@@ -9,10 +9,10 @@ category('UI info panel', () => {
   let v: DG.TableView;
   let smiles: DG.DataFrame;
 
-  // before(async () => {
-  //   grok.shell.closeAll();
-  //   grok.shell.windows.showProperties = true;
-  // });
+  before(async () => {
+    grok.shell.closeAll();
+    grok.shell.windows.showProperties = true;
+  });
 
 
   test('gasteiger', async () => {
@@ -191,29 +191,29 @@ category('UI info panel', () => {
     grok.shell.o = ui.div();
   });
 
-  // test('descriptors', async () => {
-  //   smiles = grok.data.demo.molecules(20);
-  //   v = grok.shell.addTableView(smiles);
-  //   await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-  //   const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-  //   await awaitPanel(pp, 'Chemistry');
-  //   (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
-  //   await awaitPanel(pp, 'Descriptors', 3000);
-  //   const desc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
-  //     .find((el) => el.textContent === 'Descriptors') as HTMLElement;
-  //   if (!desc?.classList.contains('expanded')) desc?.click();
-  //   await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
-  //     'descriptors table hasn\'t been created', 10000);
-  //   desc?.click(); await delay(100);
-  // });
+  test('descriptors', async () => {
+    smiles = grok.data.demo.molecules(20);
+    v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
+    await awaitPanel(pp, 'Chemistry');
+    (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    await awaitPanel(pp, 'Descriptors', 3000);
+    const desc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
+      .find((el) => el.textContent === 'Descriptors') as HTMLElement;
+    if (!desc?.classList.contains('expanded')) desc?.click();
+    await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
+      'descriptors table hasn\'t been created', 10000);
+    desc?.click(); await delay(100);
+  });
 
-  // after(async () => {
-  //   try {
-  //     grok.shell.closeAll();
-  //   } catch (e) {
-  //     console.warn(e);
-  //   }
-  // });
+  after(async () => {
+    try {
+      grok.shell.closeAll();
+    } catch (e) {
+      console.warn(e);
+    }
+  });
 });
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
