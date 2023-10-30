@@ -150,8 +150,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    gc.settings ??= getSettings(gc);
-    const settings = gc.settings;
+    const settings = (gc.settings[SparklineType.PieChart] as PieChartSettings) ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
@@ -163,7 +162,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       }),
       ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius],
         function(value: string) {
-          settings.style = value;
+          settings.style = value as PieChartStyle;
           gc.grid.invalidate();
         }),
     ]);

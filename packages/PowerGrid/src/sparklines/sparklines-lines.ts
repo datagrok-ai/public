@@ -152,8 +152,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= {globalScale: true};
-    const settings: SparklineSettings = gridColumn.settings;
+    const settings = (gridColumn.settings[SparklineType.Sparkline] as SparklineSettings) ??= getSettings(gridColumn);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +
