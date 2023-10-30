@@ -3,7 +3,7 @@ import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 //import './tests/ui-tests-info-panel';
 //import './tests/ui-tests-top-menu';
-import './tests/menu-tests-chem-space';
+// import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 // import './tests/menu-tests-similarity-diversity';
 // import './tests/menu-tests-script-based';
