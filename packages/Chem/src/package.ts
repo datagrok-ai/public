@@ -487,41 +487,49 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
-  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
-    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
-    return;
-  }
-
-  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 10000;
-  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
-
-  if (table.rowCount > allowedRowCount) {
-    grok.shell.warning(`Too many rows, maximum for chemical space is ${allowedRowCount}`);
-    return;
-  }
-
   const pg = DG.TaskBarProgressIndicator.create(`Initializing Chemical space...`);
+  try {
+    if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+      grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+      return;
+    }
 
-  const progressFunc = (progress: number) => {
-    pg.update(progress, `Running Chemical space... ${progress.toFixed(0)}%`);
-  };
+    const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 10000;
+    const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
 
-  if (table.rowCount > fastRowCount) {
-    ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
+    if (table.rowCount > allowedRowCount) {
+      grok.shell.warning(`Too many rows, maximum for chemical space is ${allowedRowCount}`);
+      return;
+    }
+
+    const progressFunc = (progress: number) => {
+      pg.update(progress, `Running Chemical space... ${progress.toFixed(0)}%`);
+    };
+
+    if (table.rowCount > fastRowCount) {
+      ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
     Do you want to continue?`))
-      .onOK(async () => {
-        const res =
-          await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
-        pg.close();
-        return res;
-      })
-      .onCancel(() => pg.close())
-      .show();
-  } else {
-    const res =
+        .onOK(async () => {
+          const res =
+          await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc)
+            .catch((e) => {
+              console.error(e);
+            });
+          pg.close();
+          return res;
+        })
+        .onCancel(() => pg.close())
+        .show();
+    } else {
+      const res =
       await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
+      pg.close();
+      return res;
+    }
+  } catch (e: any) {
+    console.error('Chem | Catch in chemSpaceTopMenu: ', e);
     pg.close();
-    return res;
+    throw e;
   }
 }
 
@@ -689,9 +697,14 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 
   const runActCliffs = async (): Promise<void> => {
-    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity,
-      similarityMetric, methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace,
-      getSimilaritiesMarix, createTooltipElement, createPropPanelElement, undefined, options);
+    try {
+      await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity,
+        similarityMetric, methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace,
+        getSimilaritiesMarix, createTooltipElement, createPropPanelElement, undefined, options);
+    } catch (e: any) {
+      grok.shell.error('Activity cliffs analysis failed');
+      grok.log.error(`Activity cliffs analysis failed: ${e}`);
+    }
   };
 
   const axesNames = getEmbeddingColsNames(df);
@@ -1040,6 +1053,7 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
   const idxCol = fingerprints.columns.byName('indexes');
   grid.sort([], []);
   grid.setRowOrder(idxCol.toList());
+  //@ts-ignore
   grid.props.pinnedRows = [tableRowIdx];
   grid.scrollToPixels(0, 0); //to address the bug in the core
 }

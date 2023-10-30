@@ -20,26 +20,31 @@ import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEdit
 export async function chemSpace(spaceParams: ISequenceSpaceParams,
   progressFunc?: (epochNum: number, epochsLength: number, embedding: number[][]) => void,
 ): Promise<ISequenceSpaceResult> {
-  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, false);
-  const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) =>
-    !el ? idx : null).filter((it) => it !== null);
-  malformedDataWarning(fpColumn, spaceParams.seqCol);
-  /* need to replace nulls with empty BitArrays since dimensionality reducing algorithmns
+  try {
+    const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, false);
+    const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) =>
+      !el ? idx : null).filter((it) => it !== null);
+    malformedDataWarning(fpColumn, spaceParams.seqCol);
+    /* need to replace nulls with empty BitArrays since dimensionality reducing algorithmns
   fail in case fpColumn contains nulls. TODO: fix on dim reduction side */
-  setEmptyBitArraysForMalformed(fpColumn);
-  const chemSpaceResult: IReduceDimensionalityResult = await reduceDimensinalityWithNormalization(
+    setEmptyBitArraysForMalformed(fpColumn);
+    const chemSpaceResult: IReduceDimensionalityResult = await reduceDimensinalityWithNormalization(
     fpColumn as BitArray[],
     spaceParams.methodName,
     spaceParams.similarityMetric,
-    spaceParams.options, true, progressFunc);
-  emptyAndMalformedIdxs.forEach((idx: number | null) => {
-    setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
-    if (chemSpaceResult.distance)
-      setNullForEmptyAndMalformedDistanceData(chemSpaceResult.distance, idx!, spaceParams.seqCol.length);
-  });
-  const cols: DG.Column[] = spaceParams.embedAxesNames.map((name: string, index: number) =>
-    DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
-  return {distance: chemSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
+    spaceParams.options, true, progressFunc); //to be changed to true
+    emptyAndMalformedIdxs.forEach((idx: number | null) => {
+      setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
+      if (chemSpaceResult.distance)
+        setNullForEmptyAndMalformedDistanceData(chemSpaceResult.distance, idx!, spaceParams.seqCol.length);
+    });
+    const cols: DG.Column[] = spaceParams.embedAxesNames.map((name: string, index: number) =>
+      DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
+    return {distance: chemSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 }
 
 function setNullForEmptyAndMalformedData(matrix: Matrix, idx: number) {
@@ -120,10 +125,14 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
       }
     });
 
-    const chemSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve) =>{
-      resolveF = resolve;
-      const r = await chemSpace(chemSpaceParams, progressFunc);
-      resolve(r);
+    const chemSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve, reject) =>{
+      try {
+        resolveF = resolve;
+        const r = await chemSpace(chemSpaceParams, progressFunc);
+        resolve(r);
+      } catch (e) {
+        reject(e);
+      }
     });
 
     const chemSpaceRes = await chemSpaceResPromise;
@@ -149,5 +158,6 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
     }
   } catch (e) {
     console.error(e);
+    scatterPlot && scatterPlot.close();
   }
 }
