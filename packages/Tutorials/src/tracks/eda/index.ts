@@ -8,12 +8,12 @@ import { GridTutorial } from './tutorials/grid';
 
 
 export const tutorials = [
-  ScatterPlotTutorial,
   GridTutorial,
   ViewersTutorial,
+  ScatterPlotTutorial,
+  EmbeddedViewersTutorial,
   FiltersTutorial,
   DashboardTutorial,
-  EmbeddedViewersTutorial,
 ];
 
 export const eda = new Track('Exploratory Data Analysis',
