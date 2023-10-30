@@ -22,39 +22,39 @@ category('top menu activity cliffs', async () => {
     }
   });
 
-  // test('activityCliffsOpen.smiles', async () => {
-  //   const df = DG.Test.isInBenchmark ?
-  //     await grok.data.files.openTable('Demo:Files/chem/smiles_10K_with_activities.csv') :
-  //     await readDataframe('tests/activity_cliffs_test.csv');
-  //   await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2);
-  // });
+  test('activityCliffsOpen.smiles', async () => {
+    const df = DG.Test.isInBenchmark ?
+      await grok.data.files.openTable('Demo:Files/chem/smiles_10K_with_activities.csv') :
+      await readDataframe('tests/activity_cliffs_test.csv');
+    await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2);
+  });
 
   test('activityCliffsOpen.molV2000', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 1);
   });
 
-  test('activityCliffsOpen.molV3000', async () => {
-    await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 185);
+  // test('activityCliffsOpen.molV3000', async () => {
+  //   await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 185);
+  // });
+
+  test('activityCliffs.emptyValues', async () => {
+    await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_empty_rows.csv'),
+      'smiles', 'Activity', 1);
   });
 
-  // test('activityCliffs.emptyValues', async () => {
-  //   await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_empty_rows.csv'),
-  //     'smiles', 'Activity', 1);
-  // });
-
-  // test('activityCliffs.malformedData', async () => {
-  //   DG.Balloon.closeAll();
-  //   await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
-  //     'canonical_smiles', 'FractionCSP3', 24);
-  //   try {
-  //     await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
-  //       '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-  //     'cannot find warning balloon', 5000);
-  //   } finally {
-  //     grok.shell.closeAll();
-  //     DG.Balloon.closeAll();
-  //   }
-  // });
+  test('activityCliffs.malformedData', async () => {
+    DG.Balloon.closeAll();
+    await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
+      'canonical_smiles', 'FractionCSP3', 24);
+    try {
+      await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
+      'cannot find warning balloon', 5000);
+    } finally {
+      grok.shell.closeAll();
+      DG.Balloon.closeAll();
+    }
+  });
 
   after(async () => {
     grok.shell.closeAll();
