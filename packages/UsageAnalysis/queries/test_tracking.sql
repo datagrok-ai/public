@@ -50,6 +50,8 @@ order by e.event_time desc
 
 --name: TestsToday
 --connection: System:Datagrok
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 select
 distinct on (e.description)
 t.id::text as id,
@@ -77,6 +79,8 @@ order by e.description, e.event_time desc
 
 --name: TestsMonth
 --connection: System:Datagrok
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 with ress as (select
 e.description, e.event_time,
 e.event_time::date as date,

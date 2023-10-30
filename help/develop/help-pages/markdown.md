@@ -325,7 +325,7 @@ Use:
 * Single underscores (`_`) for _italics_.
 
 <Tabs>
-<TabItem value="italics" label="Italisize" default>
+<TabItem value="italics" label="Italicize" default>
 
 * To draw attention to a specific word or phrase.
 * Explanatory or introductory text at the start of a list item (see the _Lists_ tab for more details).
@@ -391,7 +391,7 @@ When documenting how to navigate through the Datagrok UI:
 
 If you use icon images in addition to the text description, do it as follows:
 
-* Cick the **Add new connection** (**+**) icon...
+* Click the **Add new connection** (**+**) icon...
 
 <!--
 <details>

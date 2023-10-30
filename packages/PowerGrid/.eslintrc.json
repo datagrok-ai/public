@@ -45,6 +45,7 @@
       "arrays": "only-multiline",
       "functions": "never",
       "objects": "only-multiline"
-    }]
+    }],
+    "arrow-parens": ["warn", "always"]
   }
 }

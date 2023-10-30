@@ -67,9 +67,9 @@ export class ViewHandler {
         if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
           grok.shell.windows.showToolbox = true;
           grok.shell.windows.showContextPanel = true;
-          const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
-    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
-    more information about the selected events will be displayed on context pane`);
+          const info = ui.divText(`To learn more about an event, click the corresponding point.\
+          To select multiple points, use CTRL + Click or SHIFT + Mouse Drag. Once you've made your selection,\
+          see the detailed information on the Context Panel`);
           info.classList.add('ua-hint');
           grok.shell.o = info;
         }

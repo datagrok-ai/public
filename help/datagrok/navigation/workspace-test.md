@@ -15,7 +15,7 @@ managing [projects](project.md),
 
 1. Open "[Workspace](workspace.md)" via **View | Workspace** (or ```Alt + W```)
 
-* [Workspace](workspace.md) is opened, in which empty Skrachpad and *"
+* [Workspace](workspace.md) is opened, in which empty Scratchpad and *"
   demog"* [project](project.md)
 
 1. Expand *"demog"* in [Workspace](workspace.md)

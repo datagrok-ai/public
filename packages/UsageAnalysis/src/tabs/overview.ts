@@ -58,7 +58,7 @@ export class OverviewView extends UaView {
     let usersSelection: DG.BitSet;
 
     function query(filter: UaFilter) {
-      df = grok.data.query('UsageAnalysis:PackagesUsageOverview', {...filter});
+      df = grok.functions.call('UsageAnalysis:PackagesUsageOverview', {...filter});
       df.then((df) => {
         packagesSelection = DG.BitSet.create(df.rowCount, (i) => true);
         usersSelection = DG.BitSet.create(df.rowCount, (i) => true);

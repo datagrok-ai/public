@@ -31,7 +31,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams,
     fpColumn as BitArray[],
     spaceParams.methodName,
     spaceParams.similarityMetric,
-    spaceParams.options, false, progressFunc);
+    spaceParams.options, true, progressFunc);
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
     if (chemSpaceResult.distance)

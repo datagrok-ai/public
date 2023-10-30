@@ -44,7 +44,7 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       this.molColInput,
       this.methodInput,
       this.methodSettingsDiv,
-      this.similarityMetricInput,
+      this.similarityMetricInputRoot,
       this.similarityThresholdInput,
       this.plotEmbeddingsInput
     ], {style: {minWidth: '320px'}});

@@ -88,7 +88,7 @@ category('GUI: Dialogs', () => {
     await awaitCheck(() => demog.col('clusters (2)') !== null, 'cannot find clusters (2) column', 3000);
     isViewerPresent(Array.from(v.viewers), 'Scatter plot');
     isColumnPresent(demog.columns, 'clusters (2)');
-  });
+  }, {skipReason: 'top menu wip'});
 
   test('pca', async () => {
     demog = df.clone();

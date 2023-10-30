@@ -1,5 +1,30 @@
 # Chem changelog
 
+## 1.8.3 (2023-10-26)
+
+### Features
+
+* [#2421](https://github.com/datagrok-ai/public/issues/2421): Chem | Molecular Search options:
+  * Add some hint to explain the new options to users
+  * Fix the ability to collapse the controls after switching from Similarity to Contains
+  * Make the icon more noticeable
+* [#2420](https://github.com/datagrok-ai/public/issues/2420): Chem | Scaffold Tree coloring:
+  * The custom coloring should override the default one
+  * Coloring for child structures - it's very inconvenient that you can't click the icon again to return to the custom color
+  * Add the icon for removing the specific node of the scaffold tree
+
+### Bug Fixes
+
+* [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold tree viewer: coloring can't be saved to the Layout
+* [#2450](https://github.com/datagrok-ai/public/issues/2450): Scaffold tree imported from file is not restored on applying saved layout
+* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted if they are in SMILES format
+
+## 1.8.2 (2023-10-22)
+
+### Bug Fixes
+
+* GROK-14149: Add progress indicator to sequence/chem space and remove jumping points
+
 ## 1.8.1 (2023-10-16)
 
 ### Bug Fixes

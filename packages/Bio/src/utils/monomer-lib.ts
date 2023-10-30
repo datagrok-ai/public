@@ -8,9 +8,7 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {
   createJsonMonomerLibFromSdf,
-  getJsonMonomerLibForEnumerator,
   IMonomerLibHelper,
-  isValidEnumeratorLib,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
   HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE
@@ -18,12 +16,8 @@ import {
 
 import {_package} from '../package';
 
-const _HELM_REQUIRED_FIELDS_ARRAY = [
-  REQ.SYMBOL, REQ.NAME, REQ.MOLFILE, REQ.AUTHOR, REQ.ID,
-  REQ.RGROUPS, REQ.SMILES, REQ.POLYMER_TYPE, REQ.MONOMER_TYPE, REQ.CREATE_DATE,
-] as const;
+import {PolyToolMonomerLibHandler} from '@datagrok-libraries/bio/src/utils/poly-tool/monomer-lib-handler';
 
-const _HELM_OPTIONAL_FIELDS_ARRAY = [OPT.NATURAL_ANALOG, OPT.META] as const;
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
 export const LIB_PATH = 'System:AppData/Bio/libraries/';
@@ -291,8 +285,9 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       }
       const df = await fileSource.readCsv(fileName);
       const json = toJson(df);
-      if (isValidEnumeratorLib(json))
-        rawLibData = getJsonMonomerLibForEnumerator(json);
+      const polyToolMonomerLib = new PolyToolMonomerLibHandler(json);
+      if (polyToolMonomerLib.isValid())
+        rawLibData = polyToolMonomerLib.getJsonMonomerLib();
       else
         throw new Error('Invalid format of CSV monomer lib');
     } else {

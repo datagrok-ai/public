@@ -22,10 +22,10 @@ interface PieChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.style ??= PieChartStyle.Radius;
-
-  return gc.settings;
+  const settings: PieChartSettings = gc.settings[SparklineType.PieChart] ??=
+    getSettingsBase(gc, SparklineType.PieChart);
+  settings.style ??= PieChartStyle.Radius;
+  return settings;
 }
 
 function getColumnsSum(cols: DG.Column[], row: number) {
@@ -150,8 +150,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    gc.settings ??= getSettings(gc);
-    const settings = gc.settings;
+    const settings: PieChartSettings = gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
@@ -162,7 +161,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
       ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius],
-        function(value: string) {
+        function(value: PieChartStyle) {
           settings.style = value;
           gc.grid.invalidate();
         }),

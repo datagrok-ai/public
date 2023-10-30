@@ -18,7 +18,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters, UMAP} from './umap';
 import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
 import {SparseMatrixService} from './distance-matrix/sparse-matrix-service';
-import {getKnnGraph} from './umap/knnGraph';
+import {getKnnGraph, getKnnGraphFromDM} from './umap/knnGraph';
 
 export type SparseMatrixTransferType = {
   i: Int32Array,
@@ -248,7 +248,7 @@ class UMAPReducer extends Reducer {
       this.distanceMatrix = parallelDistanceWorkers ? await (async () => {
         const matrixService = new DistanceMatrixService(true, false);
         try {
-          const dist = await matrixService.calc(this.data, this.distanceFname, true, this.distanceFnArgs);
+          const dist = await matrixService.calc(this.data, this.distanceFname, false, this.distanceFnArgs);
           matrixService.terminate();
           return dist;
         } catch (e) {
@@ -262,17 +262,22 @@ class UMAPReducer extends Reducer {
             return d;}); 
           return ret.data; 
         })();
+        if (this.distanceMatrix && !isBitArrayMetric(this.distanceFname)) {
+          const knnRes = getKnnGraphFromDM(this.distanceMatrix, this.reducer.neighbors, this.data.length);
+          this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
+        }
+        
     } else if (this.usingSparseMatrix) {
           console.time('sparse matrix');
           let res: {[K in keyof SparseMatrixTransferType]: SparseMatrixTransferType[K] | null} | null
             = this.transferedSparseMatrix ??
               await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold, this.distanceFnArgs);
           console.timeEnd('sparse matrix');
+          if (!isBitArrayMetric(this.distanceFname)) {
+            const knnRes = getKnnGraph(res.i!, res.j!, res.distance!, this.reducer.neighbors, this.data.length);
 
-          const knnRes = getKnnGraph(res.i!, res.j!, res.distance!, this.reducer.neighbors, this.data.length);
-
-          this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
-
+            this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
+          }
           console.time('sparse matrix to map')
           this.sparseMatrix = new Map<number, Map<number, number>>();
           for (let i = 0; i < res.i!.length; ++i) {

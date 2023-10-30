@@ -2,24 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {handleError} from './handle-error';
-
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
-import {SequenceTranslatorUI} from '../view/view';
-import {_package} from '../package';
+import {_package, oligoTranslatorApp, oligoPatternApp, oligoStructureApp} from '../package';
+import {tryCatch} from '../model/helpers';
 
-export async function demoTranslateSequenceUI() {
-  try {
-    openSequenceTranslatorOnPane(0);
-  } catch (err: any) {
-    handleError(err);
-  }
+export async function demoOligoTranslatorUI() {
+  await tryCatch(async () => oligoTranslatorApp());
 }
 
-export async function demoDesignPatternUI() {
-  try {
-    async function emulateUserInput(value: string, idx: number, idxUpdate: (idx: number) => number) {
+export async function demoOligoPatternUI() {
+  await tryCatch(async () => {
+    async function emulateUserInput(value: string, idx: number, idxUpdate: (idx: number) => number): Promise<void> {
       await delay(3000);
 
       // warning: this redefinition is necessary because
@@ -32,7 +26,7 @@ export async function demoDesignPatternUI() {
       selectElement.dispatchEvent(event);
     }
 
-    openSequenceTranslatorOnPane(1);
+    await oligoPatternApp();
 
     let len: number;
 
@@ -44,28 +38,24 @@ export async function demoDesignPatternUI() {
     const asNewValues = ['2\'-O-Methyl', '2\'-Fluoro', '2\'-O-MOE'];
     asNewValues.forEach(async (value, idx) => {
       emulateUserInput(value, idx, (i) => (len - 2 - 2 * i));
+    });
+  })
+}
+
+export async function demoOligoStructureUI() {
+  await tryCatch(async () => {
+    async function setInputValue(idx: number, sequence: string): Promise<void> {
+      await delay(500);
+      const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.colored-text-input > textarea');
+      const textarea = textInputs[idx];
+      textarea.value = sequence;
+      const event = new Event('input');
+      textarea.dispatchEvent(event);
+    }
+    await oligoStructureApp();
+    const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
+    inputSequences.forEach(async (sequence, idx) => {
+      await setInputValue(idx, sequence);
     })
-  } catch (err: any) {
-    handleError(err);
-  }
-}
-
-export async function demoVisualizeDuplexUI() {
-  try {
-    await openSequenceTranslatorOnPane(2);
-  } catch (err: any) {
-    handleError(err);
-  }
-}
-
-async function openSequenceTranslatorOnPane(paneNumber: number): Promise<void> {
-  let tabControl: DG.TabControl;
-  let panes: DG.TabPane[];
-  await getJsonData();
-  await _package.initMonomerLib();
-  const v = new SequenceTranslatorUI();
-  await v.createLayout();
-  tabControl = (await v.tabs.getControl());
-  panes = tabControl.panes;
-  tabControl.currentPane = panes[paneNumber];
+  });
 }

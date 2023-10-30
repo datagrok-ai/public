@@ -58,7 +58,7 @@ See
 ## Vulnerability remediation
 
 Datagrok server core is written in Dart, which is a language developed and supported by Google. We
-follow [Dart Security Best Practises](https://dart.dev/security#best-practices) to minimize the risk of introducing a
+follow [Dart Security Best Practices](https://dart.dev/security#best-practices) to minimize the risk of introducing a
 vulnerability.
 
 Every release is tested according to our [quality-assurance procedures](quality-assurance.md) which includes

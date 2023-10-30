@@ -4,13 +4,19 @@ title: "Function annotations"
 
 # Function annotations
 
-There are various types of [functions](functions.md) such as [scripts](../../../compute/scripting.md) or
-[queries](../../../access/access.md#data-query). What is common to all of them is the annotation of parameters. This is part of
-the mechanism that enables universal support for functions in the platform.
+There are various types of [functions](functions.md), such as [scripts](../../../compute/scripting.md) or
+[queries](../../../access/access.md#data-query). All of them are annotated in a similar way, and that 
+enables universal support for functions in the platform.
 
 A function annotation, also known as a header, is a multi-line comment that is placed above the function declaration.
 It contains information about the function name, role, as well as function inputs and outputs. Inputs and outputs
-can have metadata associated with them as well.
+can have metadata associated with them as well. 
+
+When you run a function, Datagrok generates the UI from the parameter annotations. You can build
+interactive experiences that allow [validation](#validation), controlled [vocabularies](#choices),
+[autocomplete](#autocomplete), [custom inputs](#inputs-for-semantic-types), 
+[dynamic lookups](#lookup-tables), [referencing parameters](#referencing-other-parameters), and 
+[function chaining](#function-inputs) - without writing a single line of UI code!
 
 ## Function
 
@@ -41,7 +47,7 @@ These are the common parameters for all functions:
 
 Some parameters are specific to script language and/or technology:
 * Script
-  * `language`: script language, so that Datagrok knows how to execute it
+  * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
   * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
   * `sample`: path to a sample data csv file. When defined, a `*` icon appears on the ribbon panel that loads it. 
 * Script-based info panels
@@ -71,7 +77,7 @@ Datagrok supports the following types in all scripting languages:
 * Scalars: `int`, `double`, `bool`, `string`, `datetime`
 * Table: `dataframe`, `column`, `column_list`
 * Collections: `list` (typically of strings)
-* `graphics`: typically a function output. See [example]()
+* `graphics`: typically a function output. See [example](https://github.com/datagrok-ai/public/blob/9f7043dbadd9be35c6f798143642de3c9145b560/packages/Chem/scripts/gasteiger_charges.py#L4)
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
 
@@ -79,13 +85,13 @@ Some of the options apply to all parameters, while other are type-specific.
 
 For all parameters:
 
-| Option      | Value  | Description                                        |
-|-------------|--------|----------------------------------------------------|
-| validators  | string | Comma-separated list of [validators](#validation) |
-| caption     | string | Custom field caption                               |
-| postfix     | string | Field postfix                                      |
-| units       | string | Value unit name                                    |
-| nullable    | bool   | Makes it an [optional parameter]()                 |
+| Option     | Value  | Description                                                               |
+|------------|--------|---------------------------------------------------------------------------|
+| validators | string | Comma-separated list of [validators](#validation)                         |
+| caption    | string | Custom field caption                                                      |
+| postfix    | string | Field postfix                                                             |
+| units      | string | Value unit name                                                           |
+| nullable   | bool   | Makes it an [optional parameter](#initial-values-and-optional-parameters) |
 
 For `dataframe` type:
 
@@ -108,15 +114,48 @@ For `string` type
 
 | Option                       | Value                                                                             | Description                                        |
 |------------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------|
-| [choices](choices)           | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
+| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
 | [suggestions](#autocomplete) | Name of a function that returns a list of strings to autocomplete user input      | Autocomplete gives you options as you type |
 
 For `numeric` types
 
-| Option | Description                    |
-|--------|--------------------------------|
-| min    | Minimum value to be validated. |                                                                                |
-| max    | Maximum value to be validated. | 
+| Option   | Description                                                                                                                                |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |                                                                                |
+
+For `list` type`
+
+| Option      | Value                                                             | 
+|-------------|-------------------------------------------------------------------|
+| separators  | Characters used to split string to list of values. Default is `,` | 
+
+**Separators** apply only for the TextArea input type. The following example demonstrates how separators work
+for the Postgres-based SQL query:
+
+<details>
+<summary> Using separators in a query </summary>
+<div>
+
+```sql
+--name: OrdersByEmployee
+--friendlyName: OrdersByEmployee
+--connection: PostgresNorthwind
+--input: string shipCountry = "Spain" {choices: Query("SELECT DISTINCT shipCountry FROM orders")}
+--input: string shipCity = "Barcelona" {choices: Query("SELECT DISTINCT shipcity FROM orders WHERE shipCountry = @shipCountry")}
+--input: string customerId = "GALED" {choices: Query("SELECT DISTINCT customerid FROM orders WHERE shipCity = @shipCity")}
+--input: list<string> employee {inputType: TextArea; separators: ,}
+
+SELECT *
+FROM orders
+INNER JOIN employees
+ON orders.employeeId = employees.employeeId
+WHERE lastName in (SELECT unnest(@employee))
+```
+
+![Separators Option](../../../compute/separators-option.gif)
+
+</div>
+</details>
 
 ### Initial values and optional parameters
 
@@ -201,31 +240,115 @@ To learn more, see [search patterns](../../../explore/search-filter-select/data-
 ### Choices
 
 Use `choices` to make input a combo box, and restrict the selection to the defined set of values. 
-You can define `choices` using a comma-separated list of values, a name of another query, 
+You can define `choices` using a comma-separated list of values, a name of another function (such as query), 
 or by writing an actual SQL query. Here's an example of how to define `choices` for a `shipCountry` 
-input parameter using all three methods:
+input parameter using all methods:
 
 ```sql
 --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
---input: string shipCountry = "France" {choices: Demo:northwind:countries}
+--input: string shipCountry = "France" {choices: Samples:countries}
 --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
+--input: string shipCountry = "France" {choices: OpenFile("System:AppData/Samples/countries.csv")}
 ```
+
+![img_2.png](single-choice-input.png)
+
+When `choices` is applied to the `list` parameter, the input becomes a multiple choice, just like in 
+this example:
+
+```sql
+--input: list<string> company {choices: Query("SELECT DISTINCT company from research_companies")}
+```
+
+![img_1.png](multiple-choice-input.png)
+
 
 ### Validation
 
-Use validators to assure that the parameters are valid before calling the function. 
+In addition to the built-in [checks that the value is not missing](#initial-values-and-optional-parameters), 
+and that it satisfies min-max conditions, 
+you can specify custom validation functions that get executed before calling the function 
+to assure the validity of the parameters. 
 
-You can specify 
-Named validators:
+Usually it's a JavaScript function that gets executed right 
+in the browser, but you can use other languages as well. A validation function accepts one parameter
+(a string that user enters), and returns null if the string is valid, or the reason for being invalid,
+otherwise.
 
-* containsMissingValues
-* columnName - checks if table contains the column name
-* columnIsNumerical
-* columnIsCategorical.
+The following example adds a "containsLettersOnly" function to the "col" parameter:
 
-Any function can be a validator if it returns `null` when validation is right, or string with error message otherwise.
+```
+#input: string s {validators: ["containslettersonly"]}
+#input: column col {validators: ["containsmissingvalues"]}
+```
+
+```js
+//name: jsVal1
+//input: string s
+//output: string valid
+valid = input < 11 ? null : "Error val1";
+```
+
+```python
+#name: Numbers
+#language: python
+#input: int count1 {validators: ["jsval1"]
+```
+
+![Script Parameter Validators](../../../uploads/features/script-param-validators.gif "Script Parameter Validators")
+
+### Lookup tables
+
+Lookup tables let you initialize inputs with a set of pre-defined values. To use it, set 
+the `choices` attribute to a function that returns a dataframe, and set `propagateChoice` to "all". 
+The first column is used as a key in the combo box. When you select it, the input fields are initialized with the 
+values from the corresponding columns (input names and column names have to match).
+
+The following example lets you initialize multiple car's parameters based on the model that you select.
+Note that here we use the `OpenFile` function to read a dataframe from the CSV file on a file share; it would
+work the same if we read it from the database using the `Query` function.
+
+```
+//input: string model { choices: OpenFile("System:AppData/Compute/cars.csv"); propagateChoice: all }
+//input: double mpg
+//input: int cyl
+//input: int disp
+```
+
+```csv
+model,mpg,cyl,disp,hp,drat,wt,qsec,vs,am,gear,carb
+Mazda RX4,21.0,6,160,110,3.90,2.620,16.46,0,1,4,4
+Mazda RX4 Wag,21.0,6,160,110,3.90,2.875,17.02,0,1,4,4
+Datsun 710,22.8,4,108,93,3.85,2.320,18.61,1,1,4,1
+Hornet 4 Drive,21.4,6,258,110,3.08,3.215,19.44,1,0,3,1
+Hornet Sportabout,18.7,8,360,175,3.15,3.440,17.02,0,0,3,2
+```
+
+![](default-values-from-file.gif)
+
+### Referencing other parameters
+
+Parameter's choices, validators, and suggestions can depend on the value of another parameter. 
+This is useful when creating queries with hierarchical choices, where each subsequent parameter 
+depends on the previous one. To do this, reference the parameter in another parameter's annotation  
+using the `@` symbol:
+
+```sql
+--input: string state {choices: Query("SELECT DISTINCT state FROM public.starbucks_us")}
+--input: string city {choices: Query("SELECT DISTINCT city FROM public.starbucks_us WHERE state = @state")}
+SELECT * FROM public.starbucks_us WHERE (city = @city)
+```
+
+Now, when you change the first parameter (country), the list of dependent choices (cities)
+gets updated automatically:
+
+![](dependent-parameters.gif)
 
 ### Autocomplete
+
+Use autocomplete to help users enter a correct value. For instance, when entering a product name, it might make
+sense to dynamically query a database for values starting with the already entered text, and suggest to auto-complete
+the value.
 
 Use the `suggestions` option to enable autocomplete, and specify the name of a function that 
 accepts one string parameter, and returns a list of strings (or a dataframe with one string column)
@@ -269,6 +392,82 @@ FROM target_dictionary td
 
 ![](autocomplete.gif)
 
+
+### Function inputs
+
+To reuse other "helper" functions along with their editors for your top-level function, specify 
+the helper function using the `editor` option. In the following example, we have a parameter `orders`
+that points to the `Samples:OrdersByEmployee` function, so in the autogenerated UI, we see the inputs
+of that function instead of the normal dataframe input. When the top-level function is executed,
+`orders` parameters gets evaluated to the results of the execution of the `Samples:OrdersByEmployee` 
+function with the specified parameters.
+
+This powerful technique allows to reuse functions, and mix multiple technologies and languages 
+within one script. You can get your data with a SQL query, run calculations in Python, and then
+visualize it interactively in Datagrok - all of that without writing a single line of UI code.
+To learn more, see [Compute](../../../compute/compute.md#data-access).
+
+```js
+//input: dataframe orders {category: Data; editor: Samples:OrdersByEmployee}
+//input: int factor = 2 {category: Computation}
+//output: int result
+
+result = orders.rowCount * 2;
+```
+
+![img.png](function-input.png)
+
+
+### Input types
+
+Input fields such as text boxes or combo boxes get generated automatically based on
+the property attributes. You can also explicitly set the `inputType` option. Here, we 
+set it to `Radio` to make the input appear as a radio button instead of the combo box:
+
+```js
+//input: string fruit { choices: ["Apple", "Banana"], inputType: Radio }`
+```
+
+Input types have to match the data types (input types in bold are the default ones
+that you do not have to specify):
+
+| Input type      | Data types  | Example / description                    |
+|-----------------|-------------|------------------------------------------|
+| **Int**         | int         | { min: 0; max: 20; step: 4}              |
+| **BigInt**      | bigint      |                                          |
+| **Float**       | double      | { min: 0; max: 1; step: 0.03 }           |
+| **Bool**        | bool        |                                          |
+| **Text**        | string      |                                          |
+| **Date**        | datetime    |                                          |
+| **MultiChoice** | list        | { choices: \["A", "B"] }                 |
+| **List**        | list        | { inputType: TextArea; separators: ,}    |
+| **Column**      | column      |                                          |
+| Slider          | int, double | { min: 0; max: 20; step: 4}              |
+| Color           | string      |                                          |
+| Radio           | string      | {inputType: Radio; choices: \["A", "B"]} |
+| Molecule        | string      |                                          |
+
+![](input-types.png)
+
+Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
+for more input types.  
+
+For developers: [DG.InputBase](https://datagrok.ai/js-api/classes/dg.InputBase)
+
+### Inputs for semantic types
+
+Datagrok automatically [detects semantic types](../../../develop/function-roles.md#semantic-type-detectors), 
+and you can also specify semantic types of input parameters. In this case, a corresponding input will be
+used, if it is defined. 
+
+For instance, this is how an input field for the "Molecule" semantic type looks like. When you click
+a molecule, a molecule sketcher pops up.
+
+```sql
+--input: string substructure = 'c1ccccc1' {semType: Molecule}
+```
+
+![](molecule-input.png)
 
 ## Examples
 
@@ -345,4 +544,5 @@ select * from protein_classification;
 See also:
 
 * [Functions](functions.md)
-* [Function parameters enhancement](func-params-enhancement.md)
+* [Compute](../../../compute/compute.md)
+

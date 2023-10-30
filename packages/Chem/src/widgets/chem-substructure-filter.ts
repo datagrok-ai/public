@@ -7,7 +7,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {chemSubstructureSearchLibrary} from '../chem-searches';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subject, Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
@@ -248,7 +248,7 @@ export class SubstructureFilter extends DG.Filter {
     }));
 
     this.currentSearches.add('');
-    chemSubstructureSearchLibrary(this.column!, '', '', false, false)
+    chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
       .then((_) => { }); // Precalculating fingerprints
 
     let onChangedEvent: any = this.sketcher.onChanged;
@@ -423,7 +423,7 @@ export class SubstructureFilter extends DG.Filter {
 
   async getFilterBitset(): Promise<BitArray> {
     const smarts = await this.getSmartsToFilter();
-    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false,
+    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, FILTER_TYPES.substructure, false, false,
       this.searchType, this.similarityCutOff, this.fp);
   }
 
@@ -470,7 +470,7 @@ export class SubstructureFilter extends DG.Filter {
     if (this.searchType !== SubstructureSearchType.CONTAINS)
       this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'chem-search-options-icon');
     else {
-      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()))
+      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()) && this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE)
         this.sketcher.root.appendChild(this.optionsIcon);
     }
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)

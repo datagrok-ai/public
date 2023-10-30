@@ -117,7 +117,7 @@ experience.
 A visual tool for annotating function parameters is
 [currently in the development](https://github.com/datagrok-ai/public/issues/184).
 
-Learn more: [function parameters](../datagrok/concepts/functions/func-params-enhancement.md).
+Learn more: [function parameters](../datagrok/concepts/functions/func-params-annotation.md).
 
 See also: [auto-generating UI for dynamic data retrieval](#data-access).
 

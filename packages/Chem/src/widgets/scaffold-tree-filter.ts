@@ -99,7 +99,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   createViewer(dataFrame: DG.DataFrame) {
     this.viewer.allowGenerate = false;
-    this.viewer.size = 'extra';
+    this.viewer.size = 'large';
     this.viewer.applyFilter = false;
     this.viewer.resizable = true;
     this.viewer.molCol = this.column;
