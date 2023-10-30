@@ -296,6 +296,8 @@ export namespace chem {
     }
 
     validate(x: string): void {
+      if (Sketcher.isEmptyMolfile(x))
+        this.molInput.value = '';
       this.error = this._validationFunc(x);
       this.updateInvalidMoleculeWarning();
     }
@@ -466,7 +468,6 @@ export namespace chem {
 
         if (this.getSmiles() !== newSmilesValue)
           this.setValue(newSmilesValue);
-
       };
 
       this.molInput.addEventListener('keydown', (e) => {
