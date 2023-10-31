@@ -1306,7 +1306,7 @@ export class RichFunctionView extends FunctionView {
             for (const [index, viewer] of nonGridViewers.entries()) {
               await plotToSheet(
                 exportWorkbook,
-                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                 viewer.root,
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -1342,7 +1342,7 @@ export class RichFunctionView extends FunctionView {
                   DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
                 ]);
                 dfToSheet(
-                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                   stats,
                   currentDf.columns.length + 2,
                   (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -1350,7 +1350,7 @@ export class RichFunctionView extends FunctionView {
               } else {
                 await plotToSheet(
                   exportWorkbook,
-                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                   viewer.root,
                   currentDf.columns.length + 2,
                   (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
