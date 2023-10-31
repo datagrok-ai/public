@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 /** Right-hand side of IVP */
-type Func = (t: number, y: Float64Array, p: Float64Array) => Float64Array;
+type Func = (t: number, y: Float64Array, p: Float64Array, output: Float64Array) => void;
 
 /** Initial Value Problem (IVP) type */
 type ODEs = {
@@ -20,7 +20,7 @@ type ODEs = {
   solutionColNames: string[],
 };
 
-const ex1 = (t: number, _y: Float64Array, _p: Float64Array) => {
+const ex1: Func = (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {
     // constants
     const const1 = 1.0;
     const const2 = 3.0;
@@ -37,14 +37,12 @@ const ex1 = (t: number, _y: Float64Array, _p: Float64Array) => {
     const coef1 = const1 + param1;
     const coef2 = const2 + param2 + 0.0;
   
-    return new Float64Array([
-      coef1 * y, // d(x)/dt
-      coef2 * x // dy/d(t)
-    ]);
+    output[0] = coef1 * y; // d(x)/dt
+    output[1] = coef2 * x; // dy/d(t)
 } // ex1
 
   
-const ex2 = (t: number, _y: Float64Array, _p: Float64Array) => {  
+const ex2: Func = (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {  
     // parameters
     const alpha = _p[0];
     const beta = _p[1];
@@ -53,10 +51,8 @@ const ex2 = (t: number, _y: Float64Array, _p: Float64Array) => {
     const x = _y[0];
     const y = _y[1];  
   
-    return new Float64Array([
-      alpha * x, // d(x)/dt
-      beta * y // dy/d(t)
-    ]);
+    output[0] = alpha * x; // d(x)/dt
+    output[1] = beta * y; // dy/d(t)
 } // ex2
 
 export const example2: ODEs = {
@@ -69,36 +65,29 @@ export const example2: ODEs = {
 };
 
 /** Returns derivative with respect to t. */
-function tDerivative(t: number, y: Float64Array, p: Float64Array, f: Func, eps: number): Float64Array {
+function tDerivative(t: number, y: Float64Array, p: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
   const size = y.length;
-  const res = new Float64Array(size);
-  const f0 = f(t, y, p);
-  const f1 = f(t + eps, y, p);
+  f(t, y, p, f0Buf);
+  f(t + eps, y, p, f1Buf);
 
   for (let i = 0; i < size; ++i)
-    res[i] = (f1[i] - f0[i]) / eps;
-
-  return res;
+    output[i] = (f1Buf[i] - f0Buf[i]) / eps;
 }
 
 /** Returns Jacobian. */
-function Jacobian(t: number, y: Float64Array, p: Float64Array, f: Func, eps: number): Float64Array {
-  const size = y.length;
-  const res = new Float64Array(size * size);
-  const f0 = f(t, y, p);
+function Jacobian(t: number, y: Float64Array, p: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
+  const size = y.length;  
+  f(t, y, p, f0Buf);
 
   for (let j = 0; j < size; ++j) {
     y[j] += eps;
-
-    const f1 = f(t, y, p);
+    f(t, y, p, f1Buf);
 
     for (let i = 0; i < size; ++i)
-      res[j + i * size] = (f1[i] - f0[i]) / eps;
+      output[j + i * size] = (f1Buf[i] - f0Buf[i]) / eps;
 
     y[j] -= eps;
   }
-
-  return res;
 }
 
 /** Solve initial value problem. */
@@ -129,10 +118,3 @@ export function solveODEs(problem: ODEs): DG.DataFrame {
 
   return solutionDf;
 }
-
-/*const y = new Float64Array([1, 12]);
-const p = new Float64Array([15, 7]);
-
-//console.log(T(2, y, p, ex2, 0.00000001));
-
-console.log(Jac(0, y, p, ex2, 0.00000001));*/
