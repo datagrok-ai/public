@@ -114,6 +114,6 @@ export async function initTests() {
         if (res !== 'ok')
           throw new Error(res);
       }, skip.includes(cat) ? {skipReason: 'SKIP'} : undefined);
-    });
+    }, {timeout: 5000});
   }
 }
