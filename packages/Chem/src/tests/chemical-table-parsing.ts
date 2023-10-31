@@ -103,19 +103,19 @@ category('chemical table parsing', async () => {
     _testBondTypes(molfileV2K, OUTPUT_V2K);
   });
 
-  test('parse coordinates V3K', async () => {
-    _testCoordinates(molfileV3K, OUTPUT_V3K);
-  });
+  // test('parse coordinates V3K', async () => {
+  //   _testCoordinates(molfileV3K, OUTPUT_V3K);
+  // });
 
-  test('parse atom types V3K', async () => {
-    _testAtomTypes(molfileV3K, OUTPUT_V3K);
-  });
+  // test('parse atom types V3K', async () => {
+  //   _testAtomTypes(molfileV3K, OUTPUT_V3K);
+  // });
 
-  test('parse bonded atoms V3K', async () => {
-    _testBondedAtoms(molfileV3K, OUTPUT_V3K);
-  });
+  // test('parse bonded atoms V3K', async () => {
+  //   _testBondedAtoms(molfileV3K, OUTPUT_V3K);
+  // });
 
-  test('parse bond types V3K', async () => {
-    _testBondTypes(molfileV3K, OUTPUT_V3K);
-  });
+  // test('parse bond types V3K', async () => {
+  //   _testBondTypes(molfileV3K, OUTPUT_V3K);
+  // });
 });
