@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {initMatrOperApi, getInverseMatrix, invMatrix} from '../wasm/matrix-operations-api';
+import {initMatrOperApi, inverseMatrix, memAlloc, memFree} from '../wasm/matrix-operations-api';
 
 import {solveODEs} from './solver';
 
@@ -19,69 +19,30 @@ export async function init() {
   await initMatrOperApi();
 }
 
-//name: check
-//input: int n
-export function check(n: number) {
-  /*const A = (n === 1) ? new Float64Array([10]) : 
-  ((n === 2) ? new Float64Array([1,2,3,4]) : new Float64Array([1,1,1,0,1,1,0,0,1]));
+//name: check upd
+//input: int n = 3
+export function checkUpd(n: number) {
+  const size = n * n;
+
+  const mem = memAlloc(size);
+
+  const A = new Float64Array(mem.buf, mem.off1, size);
+  const invA = new Float64Array(mem.buf, mem.off2, size);
+
+  A[0] = 1; A[1] = 2; A[2] = 3;
+  A[3] = 0; A[4] = 1; A[5] = 2;
+  A[6] = 0; A[7] = 0; A[8] = 1;
+  
   console.log('A:');
   console.log(A);
+
+  inverseMatrix(A, n, invA);
+
   console.log('inv A:');
-  console.log(getInverseMatrix(A, n));*/
-  switch (n) {
-    case 1:
-      const A = new Float64Array([10]);
-      const invA = new Float64Array(n * n);
-      invMatrix(A, n, invA);
-      console.log('A:');
-      console.log(A);
-      console.log('inv A:');
-      console.log(invA);
-      break;
-    
-    case 2:
-      const B = new Float64Array([1, 2, 3, 4]);
-      const invB = new Float64Array(n * n);
-      invMatrix(B, n, invB);
-      console.log('B:');
-      console.log(B);
-      console.log('inv B:');
-      console.log(invB);
-      break;
+  console.log(invA);
 
-    default:
-      const C = new Float64Array([1, 1, 1, 0, 1, 1, 0, 0, 1]);
-      const invC = new Float64Array(3 * 3);
-      invMatrix(C, n, invC);
-      console.log('C:');
-      console.log(C);
-      console.log('inv C:');
-      console.log(invC);
-      break;
-  }
-}
-
-//name: performance
-//input: int size = 15
-//input: int times = 10000
-export function performance(size: number, times: number) {
-  const A = new Float64Array(size * size);
-
-  for (let i = 0; i < size; ++i)
-    for (let j = i; j < size; ++j)
-      A[j + i * size] = Math.random();
-
-  let sum = 0;
-
-  for (let k = 0; k < times; ++k) {
-    const start = new Date().getTime();
-    getInverseMatrix(A, size);
-    const finish = new Date().getTime();
-    sum += finish - start;
-  }
-
-  console.log(`Total time: ${sum} ms.`);
-  console.log(`Average time: ${sum/times} ms.`);
+  memFree(mem.off1);
+  memFree(mem.off2);
 }
 
 //name: Example 1
@@ -269,7 +230,7 @@ export function solveVdP(t0: number, t1: number, h: number, x1: number, x2: numb
       output[1] = -x1 + mu * (1 - x1 * x1) * x2;
     },
     tolerance: 0.00005,
-    solutionColNames: ['x1', 'x2']
+    solutionColNames: ['x1(t)', 'x2(t)']
   });
 }
 
@@ -294,7 +255,7 @@ export function solveVdP(t0: number, t1: number, h: number, x1: number, x2: numb
 //input: double VL = 7.2 {units: L; caption: Liquid volume (VL); category: Initial values}
 //input: double qin = 1.0 {units: L/min; caption: Gas to headspace; category: Parameters}
 //input: double yO2in = 0.21 {units: ; caption: Oxygen mole fraction; category: Parameters}
-//input: double H = 1.3 {units: mmol/(L atm); caption: Henry's law constant; category: Parameters}
+//input: double He = 1.3 {units: mmol/(L atm); caption: Henry's law constant; category: Parameters}
 //input: double T = 300.0 {units: K; caption: System temperature; category: Parameters}
 //input: double R = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double P = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
@@ -303,13 +264,13 @@ export function solveVdP(t0: number, t1: number, h: number, x1: number, x2: numb
 //editor: Compute:RichFunctionViewEditor
 export function Bioreactor(t0: number, t1: number, h: number,
   FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, CO2: number, yO2P: number, CYST: number, VL: number, 
-  qin: number, yO2in: number, H: number, T: number, R: number, P: number, TimeToSwitch: number): DG.DataFrame 
+  qin: number, yO2in: number, He: number, T: number, R: number, P: number, TimeToSwitch: number): DG.DataFrame 
 {
   return solveODEs({
     name: 'FAE simulation',
     arg: {name: 't', start: t0, finish: t1, step: h},
     initial: new Float64Array([FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL]),
-    params: new Float64Array([qin, yO2in, H, T, R, P, TimeToSwitch]),
+    params: new Float64Array([qin, yO2in, He, T, R, P, TimeToSwitch]),
     func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => { 
       // constants
       const VLinitial = 7.2;
@@ -444,7 +405,7 @@ export function Bioreactor(t0: number, t1: number, h: number,
       output[12] = Fin - Fpermeate;
     },
     tolerance: 0.00005,
-    solutionColNames: ['FFox', 'KKox', 'FFred', 'KKred', 'Ffree', 'Kfree', 'FKred', 'FKox', 'MEAthiol', 'CO2', 'yO2P', 'CYST', 'VL']
+    solutionColNames: ['FFox(t)', 'KKox(t)', 'FFred(t)', 'KKred(t)', 'Ffree(t)', 'Kfree(t)', 'FKred(t)', 'FKox(t)', 'MEAthiol(t)', 'CO2(t)', 'yO2P(t)', 'CYST(t)', 'VL(t)']
   });  
 }
 

@@ -17,7 +17,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {invMatrix} from '../wasm/matrix-operations-api';
+import {inverseMatrix, memAlloc, memFree} from '../wasm/matrix-operations-api';
 
 /** A very small number */
 const TINY = 1e-20;
@@ -150,8 +150,10 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   const yTemp = new Float64Array(dim);
 	const yErr = new Float64Array(dim);
 
-  const W = new Float64Array(dim * dim);
-  const invW = new Float64Array(dim * dim);
+  const wasmMemory = memAlloc(dimSquared);
+  const W = new Float64Array(wasmMemory.buf, wasmMemory.off1, dimSquared);
+  const invW = new Float64Array(wasmMemory.buf, wasmMemory.off1, dimSquared);
+
   const f0 = new Float64Array(dim);
   const k1 = new Float64Array(dim);
   const f1 = new Float64Array(dim);
@@ -212,7 +214,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
         W[i] = I[i] - hd * W[i];
 
       // invW = W.inverse();
-      invMatrix(W, dim, invW);
+      inverseMatrix(W, dim, invW);
 
       // k1 = invW * (f0 + hdT);
       for (let i = 0; i < dim; ++i)
@@ -288,8 +290,11 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
 				hTemp = SAFETY * h * errmax**PSHRNK;
 				h = max(hTemp, REDUCE_COEF * h);
 				tNew = t + h;
-				if (tNew == t)
+				if (tNew == t) {
+          memFree(wasmMemory.off1);
+          memFree(wasmMemory.off2);
           throw new Error(ERROR_MSG.ROSENBROCK_METHOD_FAILS);
+        }
 			}
 			else {
 				if (errmax > ERR_CONTR)
@@ -332,7 +337,11 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
 	tArr[rowCount - 1] = t1;
 
 	for (let i = 0; i < dim; ++i)
-    yArrs[i][rowCount - 1] = y[i];	  
+    yArrs[i][rowCount - 1] = y[i];
+  
+  // 4. Free wasm buffer
+  memFree(wasmMemory.off1);
+  memFree(wasmMemory.off2);
 
   const solutionDf = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(odes.arg.name, tArr)]);
   yArrs.forEach((arr, idx) => solutionDf.columns.add(DG.Column.fromFloat32Array(odes.solutionColNames[idx], arr)));
