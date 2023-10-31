@@ -15,9 +15,9 @@ We are using a number of great open-source projects in our platform. Here they a
 
 ## Cheminformatics
 
-* [RDKit](https://www.rdkit.org/) - server-side and client-side [cheminformatics](solutions/datagrok/solutions/domains/chem/chem.md)
+* [RDKit](https://www.rdkit.org/) - server-side and client-side [cheminformatics](../datagrok/solutions/domains/chem/chem.md)
 * [OpenChemLib JS](https://github.com/cheminfo/openchemlib-js) -
-  client-side [cheminformatics](solutions/datagrok/solutions/domains/chem/chem.md)
+  client-side [cheminformatics](../datagrok/solutions/domains/chem/chem.md)
 * [NGL Viewer](https://nglviewer.org/) - web-based molecular graphics
 * [Deepchem](https://deepchem.io/) - deep learning for drug discovery
 * [MoleculeNet](https://moleculenet.org/) - a benchmark for molecular machine learning

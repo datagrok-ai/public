@@ -18,7 +18,7 @@ Here are some examples of such visuals:
 * Segments and legend items in a [pie chart](../../visualize/viewers/pie-chart.md)
 * Category labels in a [trellis plot](../../visualize/viewers/trellis-plot.md)
 * Rectangular areas in a [tree map](../../visualize/viewers/tree-map.md)
-* Nodes and edges in a [network diagram](../visualize/viewers/network-diagram.md)
+* Nodes and edges in a [network diagram](../../visualize/viewers/network-diagram.md)
 * Words in a [word cloud](../../visualize/viewers/word-cloud.md)
 * Categories and histogram bins in a [filter](../../visualize/viewers/filters.md).
 

@@ -135,7 +135,7 @@ All visualizations are tightly coupled. Hover, selection, filtering on one viewe
 
 ![Viewers Interaction](../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
 
-For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.md):
+For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.mdx):
 
 ![Viewers Interaction 2](../../uploads/gifs/sp-hist.gif "Viewers Interaction 2")
 
@@ -417,7 +417,7 @@ choose **Clone**.
 
 |                                               |                                                                                                                                                                                                                                                       |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Markup](markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../datagrok/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
+| ![Markup](markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
 
 ## Tile viewer
 

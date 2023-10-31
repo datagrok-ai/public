@@ -86,8 +86,8 @@ Once completed, it will output the resulting table.
 
 <!--## Applications
 
-Remarkably, routing works for [applications](../develop/how-to/build-an-app.md). They are shipped as part of
-a [package](../develop/develop.md) and used by developers as a means to extend the Datagrok platform. An application
+Remarkably, routing works for [applications](../../develop/how-to/build-an-app.md). They are shipped as part of
+a [package](../../develop/develop.md) and used by developers as a means to extend the Datagrok platform. An application
 link has the following form: `https://public.datagrok.ai/apps/{package.name}/{application.name}`
 
 The application name can be omitted, in which case it follows the same rule as for views, that is, the first application

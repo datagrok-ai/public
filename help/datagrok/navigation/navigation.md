@@ -300,4 +300,4 @@ See also:
 
 * [Functions](../concepts/functions/functions.md)
 * [Info panes](../../explore/data-augmentation/info-panels.md)
-* [Entities](../datagrok/concepts/objects.md)
+* [Entities](../concepts/objects.md)

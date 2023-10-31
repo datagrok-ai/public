@@ -70,10 +70,10 @@ were previously impossible to spot, resulting in the acceleration of data-driven
   in the browser
 * [30+ high-performance interactive viewers](visualize/viewers/viewers.md)
 * [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
-* Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals,
+* Built-in viewers: [regression lines](visualize/viewers/scatter-plot.mdx), confidence intervals,
   correlations, [statistical tests](datagrok/solutions/domains/data-science.md)
 * Automatic detection of outliers, [missing values](transform/missing-values-imputation.md), wrong data types
-* Publish [dashboards](./visualize/dashboard.md)
+* Publish [dashboards](visualize/dashboard.md)
 
 ## Machine learning
 

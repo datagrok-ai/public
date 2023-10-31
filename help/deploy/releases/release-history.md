@@ -134,7 +134,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
   * [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue, which caused error message when called through `grok.events.onContextMenu` context.
   * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views.
   * [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases.
-* [Scatter plot](../../visualize/viewers/scatter-plot.md):
+* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
   
   * [#2089](https://github.com/datagrok-ai/public/issues/2089): Added an option to change Scatter plot and Trellis plot's mouse drag action from panning to selection. For trellis plot with an inner scatter plot viewer, the default value is `selection`.
   *  [#2108](https://github.com/datagrok-ai/public/issues/2108): Improved behavior of 'Dot' marker type on Scatter plot.
@@ -294,7 +294,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 * [Filter Panel](../../visualize/viewers/filters.md):
   * Added the ability to sort the default filters by #categories.
   * Fixed [#1837](https://github.com/datagrok-ai/public/issues/1837): Filters cannot be enabled if all filters were disabled in another view
-* [Scatter plot](../../visualize/viewers/scatter-plot.md):
+* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
    * [#1746](https://github.com/datagrok-ai/public/issues/1746): Added the ability to set date for the Min and Max values on axes.
    * [#1882](https://github.com/datagrok-ai/public/issues/1882): Reset the Min and Max values on column change.
    * Fixed:
@@ -503,7 +503,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 * [Biostructure Viewer](#biostructureviewer) package for interactive exploration of biological structures. For details, see [Biostructure Viewer](https://community.datagrok.ai/t/macromolecules-updates/661/14).
 * New user-designed cell forms feature that allows you to include more details in cells, displaying additional values alongside the cell content. In-grid forms also inherit the color-coding scheme of the grid, enabling you to view even more additional information in the cell.
 * [Tile Viewer]( https://public.datagrok.ai/apps/Tutorials/Demo/Viewers/Tile%20Viewer) supporting swimlanes mode, where you can drag and drop cards between lanes.
-* Completely redesigned [table link editor](../../explore/link-tables.md).
+* Completely redesigned [table link editor](../../transform/link-tables.md).
 * Improvement in the function execution efficiency with a significant performance boost of 10x, specifically in formula calculations.
 * Multiple improvements in plugins, such as [Chem](#chem), [Bio](#bio), [Helm](#helm), [Peptides](#peptides), [Dendrogram](#dendrogram).
 
@@ -547,7 +547,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
     * Filters re-ordering dialog is not opened if a custom filter was added to filters panel
     * The usability of range filters when min/max values existing in the table were shown instead of actually set range
     * Slow filtering if there are multiple bar charts on several views.
-* [Scatter plot](../../visualize/viewers/scatter-plot.md):
+* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
   * Now it displays legend labels for conditional coloring.
   * Added date picker for X and Y axes min/max values.
   * Harmonized the scatter plot context menu:
@@ -657,7 +657,7 @@ The package provides the functionality of two viewers  that enable the visualiza
   * Customization of dimensionality reduction algorithms is now possible, especially in the context of **Chemical Space** and **Activity Cliffs** functions. For details, see [Dimensionality reduction algorithms](https://community.datagrok.ai/t/cheminformatics-updates/457/21).
   * Implemented improvements for Similarity and Diversity Search viewers. Information from any column of the initial dataset can now be added to these viewers, and the color coding applied to the initial dataframe is also displayed there. To learn more, see [New functionality in Similarity/Diversity search](https://community.datagrok.ai/t/cheminformatics-updates/457/19).
   * When a large structure is depicted in the sketch box of the filters panel, it is now rendered in a tooltip.
-  * [Scaffold tree](../../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis) improvements:
+  * [Scaffold tree](../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis) improvements:
     * Scaffold tree now uses the default sketcher set in the Chem package properties.
     * Implemented logical AND, OR, NOT operations for scaffold tree elements.
 * Fixed:
@@ -1378,7 +1378,7 @@ Here are some of the biggest improvements:
     configuration isn't applied to the column in the grid.
   * Fixed changing the linear color scheme issue. Now the null values don’t get colored.
   * Fixed inconsistent behavior of color coding checkboxes in the columns context menu.
-* [Scatter plot](../../visualize/viewers/scatter-plot.md):
+* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
   * Added the exact min/max of the column on the axes' ticks.
   * Context menu: marker section doesn’t close on click.
   * Fixed axis buffer and filters interaction.

@@ -7,7 +7,7 @@ A next-generation environment for scientific computing that leverages core Datag
 [in-memory data engine](../develop/under-the-hood/performance.md#in-memory-database),
 [interactive visualizations](../datagrok/solutions/domains/use-cases/eda.md),
 [data access](../access/access.md),
-[machine learning](../learn/learn.md), and [enterprise features](../home.md#deploy-and-integrate)
+[machine learning](../learn/learn.md), and [enterprise features](../datagrok/datagrok.md#deploy-and-integrate)
 to enable developing, publishing, discovering, and using scientific applications:
 
 1. [Functions and cross-language support](#functions-and-cross-language-support)

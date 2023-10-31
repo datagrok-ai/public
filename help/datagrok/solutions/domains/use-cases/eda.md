@@ -44,7 +44,7 @@ With Datagrok, you can:
 
 * Visualize data at the click of a button using [30+ native viewers](../../../../visualize/viewers/viewers.md). We support all popular
   visualizations (
-  like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#regression-line)
+  like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.mdx#regression-line)
   or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
   viewers, such as [chemically-aware   viewers](../chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../../../../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
 

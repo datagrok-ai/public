@@ -16,7 +16,7 @@ or come up with your own solution.
 
 ## Datagrok JS API
 
-We expose some commonly used functions via [JS API](../packages/js-api.md). To invoke the methods, use `grok.chem`. 
+We expose some commonly used functions via [JS API](../../packages/js-api.md). To invoke the methods, use `grok.chem`. 
 Most of the methods are asynchronous. Behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h) functions.
 
