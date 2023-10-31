@@ -131,13 +131,15 @@ MD030:
   # Spaces for multi-line ordered list items
   ol_multi: 1
 
+# askalkin requested to disable it
 # MD031/blanks-around-fences - Fenced code blocks should be surrounded by blank lines
-MD031:
-  # Include list items
-  list_items: true
+MD031: false
+#  # Include list items
+#  list_items: true
 
+# askalkin requested to disable it
 # MD032/blanks-around-lists - Lists should be surrounded by blank lines
-MD032: true
+MD032: false
 
 # MD033/no-inline-html - Inline HTML
 MD033: false
@@ -193,17 +195,17 @@ MD044:
 MD045: false
 
 # MD046/code-block-style - Code block style
-MD046:
-  # Block style
-  style: "consistent"
+MD046: false
+#  # Block style
+#  style: "consistent"
 
 # MD047/single-trailing-newline - Files should end with a single newline character
 MD047: false
 
 # MD048/code-fence-style - Code fence style
-MD048:
-  # Code fence style
-  style: "consistent"
+MD048: false
+#  # Code fence style
+#  style: "consistent"
 
 ## MD049/emphasis-style - Emphasis style should be consistent
 #MD049:
