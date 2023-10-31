@@ -42,8 +42,10 @@ jobs:
           job_name="Build"
           if [[ $npm_version == ${current_version} ]]; then
             changed_version='false'
+            echo "Package $name version ${current_version} already published"
+            echo "::notice title=${name}::Version ${current_version} is already published"
           else
-            if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "release/"* ]]; then
+            if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
               changed_version='true'
               job_name="Build and publish to NPM"
               latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
@@ -56,6 +58,9 @@ jobs:
               else
                 echo "latest=false" >> $GITHUB_OUTPUT
               fi
+            else
+                echo "It is an actions for development branch. Publish will be skipped"
+                echo "::notice title=${name}::It is an actions for development branch. Publish will be skipped"
             fi
           fi
           echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
