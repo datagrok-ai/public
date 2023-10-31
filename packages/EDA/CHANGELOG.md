@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.6 (2023-10-31)
+
+Methods descriptions are updated.
+
 ## 1.1.5 (2023-10-23)
 
 Anova top-menu item is improved.
