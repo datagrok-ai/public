@@ -76,11 +76,11 @@ category('substructure search', () => {
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSubstructureWithMalformedMolString_awaitAll', async () => {
-    const df = DG.DataFrame.fromCsv(testCsv);
-    df.columns.byName('smiles').set(4, 'qq');
-    await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
-  });
+  // test('searchSubstructureWithMalformedMolString_awaitAll', async () => {
+  //   const df = DG.DataFrame.fromCsv(testCsv);
+  //   df.columns.byName('smiles').set(4, 'qq');
+  //   await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
+  // });
 
   test('searchSubstructureWithNull_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);

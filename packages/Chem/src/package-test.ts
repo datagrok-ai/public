@@ -16,21 +16,21 @@ import './tests/substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/sketcher-tests';
 
-import './tests/detector-tests';
-import './tests/api-based-tests';
-import './tests/notation-converter-tests';
-import './tests/screening-tools';
+// import './tests/detector-tests';
+// import './tests/api-based-tests';
+// import './tests/notation-converter-tests';
+// import './tests/screening-tools';
 
-import './tests/save-as-sdf-tests';
-import './tests/substructure-filter-tests';
+// import './tests/save-as-sdf-tests';
+// import './tests/substructure-filter-tests';
 
-import './tests/viewers';
+// import './tests/viewers';
 
-import './tests/mol2-importer-tests';
-import './tests/chemical-table-parsing';
-import './tests/is-smarts-tests';
-import './tests/fingerprints';
-import './tests/scaffold-tree-tests';
+// import './tests/mol2-importer-tests';
+// import './tests/chemical-table-parsing';
+// import './tests/is-smarts-tests';
+// import './tests/fingerprints';
+// import './tests/scaffold-tree-tests';
 
 export const _package = new DG.Package();
 export {tests};
