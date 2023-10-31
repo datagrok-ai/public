@@ -37,6 +37,7 @@ export abstract class FunctionView extends DG.ViewBase {
   ) {
     super();
     this.box = true;
+    this.parentCall = grok.functions.getCurrentCall();
     this.init();
   }
 
@@ -337,13 +338,13 @@ export abstract class FunctionView extends DG.ViewBase {
     this.subs.push(historicalSub);
 
     ui.tooltip.bind(exportBtn, () => {
-      if (this.consistencyState.value === 'inconsistent')
+      if (this.consistencyState.value === 'inconsistent' && this.mandatoryConsistent)
         return 'Current run is inconsistent. Export feature is disabled.';
       else
         return null;
     });
 
-    if (!this.options.isTabbed) {
+    if (!this.options.isTabbed && this.mandatoryConsistent) {
       const consistencySub = this.consistencyState
         .pipe(distinctUntilChanged())
         .subscribe((newValue) => {
@@ -352,7 +353,7 @@ export abstract class FunctionView extends DG.ViewBase {
             $(exportBtn.lastChild).css('color', 'var(--gray-2)');
           } else {
             $(exportBtn).removeClass('d4-disabled');
-            $(exportBtn.lastChild).css('color', 'var(--blue-1)');
+            $(exportBtn.lastChild).css('color', '#40607F');
           }
         });
       this.subs.push(consistencySub);
@@ -549,5 +550,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
+  }
+
+  protected get mandatoryConsistent() {
+    return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
   }
 }

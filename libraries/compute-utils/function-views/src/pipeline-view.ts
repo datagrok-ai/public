@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
-import {debounceTime, distinctUntilChanged, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
+import {debounceTime, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
@@ -446,7 +446,6 @@ export class PipelineView extends ComputationView {
     const consistencyStates = Object.values(this.steps).map((step) => step.view.consistencyState);
     const plvConsistencySub =
       merge(...consistencyStates)
-        .pipe(distinctUntilChanged())
         .subscribe(() => {
           if (consistencyStates.map((state) => state.value).some((v) => v === 'inconsistent'))
             this.consistencyState.next('inconsistent');
