@@ -112,11 +112,16 @@ jobs:
               fi
           
               if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
-                MATRIX_PUBLISH_JSON+=", \"docker\": \"build_docker\""
+                  build_docker=true
               else
                 if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
-                  MATRIX_PUBLISH_JSON+=", \"docker\": \"build_docker\""
+                  build_docker=true
                 fi
+              fi
+
+              MATRIX_PUBLISH_JSON+=", \"build_docker\": \"true\""
+              if [[ "$build_docker" == "true" ]]; then
+                MATRIX_PUBLISH_JSON+=", \"docker\": \"$(find packages/*/dockerfiles -type f -name Dockerfile | tr '\n' ' ')\""
               fi
 
               MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
@@ -372,7 +377,7 @@ jobs:
           docker system prune -af --volumes
 
       - name: Get docker image version
-        if: matrix.docker == 'build_docker'
+        if: matrix.docker_build == 'true'
         id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
@@ -386,11 +391,23 @@ jobs:
       - name: Build package Docker image
         if: steps.docker_name_ver.outcome == 'success'
         id: build-docker
-        uses: docker/build-push-action@v3
-        with:
-          context: packages/${{ matrix.package }}/dockerfiles
-          load: true
-          tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
+        run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            image_name=${{ steps.docker_name_ver.outputs.package_name }}
+            if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
+              image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
+            fi
+            docker buildx build \
+              --tag datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }} \
+              --cache-from type=registry,ref="datagrok/$image_name:cache" \
+              --cache-to type=registry,ref="datagrok/$image_name:cache" \
+              --output type=docker,dest=/tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar
+              --load $dockerfile
+            image_tars+=" /tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
+            images+=" datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }}"
+          done
+          echo "images=$images" >> $GITHUB_OUTPUT
+          echo "image_tars=image_tars" >> $GITHUB_OUTPUT
 
       - name: General checks
         run: |
@@ -472,11 +489,16 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
 
-      - name: Upload Docker image as artifact
+#      - name: Upload Docker image as artifact
+#        if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
+#        uses: ishworkh/docker-image-artifact-upload@v1
+#        with:
+#          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
+
+      - uses: actions/upload-artifact@v3
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
-        uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
+          path: ${{ steps.build-docker.outputs.image_tars }}
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
@@ -485,13 +507,21 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
 
-      - name: Build and push package Docker image
+#      - name: Build and push package Docker image
+#        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
+#        uses: docker/build-push-action@v3
+#        with:
+#          context: packages/${{ matrix.package }}/dockerfiles
+#          push: true
+#          tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
+
+      - name: Publish package Docker image
         if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
-        uses: docker/build-push-action@v3
-        with:
-          context: packages/${{ matrix.package }}/dockerfiles
-          push: true
-          tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
+        id: publish-docker
+        run: |
+          for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
+            docker push $image
+          done
 
       - name: Commit package-lock.json
         id: git
