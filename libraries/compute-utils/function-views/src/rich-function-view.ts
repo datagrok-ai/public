@@ -775,14 +775,27 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
+  focusedInput = null as HTMLElement | null;
+
+  private saveFocusedElement(t: HTMLElement) {
+    this.focusedInput = t;
+  }
+
+  private restoreFocusedElement() {
+    this.focusedInput?.focus();
+  }
+
   private disableInputsOnRun(paramName: string, t: InputVariants) {
     const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
       if (this.getInputLockState(paramName) !== 'user input' && this.getInputLockState(paramName)) return;
 
-      if (isRunning)
+      if (isRunning) {
+        if (isInputBase(t) && $(t.input).is(':focus')) this.saveFocusedElement(t.input);
         t.enabled = false;
-      else
+      } else {
         t.enabled = true;
+        if (isInputBase(t)) this.restoreFocusedElement();
+      }
     });
     this.subs.push(disableOnRunSub);
   }
@@ -1055,7 +1068,6 @@ export class RichFunctionView extends FunctionView {
       }
     });
     this.subs.push(sub4);
-
   }
 
   public isRunnable() {
