@@ -16,13 +16,13 @@ import './tests/substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/sketcher-tests';
 
-// import './tests/detector-tests';
-// import './tests/api-based-tests';
-// import './tests/notation-converter-tests';
-// import './tests/screening-tools';
+import './tests/detector-tests';
+import './tests/api-based-tests';
+import './tests/notation-converter-tests';
+import './tests/screening-tools';
 
-// import './tests/save-as-sdf-tests';
-// import './tests/substructure-filter-tests';
+import './tests/save-as-sdf-tests';
+import './tests/substructure-filter-tests';
 
 // import './tests/viewers';
 

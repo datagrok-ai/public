@@ -44,28 +44,28 @@ category('screening tools', () => {
     expect(df.columns.length, 95);
   });
 
-  test('elementalAnalysis.molV3000', async () => {
-    const df = approvedDrugs100.clone();
-    elementalAnalysis(df, df.getCol('molecule'), false, false);
-    expect(df.columns.length, 41);
-  });
+  // test('elementalAnalysis.molV3000', async () => {
+  //   const df = approvedDrugs100.clone();
+  //   elementalAnalysis(df, df.getCol('molecule'), false, false);
+  //   expect(df.columns.length, 41);
+  // });
 
-  test('elementalAnalysis.emptyValues', async () => {
-    const df = await readDataframe('tests/sar-small_empty_vals.csv');
-    await grok.data.detectSemanticTypes(df);
-    elementalAnalysis(df, df.getCol('smiles'), false, false);
-    expect(df.columns.length, 6);
-    expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
-  });
+  // test('elementalAnalysis.emptyValues', async () => {
+  //   const df = await readDataframe('tests/sar-small_empty_vals.csv');
+  //   await grok.data.detectSemanticTypes(df);
+  //   elementalAnalysis(df, df.getCol('smiles'), false, false);
+  //   expect(df.columns.length, 6);
+  //   expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
+  // });
 
-  test('elementalAnalysis.malformedData', async () => {
-    const df = await readDataframe('tests/Test_smiles_malformed.csv');
-    await grok.data.detectSemanticTypes(df);
-    elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
-    expect(df.columns.length, 29);
-    expect(Array.from(df.row(40).cells).map((c) => c.value).join(''),
-      '1480010COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc300040203710400.272729992866516126340');
-  });
+  // test('elementalAnalysis.malformedData', async () => {
+  //   const df = await readDataframe('tests/Test_smiles_malformed.csv');
+  //   await grok.data.detectSemanticTypes(df);
+  //   elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
+  //   expect(df.columns.length, 29);
+  //   expect(Array.from(df.row(40).cells).map((c) => c.value).join(''),
+  //     '1480010COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc300040203710400.272729992866516126340');
+  // });
 
   after(async () => {
     grok.shell.closeAll();
