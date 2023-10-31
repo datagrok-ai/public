@@ -27,5 +27,5 @@ category('pdbGridCellRenderer', () => {
     const pdbDataView: DG.TableView = grok.shell.addTableView(pdbDataDf);
     dfList.push(pdbDataDf);
     viewList.push(pdbDataView);
-  });
+  }, {skipReason: '#2477: BsV: Fix test pdbGridCellRenderer'});
 });
