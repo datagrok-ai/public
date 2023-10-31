@@ -10,6 +10,8 @@ declare module 'NGL' {
     defaultRepresentation: boolean
   };
 
+  export type Colormaker = {};
+
   export class ColormakerRegistryClass {
     add(id: String, scheme: Colormaker): undefined
 
