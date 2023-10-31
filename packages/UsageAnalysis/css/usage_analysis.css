@@ -141,3 +141,7 @@
   background-color: rgba(255, 255, 255, 0.93);
   transition: 2s;
 }
+
+#ua-tests-filters .d4-filter-categorical, #ua-tests-filters .d4-filter-group-wrapper > .d4-flex-col.d4-filter {
+  min-width: 190px !important;
+}
