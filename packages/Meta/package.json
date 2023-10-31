@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.29",
+  "version": "3.6.30",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3421,6 +3421,9 @@
         },
         "1.0.4": {
           "datagrok-api": "latest"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Automated CVM tests",
