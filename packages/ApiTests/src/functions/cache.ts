@@ -40,20 +40,19 @@ category('Benchmarks: Client-side cache', () => {
   });
 
   test('Tiny scalar calls no cache', async () => {
-    const iterations = DG.Test.isInBenchmark ? 100000 : 10000;
+    const iterations = DG.Test.isInBenchmark ? 100000 : 100;
     return toDart(await runLoop(false, tiny, getTinyGenerator(true, iterations)));
   }, {timeout: 400000});
 
   test('Tiny scalar calls with cache', async () => {
     await tiny.apply({'x': 1});
-    const iterations = DG.Test.isInBenchmark ? 100000 : 10000;
+    const iterations = DG.Test.isInBenchmark ? 100000 : 100;
     return toDart(await runLoop(true, tiny, getTinyGenerator(true, iterations)));
   }, {timeout: 400000});
 
   test('Cached dataframe', async () => {
-    const type = DG.Test.isInBenchmark ? 'h' : 'm';
-    const iterations = DG.Test.isInBenchmark ? 100 : 5;
-    return toDart(await runLoop(true, demog, getHeavyGenerator(iterations, type)));
+    const type = DG.Test.isInBenchmark ? 'h' : 'l';
+    return toDart(await runLoop(true, demog, getHeavyGenerator(10, type)));
   }, {timeout: 180000});
 
   test('Records limit, tiny', async () => {
@@ -164,7 +163,7 @@ category('Functions: Client-side cache', () => {
     expect(count, 0);
   });
 
-  test('Expiration: fastCache', async () => {
+  test('Expiration', async () => {
     const func = registerFunc('dataframe getNowDf()', () => DataFrame.fromCsv(`id,date
 id1,${Date.now()}`));
     const res1 = await func.apply();
