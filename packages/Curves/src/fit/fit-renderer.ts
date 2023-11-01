@@ -475,7 +475,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
 
       if (data.chartOptions?.showStatistics) {
-        const statistics = getSeriesStatistics(series, fitFunc);
+        const statistics = getSeriesStatistics(series, fitFunc, chartLogOptions);
         for (let j = 0; j < data.chartOptions.showStatistics.length; j++) {
           const statName = data.chartOptions.showStatistics[j];
           const prop = statisticsProperties.find(p => p.name === statName);

@@ -56,7 +56,7 @@ export function calculateSeriesStats(series: IFitSeries, chartLogOptions: LogOpt
   else 
     series.parameters = fitSeries(series, fitFunction, chartLogOptions).parameters;
 
-  const seriesStatistics = getSeriesStatistics(series, fitFunction);
+  const seriesStatistics = getSeriesStatistics(series, fitFunction, chartLogOptions);
   return seriesStatistics;
 }
 
@@ -93,8 +93,6 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series:
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
   column.tags[STATISTICS_TAG] = p.name;
 
-// accordions for runs
-// combobox - series -> all or aggregated, in all we have all the series, then combobox with aggr
   column
     .init((i) => {
       const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
@@ -143,9 +141,6 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
       (chartData.series[i][propertyName as keyof IFitSeries] as any) = inputBase.value;
   }
 }
-
-// TODO: fix the margins if small cell sizes
-// TODO: don't allow clickToToggle if small size
 
 function convertJnJColumnToJSON(column: DG.Column): void {
   for (let i = 0; i < column.length; i++) {
