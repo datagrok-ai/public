@@ -17,4 +17,4 @@ export const tutorials = [
 ];
 
 export const eda = new Track('Exploratory Data Analysis',
-  tutorials.map((t) => new t()), 'https://datagrok.ai/help/explore/exploratory-data-analysis');
+  tutorials.map((t) => new t()), 'https://datagrok.ai/help/datagrok/solutions/domains/use-cases/eda');
