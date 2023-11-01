@@ -116,8 +116,8 @@ for (const lang of langs) {
     });
 
     test('Escaping', async () => {
-      const testStrings = ['COC1=C(C(=C(C=C1)/C=N\\N=C(N)N)Cl)OC',
-        '\t\n\t\tsdfdsf\t', ' sdfds \\\'\"""', ' \n ', '\'\""\'', 'COC1=C(C(=C(C=C1)/C=N\N=C(N)N)Cl)OC'];
+      const testStrings = ['\t\n\t\tsdfdsf\t', ' sdfds \\\'\"""', ' \n ', '\'\""\'', '\n and \\n',
+        String.raw`CO\C1=C(C(=C(C=C1)/C=N\N=C(N)N)Cl)OC`, '"', '\'', '\n', '\t', '\\'];
       for (let i = 0; i < testStrings.length; i++) {
         const result = await grok.functions.call(`CVMTests:${lang}Echo`,
           {'string_input': testStrings[i]});
