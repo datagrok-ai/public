@@ -25,7 +25,7 @@ import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues, SELECT
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap} from './widgets/distribution';
-import {getAggregatedValue, getStats, Stats} from './utils/statistics';
+import {getAggregatedValue, Stats} from './utils/statistics';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
@@ -58,6 +58,8 @@ export enum VIEWER_TYPE {
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
 };
+
+export type TooltipOptions = {fromViewer?: boolean, isMutationCliffs?: boolean};
 
 export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -723,15 +725,19 @@ export class PeptidesModel {
     return true;
   }
 
-  showTooltip(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): boolean {
+  showTooltip(monomerPosition: type.SelectionItem, x: number, y: number, options: TooltipOptions = {}): boolean {
+    options.fromViewer ??= false;
+    options.isMutationCliffs ??= false;
     if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
       this.showMonomerTooltip(monomerPosition.monomerOrCluster, x, y);
     else
-      this.showTooltipAt(monomerPosition, x, y, fromViewer);
+      this.showTooltipAt(monomerPosition, x, y, options);
     return true;
   }
   //TODO: move out to viewer code
-  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): HTMLDivElement | null {
+  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number, options: TooltipOptions = {}): HTMLDivElement | null {
+    options.fromViewer ??= false;
+    options.isMutationCliffs ??= false;
     const stats = this.monomerPositionStats[monomerPosition.positionOrClusterType]![monomerPosition.monomerOrCluster];
     if (!stats?.count)
       return null;
@@ -743,10 +749,10 @@ export class PeptidesModel {
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
 
     const tableMap = getStatsTableMap(stats);
-    if (fromViewer) {
-      tableMap['Mean difference'] = `${tableMap['Mean difference']} (size)`;
+    if (options.fromViewer) {
+      tableMap['Mean difference'] = `${tableMap['Mean difference']}${options.isMutationCliffs ? ' (size)' : ''}`;
       if (tableMap['p-value'])
-        tableMap['p-value'] = `${tableMap['p-value']} (color)`;
+        tableMap['p-value'] = `${tableMap['p-value']}${options.isMutationCliffs ? ' (color)' : ''}`;
     }
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
     const resultMap = {...tableMap, ...aggregatedColMap};

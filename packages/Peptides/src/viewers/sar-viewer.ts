@@ -125,7 +125,8 @@ export class MonomerPosition extends DG.JsViewer {
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
       this.model.highlightMonomerPosition(monomerPosition);
-      return this.model.showTooltip(monomerPosition, x, y, true);
+      return this.model.showTooltip(monomerPosition, x, y,
+        {fromViewer: true, isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS});
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
@@ -383,7 +384,7 @@ export class MostPotentResidues extends DG.JsViewer {
         monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
-      return this.model.showTooltip(monomerPosition, x, y, true);
+      return this.model.showTooltip(monomerPosition, x, y, {fromViewer: true, isMutationCliffs: true});
     });
     DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {

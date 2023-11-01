@@ -9,6 +9,7 @@
 ### Bug Fixes
 
 * Fixed Logo Summary Table tooltip wouldn't show if analysis table doesn't contain column names 'Cluster'.
+* Fixed tooltips would show irrelevant info.
 
 ## 1.15.3 (2023-10-26)
 
