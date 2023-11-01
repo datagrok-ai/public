@@ -151,7 +151,31 @@ export class MonomerPosition extends DG.JsViewer {
         this.currentGridCell = gridCell;
       }
     });
-    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPressed = ev.key.startsWith('Arrow'));
+    this.viewerGrid.root.addEventListener('keydown', (ev) => {
+      this.keyPressed = ev.key.startsWith('Arrow');
+      if (this.keyPressed)
+        return;
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey)) {
+        if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+          this.model.initInvariantMapSelection({notify: false});
+        else
+          this.model.initMutationCliffsSelection({notify: false});
+      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+        const positions = Object.keys(this.model.monomerPositionStats).filter((pos) => pos !== 'general');
+        for (const position of positions) {
+          const monomers = Object.keys(this.model.monomerPositionStats[position]!).filter((monomer) => monomer !== 'general');
+          for (const monomer of monomers) {
+            const monomerPosition = {monomerOrCluster: monomer, positionOrClusterType: position};
+            if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+              this.model.modifyInvariantMapSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+            else
+              this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+          }
+        }
+      }
+      this.model.fireBitsetChanged();
+      this.viewerGrid.invalidate();
+    });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
       if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
@@ -378,7 +402,21 @@ export class MostPotentResidues extends DG.JsViewer {
         this.currentGridRowIdx = gridCell.gridRow;
       }
     });
-    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPressed = ev.key.startsWith('Arrow'));
+    this.viewerGrid.root.addEventListener('keydown', (ev) => {
+      this.keyPressed = ev.key.startsWith('Arrow');
+      if (this.keyPressed)
+        return;
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey)) {
+        this.model.initMutationCliffsSelection({notify: false});
+      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+        for (let rowIdx = 0; rowIdx < mostPotentResiduesDf.rowCount; ++rowIdx) {
+          const monomerPosition = this.getMonomerPosition(this.viewerGrid.cell('Diff', rowIdx));
+          this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+        }
+      }
+      this.model.fireBitsetChanged();
+      this.viewerGrid.invalidate();
+    });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);

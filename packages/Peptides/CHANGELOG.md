@@ -2,6 +2,10 @@
 
 ## 1.16.0 (WIP)
 
+### Features
+
+* Added Select All and Desect All functionality to all viewers.
+
 ### Bug Fixes
 
 * Fixed Logo Summary Table tooltip wouldn't show if analysis table doesn't contain column names 'Cluster'.

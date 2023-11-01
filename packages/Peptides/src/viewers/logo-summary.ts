@@ -319,7 +319,21 @@ export class LogoSummaryTable extends DG.JsViewer {
         this.currentRowIndex = gridCell.gridRow;
       }
     });
-    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPress = ev.key.startsWith('Arrow'));
+    this.viewerGrid.root.addEventListener('keydown', (ev) => {
+      this.keyPress = ev.key.startsWith('Arrow');
+      if (this.keyPress)
+        return;
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.shiftKey && ev.ctrlKey)) {
+        this.model.initClusterSelection({notify: false});
+      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+        for (let rowIdx = 0; rowIdx < summaryTable.rowCount; ++rowIdx) {
+          this.model.modifyClusterSelection(this.getCluster(this.viewerGrid.cell(C.LST_COLUMN_NAMES.CLUSTER, rowIdx)),
+            {shiftPressed: true, ctrlPressed: false}, false);
+        }
+      }
+      this.model.fireBitsetChanged();
+      this.viewerGrid.invalidate();
+    });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
       if (!gridCell || !gridCell.isTableCell || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
