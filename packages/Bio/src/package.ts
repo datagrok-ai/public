@@ -569,11 +569,15 @@ export async function sequenceSpaceTopMenu(
           pg.close();
         }
       });
-      const sequenceSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve) => {
-        resolveF = resolve;
-        const res = await getSequenceSpace(chemSpaceParams,
-          options?.[BYPASS_LARGE_DATA_WARNING] ? undefined : progressFunc);
-        resolve(res);
+      const sequenceSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve, reject) => {
+        try {
+          resolveF = resolve;
+          const res = await getSequenceSpace(chemSpaceParams,
+            options?.[BYPASS_LARGE_DATA_WARNING] ? undefined : progressFunc);
+          resolve(res);
+        } catch (e) {
+          reject(e);
+        }
       });
       const sequenceSpaceRes = await sequenceSpaceResPromise;
       pg.close();
@@ -585,7 +589,13 @@ export async function sequenceSpaceTopMenu(
       ui.dialog().add(ui.divText(`Sequence space analysis might take several minutes.
     Do you want to continue?`))
         .onOK(async () => {
-          await getSeqSpace();
+          await getSeqSpace().catch((err: any) => {
+            pg.close();
+            const [errMsg, errStack] = errInfo(err);
+            _package.logger.error(errMsg, undefined, errStack);
+            if (scatterPlot)
+              scatterPlot.close();
+          });
         })
         .onCancel(() => { pg.close(); })
         .show();
@@ -619,9 +629,11 @@ export async function sequenceSpaceTopMenu(
   } catch (e) {
     console.error(e);
     pg.close();
+    const [errMsg, errStack] = errInfo(e);
+    _package.logger.error(errMsg, undefined, errStack);
+    if (scatterPlot)
+      (scatterPlot as unknown as DG.Viewer).close();
   }
-
-
   /*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
     return;
