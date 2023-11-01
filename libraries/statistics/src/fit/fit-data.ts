@@ -181,9 +181,9 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
 }
 
 /** Returns series statistics */
-export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): FitStatistics {
-  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
-    y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitStatistics {
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+    y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (!series.parameters)
     series.parameters = fitSeries(series, fitFunc).parameters;
   return getStatistics(data, series.parameters, fitFunc.y, true);
