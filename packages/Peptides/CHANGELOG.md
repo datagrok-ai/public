@@ -5,6 +5,7 @@
 ### Features
 
 * Added Select All and Desect All functionality to all viewers.
+* Added Mean activity column for the Most Potent Residues viewer.
 
 ### Bug Fixes
 

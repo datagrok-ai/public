@@ -42,6 +42,7 @@ export type SummaryStats = {
   minMeanDifference: number, maxMeanDifference: number,
   minPValue: number, maxPValue: number,
   minRatio: number, maxRatio: number,
+  minMean: number, maxMean: number,
 };
 export type PositionStats = {[monomer: string]: Stats | undefined} & {general: SummaryStats};
 export type MonomerPositionStats = {[position: string]: PositionStats | undefined} & {general: SummaryStats};

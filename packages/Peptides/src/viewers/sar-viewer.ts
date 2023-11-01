@@ -299,6 +299,7 @@ export class MostPotentResidues extends DG.JsViewer {
     const pValData: (number | null)[] = new Array(posData.length);
     const countData: number[] = new Array(posData.length);
     const ratioData: number[] = new Array(posData.length);
+    const meanData: number[] = new Array(posData.length);
 
     let i = 0;
     for (const [position, positionStats] of monomerPositionStatsEntries) {
@@ -337,6 +338,7 @@ export class MostPotentResidues extends DG.JsViewer {
       pValData[i] = maxEntry![1].pValue;
       countData[i] = maxEntry![1].count;
       ratioData[i] = maxEntry![1].ratio;
+      meanData[i] = maxEntry![1].mean;
       ++i;
     }
 
@@ -352,6 +354,7 @@ export class MostPotentResidues extends DG.JsViewer {
     mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.POSITION, posData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.STRING, C.COLUMNS_NAMES.MONOMER, monomerData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN_DIFFERENCE, mdData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN, meanData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.P_VALUE, pValData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.COUNT, countData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.RATIO, ratioData));
