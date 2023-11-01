@@ -275,11 +275,24 @@ export class LinearFunction extends FitFunction {
   }
 
   y(params: number[], x: number): number {
-    throw new Error('Not implemented');
+    return linear(params, x);
   }
 
   getInitialParameters(x: number[], y: number[]): number[] {
-    throw new Error('Not implemented');
+    let minIndex = 0;
+    let maxIndex = 0;
+    for (let i = 1; i < x.length; i++) {
+      if (x[i] < x[minIndex])
+        minIndex = i;
+      if (x[i] > x[maxIndex])
+        maxIndex = i;
+    }
+
+    const deltaX = x[maxIndex] - x[minIndex];
+    const deltaY = y[maxIndex] - y[minIndex];
+    const A = deltaY / deltaX;
+    const B = y[maxIndex] - A * x[maxIndex];
+    return [A, B];
   }
 }
 
@@ -558,6 +571,12 @@ export function sigmoid(params: number[], x: number): number {
   const C = params[2];
   const D = params[3];
   return (D + (A - D) / (1 + Math.pow(10, (x - C) * B)));
+}
+
+export function linear(params: number[], x: number) {
+  const A = params[0];
+  const B = params[1];
+  return A * x + B;
 }
 
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
