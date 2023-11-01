@@ -735,6 +735,7 @@ export class PeptidesModel {
       this.showTooltipAt(monomerPosition, x, y, options);
     return true;
   }
+  
   //TODO: move out to viewer code
   showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number, options: TooltipOptions = {}): HTMLDivElement | null {
     options.fromViewer ??= false;

@@ -233,6 +233,7 @@ export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number
   const tableMap: StringDictionary = {
     'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
+    'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
   if (stats.pValue !== null)
     tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);
