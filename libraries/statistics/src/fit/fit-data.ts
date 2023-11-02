@@ -141,6 +141,8 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
     let bounds = DG.Rect.fromXYArrays(xs, ys);
     for (let i = 1; i < chartData.series!.length; i++) {
       const {xs, ys} = getPointsArrays(chartData.series[i].points);
+      if (xs.some((x) => !x) || ys.some((y) => !y))
+        continue;
       bounds = bounds.union(DG.Rect.fromXYArrays(xs, ys));
     }
     return o ? changeBounds(bounds, o!): bounds;
