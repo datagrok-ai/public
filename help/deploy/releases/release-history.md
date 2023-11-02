@@ -20,6 +20,15 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-11-02 1.17.1
+
+### Addressed Issues
+
+* (Improvement) GROK-14180: Implement waiting mode in db.runLocked 
+* (Bug) [#2330](https://github.com/datagrok-ai/public/issues/2330): Scatter plot: has to show empty categories like Box plot and Bar chart do 
+* (Bug) [#2468](https://github.com/datagrok-ai/public/issues/2468): Cell values starting with the quote character are parsed incorrectly 
+
+
 ## 2023-10-31 1.17.0
 
 ### Addressed Issues
