@@ -83,6 +83,8 @@ export class DashboardTutorial extends Tutorial {
         .filter((idx, el) => el.textContent?.trim() === paramAnnotation)[0] != null)),
       null, paramQueryDescription);
 
+    await this.buttonClickAction($('.d4-ribbon')[0]!, 'Save the query', 'SAVE');
+
     const paramEditorDlg = await this.openDialog('Hit the "Run query..." under "Actions" on toolbox',
       queryName, $('.d4-link-action').filter((_, el) => $(el).text() === 'Run query...')[0]);
     
@@ -129,8 +131,11 @@ export class DashboardTutorial extends Tutorial {
     await this.openViewByType('Open the project gallery', DG.View.PROJECTS,
       this.getSidebarHints('Data', DG.View.PROJECTS));
 
-    await this.action('Find and click on your project',
-    grok.events.onCurrentObjectChanged.pipe(filter((data: DG.EventData) =>
-      data.args.value instanceof DG.Project && data.args.value?.friendlyName == projectName)));
+    await this.action('Find and open your project',
+      grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));
+
+    await this.textInpAction($('.d4-toolbox')[0]!, 'Set State to LA', 'State', 'LA');
+
+    await this.buttonClickAction($('.d4-toolbox')[0]!, 'Click REFRESH button', 'REFRESH');
   }
 }

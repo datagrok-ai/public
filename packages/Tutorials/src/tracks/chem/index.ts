@@ -7,7 +7,7 @@ import {SubstructureSearchFilteringTutorial} from './tutorials/substructure-sear
 
 
 export const tutorials = [
-  // VirtualScreeningTutorial,
+  VirtualScreeningTutorial,
   RGroupsAnalysisTutorial,
   ActivityCliffsTutorial,
   SimilarityDiversitySearchTutorial,
