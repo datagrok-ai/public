@@ -17,7 +17,6 @@ category('Viewers: Core Viewers', () => {
     v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS && v !== 'Pivot table'); // TO FIX
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
-  coreViewers.push('distributionProfiler');
 
   before(async () => {
     df = await _package.files.readCsv('SPGI_v2_100.csv');

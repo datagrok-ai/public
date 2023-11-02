@@ -11,7 +11,7 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
-import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet} from '../../shared-utils/utils';
+import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -23,11 +23,6 @@ const VALIDATION_DEBOUNCE_TIME = 250;
 const RUN_WAIT_TIME = 500;
 
 export type InputVariants = DG.InputBase | FuncCallInput;
-
-function isInputBase(input: FuncCallInput): input is DG.InputBase {
-  const inputAny = input as any;
-  return (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
-}
 
 function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
   return new Observable((observer: any) => {
@@ -671,6 +666,34 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
+    if (state === 'restricted') {
+      this.funcCall.options[RESTRICTED_PATH] = {
+        ...this.funcCall.options[RESTRICTED_PATH],
+        [paramName]: value,
+      };
+    }
+
+    if (state) {
+      this.funcCall.options[EDIT_STATE_PATH] = {
+        ...this.funcCall.options[EDIT_STATE_PATH],
+        [paramName]: state,
+      };
+    }
+
+    this.updateConsistencyState();
+  }
+
+  private getInputLockState(paramName: string): INPUT_STATE | undefined {
+    return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
+  }
+
+  private updateConsistencyState() {
+    const isInconsistent = Object.values(this.funcCall.options[EDIT_STATE_PATH]).some((inputState) => inputState === 'inconsistent');
+
+    this.consistencyState.next(isInconsistent ? 'inconsistent': 'consistent');
+  }
+
   public getInput(name: string) {
     return this.inputsMap[name];
   }
@@ -775,14 +798,27 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
+  focusedInput = null as HTMLElement | null;
+
+  private saveFocusedElement(t: HTMLElement) {
+    this.focusedInput = t;
+  }
+
+  private restoreFocusedElement() {
+    this.focusedInput?.focus();
+  }
+
   private disableInputsOnRun(paramName: string, t: InputVariants) {
     const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
       if (this.getInputLockState(paramName) !== 'user input' && this.getInputLockState(paramName)) return;
 
-      if (isRunning)
+      if (isRunning) {
+        if (isInputBase(t) && $(t.input).is(':focus')) this.saveFocusedElement(t.input);
         t.enabled = false;
-      else
+      } else {
         t.enabled = true;
+        if (isInputBase(t)) this.restoreFocusedElement();
+      }
     });
     this.subs.push(disableOnRunSub);
   }
@@ -964,26 +1000,6 @@ export class RichFunctionView extends FunctionView {
     tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
   }
 
-  private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
-    if (state === 'restricted') {
-      this.funcCall.options[RESTRICTED_PATH] = {
-        ...this.funcCall.options[RESTRICTED_PATH],
-        [paramName]: value,
-      };
-    }
-
-    if (state) {
-      this.funcCall.options[EDIT_STATE_PATH] = {
-        ...this.funcCall.options[EDIT_STATE_PATH],
-        [paramName]: state,
-      };
-    }
-  }
-
-  private getInputLockState(paramName: string): INPUT_STATE | undefined {
-    return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
-  }
-
   private syncInput(val: DG.FuncCallParam, t: InputVariants, field: SyncFields) {
     const name = val.name;
 
@@ -1055,7 +1071,6 @@ export class RichFunctionView extends FunctionView {
       }
     });
     this.subs.push(sub4);
-
   }
 
   public isRunnable() {
@@ -1294,7 +1309,7 @@ export class RichFunctionView extends FunctionView {
             for (const [index, viewer] of nonGridViewers.entries()) {
               await plotToSheet(
                 exportWorkbook,
-                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                 viewer.root,
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -1330,7 +1345,7 @@ export class RichFunctionView extends FunctionView {
                   DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
                 ]);
                 dfToSheet(
-                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                   stats,
                   currentDf.columns.length + 2,
                   (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -1338,7 +1353,7 @@ export class RichFunctionView extends FunctionView {
               } else {
                 await plotToSheet(
                   exportWorkbook,
-                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                   viewer.root,
                   currentDf.columns.length + 2,
                   (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,

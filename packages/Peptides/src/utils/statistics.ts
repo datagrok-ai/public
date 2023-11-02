@@ -9,6 +9,7 @@ export type Stats = {
   meanDifference: number,
   ratio: number,
   mask: BitArray,
+  mean: number,
 };
 
 export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
@@ -29,12 +30,13 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
       rest[restIndex++] = data[i];
   }
 
+  const selectedMean = selected.reduce((a, b) => a + b, 0) / selected.length;
   if (selected.length === 1 || rest.length === 1) {
-    const selectedMean = selected.reduce((a, b) => a + b, 0) / selected.length;
     const restMean = rest.reduce((a, b) => a + b, 0) / rest.length;
     return {
       count: selected.length,
       pValue: null,
+      mean: selectedMean,
       meanDifference: selectedMean - restMean,
       ratio: selected.length / (bitArray.length),
       mask: bitArray,
@@ -46,6 +48,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
   return {
     count: selected.length,
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
+    mean: selectedMean,
     meanDifference: currentMeanDiff,
     ratio: selected.length / (bitArray.length),
     mask: bitArray,

@@ -1,5 +1,13 @@
 # BiostructureViewer changelog
 
+## 1.1.0 (WIP)
+
+### Features
+
+* View for imported structures allows display controls
+
+### Bug fixes
+
 ## 1.0.11 (2023-07-24)
 
 *Dependency: datgarok-api >= 1.15.2*

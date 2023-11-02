@@ -20,7 +20,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.17.0",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5"

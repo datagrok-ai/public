@@ -88,7 +88,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'EState_VSA5', 'EState_VSA6', 'EState_VSA7', 'EState_VSA8', 'EState_VSA9', 'VSA_EState1',
       'VSA_EState10', 'VSA_EState2', 'VSA_EState3', 'VSA_EState4', 'VSA_EState5', 'VSA_EState6',
       'VSA_EState7', 'VSA_EState8', 'VSA_EState9', 'PMI1', 'PMI2', 'PMI3', 'NPR1', 'NPR2', 'RadiusOfGyration',
-      'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex'];
+      'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex', 'AvgIpc'];
 
     const computeDescriptors = async (descriptors: string[], hasHistory = false) => {
       if (!hasHistory) this.title('Compute molecular descriptors');
@@ -155,7 +155,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     await computeDescriptors(descriptors);
 
     this.title('Train a model to predict activity based on molecule structure');
-    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
+    const pmv = await this.openViewByType('Click on "ML | Models | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));

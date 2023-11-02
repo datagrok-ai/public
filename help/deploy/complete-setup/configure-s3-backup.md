@@ -7,7 +7,7 @@ This document contains instructions to configure AWS S3 bucket backup
 
 ## Configure with terraform AWS deployment
 
-To configure AWS S3 bucket backup use [instructions](deploy-amazon-terraform.md)
+To configure AWS S3 bucket backup use [instructions](../aws/deploy-amazon-terraform.md)
 
 ## Manual S3 bucket backup configuration
 

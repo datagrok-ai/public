@@ -115,7 +115,7 @@ export class SparseMatrixService {
         const fractionIndex = Math.floor(max_Sparse_matrix_size / matSize * distance.length);
 
         let threshold = 1 - distance[fractionIndex];
-        threshold = Math.min(Math.max(threshold, 0.3), 0.9); //capping
+        threshold = Math.max(threshold, 0.3);
         return threshold;
       } catch (e) {
         thresholdWorkers?.forEach((w) => w?.terminate());

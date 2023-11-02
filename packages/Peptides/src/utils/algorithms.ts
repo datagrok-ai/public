@@ -123,7 +123,8 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
   options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
   options.isFiltered ??= false;
   const monomerPositionObject = {general: {}} as MonomerPositionStats & {general: SummaryStats};
-  let activityColData: Float64Array = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData() as Float64Array;
+  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
   let sourceDfLen = df.rowCount;
 
   if (options.isFiltered) {
@@ -156,7 +157,7 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
       }
       const bitArray = BitArray.fromValues(boolArray);
       const stats = bitArray.allFalse || bitArray.allTrue ?
-        {count: sourceDfLen, meanDifference: 0, ratio: 1.0, pValue: null, mask: bitArray} :
+        {count: sourceDfLen, meanDifference: 0, ratio: 1.0, pValue: null, mask: bitArray, mean: activityCol.stats.avg} :
         getStats(activityColData, bitArray);
       currentPositionObject[monomer] = stats;
       getSummaryStats(currentPositionObject.general, stats);
@@ -167,9 +168,7 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
   return monomerPositionObject;
 }
 
-export function getSummaryStats(
-  genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null,
-): void {
+export function getSummaryStats(genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
   if (stats === null && summaryStats === null)
     throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
 
@@ -231,7 +230,8 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
   const customClustColNamesList = customClusters.map((v) => v.name);
 
-  const activityColData: type.RawData = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
+  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityColData = activityCol.getRawData() as Float64Array;
 
   const origClustStats: ClusterStats = {};
   const customClustStats: ClusterStats = {};
@@ -243,7 +243,8 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
       const mask = masks[maskIdx];
       const stats = mask.allTrue || mask.allFalse ?
-        {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask} : getStats(activityColData, mask);
+        {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask, mean: activityCol.stats.avg} :
+        getStats(activityColData, mask);
       resultStats[clustNames[maskIdx]] = stats;
     }
   }

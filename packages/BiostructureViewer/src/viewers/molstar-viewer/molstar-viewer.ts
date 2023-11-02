@@ -12,7 +12,7 @@ import {Base64} from 'js-base64';
 
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
-import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
+import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
 
 import {
   IBiostructureViewer, MolstarDataType,
@@ -248,54 +248,45 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       if (!this.viewer) throw new Error('viewer does not exists');
 
       const plugin: PluginContext = this.viewer.plugin;
+      const state: Partial<PluginLayoutStateProps> = {};
       switch (property.name) {
         case PROPS.layoutShowLog: {
-          //plugin.layout.setProps({layoutShowLog: value;});
-
-          //PluginCommands.Layout.Update(plugin, );
+          // PluginCommands.Layout.Update(plugin, );
           const _k = 11;
-        }
           break;
+        }
         case PROPS.layoutShowControls: {
-          // eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
-          const _k = 11;
-        }
+          state.showControls = this.layoutShowControls;
           break;
+        }
         case PROPS.layoutIsExpanded: {
-          //eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
-        }
+          state.isExpanded = this.layoutIsExpanded;
           break;
+        }
         case PROPS.layoutRegionStateLeft:
         case PROPS.layoutRegionStateTop:
         case PROPS.layoutRegionStateRight:
         case PROPS.layoutRegionStateBottom: {
-          //eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin, {
-            state: {
-              regionState: {
-                left: this.layoutRegionStateLeft,
-                top: this.layoutRegionStateTop,
-                right: this.layoutRegionStateRight,
-                bottom: this.layoutRegionStateBottom,
-              },
-            },
-          });
-        }
+          state.regionState = {
+            left: this.layoutRegionStateLeft,
+            top: this.layoutRegionStateTop,
+            right: this.layoutRegionStateRight,
+            bottom: this.layoutRegionStateBottom,
+          };
           break;
+        }
         case PROPS.layoutControlsDisplay: {
-          //eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin,
-            {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
-        }
+          state.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
           break;
+        }
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
-        // }
         //   break;
+        // }
       }
+      //eslint-disable-next-line new-cap
+      await PluginCommands.Layout.Update(plugin, {state: state});
     };
 
     switch (property.name) {

@@ -6,7 +6,7 @@ import {ViewHandler} from '../view-handler';
 
 category('App', () => {
   const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
-  const num = [4, 2, 2, 4, 3, 18];
+  const num = [4, 2, 2, 4, 3, 5];
   let initTime: number = 0;
 
   before(async () => {
@@ -15,7 +15,6 @@ category('App', () => {
     if (!grok.shell.view(ViewHandler.UAname))
       await ViewHandler.getInstance().init();
     initTime = (Date.now() - start) / 1000;
-    console.log(initTime);
     grok.shell.windows.showContextPanel = false;
   });
 

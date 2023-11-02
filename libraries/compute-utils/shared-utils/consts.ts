@@ -58,3 +58,5 @@ export enum ABILITY_STATE {
 }
 
 export type INPUT_STATE = 'disabled' | 'restricted' | 'restricted unlocked' | 'inconsistent' | 'user input';
+
+export type VIEW_STATE = 'inconsistent' | 'consistent';

@@ -167,7 +167,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const mask = DG.BitSet.create(rowCount,
           bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
         const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
-        const stats = bitArray.allFalse || bitArray.allTrue ? {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray} :
+        const stats = bitArray.allFalse || bitArray.allTrue ?
+          {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray,
+            mean: activityCol.stats.avg} :
           getStats(activityColData, bitArray);
         const tableMap = getStatsTableMap(stats);
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
@@ -231,6 +233,7 @@ export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number
   const tableMap: StringDictionary = {
     'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
+    'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
   if (stats.pValue !== null)
     tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);
