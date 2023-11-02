@@ -79,13 +79,13 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
   }
 
   return {
-    rSquared: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'rSquared', rSquaredValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    auc: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'auc', aucValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    interceptX: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'interceptX', interceptXValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    interceptY: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'interceptY', interceptYValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    slope: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'slope', slopeValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    top: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'top', topValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    bottom: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'bottom', bottomValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
+    rSquared: DG.Stats.fromValues(rSquaredValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    auc: DG.Stats.fromValues(aucValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    interceptX: DG.Stats.fromValues(interceptXValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    interceptY: DG.Stats.fromValues(interceptYValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    slope: DG.Stats.fromValues(slopeValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    top: DG.Stats.fromValues(topValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    bottom: DG.Stats.fromValues(bottomValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
   };
 }
 
