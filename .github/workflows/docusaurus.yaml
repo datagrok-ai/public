@@ -169,6 +169,7 @@ jobs:
           echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
         if: github.event_name != 'workflow_dispatch'
+        continue-on-error: true
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
           if [[ "${{ steps.anchors.outputs.result }}" == "success" ]]; then
