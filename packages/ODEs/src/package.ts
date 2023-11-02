@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi, inverseMatrix, memAlloc, memFree} from '../wasm/matrix-operations-api';
 
-import {solveODEs} from './solver';
+import {ODEs, solveODEs} from './solver';
 
 export const _package = new DG.Package();
 
@@ -409,3 +409,9 @@ export function Bioreactor(t0: number, t1: number, h: number,
   });  
 }
 
+//name: solve
+//input: object problem
+//output: dataframe df
+export function solve(problem: ODEs): DG.DataFrame {  
+  return solveODEs(problem); 
+}

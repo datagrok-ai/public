@@ -50,7 +50,7 @@ const max = (x: number, y: number) => (x > y) ? x : y;
 type Func = (t: number, y: Float64Array, p: Float64Array, output: Float64Array) => void;
 
 /** Initial Value Problem (IVP) type */
-type ODEs = {
+export type ODEs = {
   name: string,
   arg: {
     name: string,
