@@ -21,7 +21,7 @@ export class SparseMatrixService {
       const matSize = values.length * (values.length - 1) / 2;
       const chunkSize = Math.floor(matSize / this._workerCount);
 
-      const minThreshold = await this.getMinimalThreshold(values, fnName, opts);
+      const minThreshold = values.length > 20_000 ? await this.getMinimalThreshold(values, fnName, opts) : 0;
       if (threshold < minThreshold) {
         console.log(`using threshold ${minThreshold}`);
         threshold = minThreshold;
