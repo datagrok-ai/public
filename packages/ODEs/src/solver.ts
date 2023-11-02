@@ -47,7 +47,7 @@ const abs = (x: number) => (x > 0) ? x : -x;
 const max = (x: number, y: number) => (x > y) ? x : y;
 
 /** Right-hand side of IVP */
-type Func = (t: number, y: Float64Array, p: Float64Array, output: Float64Array) => void;
+type Func = (t: number, y: Float64Array, output: Float64Array) => void;
 
 /** Initial Value Problem (IVP) type */
 export type ODEs = {
@@ -58,31 +58,30 @@ export type ODEs = {
     finish: number,
     step: number
   },
-  initial: Float64Array,
-  params: Float64Array,
+  initial: number[] | Float32Array | Float64Array | Int32Array,
   func: Func,
   tolerance: number,
   solutionColNames: string[],  
 };
 
 /** Returns derivative with respect to t. */
-function tDerivative(t: number, y: Float64Array, p: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
+function tDerivative(t: number, y: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
   const size = y.length;
-  f(t, y, p, f0Buf);
-  f(t + eps, y, p, f1Buf);
+  f(t, y, f0Buf);
+  f(t + eps, y, f1Buf);
 
   for (let i = 0; i < size; ++i)
     output[i] = (f1Buf[i] - f0Buf[i]) / eps;
 }
 
 /** Returns Jacobian. */
-function Jacobian(t: number, y: Float64Array, p: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
+function Jacobian(t: number, y: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
   const size = y.length;  
-  f(t, y, p, f0Buf);
+  f(t, y, f0Buf);
 
   for (let j = 0; j < size; ++j) {
     y[j] += eps;
-    f(t, y, p, f1Buf);
+    f(t, y, f1Buf);
 
     for (let i = 0; i < size; ++i)
       output[j + i * size] = (f1Buf[i] - f0Buf[i]) / eps;
@@ -95,9 +94,6 @@ function Jacobian(t: number, y: Float64Array, p: Float64Array, f: Func, eps: num
 export function solveODEs(odes: ODEs): DG.DataFrame {
   /** right-hand side of the IVP solved */
   const f = odes.func;
-
-  /** parameters of the IVP solved */
-  const p = odes.params;
 
   // operating variables
 	const t0 = odes.arg.start;
@@ -177,7 +173,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   // 2. COMPUTE NUMERICAL SOLUTION FOR THE POINTS FROM THE INTERVAL (t0, t1)
   while (flag) {
     // compute derivative
-    f(t, y, p, dydt);
+    f(t, y, dydt);
 
 		// compute scale vector    
     for (let i = 0; i < dim; ++i)
@@ -198,7 +194,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
 			//int resultCode = MRT(f, T, J, y, dydt, t, h, yTemp, yErr);
 // ----------------------------------------------------------------------------------
       // MatType hdT = h * d * T(t, y, EPS);
-      tDerivative(t, y, p, f, EPS, f0Buf, f1Buf, hdT);
+      tDerivative(t, y, f, EPS, f0Buf, f1Buf, hdT);
       hd = h * D;
       for (let i = 0; i < dim; ++i)
         hdT[i] *= hd;
@@ -206,10 +202,10 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
       // The main computations
 
       // f0 = f(t, y);
-      f(t, y, p, f0);
+      f(t, y, f0);
       
       // W = I - h * d * J(t, y, EPS);      
-      Jacobian(t, y, p, f, EPS, f0Buf, f1Buf, W);
+      Jacobian(t, y, f, EPS, f0Buf, f1Buf, W);
       for (let i = 0; i < dimSquared; ++i)
         W[i] = I[i] - hd * W[i];
 
@@ -236,7 +232,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
         yDer[i] = y[i] + h_div_num * k1[i];
       
       // f1 = f(t + 0.5 * h, yDer);
-      f(t + h_div_num, yDer, p, f1);
+      f(t + h_div_num, yDer, f1);
 
       // k2 = invW * (f1 - k1) + k1;
       for (let i = 0; i < dim; ++i)
@@ -256,7 +252,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
         yTemp[i] = y[i] + h * k2[i];
 
       // f2 = f(t + h, yOut);
-      f(t + h, yTemp, p, f2);
+      f(t + h, yTemp, f2);
 
       // k3 = invW * (f2 - e32 * (k2 - f1) - 2.0 * (k1 - f0) + hdT);
       for (let i = 0; i < dim; ++i)

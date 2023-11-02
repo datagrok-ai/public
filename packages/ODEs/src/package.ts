@@ -58,20 +58,15 @@ export function checkUpd(n: number) {
 //output: dataframe df {caption: Example 1; viewer: Line chart(block: 100, sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)}
 //editor: Compute:RichFunctionViewEditor
 export function solveExample1(t0: number, t1: number, h: number, x: number, y: number, param1: number, param2: number): DG.DataFrame {
+  // constants
+  const const1 = 1.0;
+  const const2 = 3.0;
+
   return solveODEs({
     name: 'Example 1',
     arg: {name: 't', start: t0, finish: t1, step: h},
-    initial: new Float64Array([x, y]),
-    params: new Float64Array([param1, param2]),
-    func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {
-      // constants
-      const const1 = 1.0;
-      const const2 = 3.0;
-    
-      // parameters
-      const param1 = _p[0];
-      const param2 = _p[1];
-    
+    initial: [x, y],    
+    func: (t: number, _y: Float64Array, output: Float64Array) => {    
       // function values
       const x = _y[0];
       const y = _y[1];
@@ -104,13 +99,8 @@ export function solveExample2(t0: number, t1: number, h: number, x: number, y: n
   return solveODEs({
     name: 'Example 2',
     arg: {name: 't', start: t0, finish: t1, step: h},
-    initial: new Float64Array([x, y]),
-    params: new Float64Array([alpha, beta]),
-    func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {  
-      // parameters
-      const alpha = _p[0];
-      const beta = _p[1];
-    
+    initial: [x, y],
+    func: (t: number, _y: Float64Array, output: Float64Array) => {    
       // function values
       const x = _y[0];
       const y = _y[1];  
@@ -139,13 +129,8 @@ export function solveExample3(t0: number, t1: number, h: number, x: number, y: n
   return solveODEs({
     name: 'Example 3',
     arg: {name: 't', start: t0, finish: t1, step: h},
-    initial: new Float64Array([x, y]),
-    params: new Float64Array([alpha, beta]),
-    func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {  
-      // parameters
-      const alpha = _p[0];
-      const beta = _p[1];
-    
+    initial: [x, y],
+    func: (t: number, _y: Float64Array, output: Float64Array) => {  
       // function values
       const x = _y[0];
       const y = _y[1];  
@@ -174,13 +159,8 @@ export function solveMM(t0: number, t1: number, h: number, p0: number, p1: numbe
   return solveODEs({
     name: 'M|M|1|1 simulation',
     arg: {name: 't', start: t0, finish: t1, step: h},
-    initial: new Float64Array([p0, p1]),
-    params: new Float64Array([lambda, mu]),
-    func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {  
-      // parameters
-      const lambda = _p[0];
-      const mu = _p[1];
-    
+    initial: [p0, p1],
+    func: (t: number, _y: Float64Array, output: Float64Array) => {  
       // function values
       const p0 = _y[0];
       const p1 = _y[1];
@@ -216,12 +196,8 @@ export function solveVdP(t0: number, t1: number, h: number, x1: number, x2: numb
   return solveODEs({
     name: 'Van der Pol oscillator simulation',
     arg: {name: 't', start: t0, finish: t1, step: h},
-    initial: new Float64Array([x1, x2]),
-    params: new Float64Array([mu]),
-    func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => {  
-      // parameters     
-      const mu = _p[0];
-    
+    initial: [x1, x2],
+    func: (t: number, _y: Float64Array, output: Float64Array) => {  
       // function values
       const x1 = _y[0];
       const x2 = _y[1];
@@ -266,43 +242,33 @@ export function Bioreactor(t0: number, t1: number, h: number,
   FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, CO2: number, yO2P: number, CYST: number, VL: number, 
   qin: number, yO2in: number, He: number, T: number, R: number, P: number, TimeToSwitch: number): DG.DataFrame 
 {
+  // constants
+  const VLinitial = 7.2;
+  const Vtotalvessel = 10.0;
+  const AgitatorSpeed = 400.0;
+  const AgitatorDiameter = 6.0;
+  const AgitatorPowerNumber = 2.1;
+  const pH = 7.4;
+  const k1red = 0.05604;
+  const k1ox = 0.0108;
+  const k2Fd = 1.35;
+  const k2Fa = 110400000.0;
+  const k2Kd = 0.04038;
+  const k2Ka = 120000000.0;
+  const k3FKa = 181200000.0;
+  const k3FKd = 0.01188;
+  const k4ox = 0.0108;
+  const k4red = 0.05604;
+  const kthiolox = 0.005;
+  const krcyst = 0.0;
+  const percentO2saturation = 100.0;
+  const pKa2MEA = 8.18;
+
   return solveODEs({
     name: 'FAE simulation',
     arg: {name: 't', start: t0, finish: t1, step: h},
-    initial: new Float64Array([FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL]),
-    params: new Float64Array([qin, yO2in, He, T, R, P, TimeToSwitch]),
-    func: (t: number, _y: Float64Array, _p: Float64Array, output: Float64Array) => { 
-      // constants
-      const VLinitial = 7.2;
-      const Vtotalvessel = 10.0;
-      const AgitatorSpeed = 400.0;
-      const AgitatorDiameter = 6.0;
-      const AgitatorPowerNumber = 2.1;
-      const pH = 7.4;
-      const k1red = 0.05604;
-      const k1ox = 0.0108;
-      const k2Fd = 1.35;
-      const k2Fa = 110400000.0;
-      const k2Kd = 0.04038;
-      const k2Ka = 120000000.0;
-      const k3FKa = 181200000.0;
-      const k3FKd = 0.01188;
-      const k4ox = 0.0108;
-      const k4red = 0.05604;
-      const kthiolox = 0.005;
-      const krcyst = 0.0;
-      const percentO2saturation = 100.0;
-      const pKa2MEA = 8.18;
-    
-      // parameters
-      const qin = _p[0];
-      const yO2in = _p[1];
-      const H = _p[2];
-      const T = _p[3];
-      const R = _p[4];
-      const P = _p[5];
-      const TimeToSwitch = _p[6];
-    
+    initial: [FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL],
+    func: (t: number, _y: Float64Array, output: Float64Array) => {   
       // function values
       const FFox = _y[0];
       const KKox = _y[1];
@@ -325,9 +291,9 @@ export function Bioreactor(t0: number, t1: number, h: number,
 
       const MEAthiolate = MEAthiol * Math.pow(10.0,(pH - pKa2MEA));
 
-      const qout = qin - klasurface*(yO2P*H - CO2) * VL * R * T / (P*1000.0);
+      const qout = qin - klasurface*(yO2P*He - CO2) * VL * R * T / (P*1000.0);
   
-      const OTR = klasurface*(yO2P*H - CO2);
+      const OTR = klasurface*(yO2P*He - CO2);
 
       const Vg = Vtotalvessel - VL;
 
