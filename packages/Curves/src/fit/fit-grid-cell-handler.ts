@@ -64,15 +64,18 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
   const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
   const rSquaredValues: number[] = [], aucValues: number[] = [], interceptXValues: number[] =  [], interceptYValues: number[] = [],
     slopeValues: number[] = [], topValues: number[] = [], bottomValues: number[] = [];
-  for (let i = 0; i < chartData.series?.length!; i++) {
+  for (let i = 0, j = 0; i < chartData.series?.length!; i++) {
+    if (chartData.series![i].points.every((p) => p.outlier))
+      continue;
     const seriesStats = calculateSeriesStats(chartData.series![i], chartLogOptions);
-    rSquaredValues[i] = seriesStats.rSquared!;
-    aucValues[i] = seriesStats.auc!;
-    interceptXValues[i] = seriesStats.interceptX;
-    interceptYValues[i] = seriesStats.interceptY;
-    slopeValues[i] = seriesStats.slope;
-    topValues[i] = seriesStats.top!;
-    bottomValues[i] = seriesStats.bottom!;
+    rSquaredValues[j] = seriesStats.rSquared!;
+    aucValues[j] = seriesStats.auc!;
+    interceptXValues[j] = seriesStats.interceptX;
+    interceptYValues[j] = seriesStats.interceptY;
+    slopeValues[j] = seriesStats.slope;
+    topValues[j] = seriesStats.top!;
+    bottomValues[j] = seriesStats.bottom!;
+    j++;
   }
 
   return {
@@ -100,7 +103,7 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series:
         return null;
       const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
-      if (chartData.series![seriesNumber] === undefined)
+      if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
         return null;
       const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
       const fitResult = calculateSeriesStats(chartData.series![seriesNumber], chartLogOptions);
@@ -123,6 +126,8 @@ function addAggrStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, agg
         return null;
       const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
+        return null;
       const fitResult = getChartDataAggrStats(chartData, aggrType);
       return p.get(fitResult);
     });
