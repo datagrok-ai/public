@@ -15,7 +15,7 @@ export class ActivityCliffsTutorial extends Tutorial {
   get description() {
     return 'The Activity Cliffs tool detects and visualizes pairs of molecules ' +
     'with highly similar structures but significantly different activity levels. ' +
-    'It uses distance-based dimensionality reduction algorithms (such as tSNE and UMAP) ' +
+    'It uses distance-based dimensionality reduction algorithms ' +
     'to convert cross-similarities into a 2D scatterplot.';
   }
 
@@ -32,7 +32,7 @@ export class ActivityCliffsTutorial extends Tutorial {
 
     this.describe(`The <b>Activity Cliffs</b> tool detects and visualizes pairs of molecules
       with highly similar structures but significantly different activity levels.
-      It uses distance-based dimensionality reduction algorithms (such as tSNE and UMAP)
+      It uses distance-based dimensionality reduction algorithms 
       to convert cross-similarities into a 2D scatterplot.<hr>`);
 
     this.t = await grok.data.files.openTable('System:AppData/Tutorials/activity_cliffs.csv');
@@ -42,7 +42,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     this.describe(`When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
-    <li><b>Chem</b> menu (it houses all chemical tools).</li>
+    <li><b>Chem</b> menu (it contains all chemical tools)</li>
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
@@ -56,7 +56,7 @@ export class ActivityCliffsTutorial extends Tutorial {
 
     this.title('Set Parameters', true);
     this.describe(`In the <b>Activity Cliffs</b> dialog, you can specify parameters like the similarity
-    cutoff or the dimensionality reduction algorithm. For this tutorial, we’ll continue with the default settings.`);
+    cutoff or the dimensionality reduction algorithm. For this tutorial, let's continue with the default settings.`);
 
     await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
 
@@ -91,7 +91,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents
     the maximum detected activity cliff for that molecule. The pairs with larger red markers may be
     particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.<br>
-    Let’s zoom in. <b>Use Alt + Mouse Drag</b>.`);
+    Let’s zoom in. Use <b>Alt + Mouse Drag</b>.`);
 
     await this.action('Press Use Alt + Mouse Drag to zoom in', v!.onZoomed);
     

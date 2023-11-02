@@ -39,7 +39,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     this.describe(`When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
-    <li><b>Chem</b> menu (it houses all chemical tools).</li>
+    <li><b>Chem</b> menu (it contains all chemical tools)</li>
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
@@ -99,7 +99,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     The <b>Context Panel</b> provides information and actions relevant to your selection.<br>
     Let’s explore.`);
 
-    await this.action('Click any segment on a bar chart', this.t.onSelectionChanged, undefined, 'Note the changes in the grid');
+    await this.action('Click any segment on a bar chart', this.t.onSelectionChanged, undefined, 'Scroll to see the selected rows in the grid.');
 
     await this.action('Press Escape', new Observable((subscriber: any) => {
       document.addEventListener("keydown", ({key}) => {
@@ -108,7 +108,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       }, {once: true});
     }));
 
-    await this.action('In the grid, press Shift + Drag Mouse Down', combineLatest([this.t.onSelectionChanged,
+    await this.action('In the grid, press Shift+Drag Mouse Down', combineLatest([this.t.onSelectionChanged,
       new Observable((subscriber: any) => {
         const observer = new MutationObserver((mutationsList, observer) => {
           mutationsList.forEach((m) => {

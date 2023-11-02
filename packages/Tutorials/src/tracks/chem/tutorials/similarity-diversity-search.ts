@@ -39,7 +39,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     this.describe(`When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
-    <li><b>Chem</b> menu (it houses all chemical tools).</li>
+    <li><b>Chem</b> menu (it contains all chemical tools)</li>
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
@@ -99,7 +99,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
 
     this.title('Specify a custom reference molecule', true);
     this.describe(`You can also specify a reference molecule using a sketcher either by manually drawing
-    the structure or by pasting its identifier. For this tutorial, let’s use paste the molecule's SMILES.`);
+    the structure or by pasting its identifier. For this tutorial, let’s paste the molecule's SMILES.`);
 
     const d = await this.openDialog('On the reference molecule, click the Edit icon', '',
       $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0));
@@ -118,7 +118,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     this.title('Get insights using Context Panel', true);
     this.describe(`As you explore the dataset, the <b>Context Panel</b> dynamically updates to show data
     and actions relevant to the current object. However, freezing a reference molecule overrides
-    this in the similarity viewer, keeping the focus on the reference molecule while exploring other data.<br>
+    this in the similarity viewer, keeping the focus on the chosen reference molecule while exploring other data.<br>
     In this case, to view information about a molecule on the <b>Context Panel</b>, you need to access it directly
     from the viewer. Let’s explore information about the reference molecule.`);
     
