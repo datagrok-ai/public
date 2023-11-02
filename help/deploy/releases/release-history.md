@@ -7,10 +7,10 @@ slug: develop/admin/releases/release-history
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:17.0](https://hub.docker.com/r/datagrok/datagrok)                              |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:17.1](https://hub.docker.com/r/datagrok/datagrok)                              |
 | [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.9](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.3](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 | [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
