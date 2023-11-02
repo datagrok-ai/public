@@ -51,7 +51,7 @@ category('Packages: Docker', () => {
   test('Container timeout', async () => {
     let container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
     await grok.dapi.docker.dockerContainers.run(container.id);
-    await delay(10000);
+    await delay(20000);
     await awaitContainerStart(containerOnDemandName, 10);
     await delay(70000);
     container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
