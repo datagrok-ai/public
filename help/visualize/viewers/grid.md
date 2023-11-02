@@ -172,6 +172,17 @@ element, you will see the row it represents in the grid.
 
 ![Current rows](../current-rows-2.gif "Current rows")
 
+### Pinned rows
+
+Datagrok supports pinned rows functionality, where each row can be pinned based on its column name and cell value.
+Pinned rows are also saved to the layout. If you try to pin a non-unique row, it will be pinned but it won't be saved
+in the layout.
+
+To pin a row, select the row you want to pin and open: **Menu | Pin | Pin row**. To pin multiple rows, simply select the
+**Pin selected rows** option.
+
+![Pinned rows](../pinned-rows.gif "Pinned rows")
+
 ### Column edit permissions
 
 You can specify who can edit a specific column. There are few  ways to do it:
