@@ -100,9 +100,8 @@ async function basicCacheTest(query: string): Promise<void> {
   const firstExecutionTime = await getCallTime(dataQuery.prepare());
   await delay(100);
   const secondExecutionTime = await getCallTime(dataQuery.prepare());
-  expect(firstExecutionTime > secondExecutionTime * 2, true,
-    `The first execution time ${firstExecutionTime} ms
-        is no more than twice the second execution time ${secondExecutionTime} ms for ${query}`);
+  // eslint-disable-next-line max-len
+  expect(firstExecutionTime > secondExecutionTime * 2, true, `The first execution time ${firstExecutionTime} ms is no more than twice the second execution time ${secondExecutionTime} ms for ${query}`);
 }
 
 async function cleanCache(connections: String[]): Promise<void> {
