@@ -775,15 +775,14 @@ export namespace chem {
     });
   }
 
-    export function drawMolecule(molString: string, w?: number, h?: number): HTMLDivElement {
-      const molDiv = ui.div();
-      grok.functions
-      .call('Chem:drawMolecule', {
-        'molStr': molString, 'w': w, 'h': h, 'popupMenu': false
-      })
+  export function drawMolecule(molString: string, w?: number, h?: number, popupMenu: boolean = false): HTMLDivElement {
+    const molDiv = ui.div();
+    grok.functions.call('Chem:drawMolecule', {
+      'molStr': molString, 'w': w, 'h': h, 'popupMenu': popupMenu
+    })
       .then((res: HTMLElement) => molDiv.append(res));
-      return molDiv;
-    }
+    return molDiv;
+  }
 
   /**
    * Sketches Molecule sketcher.
