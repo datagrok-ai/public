@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.31",
+  "version": "3.6.32",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3368,6 +3368,9 @@
         },
         "1.2.11": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.2.12": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
