@@ -666,6 +666,34 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
+    if (state === 'restricted') {
+      this.funcCall.options[RESTRICTED_PATH] = {
+        ...this.funcCall.options[RESTRICTED_PATH],
+        [paramName]: value,
+      };
+    }
+
+    if (state) {
+      this.funcCall.options[EDIT_STATE_PATH] = {
+        ...this.funcCall.options[EDIT_STATE_PATH],
+        [paramName]: state,
+      };
+    }
+
+    this.updateConsistencyState();
+  }
+
+  private getInputLockState(paramName: string): INPUT_STATE | undefined {
+    return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
+  }
+
+  private updateConsistencyState() {
+    const isInconsistent = Object.values(this.funcCall.options[EDIT_STATE_PATH]).some((inputState) => inputState === 'inconsistent');
+
+    this.consistencyState.next(isInconsistent ? 'inconsistent': 'consistent');
+  }
+
   public getInput(name: string) {
     return this.inputsMap[name];
   }
@@ -970,26 +998,6 @@ export class RichFunctionView extends FunctionView {
     if (!tAny.placeLockStateIcons)
       tAny.placeLockStateIcons = defaultPlaceLockStateIcons;
     tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
-  }
-
-  private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
-    if (state === 'restricted') {
-      this.funcCall.options[RESTRICTED_PATH] = {
-        ...this.funcCall.options[RESTRICTED_PATH],
-        [paramName]: value,
-      };
-    }
-
-    if (state) {
-      this.funcCall.options[EDIT_STATE_PATH] = {
-        ...this.funcCall.options[EDIT_STATE_PATH],
-        [paramName]: state,
-      };
-    }
-  }
-
-  private getInputLockState(paramName: string): INPUT_STATE | undefined {
-    return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, field: SyncFields) {

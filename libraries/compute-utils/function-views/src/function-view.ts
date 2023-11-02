@@ -7,10 +7,11 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
-import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
+import {distinctUntilChanged} from 'rxjs/operators';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -36,6 +37,7 @@ export abstract class FunctionView extends DG.ViewBase {
   ) {
     super();
     this.box = true;
+    this.parentCall = grok.functions.getCurrentCall();
     this.init();
   }
 
@@ -324,7 +326,7 @@ export abstract class FunctionView extends DG.ViewBase {
       this.historyBlock.showEditDialog(this.lastCall);
     }, 'Edit this run');
 
-    const ribbonSub = this.isHistorical.subscribe((newValue) => {
+    const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
         $(exportBtn).show();
         $(editBtn).show();
@@ -333,8 +335,31 @@ export abstract class FunctionView extends DG.ViewBase {
         $(editBtn).hide();
       }
     });
+    this.subs.push(historicalSub);
 
-    this.subs.push(ribbonSub);
+    ui.tooltip.bind(exportBtn, () => {
+      if (this.consistencyState.value === 'inconsistent' && this.mandatoryConsistent)
+        return 'Current run is inconsistent. Export feature is disabled.';
+      else
+        return null;
+    });
+
+    if (!this.options.isTabbed && this.mandatoryConsistent) {
+      const consistencySub = this.consistencyState
+        .pipe(distinctUntilChanged())
+        .subscribe((newValue) => {
+          if (newValue === 'inconsistent') {
+            $(exportBtn).addClass('d4-disabled');
+            $(exportBtn).css('pointer-events', 'all');
+            $(exportBtn.lastChild).css('color', 'unset');
+          } else {
+            $(exportBtn).removeClass('d4-disabled');
+            $(exportBtn).removeProp('pointer-events');
+            $(exportBtn.lastChild).removeProp('color');
+          }
+        });
+      this.subs.push(consistencySub);
+    }
 
     const newRibbonPanels: HTMLElement[][] =
       [[
@@ -495,6 +520,8 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
 
+  public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
+
   /**
     * Default export filename generation method.
     * It automatically replaces all symbols unsupported by Windows filesystem.
@@ -525,5 +552,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
+  }
+
+  protected get mandatoryConsistent() {
+    return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
   }
 }
