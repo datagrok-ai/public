@@ -47,6 +47,7 @@ export class ScatterPlotLinesRenderer {
     multipleLinesCounts!: Uint8Array;
     visibility: BitArray;
     currentLineStyle: ScatterPlotCurrentLineStyle;
+    arrowWidth = 15;
 
     get currentLineId(): number {
         return this._currentLineIdx;
@@ -115,6 +116,7 @@ export class ScatterPlotLinesRenderer {
         const filter = this.sp.dataFrame.filter;
         for (let i = 0; i < this.lines.from.length; i++) {
             if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
+                let lineLen = 0;
                 const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
                 const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
                 let aX = pointFrom?.x;
@@ -135,8 +137,9 @@ export class ScatterPlotLinesRenderer {
                     const multiLines = this.multipleLinesCounts[i];
                     let controlPoint: DG.Point | null = null;
                     if (multiLines) {
-                        const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo);
-                        const endtPointWithMarker = this.getPointOnDistance(bX, bY, aX, aY, sizeFrom);
+                        lineLen = this.getLineLength(aX, aY, bX, bY);
+                        const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen);
+                        const endtPointWithMarker = this.getPointOnDistance(bX, bY, aX, aY, sizeFrom, lineLen);
                         aX = startPointWithMarker.x;
                         aY = startPointWithMarker.y;
                         bX = endtPointWithMarker.x;
@@ -151,10 +154,14 @@ export class ScatterPlotLinesRenderer {
                         this.ctx.lineTo(bX, bY);
                     }
                     if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i)) {
-                        const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo) : null;
-                        const arrowCPX = multiLines ? controlPoint!.x : aX;
-                        const arrowCPY = multiLines ? controlPoint!.y : aY;
-                        this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                        if (!lineLen)
+                            lineLen = this.getLineLength(aX, aY, bX, bY);
+                        if (lineLen > this.arrowWidth) {
+                            const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen) : null;
+                            const arrowCPX = multiLines ? controlPoint!.x : aX;
+                            const arrowCPY = multiLines ? controlPoint!.y : aY;
+                            this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                        }
                     }
                     this.ctx.stroke();
                     this.ctx.closePath();
@@ -240,8 +247,9 @@ export class ScatterPlotLinesRenderer {
                 const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
                 const pTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
                 if (this.multipleLinesCounts[i]) {
-                    const fromMarker = this.getPointOnDistance(pFrom.x, pFrom.y, pTo.x, pTo.y, sizeTo);
-                    const toMarker = this.getPointOnDistance(pTo.x, pTo.y, pFrom?.x, pFrom?.y, sizeFrom);
+                    const len = this.getLineLength(pFrom.x, pFrom.y, pTo.x, pTo.y);
+                    const fromMarker = this.getPointOnDistance(pFrom.x, pFrom.y, pTo.x, pTo.y, sizeTo, len);
+                    const toMarker = this.getPointOnDistance(pTo.x, pTo.y, pFrom?.x, pFrom?.y, sizeFrom, len);
                     const controlPoint = this.lines.from[i] > this.lines.to[i] ?
                         this.findControlPoint(this.multipleLinesCounts[i], fromMarker.x, fromMarker.y, toMarker.x, toMarker.y, i) :
                         this.findControlPoint(this.multipleLinesCounts[i], toMarker.x, toMarker.y, fromMarker.x, fromMarker.y, i);
@@ -337,10 +345,13 @@ export class ScatterPlotLinesRenderer {
         return minDist!;
     }
 
-    getPointOnDistance(p1x: number, p1y: number, p2x: number, p2y: number, distance: number): DG.Point {
-        const p1p2d = Math.sqrt(Math.pow(p2x - p1x, 2) + Math.pow(p2y - p1y, 2));
-        const dx = (p2x - p1x) / p1p2d;
-        const dy = (p2y - p1y) / p1p2d;
+    getLineLength(p1x: number, p1y: number, p2x: number, p2y: number): number {
+        return Math.sqrt(Math.pow(p2x - p1x, 2) + Math.pow(p2y - p1y, 2));
+    }
+
+    getPointOnDistance(p1x: number, p1y: number, p2x: number, p2y: number, distance: number, length: number): DG.Point {
+        const dx = (p2x - p1x) / length;
+        const dy = (p2y - p1y) / length;
         const p3x = p2x - distance * dx;
         const p3y = p2y - distance * dy;
 
@@ -363,12 +374,11 @@ export class ScatterPlotLinesRenderer {
 
     canvasArrow(path: CanvasRenderingContext2D, arrowEndX: number, arrowEndY: number, quadX: number, quadY: number): void {
         const arrowAngle = Math.atan2(quadX - arrowEndX, quadY - arrowEndY) + Math.PI;
-        const arrowWidth = 15;
-        path.moveTo(arrowEndX - (arrowWidth * Math.sin(arrowAngle - Math.PI / 10)),
-            arrowEndY - (arrowWidth * Math.cos(arrowAngle - Math.PI / 10)));
+        path.moveTo(arrowEndX - (this.arrowWidth * Math.sin(arrowAngle - Math.PI / 10)),
+            arrowEndY - (this.arrowWidth * Math.cos(arrowAngle - Math.PI / 10)));
         path.lineTo(arrowEndX, arrowEndY);
-        path.lineTo(arrowEndX - (arrowWidth * Math.sin(arrowAngle + Math.PI / 10)),
-            arrowEndY - (arrowWidth * Math.cos(arrowAngle + Math.PI / 10)));
+        path.lineTo(arrowEndX - (this.arrowWidth * Math.sin(arrowAngle + Math.PI / 10)),
+            arrowEndY - (this.arrowWidth * Math.cos(arrowAngle + Math.PI / 10)));
     }
 
 }
