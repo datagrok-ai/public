@@ -1,10 +1,16 @@
 # PowerGrid changelog
 
-## 1.2.0 (WIP)
+## 1.2.0 (2023-11-02)
 
 ### Features
 
-* Smart forms (WIP)
+* [#2208](https://github.com/datagrok-ai/public/issues/2208): Implemented SmartForms
+* Added image rendering on double clcik in ImageUrl
+
+### Bug Fixes
+
+* Removed URL rendering in ImageUrl
+* Fixed sparklines visualizations and made them configurable
 
 ## 1.1.33 (2023-08-04)
 
