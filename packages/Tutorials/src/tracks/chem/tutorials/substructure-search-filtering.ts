@@ -36,7 +36,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     this.describe(`When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
-    <li><b>Chem</b> menu (it houses all chemical tools).</li>
+    <li><b>Chem</b> menu (it contains all chemical tools)</li>
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
