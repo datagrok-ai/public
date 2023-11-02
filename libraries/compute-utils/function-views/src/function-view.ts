@@ -316,7 +316,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
-      this.exportConfig!.supportedFormats,
+      this.exportConfig?.supportedFormats ?? [],
       async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
     );
 
