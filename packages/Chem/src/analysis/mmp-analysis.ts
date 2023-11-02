@@ -59,8 +59,8 @@ function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
     for (let j = i + 1; j < dim; j++) {
       const dim2 = frags[j].length;
       let core = '';
-      let r1 = '';
-      let r2 = '';
+      let r1 = ''; // molecule minus core for first molecule in pair
+      let r2 = ''; // molecule minus core for second molecule in pair
 
       //here we get the best possible fragment pair
       //TODO: do not process molecular pairs with low similarity
@@ -171,21 +171,8 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
       const idx1 = mmpRules.rules[i].pairs[j].firstStructure;
       const idx2 = mmpRules.rules[i].pairs[j].secondStructure;
 
-      //revise
-      const mol1 = rdkitModule.get_mol(molecules.get(idx1));
-      const mol2 = rdkitModule.get_mol(molecules.get(idx2));
-
-      mol2.generate_aligned_coords(mol1, JSON.stringify({
-        useCoordGen: true,
-        allowRGroups: true,
-        acceptFailure: false,
-        alignOnly: true,
-      }));
-
-      molFrom[pairIdx] = mol1.get_molblock();
-      molTo[pairIdx] = mol2.get_molblock();
-      mol1?.delete();
-      mol2?.delete();
+      molFrom[pairIdx] = molecules.get(idx1);
+      molTo[pairIdx] = molecules.get(idx2);
 
       const diff = activities.get(idx2) - activities.get(idx1);
       diffs[pairIdx] = diff;
@@ -227,7 +214,7 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
   //creating cases grid
   const pairsFromCol = DG.Column.fromStrings(MMP_COLNAME_FROM, molFrom);
   const pairsToCol = DG.Column.fromStrings(MMP_COLNAME_TO, molTo);
-  const singleDiffCol = DG.Column.fromFloat32Array(MMP_COLNAME_DIFF, diffs);
+  const singleDiffCol = DG.Column.fromFloat32Array(MMP_COLNAME_DIFF, diffs);  
   const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, molFrom.length);
   const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);
@@ -397,15 +384,49 @@ async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<st
   return await service.mmpGetMcs(molecules);
 }
 
-async function getInverseSubstructures(from: string[], to: string[], module: RDModule):
-  Promise<[(ISubstruct | null)[], (ISubstruct | null)[]]> {
+async function getInverseSubstructuresAndAlign(from: string[], to: string[], module: RDModule):
+  Promise<[(ISubstruct | null)[], (ISubstruct | null)[], string[], string[]]> {
+  const fromAligned = new Array<string>(from.length);
+  const toAligned = new Array<string>(from.length);
   const res1 = new Array<(ISubstruct | null)>(from.length);
   const res2 = new Array<(ISubstruct | null)>(from.length);
 
   const mcs = await getMmpMcs(from, to);
 
   for (let i = 0; i < from.length; i++) {
+
+    //aligning molecules
     const mcsMol = module.get_qmol(mcs[i]);
+    mcsMol.set_new_coords();
+    //revise
+    const mol1 = module.get_mol(from[i]);
+    const mol2 = module.get_mol(to[i]);
+
+    mol1.generate_aligned_coords(mcsMol, JSON.stringify({
+      useCoordGen: true,
+      allowRGroups: true,
+      acceptFailure: false,
+      alignOnly: true,
+    }));
+
+    mol2.generate_aligned_coords(mcsMol, JSON.stringify({
+      useCoordGen: true,
+      allowRGroups: true,
+      acceptFailure: false,
+      alignOnly: true,
+    }));
+
+    fromAligned[i] = mol1.get_molblock();
+    toAligned[i] = mol2.get_molblock();
+
+    //highlight fragment 
+    const matches = mol1.get_substruct_matches(mcsMol);
+    for (let i = 0; i < matches.length; i++) {
+      
+    }
+
+    mol1?.delete();
+    mol2?.delete();
 
     const substruct1 = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
     const substruct2 = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
@@ -415,7 +436,7 @@ async function getInverseSubstructures(from: string[], to: string[], module: RDM
 
     mcsMol?.delete();
   }
-  return [res1, res2];
+  return [res1, res2, fromAligned, toAligned];
 }
 
 export class MmpAnalysis {
@@ -559,7 +580,7 @@ export class MmpAnalysis {
 
     //Transformations tab
     const {maxAct, diffs, linesIdxs, allPairsGrid, casesGrid, lines} =
-      getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, module);
+      await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, module);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid);
@@ -620,8 +641,10 @@ export class MmpAnalysis {
       pairsFrom[i] = diffFrom.get(cases[i]);
       pairsTo[i] = diffTo.get(cases[i]);
     }
-    const [inverse1, inverse2] = await getInverseSubstructures(pairsFrom, pairsTo, rdkitModule);
+    const [inverse1, inverse2, fromAligned, toAligned] = await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
     for (let i = 0; i < cases.length; i++) {
+      diffFrom.set(cases[i], fromAligned[i]);
+      diffTo.set(cases[i], toAligned[i]);
       diffFromSubstrCol.set(cases[i], inverse1[i]);
       diffToSubstrCol.set(cases[i], inverse2[i]);
     }

@@ -283,6 +283,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           res[i] = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
             AtomCompare: 'Elements',
             BondCompare: 'OrderExact',
+            RingMatchesRingOnly: true
           }));
         } else
           res[i] = '';
@@ -323,6 +324,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
           AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
           BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
+          //RingMatchesRingOnly: true
         }));
       }
       return mcsSmarts ?? '';
