@@ -35,7 +35,7 @@ onmessage = async (event) => {
       // const currentIncrement = Math.floor(Math.random() * increment) + 1
       cnt+=increment;
       mj+=increment;
-      while (mj >= values.length) {
+      while (mj >= values.length && cnt < chunkSize) {
         mi++;
         mj = mi + 1 + (mj - values.length);
       }
