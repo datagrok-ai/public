@@ -77,7 +77,7 @@ function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
         }
       }
 
-      if (core === '')
+      if (core === '' || r1.length / core.length > 0.4 || r2.length / core.length > 0.4)
         continue;
 
       let ruleSmiles1 = mmpRules.smilesFrags.indexOf(r1);
