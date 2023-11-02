@@ -350,10 +350,12 @@ export abstract class FunctionView extends DG.ViewBase {
         .subscribe((newValue) => {
           if (newValue === 'inconsistent') {
             $(exportBtn).addClass('d4-disabled');
-            $(exportBtn.lastChild).css('color', 'var(--gray-2)');
+            $(exportBtn).css('pointer-events', 'all');
+            $(exportBtn.lastChild).css('color', 'unset');
           } else {
             $(exportBtn).removeClass('d4-disabled');
-            $(exportBtn.lastChild).css('color', '#40607F');
+            $(exportBtn).removeProp('pointer-events');
+            $(exportBtn.lastChild).removeProp('color');
           }
         });
       this.subs.push(consistencySub);
