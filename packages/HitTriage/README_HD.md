@@ -19,6 +19,8 @@ Every time user changes given molecule or adds new molecule to a dataframe, comp
 
 - **Submit function** : Users can define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
 
+![template](images/hit-triage-filtering.png)
+
 ![template](https://datagrok.ai/help/uploads/hittriage/files/images/template-HD.png)
 
 ## Campaigns
