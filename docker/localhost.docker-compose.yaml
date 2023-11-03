@@ -143,10 +143,10 @@ services:
         aliases:
           - pgsql_rdkit
     volumes:
-      - datagrok_demo_postgres_rdkit:/var/lib/postgresql/data
+      - datagrok_postgres_rdkit:/var/lib/postgresql/data
     command: postgres -c 'max_connections=1000'
     restart: on-failure
-    profiles: ["demo", "postgres_rdkit"]
+    profiles: ["postgres_rdkit"]
 
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
@@ -232,7 +232,7 @@ volumes:
   datagrok_demo_postgres_starbucks:
   datagrok_demo_postgres_world:
   datagrok_demo_postgres_unichem:
-  datagrok_demo_postgres_rdkit:
+  datagrok_postgres_rdkit:
 
 networks:
   datagrok:
