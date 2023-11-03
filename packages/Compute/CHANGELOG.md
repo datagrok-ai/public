@@ -1,5 +1,90 @@
 # Compute changelog
 
+## 1.17.0 (2023-11-03)
+
+### Features:
+
+- ModelHub: Added mandatory groups indication
+- PLV: Added inconsistent steps indication
+- PLV: Added mandatoryConsistent tag
+
+## 1.16.0 (2023-10-31)
+
+### Features:
+
+- RFV: Added input validators
+- RFV: Added input lock-states
+- RFV: Added `keepOutput` tag to control output hiding
+
+### Fixed bugs
+
+- RFV: Fixed losing focus on input disabling
+- RFV: Fixed empty tooltip appearing
+- RFV: Fixed validators & validation icon appearance
+
+## 1.15.2 (WIP)
+
+### Fixed bugs
+
+- Removed idle pkpd.R and pop-pk.R scripts
+
+## 1.15.1 (2023-10-21)
+
+### Fixed bugs
+
+- PLV: Fixed load run bug logic
+- RFV: Fixed load run bug logic
+
+## 1.15.0 (2023-09-25)
+
+### Fixed bugs
+
+- RFV: Fixed inputs layout inside of foldable categories
+
+### Features
+
+- RFV: Sensitivity analysis is added
+
+## 1.14.3 (2023-09-08)
+
+### Fixed bugs
+
+- PLV: Fixed options logic on funcCall copy
+
+### Features
+
+- Compute: OutliersViewer's balloon has now proper buttons type
+
+## 1.14.2 (2023-09-07)
+
+### Fixed bugs
+
+- RFV: Fixed tabs reappearance after recalculation
+
+### Features
+
+- RFV: Added styling for scalar tables
+- OultiersSelection viewer now supports actionable balloon
+
+## 1.14.1 (2023-09-06)
+
+### Fixed bugs
+
+- Fixed color and numeric values parsing in RFV
+
+## 1.13.12 (2023-08-25)
+
+### Fixed bugs
+
+- Fixed rare bug with historical runs in PLV
+- Fixed bug with viewers' captions duplication
+
+## 1.13.9 (2023-08-23)
+
+### Fixed bugs
+
+- Fixed bug with empty captions in RFV blocks
+
 ## 1.13.8 (2023-08-18)
 
 ### Features

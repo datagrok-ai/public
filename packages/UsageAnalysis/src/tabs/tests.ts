@@ -7,10 +7,12 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 
 const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
+export const filters = ui.box();
+filters.id = 'ua-tests-filters';
+filters.style.display = 'none';
 
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
-  static filters: HTMLElement = ui.box();
   cardFilter: string | null = null;
   filterGroup: DG.FilterGroup | undefined = undefined;
 
@@ -22,26 +24,51 @@ export class TestsView extends UaView {
   async initViewers(): Promise<void> {
     // Area Chart
     const chart = ui.wait(async () => {
-      const dfMonth: DG.DataFrame = await grok.data.query('UsageAnalysis:TestsMonth');
+      const dfMonth: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsMonth');
       dfMonth.getCol('status').colors.setCategorical(colors);
       const areaChart = DG.Viewer.fromType('Line chart', dfMonth, historyStyle);
-      // areaChart.root.style.marginRight = '10px';
       return areaChart.root;
     });
+    chart.style.marginRight = '12px';
 
     // Table
     const grid = ui.wait(async () => {
-      const df: DG.DataFrame = await grok.data.query('UsageAnalysis:TestsToday');
+      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday');
       df.getCol('status').colors.setCategorical(colors);
       df.getCol('id').name = '~id';
-      if (TestsView.filters.children.length) TestsView.filters = ui.box();
-      const filters = DG.Viewer.filters(df, filtersStyle);
-      this.filterGroup = new DG.FilterGroup(filters.dart);
-      TestsView.filters.appendChild(filters.root);
+      if (filters.children.length)
+        filters.innerHTML = '';
+      const filters_ = DG.Viewer.filters(df, filtersStyle);
+      this.filterGroup = new DG.FilterGroup(filters_.dart);
+      filters.appendChild(filters_.root);
       df.onCurrentRowChanged.subscribe(async () => {
         const row = df.currentRow;
         const acc = DG.Accordion.create();
-        const history: DG.DataFrame = await grok.data.query('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
+        let history: DG.DataFrame = await grok.functions.call('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
+        history.getCol('id').name = '~id';
+        history.getCol('uid').name = '~uid';
+        const resName = history.getCol('res_name');
+        if (resName.stats.valueCount) {
+          const newHistory = history.groupBy(['date', 'status', 'ms', 'result', '~uid']).add('key', '~id').aggregate();
+          const categories = resName.categories.filter((c) => c);
+          categories.forEach((c) => newHistory.columns.addNewString(c));
+          for (const row of newHistory.rows) {
+            const id = row.get('~id');
+            const df = history.rows.match({'~id': `= ${id}`}).toDataFrame();
+            for (const r of df.rows) {
+              const name = r.get('res_name');
+              if (name)
+                newHistory.set(name, row.idx, r.get('res_value'));
+            }
+          }
+          newHistory.columns.byNames(categories).forEach((col) => col.name = col.name.replace('result.', ''));
+          history = newHistory;
+        } else {
+          history.columns.remove('res_name');
+          history.columns.remove('res_value');
+        }
+        const grid = history.plot.grid();
+        grid.sort(['date'], [false]);
         acc.addPane('Details', () => {
           const table = ui.tableFromMap({
             Test: row.get('test'),
@@ -51,15 +78,26 @@ export class TestsView extends UaView {
           table.style.userSelect = 'text';
           return table;
         }, true);
-        acc.addPane('History', () => ui.waitBox(async () => {
+        const hPane = acc.addPane('History', () => ui.waitBox(async () => {
           history.getCol('status').colors.setCategorical(colors);
-          const grid = history.plot.grid();
           // grid.col('status')!.isTextColorCoded = true;
           grid.col('date')!.format = 'MM/dd/yy'; // MM/dd/yyyy HH:mm:ss
           grid.col('date')!.width = 70;
           grid.col('status')!.width = 19;
+          grid.onCellTooltip((gc, x, y) => {
+            if (gc.isColHeader) return false;
+            const row = gc.tableRow;
+            ui.tooltip.show(ui.tableFromMap({
+              'Time': row?.get('date'),
+              'Run by': ui.render(`#{x.${row?.get('~uid')}}`),
+              // Package: ui.render(`#{x.${r.uid}}`),
+            }), x, y);
+            return true;
+          });
           return grid.root;
         }), true);
+        const info = hPane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
+        info.firstChild?.after(ui.button('Add to workspace', () => grok.shell.addTableView(history)));
         acc.addPane('Execution time', () => ui.waitBox(async () => {
           const lct = DG.Viewer.fromType('Line chart', history, execTimeStyle);
           return lct.root;
@@ -73,7 +111,7 @@ export class TestsView extends UaView {
     const cardsView = ui.div([], {classes: 'ua-cards'});
     const counters = ['passed', 'failed', 'skipped'];
     cardsView.textContent = '';
-    const cardsDfP: Promise<DG.DataFrame> = grok.data.query('UsageAnalysis:TestsCount');
+    const cardsDfP: Promise<DG.DataFrame> = grok.functions.call('UsageAnalysis:TestsCount');
     for (let i = 0; i < 3; i++) {
       const c = counters[i];
       const card = ui.div([ui.divText(c), ui.wait(async () => {
@@ -94,11 +132,9 @@ export class TestsView extends UaView {
       });
       cardsView.append(card);
     }
-
     this.root.append(ui.splitV([
       ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {maxHeight: '150px'}}),
-      grid,
-    ], null, true));
+      grid], null, true));
   }
 }
 
@@ -141,7 +177,7 @@ const historyStyle = {
   'autoLayout': false,
   // 'lineWidth': 2,
   // 'lineColoringType': 'Custom',
-  'chartTypes': ['Area Chart'],
+  'chartTypes': ['Stacked Bar Chart'],
 };
 
 const execTimeStyle = {

@@ -131,11 +131,10 @@ export class SaguaroViewer extends DG.JsViewer {
   }
 
   override detach(): void {
-    if (this.setDataInProgress) return;
-
     const superDetach = super.detach.bind(this);
     this.detachPromise = this.detachPromise.then(async () => {
       await this.viewPromise;
+      if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach'); // detach
         this.viewed = false;
@@ -149,27 +148,27 @@ export class SaguaroViewer extends DG.JsViewer {
   // -- Data --
 
   setData(): void {
-    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
-    _package.logger.debug('BiotrackViewer.setData() ');
-
+    _package.logger.debug('BiotrackViewer.setData() in');
     this.viewPromise = this.viewPromise.then(async () => { // setData
-      if (this.viewed) {
-        await this.destroyView('setData'); // setData
-        this.viewed = false;
-      }
-    }).then(async () => {
-      await this.detachPromise;
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      try {
+        if (this.viewed) {
+          await this.destroyView('setData'); // setData
+          this.viewed = false;
+        }
 
-      // TODO: Data
-    }).then(async () => {
-      if (!this.viewed) {
-        await this.buildView('setData'); // setData
-        this.viewed = true;
+        await this.detachPromise;
+        // TODO: Data
+
+        if (!this.viewed) {
+          await this.buildView('setData'); // setData
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        grok.shell.error(err.toString());
+      } finally {
+        this.setDataInProgress = false;
       }
-    }).catch((reason: any) => {
-      grok.shell.error(reason.toString());
-    }).then(() => {
-      this.setDataInProgress = false;
     });
   }
 

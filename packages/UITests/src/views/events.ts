@@ -140,6 +140,7 @@ category('View: Events', () => {
         expect(viewerElement != null, true);
         expect(Array.from(v.viewers).length, 2);
       }, () => {
+        grok.shell.v = tv;
         tv.histogram();
         v.loadLayout(tv.saveLayout());
       });

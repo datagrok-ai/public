@@ -13,10 +13,10 @@ are encountered in the structure currently drawn. These fragment lists were crea
 compounds of the RTECS database known to be active in a certain toxicity class (e.g. mutagenicity). During the
 shreddering any molecule was first cut at every rotatable bonds leading to a set of core fragments. These in turn were
 used to reconstruct all possible bigger fragments being a substructure of the original molecule. Afterwards, a
-substructure search process determined the occurence frequency of any fragment (core and constructed fragments)
+substructure search process determined the occurrence frequency of any fragment (core and constructed fragments)
 within all compounds of that toxicity class. It also determined these fragment's frequencies within the structures of
 more than 3000 traded drugs. Based on the assumption that traded drugs are largely free of toxic effects, any fragment
-was considered a risk factor if it occured often as substructure of harmful compounds but never or rarely in traded
+was considered a risk factor if it occurred often as substructure of harmful compounds but never or rarely in traded
 drugs.
 
 Toxicity risks are predicted from precompiled fragment lists using a previously published algorithm.

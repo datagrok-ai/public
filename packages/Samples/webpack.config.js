@@ -4,7 +4,7 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'production',
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`demo_test`}, import: './src/package-test.ts'},
+    test: {filename: 'package-test.js', library: {type: 'var', name:`samples_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
   },
   resolve: {

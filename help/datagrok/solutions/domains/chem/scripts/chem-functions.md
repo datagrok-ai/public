@@ -74,9 +74,9 @@ References:
 
 ### Chemical space using UMAP
 
-Uniform Manifold Approximation and Projection (UMAP) is a dimension reduction technique that can be used for
-visualisation similarly to [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), but
-also for general non-linear dimension reduction.
+Uniform Manifold Approximation and Projection (UMAP) is a dimensionality reduction technique that can be used for
+visualization similarly to [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), but
+also for general non-linear dimensionality reduction.
 
 ![Chemical Space Using UMAP](../../../../../uploads/chem/umap.png "Chemical Space Using UMAP")
 
@@ -88,11 +88,11 @@ References:
 
 ### Filter by catalogs
 
-Screen out or reject undesireable molecules based on various criteria.
+Screen out or reject undesirable molecules based on various criteria.
 
 Filter sets:
 
-* **PAINS**: Pan assay interference patterns, seperated into three sets (PAINS_A, PAINS_B, and PAINS_C).
+* **PAINS**: Pan assay interference patterns, separated into three sets (PAINS_A, PAINS_B, and PAINS_C).
 * **BRENK**: Filters unwanted functionality due to potential toxicity reasons or unfavorable pharmacokinetics.
 * **NIH**: Annotated compounds with problematic functional groups
 * **ZINC**: Filtering based on drug-likeness and unwanted functional groups.
@@ -149,7 +149,7 @@ References:
 * [RDKit Chemical reaction handling](https://rdkit.org/docs/RDKit_Book.html#chemical-reaction-handling)
 * [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html)
 
-### Similarity maps using fingerptints
+### Similarity maps using fingerprints
 
 Visualizes the atomic contributions to the similarity between a molecule and a reference molecule.
 

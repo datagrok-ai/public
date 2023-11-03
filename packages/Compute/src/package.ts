@@ -9,6 +9,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
 import { ImportScriptGeneratorApp } from './import-script-generator/view';
+import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -33,7 +34,7 @@ export function importScriptGenerator(){
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
-//output: viewer
+//output: viewer result
 export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
@@ -226,4 +227,82 @@ export function modelCatalog() {
       });
     }
   } else grok.shell.v = modelsView;
+}
+
+
+//name: SimTimeValidator
+//input: object params
+//output: object validator
+export function SimTimeValidator(params: any) {
+  const {reasonableMin, reasonableMax} = params;
+  return (val: number) => {
+    return makeValidationResult({
+      warnings: val < reasonableMin || val > reasonableMax ? [`Minimum reasonable time is ${reasonableMin}. Maximum reasonable time is ${reasonableMax}`]: undefined,
+      errors: val < 0 ? [`Time should be strictly positive`]: undefined,
+    });
+  };
+}
+
+//name: DesiredTempValidator
+//input: object params
+//output: object validator
+export function DesiredTempValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    const ambTemp = info.funcCall.inputs['ambTemp'];
+    const initTemp = info.funcCall.inputs['initTemp'];
+    return makeValidationResult({
+      errors: [
+        ...(val < ambTemp) ? [makeAdvice(`Desired temperature cannot be less than ambient temperature (${ambTemp}). \n`, [
+          {actionName: 'Set desired equal to ambient', action: () => info.funcCall.inputs['desiredTemp'] = ambTemp }
+        ])]: [],
+        ...(val > initTemp) ? [`Desired temperature cannot be higher than initial temperature (${initTemp})`]: [],
+      ]
+    });
+  };
+}
+
+//name: InitialTempValidator
+//input: object params
+//output: object validator
+export function InitialTempValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    const ambTemp = info.funcCall.inputs['ambTemp'];
+    return makeValidationResult({
+      errors: [
+        ...(val < ambTemp) ? [`Initial temperature cannot be less than ambient temperature (${ambTemp}).`]: [],
+      ]
+    });
+  };
+}
+
+//name: AmbTempValidator
+//input: object params
+//output: object validator
+export function AmbTempValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    const initTemp = info.funcCall.inputs['initTemp'];
+    return makeValidationResult({
+      errors: [
+        ...(val > initTemp) ? [`Ambient temperature cannot be higher than initial temperature (${initTemp})`]: [],
+      ]
+    });
+  };
+}
+
+//name: HeatCapValidator
+//input: object params
+//output: object validator
+export function HeatCapValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    return makeValidationResult({
+      errors: [
+        ...val <= 0 ? ['Heat capacity must be greater than zero.']: []
+      ],
+      notifications: [
+        makeAdvice(`Heat capacity is only dependent on the object material.`, [
+          {actionName: 'Google it', action: () => { window.open(`http://google.com`)}}
+        ]),
+      ]
+    });
+  };
 }

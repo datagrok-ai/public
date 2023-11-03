@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SequenceTranslatorUI} from './view/view';
+import {AppUIFactory, CombinedAppUI} from './view/app-ui';
+import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -12,15 +13,17 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
-import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
+import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
+import {APP} from './view/const/ui';
+import {getExternalAppViewFactories} from './plugins/mermade';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
 
   get monomerLib(): IMonomerLib {
     if (!this._monomerLib)
-      throw new Error ('ST: monomer lib not loaded')
+      throw new Error ('Monomer lib not loaded')
     return this._monomerLib!;
   }
 
@@ -29,37 +32,54 @@ class StPackage extends DG.Package {
       return;
 
     const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-      'Initializing Sequence Translator monomer library ...');
-    try {
+      `Initializing ${APP.COMBINED} monomer library ...`);
+    await tryCatch(async () => {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
-    } catch (err: any) {
-      const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-      throw new Error('Sequence Translator: Loading monomer library error: ' + errMsg);
-    } finally {
-      pi.close();
-    }
+    }, () => pi.close());
   }
 }
 
 export const _package: StPackage = new StPackage();
 
-//name: Sequence Translator
-//tags: app
-export async function sequenceTranslatorApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
+async function buildLayout(appName: string): Promise<void> {
+  await initSequenceTranslatorLibData();
+  const appUI = AppUIFactory.getUI(appName);
+  await appUI.createAppLayout();
+}
 
-  try {
-    await initSequenceTranslatorLibData();
-    const v = new SequenceTranslatorUI();
-    await v.createLayout();
-  } catch (err: any) {
-    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
-    throw err;
-  } finally {
-    pi.close();
-  }
+
+//name: Oligo Toolkit
+//meta.icon: img/icons/toolkit.png
+//tags: app
+export async function oligoToolkitApp(): Promise<void> {
+  await initSequenceTranslatorLibData();
+  const externalViewFactories = await getExternalAppViewFactories();
+  if (!externalViewFactories)
+    throw new Error('External app view factories not loaded');
+  const appUI = new CombinedAppUI(externalViewFactories!);
+  await appUI.createAppLayout();
+}
+
+//name: Oligo Translator
+//meta.icon: img/icons/translator.png
+//tags: app
+export async function oligoTranslatorApp(): Promise<void> {
+  await buildLayout(APP.TRANSLATOR);
+}
+
+//name: Oligo Pattern
+//meta.icon: img/icons/pattern.png
+//tags: app
+export async function oligoPatternApp(): Promise<void> {
+  await buildLayout(APP.PATTERN);
+}
+
+//name: Oligo Structure
+//meta.icon: img/icons/structure.png
+//tags: app
+export async function oligoStructureApp(): Promise<void> {
+  await buildLayout(APP.STRUCTRE);
 }
 
 //name: initSequenceTranslatorLibData
@@ -99,28 +119,28 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
   return linkStrandsV3000(strands, true);
 }
 
-//name: demoTranslateSequence
-//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Translate
+//name: demoOligoTranslator
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
 export async function demoTranslateSequence(): Promise<void> {
-  await demoTranslateSequenceUI();
+  await demoOligoTranslatorUI();
 }
 
-//name: demoDesignPattern
-//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Design
+//name: demoOligoPattern
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
 //description: Design a modification pattern for an oligonucleotide sequence
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoDesignPattern(): Promise<void> {
-  await demoDesignPatternUI();
+export async function demoOligoPattern(): Promise<void> {
+  await demoOligoPatternUI();
 }
 
-//name: demoVisualizeDuplex
-//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Visualize duplex
+//name: demoOligoStructure
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
 //description: Visualize duplex and save SDF
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoVisualizeDuplex(): Promise<void> {
-  await demoVisualizeDuplexUI();
+export async function demoOligoStructure(): Promise<void> {
+  await demoOligoStructureUI();
 }
 
 //name: translateOligonucleotideSequence

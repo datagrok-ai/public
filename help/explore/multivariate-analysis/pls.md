@@ -6,12 +6,12 @@ sidebar_position: 0
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
 and analysis of more than one statistical outcome variable at a time.
 
-Partial least squares regression (PLS regression) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on these components.
+Partial least squares regression (PLS regression) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on these components.
 
-## Regress and analyse
+## Regress and analyze
 
 * Open a table
-* Run from the top menu: `ML | Multivariate Analysis (PLS)...`
+* Run from the top menu: `ML | Analyze | Multivariate Analysis...`
 * Select a table that contains features
 * Select feature columns
 * Select column with sample names
@@ -37,7 +37,7 @@ A scatter plot and a regression line indicate how the model fits and predicts.
 
 ### Scores
 
-The scores plot shows object similarities and disasimilarities.
+The scores plot shows object similarities and dissimilarities.
 
 ![scores.png](scores.png)
 

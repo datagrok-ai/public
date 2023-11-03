@@ -23,6 +23,7 @@ jobs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
       current_version: ${{ steps.check-version.outputs.current_version }}
       name: ${{ steps.check-version.outputs.name }}
+      job_name: ${{ steps.check-version.outputs.job_name }}
       packages_matrix: ${{ steps.packages.outputs.matrix }}
       libraries_matrix: ${{ steps.libraries.outputs.matrix }}
       latest: ${{ steps.check-version.outputs.latest }}
@@ -38,23 +39,32 @@ jobs:
           name="$(jq -r '.name' package.json)"
           current_version="$(jq -r '.version' package.json)"
           npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
+          job_name="Build"
           if [[ $npm_version == ${current_version} ]]; then
             changed_version='false'
+            echo "Package $name version ${current_version} already published"
+            echo "::notice title=${name}::Version ${current_version} is already published"
           else
-            changed_version='true'
-
-            latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
-            newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
-            if [[ "${newest_version}" == "${current_version}" ]]; then
-              echo "latest=true" >> $GITHUB_OUTPUT
-              if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
-                echo "replace_dep=true" >> $GITHUB_OUTPUT
+            if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
+              changed_version='true'
+              job_name="Build and publish to NPM"
+              latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
+              newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
+              if [[ "${newest_version}" == "${current_version}" ]]; then
+                echo "latest=true" >> $GITHUB_OUTPUT
+                if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
+                  echo "replace_dep=true" >> $GITHUB_OUTPUT
+                fi
+              else
+                echo "latest=false" >> $GITHUB_OUTPUT
               fi
             else
-              echo "latest=false" >> $GITHUB_OUTPUT
+                echo "It is an actions for development branch. Publish will be skipped"
+                echo "::notice title=${name}::It is an actions for development branch. Publish will be skipped"
             fi
           fi
           echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
+          echo "job_name=${job_name}" >> $GITHUB_OUTPUT
           echo "current_version=${current_version}" >> $GITHUB_OUTPUT
           echo "name=${name}" >> $GITHUB_OUTPUT
 
@@ -129,7 +139,7 @@ jobs:
           echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 
   build:
-    name: Build and publish to npm
+    name: ${{ needs.version.outputs.job_name || 'Deploy' }}
     runs-on: ubuntu-22.04
     needs: [ version, common-check ]
     if: needs.common-check.outputs.continue == 'true'
@@ -139,7 +149,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -197,13 +207,13 @@ jobs:
         timeout-minutes: 15
         id: test-ApiTests
         run: |
-          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+          test_result=$(npm run test -- --record --csv | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
           if [ -z "$test_result" ]; then
             echo "All tests finished successfully"
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo -e "SLACK_MESSAGE_BODY=*ApiTests results:*\n${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+            echo -e "SLACK_MESSAGE_BODY=${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
@@ -219,49 +229,49 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-#      - name: Install DBTests dependencies
-#        run: npm install
-#        working-directory: ./packages/DBTests
-#      - name: Run DBTests
-#        continue-on-error: true
-#        timeout-minutes: 15
-#        id: test-DBTests
-#        run: |
-#          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
-#          if [ -z "$test_result" ]; then
-#            echo "All tests finished successfully"
-#          else
-#            echo "Test failures"
-#            echo -e "${test_result}"
-#            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-#            exit 1
-#          fi
-#        working-directory: packages/DBTests
-#      - name: Upload DBTests results
-#        if: steps.test-DBTests.outcome != 'skipped'
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: DBTests.test-results
-#          path: |
-#            packages/DBTests/test-record.mp4
-#            packages/DBTests/test-report.csv
-#            packages/DBTests/test-console-output.log
-#          retention-days: 14
-#          if-no-files-found: warn
+      #      - name: Install DBTests dependencies
+      #        run: npm install
+      #        working-directory: ./packages/DBTests
+      #      - name: Run DBTests
+      #        continue-on-error: true
+      #        timeout-minutes: 15
+      #        id: test-DBTests
+      #        run: |
+      #          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+      #          if [ -z "$test_result" ]; then
+      #            echo "All tests finished successfully"
+      #          else
+      #            echo "Test failures"
+      #            echo -e "${test_result}"
+      #            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+      #            exit 1
+      #          fi
+      #        working-directory: packages/DBTests
+      #      - name: Upload DBTests results
+      #        if: steps.test-DBTests.outcome != 'skipped'
+      #        uses: actions/upload-artifact@v3
+      #        with:
+      #          name: DBTests.test-results
+      #          path: |
+      #            packages/DBTests/test-record.mp4
+      #            packages/DBTests/test-report.csv
+      #            packages/DBTests/test-console-output.log
+      #          retention-days: 14
+      #          if-no-files-found: warn
 
       - name: Prepare Slack Message
-#        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
+        #        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
         if: ${{ steps.test-ApiTests.outcome == 'failure' }}
         id: slack-prepare
         shell: bash
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
           
-          header="*GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:*"
+          header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
           context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
@@ -315,7 +325,7 @@ jobs:
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: needs.version.outputs.changed_version == 'true' && (github.ref == 'refs/heads/master' || contains(github.ref, 'release/'))
+        if: needs.version.outputs.changed_version == 'true'
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
@@ -361,7 +371,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -440,7 +450,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:

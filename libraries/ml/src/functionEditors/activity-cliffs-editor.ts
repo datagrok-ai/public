@@ -39,7 +39,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
         this.similarityInput,
         this.methodInput,
         this.methodSettingsDiv,
-        this.similarityMetricInput,
+        this.similarityMetricInputRoot,
       ], {style: {minWidth: '320px'}});
     }
 

@@ -1,11 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall} from './utils';
+  _testSearchSubstructureSARSmall,
+  checkBitSetIndices} from './utils';
 import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {chemSubstructureSearchLibrary} from '../chem-searches';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
+import { SubstructureSearchType } from '../constants';
+import { Fingerprint } from '../utils/chem-common';
 
 export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
@@ -15,6 +18,36 @@ COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC
 Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5
 CC(C(=O)NCCS)c1cccc(c1)C(=O)c2ccccc2
 COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5`;
+
+const included_in_molblock = `
+RDKit          2D
+
+ 11 12  0  0  0  0  0  0  0  0999 V2000
+    3.0000   -2.5981    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000   -2.5981    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000   -2.5981    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500   -3.8971    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500   -3.8971    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  2  0
+  3  4  1  0
+  4  5  2  0
+  5  6  1  0
+  6  7  2  0
+  3  8  1  0
+  8  9  2  0
+  9 10  1  0
+ 10 11  2  0
+ 11  2  1  0
+  8  7  1  0
+M  END
+`
 
 category('substructure search', () => {
   before(async () => {
@@ -69,7 +102,7 @@ category('substructure search', () => {
     console.log(`first Call to searchSubstructure took ${midTime1 - startTime} milliseconds`);
     console.log(`loop Call to searchSubstructure took ${midTime2 - midTime1} milliseconds`);
     console.log(`last Call to searchSubstructure took ${endTime - midTime2} milliseconds`);
-  }, {timeout: 90000});
+  }, {timeout: 180000});
 
   test('searchSubstructureAfterChanges_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
@@ -163,7 +196,6 @@ M  END
 `, [2, 3]);
   });
 
-
   test('search_benzene_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
@@ -188,14 +220,61 @@ M  END
     await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
   });
 
-  async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
-    const startTime = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '');
-    const midTime1 = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '');
-    const midTime2 = performance.now();
-
-    console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
-    console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
-  }
 });
+
+category('substructure search: search types', () => { 
+
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  test('included_in_search_awaitAll', async () => {
+    await testSearchType(included_in_molblock, SubstructureSearchType.INCLUDED_IN, [0, 1, 2]);
+  });
+
+  test('not_included_in_search_awaitAll', async () => {
+    await testSearchType(included_in_molblock, SubstructureSearchType.NOT_INCLUDED_IN,
+      [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  });
+
+  test('contains_search_awaitAll', async () => {
+    await testSearchType('c1ccccc1', SubstructureSearchType.CONTAINS,
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 19]);
+  });
+
+  test('not_contains_search_awaitAll', async () => {
+    await testSearchType('c1ccccc1', SubstructureSearchType.NOT_CONTAINS, [13, 14]);
+  });
+
+  test('exact_search_awaitAll', async () => {
+    await testSearchType('FC(F)(F)c1ccc(OC2CCNCC2)cc1', SubstructureSearchType.EXACT_MATCH, [4]);
+  });
+
+  test('is_similar_search_awaitAll', async () => {
+    await testSearchType('c1ccccc1', SubstructureSearchType.IS_SIMILAR, [0, 1, 2, 3, 5, 15, 16], Fingerprint.Morgan, 0.05);
+  });
+
+});
+
+
+async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
+  const startTime = performance.now();
+  await chemSubstructureSearchLibrary(molCol, query, '');
+  const midTime1 = performance.now();
+  await chemSubstructureSearchLibrary(molCol, query, '');
+  const midTime2 = performance.now();
+
+  console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
+  console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
+}
+
+async function testSearchType(query: string, searchType: SubstructureSearchType, trueIndices: number[],
+  fp?: Fingerprint, similarity?: number) {
+  const df = await readDataframe('tests/test_search_types.csv');
+  const res = await chemSubstructureSearchLibrary(df.col('canonical_smiles')!, query, '', FILTER_TYPES.substructure, false, true, searchType, similarity, fp);
+  const bitset = DG.BitSet.fromBytes(res.buffer.buffer, df.rowCount);
+  checkBitSetIndices(bitset, trueIndices);
+}

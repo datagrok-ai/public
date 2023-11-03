@@ -113,7 +113,7 @@ add the `--csv` flag (the report will be saved in a CSV file in the package fold
 pass the `--gui` flag that disables the headless browser mode. This option can help you debug your tests.
 For more detailed information and additional usage instructions, please refer to the [datagrok-tools page](https://github.com/datagrok-ai/public/tree/master/tools).
 
-If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose.mdx) to run the stand.
+If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose/docker-compose.mdx) to run the stand.
 
 ### Trigger GitHub Actions manually
 

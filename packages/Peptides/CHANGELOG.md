@@ -1,23 +1,129 @@
 # Peptides changelog
 
-## 1.12.0 (WIP)
+## 1.16.0 (WIP)
 
 ### Features
 
-* Improved Identity panel UI.
-* Added sequence similarity functionality.
-* Moved Similarity & Identity form to Toolbox.
-* Other UI/UX improvements.
-* Peptides moved to Bio > Analyze > SAR
+* Added Select All and Desect All functionality to all viewers.
+* Added Mean activity column for the Most Potent Residues viewer.
+* Added Mean activity to tooltips.
+
+### Bug Fixes
+
+* Fixed Logo Summary Table tooltip wouldn't show if analysis table doesn't contain column names 'Cluster'.
+* Fixed tooltips would show irrelevant info.
+
+## 1.15.3 (2023-10-26)
+
+### Bug Fixes
+
+* Fixed docking sequence space would completely remove the viewer.
+
+## 1.15.2 (2023-10-26)
+
+### Features
+
+* Improved Sequence space default parameters (changed threshold similarity from 0.8 to 0.3)
+
+## 1.15.1 (2023-10-19)
+
+### Features
+
+* Color-coding Sequence space by scaled activity.
+* Optimized Mutation Cliffs calculations to use workers.
+* Hid WebLogo positions in Logo Summary Table.
+
+### Bug Fixes
+
+* Fixed Invariant Map color coding wouldn't change when changing color column.
+
+## 1.15.0 (2023-10-12)
+
+### Features
+
+* Added Sequence Space viewer.
+* Selection panel columns now inherti width from main table.
+* Invarian Map cell values now rendered with contrast color relative to background.
+
+### Bug Fixes
+
+* Fixed WebLogo in header margin width.
+* Widgets in Context panel will now fill all the available width.
+* Fixed LST rows not resizable.
+* Fixed selection inconsistency.
+* Fixed Most Potent Residues keyboar navigation.
+* Fixed analysis not starting when there are columns of the same name.
+
+## 1.14.1 (2023-09-28)
+
+### Bug Fixes
+
+* Fixed a bug when filtering single cluster would break Logo Summary Table.
+
+## 1.14.0 (2023-09-28)
+
+### Features
+
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added icon to expand grids in property panel to fullscreen.
+
+### Bug Fixes
+
+* Fixed Distribution panel labels.
+
+## 1.13.3 (2023-09-20)
+
+### Features
+
+* WebLogo now reacts to filtering.
+
+### Bug Fixes
+
+* Fixed distribution panel throwing error when selection matches filter.
+
+## 1.13.2 (2023-09-14)
+
+### Bug Fixes
+
+* Downgraded `datagrok-api` dependency to version 1.16.4.
+
+## 1.13.1 (2023-09-13)
+
+### Bug Fixes
+
+* Most Potent Residues: Fixed issue when the viewer failed to construct in some cases.
+
+## 1.13.0 (2023-09-13)
+
+### Features
+
+* Monomer-Position and Most Potent Residues: Circle size is now based on the absolute value of mean difference.
+* Scaling default colors (blue for low values and red for high) in Monomer-Position viewer.
+* Highlight rows on mouse over Monomer-Position, Most Potent Residues, Logo Summary Table and WebLogo in the header.
+* Changed viewer interactivity to match the platform defaults. Learn more about viewer hotkeys [here](https://datagrok.ai/help/visualize/viewers/#selection).
+* Accordion with actions, mutation cliffs pairs, distribution and selection panels now shows on any selection.
+* Removed steps from tutorial.
+* Ignore rows with missing values when starting the analysis.
+
+### Bug Fixes
+
+* Logo Summary Table: Fixed interaction.
+
+## 1.12.0 (2023-08-30)
+
+### Features
+
+* Added sequence identity and similairty functionality.
+* Peptides moved to Bio > Analyze > SAR.
+* Added tooltips for all inputs and buttons.
+* Added Selection panel which shows the current selection as a separate table.
+* UI/UX improvements.
 
 ### Bug Fixes
 
 * Fixed table view tooltips.
 * Fixed selection with WebLogo in the column header.
-* Fixed identity scoring formula.
 * Fixed table view couldn't be filtered by monomer position columns.
-* Fixed identity panel not considering filtered table view.
-* Fixed the Identity button not disabling on incorrect input.
 
 ## 1.11.0 (2023-08-03)
 

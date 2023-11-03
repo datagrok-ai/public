@@ -37,6 +37,7 @@ import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
+import {ItemsGrid} from "./src/ui/items-grid";
 
 
 let api = <any>window;
@@ -665,10 +666,19 @@ export namespace input {
     return input;
   }
 
+  export function grid(items: any[], properties: Property[]): ItemsGrid {
+    return new ItemsGrid(items, properties);
+  }
+
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
+
+  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
+    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+  }
+
 
   // export function bySemType(semType: string) {
   //
@@ -707,8 +717,8 @@ export function sliderInput(name: string, value: number | null, min: number, max
   return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
-  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
+  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items, options), onValueChanged);
 }
 
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
@@ -1125,25 +1135,33 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
         spliterResize(divider, items[i], items[i + 1])
       }
     });
-    tools.handleResize(b, (w,h)=>{
-      let totalHeigh = 0;
-      let childs = 0;
+
+    tools.waitForElementInDom(b).then((x)=>{
+      const rootHeight = x.getBoundingClientRect().height;
+    
       for (let i = 0; i < b.children.length; i++){
         if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          childs++;
+          $(b.childNodes[i]).attr('style', `height:${(rootHeight/items.length-($(b).find('.ui-split-h-divider').length*4)/items.length)}px;`);
+        } else {
+          $(b.childNodes[i]).css('height', 4);
         }
-        totalHeigh = totalHeigh + $(b.childNodes[i]).height();
-      }
-
-      for (let i = 0; i < b.children.length; i++){
-          if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-            $(b.childNodes[i]).css('max-height', (h-totalHeigh)/childs+$(b.childNodes[i]).height());
-          } else {
-            $(b.childNodes[i]).css('height', 4);
-          }
       }
 
     });
+
+    tools.handleResize(b, (w,h)=>{
+      const rootHeight = b.getBoundingClientRect().height;
+
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+          $(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
+        } else {
+          $(b.childNodes[i]).css('height', 4);
+        }
+      }
+      
+    });
+
   } else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
@@ -1155,7 +1173,6 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
   let b = box(null, options);
 
   if (resize && items.length > 1) {
-
     items.forEach((v, i) => {
       let divider = box();
       divider.className='ui-split-h-divider';
@@ -1164,25 +1181,32 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
         $(b).append(divider)
         spliterResize(divider, items[i], items[i + 1], true);
       }
-    })
+    });
 
-    tools.handleResize(b, (w,h)=>{
-      let totalWidth = 0;
-      let childs = 0;
+    tools.waitForElementInDom(b).then((x)=>{
+      const rootWidth = x.getBoundingClientRect().width;
+    
       for (let i = 0; i < b.children.length; i++){
         if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          childs++;
+          $(b.childNodes[i]).attr('style', `width:${(rootWidth/items.length-($(b).find('.ui-split-h-divider').length*4)/items.length)}px;`);
+        } else {
+          $(b.childNodes[i]).css('width', 4);
         }
-        totalWidth = totalWidth + $(b.childNodes[i]).width();
       }
 
+    });
+
+    tools.handleResize(b, (w,h)=>{
+      const rootWidth = b.getBoundingClientRect().width;
+
       for (let i = 0; i < b.children.length; i++){
-          if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-            $(b.childNodes[i]).css('max-width', (w-totalWidth)/childs+$(b.childNodes[i]).width());
-          } else {
-            $(b.childNodes[i]).css('width', 4);
-          }
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+          $(b.childNodes[i]).attr('style', `width:${(w-rootWidth)/b.children.length+$(b.childNodes[i]).width()}px;`);
+        } else {
+          $(b.childNodes[i]).css('width', 4);
         }
+      }
+      
     });
 
   } else {
@@ -1192,66 +1216,66 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 }
 
 function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean = false) {
-  let md: any;
-  divider.onmousedown = onMouseDown;
+let md: any;
+divider.onmousedown = onMouseDown;
 
-  if (horizontal) {
-    divider.style.cssText = `
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
-    max-width: 4px;
-    width: 4px;
-    min-width: 4px;
-    cursor: col-resize;`
-  }
-  else {
-    divider.style.cssText = `
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
-    max-height: 4px;
-    height: 4px;
-    min-height: 4px;
-    cursor: row-resize;`
-  }
+if (horizontal) {
+  divider.style.cssText = `
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+  max-width: 4px;
+  width: 4px;
+  min-width: 4px;
+  cursor: col-resize;`
+}
+else {
+  divider.style.cssText = `
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+  max-height: 4px;
+  height: 4px;
+  min-height: 4px;
+  cursor: row-resize;`
+}
 
-  divider.style.backgroundRepeat = 'no-repeat';
-  divider.style.backgroundPosition = 'center';
+divider.style.backgroundRepeat = 'no-repeat';
+divider.style.backgroundPosition = 'center';
+divider.style.backgroundColor = 'var(--grey-1)';
+
+function onMouseDown(e: any) {
+  if (!nextSibling.classList.contains('ui-box'))
+  nextSibling = nextSibling.parentElement!;
+  if (!previousSibling.classList.contains('ui-box'))
+  previousSibling = previousSibling.parentElement!;
+
+  md = {
+      e,
+      offsetLeft: divider.offsetLeft,
+      offsetTop: divider.offsetTop,
+      topHeight: previousSibling.offsetHeight,
+      bottomHeight: nextSibling.offsetHeight,
+      leftWidth: previousSibling.offsetWidth,
+      rightWidth: nextSibling.offsetWidth
+  };
+
+  divider.style.backgroundColor = 'var(--grey-2)';
+  document.onmousemove = onMouseMove;
+  document.onmouseup = () => {
   divider.style.backgroundColor = 'var(--grey-1)';
-
-  function onMouseDown(e: any) {
-    if (!nextSibling.classList.contains('ui-box'))
-      nextSibling = nextSibling.parentElement!;
-    if (!previousSibling.classList.contains('ui-box'))
-      previousSibling = previousSibling.parentElement!;
-
-      md = {
-        e,
-        offsetLeft: divider.offsetLeft,
-        offsetTop: divider.offsetTop,
-        topHeight: previousSibling.offsetHeight,
-        bottomHeight: nextSibling.offsetHeight,
-        leftWidth: previousSibling.offsetWidth,
-        rightWidth: nextSibling.offsetWidth
-      };
-
-    divider.style.backgroundColor = 'var(--grey-2)';
-    document.onmousemove = onMouseMove;
-    document.onmouseup = () => {
-      divider.style.backgroundColor = 'var(--grey-1)';
-      document.onmousemove = document.onmouseup = null;
-    }
+  document.onmousemove = document.onmouseup = null;
   }
+}
 
-  function onMouseMove(e: any) {
-      const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-      if (horizontal) {
-        delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
-        previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
-        nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-      } else {
-        delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
-        previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
-        nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
-      }
+function onMouseMove(e: any) {
+  const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+  if (horizontal) {
+      delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+      previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
+      nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
+  } else {
+      delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+      previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
+      nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
   }
+}
 }
 
 export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
@@ -1324,6 +1348,7 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   }
   _options(d, options);
   $(d).addClass('ui-form');
+  
   return d;
 }
 
@@ -1526,12 +1551,20 @@ export namespace hints {
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
-
-    const indicatorNode = el.getBoundingClientRect();
+    
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
-    hintIndicator.style.left = indicatorNode.left + 'px';
-    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    let setPosition = setInterval(function () {
+      if ($('body').has(el).length != 0) {
+        const indicatorNode = el.getBoundingClientRect();
+        hintIndicator.style.left = indicatorNode.left + 'px';
+        hintIndicator.style.top = indicatorNode.top + 'px';
+      } else {
+        hintIndicator.remove();
+        clearInterval(setPosition);
+      } 
+    }, 10);
 
     if (clickToClose) {
       $(el).on('click', () => {
@@ -1652,4 +1685,215 @@ interface HintPage {
   /** Returns error message (and stops wizard from proceeding to the next page),
    * or null if validated */
   validate?: () => string | null;
+}
+
+export namespace css {
+
+  export enum flex {
+    row = 'd4-flex-row',
+    col = 'd4-flex-col',
+    wrap = 'd4-flex-wrap',
+    nowrap = 'd4-flex-nowrap',
+    grow = 'd4-flex-grow',
+  }
+
+  export enum alignItems {
+    start = 'css-align-items-start',
+    end = 'css-align-items-end',
+    center = 'css-align-items-center',
+    baseline = 'css-align-items-baseline',
+    stretch = 'css-align-items-stretch',
+  }
+
+  export enum justifyContent {
+    start = 'css-justify-content-start',
+    end = 'css-justify-content-end',
+    center = 'css-justify-content-center',
+    between = 'css-justify-content-between',
+    around = 'css-justify-content-around',
+  }
+
+  export enum gap {
+    small = 'css-gap-small',
+    medium = 'css-gap-medium',
+    large = 'css-gap-large',
+  }
+
+  export enum margin {
+    none = 'css-m-none',
+    small = 'css-m-small',
+    medium = 'css-m-medium',
+    large = 'css-m-large',
+    auto = 'css-m-auto'
+  }
+
+  export enum marginX {
+    none = 'css-mx-none',
+    small = 'css-mx-small',
+    medium = 'css-mx-medium',
+    large = 'css-mx-large',
+    auto = 'css-mx-auto'
+  }
+
+  export enum marginY {
+    none = 'css-my-none',
+    small = 'css-my-small',
+    medium = 'css-my-medium',
+    large = 'css-my-large',
+    auto = 'css-my-auto'
+  }
+
+  export enum marginLeft {
+    none = 'css-ml-none',
+    small = 'css-ml-small',
+    medium = 'css-ml-medium',
+    large = 'css-ml-large',
+    auto = 'css-ml-auto'
+  }
+
+  export enum marginRight {
+    none = 'css-mr-none',
+    small = 'css-mr-small',
+    medium = 'css-mr-medium',
+    large = 'css-mr-large',
+    auto = 'css-mr-auto'
+  }
+
+  export enum marginTop {
+    none = 'css-mt-none',
+    small = 'css-mt-small',
+    medium = 'css-mt-medium',
+    large = 'css-mt-large',
+    auto = 'css-mt-auto'
+  }
+
+  export enum marginBottom {
+    none = 'css-mb-none',
+    small = 'css-mb-small',
+    medium = 'css-mb-medium',
+    large = 'css-mb-large',
+    auto = 'css-mb-auto'
+  }
+
+  export enum padding {
+    none = 'css-p-none',
+    small = 'css-p-small',
+    medium = 'css-p-medium',
+    large = 'css-p-large',
+  }
+
+  export enum paddingX {
+    none = 'css-px-none',
+    small = 'css-px-small',
+    medium = 'css-px-medium',
+    large = 'css-px-large',
+  }
+
+  export enum paddingY {
+    none = 'css-py-none',
+    small = 'css-py-small',
+    medium = 'css-py-medium',
+    large = 'css-py-large',
+  }
+
+  export enum paddingLeft {
+    none = 'css-pl-none',
+    small = 'css-pl-small',
+    medium = 'css-pl-medium',
+    large = 'css-pl-large',
+  }
+
+  export enum paddingRight {
+    none = 'css-pr-none',
+    small = 'css-pr-small',
+    medium = 'css-pr-medium',
+    large = 'css-pr-large',
+  }
+
+  export enum paddingTop {
+    none = 'css-pt-none',
+    small = 'css-pt-small',
+    medium = 'css-pt-medium',
+    large = 'css-pt-large',
+  }
+
+  export enum paddingBottom {
+    none = 'css-pb-none',
+    small = 'css-pb-small',
+    medium = 'css-pb-medium',
+    large = 'css-pb-large',
+  }
+
+  export enum textSize {
+    small = 'css-text-small',
+    medium = 'css-text-medium',
+    large = 'css-text-large',
+  }
+
+  export enum textAlign {
+    left = 'css-text-left',
+    right = 'css-text-right',
+    center = 'css-text-center',
+  }
+
+  export enum textWeight {
+    light = 'css-text-light',
+    normal = 'css-text-normal',
+    bolder = 'css-text-bolder',
+    bold = 'css-text-bold',
+  }
+
+  export enum textTransform {
+    lowercase = 'css-text-lowercase',
+    uppercase = 'css-text-uppercase',
+    capitalize = 'css-text-capitalize',
+  }
+
+  export enum lineHeight {
+    small = 'css-lh-small',
+    medium = 'css-lh-medium',
+    large = 'css-lh-large',
+  }
+
+  export enum background {
+    none = 'css-bg-none',
+    white = 'css-bg-white',
+    light = 'css-bg-light',
+  }
+
+  export enum shadow {
+    none = 'css-shadow-none',
+    small = 'css-shadow-small',
+    medium = 'css-shadow-medium',
+    large = 'css-shadow-large',
+  }
+
+  export enum table {
+    normal = 'css-table',
+    wide = 'css-table-wide'
+  }
+
+  export enum tableSize {
+    small = 'css-table-small',
+    medium = 'css-table-medium',
+    large = 'css-table-large'
+  }
+
+  export enum tableStyle {
+    border = 'css-table-border',
+    linesRow = 'css-table-row-lines',
+    linesCol = 'css-table-col-lines',
+    striped = 'css-table-striped'
+  }
+  
+  export enum border {
+    all = 'css-border',
+    right = 'css-border-right',
+    left = 'css-border-left',
+    top = 'css-border-top',
+    bottom = 'css-border-bottom',
+    leftRight = 'css-border-left-right',
+    topBottom = 'css-border-top-bottom'
+  }
+
 }

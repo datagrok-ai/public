@@ -23,10 +23,10 @@ type Likelihood = {
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number,
   data: {x: number[], y: number[]}, params: number[]) => Likelihood;
 
-export enum FitErrorModel {
-  Constant,
-  Proportional
-}
+export const FitErrorModel = {
+  CONSTANT: 'constant',
+  PROPORTIONAL: 'proportional',
+};
 
 export type FitParamBounds = {
   min?: number;
@@ -107,16 +107,21 @@ export const DROPLINES = ['IC50'];
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
 
+export type FitLineStyle = 'solid' | 'dotted' | 'dashed' | 'dashdotted';
+
+export type FitErrorModelType = 'constant' | 'proportional';
+
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
   x: number;
   y: number;
   outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
-  minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
+  size?: number;           // overrides the default marker size
   stdev?: number;          // when defined, renders an error bar candlestick
+  // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
+  // maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
 }
 
 /** A series consists of points, has a name, and options.
@@ -171,12 +176,14 @@ export interface IFitSeriesOptions {
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
+  lineStyle?: FitLineStyle;             // defines the series line style
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
+  errorModel?: FitErrorModelType;       // defines the series error model
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
   droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
@@ -202,39 +209,43 @@ export const fitChartDataProperties: Property[] = [
   Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
   Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
   Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
-  Property.js('title', TYPE.STRING, {description: 'Plot title. If not specified, doesn\'t renders', nullable: true}),
+  Property.js('title', TYPE.STRING, {nullable: true}),
   Property.js('xAxisName', TYPE.STRING, {description:
     'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('yAxisName', TYPE.STRING, {description:
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('logX', TYPE.BOOL, {defaultValue: false}),
-  Property.js('logY', TYPE.BOOL, {defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name),
-    inputType: 'MultiChoice'}),
+  Property.js('logX', TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
+  Property.js('logY', TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
+  Property.js('showStatistics', TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
+    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
 export const fitSeriesProperties: Property[] = [
-  Property.js('name', TYPE.STRING),
   Property.js('fitFunction', TYPE.STRING,
     {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
   Property.js('pointColor', TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('fitLineColor', TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  Property.js('errorModel', TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
+    choices: ['constant', 'proportional'], nullable: false}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
-    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
-  Property.js('showFitLine', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
-  Property.js('showPoints', TYPE.STRING,
+    'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
+  Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
+  Property.js('showPoints', TYPE.STRING, // rewrite description
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   Property.js('showCurveConfidenceInterval', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false}),
-  Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
-    defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
+      caption: 'Confidence interval'}),
+  Property.js('markerType', TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
-  Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
+  Property.js('lineStyle', TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
+    choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
+  Property.js('droplines', TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
+    choices: DROPLINES, inputType: 'MultiChoice'}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
@@ -264,11 +275,24 @@ export class LinearFunction extends FitFunction {
   }
 
   y(params: number[], x: number): number {
-    throw new Error('Not implemented');
+    return linear(params, x);
   }
 
   getInitialParameters(x: number[], y: number[]): number[] {
-    throw new Error('Not implemented');
+    let minIndex = 0;
+    let maxIndex = 0;
+    for (let i = 1; i < x.length; i++) {
+      if (x[i] < x[minIndex])
+        minIndex = i;
+      if (x[i] > x[maxIndex])
+        maxIndex = i;
+    }
+
+    const deltaX = x[maxIndex] - x[minIndex];
+    const deltaY = y[maxIndex] - y[minIndex];
+    const A = deltaY / deltaX;
+    const B = y[maxIndex] - A * x[maxIndex];
+    return [A, B];
   }
 }
 
@@ -299,7 +323,7 @@ export class SigmoidFunction extends FitFunction {
       }
     }
     const xAtMedY = x[nearestXIndex];
-    const slope = y[0] > y[y.length - 1] ? 1.2 : -1.2;
+    const slope = y[0] > y[y.length - 1] ? 1 : -1;
 
     // params are: [max, tan, IC50, min]
     return [dataBounds.bottom, slope, xAtMedY, dataBounds.top];
@@ -346,20 +370,20 @@ export const fitFunctions: {[index: string]: FitFunction} = {
 };
 
 export interface IFitOptions {
-  errorModel: FitErrorModel;
+  errorModel: FitErrorModelType;
   confidenceLevel: number;
   statistics: boolean;
 }
 
 
-function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
+function createObjectiveFunction(errorModel: FitErrorModelType): ObjectiveFunction {
   let of: ObjectiveFunction;
 
   switch (errorModel) {
-  case FitErrorModel.Constant:
+  case FitErrorModel.CONSTANT:
     of = objectiveNormalConstant;
     break;
-  case FitErrorModel.Proportional:
+  case FitErrorModel.PROPORTIONAL:
     of = objectiveNormalProportional;
     break;
   default:
@@ -405,7 +429,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel,
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModelType,
   parameterBounds?: FitParamBounds[]): FitCurve {
   const curveFunction = fitFunction.y;
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
@@ -455,11 +479,11 @@ export function getFittedCurve(curveFunction: (params: number[], x: number) => n
 }
 
 export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: number[],
-  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModel):
+  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModelType):
   FitConfidenceIntervals {
   const of = createObjectiveFunction(errorModel);
 
-  const error = errorModel === FitErrorModel.Proportional ?
+  const error = errorModel === FitErrorModel.PROPORTIONAL ?
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
@@ -467,7 +491,7 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
   const top = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.Constant)
+    if (errorModel === FitErrorModel.CONSTANT)
       return value + quantile * error;
     else
       return value + quantile * Math.abs(value) * error;
@@ -475,7 +499,7 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.Constant)
+    if (errorModel === FitErrorModel.CONSTANT)
       return value - quantile * error;
     else
       return value - quantile * Math.abs(value) * error;
@@ -547,6 +571,12 @@ export function sigmoid(params: number[], x: number): number {
   const C = params[2];
   const D = params[3];
   return (D + (A - D) / (1 + Math.pow(10, (x - C) * B)));
+}
+
+export function linear(params: number[], x: number) {
+  const A = params[0];
+  const B = params[1];
+  return A * x + B;
 }
 
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
@@ -667,5 +697,5 @@ function objectiveNormalProportional(targetFunc: (params: number[], x: number) =
   for (let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
 
-  return {value: -likelihood, const: sigma, mult: 0};
+  return {value: -likelihood, const: 0, mult: sigma};
 }

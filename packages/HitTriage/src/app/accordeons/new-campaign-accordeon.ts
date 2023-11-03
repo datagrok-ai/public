@@ -46,7 +46,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
 
   const dfInput = ui.tableInput('Dataframe', null, undefined, onFileChange);
   onFileChange();
-  const fileInputDiv = ui.divV([dfInput, errorDiv]);
+  const fileInputDiv = ui.div([dfInput, errorDiv]);
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
   const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
   // for display purposes we use friendly name of the function
@@ -62,19 +62,22 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
     funcCall = func.prepare();
     const editor = await funcCall.getEditor();
+    editor.classList.remove('ui-form');
     funcEditorDiv.innerHTML = '';
     funcEditorDiv.appendChild(editor);
   };
-  const funcEditorDiv = ui.div();
+  const funcEditorDiv = ui.div([]);
   const dataSourceFunctionInput = ui.choiceInput(
-    C.i18n.dataSourceFunction, Object.keys(dataSourceFunctionsMap)[0],
+    C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
     Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
   // call the onchange function to create an editor for the first function
   onDataFunctionChange();
-  const functionInputDiv = ui.divV([dataSourceFunctionInput, funcEditorDiv]);
+  if (template.queryFunctionName)
+    dataSourceFunctionInput.root.getElementsByTagName('select').item(0)?.setAttribute('disabled', 'true');
+  const functionInputDiv = ui.div([dataSourceFunctionInput, funcEditorDiv]);
   // if the file source is selected as 'File', no other inputs are needed so we hide the function editor
   functionInputDiv.style.display = 'none';
-  const dataInputsDiv = ui.divV([fileInputDiv, functionInputDiv]);
+  const dataInputsDiv = ui.div([fileInputDiv, functionInputDiv]);
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
@@ -82,25 +85,21 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     DG.Property.fromOptions({name: field.name, type: CampaignFieldTypes[field.type], nullable: !field.required}));
   const campaignPropsObject: {[key: string]: any} = {};
   const campaignPropsForm = campaignProps.length ? ui.input.form(campaignPropsObject, campaignProps) : ui.div();
+  campaignPropsForm.classList.remove('ui-form');
   // displaying function editor or file input depending on the data source type
   if (template.dataSourceType === 'File') {
-    fileInputDiv.style.display = 'block';
+    fileInputDiv.style.display = 'inherit';
     functionInputDiv.style.display = 'none';
   } else {
     fileInputDiv.style.display = 'none';
-    functionInputDiv.style.display = 'block';
+    functionInputDiv.style.display = 'inherit';
   }
 
-  // const accordeon = ui.accordion();
-  // accordeon.root.classList.add('hit-triage-new-campaign-accordeon');
-  // accordeon.addPane('File source', () => dataInputsDiv, true);
-  //campaignProps.length && accordeon.addPane('Campaign details', () => campaignPropsForm, true);
-  const form = ui.divV([
+  const form = ui.div([
     dataInputsDiv,
-    ...(campaignProps.length ? [ui.h2('Campaign details'), campaignPropsForm] : [])], 'ui-form');
-  const content = ui.div(form, 'ui-form');
-  const buttonsDiv = ui.divH([]); // div for create and cancel buttons
-  content.appendChild(buttonsDiv);
+    ...(campaignProps.length ? [campaignPropsForm] : [])]);
+  const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
+  form.appendChild(buttonsDiv);
   const promise = new Promise<INewCampaignResult>((resolve) => {
     const onOkProxy = async () => {
       if (template.dataSourceType === 'File') {
@@ -130,10 +129,9 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   });
 
   const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
+    const _cancelButton = ui.button(C.i18n.cancel, () => resolve());
     //buttonsDiv.appendChild(cancelButton);
   });
 
-  return {promise, root: content, cancelPromise};
+  return {promise, root: form, cancelPromise};
 }

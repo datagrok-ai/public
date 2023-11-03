@@ -38,10 +38,11 @@ interface SparklineSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= true;
-  return gc.settings;
+  const settings: SparklineSettings = gc.settings[SparklineType.Sparkline] ??=
+    getSettingsBase(gc, SparklineType.Sparkline);
+  settings.globalScale ??= false;
+  settings.colorCode ??= true;
+  return settings;
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
@@ -68,10 +69,17 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     cols: cols
   };
 
-
   const MousePoint = new DG.Point(e.offsetX, e.offsetY);
   const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) /
     b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
+  if (activeColumn >= cols.length || activeColumn === -1) {
+    return {
+      isHit: false,
+      row: -1,
+      cols: [],
+      activeColumn: -1
+    };
+  }
 
   const activePoint = getPos(activeColumn, row, getPosConstants);
   return {
@@ -144,8 +152,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= {globalScale: true};
-    const settings: SparklineSettings = gridColumn.settings;
+    const settings: SparklineSettings = gridColumn.settings[SparklineType.Sparkline] ??= getSettings(gridColumn);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +

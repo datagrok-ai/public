@@ -8,5 +8,5 @@
 #condition: file.isFile && file.name.endsWith("csv")
 #output: int num_lines
 
-df = OpenFile(file.path)
+df = OpenFile('System:AppData/' + file.path)
 num_lines = df.rowCount

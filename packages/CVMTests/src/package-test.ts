@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import './scripts/scripts';
+
+// import './scripts/scripts';
 import './shell/ml';
-// import './scripts/scripts_tests';
+import './scripts/scripts_tests';
+import './docker/docker';
+// import './gui/dialogs'; To fix!
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

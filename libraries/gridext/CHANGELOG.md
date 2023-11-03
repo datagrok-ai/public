@@ -1,5 +1,11 @@
 # gridext changelog
 
+## 1.3.67 (2023-10-25)
+
+### Bug Fixes
+
+* [#2367](https://github.com/datagrok-ai/public/issues/2367): Moved 'Pin column' functionality to the 'Pin' menu group
+
 ## 1.3.66 (2023-08-04)
 
 ### Bug Fixes

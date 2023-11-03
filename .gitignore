@@ -67,3 +67,10 @@ docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
 test-console-output.log
+
+.terraform
+
+# local history
+.lh
+
+_lint-check-report.md

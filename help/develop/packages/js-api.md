@@ -5,7 +5,7 @@ title: "JavaScript API"
 
 [Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`)
-or from [packages](./develop.md#packages).
+or from [packages](../develop.md#packages).
 
 This document covers the following areas:
 
@@ -38,7 +38,7 @@ For example, to import a dataframe from a CSV file:
 1. Select the best fitting option, `grok.data`, and press `.`. The following options appear: `[demo, query, compareTables, parseCsv, upload]`.
 1. Select `grok.data.parseCsv` and press **Enter**. Use IntelliSense to provide the parameters. 
 
-![grok-intellisense](grid-adaptive-number-formatting.gif)
+![grok-intellisense](./grid-adaptive-number-formatting.gif)
 
 :::note
 
@@ -65,7 +65,7 @@ Check out [JS API Class Reference](https://datagrok.ai/js-api/)
 
 ### Shell
 
-Datarok visual shell is used to get access to top-level views, tables, methods, and platform states.
+Datagrok visual shell is used to get access to top-level views, tables, methods, and platform states.
 
 Learn more here: [Datagrok Shell reference](https://datagrok.ai/js-api/classes/dg.Shell)
 
@@ -175,7 +175,7 @@ Internally, JavaScript-based applications are functions that are annotated accor
 Code snippets:
 
 * [Dynamic registering](https://public.datagrok.ai/js/samples/functions/register-function)
-* [Functions: Parameter validators](https://public.datagrok.ai/js/samples/functions/func-params-enhancement)
+* [Functions: Parameter validators](https://public.datagrok.ai/js/samples/functions/func-params-annotation)
 * [Functions: Info panels](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 
@@ -276,5 +276,5 @@ Code snippets:
 
 See also:
 
-* [JavaScript development](./develop.md)
+* [JavaScript development](../develop.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js)

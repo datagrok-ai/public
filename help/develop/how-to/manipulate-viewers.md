@@ -3,7 +3,7 @@ title: "Manipulate viewers"
 ---
 
 [Viewers](../../visualize/viewers/viewers.md) are main visual components of the Datagrok platform. Our JavaScript API exposes
-functionality for manipulating native viewers, such as [scatter plot](../../visualize/viewers/scatter-plot.md)
+functionality for manipulating native viewers, such as [scatter plot](../../visualize/viewers/scatter-plot.mdx)
 or [histogram](../../visualize/viewers/histogram.md), as well as
 for [developing custom viewers](develop-custom-viewer.md).
 

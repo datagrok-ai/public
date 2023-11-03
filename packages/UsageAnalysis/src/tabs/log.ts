@@ -1,4 +1,4 @@
-import {Filter, UaView} from './ua';
+import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
 

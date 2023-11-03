@@ -1,0 +1,45 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to ECS Fargate. DNS and ACM should be configured manually."
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Client Endpoint configuration"
+        Parameters:
+          - DatagrokArnSSLCertificate
+    ParameterLabels:
+      DatagrokArnSSLCertificate:
+        default: "DatagrokArnSSLCertificate: AWS ACM certificate ARN"
+Parameters:
+  DatagrokArnSSLCertificate:
+    Type: String
+    AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
+    Description: The certificate is used for both Datagrok and CVM client endpoints. If you do not use Route53 for DNS management, it is required to upload certificate to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html) and specify the Certificate ARN here.
+#Conditions:
+#  CreateDNS:
+#    Fn::Equals:
+#      - Ref: DatagrokArnSSLCertificate
+#      - ''
+#  CreateSSL:
+#    Fn::Equals:
+#      - Ref: DatagrokArnSSLCertificate
+#      - ''
+Outputs:
+  DatagrokLoadBalancerDNSName:
+    Description: Datagrok Load Balancer DNS to create CNAME record
+    Value:
+      Fn::GetAtt:
+        - DatagrokLoadBalancer
+        - DNSName
+  #    Condition: CreateDNS
+  CvmLoadBalancerDNSName:
+    Description: Datagrok CVM Load Balancer DNS to create CNAME record
+    Value:
+      Fn::GetAtt:
+        - CvmLoadBalancer
+        - DNSName
+  #    Condition: CreateDNS
+  DatagrokEndpoint:
+    Description: Datagrok endpoint
+    Value: 'Create DNS records for Datagrok and CVM using stated DNS Names as CNAMEs targets'

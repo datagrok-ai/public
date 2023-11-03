@@ -1,5 +1,32 @@
 # compute-utils changelog
 
+## 1.13.14 (2023-08-30)
+
+### Features
+
+- HistoryInput allow skip df load
+
+## 1.13.13 (2023-08-29)
+
+### Features
+
+- HistoryInput redesigned
+
+## 1.13.9 (2023-08-23)
+
+### Fixed bugs
+
+- Fixed bug with empty captions in RFV blocks
+
+## 1.13.8 (2023-08-18)
+
+### Features
+
+- RFV: Inputs are now disabled during computations
+- RFV: editState is now properly saved
+- FileInput: Moved icons into options container
+- Default users and groups IDs are now taken from API
+
 ## 1.13.6 (2023-08-15)
 
 ### Features

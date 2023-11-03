@@ -9,7 +9,7 @@ import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
-import {TestsView} from './tabs/tests';
+import {TestsView, filters} from './tabs/tests';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -31,10 +31,10 @@ export class ViewHandler {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
+    toolbox.filters.root.after(filters);
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView];
-    // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       currentView.tryToinitViewers();
@@ -68,22 +68,20 @@ export class ViewHandler {
         if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
           grok.shell.windows.showToolbox = true;
           grok.shell.windows.showContextPanel = true;
-          const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
-    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
-    more information about the selected events will be displayed on context pane`);
+          const info = ui.divText(`To learn more about an event, click the corresponding point.\
+          To select multiple points, use CTRL + Click or SHIFT + Mouse Drag. Once you've made your selection,\
+          see the detailed information on the Context Panel`);
           info.classList.add('ua-hint');
           grok.shell.o = info;
         }
         helpShown = true;
       }
       if (view.name === 'Tests') {
-        grok.shell.windows.showToolbox = false;
-        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.12);
+        toolbox.filters.expanded = false;
+        filters.style.display = 'flex';
       } else {
-        grok.shell.windows.showToolbox = true;
-        if (this.dockFilters)
-          grok.shell.dockManager.close(this.dockFilters);
-        this.dockFilters = null;
+        toolbox.filters.expanded = true;
+        filters.style.display = 'none';
       }
     });
     ViewHandler.UA.name = ViewHandler.UAname;

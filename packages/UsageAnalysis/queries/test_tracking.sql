@@ -29,16 +29,20 @@ e.event_time = (select max(_e.event_time) from events _e where _e.event_type_id 
 --connection: System:Datagrok
 --input: string id
 select
-e.event_time as date,
+e.id, e.event_time as date,
 case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
 v3.value::int as ms,
-v2.value as result
+v2.value as result, u.id as uid,
+p5.name as res_name, v5.value as res_value
 from events e
 inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-%'
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
 left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
 left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'ms' on v3.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
+left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name like 'result.%' on v5.event_id = e.id
+inner join users_sessions s on e.session_id = s.id
+inner join users u on u.id = s.user_id
 where
 e.event_type_id = @id
 order by e.event_time desc
@@ -46,6 +50,8 @@ order by e.event_time desc
 
 --name: TestsToday
 --connection: System:Datagrok
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 select
 distinct on (e.description)
 t.id::text as id,
@@ -73,6 +79,8 @@ order by e.description, e.event_time desc
 
 --name: TestsMonth
 --connection: System:Datagrok
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 with ress as (select
 e.description, e.event_time,
 e.event_time::date as date,

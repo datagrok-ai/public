@@ -14,8 +14,7 @@ import './functions/logical-functions';
 import './functions/math-functions';
 import './functions/stats-functions';
 import './functions/text-functions';
-
-// import './functions/cache';
+import './functions/cache';
 import './shell/shell';
 import './shell/ml';
 import './shell/settings';
@@ -38,6 +37,7 @@ import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
 // import './package/upload';
+import './packages/properties';
 import './grid/grid';
 import './grid/color-coding';
 import './grid/multi-value-column';

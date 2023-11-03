@@ -1,5 +1,81 @@
 # Chem changelog
 
+## 1.8.3 (2023-10-26)
+
+### Features
+
+* [#2421](https://github.com/datagrok-ai/public/issues/2421): Chem | Molecular Search options:
+  * Add some hint to explain the new options to users
+  * Fix the ability to collapse the controls after switching from Similarity to Contains
+  * Make the icon more noticeable
+* [#2420](https://github.com/datagrok-ai/public/issues/2420): Chem | Scaffold Tree coloring:
+  * The custom coloring should override the default one
+  * Coloring for child structures - it's very inconvenient that you can't click the icon again to return to the custom color
+  * Add the icon for removing the specific node of the scaffold tree
+
+### Bug Fixes
+
+* [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold tree viewer: coloring can't be saved to the Layout
+* [#2450](https://github.com/datagrok-ai/public/issues/2450): Scaffold tree imported from file is not restored on applying saved layout
+* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted if they are in SMILES format
+
+## 1.8.2 (2023-10-22)
+
+### Bug Fixes
+
+* GROK-14149: Add progress indicator to sequence/chem space and remove jumping points
+
+## 1.8.1 (2023-10-16)
+
+### Bug Fixes
+
+* [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold Tree: Coloring can't be saved to the Layout
+* [#2400](https://github.com/datagrok-ai/public/issues/2400): Molecular search: Three dots infinite loading
+
+## 1.8.0 (2023-08-09)
+
+### Features
+
+* GROK-13817: Highlighting multiple substructures with different colors inside one molecule structure
+* [#2355](https://github.com/datagrok-ai/public/issues/2355): Integrate Scaffold Tree with color-coded fragments
+* GROK-13993: Fast Chemical space on large datasets (> 20k)  using sparse matrix
+* GROK-13994: Implemented filter by superstructure, exact structure, similarity score
+* GROK-13966: Exposed fingerprints options for similarity, diversity search
+
+## 1.7.2 (2023-09-05)
+
+### Bug Fixes
+
+* Chem: Scaffold Tree: Checkbox shouldn't be set, when group is expanded
+* Chem: Scaffold Tree: Fix the behaviour of allowGenerate property
+
+## 1.7.1 (2023-08-31)
+
+### Features
+
+* GROK-13571: Chem | Ability to terminate substructure search if substructure has been changed
+
+### Bug Fixes
+
+* GROK-13327: Chem | Substructure Search: two identical panels open on the Filter Panel
+* GROK-13791: Chem | Chemical space (using t-SNE) fails on smiles dataset
+* [#2135](https://github.com/datagrok-ai/public/issues/2135):
+  * The structure rendering is too small.
+* [#2322](https://github.com/datagrok-ai/public/issues/2322): Properties panel is unexpectedly reset on changing viewer properties if there is a scaffold tree filter in filters panel 
+* GROK-13848: Chem: Substructure search results flickering
+
+## 1.7.0 (2023-08-09)
+
+### Features
+
+* GROK-13172: Chem | implement substructure search using preliminary filtration by pattern fingerprints
+
+## 1.6.22 (2023-08-07)
+
+### Bug Fixes
+
+* GROK-13713: Chem | Incorrect molecule rendering
+
 ## 1.6.21 (2023-08-02)
 
 *Dependency: datagarok-api >= 1.16.0*

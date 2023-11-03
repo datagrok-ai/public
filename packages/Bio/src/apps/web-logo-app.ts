@@ -4,22 +4,23 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {IWebLogoViewer} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {IWebLogoViewer, WebLogoProps} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 import {PROPS as wlPROPS} from '../viewers/web-logo-viewer';
 
 import {_package} from '../package';
 
 export class WebLogoApp {
-  private _funcName: string = '';
-
   df: DG.DataFrame;
   view: DG.TableView;
 
-  constructor(private readonly urlParams: URLSearchParams) {}
+  constructor(
+    private readonly urlParams: URLSearchParams,
+    private readonly funcName: string,
+    private readonly options: Partial<WebLogoProps> = {}
+  ) {}
 
-  async init(df: DG.DataFrame, funcName: string): Promise<void> {
-    this._funcName = funcName;
+  async init(df: DG.DataFrame): Promise<void> {
     this.df = df;
 
     await this.buildView();
@@ -33,9 +34,9 @@ export class WebLogoApp {
       .toArray().join('&');
 
     this.view = grok.shell.addTableView(this.df);
-    this.view.path = this.view.basePath = `func/${_package.name}.${this._funcName}?${urlParamsTxt}`;
+    this.view.path = this.view.basePath = `func/${_package.name}.${this.funcName}?${urlParamsTxt}`;
 
-    const options: { [p: string]: any } = {sequenceColumnName: 'sequence'};
+    const options: { [p: string]: any } = {...this.options, ...{sequenceColumnName: 'sequence'}};
     for (const [optName, optValue] of this.urlParams.entries()) {
       switch (optName) {
         // boolean

@@ -3,6 +3,7 @@ import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint} from '../utils/chem-common';
 import {RuleId} from '../panels/structural-alerts.js';
+import { SubstructureSearchType } from '../constants.js';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor() {
@@ -18,8 +19,8 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   initMoleculesStructures = async (molecules: string[]): Promise<number> =>
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [molecules]);
 
-  searchSubstructure = async (query: string, queryMolBlockFailover: string, molecules: string[]) =>
-    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules]);
+  searchSubstructure = async (query: string, queryMolBlockFailover: string, molecules: string[], searchType: SubstructureSearchType) =>
+    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType]);
 
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
@@ -36,4 +37,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   invalidateCache = async () => this.call(WORKER_CALL.INVALIDATE_CACHE);
 
   setTerminateFlag = async (flag: boolean) => this.call(WORKER_CALL.SET_TERMINATE_FLAG, [flag]);
+
+  mostCommonStructure = async (
+    molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
+  ): Promise<string> =>
+    this.call(WORKER_CALL.MOST_COMMON_STRUCTURE, [molecules, exactAtomSearch, exactBondSearch]);
 }

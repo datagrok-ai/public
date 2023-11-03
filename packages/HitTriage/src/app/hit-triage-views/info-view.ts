@@ -2,69 +2,66 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from '../hit-triage-app';
-import {HitTriageBaseView} from './base-view';
 import {_package} from '../../package';
 import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
 import {HitTriageCampaign} from '../types';
 import '../../../css/hit-triage.css';
-import {addBreadCrumbsToRibbons, hideComponents, modifyUrl} from '../utils';
+import {addBreadCrumbsToRibbons, modifyUrl, popRibbonPannels} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
+import {HitBaseView} from '../base-view';
 
-export class InfoView extends HitTriageBaseView {
+export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
+  public readmePath = _package.webRoot + 'README_HT.md';
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
+    grok.shell.windows.help.showHelp(this.readmePath);
     this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
   }
 
   onActivated(): void {
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
+    grok.shell.windows.help.showHelp(this.readmePath);
   }
 
   async init(presetTemplate?: HitTriageTemplate): Promise<void> {
-    $(this.root).empty();
-    this.root.style.flexDirection = 'column';
-    const wikiLink = ui.link('Read more', _package.webRoot + 'README.md');
-    const textLink = ui.inlineText([wikiLink, '.']);
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-    const appDescription = ui.divV([
+    const description = '- Configure your own workflow using the template editor.\n'+
+    '- Calculate different molecular properties.\n'+
+    '- Filter molecules using different criteria.\n'+
+    '- Submit processed dataframe to the function of your choice.\n'+
+    '- Save campaigns and continue any time from where you left off.\n ';
+    const appDescription = ui.div([
       ui.h1('Process, analyse and filter molecules for your needs using Hit Triage:'),
-      ui.list([
-        '-  Configure your own workflow using the template editor.',
-        '-  Calculate different molecular properties.',
-        '-  Filter molecules using different criteria.',
-        '-  Submit processed dataframe to the function of your choice.',
-        '-  Save campaigns and continue any time from where you left off.',
-      ]), textLink, continueCampaignsHeader,
-    ], {style: {marginLeft: '10px'}});
+      ui.div(ui.markdown(description), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
+      ui.link('Read more',
+        'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage'),
+    ]);
 
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'hit-triage-templates-input-div ui-form'});
+    const templatesDiv = ui.div([], {classes: 'ui-form'});
 
     const campaignsTable = await this.getCampaignsTable();
-    this.root.appendChild(ui.divV([
+    $(this.root).empty();
+    this.root.appendChild(ui.div([
       appDescription,
+      continueCampaignsHeader,
       campaignsTable,
       createNewCampaignHeader,
       templatesDiv,
       campaignAccordionDiv,
     ]));
-    this.startNewCampaign(campaignAccordionDiv, templatesDiv,
-      [campaignsTable.style, continueCampaignsHeader.style, createNewCampaignHeader.style, appDescription.style],
-      presetTemplate);
+    this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(() => this.app.resetBaseUrl());
   }
 
   private async startNewCampaign(
-    containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[],
-    presetTemplate?: HitTriageTemplate) {
-    //hideComponents(toRemove);
+    containerDiv: HTMLElement, templateInputDiv: HTMLElement, presetTemplate?: HitTriageTemplate,
+  ) {
     const templates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
     // if the template is just created and saved, it may not be in the list of templates
     if (presetTemplate && !templates.includes(presetTemplate.name))
@@ -76,6 +73,7 @@ export class InfoView extends HitTriageBaseView {
         JSON.parse(await _package.files.readAsText('Hit Triage/templates/' + templateName + '.json'));
       const newCampaignAccordeon = await this.getNewCampaignAccordeon(template);
       $(containerDiv).empty();
+      containerDiv.className = 'ui-form';
       containerDiv.appendChild(newCampaignAccordeon);
     };
 
@@ -84,15 +82,13 @@ export class InfoView extends HitTriageBaseView {
         await onTemmplateChange();
       });
     const createNewtemplateButton = ui.icons.add(() => {
-      this.createNewTemplate(containerDiv, templateInputDiv, toRemove);
+      this.createNewTemplate();
     }, i18n.createNewTemplate);
-    createNewtemplateButton.style.marginLeft = '15px';
-    createNewtemplateButton.style.color = '#2083d5';
-    templatesInput.root.style.width = '100%';
+    templatesInput.addOptions(createNewtemplateButton);
+
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
-    templateInputDiv.appendChild(createNewtemplateButton);
   }
 
   private async checkCampaign(campId?: string) {
@@ -129,11 +125,14 @@ export class InfoView extends HitTriageBaseView {
     }
 
     const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
-      ({name: campaign.name, createDate: campaign.createDate, status: campaign.status}));
-    const table = ui.table(campaignsInfo, (info) => ([ui.link(info.name, () => this.setCampaign(info.name)),
-      info.createDate, info.status]), ['Campaign', 'Create date', 'Status']);
-    table.classList.add('hit-triage-table');
-    return ui.div(table, {classes: 'hit-triage-table-container'});
+      ({name: campaign.name, createDate: campaign.createDate,
+        rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
+    const table = ui.table(campaignsInfo, (info) =>
+      ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
+        info.createDate, info.rowCount, info.filtered, info.status]),
+    ['Name', 'Created', 'Total', 'Selected', 'Status']);
+    table.style.color = 'var(--grey-5)';
+    return table;
   }
 
   private async setCampaign(campaignName: string) {
@@ -143,11 +142,12 @@ export class InfoView extends HitTriageBaseView {
 
   private async getNewCampaignAccordeon(template: HitTriageTemplate) {
     const {root, promise, cancelPromise} = newCampaignAccordeon(template);
-    promise.then((camp) => {
+    promise.then(async (camp) => {
       this.app.dataFrame = camp.df;
       this.app._fileInputType = camp.type;
-      this.app.setTemplate(template);
+      await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
+      this.app.saveCampaign(undefined, false);
     });
 
     cancelPromise.then(() => {
@@ -156,23 +156,38 @@ export class InfoView extends HitTriageBaseView {
     return root;
   }
 
-  private async createNewTemplate(
-    containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
-    hideComponents(toRemove);
+  private async createNewTemplate() {
     const newTemplateAccordeon = await createTemplateAccordeon();
-    $(containerDiv).empty();
-    $(templateInputDiv).empty();
-    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, i18n.createNewTemplate, () => {
-      this.init();
+    // hideComponents(toRemove);
+    // $(containerDiv).empty();
+    // $(templateInputDiv).empty();
+
+    const newView = new DG.ViewBase();
+    const curView = grok.shell.v;
+    newView.name = 'New Template';
+    newView.root.appendChild(newTemplateAccordeon.root);
+    newView.parentCall = this.app.parentCall;
+    grok.shell.addView(newView);
+    newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
+    newView.parentView = curView;
+    const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Triage', i18n.createNewTemplate, () => {
+      grok.shell.v = curView;
+      newView.close();
     });
     //this.root.prepend(breadcrumbs.root);
-    containerDiv.appendChild(newTemplateAccordeon.root);
-    newTemplateAccordeon.template.then((t) => {
+    //containerDiv.appendChild(newTemplateAccordeon.root);
+
+    newTemplateAccordeon.template.then(async (t) => {
+      await this.init(t);
+      newView.close();
+      popRibbonPannels(newView);
+      grok.shell.v = curView;
       sub.unsubscribe();
-      this.init(t);
-      $(breadcrumbs.root).empty();
-      $(breadcrumbs.root).remove();
     });
-    newTemplateAccordeon.cancelPromise.then(() => this.init());
+    newTemplateAccordeon.cancelPromise.then(() => {
+      sub.unsubscribe();
+      newView.close();
+      grok.shell.v = curView;
+    });
   }
 };

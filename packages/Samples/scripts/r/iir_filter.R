@@ -9,7 +9,7 @@
 #input: int order = 6 [Filter order]
 #input: double frequency = 0.35 [Critical frequency of the filter, in Hz]
 #input: double sampleRate = 256.0 [Signal sample rate, in Hz]
-#input: string type = high {choices: ["low", "high"]} [Type of filter: low, high]
+#input: string type = "high" {choices: ["low", "high"]} [Type of filter: low, high]
 #output: dataframe filtered {action:join(data)} [Filtered signal vector]
 #output: graphics [Raw and filtered signals]
 

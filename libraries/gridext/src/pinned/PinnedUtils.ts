@@ -277,18 +277,19 @@ export function registerPinnedColumns() {
   grok.events.onContextMenu.subscribe((args : any) => {
     PinnedUtils.handleContextMenu(args, (menu : DG.Menu, colGridOrPinned : DG.GridColumn | PinnedColumn,
                                          grid : DG.Grid) => {
+      const pinMenu = menu.group('Pin');
       if (colGridOrPinned instanceof PinnedColumn) {
         const colGrid = colGridOrPinned.getGridColumn();
         if (colGrid !== null && !GridUtils.isRowHeader(colGrid)) {
-          menu.item('Unpin Column', () => {
+          pinMenu.item('Unpin Column', () => {
             colGridOrPinned.close();
           });
         }
-        menu.item('Unpin All Columns', () => {
+        pinMenu.item('Unpin All Columns', () => {
           PinnedUtils.closeAllPinnedColumns(grid);
         });
       } else {
-        menu.item('Pin Column', async () => {
+        pinMenu.item('Pin Column', async () => {
           PinnedUtils.addPinnedColumn(colGridOrPinned);
         });
       }

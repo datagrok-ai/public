@@ -1,71 +1,65 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitDesignBaseView} from './base-view';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import $ from 'cash-dom';
 import {CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
-import {addBreadCrumbsToRibbons, hideComponents, modifyUrl} from '../utils';
+import {addBreadCrumbsToRibbons, modifyUrl, popRibbonPannels} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
+import {HitBaseView} from '../base-view';
 
-export class HitDesignInfoView extends HitDesignBaseView {
-  newItemHeader: HTMLElement = ui.h1(i18n.startNewCampaign);
+export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
   constructor(app: HitDesignApp) {
     super(app);
     this.name = 'Hit Design';
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md'); // TODO: Separate readme for Hit Design
+    grok.shell.windows.help.showHelp(_package.webRoot + 'README_HD.md'); // TODO: Separate readme for Hit Design
     this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
   }
 
   onActivated(): void {
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
+    grok.shell.windows.help.showHelp(_package.webRoot + 'README_HD.md');
   }
 
   async init(presetTemplate?: HitDesignTemplate) {
-    $(this.root).empty();
-    this.newItemHeader.style.display = 'none';
-    const wikiLink = ui.link('Read more', _package.webRoot + 'README.md'); // TODO: Separate readme for Hit Design
+    const wikiLink = ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage');
     const textLink = ui.inlineText([wikiLink, '.']);
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
     const appDescription = ui.divV([
-      ui.h1('Create, Process, analyse and filter molecules for your needs using Hit Design:'),
-      ui.list([
-        '-  Configure your own workflow using the template editor.',
-        '-  Calculate differnet molecular properties.',
-        '-  Add molecule rows using sketcher.',
-        '-  Move molecules between stages using drag and drop in tile viewer.',
-        '-  Submit processed dataframe to the function of your choice.',
-        '-  Save campaigns and continue any time from where you left off.',
-      ]),
+      ui.h1('Hit Design: Tailored Molecule Workflow Design Made Simple'),
+      ui.div(ui.markdown(
+        '-  Configure your own workflow using the template editor.\n' +
+        '-  Calculate differnet molecular properties.\n' +
+        '-  User-friendly grid interface to sketch molecules.\n' +
+        '-  Transition molecules between stages using drag and drop in tile viewer.\n' +
+        '-  Submit processed dataframe to the function of your choice.\n' +
+        '-  Initiate campaigns and continue any time from where you left off.\n',
+      ), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
+      textLink,
     ]);
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'hit-triage-templates-input-div ui-form'});
+    const templatesDiv = ui.divH([]);
+    const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
 
     const campaignsTable = await this.getCampaignsTable();
-    this.root.appendChild(ui.divV([
-      ui.divV([appDescription, textLink, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
+    $(this.root).empty();
+    this.root.appendChild(ui.div([
+      ui.divV([appDescription, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
       campaignsTable,
       createNewCampaignHeader,
-      this.newItemHeader,
-      templatesDiv,
-      campaignAccordionDiv,
+      contentDiv,
     ]));
-    this.startNewCampaign(campaignAccordionDiv, templatesDiv,
-      [campaignsTable.style, continueCampaignsHeader.style, createNewCampaignHeader.style], presetTemplate);
+    this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(() => this.app.resetBaseUrl());
   }
 
   private async startNewCampaign(
-    containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[],
-    presetTemplate?: HitDesignTemplate) {
-    // hideComponents(toRemove);
-    // this.newItemHeader.style.display = 'block';
-    this.newItemHeader.innerText = i18n.startNewCampaign;
+    containerDiv: HTMLElement, templateInputDiv: HTMLElement, presetTemplate?: HitDesignTemplate,
+  ) {
     const templates = (await _package.files.list('Hit Design/templates')).map((file) => file.name.slice(0, -5));
     // if the template is just created and saved, it may not be in the list of templates
     if (presetTemplate && !templates.includes(presetTemplate.name))
@@ -86,15 +80,13 @@ export class HitDesignInfoView extends HitDesignBaseView {
       });
     templatesInput.root.style.width = '100%';
     const createNewtemplateButton = ui.icons.add(() => {
-      this.createNewTemplate(containerDiv, templateInputDiv, toRemove);
+      this.createNewTemplate();
     }, i18n.createNewTemplate);
-    createNewtemplateButton.style.marginLeft = '15px';
     createNewtemplateButton.style.color = '#2083d5';
-
+    templatesInput.addOptions(createNewtemplateButton);
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
-    templateInputDiv.appendChild(createNewtemplateButton);
   }
 
 
@@ -132,11 +124,14 @@ export class HitDesignInfoView extends HitDesignBaseView {
     }
 
     const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
-      ({name: campaign.name, createDate: campaign.createDate, status: campaign.status}));
-    const table = ui.table(campaignsInfo, (info) => ([ui.link(info.name, () => this.setCampaign(info.name)),
-      info.createDate, info.status]), ['Campaign', 'Create date', 'Status']);
-    table.classList.add('hit-triage-table');
-    return ui.div(table, {classes: 'hit-triage-table-container'});
+      ({name: campaign.name, createDate: campaign.createDate,
+        rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
+    const table = ui.table(campaignsInfo, (info) =>
+      ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
+        info.createDate, info.rowCount, info.filtered, info.status]),
+    ['Name', 'Created', 'Total', 'Selected', 'Status']);
+    table.style.color = 'var(--grey-5)';
+    return table;
   }
 
   private async setCampaign(campaignName: string) {
@@ -145,11 +140,11 @@ export class HitDesignInfoView extends HitDesignBaseView {
   }
   private async getNewCampaignAccordeon(template: HitDesignTemplate) {
     const {root, promise, cancelPromise} = newHitDesignCampaignAccordeon(template);
-    promise.then((camp) => {
+    promise.then(async (camp) => {
       this.app.dataFrame = camp.df;
-      this.app.setTemplate(template);
+      await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
-      this.newItemHeader.style.display = 'none';
+      this.app.saveCampaign(undefined, false);
     });
 
     cancelPromise.then(() => {
@@ -158,23 +153,35 @@ export class HitDesignInfoView extends HitDesignBaseView {
     return root;
   }
 
-  private async createNewTemplate(
-    containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
-    hideComponents(toRemove);
-    this.newItemHeader.style.display = 'block';
-    this.newItemHeader.innerText = i18n.createNewTemplate;
+  private async createNewTemplate() {
     const newTemplateAccordeon = await newHitDesignTemplateAccordeon();
-    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, i18n.createNewTemplate, () => {
-      this.init();
+    // hideComponents(toRemove);
+    // $(containerDiv).empty();
+    // $(templateInputDiv).empty();
+
+    const newView = new DG.ViewBase();
+    const curView = grok.shell.v;
+    newView.name = 'New Template';
+    newView.root.appendChild(newTemplateAccordeon.root);
+    newView.parentCall = this.app.parentCall;
+    grok.shell.addView(newView);
+    newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
+    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Design', i18n.createNewTemplate, async () => {
+      grok.shell.v = curView;
+      newView.close();
     });
-    $(containerDiv).empty();
-    $(templateInputDiv).empty();
-    containerDiv.appendChild(newTemplateAccordeon.root);
-    newTemplateAccordeon.template.then((t) => {
-      $(breadcrumbs.root).empty();
-      $(breadcrumbs.root).remove();
+    //containerDiv.appendChild(newTemplateAccordeon.root);
+    newTemplateAccordeon.template.then(async (t) => {
+      await this.init(t);
+      newView.close();
+      popRibbonPannels(newView);
+      grok.shell.v = curView;
       sub.unsubscribe();
-      this.init(t);
+    });
+    newTemplateAccordeon.cancelPromise.then(async () => {
+      sub.unsubscribe();
+      newView.close();
+      grok.shell.v = curView;
     });
   }
 }

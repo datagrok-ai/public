@@ -5,20 +5,19 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {
   createJsonMonomerLibFromSdf,
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+import {
+  HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE
+} from '@datagrok-libraries/bio/src/utils/const';
 
 import {_package} from '../package';
 
-const _HELM_REQUIRED_FIELDS_ARRAY = [
-  REQ.SYMBOL, REQ.NAME, REQ.MOLFILE, REQ.AUTHOR, REQ.ID,
-  REQ.RGROUPS, REQ.SMILES, REQ.POLYMER_TYPE, REQ.MONOMER_TYPE, REQ.CREATE_DATE,
-] as const;
+import {PolyToolMonomerLibHandler} from '@datagrok-libraries/bio/src/utils/poly-tool/monomer-lib-handler';
 
-const _HELM_OPTIONAL_FIELDS_ARRAY = [OPT.NATURAL_ANALOG, OPT.META] as const;
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
 export const LIB_PATH = 'System:AppData/Bio/libraries/';
@@ -135,6 +134,33 @@ export class MonomerLib implements IMonomerLib {
     return Object.keys(this._monomers[polymerType]);
   }
 
+  /** Get a list of monomers with specified element attached to specified
+   * R-group
+   * WARNING: RGroup numbering starts from 1, not 0*/
+  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[] {
+    const monomerSymbols = this.getMonomerSymbolsByType(polymerType);
+    let monomers = monomerSymbols.map((sym) => this.getMonomer(polymerType, sym));
+    monomers = monomers.filter((el) => el !== null);
+    if (monomers.length === 0)
+      return [];
+
+    function findAllIndices<T>(arr: T[], element: T): number[] {
+      return arr.map((value, index) => (value === element ? index : -1))
+        .filter((index) => index !== -1);
+    }
+
+    monomers = monomers.filter((monomer) => {
+      if (!monomer?.rgroups)
+        return false;
+      let criterion = monomer?.rgroups.length >= rGroupNumber;
+      const molfileHandler = MolfileHandler.getInstance(monomer.molfile);
+      const rGroupIndices = findAllIndices(molfileHandler.atomTypes, 'R#');
+      criterion &&= true;
+      return criterion;
+    });
+    return monomers.map((monomer) => monomer?.symbol!);
+  }
+
   get onChanged(): Observable<any> {
     return this._onChanged;
   }
@@ -244,9 +270,28 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       } else {
         grok.shell.warning('Chem package is not installed');
       }
-    } else {
+    } else if (fileName.endsWith('.json')) {
       const file = await fileSource.readAsText(fileName);
       rawLibData = JSON.parse(file);
+    } else if (fileName.endsWith('.csv')) {
+      // todo: replace by DataFrame's method after update of js-api
+      function toJson(df: DG.DataFrame): any[] {
+        return Array.from({length: df.rowCount}, (_, idx) =>
+          df.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+            entry[colName] = df.get(colName, idx);
+            return entry;
+          }, {})
+        );
+      }
+      const df = await fileSource.readCsv(fileName);
+      const json = toJson(df);
+      const polyToolMonomerLib = new PolyToolMonomerLibHandler(json);
+      if (polyToolMonomerLib.isValid())
+        rawLibData = polyToolMonomerLib.getJsonMonomerLib();
+      else
+        throw new Error('Invalid format of CSV monomer lib');
+    } else {
+      throw new Error('Monomer library of unknown file format, supported formats: SDF, JSON, CSV');
     }
 
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};

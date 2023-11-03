@@ -9,9 +9,9 @@ export interface ISimilaritySpaceParams {
   methodName: string;
   similarityMetric: string;
   plotEmbeddings: boolean;
+  sparseMatrixThreshold?: number;
   options: IUMAPOptions | ITSNEOptions;
 }
-
 export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
   plotEmbeddingsInput: DG.InputBase;
@@ -23,6 +23,7 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       molecules: this.molColInput.value!,
       methodName: this.methodInput.value!,
       similarityMetric: this.similarityMetricInput.value!,
+      sparseMatrixThreshold: this.similarityThresholdObj['Similarity threshold'] ?? 0,
       plotEmbeddings: this.plotEmbeddingsInput.value!,
       options: this.algorithmOptions
     };
@@ -35,7 +36,7 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
   constructor(semtype: DG.SemType){
     super(semtype);
 
-    this.plotEmbeddingsInput = ui.boolInput('Plot Embeddings', true);
+    this.plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
 
     //@ts-ignore
     this.funcParamsDiv = ui.inputs([
@@ -43,7 +44,8 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       this.molColInput,
       this.methodInput,
       this.methodSettingsDiv,
-      this.similarityMetricInput,
+      this.similarityMetricInputRoot,
+      this.similarityThresholdInput,
       this.plotEmbeddingsInput
     ], {style: {minWidth: '320px'}});
   }

@@ -1,5 +1,23 @@
 # Sequence Translator changelog
 
+## 1.2.0 (2023-10-27)
+
+### Features
+
+* Tabs implemented as separate apps
+
+## 1.1.4 (2023-09-07)
+
+### Bug fixes
+
+* Fixed molfile direction for AS and AS2 on SDF tab
+
+## 1.1.3 (2023-09-07)
+
+### Bug fixes
+
+* Fixed Direction of AS and AS2 for SDF tab
+
 ## 1.1.2 (2023-08-16)
 
 ### Bug fixes

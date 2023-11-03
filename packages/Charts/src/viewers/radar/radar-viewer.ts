@@ -21,9 +21,9 @@ export class RadarViewer extends DG.JsViewer {
   chart: echarts.ECharts;
   min: MinimalIndicator;
   max: MaximumIndicator;
-  showCurrentRow: boolean;
-  showTooltip: boolean;
+  showOnlyCurrentRow: boolean;
   showAllRows: boolean;
+  showTooltip: boolean;
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
@@ -38,9 +38,9 @@ export class RadarViewer extends DG.JsViewer {
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)' });
-    this.showCurrentRow = this.bool('showCurrentRow', false);
-    this.showTooltip = this.bool('showTooltip', true);
+    this.showOnlyCurrentRow = this.bool('showOnlyCurrentRow', false, {description: 'Hides max and min values'});
     this.showAllRows = this.bool('showAllRows', false);
+    this.showTooltip = this.bool('showTooltip', true);
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFB0D7FF);
     this.backgroundMaxColor = this.int('backgroundMaxColor', 0xFFBCE2F5);
     this.showMin = this.bool('showMin', true);
@@ -81,13 +81,15 @@ export class RadarViewer extends DG.JsViewer {
       }
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/radar-viewer.md';
+    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
   }
 
   initChartEventListeners() {
     this.dataFrame.onRowsFiltered.subscribe((_) => {
-      this.checkConditions();
-      this.render();
+      if (this.dataFrame) {
+        this.checkConditions();
+        this.render();
+      }
     });
   }
 
@@ -137,7 +139,7 @@ export class RadarViewer extends DG.JsViewer {
 
       break;
     case 'showCurrentRow':
-      if (this.showCurrentRow === true)
+      if (this.showOnlyCurrentRow === true)
         this.clearData([0, 1]);
       else {
         this.clearData([2]);
@@ -227,7 +229,7 @@ export class RadarViewer extends DG.JsViewer {
   updateMin() {
     option.series[0].data[0] = {
       value: this.getQuantile(this.columns, this.getOptions(true).look.min / 100),
-      name: `${this.getOptions(true).look.min}th percentile`,
+      name: `min percentile`,
       areaStyle: {
         color: DG.Color.toHtml(this.backgroundMinColor),
         opacity: 0.4,
@@ -243,7 +245,7 @@ export class RadarViewer extends DG.JsViewer {
   updateMax() {
     option.series[1].data[0] = {
       value: this.getQuantile(this.columns, this.getOptions(true).look.max / 100),
-      name: `${this.getOptions(true).look.max}th percentile`,
+      name: `max percentile`,
       areaStyle: {
         color: DG.Color.toHtml(this.backgroundMaxColor),
         opacity: 0.4,

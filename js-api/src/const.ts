@@ -289,26 +289,6 @@ export const TAGS = {
 
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
-    
-export const InputType = {
-  Int: 'Int',
-  BigInt: 'BigInt',
-  Float: 'Float',
-  QNum: 'QNum',
-  Slider: 'Slider',
-  Bool: 'Bool',
-  TextArea: 'TextArea',
-  Text: 'Text',
-  Date: 'Date',
-  Map: 'Map',
-  List: 'List',
-  Color: 'Color',
-  Column: 'Column',
-  Radio: 'Radio',
-  Choice: 'Choice',
-  MultiChoice: 'MultiChoice',
-  Table: 'Table',
-}
 
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.
@@ -410,7 +390,8 @@ export enum VIEWER {
   TIMELINES = 'TimelinesViewer',
   RADAR_VIEWER = 'RadarViewer',
   SURFACE_PLOT = 'SurfacePlot',
-  SCAFFOLD_TREE = 'Scaffold Tree'
+  SCAFFOLD_TREE = 'Scaffold Tree',
+  PIVOT_TABLE = 'Pivot table'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */

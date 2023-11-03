@@ -443,6 +443,10 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
+  getStates(columnName: string, filterType: String): Array<Object> {
+    return api.grok_FilterGroup_GetStates(this.dart, columnName, filterType);
+  }
+
   add<T extends FilterState>(state: T) {
     api.grok_FilterGroup_Add(this.dart, state);
   }
@@ -491,8 +495,12 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSetting
   set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
   /** Convert coords */
-  worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
-  screenToWorld(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
+  worldToScreen(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
+  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
+
+  /// 32-bit integer with X in the hi 16 bits, and Y in the lo 16 bits
+  pointToScreen(index: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
+
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
   getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
 

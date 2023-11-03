@@ -11,7 +11,7 @@ import {Unsubscribable} from 'rxjs';
 
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
-import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
+import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
 
 import {
   IBiostructureViewer, MolstarDataType,
@@ -29,6 +29,7 @@ import {parseAndVisualsData} from './molstar-viewer-open';
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 
 import {_package} from '../../package';
+import {errInfo} from '../../utils/err-info';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -146,6 +147,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
+    this.data = this.addProperty(PROPS.data, DG.TYPE.OBJECT, undefined,
+      {category: PROPS_CATS.DATA, userEditable: false});
     this.pdb = this.string(PROPS.pdb, pdbDefault,
       {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
@@ -241,54 +244,45 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       if (!this.viewer) throw new Error('viewer does not exists');
 
       const plugin: PluginContext = this.viewer.plugin;
+      const state: Partial<PluginLayoutStateProps> = {};
       switch (property.name) {
         case PROPS.layoutShowLog: {
-          //plugin.layout.setProps({layoutShowLog: value;});
-
-          //PluginCommands.Layout.Update(plugin, );
+          // PluginCommands.Layout.Update(plugin, );
           const _k = 11;
-        }
           break;
+        }
         case PROPS.layoutShowControls: {
-          // eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
-          const _k = 11;
-        }
+          state.showControls = this.layoutShowControls;
           break;
+        }
         case PROPS.layoutIsExpanded: {
-          //eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
-        }
+          state.isExpanded = this.layoutIsExpanded;
           break;
+        }
         case PROPS.layoutRegionStateLeft:
         case PROPS.layoutRegionStateTop:
         case PROPS.layoutRegionStateRight:
         case PROPS.layoutRegionStateBottom: {
-          //eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin, {
-            state: {
-              regionState: {
-                left: this.layoutRegionStateLeft,
-                top: this.layoutRegionStateTop,
-                right: this.layoutRegionStateRight,
-                bottom: this.layoutRegionStateBottom,
-              },
-            },
-          });
-        }
+          state.regionState = {
+            left: this.layoutRegionStateLeft,
+            top: this.layoutRegionStateTop,
+            right: this.layoutRegionStateRight,
+            bottom: this.layoutRegionStateBottom,
+          };
           break;
+        }
         case PROPS.layoutControlsDisplay: {
-          //eslint-disable-next-line new-cap
-          await PluginCommands.Layout.Update(plugin,
-            {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
-        }
+          state.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
           break;
+        }
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
-        // }
         //   break;
+        // }
       }
+      //eslint-disable-next-line new-cap
+      await PluginCommands.Layout.Update(plugin, {state: state});
     };
 
     switch (property.name) {
@@ -316,6 +310,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
     switch (property.name) {
       case PROPS.data:
+        // @ts-ignore
+        if ('_original' in this.data) this.data = this.data['_original'];
+        this.setData();
+        break;
       case PROPS.pdb:
       case PROPS.pdbTag:
         this.setData();
@@ -340,12 +338,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   }
 
   override detach(): void {
-    if (this.setDataInProgress) return;
     _package.logger.debug('MolstarViewer.detach(), ');
 
     const superDetach = super.detach.bind(this);
     this.detachPromise = this.detachPromise.then(async () => { // detach
       await this.viewPromise;
+      if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
@@ -357,46 +355,47 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   // -- Data --
 
   setData(): void {
-    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
-    _package.logger.debug(`MolstarViewer.setData() `);
-
+    _package.logger.debug(`MolstarViewer.setData(), in `);
     this.viewPromise = this.viewPromise.then(async () => { // setData
-      if (this.viewed) {
-        await this.destroyView('setData');
-        this.viewed = false;
-      }
-    }).then(async () => {
-      await this.detachPromise;
-      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      try {
+        if (this.viewed) {
+          await this.destroyView('setData');
+          this.viewed = false;
+        }
 
-      // -- PDB data --
-      this.dataEff = null;
-      let pdbTag: string = pdbTAGS.PDB;
-      let pdb: string | null = null;
-      if (this.pdbTag) pdbTag = this.pdbTag;
-      if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
-      if (this.pdb) pdb = this.pdb;
-      if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
-      if (this.data) {
-        this.dataEff = this.data;
-        // TODO: Fix receiving property object value
-        // @ts-ignore
-        if ('a' in this.data) this.dataEff = this.data['a'];
-      }
+        await this.detachPromise;
+        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-      // -- Ligand --
-      if (!this.ligandColumnName) {
-        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        if (molCol)
-          this.ligandColumnName = molCol.name;
+        // -- PDB data --
+        this.dataEff = null;
+        let pdbTag: string = pdbTAGS.PDB;
+        let pdb: string | null = null;
+        if (this.pdbTag) pdbTag = this.pdbTag;
+        if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
+        if (this.pdb) pdb = this.pdb;
+        if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
+        if (this.data)
+          this.dataEff = this.data;
+
+        // -- Ligand --
+        if (!this.ligandColumnName) {
+          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+          if (molCol)
+            this.ligandColumnName = molCol.name;
+        }
+
+        if (!this.viewed) {
+          await this.buildView('setData');
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        grok.shell.error(errMsg);
+        _package.logger.error(errMsg, undefined, errStack);
+      } finally {
+        this.setDataInProgress = false;
       }
-    }).then(async () => {
-      if (!this.viewed) {
-        await this.buildView('setData');
-        this.viewed = true;
-      }
-    }).finally(() => {
-      this.setDataInProgress = false;
     });
   }
 

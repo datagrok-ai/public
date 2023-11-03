@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-## 2.1.8 (WIP)
+## 2.1.9 (WIP)
+
+* Update of Neptune driver version
+
+## 2.1.8 
 
 This release focuses on fixing bugs
 

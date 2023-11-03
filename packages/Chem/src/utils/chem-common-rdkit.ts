@@ -10,6 +10,7 @@ import {isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
+import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -158,7 +159,7 @@ export function drawRdKitReactionToOffscreenCanvas(
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
-  options = {normalizeDepiction: true, straightenDepiction: true}) {
+  options = {normalizeDepiction: true, straightenDepiction: true}, scaffoldStruct: ISubstruct | null = null) {
   if (!w || !h) {
     console.error('Width and height cannot be zero.');
     return;
@@ -199,20 +200,25 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
 
   let scaffoldMol: RDMol | null = null;
   try {
-    scaffoldMol = scaffoldMolString == null ? null :
-      (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
-        getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
-    let substructJson = '{}';
-    if (scaffoldMol) {
-      try {
-        substructJson = mol.get_substruct_match(scaffoldMol);
-      } catch (e) {
-        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
+    let substruct: ISubstruct | null = null;
+    if (scaffoldStruct)
+      substruct = scaffoldStruct;
+    else {
+      let substructJson = scaffoldStruct ?? '{}';
+      scaffoldMol = scaffoldMolString == null ? null :
+        (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
+          getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
+      if (scaffoldMol) {
+        try {
+          substructJson = mol.get_substruct_match(scaffoldMol);
+        } catch (e) {
+          console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
+        }
+        if (substructJson === '')
+          substructJson = '{}';
       }
-      if (substructJson === '')
-        substructJson = '{}';
+      substruct = JSON.parse(substructJson);
     }
-    const substruct = JSON.parse(substructJson);
     drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct);
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
@@ -239,4 +245,35 @@ export function checkMoleculeValid(molecule: string): any {
     return null;
   }
   return mol;
+}
+
+
+export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule): ISubstruct | null {
+  const mol = getMolSafe(molecule, {}, rdkit).mol;
+  let substruct: ISubstruct | null = null;
+  try {
+    if (mol) {
+      let uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
+      let uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
+      if (mcsMol) {
+        const matchedAtomsAndBonds: ISubstruct = JSON.parse(mol!.get_substruct_match(mcsMol!));
+        if (matchedAtomsAndBonds.atoms)
+          uncommonAtoms = getArraysDifference(uncommonAtoms, matchedAtomsAndBonds.atoms.sort((a, b) => { return a - b; }));
+        if (matchedAtomsAndBonds.bonds)
+          uncommonBonds = getArraysDifference(uncommonBonds, matchedAtomsAndBonds.bonds.sort((a, b) => { return a - b; }));
+      }
+      return {atoms: uncommonAtoms, bonds: uncommonBonds};
+    }
+  } finally {
+    mol?.delete();
+  }
+  return substruct;
+}
+
+function getArraysDifference(largerArr: number[], smallerArr: number[]) {
+  const diffArr: number[] = [];
+  let counter = 0;
+  for (let i = 0; i < largerArr.length; i++)
+    largerArr[i] === smallerArr[counter] ? counter++ : diffArr.push(largerArr[i]);
+  return diffArr;
 }

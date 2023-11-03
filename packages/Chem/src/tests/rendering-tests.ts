@@ -1,9 +1,10 @@
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test, expectArray} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {readDataframe} from './utils';
 import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
+import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 
 category('rendering', () => {
   test('visual rendering', async () => {
@@ -44,5 +45,14 @@ category('rendering', () => {
     const tv = grok.shell.addTableView(df);
     const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
     await scrollTable(canvas, scrollDelta, scrollCycles, 5);
+  });
+
+  test('stereochemistry', async () => {
+    const df = await readDataframe('tests/stereochemistry.csv');
+    const smiles = df.getCol('smiles').toList();
+    const rdKitCellRenderer: RDKitCellRenderer = await grok.functions.call('Chem:rdKitCellRenderer');
+    const res = smiles.map((s) => rdKitCellRenderer
+      ._fetchMol(s, [], false, false, {}, true).molCtx.useMolBlockWedging);
+    expectArray(res, new Array(5).fill(false));
   });
 });
