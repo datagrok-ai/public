@@ -717,8 +717,8 @@ export function sliderInput(name: string, value: number | null, min: number, max
   return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): ChoiceInput<T | null> {
-  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
+  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items, options), onValueChanged);
 }
 
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
