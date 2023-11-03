@@ -54,12 +54,9 @@ Mappings:
     H2o:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/h2o
-    JKG:
+    Jupyter:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/jupyter_kernel_gateway
-    JN:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/jupyter_notebook
+      repo: datagrok/jupyter
     Kaniko:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/kaniko
@@ -96,8 +93,7 @@ Metadata:
       - DatagrokVersion
       - GrokConnectVersion
       - GrokSpawnerVersion
-      - JKGVersion
-      - JNVersion
+      - JupyterVersion
       - GrokComputeVersion
       - H2oVersion
     ParameterLabels:
@@ -123,10 +119,8 @@ Metadata:
         default: 'InternetSubnetAllow2: Allow connect from additional CIDR (Optional)'
       InternetSubnetAllow3:
         default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
-      JKGVersion:
-        default: Jupyter Kernel Gateway Version
-      JNVersion:
-        default: Jupyter Notebook Version
+      JupyterVersion:
+        default: Jupyter Version
   cfn-lint:
     config:
       ignore_checks:
@@ -221,15 +215,10 @@ Parameters:
     Description: Additional subnet for access to Datagrok client endpoints. You can
       omit this parameter is already specified InternetSubnetAllow.
     Type: String
-  JKGVersion:
+  JupyterVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.6.2
+    Default: bleeding-edge
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
-    Type: String
-  JNVersion:
-    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.1.1
-    Description: Enter Datagrok Jupyter Notebook docker image version.
     Type: String
 Resources:
   Cvm443Ingress:
@@ -237,7 +226,7 @@ Resources:
       CidrIp:
         Ref: InternetSubnetAllow
       Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for Jupyter, GC
       FromPort: 443
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -279,7 +268,7 @@ Resources:
         - ip:
             Ref: DatagrokNatGatewayEIP
       Description:
-        Fn::Sub: ${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} NatGW 443/tcp on CVM ALB for Jupyter, GC
       FromPort: 443
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -291,7 +280,7 @@ Resources:
       CidrIp:
         Ref: CIDR
       Description:
-        Fn::Sub: ${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} VPC 443/tcp on CVM ALB for Jupyter, GC
       FromPort: 443
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -435,7 +424,7 @@ Resources:
       CidrIp:
         Ref: InternetSubnetAllow
       Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for Jupyter, GC
       FromPort: 80
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -477,7 +466,7 @@ Resources:
         - ip:
             Ref: DatagrokNatGatewayEIP
       Description:
-        Fn::Sub: ${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} NatGW 80/tcp on CVM ALB for Jupyter, GC
       FromPort: 80
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -489,7 +478,7 @@ Resources:
       CidrIp:
         Ref: CIDR
       Description:
-        Fn::Sub: ${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} VPC 80/tcp on CVM ALB for Jupyter, GC
       FromPort: 80
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -541,7 +530,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb-int
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb-int
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -554,7 +543,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -599,6 +588,8 @@ Resources:
       LoadBalancerAttributes:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
+      - Key: idle_timeout.timeout_seconds
+        Value: 900
       Name:
         Fn::Sub: ${AWS::StackName}-datagrok-cvm
       Scheme:
@@ -618,7 +609,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb
       - Key: datagrok.component
         Value: cvm
       Type: application
@@ -628,8 +619,10 @@ Resources:
       LoadBalancerAttributes:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
+      - Key: idle_timeout.timeout_seconds
+        Value: 900
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-int
+        Fn::Sub: ${AWS::StackName}-dg-cvm-int
       Scheme: internal
       SecurityGroups:
       - Ref: CvmALBIntSecurityGroup
@@ -639,7 +632,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb-int
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb-int
       - Key: datagrok.component
         Value: cvm
       Type: application
@@ -1326,7 +1319,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o-gh-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o-gh-i
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1365,7 +1358,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o-gh
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o-gh
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1401,7 +1394,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o-i
       Port: 54321
       Protocol: HTTP
       Tags:
@@ -1440,7 +1433,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o
       Port: 54321
       Protocol: HTTP
       Tags:
@@ -1537,7 +1530,7 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1624,7 +1617,7 @@ Resources:
       ServiceRegistries:
       - RegistryArn:
           Fn::GetAtt:
-          - DatagrokJupyterKernelGatewayServiceDiscoveryEntry
+          - DatagrokJupyterServiceDiscoveryEntry
           - Arn
       Tags:
       - Key: datagrok.component
@@ -1632,24 +1625,8 @@ Resources:
       - Key: datagrok.service
         Value: jupyter_kernel_gateway
       TaskDefinition:
-        Ref: DatagrokJupyterKernelGatewayTaskDefinition
+        Ref: DatagrokJupyterTaskDefinition
     Type: AWS::ECS::Service
-  DatagrokJupyterKernelGatewayServiceDiscoveryEntry:
-    Properties:
-      Description:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter_kernel_gateway' service discovery
-          entry in Cloud Map
-      DnsConfig:
-        DnsRecords:
-        - TTL: 60
-          Type: A
-        RoutingPolicy: MULTIVALUE
-      HealthCheckCustomConfig:
-        FailureThreshold: 1
-      Name: jupyter_kernel_gateway
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
   DatagrokJupyterKernelGatewayTCP5005IntListenerRule:
     Properties:
       Actions:
@@ -1673,7 +1650,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-gh-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jup-gh-int
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1713,7 +1690,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-gh
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jkg-gh
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1753,7 +1730,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter-int
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1793,7 +1770,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1810,101 +1787,11 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTaskDefinition:
-    Properties:
-      ContainerDefinitions:
-      - Command:
-        - Fn::Sub: ${AWS::Region}.compute.internal
-        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
-        Essential: false
-        Image:
-          Fn::Sub:
-          - ${domain}/${repo}:${tag}
-          - domain:
-              Fn::FindInMap:
-              - Images
-              - Searchdomain
-              - domain
-            repo:
-              Fn::FindInMap:
-              - Images
-              - Searchdomain
-              - repo
-            tag:
-              Fn::FindInMap:
-              - Images
-              - Searchdomain
-              - version
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: DatagrokLogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: jkg
-        MemoryReservation: 100
-        Name: ResolvConf
-        ReadonlyRootFilesystem: true
-      - DependsOn:
-        - Condition: SUCCESS
-          ContainerName: ResolvConf
-        Essential: true
-        Image:
-          Fn::Sub:
-          - ${domain}/${repo}:${tag}
-          - domain:
-              Fn::FindInMap:
-              - Images
-              - JKG
-              - domain
-            repo:
-              Fn::FindInMap:
-              - Images
-              - JKG
-              - repo
-            tag:
-              Ref: JKGVersion
-        LinuxParameters: {}
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: DatagrokLogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: jkg
-        MemoryReservation: 2048
-        Name: jupyter_kernel_gateway
-        PortMappings:
-        - ContainerPort: 5005
-          HostPort: 5005
-          Protocol: tcp
-        - ContainerPort: 8888
-          HostPort: 8888
-          Protocol: tcp
-      Cpu: '1024'
-      EphemeralStorage:
-        SizeInGiB: 50
-      ExecutionRoleArn:
-        Fn::GetAtt:
-        - DatagrokTaskExecutionRole
-        - Arn
-      Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter_kernel_gateway
-      Memory: '3072'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-      - FARGATE
-    Type: AWS::ECS::TaskDefinition
   DatagrokJupyterNotebookService:
     DependsOn:
     - CvmTCP80Listener
     - CvmTCP443Listener
     - CvmTCP8090IntListener
-    - DatagrokJupyterNotebookTCP5005ListenerRule
-    - DatagrokJupyterNotebookTCP5005IntListenerRule
     - DatagrokJupyterNotebookTCP8889ListenerRule
     - DatagrokJupyterNotebookTCP8889IntListenerRule
     Properties:
@@ -1921,17 +1808,9 @@ Resources:
       LaunchType: FARGATE
       LoadBalancers:
       - ContainerName: jupyter_notebook
-        ContainerPort: 5005
-        TargetGroupArn:
-          Ref: DatagrokJupyterNotebookTCP5005TargetGroup
-      - ContainerName: jupyter_notebook
         ContainerPort: 8889
         TargetGroupArn:
           Ref: DatagrokJupyterNotebookTCP8889TargetGroup
-      - ContainerName: jupyter_notebook
-        ContainerPort: 5005
-        TargetGroupArn:
-          Ref: DatagrokJupyterNotebookTCP5005IntTargetGroup
       - ContainerName: jupyter_notebook
         ContainerPort: 8889
         TargetGroupArn:
@@ -1956,14 +1835,14 @@ Resources:
       - Key: datagrok.component
         Value: cvm
       - Key: datagrok.service
-        Value: jupyter_notebook
+        Value: jupyter
       TaskDefinition:
         Ref: DatagrokJupyterNotebookTaskDefinition
     Type: AWS::ECS::Service
   DatagrokJupyterNotebookServiceDiscoveryEntry:
     Properties:
       Description:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM jupyter_notebook service discovery
+        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter-notebook' service discovery
           entry in Cloud Map
       DnsConfig:
         DnsRecords:
@@ -1976,86 +1855,6 @@ Resources:
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
-  DatagrokJupyterNotebookTCP5005IntListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterNotebookTCP5005IntTargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /notebook/helper/*
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 5
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterNotebookTCP5005IntTargetGroup:
-    Properties:
-      HealthCheckPath: /notebook/helper/info
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jn-gh-i
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterNotebookTCP5005ListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterNotebookTCP5005TargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /notebook/helper/*
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 5
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterNotebookTCP5005TargetGroup:
-    Properties:
-      HealthCheckPath: /notebook/helper/info
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jn-gh
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   DatagrokJupyterNotebookTCP8889IntListenerRule:
     Properties:
       Actions:
@@ -2079,11 +1878,11 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jn-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern-int
       Port: 8889
       Protocol: HTTP
       Tags:
-      - Key: datagrok.component
+      - Key: com.docker.compose.project
         Value: cvm
       TargetGroupAttributes:
       - Key: stickiness.enabled
@@ -2119,11 +1918,11 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jn
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern
       Port: 8889
       Protocol: HTTP
       Tags:
-      - Key: datagrok.component
+      - Key: com.docker.compose.project
         Value: cvm
       TargetGroupAttributes:
       - Key: stickiness.enabled
@@ -2169,7 +1968,7 @@ Resources:
               Ref: DatagrokLogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: jn
+            awslogs-stream-prefix: jupyter_notebook
         MemoryReservation: 100
         Name: ResolvConf
         ReadonlyRootFilesystem: true
@@ -2183,15 +1982,15 @@ Resources:
           - domain:
               Fn::FindInMap:
               - Images
-              - JN
+              - Jupyter
               - domain
             repo:
               Fn::FindInMap:
               - Images
-              - JN
+              - Jupyter
               - repo
             tag:
-              Ref: JNVersion
+              Ref: JupyterVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -2200,24 +1999,126 @@ Resources:
               Ref: DatagrokLogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: jn
-        MemoryReservation: 1024
+            awslogs-stream-prefix: jupyter_notebook
+        MemoryReservation: 512
         Name: jupyter_notebook
         PortMappings:
-        - ContainerPort: 5005
-          HostPort: 5005
-          Protocol: tcp
         - ContainerPort: 8889
           HostPort: 8889
           Protocol: tcp
       Cpu: '512'
+      EphemeralStorage:
+        SizeInGiB: 50
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter_notebook
-      Memory: '2048'
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+    Type: AWS::ECS::TaskDefinition
+  DatagrokJupyterServiceDiscoveryEntry:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter-kernel-gateway' service discovery
+          entry in Cloud Map
+      DnsConfig:
+        DnsRecords:
+        - TTL: 60
+          Type: A
+        RoutingPolicy: MULTIVALUE
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: jupyter_kernel_gateway
+      NamespaceId:
+        Ref: DatagrokCloudMap
+    Type: AWS::ServiceDiscovery::Service
+  DatagrokJupyterTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: ${AWS::Region}.compute.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+        Essential: false
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: DatagrokLogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: jupyter_kernel_gateway
+        MemoryReservation: 100
+        Name: ResolvConf
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: ResolvConf
+        Essential: true
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Jupyter
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Jupyter
+              - repo
+            tag:
+              Ref: JupyterVersion
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: DatagrokLogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: jupyter_kernel_gateway
+        MemoryReservation: 2048
+        Name: jupyter_kernel_gateway
+        PortMappings:
+        - ContainerPort: 5005
+          HostPort: 5005
+          Protocol: tcp
+        - ContainerPort: 8888
+          HostPort: 8888
+          Protocol: tcp
+      Cpu: '1024'
+      EphemeralStorage:
+        SizeInGiB: 50
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - DatagrokTaskExecutionRole
+        - Arn
+      Family:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
+      Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
@@ -3381,7 +3282,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-gc-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-gc-i
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -3421,7 +3322,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-gc
+        Fn::Sub: ${AWS::StackName}-dg-cvm-gc
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -3518,7 +3419,7 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-grok_compute
+        Fn::Sub: ${AWS::StackName}-dg-cvm-grok_compute
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:

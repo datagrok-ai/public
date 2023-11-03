@@ -402,16 +402,6 @@ export class Settings {
       }
     });
   }
-
-  /** Jupyter Notebook URL */
-  get jupyterNotebook(): string {
-    return api.grok_Settings_Get_JupyterNotebook();
-  }
-
-  /** Jupyter Notebook Token */
-  get jupyterNotebookToken(): string {
-    return api.grok_Settings_Get_JupyterNotebookToken();
-  }
 }
 
 export class SearchResult {

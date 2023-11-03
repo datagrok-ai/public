@@ -285,8 +285,7 @@ Resources:
                           'h2oUrl': oldSettings['settings']['h2oUrl'],
                           'cvmUrlClient': f"https://{cvmClient}",
                           'cvmSplit': oldSettings['settings']['cvmSplit'],
-                          'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
-                          'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
+                          'jupyterToken': oldSettings['settings']['jupyterToken']
                       }
 
                       setSettings = http.request("POST", f'{host}/api/admin/plugins/scripts/settings',

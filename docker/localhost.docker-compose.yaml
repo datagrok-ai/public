@@ -72,8 +72,8 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "chem", "jupyter_notebook", "notebook", "scripting",
-                "grok_compute", "jupyter_kernel_gateway", "jkg", "h2o" ]
+    profiles: [ "all", "nginx", "cvm", "chem", "jupyter", "scripting",
+                "grok_compute", "h2o" ]
 
   grok_compute:
     image: datagrok/grok_compute:${GROK_COMPUTE_VERSION:-latest}
@@ -86,23 +86,14 @@ services:
     restart: unless-stopped
     profiles: [ "all", "cvm", "chem", "grok_compute" ]
 
-  jupyter_notebook:
-    image: datagrok/jupyter_notebook:${GROK_JUPYTER_NOTEBOOK_VERSION:-latest}
-    networks:
-      datagrok:
-        aliases:
-          - jupyter_notebook
-    restart: unless-stopped
-    profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
-
-  jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+  jupyter:
+    image: datagrok/jupyter:${JUPYTER_VERSION:-bleeding-edge}
     networks:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
     restart: unless-stopped
-    profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
+    profiles: [ "all", "cvm", "scripting", "jupyter" ]
 
   h2o:
     image: datagrok/h2o:latest

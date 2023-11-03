@@ -113,7 +113,7 @@ export interface SettingsInterface {
   /// Will load default settings from server on platform start
   loadDefaultsOnStart: boolean;
 
-  /// If not empty, will be used to load package.js instead Datagrok backend
+  /// If not empty, will be used to load package.js instead of the Datagrok backend
   webpackDevUrl: string;
 
   /// CVM URL.
@@ -125,14 +125,13 @@ export interface SettingsInterface {
   /// Datlas API URL.
   apiUrl: string;
 
-  /// Jupyter Gateway instance token.
-  jupyterGatewayToken: string;
-
-  /// Jupyter Notebook instance token.
-  jupyterNotebookToken: string;
+  /// Jupyter instance token.
+  jupyterToken: string;
 
   /// Help base URL.
   helpBaseUrl: string;
+
+  clientFuncCacheEnabled: boolean;
 
 
 }
