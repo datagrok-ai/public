@@ -55,7 +55,7 @@ WORKDIR ${GROK_CONNECT_DIR}
 # GrokConnect
 EXPOSE 1234
 
-ENTRYPOINT ["java", "-Xmx4g", "-classpath", "grok_connect.jar:lib/*", "grok_connect.GrokConnect"]
+ENTRYPOINT ["java", "-Xmx256m", "-classpath", "grok_connect.jar:lib/*", "grok_connect.GrokConnect"]
 
 ARG BRANCH
 ARG COMMIT_PUBLIC
