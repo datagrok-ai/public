@@ -48,6 +48,7 @@ const CONTROL_TAG = '#';
 const CONTROL_SEP = ':';
 const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
+const SERVICE = '_';
 const DEFAULT_TOL = 0.00005;
 
 type Arg = {
@@ -85,6 +86,21 @@ enum ERROR_MSG {
   CONTROL_EXPR = `unsupported control expression with the tag '${CONTROL_TAG}'`,
   ARG = 'incorrect argument specification',
   INITS = 'incorrect initial values specification',
+}
+
+enum ANNOT {
+  NAME = '//name:',
+  LANG = '//language: javascript',
+  INPUT = '//input: double',
+  OUTPUT = '//input: dataframe df',
+  EDITOR = '//editor: Compute:RichFunctionViewEditor',
+  CAPTION = 'caption:',
+  ARG_INIT = '{caption: Initial; category: Argument}',
+  ARG_FIN = '{caption: Final; category: Argument}',
+  ARG_STEP = '{caption: Step; category: Argument}',
+  INITS = 'category: Initial values',
+  PARAMS = 'category: Parameters',
+  VIEWERS = 'viewer: Line chart(block: 100, sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)'
 }
 
 type Block = {
@@ -218,7 +234,7 @@ function getEqualities(lines: string[]): Map<string, number> {
 }
 
 /** */
-function getODEs(text: string): IVP {
+function getIVP(text: string): IVP {
   // The current Initial Value Problem (IVP) specification
   let name: string;
   let deqs: Map<string, string>;
@@ -288,4 +304,51 @@ function getODEs(text: string): IVP {
   };
 }
 
-console.log(getODEs(eqs));
+/** */
+function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
+  const res = [] as string[];
+
+  // the 'name' line
+  res.push(`${ANNOT.NAME} ${ivp.name}`);
+
+  // the 'language' line
+  res.push(ANNOT.LANG);
+
+  // argument lines
+  const arg = ivp.arg;
+  const t0 = `${SERVICE}${arg.name}0`;
+  const t1 = `${SERVICE}${arg.name}1`;
+  const h = `${SERVICE}h`
+  res.push(`${ANNOT.INPUT} ${t0} = ${arg.start} ${ANNOT.ARG_INIT}`);
+  res.push(`${ANNOT.INPUT} ${t1} = ${arg.finish} ${ANNOT.ARG_FIN}`);
+  res.push(`${ANNOT.INPUT} ${h} = ${arg.step} ${ANNOT.ARG_STEP}`);
+
+  // initial values lines
+  ivp.inits.forEach((val, key, map) => res.push(`${ANNOT.INPUT} ${key} = ${val} {${ANNOT.CAPTION} ${key}; ${ANNOT.INITS}}`));
+
+  // parameters lines
+  if (ivp.params !== null)
+    ivp.params.forEach((val, key, map) => res.push(`${ANNOT.INPUT} ${key} = ${val} {${ANNOT.CAPTION} ${key}; ${ANNOT.PARAMS}}`));
+
+  // the 'output' line
+  if (toAddViewers)
+    res.push(`${ANNOT.OUTPUT} {${ANNOT.CAPTION} ${ivp.name}; ${ANNOT.VIEWERS}}`);
+  else
+    res.push(`${ANNOT.OUTPUT} {${ANNOT.CAPTION} ${ivp.name}`);
+
+  // the 'editor' line
+  if (toAddEditor)
+    res.push(ANNOT.EDITOR);
+
+  return res;
+}
+
+const ivp = getIVP(eqs);
+console.log(ivp);
+
+console.log();
+
+const annot = getAnnot(ivp);
+
+for (const line of annot)
+  console.log(line);
