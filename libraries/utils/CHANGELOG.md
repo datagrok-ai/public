@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.1.20 (2023-11-03)
+
+This release focuses on improving performance.
+
 ## 4.1.19 (2023-10-30)
 
 ### Features
