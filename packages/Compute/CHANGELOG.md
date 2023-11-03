@@ -1,5 +1,13 @@
 # Compute changelog
 
+## 1.17.0 (2023-11-03)
+
+### Features:
+
+- ModelHub: Added mandatory groups indication
+- PLV: Added inconsistent steps indication
+- PLV: Added mandatoryConsistent tag
+
 ## 1.16.0 (2023-10-31)
 
 ### Features:
