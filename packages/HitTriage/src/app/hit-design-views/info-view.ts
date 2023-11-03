@@ -16,13 +16,13 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     super(app);
     this.name = 'Hit Design';
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md'); // TODO: Separate readme for Hit Design
+    grok.shell.windows.help.showHelp(_package.webRoot + 'README_HD.md'); // TODO: Separate readme for Hit Design
     this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
   }
 
   onActivated(): void {
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
+    grok.shell.windows.help.showHelp(_package.webRoot + 'README_HD.md');
   }
 
   async init(presetTemplate?: HitDesignTemplate) {
