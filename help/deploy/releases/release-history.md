@@ -20,6 +20,12 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-11-03 1.17.2
+
+### Addressed Issues
+
+
+
 ## 2023-11-02 1.17.1
 
 ### Addressed Issues
