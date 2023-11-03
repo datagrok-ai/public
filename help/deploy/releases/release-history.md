@@ -7,7 +7,7 @@ slug: develop/admin/releases/release-history
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:17.1](https://hub.docker.com/r/datagrok/datagrok)                              |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:17.2](https://hub.docker.com/r/datagrok/datagrok)                              |
 | [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.9](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
