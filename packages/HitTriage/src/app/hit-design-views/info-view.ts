@@ -33,12 +33,13 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const appDescription = ui.divV([
       ui.h1('Hit Design: Tailored Molecule Workflow Design Made Simple'),
       ui.div(ui.markdown(
-        '-  Configure your own workflow using the template editor.\n' +
-        '-  Calculate differnet molecular properties.\n' +
-        '-  User-friendly grid interface to sketch molecules.\n' +
-        '-  Transition molecules between stages using drag and drop in tile viewer.\n' +
-        '-  Submit processed dataframe to the function of your choice.\n' +
-        '-  Initiate campaigns and continue any time from where you left off.\n',
+        '-  Configure your own workflow using the template editor\n' +
+        '-  Sketch molecules in the molecular spreadsheet\n' +
+        '-  Annotate and share ideas with the team\n' +
+        '-  Calculate different molecular properties\n' +
+        '-  Customizable additional views (drag-and-drop molecules between stages)\n' +
+        '-  Submit final selection to the function of your choice\n' +
+        '-  Save campaigns and continue from where you left off\n',
       ), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
       textLink,
     ]);
