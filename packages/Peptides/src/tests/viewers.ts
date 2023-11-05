@@ -12,6 +12,7 @@ import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {TEST_COLUMN_NAMES} from './utils';
+import {showTooltip} from '../utils/tooltips';
 
 category('Viewers: Basic', () => {
   const df = DG.DataFrame.fromCsv(aligned1);
@@ -56,8 +57,8 @@ category('Viewers: Monomer-Position', () => {
     const cellCoordinates = {col: '9', row: 6};
     const gc = mpViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     const mp = mpViewer.getMonomerPosition(gc);
-    expect(model.showTooltip(mp, 0, 0), true,
-      `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
+    expect(showTooltip(model.df, model.settings.columns!, {monomerPosition: mp, x: 0, y: 0, mpStats: model.monomerPositionStats}),
+      true, `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 
   test('Modes', async () => {
@@ -110,8 +111,8 @@ category('Viewers: Most Potent Residues', () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     const mp = mprViewer.getMonomerPosition(gc);
-    expect(model.showTooltip(mp, 0, 0), true,
-      `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
+    expect(showTooltip(model.df, model.settings.columns!, {monomerPosition: mp, x: 0, y: 0, mpStats: model.monomerPositionStats}),
+      true, `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 });
 

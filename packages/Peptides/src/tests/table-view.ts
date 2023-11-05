@@ -8,6 +8,7 @@ import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {TEST_COLUMN_NAMES} from './utils';
+import {showMonomerTooltip} from '../utils/tooltips';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -42,7 +43,7 @@ category('Table view', () => {
   after(async () => await delay(3000));
 
   test('Tooltip', async () => {
-    expect(model.showMonomerTooltip(firstPair.monomerOrCluster, 0, 0), true,
+    expect(showMonomerTooltip(firstPair.monomerOrCluster, 0, 0), true,
       `Couldn't structure for monomer ${firstPair.monomerOrCluster}`);
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 
