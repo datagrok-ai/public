@@ -5,11 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {PeptidesModel, PositionStats, VIEWER_TYPE} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import wu from 'wu';
 import {SelectionItem} from '../utils/types';
-import {Stats} from '../utils/statistics';
+import {PositionStats, Stats} from '../utils/statistics';
 import {_package} from '../package';
+import {showTooltip} from '../utils/tooltips';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -125,8 +126,9 @@ export class MonomerPosition extends DG.JsViewer {
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
       this.model.highlightMonomerPosition(monomerPosition);
-      return this.model.showTooltip(monomerPosition, x, y,
-        {fromViewer: true, isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS});
+      return showTooltip(this.model.df, this.model.settings.columns!, {fromViewer: true,
+        isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS, monomerPosition, x, y,
+        mpStats: this.model.monomerPositionStats});
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
@@ -387,7 +389,8 @@ export class MostPotentResidues extends DG.JsViewer {
         monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
-      return this.model.showTooltip(monomerPosition, x, y, {fromViewer: true, isMutationCliffs: true});
+      return showTooltip(this.model.df, this.model.settings.columns!,
+        {fromViewer: true, isMutationCliffs: true, monomerPosition, x, y, mpStats: this.model.monomerPositionStats});
     });
     DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
@@ -410,9 +413,9 @@ export class MostPotentResidues extends DG.JsViewer {
       this.keyPressed = ev.key.startsWith('Arrow');
       if (this.keyPressed)
         return;
-      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey)) {
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey))
         this.model.initMutationCliffsSelection({notify: false});
-      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+      else if (ev.code === 'KeyA' && ev.ctrlKey) {
         for (let rowIdx = 0; rowIdx < mostPotentResiduesDf.rowCount; ++rowIdx) {
           const monomerPosition = this.getMonomerPosition(this.viewerGrid.cell('Diff', rowIdx));
           this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);

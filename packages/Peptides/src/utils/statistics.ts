@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {RawData} from './types';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {ClusterType} from '../model';
 
 export type Stats = {
   count: number,
@@ -11,6 +13,22 @@ export type Stats = {
   mask: BitArray,
   mean: number,
 };
+
+export type PositionStats = {[monomer: string]: Stats | undefined} & {general: SummaryStats};
+export type MonomerPositionStats = {[position: string]: PositionStats | undefined} & {general: SummaryStats};
+export type ClusterStats = {[cluster: string]: Stats};
+export type ClusterTypeStats = {[clusterType in ClusterType]: ClusterStats};
+
+export type SummaryStats = {
+  minCount: number, maxCount: number,
+  minMeanDifference: number, maxMeanDifference: number,
+  minPValue: number, maxPValue: number,
+  minRatio: number, maxRatio: number,
+  minMean: number, maxMean: number,
+};
+
+export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
+export type AggregationColumns = {[col: string]: DG.AggregationType};
 
 export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
   if (data.length !== bitArray.length && data.some((v, i) => i >= bitArray.length ? v !== 0 : false))
@@ -61,4 +79,20 @@ export function getAggregatedValue(col: DG.Column<number>, agg: DG.AggregationTy
     throw new Error(`Aggregation type ${agg} is not supported`);
   //@ts-ignore: this is a hack to avoid using switch to access the getters
   return stat[agg] as number;
+}
+
+export function getAggregatedColumnValues(df: DG.DataFrame, columns: AggregationColumns,
+  options: {filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number} = {}): StringDictionary {
+  options.filterDf ??= false;
+  options.fractionDigits ??= 3;
+
+  const filteredDf = options.filterDf && df.filter.anyFalse ? df.clone(df.filter) : df;
+
+  const colResults: StringDictionary = {};
+  for (const [colName, aggFn] of Object.entries(columns)) {
+    const newColName = getAggregatedColName(aggFn, colName);
+    const value = getAggregatedValue(filteredDf.getCol(colName), aggFn, options.mask);
+    colResults[newColName] = value.toFixed(options.fractionDigits);
+  }
+  return colResults;
 }

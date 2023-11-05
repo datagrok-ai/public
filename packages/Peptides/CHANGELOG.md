@@ -1,12 +1,13 @@
 # Peptides changelog
 
-## 1.16.0 (WIP)
+## 1.16.0 (2023-11-05)
 
 ### Features
 
 * Added Select All and Desect All functionality to all viewers.
 * Added Mean activity column for the Most Potent Residues viewer.
 * Added Mean activity to tooltips.
+* Added WebLogo to Selection table.
 
 ### Bug Fixes
 

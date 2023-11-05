@@ -2,13 +2,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, before, expect, expectFloat, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel, VIEWER_TYPE, getAggregatedColName} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {startAnalysis} from '../widgets/peptides';
 import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {LogoSummaryTable} from '../viewers/logo-summary';
 import {TEST_COLUMN_NAMES} from './utils';
+import {getAggregatedColName} from '../utils/statistics';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;

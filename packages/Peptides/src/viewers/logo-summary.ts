@@ -7,7 +7,7 @@ import {CLUSTER_TYPE, ClusterType, PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {getAggregatedValue, getStats, Stats} from '../utils/statistics';
+import {getAggregatedColumnValues, getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
 import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
 import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
@@ -323,9 +323,9 @@ export class LogoSummaryTable extends DG.JsViewer {
       this.keyPress = ev.key.startsWith('Arrow');
       if (this.keyPress)
         return;
-      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.shiftKey && ev.ctrlKey)) {
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.shiftKey && ev.ctrlKey))
         this.model.initClusterSelection({notify: false});
-      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+      else if (ev.code === 'KeyA' && ev.ctrlKey) {
         for (let rowIdx = 0; rowIdx < summaryTable.rowCount; ++rowIdx) {
           this.model.modifyClusterSelection(this.getCluster(this.viewerGrid.cell(C.LST_COLUMN_NAMES.CLUSTER, rowIdx)),
             {shiftPressed: true, ctrlPressed: false}, false);
@@ -489,7 +489,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const labels = getDistributionLegend(`Cluster: ${cluster.monomerOrCluster}`, 'Other');
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
-    const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask});
+    const aggregatedColMap = getAggregatedColumnValues(this.model.df, this.model.settings.columns!, {filterDf: true, mask: mask});
     const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
     const tooltip = getStatsSummary(labels, hist, resultMap);
 

@@ -6,6 +6,10 @@ import {PeptidesModel} from '../model';
 import wu from 'wu';
 import {COLUMNS_NAMES} from '../utils/constants';
 import {addExpandIcon} from '../utils/misc';
+import {CellRendererOptions, WebLogoBounds, setWebLogoRenderer} from '../utils/cell-renderer';
+import {CachedWebLogoTooltip, SelectionItem} from '../utils/types';
+import {TooltipOptions} from '../utils/tooltips';
+import {calculateMonomerPositionStatistics} from '../utils/algorithms';
 
 export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): HTMLElement {
   const compBitset = model.getCompoundBitset();
@@ -58,5 +62,15 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): H
       grid.col(gridCol.name)!.width = gridCol.width;
     }
   }, 500);
+
+  const mpStats = calculateMonomerPositionStatistics(grid.dataFrame, model.positionColumns.toArray());
+
+  const cachedWebLogoTooltip: CachedWebLogoTooltip = {bar: '', tooltip: null};
+  const webLogoBounds: WebLogoBounds = {};
+  const cellRendererOptions: CellRendererOptions = {isSelectionTable: true, cachedWebLogoTooltip, webLogoBounds};
+  const tooltipOptions: TooltipOptions = {x: 0, y: 0, monomerPosition: {} as SelectionItem, mpStats};
+
+  setWebLogoRenderer(grid, model, cellRendererOptions, tooltipOptions);
+
   return gridHost;
 }
