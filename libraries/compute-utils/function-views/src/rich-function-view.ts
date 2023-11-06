@@ -61,6 +61,19 @@ interface ValidationRequestPayload {
   context?: any,
 }
 
+/**
+ * Class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
+ *
+ * It provides the following functionality out-of-the-box, where each section could be customized:
+ * - a structured way to represent input and output parameters: {@link parameters}
+ * - generic way to generate UI for inputs, outputs, and interactivity (running the model, etc)
+ *   - persisting historical results to the db (via {@link parameters})
+ * - export (to Excel and PDF): {@link export}
+ * - easy loading of historical runs
+ * - routing
+ * - entering the real, measured (as opposed to predicted) values manually
+ * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
+ * */
 export class RichFunctionView extends FunctionView {
   private validationRequests = new Subject<ValidationRequestPayload>();
   private validationUpdates = new Subject<null>();
@@ -78,6 +91,11 @@ export class RichFunctionView extends FunctionView {
   // validators
   private validators: Record<string, Validator> = {};
   private validationState: Record<string, ValidationResult | undefined> = {};
+
+  public pendingValidations = this.validationUpdates.pipe(
+    startWith(null),
+    map(() => this.validationState),
+  );
 
   static fromFuncCall(
     funcCall: DG.FuncCall,

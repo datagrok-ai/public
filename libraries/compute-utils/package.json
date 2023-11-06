@@ -8,6 +8,7 @@
   },
   "description": "",
   "dependencies": {
+    "@datagrok-libraries/utils": "^4.1.19",
     "@types/wu": "^2.1.42",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.17.0",

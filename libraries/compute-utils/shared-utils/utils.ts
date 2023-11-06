@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 
 export function isInputBase(input: FuncCallInput): input is DG.InputBase {
   const inputAny = input as any;
@@ -182,3 +183,10 @@ export const plotToSheet =
       ext: {width: canvas.width, height: canvas.height},
     });
   };
+
+export function fcToJson(fc: DG.FuncCall) {
+  return serialize({
+    inputs: fc.inputs,
+    outputs: fc.outputs,
+  });
+}
