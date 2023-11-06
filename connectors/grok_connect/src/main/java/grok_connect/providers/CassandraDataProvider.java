@@ -20,12 +20,7 @@ import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.PatternMatcher;
-import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.Prop;
-import grok_connect.utils.Property;
-import grok_connect.utils.QueryCancelledByUser;
+import grok_connect.utils.*;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
@@ -100,7 +95,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         String keySpace = conn.get(DbCredentials.KEYSPACE);
         return String.format("jdbc:cassandra://%s%s%s", conn.getServer(), port,
-                keySpace == null || keySpace.isEmpty() ? "" : String.format("/%s", keySpace));
+                GrokConnectUtil.isEmpty(keySpace) ? "" : String.format("/%s", keySpace));
     }
 
     @Override
@@ -111,7 +106,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     @Override
     public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
         String db = connection.get(DbCredentials.KEYSPACE);
-        if (db != null && !db.isEmpty()) {
+        if (GrokConnectUtil.isNotEmpty(db)) {
             StringColumn column = new StringColumn(new String[]{db});
             column.name = "TABLE_SCHEMA";
             DataFrame dataFrame = new DataFrame();
@@ -133,12 +128,14 @@ public class CassandraDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        String keySpace = db == null || db.isEmpty() ? schema : db;
+        String keySpace = GrokConnectUtil.isEmpty(db) ? schema : db;
+        boolean isEmptyKeySpace = GrokConnectUtil.isEmpty(keySpace);
+        boolean isEmptyTable = GrokConnectUtil.isEmpty(table);
         String whereClause = String.format(" where%s%s",
-                keySpace == null || keySpace.isEmpty() ? "" : String.format(" keyspace_name = '%s'", keySpace),
-                table == null || table.isEmpty() ? "" : String.format("%s table_name = '%s'", keySpace == null || keySpace.isEmpty() ? "" : " and", table));
+                isEmptyKeySpace ? "" : String.format(" keyspace_name = '%s'", keySpace),
+                isEmptyTable ? "" : String.format("%s table_name = '%s'", isEmptyKeySpace ? "" : " and", table));
         return String.format("select keyspace_name as table_schema, table_name,  column_name, type as data_type "
-                + "from system_schema.columns%s;", (keySpace == null || keySpace.isEmpty()) && (table == null || table.isEmpty()) ? "" : whereClause );
+                + "from system_schema.columns%s;", isEmptyKeySpace && isEmptyTable ? "" : whereClause );
     }
 
     @Override
