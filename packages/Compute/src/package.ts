@@ -93,8 +93,8 @@ export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler('Model Catalog', 'Model Catalog', _package));
-
+  DG.ObjectHandler.register(new ModelHandler(ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package)));
+  
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null)
@@ -113,7 +113,8 @@ export function init() {
 //tags: app
 //sidebar: @compute
 export function modelCatalog() {
-  ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'Model Catalog', _package)
+  const view = ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package)
+  grok.shell.addView(view);
 }
 
 

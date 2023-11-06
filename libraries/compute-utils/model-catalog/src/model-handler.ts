@@ -54,8 +54,16 @@ function requestMembership(groupName: string) {
 }
 
 export class ModelHandler extends DG.ObjectHandler {
-  get type() {
+  override get type() {
     return 'Model';
+  }
+
+  override async getById(id: string): Promise<DG.Func> {
+    return await grok.dapi.functions.find(id);
+  }
+
+  override async refresh(x: DG.Script): Promise<DG.Func> {
+    return await this.getById(x.id);
   }
 
   static async openHelp(func: DG.Func) {
@@ -78,17 +86,13 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   // Checks whether this is the handler for [x]
-  static isApplicable(x: any) {
+  override isApplicable(x: any) {
     return x instanceof DG.Func && x.hasTag('model');
   }
 
   private userGroups!: DG.Group[];
 
-  constructor(
-    private viewName: string,
-    private funcName: string,
-    private currentPackage: DG.Package,
-  ) {
+  constructor(private modelsView: ModelCatalogView) {
     super();
   }
 
@@ -98,7 +102,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage('script', `/images/entities/${language}.png`);
   }
 
-  renderMarkup(x: DG.Func): HTMLElement {
+  override renderMarkup(x: DG.Func): HTMLElement {
     const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
     const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !this.userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
     const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
@@ -150,7 +154,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return markup;
   }
 
-  renderIcon(func: DG.Func): HTMLElement {
+  override renderIcon(func: DG.Func): HTMLElement {
     if (func.options['icon'] != null && (func.options['icon'].startsWith('http://') || func.options['icon'].startsWith('https://')))
       return ui.iconImage('model-icon', func.options['icon']);
 
@@ -168,7 +172,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage(func.package.name, iconUrl);
   }
 
-  async renderPreview(x: DG.Func) {
+  override async renderPreview(x: DG.Func) {
     const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
     const editor = await grok.functions.find(editorName);
     if (editor !== null && editor instanceof DG.Func) {
@@ -182,7 +186,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return super.renderPreview(x);
   }
 
-  renderProperties(func: DG.Func) {
+  override renderProperties(func: DG.Func) {
     const a = ui.accordion('ComputeModel');
     a.context = func;
     const titleDiv = ui.div([
@@ -199,7 +203,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return a.root;
   }
 
-  renderTooltip(x: DG.Func) {
+  override renderTooltip(x: DG.Func) {
     const h = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
     h.classList.add('d4-link-label');
     const card = ui.bind(x, ui.divV([
@@ -209,17 +213,22 @@ export class ModelHandler extends DG.ObjectHandler {
     return card;
   }
 
-  renderCard(x: DG.Func): HTMLElement {
+  override renderCard(x: DG.Func): HTMLElement {
     const h = this.renderMarkup(x);
     h.classList.add('d4-link-label');
     const card = ui.bind(x, ui.h2(h));
     return card;
   }
 
-  init(): void {
+  override init(): void {
     setTimeout(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
       this.userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+
+      grok.functions.onBeforeRunAction.subscribe((fc) => {
+        if (fc.func.hasTag('model'))
+          this.modelsView.bindModel(fc);
+      });
     });
   }
 }
