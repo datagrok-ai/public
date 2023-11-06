@@ -928,6 +928,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         const mol = checkMoleculeValid(cell.cell.value);
         if (!checkMolEqualSmiles(mol, newValue)) {
           try {
+            //@ts-ignore TODO Remove on js-api update
             cell.setValue(newValue, true);
           } catch {
             cell.cell.value = newValue;
@@ -936,6 +937,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         mol?.delete();
       } else {
         try {
+          //@ts-ignore TODO Remove on js-api update
           cell.setValue(sketcher.getMolFile(), true);
         } catch {
           cell.cell.value = sketcher.getMolFile();
