@@ -89,7 +89,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.showTree = true;
     this.initRibbon();
     this.initMenu();
-    if (propsSub == null && window.localStorage.getItem('ModelCatalogShowProperties') == null) { // @ts-ignore
+    if (propsSub == null && window.localStorage.getItem('ModelCatalogShowProperties') == null) {
         propsSub = grok.events.onCurrentObjectChanged.subscribe((o) => {
           if (this.meta.isApplicable(o.sender)) {
             grok.shell.windows.showProperties = true;
@@ -100,17 +100,9 @@ export class ModelCatalogView extends DG.CustomCardView {
       }
     grok.shell.windows.showHelp = false;
 
-    // const pathSegments = grok.shell.startUri.split('/');
-    // if (pathSegments.length > 3) {
-    //   grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
-    //     if (lst.length == 1)
-    //       ModelHandler.openModel(lst[0]);
-    //   });
-    // }
-
     setTimeout(async () => {
       grok.functions.onBeforeRunAction.subscribe((fc) => {
-        if (fc.func.hasTag('model') || fc.func.hasTag('model-editor'))
+        if (fc.func.hasTag('model'))
           this.bindModel(fc);
       });
     });

@@ -115,6 +115,14 @@ export function init() {
 export function modelCatalog() {
   const view = ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package)
   grok.shell.addView(view);
+  
+  const pathSegments = grok.shell.startUri.substring('https://'.length).split('/');
+  if (pathSegments.length > 3) {
+    grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
+      if (lst.length == 1)
+        ModelHandler.openModel(lst[0]);
+    });
+  }
 }
 
 
