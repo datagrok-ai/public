@@ -18,6 +18,9 @@ export class ModelCatalogView extends DG.CustomCardView {
     let modelsView = this.findModelCatalogView(funcName);
     if (modelsView == null) {
       modelsView = this.createModelCatalogView(viewName, funcName, currentPackage)
+      grok.shell.addView(modelsView);
+    } else {
+      grok.shell.v = modelsView;
     }
     return modelsView as ModelCatalogView;
   }
@@ -55,7 +58,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
     this.root.classList.add('model-catalog-view');
-    this.meta = new ModelHandler(this);
+    this.meta = new ModelHandler(this.viewName, this.funcName, this.currentPackage);
     this.name = viewName;
     this.permanentFilter = '#model';
     this.renderMode = DG.RENDER_MODE.BRIEF;

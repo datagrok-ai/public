@@ -92,7 +92,11 @@ export class ModelHandler extends DG.ObjectHandler {
 
   private userGroups!: DG.Group[];
 
-  constructor(private modelsView: ModelCatalogView) {
+  constructor(
+    private viewName: string,
+    private funcName: string,
+    private currentPackage: DG.Package,
+  ) {
     super();
   }
 
@@ -226,8 +230,13 @@ export class ModelHandler extends DG.ObjectHandler {
       this.userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
 
       grok.functions.onBeforeRunAction.subscribe((fc) => {
-        if (fc.func.hasTag('model'))
-          this.modelsView.bindModel(fc);
+        if (fc.func.hasTag('model')) {
+          ModelCatalogView.findOrCreateCatalogView(
+            this.viewName,
+            this.funcName,
+            this.currentPackage,
+          ).bindModel(fc);
+        }
       });
     });
   }
