@@ -434,40 +434,14 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 ## Debug query
 
-### Open debug section
-
-To open debug section follow the next steps:
-
-<img alt="Open debug section" src={require('./debug-section-open-saved-query.gif').default} width="800px"/>
-
-If you have a saved data query:
-
-1. Go to **Data > Databases**.
-2. In the **Database Manager**, click the desired connector, choose saved connection, and click on saved query.
-3. Activate **Context Panel** with F2 keyboard shortcut or with the help of **Windows > Context Panel**.
-4. Click on **Debug** section.
-
-:::tip
-
-Additionally, you can open debug window by right-clicking on saved query and clicking on Debug
-
-:::
-
-<img alt="Open debug section" src={require('./debug-section-open-new-query.gif').default} width="800px"/>
-
-If you don't have a saved query:
-
-1. Go to **Data > Databases**.
-2. In the **Database Manager**, click the desired connector, choose saved connection and click **Add query**.
-3. Write your query and click on Debug icon
-
-### Debug section parameters
+Query debugger lets you find common problems, and optimize query performance.
+**To open query debugger**, right-click on the query and select "Debug", or click on the "bug" icon on
+top of the query editor.
 
 There are two parameters that can significantly influence execution time of query - **Fetch size** and **Init fetch size**.
 
 **Fetch size**. Gives the JDBC driver a hint as to the number of rows that should be fetched from the database
-when more rows are needed for this ResultSet object. If the fetch size specified is zero, the JDBC driver ignores the value
-and is free to make its own best guess as to what the fetch size should be.
+when more rows are needed for this ResultSet object. If the fetch size specified is zero, the JDBC driver .
 Grok Connect under the hood not only uses this value as fetch size for ResultSet but also as the number
 of rows that will be sent to the server in one WebSocket message. And consequently, this value for User-Agent equals
 the number of rows that will be rendered on the screen by 1 workaround.
@@ -520,12 +494,6 @@ SELECT * FROM very_big_table
 ```
 
 </details>
-
-:::note
-
-Init fetch size can be set only in numbers.
-
-:::
 
 **Optimize fetch size**. When checked disables other inputs and runs several queries with different fetch sizes and displays in the end times of execution for each run.
 
