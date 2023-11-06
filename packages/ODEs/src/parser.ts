@@ -5,10 +5,10 @@ Another line
 
   #name: Complex Test
 #differential equations:
-  d(x)/dt = coef1 * y
+  d(x)/dt = coef1 * y + tanh(t)
 
   dy/d(t) = coef2 
-   * x
+   * x - pow(t, 3)
 
                #expressions:
   coef1 = const1 + param1
@@ -47,10 +47,13 @@ Another line
 const simple = `
 #name: Simple
 #differential equations:
-  dy/d(t) = mu * y + sin(t)
+  dy/d(t) = mu * y + sin(PI * t) + E + smth
+
+#expressions:
+  smth = exp(t) + sqrt(t) + log(t) + pow(t, 0.4)
   
 #argument: t
-  start = 0
+  start = 0.1
   finish = 5.0
   step = 0.1
 
@@ -262,7 +265,6 @@ type Arg = {
   step: number
 };
 
-
 type DifEqs = {
   equations: Map<string, string>,
   solutionNames: string[]
@@ -278,6 +280,8 @@ type IVP = {
   consts: Map<string, number> | null,
   params: Map<string, number> | null,
   tolerance: string,
+  usedMathFuncs: number[],
+  usedMathConsts: number[],
 };
 
 enum CONTROL_EXPR {
@@ -315,7 +319,7 @@ enum ANNOT {
 
 enum SCRIPT {
   CONSTS = '\n// constants',
-  ODE_COM = '\n// define the problem',
+  ODE_COM = '\n// the problem definition',
   ODE = 'let odes = {',
   SOLVER_COM = '\n// solve the problem',
   SOLVER = `const solver = await grok.functions.eval('${ODES_PACKAGE}:${SOLVER_FUNC}');`,
@@ -326,7 +330,9 @@ enum SCRIPT {
   SUBSPACE = '      ',
   FUNC_VALS = '// extract function values',
   EVAL_EXPR = '// evaluate expressions',
-  COMP_OUT = '// compute output'
+  COMP_OUT = '// compute output',
+  MATH_FUNC_COM = '\n// used Math-functions',
+  MATH_CONST_COM = '\n// used Math-constants',
 }
 
 type Block = {
@@ -335,7 +341,13 @@ type Block = {
 }
 
 /** */
-const MATH_FUNCS = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'pow', 'exp', 'log', 'sinh', 'cosh', 'tanh',];
+const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh',];
+
+/** */
+const POW_IDX = 0;
+
+/** */
+const MATH_CONSTS = ['PI', 'E', ];
 
 /**  */
 function getStartOfProblemDef(lines: string[]): number {
@@ -411,9 +423,21 @@ function concatMultilineFormulas(source: string[]): string[] {
 function processed(expression: string): string {
   let proc = expression;
 
-  MATH_FUNCS.forEach((func) => proc = proc.replace(func, `Math.${func}`));
+  //MATH_FUNCS.forEach((func) => proc = proc.replace(func, `Math.${func}`));
 
   return proc;
+}
+
+/** */
+function getUsedMathIds(text: string, mathIds: string[]) {
+  const res = [] as number[];
+  const size = mathIds.length;  
+
+  for (let i = 0; i < size; ++i)
+    if (text.includes(`${mathIds[i]}`))
+      res.push(i);
+
+  return res;  
 }
 
 /** */
@@ -427,7 +451,7 @@ function getDifEquations(lines: string[]): DifEqs {
   for (const line of lines) {
     divIdx = line.indexOf(DIV_SIGN);
     eqIdx = line.indexOf(EQUAL_SIGN);
-    const name = line.slice(0, divIdx).replace(/[d() ]/g, '');
+    const name = line.slice(line.indexOf('d') + 1, divIdx).replace(/[() ]/g, '');
     names.push(name);
     deqs.set(name, processed(line.slice(eqIdx + 1).trim()));
   }
@@ -545,6 +569,8 @@ function getIVP(text: string): IVP {
     consts: consts,
     params: params,
     tolerance: tolerance,
+    usedMathFuncs: getUsedMathIds(text, MATH_FUNCS),
+    usedMathConsts: getUsedMathIds(text, MATH_CONSTS),
   };
 } // getIVP
 
@@ -586,6 +612,11 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
 
   return res;
 } // getAnnot
+
+/** */
+function getMathArg(funcIdx: number): string {
+  return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
+}
 
 /** */
 function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
@@ -636,7 +667,19 @@ function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] 
   res.push(`${SCRIPT.SPACE}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push('};');
 
-  // 4. The 'call solver' lines
+  // 4. Math functions
+  if (ivp.usedMathFuncs.length > 0) {
+    res.push(SCRIPT.MATH_FUNC_COM);
+    ivp.usedMathFuncs.forEach((i) => res.push(`const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`));
+  }
+
+  // 5. Math constants
+  if (ivp.usedMathConsts.length > 0) {
+    res.push(SCRIPT.MATH_CONST_COM);
+    ivp.usedMathConsts.forEach((i) => res.push(`const ${MATH_CONSTS[i]} = Math.${MATH_CONSTS[i]};`));
+  }
+
+  // 6. The 'call solver' lines
   res.push(SCRIPT.SOLVER_COM);
   res.push(SCRIPT.SOLVER);
   res.push(SCRIPT.PREPARE);
@@ -647,7 +690,7 @@ function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] 
 } // getScript
 
 
-const ivp = getIVP(bio);
+/*const ivp = getIVP(bio);
 console.log(ivp);
 
 console.log();
@@ -655,4 +698,4 @@ console.log();
 const scriptLines = getScript(ivp);
 
 for (const line of scriptLines)
-  console.log(line);
+  console.log(line);*/
