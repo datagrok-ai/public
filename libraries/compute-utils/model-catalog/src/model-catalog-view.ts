@@ -40,12 +40,11 @@ export class ModelCatalogView extends DG.CustomCardView {
   }
 
   public bindModel(fc: DG.FuncCall) {
-    const modelsView = ModelCatalogView.findOrCreateCatalogView(this.viewName, this.funcName, this.currentPackage);
     fc.aux['showOnTaskBar'] = false;
     
-    const parentCall = modelsView.parentCall;
+    const parentCall = this.parentCall;
     if (parentCall != null) {
-      parentCall.aux['view'] = modelsView;
+      parentCall.aux['view'] = this;
       fc.parentCall = parentCall;
     }
   }

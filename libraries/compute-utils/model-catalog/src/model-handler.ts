@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelCatalogView} from './model-catalog-view';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -228,16 +227,6 @@ export class ModelHandler extends DG.ObjectHandler {
     setTimeout(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
       this.userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-
-      grok.functions.onBeforeRunAction.subscribe((fc) => {
-        if (fc.func.hasTag('model')) {
-          ModelCatalogView.findOrCreateCatalogView(
-            this.viewName,
-            this.funcName,
-            this.currentPackage,
-          ).bindModel(fc);
-        }
-      });
     });
   }
 }

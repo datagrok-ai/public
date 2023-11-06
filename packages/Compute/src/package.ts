@@ -109,17 +109,23 @@ export function init() {
   initCompleted = true;
 }
 
+let startUriLoaded = false;
+
 //name: Model Catalog
 //tags: app
 //sidebar: @compute
 export function modelCatalog() {
   ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package)
   
-  const pathSegments = grok.shell.startUri.substring('https://'.length).split('/');
-  if (pathSegments.length > 3) {
+  const optionalPart = grok.shell.startUri.indexOf('?');
+  const pathSegments = grok.shell.startUri
+    .substring('https://'.length, optionalPart > 0 ? optionalPart: undefined)
+    .split('/');
+  if (!startUriLoaded && pathSegments.length > 3) {
     grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
       if (lst.length == 1)
         ModelHandler.openModel(lst[0]);
+        startUriLoaded = true;
     });
   }
 }
