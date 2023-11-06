@@ -926,11 +926,21 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
         const mol = checkMoleculeValid(cell.cell.value);
-        if (!checkMolEqualSmiles(mol, newValue))
-          cell.setValue(newValue, true);
+        if (!checkMolEqualSmiles(mol, newValue)) {
+          try {
+            cell.setValue(newValue, true);
+          } catch {
+            cell.cell.value = newValue;
+          }
+        }
         mol?.delete();
-      } else
-        cell.setValue(sketcher.getMolFile(), true);
+      } else {
+        try {
+          cell.setValue(sketcher.getMolFile(), true);
+        } catch {
+          cell.cell.value = sketcher.getMolFile();
+        }
+      }
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show({resizable: true});
