@@ -12,6 +12,7 @@ import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import serialization.Types;
@@ -29,7 +30,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     private static final String TYPE = "Snowflake";
     private static final String DESCRIPTION = "Query Snowflake database";
     private static final List<String> AVAILABLE_CLOUDS =
-            Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp"));
+            Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp", "privatelink"));
 
     public SnowflakeDataProvider() {
         init();
@@ -64,15 +65,18 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
+        boolean isEmptyDb = GrokConnectUtil.isEmpty(db);
+        boolean isEmptySchema = GrokConnectUtil.isEmpty(schema);
+        boolean isEmptyTable = GrokConnectUtil.isEmpty(table);
         String whereClause = String.format(" WHERE%s%s%s",
-                db == null ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
-                schema == null ? "" : String.format("%s c.table_schema = '%s'", db == null ? "" : " AND",schema),
-                table == null ? "" : String.format("%s c.table_name = '%s'", db == null && schema == null ? "" : " AND", table));
+                isEmptyDb ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
+                isEmptySchema ? "" : String.format("%s c.table_schema = '%s'", isEmptyDb ? "" : " AND", schema),
+                isEmptyTable ? "" : String.format("%s c.table_name = '%s'", isEmptyDb && isEmptySchema ? "" : " AND", table));
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s ORDER BY c.table_name, c.ordinal_position;"
-                , db == null && schema == null && table == null ? "" : whereClause);
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s ORDER BY c.table_name, c.ordinal_position;",
+                isEmptyDb && isEmptySchema && isEmptyTable ? "" : whereClause);
     }
 
     @Override
@@ -154,11 +158,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     private String buildAccount(DataConnection conn) {
-        return new StringBuilder(conn.get(DbCredentials.ACCOUNT_LOCATOR))
-                .append(URL_SEPARATOR)
-                .append(conn.get(DbCredentials.REGION_ID))
-                .append(URL_SEPARATOR)
-                .append(conn.get(DbCredentials.CLOUD))
-                .toString();
+        StringBuilder builder = new StringBuilder(conn.get(DbCredentials.ACCOUNT_LOCATOR));
+        if (GrokConnectUtil.isNotEmpty(conn.get(DbCredentials.REGION_ID)))
+            builder.append(URL_SEPARATOR).append(conn.get(DbCredentials.REGION_ID));
+        if (GrokConnectUtil.isNotEmpty(conn.get(DbCredentials.CLOUD)))
+            builder.append(URL_SEPARATOR).append(conn.get(DbCredentials.CLOUD));
+        return builder.toString();
     }
 }
