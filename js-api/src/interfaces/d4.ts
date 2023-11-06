@@ -324,6 +324,9 @@ export interface IScatterPlotLookSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
+  /// Invalid are null values and not positive numbers if axis is logarithmic.
+  filterOutInvalid: boolean;
+
   /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
   showFilteredOutPoints: boolean;
 
@@ -509,6 +512,8 @@ export interface IScatterPlotLookSettings {
 
   /// Requires *Auto Axis Size* to be turned off.
   yAxisWidth: number;
+
+  legendInViewerFiltering: boolean;
 
   axisFont: string;
 
@@ -2024,6 +2029,8 @@ export interface IPivotViewerLookSettings {
   aggregateColumnNames: Array<string>;
 
   aggregateAggTypes: Array<string>;
+
+  viewerSettings: Array<any>;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
