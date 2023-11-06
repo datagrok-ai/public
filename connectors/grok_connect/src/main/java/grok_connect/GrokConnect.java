@@ -40,7 +40,6 @@ public class GrokConnect {
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
     private static final String LOG_LEVEL_PREFIX = "LogLevel";
-    public static boolean needToReboot = false;
     public static ProviderManager providerManager;
     public static Properties properties;
 
@@ -48,13 +47,13 @@ public class GrokConnect {
         try {
             properties = getInfo();
             setGlobalLogLevel();
-            PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
+            PARENT_LOGGER.info("{} - version: {}", properties.get(NAME), properties.get(VERSION));
             PARENT_LOGGER.info("Grok Connect initializing");
             PARENT_LOGGER.info(getStringLogMemory());
-            PARENT_LOGGER.trace("HELLO FROM TRACE");
-
             providerManager = new ProviderManager();
+            threadPool(300, 25, -1);
             port(DEFAULT_PORT);
+            System.setProperty("com.zaxxer.hikari.housekeeping.periodMs", "60000");
             connectorsModule();
             PARENT_LOGGER.info("grok_connect with Hikari pool");
             PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
@@ -66,72 +65,64 @@ public class GrokConnect {
 
     private static void connectorsModule() {
         webSocket("/query_socket", new QueryHandler());
-        // webSocket("/query_table", new QueryHandler(QueryType.tableQuery));
 
         before((request, response) -> {
             PARENT_LOGGER.debug("Endpoint {} was called", request.pathInfo());
             PARENT_LOGGER.debug(getStringLogMemory());
         });
 
+        exception(QueryCancelledByUser.class, (exception, request, response) -> {
+            FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+            QueryMonitor.getInstance().removeResultSet(call.id);
+        });
+
+        exception(Exception.class, (exception, request, response) -> {
+            if (request.raw().getRequestURI().equals("/test")) {
+                StringWriter errors = new StringWriter();
+                errors.write("ERROR:\n" + exception.getLocalizedMessage() + "\n\nSTACK TRACE:\n");
+                exception.printStackTrace(new PrintWriter(errors));
+                response.body(errors.toString());
+            } else if (request.raw().getRequestURI().equals("/query_table_sql")) {
+                buildExceptionResponse(response, printError(exception));
+            } else if (request.raw().getRequestURI().equals("/schema")
+                    || request.raw().getRequestURI().equals("/schemas")
+                    || request.raw().getRequestURI().equals("/query")) {
+                DataQueryRunResult result = new DataQueryRunResult();
+                BufferAccessor bufferAccessor = packException(result, exception);
+                prepareResponse(result, response, bufferAccessor);
+            }
+        });
+
         post("/query", (request, response) -> {
-        BufferAccessor buffer;
-        DataQueryRunResult result = new DataQueryRunResult();
-        result.log = "";// use builder instead
-        FuncCall call = null;
-            try {
-                call = gson.fromJson(request.body(), FuncCall.class);
-                call.log = "";
-                call.setParamValues();
-                call.afterDeserialization();
-                PARENT_LOGGER.debug("Query: {}", call.func.query);
-                long startTime = System.currentTimeMillis();
-                DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
-                DataFrame dataFrame = provider.execute(call);
-                double execTime = (System.currentTimeMillis() - startTime) / 1000.0;
-                result.blob = dataFrame.toByteArray();
-                result.blobLength = result.blob.length;
-                result.timeStamp = Instant.ofEpochMilli(startTime)
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss"));
-                result.execTime = execTime;
-                result.columns = dataFrame.columns.size();
-                result.rows = dataFrame.rowCount;
-                String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
-                        result.timeStamp,
-                        result.execTime,
-                        result.columns,
-                        result.rows,
-                        result.blobLength);
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
 
-                if (call.debugQuery) {
-                    result.log += getStringLogMemory();
-                    result.log += logString;
-                }
-                PARENT_LOGGER.debug(logString);
-                buffer = new BufferAccessor(result.blob);
-                buffer.bufPos = result.blob.length;
-
-            } catch (Throwable ex) {
-                buffer = packException(result,ex);
-                if (ex instanceof OutOfMemoryError) {
-                    PARENT_LOGGER.error("SEVER", ex);
-                    needToReboot = true;
-                } else {
-                    PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                }
-            }
-            finally {
-                if (call != null)
-                    result.log += call.log;
-            }
-            try {
-                buffer.insertStringHeader(gson.toJson(result));
-                buildResponse(response, buffer.toUint8List());
-            } catch (Throwable ex) {
-                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                buildExceptionResponse(response, printError(ex));
-            }
-
+            FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+            call.setParamValues();
+            call.afterDeserialization();
+            PARENT_LOGGER.debug("Query: {}", call.func.query);
+            long startTime = System.currentTimeMillis();
+            DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
+            DataFrame dataFrame = provider.executeCall(call);
+            double execTime = (System.currentTimeMillis() - startTime) / 1000.0;
+            result.blob = dataFrame.toByteArray();
+            result.blobLength = result.blob.length;
+            result.timeStamp = Instant.ofEpochMilli(startTime)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss"));
+            result.execTime = execTime;
+            result.columns = dataFrame.columns.size();
+            result.rows = dataFrame.rowCount;
+            String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
+                    result.timeStamp,
+                    result.execTime,
+                    result.columns,
+                    result.rows,
+                    result.blobLength);
+            PARENT_LOGGER.debug(logString);
+            buffer = new BufferAccessor(result.blob);
+            buffer.bufPos = result.blob.length;
+            prepareResponse(result, response, buffer);
             return response;
         });
 
@@ -139,51 +130,33 @@ public class GrokConnect {
             DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
             DataProvider provider = providerManager.getByName(connection.dataSource);
             response.type(MediaType.TEXT_PLAIN);
-            return provider.testConnection(connection);
+            provider.testConnection(connection);
+            return DataProvider.CONN_AVAILABLE;
         });
 
         post("/query_table_sql", (request, response) -> {
-            String query = "";
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                TableQuery tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                query = provider.queryTableSql(connection, tableQuery);
-            } catch (Throwable ex) {
-                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                buildExceptionResponse(response, printError(ex));
-            }
-            return query;
+            DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+            TableQuery tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
+            DataProvider provider = providerManager.getByName(connection.dataSource);
+            return provider.queryTableSql(connection, tableQuery);
         });
 
         post("/schemas", (request, response) -> {
-            BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame dataFrame = provider.getSchemas(connection);
-                buffer = packDataFrame(result, dataFrame);
-            } catch (Throwable ex) {
-                PARENT_LOGGER.debug(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                buffer = packException(result, ex);
-            }
+            DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+            DataProvider provider = providerManager.getByName(connection.dataSource);
+            DataFrame dataFrame = provider.getSchemas(connection);
+            BufferAccessor buffer = packDataFrame(result, dataFrame);
             prepareResponse(result, response, buffer);
             return response;
         });
 
         post("/schema", (request, response) -> {
-            BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
-                buffer = packDataFrame(result, dataFrame);
-            } catch (Throwable ex) {
-                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                buffer = packException(result, ex);
-            }
+            DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+            DataProvider provider = providerManager.getByName(connection.dataSource);
+            DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
+            BufferAccessor buffer = packDataFrame(result, dataFrame);
             prepareResponse(result, response, buffer);
             return response;
         });
@@ -219,11 +192,10 @@ public class GrokConnect {
         get("/health", (request, response) -> {
             int status;
             String body;
-            if (needToReboot) {
+            if (Runtime.getRuntime().freeMemory() < Runtime.getRuntime().maxMemory() * 0.1) {
                 status = HttpURLConnection.HTTP_INTERNAL_ERROR;
                 body = "Grok connect needs a reboot";
-            }
-            else {
+            } else {
                 status = HttpURLConnection.HTTP_OK;
                 body = "OK";
             }
@@ -271,19 +243,19 @@ public class GrokConnect {
         long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         long free = Runtime.getRuntime().maxMemory() - used;
         long total = Runtime.getRuntime().maxMemory();
-        return String.format("Memory: free: %s(%.2f%%), used: %s", free, 100.0 * free/total, used);
+        return String.format("Memory: free: %s(%.2f%%), used: %s; active threads: %s", free, 100.0 * free/total, used, activeThreadCount());
     }
 
     private static void prepareResponse(DataQueryRunResult result, Response response, BufferAccessor buffer) {
         try {
             buffer.insertStringHeader(gson.toJson(result));
             buildResponse(response, buffer.toUint8List());
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             buildExceptionResponse(response, printError(ex));
         }
     }
 
-    private static void buildResponse(Response response, byte[] bytes) throws Throwable {
+    private static void buildResponse(Response response, byte[] bytes) throws IOException {
         response.type(MediaType.APPLICATION_OCTET_STREAM);
         response.raw().setContentLength(bytes.length);
         response.status(HttpURLConnection.HTTP_OK);

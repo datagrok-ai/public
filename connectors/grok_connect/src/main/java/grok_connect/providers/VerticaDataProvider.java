@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,9 +12,7 @@ import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
 import serialization.IntColumn;
@@ -88,8 +84,7 @@ public class VerticaDataProvider extends JdbcDataProvider {
      * Replace it with InColumn for easy handle in next steps
      */
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws ClassNotFoundException,
-            SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table) {
         String columnName = "is_view";
         DataFrame dataFrame = super.getSchema(connection, schema, table);
         Column oldColumn = dataFrame.columns.stream()

@@ -67,7 +67,7 @@ public class NeptuneDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
+    public Connection getConnection(DataConnection conn) throws SQLException {
         prepareProvider();
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
@@ -89,16 +89,11 @@ public class NeptuneDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) throws SQLException {
         String columnTypeName;
-        try {
-            columnTypeName = resultSet.getMetaData().getColumnTypeName(c);
-            if (!columnTypeName.equals(COMPLEX_COLUMN_NAME)) {
-                return resultSet.getObject(c);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Something went wrong when getting value from resultSet", e);
-        }
+        columnTypeName = resultSet.getMetaData().getColumnTypeName(c);
+        if (!columnTypeName.equals(COMPLEX_COLUMN_NAME))
+            return resultSet.getObject(c);
         try {
             Method getValue = OpenCypherResultSet.class.getDeclaredMethod("getValue", int.class);
             getValue.setAccessible(true);

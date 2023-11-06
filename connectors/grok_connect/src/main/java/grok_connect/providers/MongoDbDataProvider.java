@@ -10,7 +10,6 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.QueryCancelledByUser;
 import org.slf4j.Logger;
 import serialization.DataFrame;
 import serialization.Types;
@@ -40,37 +39,43 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, GrokConnectException, QueryCancelledByUser {
+    public DataFrame executeCall(FuncCall queryRun) {
         DataQuery dataQuery = queryRun.func;
-        Connection connection = getConnection(dataQuery.connection);
-        ResultSet resultSet = getResultSet(queryRun, connection, logger, 1);
-        ResultSetManager resultSetManager = getResultSetManager();
-        resultSetManager.init(resultSet.getMetaData(), 100);
-        return getResultSetSubDf(queryRun, resultSet, resultSetManager,-1, 1, logger, 0, false);
+        try (Connection connection = getConnection(dataQuery.connection);
+             ResultSet resultSet = getResultSet(queryRun, connection, logger, 1)) {
+            ResultSetManager resultSetManager = getResultSetManager();
+            resultSetManager.init(resultSet.getMetaData(), 100);
+            return getResultSetSubDf(queryRun, resultSet, resultSetManager,-1, 1, logger, 0, false);
+        } catch (SQLException e) {
+            throw new GrokConnectException("Something went wrong during execution", e);
+        }
     }
 
     @Override
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger, int fetchSize) {
         try {
             PreparedStatement statement = connection.prepareStatement(queryRun.func.query);
             return statement.executeQuery();
         } catch (SQLException e) {
-            throw new RuntimeException("Something went wrong when getting resultSet", e);
+            throw new RuntimeException("Something went wrong when getting ResultSet", e);
         }
     }
 
     @Override
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, ResultSetManager resultSetManager, int maxIterations, int columnCount,
-                                       Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
-        while (resultSet.next()) {
-            Object object = resultSet.getObject(OBJECT_INDEX);
-            resultSetManager.processValue(object, OBJECT_INDEX);
+                                       Logger queryLogger, int operationNumber, boolean dryRun) {
+        try {
+            while (resultSet.next()) {
+                Object object = resultSet.getObject(OBJECT_INDEX);
+                resultSetManager.processValue(object, OBJECT_INDEX);
+            }
+            resultSet.close();
+            DataFrame dataFrame = new DataFrame();
+            dataFrame.addColumns(resultSetManager.getProcessedColumns());
+            return dataFrame;
+        } catch (SQLException e) {
+            throw new GrokConnectException("Something went wrong during execution of query", e);
         }
-        resultSet.close();
-        DataFrame dataFrame = new DataFrame();
-        dataFrame.addColumns(resultSetManager.getProcessedColumns());
-        return dataFrame;
     }
 
     @Override

@@ -69,7 +69,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void prepareProvider() throws ClassNotFoundException {
+    public void prepareProvider() {
         super.prepareProvider();
         System.getProperties().setProperty("oracle.jdbc.J2EE13Compliant", "true");
     }

@@ -1,10 +1,7 @@
 package grok_connect.connectors_info;
 
-import java.sql.*;
-import java.text.*;
 import java.util.*;
 import java.util.regex.*;
-import java.io.IOException;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
@@ -23,16 +20,13 @@ public abstract class DataProvider
 
     public abstract boolean autoInterpolation();
 
-    public abstract DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException;
+    public abstract DataFrame executeCall(FuncCall queryRun);
 
-    public DataFrame getSchemas(DataConnection dataConnection)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection dataConnection) {
         throw new UnsupportedOperationException();
     }
 
-    public DataFrame getSchema(DataConnection dataConnection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchema(DataConnection dataConnection, String schema, String table) {
         throw new UnsupportedOperationException();
     }
 
@@ -77,16 +71,15 @@ public abstract class DataProvider
         queryRun.func.removeParams(patternParams);
         queryRun.func.addParams(queryParams);
 
-        queryBuffer.append(query.substring(idx, query.length()));
+        queryBuffer.append(query.substring(idx));
         query = queryBuffer.toString();
         return query;
     }
 
-    public abstract String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException;
+    public abstract boolean testConnection(DataConnection conn);
 
 
-    public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame queryTable(DataConnection conn, TableQuery query) {
         throw new UnsupportedOperationException();
     }
 

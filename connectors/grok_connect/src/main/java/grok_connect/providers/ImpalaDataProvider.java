@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
@@ -13,10 +11,8 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -95,7 +91,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) {
         String schema = connection.get(DbCredentials.SCHEMA);
         String columnName = "TABLE_SCHEMA";
         if (schema != null && !schema.isEmpty()) {
@@ -112,8 +108,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table) {
         if (table == null) {
             return handleNoTable(connection);
         }
@@ -175,12 +170,12 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
 
-    private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {
+    private DataFrame handleNoTable(DataConnection connection) {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = "SHOW TABLES;";
         queryRun.func.connection = connection;
-        DataFrame tables = execute(queryRun);
+        DataFrame tables = executeCall(queryRun);
         DataFrame result = new DataFrame();
         for (int i = 0; i < tables.rowCount; i++) {
             String table = tables.columns.get(0).get(i)
@@ -190,15 +185,14 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         return result;
     }
 
-    private DataFrame getSingleTableInfo(DataConnection connection, String table) throws GrokConnectException,
-            QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {
+    private DataFrame getSingleTableInfo(DataConnection connection, String table) {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String currentSchema = connection.get(DbCredentials.SCHEMA);
         currentSchema = currentSchema == null || currentSchema.isEmpty() ? descriptor.defaultSchema : currentSchema;
         queryRun.func.query = getSchemaSql(currentSchema, currentSchema, table);
         queryRun.func.connection = connection;
-        DataFrame result = execute(queryRun);
+        DataFrame result = executeCall(queryRun);
         prepareGetSchemaDataFrame(result, currentSchema, table);
         return result;
     }

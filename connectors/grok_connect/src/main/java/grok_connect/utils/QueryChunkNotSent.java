@@ -1,5 +1,4 @@
 package grok_connect.utils;
 
-public class QueryChunkNotSent extends Throwable{
-    
+public class QueryChunkNotSent extends RuntimeException {
 }

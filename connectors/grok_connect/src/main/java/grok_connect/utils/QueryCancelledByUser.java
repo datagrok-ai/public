@@ -1,4 +1,4 @@
 package grok_connect.utils;
 
-public class QueryCancelledByUser extends Exception{
+public class QueryCancelledByUser extends RuntimeException {
 }

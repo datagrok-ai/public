@@ -31,7 +31,6 @@ public class ConnectionPool {
     }
 
     public void setTimer() {
-
         if (timer == null)
             timer = new Timer("timer");
 
@@ -41,15 +40,7 @@ public class ConnectionPool {
         timerTask = new TimerTask() {
             @Override
             public void run() {
-                if (SettingsManager.getInstance().getSettings().debug) {
-                    if (connectionPool.size() > 0)
-                        System.out.println("Connection pool log:");
-                    connectionPool.forEach((k, v) -> {
-                        System.out.println("Pool: " + v.hikariDataSource.getPoolName());
-                        System.out.println("Active: " + v.poolProxy.getActiveConnections());
-                        System.out.println("Idle: " +v.poolProxy.getIdleConnections());
-                    });
-                }
+                connectionPool.entrySet().removeIf(entry -> entry.getValue().hikariDataSource.isClosed());
             }
         };
 
@@ -58,7 +49,7 @@ public class ConnectionPool {
                 SettingsManager.getInstance().getSettings().connectionPoolTimerRate);
     }
 
-    public Connection getConnection(String url, java.util.Properties properties, String driverClassName) throws GrokConnectException, SQLException {
+    public Connection getConnection(String url, java.util.Properties properties, String driverClassName) throws SQLException {
         LOGGER.debug("getConnection was called for driver {} with url {}", driverClassName, url);
         if (url == null || properties == null || driverClassName == null)
             throw new GrokConnectException("Connection parameters are null");

@@ -5,11 +5,9 @@ import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
-import grok_connect.utils.QueryChunkNotSent;
-import grok_connect.utils.QueryManager;
+import grok_connect.utils.*;
 import org.eclipse.jetty.websocket.api.Session;
 import java.nio.ByteBuffer;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -46,11 +44,11 @@ public class SessionHandler {
 
     public void onError(Throwable err) {
         Throwable cause = err.getCause() == null ? err : err.getCause(); // we need to get cause, because error is wrapped by runtime exception
-        if (cause instanceof OutOfMemoryError) {
-            // guess it won't work because there is no memory left!
-            GrokConnect.needToReboot = true;
-        }
         String message = cause.getMessage();
+        if (cause.getClass().equals(QueryCancelledByUser.class) || message.equals("grok_connect.utils.QueryCancelledByUser")) {
+            logger.info(EventType.MISC.getMarker(), "Query was canceled");
+            QueryMonitor.getInstance().removeResultSet(queryManager.getQuery().id);
+        }
         String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));
         logger.error(EventType.ERROR.getMarker(), cause.toString(), cause);
@@ -63,7 +61,7 @@ public class SessionHandler {
         session.close();
     }
 
-    public void onMessage(String message) throws Throwable {
+    public void onMessage(String message) {
         logger.debug(EventType.MISC.getMarker(), "Received message {}", message.startsWith("QUERY") ? "QUERY" : message);
         if (message.startsWith(MESSAGE_START)) {
             message = message.substring(6);
@@ -103,7 +101,11 @@ public class SessionHandler {
                 firstTry = true;
                 oneDfSent = true;
                 if (queryManager.isResultSetInitialized()) {
-                    dataFrame = fdf.get();
+                    try {
+                        dataFrame = fdf.get();
+                    } catch (ExecutionException | InterruptedException e) {
+                        throw new GrokConnectException("Something went wrong during receiving of dataframe chunk", e);
+                    }
                     if (dataFrame != null && dataFrame.rowCount != 0) {
                         dfNumber++;
                     }
@@ -123,10 +125,16 @@ public class SessionHandler {
         }
     }
 
-    public void onClose() throws SQLException {
-        threadPool.shutdown();
-        queryLogger.closeLogger();
+    public void onClose() {
         queryManager.closeConnection();
+        threadPool.shutdown();
+        try {
+            if (!threadPool.awaitTermination(10, TimeUnit.SECONDS))
+                threadPool.shutdownNow();
+        } catch (InterruptedException e) {
+            threadPool.shutdownNow();
+        }
+        queryLogger.closeLogger();
     }
 
     private void sendLog() {

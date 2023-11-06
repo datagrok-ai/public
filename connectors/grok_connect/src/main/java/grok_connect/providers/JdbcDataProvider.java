@@ -1,8 +1,5 @@
 package grok_connect.providers;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,7 +8,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,12 +41,15 @@ public abstract class JdbcDataProvider extends DataProvider {
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
 
-    public void prepareProvider() throws ClassNotFoundException {
-        Class.forName(driverClassName);
+    public void prepareProvider() {
+        try {
+            Class.forName(driverClassName);
+        } catch (ClassNotFoundException e) {
+            throw new GrokConnectException(String.format("Couldn't load driver for %s.", this.descriptor.type), e);
+        }
     }
 
-    public Connection getConnection(DataConnection conn)
-            throws ClassNotFoundException, SQLException, GrokConnectException {
+    public Connection getConnection(DataConnection conn) throws SQLException {
         prepareProvider();
         return ConnectionPool.getInstance().getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
@@ -77,48 +76,28 @@ public abstract class JdbcDataProvider extends DataProvider {
         return conn.connectionString;
     }
 
-    // "CONN_AVAILABLE" or exception text
-    public String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Connection sqlConnection = null;
-        String res;
-        try {
-            sqlConnection = getConnection(conn);
-            if (sqlConnection.isClosed() || !sqlConnection.isValid(30))
-                res = "Connection is not available";
-            else
-                res = DataProvider.CONN_AVAILABLE;
-        } catch (Throwable ex) {
-            StringWriter errors = new StringWriter();
-            errors.write("ERROR:\n" + ex + "\n\nSTACK TRACE:\n");
-            ex.printStackTrace(new PrintWriter(errors));
-            System.out.println(errors);
-            res = errors.toString();
+    public boolean testConnection(DataConnection conn) {
+        try (Connection connection = getConnection(conn)) {
+            return !connection.isClosed() || connection.isValid(30);
+        } catch (Exception e) {
+            throw new GrokConnectException("Connection test failed for host " + conn.getServer(), e);
         }
-        finally {
-            if (sqlConnection != null)
-                sqlConnection.close();
-        }
-        return res;
     }
 
-    public DataFrame getSchemas(DataConnection connection)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemasSql(connection.getDb());
         queryRun.func.connection = connection;
-
-        return execute(queryRun);
+        return executeCall(queryRun);
     }
 
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table) {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
         queryRun.func.connection = connection;
-
-        return execute(queryRun);
+        return executeCall(queryRun);
     }
 
     public String getSchemasSql(String db) {
@@ -330,7 +309,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public ResultSet getResultSet(FuncCall queryRun, Connection connection,
-                                  Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
+                                  Logger queryLogger, int fetchSize) throws SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
@@ -351,71 +330,56 @@ public abstract class JdbcDataProvider extends DataProvider {
             } else {
                 queryLogger.debug(EventType.MISC.getMarker(), "Executing batch mode");
                 String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n", commentStart));
-                for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize);
+                for (int i = 0; i < queries.length; i++) {
+                    resultSet = executeQuery(queries[i], queryRun, connection, timeout, queryLogger, fetchSize);
+                    if (i != queries.length - 1)
+                        resultSet.close();
+                }
             }
 
             return resultSet;
         } catch (SQLException e) {
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
-            else throw e;
+            throw new GrokConnectException("Something went wrong during receiving of ResultSet", e);
         }
     }
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, ResultSetManager resultSetManager, int maxIterations, int columnCount,
-                                       Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
-        if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
-            queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
+                                       Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException {
+        if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
             throw new QueryCancelledByUser();
-        }
 
-        try {
-            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
-            if (dryRun)
-                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL;
-            queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
-                    "Column filling was started");
-            int rowCount = 0;
-            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
-                rowCount++;
-                for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = getObjectFromResultSet(resultSet, c);
+        EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
+        if (dryRun)
+            resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL;
+        queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
+                "Column filling was started");
+        int rowCount = 0;
+        while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
+            rowCount++;
+            for (int c = 1; c < columnCount + 1; c++) {
+                Object value = getObjectFromResultSet(resultSet, c);
 
-                    if (dryRun) continue;
-                    resultSetManager.processValue(value, c);
+                if (dryRun) continue;
+                resultSetManager.processValue(value, c);
 
-                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
-                        queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
-                        DataFrame dataFrame = new DataFrame();
-                        dataFrame.addColumns(resultSetManager.getProcessedColumns());
-                        resultSet.close();
-                        queryMonitor.removeResultSet(queryRun.id);
-                        return dataFrame;
-                    }
-                }
+                if (queryMonitor.checkCancelledIdResultSet(queryRun.id))
+                    throw new QueryCancelledByUser();
             }
-            queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
-                    "Column filling was finished");
+        }
+        queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
+                "Column filling was finished");
 
-            DataFrame dataFrame = new DataFrame();
-            if (dryRun)
-                return dataFrame;
-            dataFrame.addColumns(resultSetManager.getProcessedColumns());
+        DataFrame dataFrame = new DataFrame();
+        if (dryRun)
             return dataFrame;
-        } catch (Exception e) {
-            queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
-            if (resultSet != null && resultSet.isClosed()) {
-                throw new QueryCancelledByUser();
-            }
-            throw new RuntimeException("Something went wrong", e);
-        }
+        dataFrame.addColumns(resultSetManager.getProcessedColumns());
+        return dataFrame;
     }
 
-    public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
-        try (Connection connection = getConnection(queryRun.func.connection)) {
-            ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
-
+    public DataFrame executeCall(FuncCall queryRun) {
+        try (Connection connection = getConnection(queryRun.func.connection);
+             ResultSet resultSet = getResultSet(queryRun, connection, logger, 100)) {
             if (resultSet == null)
                 return new DataFrame();
             ResultSetManager resultSetManager = getResultSetManager();
@@ -426,16 +390,12 @@ public abstract class JdbcDataProvider extends DataProvider {
         } catch (SQLException e) {
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
-            else throw e;
+            else throw new GrokConnectException("Something went wrong during execution of query", e);
         }
     }
 
-    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
-        try {
-            return resultSet.getObject(c);
-        }catch (SQLException e) {
-            throw new RuntimeException("Something went wrong when getting object from result set", e);
-        }
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) throws SQLException {
+        return resultSet.getObject(c);
     }
 
     protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
@@ -610,18 +570,6 @@ public abstract class JdbcDataProvider extends DataProvider {
     public String queryTableSql(DataConnection conn, TableQuery query) {
         return query.toSql(this::aggrToSql, this::patternToSql, this::limitToSql, this::addBrackets,
                 descriptor.limitAtEnd);
-    }
-
-    public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
-        FuncCall queryRun = new FuncCall();
-        queryRun.func = new DataQuery();
-        String sql = queryTableSql(conn, query);
-        if (sql == null)
-            return new DataFrame();
-        queryRun.func.query = sql;
-        queryRun.func.connection = conn;
-        return execute(queryRun);
     }
 
     public String castParamValueToSqlDateTime(FuncParam param) {

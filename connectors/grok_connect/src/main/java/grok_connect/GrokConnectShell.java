@@ -7,11 +7,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
 import grok_connect.utils.PropertyAdapter;
 import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryCancelledByUser;
 import grok_connect.utils.SettingsManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -22,7 +20,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -34,8 +31,7 @@ import serialization.DataFrame;
 public class GrokConnectShell {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrokConnectShell.class);
 
-    public static void main(String[] args) throws ParseException, IOException, SQLException,
-            java.text.ParseException, ClassNotFoundException, QueryCancelledByUser, GrokConnectException {
+    public static void main(String[] args) throws ParseException, IOException {
         LOGGER.debug("Received args: {}", Arrays.toString(args));
         Options options = new Options();
 
@@ -78,7 +74,7 @@ public class GrokConnectShell {
         long startTime = System.currentTimeMillis();
         DataProvider provider = new ProviderManager().getByName(call.func.connection.dataSource);
         provider.outputCsv = cmd.getOptionValue("original_csv");
-        DataFrame table = provider.execute(call);
+        DataFrame table = provider.executeCall(call);
         double execTime = (System.currentTimeMillis() - startTime) / 1000.0;
 
         LOGGER.debug("{}: Execution time: {} s, Columns/Rows: {}/{}\n",

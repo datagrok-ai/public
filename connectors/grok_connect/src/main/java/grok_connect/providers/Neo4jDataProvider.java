@@ -6,8 +6,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
-import java.util.TimeZone;
-
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.Neo4jBigIntColumnManager;
 import grok_connect.managers.complex_column.Neo4jComplexColumnManager;
@@ -18,6 +16,7 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
@@ -46,11 +45,15 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void prepareProvider() throws ClassNotFoundException {
+    public void prepareProvider() {
         super.prepareProvider();
-        Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
-        Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
-        Class.forName("org.neo4j.jdbc.http.HttpDriver");
+        try {
+            Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
+            Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
+            Class.forName("org.neo4j.jdbc.http.HttpDriver");
+        } catch (ClassNotFoundException e) {
+            throw new GrokConnectException("Could not load driver for Neo4jProvider", e);
+        }
     }
 
     @Override

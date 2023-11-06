@@ -20,17 +20,17 @@ public class SessionManager {
         session.getRemote().sendString("CONNECTED");
     }
 
-    static void onMessage(Session session, String message) throws Throwable {
+    static void onMessage(Session session, String message) {
         LOGGER.trace("onMessage method was called with parameters: session :{}, message: {}", session, message);
         sessions.get(session).onMessage(message);
     }
 
-    static void onError(Session session, Throwable error) throws Throwable {
+    static void onError(Session session, Throwable error) {
         LOGGER.trace("onError method was called with parameters: session :{}, error: {}", session, error);
         sessions.get(session).onError(error);
     }
 
-    static void delete(Session session) throws Throwable {
+    static void delete(Session session) {
         LOGGER.trace("delete method was called with parameters: session :{}", session);
         if (sessions.containsKey(session)) {
             SessionHandler handler = sessions.get(session);

@@ -60,64 +60,79 @@ public class QueryManager {
             initMessage = message;
     }
 
-    public void initResultSet(FuncCall query) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to db");
-        connection = provider.getConnection(query.func.connection);
-        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
-        resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
-        supportTransactions = connection.getMetaData().supportsTransactions();
-        ResultSetMetaData metaData = resultSet.getMetaData();
-        resultSetManager.init(metaData, currentFetchSize);
-        columnCount = metaData.getColumnCount();
+    public void initResultSet(FuncCall query) {
+        try {
+            logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to db");
+            connection = provider.getConnection(query.func.connection);
+            logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
+            resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
+            supportTransactions = connection.getMetaData().supportsTransactions();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            resultSetManager.init(metaData, currentFetchSize);
+            columnCount = metaData.getColumnCount();
+        } catch (SQLException e) {
+            throw new GrokConnectException("Couldn't init ResultSet", e);
+        }
     }
 
-    public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException, ClassNotFoundException {
+    public void dryRun(boolean skipColumnFillingLog) {
         // need to create new FuncCall on every run because state of params changes irrevocably after each run
-        queryLogger.writeLog(false);
-        FuncCall query = gson.fromJson(initMessage, FuncCall.class);
-        query.setParamValues();
-        initResultSet(query);
-        if (supportTransactions && changedFetchSize) {
-            resultSet.setFetchSize(currentFetchSize);
+        try {
+            queryLogger.writeLog(false);
+            FuncCall query = gson.fromJson(initMessage, FuncCall.class);
+            query.setParamValues();
+            initResultSet(query);
+            if (supportTransactions && changedFetchSize) {
+                resultSet.setFetchSize(currentFetchSize);
+            }
+            queryLogger.writeLog(!skipColumnFillingLog);
+            provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
+            closeConnection();
+            queryLogger.writeLog(true);
+        } catch (SQLException e) {
+            throw new GrokConnectException("Something went wrong during execution of dry run", e);
         }
-        queryLogger.writeLog(!skipColumnFillingLog);
-        provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
-        closeConnection();
-        queryLogger.writeLog(true);
     }
 
-    public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
-        DataFrame df = new DataFrame();
-        if (resultSet == null || resultSet.isClosed())
+    public DataFrame getSubDF(int dfNumber) {
+        try {
+            DataFrame df = new DataFrame();
+            if (resultSet == null || resultSet.isClosed())
+                return df;
+            resultSetManager.empty();
+            if (!connection.isClosed()) {
+                int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
+                df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
+            }
+
+            if (dfNumber == 1 && supportTransactions && changedFetchSize) {
+                logger.debug(EventType.MISC.getMarker(), "Manual fetch size was set for all chunks {}", currentFetchSize);
+                resultSet.setFetchSize(currentFetchSize);
+            } else if (!changedFetchSize)
+                changeFetchSize(df, dfNumber);
+
+            df.tags = new LinkedHashMap<>();
+            df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
             return df;
-        resultSetManager.empty();
-        if (!connection.isClosed()) {
-            int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
-            df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
+        } catch (SQLException e) {
+            throw new GrokConnectException("Something went wrong during receiving of dataframe chunk", e);
         }
-
-        if (dfNumber == 1 && supportTransactions && changedFetchSize) {
-            logger.debug(EventType.MISC.getMarker(), "Manual fetch size was set for all chunks {}", currentFetchSize);
-            resultSet.setFetchSize(currentFetchSize);
-        } else if (!changedFetchSize)
-            changeFetchSize(df, dfNumber);
-
-        df.tags = new LinkedHashMap<>();
-        df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
-        return df;
     }
 
-    public void closeConnection() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
-            logger.debug(EventType.MISC.getMarker(), "Closing DB connection");
-            if (!connection.getAutoCommit())
-                connection.commit();
+    public void closeConnection() {
+        try {
+            if (resultSet != null && !resultSet.isClosed()) resultSet.close();
+            if (connection != null && !connection.isClosed()) {
+                logger.debug(EventType.MISC.getMarker(), "Closing DB connection");
+                if (!connection.getAutoCommit())
+                    connection.commit();
+                connection.close();
+                logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
+            }
             QueryMonitor.getInstance().removeResultSet(query.id);
-            connection.close();
-
-            logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
-        } else
-            QueryMonitor.getInstance().removeResultSet(query.id);
+        } catch (SQLException e) {
+            throw new GrokConnectException("Something went wrong during releasing resources", e);
+        }
     }
 
     public boolean isResultSetInitialized() {
