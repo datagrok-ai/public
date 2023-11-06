@@ -927,10 +927,10 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         const newValue = sketcher.getSmiles();
         const mol = checkMoleculeValid(cell.cell.value);
         if (!checkMolEqualSmiles(mol, newValue))
-          cell.cell.value = newValue;
+          cell.setValue(newValue, true);
         mol?.delete();
       } else
-        cell.cell.value = sketcher.getMolFile();
+        cell.setValue(sketcher.getMolFile(), true);
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show({resizable: true});
