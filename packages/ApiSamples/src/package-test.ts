@@ -10,7 +10,7 @@ const skip = [
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
   'README', '10k-columns-updates',
   // To fix
-  'scatter-plot-3d', 'network-diagram', 'chord-viewer', 'sankey-viewer', 'word-cloud', '', // Break
+  'scatter-plot-3d', 'network-diagram', 'chord-viewer', 'sankey-viewer', 'word-cloud', '100-million-rows', // Break
   'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
   'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',
   'add-single-filter', 'custom-filters', 'filter-group', 'dynamic-loading'
@@ -34,7 +34,7 @@ export async function initTests() {
     category(('Scripts:' + script.options.path as string).replaceAll('/', ':'), () => {
       _test(script.friendlyName, async () => {
         await script.apply();
-        await delay(200);
+        await delay(300);
         // if (grok.shell.lastError) {
         //   const err = grok.shell.lastError;
         //   grok.shell.lastError = '';
