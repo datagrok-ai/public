@@ -40,7 +40,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     row: row,
     cols: cols,
   };
-  if ((activeColumn > cols.length) || (activeColumn < 0))
+  if ((activeColumn >= cols.length) || (activeColumn < 0))
     return answer;
   const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
   const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
