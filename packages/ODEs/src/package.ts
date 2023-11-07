@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {initMatrOperApi, inverseMatrix, memAlloc, memFree} from '../wasm/matrix-operations-api';
 
 import {ODEs, solveODEs} from './solver';
+import {getIVP, getScriptLines, getScriptParams, DF_NAME} from './scripting-tools';
 
 export const _package = new DG.Package();
 
@@ -380,4 +381,49 @@ export function Bioreactor(t0: number, t1: number, h: number,
 //output: dataframe df
 export function solve(problem: ODEs): DG.DataFrame {  
   return solveODEs(problem); 
+}
+
+//name: EquaSleek X
+//tags: app
+export async function EquaSleekX() {
+  const odeInput = ui.textInput('', 'Enter equations:\n');  
+
+  const exportBtn = ui.button('export', () => {
+    const scriptText = getScriptLines(getIVP(odeInput.value)).join('\n');      
+    const script = DG.Script.create(scriptText);
+    const sView = DG.ScriptView.create(script);
+    grok.shell.addView(sView);
+  });
+
+  const solveBtn = ui.bigButton('solve', async () => {
+    const ivp = getIVP(odeInput.value);
+    const scriptText = getScriptLines(ivp).join('\n');    
+    const script = DG.Script.create(scriptText);    
+    const params = getScriptParams(ivp);    
+    const call = script.prepare(params);
+    await call.call();
+    df = call.outputs[DF_NAME];
+    view.dataFrame = call.outputs[DF_NAME];
+    view.name = df.name;
+    if (!viewer) {
+      viewer = DG.Viewer.lineChart(df, {
+        autoLayout: false,
+        sharex: true, 
+        multiAxis: true,
+        multiAxisLegendPosition: "RightCenter",
+      });
+      view.dockManager.dock(viewer, 'right');
+    }
+  });
+ 
+  let df = DG.DataFrame.create();
+  let view = grok.shell.addTableView(df);
+  let viewer: DG.Viewer | null = null;
+  view.name = 'ODEs';
+  let div = ui.divV([
+    odeInput,
+    ui.divH([exportBtn, solveBtn])
+  ]);  
+
+  view.dockManager.dock(div, 'left');  
 }

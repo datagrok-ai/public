@@ -64,7 +64,7 @@ const simple = `
   mu = -1`;
 
 const MM = `
-#name: MarkovModel
+#name: Markov Model
 #differential equations:
   dp0/dt = lambda00 * p0 + lambda10 * p1
   dp1/dt = lambda01 * p0 + lambda11 * p1 + lambda21 * p2
@@ -254,6 +254,7 @@ const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
 const SERVICE = '_';
 const DEFAULT_TOL = '0.00005';
+export const DF_NAME = 'df';
 
 const ODES_PACKAGE = 'ODEs';
 const SOLVER_FUNC = 'solve';
@@ -304,9 +305,10 @@ enum ERROR_MSG {
 
 enum ANNOT {
   NAME = '//name:',
+  TAGS = '//tags: model',
   LANG = '//language: javascript',
   INPUT = '//input: double',
-  OUTPUT = '//output: dataframe df',
+  OUTPUT = `//output: dataframe ${DF_NAME}`,
   EDITOR = '//editor: Compute:RichFunctionViewEditor',
   CAPTION = 'caption:',
   ARG_INIT = '{caption: Initial; category: Argument}',
@@ -325,7 +327,7 @@ enum SCRIPT {
   SOLVER = `const solver = await grok.functions.eval('${ODES_PACKAGE}:${SOLVER_FUNC}');`,
   PREPARE = 'let call = solver.prepare({problem: odes});',
   CALL = 'await call.call();',
-  OUTPUT = `let df = call.getParamValue('df');`,
+  OUTPUT = `let ${DF_NAME} = call.getParamValue('${DF_NAME}');`,
   SPACE = '    ',
   SUBSPACE = '      ',
   FUNC_VALS = '// extract function values',
@@ -364,7 +366,7 @@ function getStartOfProblemDef(lines: string[]): number {
   let i = idx;
   
   while (i < linesCount) {
-    console.log(`line ${i}:${lines[i]}`);
+    //console.log(`line ${i}:${lines[i]}`);
     ++i;
   }
 
@@ -420,15 +422,6 @@ function concatMultilineFormulas(source: string[]): string[] {
 }
 
 /** */
-function processed(expression: string): string {
-  let proc = expression;
-
-  //MATH_FUNCS.forEach((func) => proc = proc.replace(func, `Math.${func}`));
-
-  return proc;
-}
-
-/** */
 function getUsedMathIds(text: string, mathIds: string[]) {
   const res = [] as number[];
   const size = mathIds.length;  
@@ -453,7 +446,7 @@ function getDifEquations(lines: string[]): DifEqs {
     eqIdx = line.indexOf(EQUAL_SIGN);
     const name = line.slice(line.indexOf('d') + 1, divIdx).replace(/[() ]/g, '');
     names.push(name);
-    deqs.set(name, processed(line.slice(eqIdx + 1).trim()));
+    deqs.set(name, line.slice(eqIdx + 1).trim());
   }
 
   return {
@@ -469,7 +462,7 @@ function getExpressions(lines: string[]): Map<string, string> {
 
   for (const line of lines) {    
     eqIdx = line.indexOf(EQUAL_SIGN);
-    exprs.set(line.slice(0, eqIdx).replace(' ', ''), processed(line.slice(eqIdx + 1).trim()));
+    exprs.set(line.slice(0, eqIdx).replace(' ', ''), line.slice(eqIdx + 1).trim());
   }
 
   return exprs;
@@ -502,7 +495,7 @@ function getEqualities(lines: string[]): Map<string, number> {
 }
 
 /** */
-function getIVP(text: string): IVP {
+export function getIVP(text: string): IVP {
   // The current Initial Value Problem (IVP) specification
   let name: string;
   let deqs: DifEqs;
@@ -552,7 +545,7 @@ function getIVP(text: string): IVP {
     }
     else // error: unsupported control expression 
     {
-      console.log(firstLine);
+      //console.log(firstLine);
       throw new Error(ERROR_MSG.CONTROL_EXPR);
     }
   }
@@ -580,6 +573,9 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
 
   // the 'name' line
   res.push(`${ANNOT.NAME} ${ivp.name}`);
+
+  // the 'tags' line
+  //res.push(ANNOT.TAGS);
 
   // the 'language' line
   res.push(ANNOT.LANG);
@@ -618,23 +614,21 @@ function getMathArg(funcIdx: number): string {
   return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
 }
 
-/** */
-function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
-  // 1. Create annotation
-  const res = getAnnot(ivp, toAddViewers, toAddEditor);
+function getScriptMainBody(ivp: IVP): string[] {  
+  const res = [] as string[];
 
-  // 2. Constants lines
+  // 1. Constants lines
   if (ivp.consts !== null) {
     res.push(SCRIPT.CONSTS);
     ivp.consts.forEach((val, key, map) => res.push(`const ${key} = ${val};`));
   }
 
-  // 3. The problem definition lines
+  // 2. The problem definition lines
   res.push(SCRIPT.ODE_COM);
   res.push(SCRIPT.ODE);
   res.push(`${SCRIPT.SPACE}name: '${ivp.name}',`);
 
-  // 3.1) argument
+  // 2.1) argument
   const t = ivp.arg.name;
   const t0 = `${SERVICE}${t}0`;
   const t1 = `${SERVICE}${t}1`;
@@ -643,10 +637,10 @@ function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] 
 
   const names = ivp.deqs.solutionNames;
 
-  // 3.2) initial values
+  // 2.2) initial values
   res.push(`${SCRIPT.SPACE}initial: [${names.join(', ')}],`);
 
-  // 3.3) the right-hand side of the problem
+  // 2.3) the right-hand side of the problem
   res.push(`${SCRIPT.SPACE}func: (${t}, ${SERVICE}y, ${SERVICE}output) => {`);
 
   res.push(`${SCRIPT.SUBSPACE}${SCRIPT.FUNC_VALS}`);
@@ -662,24 +656,24 @@ function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] 
 
   res.push(`${SCRIPT.SPACE}},`);
 
-  // 3.4) final lines of the problem specification
+  // 2.4) final lines of the problem specification
   res.push(`${SCRIPT.SPACE}tolerance: ${ivp.tolerance},`);
   res.push(`${SCRIPT.SPACE}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push('};');
 
-  // 4. Math functions
+  // 3. Math functions
   if (ivp.usedMathFuncs.length > 0) {
     res.push(SCRIPT.MATH_FUNC_COM);
     ivp.usedMathFuncs.forEach((i) => res.push(`const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`));
   }
 
-  // 5. Math constants
+  // 4. Math constants
   if (ivp.usedMathConsts.length > 0) {
     res.push(SCRIPT.MATH_CONST_COM);
     ivp.usedMathConsts.forEach((i) => res.push(`const ${MATH_CONSTS[i]} = Math.${MATH_CONSTS[i]};`));
   }
 
-  // 6. The 'call solver' lines
+  // 5. The 'call solver' lines
   res.push(SCRIPT.SOLVER_COM);
   res.push(SCRIPT.SOLVER);
   res.push(SCRIPT.PREPARE);
@@ -687,15 +681,39 @@ function getScript(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] 
   res.push(SCRIPT.OUTPUT);
 
   return res;
-} // getScript
+} // getScriptMainBody
+
+/** */
+export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
+  return getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
+}
+
+/** */
+export function getScriptParams(ivp: IVP): Record<string, number> {
+  const res = {} as Record<string, number>;
+
+  const arg = ivp.arg;
+
+  res[`${SERVICE}${arg.name}0`] = arg.start;
+  res[`${SERVICE}${arg.name}1`] = arg.finish;
+  res[`${SERVICE}h`] = arg.step;
+
+  ivp.inits.forEach((val, key) => res[key] = val);
+
+  if (ivp.params)
+    ivp.params.forEach((val, key) => res[key] = val);
+
+  return res;
+}
 
 
-/*const ivp = getIVP(bio);
+/*
+const ivp = getIVP(simple);
 console.log(ivp);
 
 console.log();
 
-const scriptLines = getScript(ivp);
+const scriptLines = getScriptLines(ivp);
 
 for (const line of scriptLines)
   console.log(line);*/

@@ -8,16 +8,20 @@
 		"email": "vmakarichev@datagrok.ai"
 	},
 	"dependencies": {
-		"datagrok-api": "latest",
+		"@codemirror/autocomplete": "^6.10.2",
+		"@codemirror/lang-markdown": "^6.2.2",
+		"@codemirror/language-data": "^6.3.1",
+		"@datagrok-libraries/utils": "latest",
 		"cash-dom": "latest",
-		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"codemirror": "^6.0.1",
+		"datagrok-api": "latest",
+		"dayjs": "latest"
 	},
 	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"webpack": "latest",
+		"webpack-cli": "latest"
 	},
 	"scripts": {
 		"link-all": "",
@@ -37,8 +41,8 @@
 		"All users"
 	],
 	"sources": [
-        "wasm/matrix-operations.js"
-    ],
+		"wasm/matrix-operations.js"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/datagrok-ai/public.git",
