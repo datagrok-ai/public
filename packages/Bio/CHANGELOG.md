@@ -7,6 +7,7 @@
 ### Bug fixes
 * Fix detectMacromolecule allowing double quoted sequences and gaps.
 * Fix for min seq length 10, tests.
+* Fix user library settings for tests
 
 ## 2.11.0 (2023-10-25)
 
