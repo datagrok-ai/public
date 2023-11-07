@@ -1,5 +1,23 @@
 # Chem changelog
 
+## 1.8.4 (2023-11-07)
+
+### Features
+
+* [#2459](https://github.com/datagrok-ai/public/issues/2459): Chem: Scaffold Tree: Improvements:
+  * The “trash can” icon is red and stands out from the general style; make a blue one from the same collection
+  * Add Expand All/Collapse All icons for easy navigation
+  * Save the state of the tree (what was selected, what was expanded) when saving
+* [#2420](https://github.com/datagrok-ai/public/issues/2420): Chem | Scaffold tree coloring:
+  * use the trash iscon instead of '-'
+
+### Bug Fixes
+
+* [#2474](https://github.com/datagrok-ai/public/issues/2474): Chem | Scaffold tree: Colour is not inherited by child node properly
+* [#2476](https://github.com/datagrok-ai/public/issues/2476): Chem | Scaffold tree: Rows are shown as filtered for a while after applying structure even if checkbox is not selected
+* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted if they are in SMILES format
+* [#2473](https://github.com/datagrok-ai/public/issues/2473): Structure filter: 'current value > use as filter' breaks filtering in some cases
+
 ## 1.8.3 (2023-10-26)
 
 ### Features
