@@ -599,7 +599,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     });
   }
-  
+
   async generateTree() {
     if (this.molColumn === null)
       return;
@@ -1238,20 +1238,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     colorIcon!.style.cssText += ('color: ' + color + ' !important');
     const substr = this.getParentSmilesIterative(group);
 
-    if (group.checked) {
+    if (group.checked)
       this.updateFilters();
-    }
+    else
+      removeElementByMolecule(this.checkedScaffolds, smiles);
 
-    if (groupValue.parentColor && !groupValue.colorOn && !groupValue.chosenColor) {
+    if (groupValue.parentColor && !groupValue.colorOn && !groupValue.chosenColor)
       removeElementByMolecule(this.colorCodedScaffolds, substr);
-      if (!group.checked)
-        removeElementByMolecule(this.checkedScaffolds, smiles);
-    } else {
+    else
       removeElementByMolecule(this.colorCodedScaffolds, smiles);
-      if (!group.checked)
-        removeElementByMolecule(this.checkedScaffolds, smiles);
-    }
-
+   
     if ((!groupValue.parentColor && !groupValue.chosenColor) || (!groupValue.parentColor) || (!groupValue.chosenColor)) {
       this.makeColorIconInactive(group);
       delete groupValue.chosenColor;
@@ -1282,13 +1278,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let updatedTag: string;
     const colorCodedString = JSON.stringify(this.colorCodedScaffolds);
     const checkedNodes = this.tree.items.filter((v) => v.checked);
-    let checkedString;
-    if (checkedNodes.length > 0) {
-      checkedString = JSON.stringify(this.checkedScaffolds);
-    } else {
-      this.checkedScaffolds = [];
-      checkedString = JSON.stringify(this.checkedScaffolds);
-    }
+    this.checkedScaffolds = checkedNodes.length > 0 ? this.checkedScaffolds : [];
+    const checkedString = JSON.stringify(this.checkedScaffolds);
     if (this.colorCodedScaffolds.length > 0 && this.checkedScaffolds.length > 0) {
       updatedTag = checkedString.slice(0, -1) + ',' + colorCodedString.slice(1);
     } else if (this.colorCodedScaffolds.length > 0) {
