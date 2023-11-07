@@ -259,7 +259,6 @@
 .mol-host {
   margin: 0 6px;
   flex-grow: 1;
-  overflow: hidden;
   display: flex;
 }
 
@@ -296,7 +295,7 @@
   color: var(--blue-1) !important;
 }
 
-.scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .d4-tree-view-group-label .chem-mol-box-info-buttons,
+.scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node:hover .d4-tree-view-group-label .chem-mol-box-info-buttons,
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node:hover > .d4-tree-view-group-label > .chem-mol-box .chem-mol-box-info .chem-mol-box-info-buttons {
   visibility: visible;
 }

@@ -459,11 +459,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.tableIdx = tableNames.length > 0 ? tableNames.indexOf(this.Table) : -1;
 
-    const molColNames = new Array(this.molColumns[this.tableIdx].length);
+    let molColNames  = [];
+    if (this.molColumns.length > 0)
+      molColNames = new Array(this.molColumns[this.tableIdx].length);
+
     for (let n = 0; n < molColNames.length; ++n)
       molColNames[n] = this.molColumns[this.tableIdx][n].name;
 
-    this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1;
+    if (this.molColumns.length > 0) {
+      this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1; 
+    }
 
     this.MoleculeColumn = this.string('MoleculeColumn', molColNames.length === 0 ? null : molColNames[0], {
       choices: molColNames,
@@ -972,6 +977,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.updateSizes();
         this.removeColorCoding(node);
         this.updateTag();
+        this.updateFilters();
         this.treeEncodeUpdateInProgress = true;
         this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
         this.treeEncodeUpdateInProgress = false;
@@ -1069,7 +1075,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         let molArom;
         const node = value(checkedNodes[n]);
         const isChosenColorOn = node.chosenColor && node.colorOn;
-        const isParentColorOn = node.parentColor && node.colorOn;
+        const isParentColorOn = node.parentColor && !node.colorOn;
         try {
           molArom = _rdKitModule.get_qmol(processUnits(molStr));
           if (isChosenColorOn) {
@@ -1291,7 +1297,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       updatedTag = checkedString;
     }  
     this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
-    grok.shell.tv.dataFrame?.fireValuesChanged();
   }
   
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
@@ -1499,18 +1504,26 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     const labelDiv = ui.divText(label);
-    labelDiv.style.marginLeft = '265px';
     const iconsDiv = ui.divV([
-      ui.iconFA('trash-alt', () => this.clearOrphanFolders(group), 'Remove orphans'),
+      ui.iconFA('trash-alt', () => {
+        const dialog = ui.dialog({title: 'Delete orphans'});
+        dialog
+        .add(ui.divText('This cannot be undone. Are you sure?'))
+        .addButton('Yes', () => {
+          this.clearOrphanFolders(group);
+          dialog.close();
+        })
+        .show();
+      }, 'Remove orphans'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
       ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
-    ], /*'chem-mol-box-info'*/ 'chem-mol-box-info-buttons');
-    iconsDiv.style.marginLeft = '265px';
+    ], 'chem-mol-box-info-buttons');
 
-    const divHost = ui.divH([ui.divV([labelDiv, iconsDiv], 'chem-mol-box-info'), divFolder]);
+    const folder = ui.divH([ui.div(ui.div(divFolder), 'mol-host')], 'chem-mol-box')
+    folder.children[0].append(ui.divV([labelDiv, iconsDiv], 'chem-mol-box-info'));
 
-    const group = rootGroup.group(divHost, {orphans: true});
+    const group = rootGroup.group(folder, {orphans: true});
     if (group.children.length === 0)
       enableNodeExtendArrow(group, false);
 
@@ -1531,6 +1544,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   clearOrphanFolders(rootGroup: TreeViewGroup) {
     if (isOrphans(rootGroup)) {
       rootGroup.remove();
+      this.updateFilters();
       return;
     }
 
@@ -1568,7 +1582,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateSizes();
   }
 
-  changeCanvasSize(molString: any, canvas: any, width: number, height: number): void {
+  changeCanvasSize(molString: any): void {
     const { chosenColor, colorOn, parentColor, smiles, group } = molString;
     const color = chosenColor && colorOn ? chosenColor : parentColor;
     const substr = chosenColor && colorOn ? smiles : this.getParentSmilesIterative(group);
@@ -1634,15 +1648,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this._bitOpInput!.value = this.bitOperation;
     } else if (p.name === 'size') {
       const canvases = this.tree.root.querySelectorAll('.chem-canvas');
-      const molStrings = this.tree.items.map((item) => ({
+      const molStrings = this.tree.items
+      .filter((item) => !isOrphans(item))
+      .map((item) => ({
         group: item,
-        smiles: (item.value as ITreeNode).smiles,
-        parentColor: (item.value as ITreeNode).parentColor,
-        chosenColor: (item.value as ITreeNode).chosenColor,
-        colorOn: (item.value as ITreeNode).colorOn
-      }));      
+        smiles: item.value.smiles,
+        parentColor: item.value.parentColor,
+        chosenColor: item.value.chosenColor,
+        colorOn: item.value.colorOn,
+      }));
+      
       for (let i = 0; i < canvases.length; ++i)
-        this.changeCanvasSize(molStrings[i], canvases[i], this.sizesMap[this.size].width, this.sizesMap[this.size].height);
+        this.changeCanvasSize(molStrings[i]);
       this.updateSizes();
       this.updateUI();
     } else if (p.name === 'allowGenerate') {

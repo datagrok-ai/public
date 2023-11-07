@@ -94,7 +94,6 @@ export class ScaffoldTreeFilter extends DG.Filter {
     super.detach();
     this.viewer.clearFilters();
     this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
-    grok.shell.tv.dataFrame?.fireValuesChanged();
   }
 
   createViewer(dataFrame: DG.DataFrame) {
