@@ -1,10 +1,16 @@
 # Compute changelog
 
+## 1.17.1 (2023-11-07)
+
+### Features
+
+- ModelCatalog: Moved generic code into compute-utils
+
 ## 1.17.0 (2023-11-03)
 
 ### Features:
 
-- ModelHub: Added mandatory groups indication
+- ModelCatalog: Added mandatory groups indication
 - PLV: Added inconsistent steps indication
 - PLV: Added mandatoryConsistent tag
 
