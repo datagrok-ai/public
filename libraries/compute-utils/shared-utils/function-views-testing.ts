@@ -7,34 +7,54 @@ import {delay, last, takeUntil, takeWhile} from 'rxjs/operators';
 import {of} from 'rxjs';
 
 export interface FunctionViewTestOptions extends ExpectDeepEqualOptions {
-  validatorsWaitTime?: number;
+  initWaitTimeout?: number;
+  validatorsWaitTimeout?: number;
+  nextStepTimeout?: number;
 }
 export type PipelineTestOptions = Record<string, FunctionViewTestOptions>
 
-export async function testPipeline(spec: any, view: PipelineView, options: PipelineTestOptions = {}) {
+export async function testPipeline(
+  spec: any, view: PipelineView, options: PipelineTestOptions = {}, initWaitTimeout = 5000) {
+  await waitForReady(view, initWaitTimeout);
   for (const [name, step] of Object.entries(view.steps)) {
     const stepSpec = spec[name];
     if (!stepSpec)
       continue;
     const prefix = options.prefix ? `${options.prefix}: ${name}` : name;
-    await testFunctionView(stepSpec, step.view, {validatorsWaitTime: 1000, ...options, prefix});
+    const defaultSettings = {validatorsWaitTimeout: 1000, nextStepTimeout: 100, initWaitTimeout: 100};
+    await testFunctionView(stepSpec, step.view, {...defaultSettings, ...options, prefix});
   }
 }
 
 export async function testFunctionView(
-  spec: any, view: FunctionView | RichFunctionView, options: FunctionViewTestOptions) {
+  spec: any, view: FunctionView | RichFunctionView, options: FunctionViewTestOptions = {}) {
+  await waitForReady(view, options.initWaitTimeout ?? 1000);
   for (const [name, data] of Object.entries(spec.inputs))
     view.funcCall.inputs[name] = data;
   if (view instanceof RichFunctionView) {
-    const validatorsWaitTime = options.validatorsWaitTime ?? 1000;
+    const validatorsWaitTimeout = options.validatorsWaitTimeout ?? 1000;
     const state = await view.pendingValidations.pipe(
-      takeUntil(of(null).pipe(delay(validatorsWaitTime))),
-      takeWhile(() => !view.isValid()),
+      takeUntil(of(null).pipe(delay(validatorsWaitTimeout))),
+      takeWhile(() => !view.isValid(), true),
       last(),
     ).toPromise();
-    if (state)
-      throw new Error(`{options.prefix}: validators failed to accept input in ${validatorsWaitTime}ms, state ${state}`);
+    if (state) {
+      const msg = `{options.prefix}: validators failed to accept input in ${validatorsWaitTimeout}ms, state ${state}`;
+      throw new Error(msg);
+    }
   }
+  console.log(`running ${view.funcCall.nqName}`);
   await view.run();
-  expectDeepEqual(view.funcCall.outputs, spec, options);
+  console.log(`checking ${view.funcCall.nqName} results`);
+  expectDeepEqual(view.funcCall.outputs, spec.outputs, options);
+}
+
+async function waitForReady(view: FunctionView, timeout: number) {
+  const isReady = await view.isReady.pipe(
+    takeUntil(of(null).pipe(delay(timeout))),
+    takeWhile((ready) => !ready, true),
+    last(),
+  ).toPromise();
+  if (!isReady)
+    throw new Error(`Waiting for view ${view.name} timeout`);
 }

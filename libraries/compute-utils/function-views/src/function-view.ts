@@ -26,6 +26,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   // emitted when after a new FuncCall is linked
   public funcCallReplaced = new Subject<true>();
+  public isReady = new BehaviorSubject(false);
 
   /**
    * Constructs a new view using function with the given {@link func}. An fully-specified name is expected.
@@ -295,6 +296,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async init() {
     await this.loadFuncCallById();
     await this.onFuncCallReady();
+    this.isReady.next(true);
   }
 
   /**

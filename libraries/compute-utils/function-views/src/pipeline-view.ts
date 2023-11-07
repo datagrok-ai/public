@@ -321,6 +321,7 @@ export class PipelineView extends ComputationView {
     this.subs.push(plvHistorySub);
 
     await this.onFuncCallReady();
+    this.isReady.next(true);
   }
 
   private syncNavButtons(currentStep: StepState, backBtn: HTMLButtonElement, nextBtn: HTMLButtonElement) {
