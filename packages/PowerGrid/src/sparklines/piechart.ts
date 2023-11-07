@@ -34,7 +34,7 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   for (let i = 0; i < cols.length; i++) {
     if (cols[i].isNone(row))
       continue;
-    sum += cols[i].get(row);
+    sum += cols[i].type === DG.COLUMN_TYPE.BIG_INT ? Number(cols[i].get(row)) : cols[i].get(row);
   }
   return sum;
 }
@@ -63,7 +63,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     for (let i = 0; i < cols.length; i++) {
       if (cols[i].isNone(gridCell.cell.row.idx))
         continue;
-      const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+      const endAngle = currentAngle + 2 * Math.PI * (cols[i].type === DG.COLUMN_TYPE.BIG_INT ?
+        Number(cols[i].get(row)) : cols[i].get(row)) / sum;
       if ((angle > currentAngle) && (angle < endAngle)) {
         activeColumn = i;
         break;
@@ -137,7 +138,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i].isNone(row))
           continue;
         const r = box.width / 2;
-        const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+        const endAngle = currentAngle + 2 * Math.PI * (cols[i].type === DG.COLUMN_TYPE.BIG_INT ?
+          Number(cols[i].get(row)) : cols[i].get(row)) / sum;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r, currentAngle, endAngle);
