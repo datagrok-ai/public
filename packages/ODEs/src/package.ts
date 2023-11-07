@@ -6,7 +6,11 @@ import * as DG from 'datagrok-api/dg';
 import {initMatrOperApi, inverseMatrix, memAlloc, memFree} from '../wasm/matrix-operations-api';
 
 import {ODEs, solveODEs} from './solver';
-import {getIVP, getScriptLines, getScriptParams, DF_NAME} from './scripting-tools';
+import {getIVP, getScriptLines, getScriptParams, DF_NAME, TEMPLATE} from './scripting-tools';
+
+import {basicSetup, EditorView} from "codemirror";
+import {python} from "@codemirror/lang-python"
+
 
 export const _package = new DG.Package();
 
@@ -386,17 +390,17 @@ export function solve(problem: ODEs): DG.DataFrame {
 //name: EquaSleek X
 //tags: app
 export async function EquaSleekX() {
-  const odeInput = ui.textInput('', 'Enter equations:\n');  
+  //const odeInput = ui.textInput('', 'Enter equations:\n');  
 
-  const exportBtn = ui.button('export', () => {
-    const scriptText = getScriptLines(getIVP(odeInput.value)).join('\n');      
+  const exportBtn = ui.button('export', () => {    
+    const scriptText = getScriptLines(getIVP(newView.state.doc.toString())).join('\n');      
     const script = DG.Script.create(scriptText);
     const sView = DG.ScriptView.create(script);
     grok.shell.addView(sView);
   });
 
-  const solveBtn = ui.bigButton('solve', async () => {
-    const ivp = getIVP(odeInput.value);
+  const solveBtn = ui.bigButton('solve', async () => {    
+    const ivp = getIVP(newView.state.doc.toString());
     const scriptText = getScriptLines(ivp).join('\n');    
     const script = DG.Script.create(scriptText);    
     const params = getScriptParams(ivp);    
@@ -407,10 +411,11 @@ export async function EquaSleekX() {
     view.name = df.name;
     if (!viewer) {
       viewer = DG.Viewer.lineChart(df, {
+        showTitle: true,
         autoLayout: false,
         sharex: true, 
         multiAxis: true,
-        multiAxisLegendPosition: "RightCenter",
+        multiAxisLegendPosition: "RightTop",
       });
       view.dockManager.dock(viewer, 'right');
     }
@@ -420,10 +425,18 @@ export async function EquaSleekX() {
   let view = grok.shell.addTableView(df);
   let viewer: DG.Viewer | null = null;
   view.name = 'ODEs';
-  let div = ui.divV([
-    odeInput,
-    ui.divH([exportBtn, solveBtn])
-  ]);  
+  let div = ui.divV([]);
 
-  view.dockManager.dock(div, 'left');  
+  let newView = new EditorView({
+    doc: TEMPLATE,
+    extensions: [basicSetup, python()],
+    parent: div
+  });
+
+  newView.dom.style.overflow = 'auto';
+
+  view.dockManager.dock(div, 'left');
+  div.append(ui.divH([exportBtn, solveBtn]));
+
+  console.log(newView);
 }
