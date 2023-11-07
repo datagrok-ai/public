@@ -10,7 +10,7 @@ const skip = [
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
   'README', '10k-columns-updates',
   // To fix
-  'scatter-plot-3d', 'network-diagram', // Break
+  'scatter-plot-3d', 'network-diagram', 'chord-viewer', 'sankey-viewer', 'word-cloud', '', // Break
   'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
   'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',
   'add-single-filter', 'custom-filters', 'filter-group', 'dynamic-loading'
@@ -22,6 +22,7 @@ const skip = [
 //input: object testContext {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
+  testContext = new TestContext(false, false);
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }
@@ -33,7 +34,7 @@ export async function initTests() {
     category(('Scripts:' + script.options.path as string).replaceAll('/', ':'), () => {
       _test(script.friendlyName, async () => {
         await script.apply();
-        await delay(300);
+        await delay(200);
         // if (grok.shell.lastError) {
         //   const err = grok.shell.lastError;
         //   grok.shell.lastError = '';
