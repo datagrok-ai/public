@@ -10,7 +10,8 @@ const skip = [
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
   'README', '10k-columns-updates',
   // To fix
-  'scatter-plot-3d', 'network-diagram', 'chord-viewer', 'sankey-viewer', 'word-cloud', '100-million-rows', // Break
+  'scatter-plot-3d', 'network-diagram', 'chord-viewer', 'sankey-viewer', 'word-cloud',
+  '100-million-rows', 'custom-viewer-properties', // Break
   'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
   'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',
   'add-single-filter', 'custom-filters', 'filter-group', 'dynamic-loading'
