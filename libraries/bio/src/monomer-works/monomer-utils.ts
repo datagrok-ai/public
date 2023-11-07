@@ -139,6 +139,9 @@ export interface IMonomerLibHelper {
 
   /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
+
+  /** Reset user settings to the specified library. WARNING: clears user * settings */
+  selectSpecifiedLibraries(libFileNameList: string[]): Promise<void>;
 }
 
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {

@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, test, expectArray} from '@datagrok-libraries/utils/src/test';
 
-import {getMonomerLibHelper, toAtomicLevel} from '../package';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {toAtomicLevel} from '../package';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_STORAGE_NAME} from '../utils/monomer-lib';
+import {LIB_STORAGE_NAME, LIB_DEFAULT, getUserLibSettings} from '../utils/monomer-lib';
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
@@ -45,10 +45,10 @@ category('toAtomicLevel', async () => {
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
-    // Clear settings to test default
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, {}, true);
-    await monomerLibHelper.loadLibraries(true);
+    userLibrariesSettings = {...await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true)};
+    const defaultLib = Object.values(LIB_DEFAULT)[0];
+    await monomerLibHelper.selectSpecifiedLibraries([defaultLib]);
+    monomerLibHelper.loadLibraries(true);
 
     for (const key in testNames) {
       sourceDf[key] = await fileSource.readCsv(inputPath[key]);

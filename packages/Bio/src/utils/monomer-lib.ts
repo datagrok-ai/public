@@ -307,6 +307,22 @@ export class MonomerLibHelper implements IMonomerLibHelper {
     return new MonomerLib(monomers);
   }
 
+  /** Reset user settings to the specified library. WARNING: clears user * settings */
+  public async selectSpecifiedLibraries(libFileNameList: string[]): Promise<void> {
+    const invalidNames = await this.getInvalidFileNames(libFileNameList);
+    if (invalidNames.length > 0)
+      throw new Error(`Cannot select libraries ${invalidNames}: no such library in the list`);
+    const settings = await getUserLibSettings();
+    settings.exclude = (await getLibFileNameList()).filter((fileName) => !libFileNameList.includes(fileName));
+    await setUserLibSetting(settings);
+  }
+
+  private async getInvalidFileNames(libFileNameList: string[]): Promise<string[]> {
+    const availableFileNames = await getLibFileNameList();
+    const invalidNames = libFileNameList.filter((fileName) => !availableFileNames.includes(fileName));
+    return invalidNames;
+  }
+
   // -- Instance singleton --
   private static _instance: MonomerLibHelper | null = null;
 
