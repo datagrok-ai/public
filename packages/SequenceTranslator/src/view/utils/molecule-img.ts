@@ -21,6 +21,11 @@ export class MoleculeImage {
   get molblock(): string { return this._validMolBlock; }
 
   set molblock(value: string) {
+    if (value === '') {
+      this._validMolBlock = value;
+      return;
+    }
+
     try {
       this.validateMolBlock(value);
     } catch (error) {
