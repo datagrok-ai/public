@@ -14,12 +14,18 @@ export interface SummarySettingsBase {
 }
 
 
+/// Utility method for old summary columns format support
+export function isSummarySettingsBase(obj: any): obj is SummarySettingsBase {
+  return (obj as SummarySettingsBase).columnNames !== undefined;
+}
+
 export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn,
   sparklineType: SparklineType): Type {
-  return gc.settings[sparklineType] ??= {
-    columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
-      .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
-  };
+  return isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[sparklineType] ??= {
+      columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
+        .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
+    };
 }
 
 export enum SparklineType {

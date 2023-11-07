@@ -6,7 +6,8 @@ import {
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit
+  Hit,
+  isSummarySettingsBase
 } from './shared';
 
 const minRadius = 10;
@@ -22,8 +23,8 @@ interface PieChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  const settings: PieChartSettings = gc.settings[SparklineType.PieChart] ??=
-    getSettingsBase(gc, SparklineType.PieChart);
+  const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
   settings.style ??= PieChartStyle.Radius;
   return settings;
 }
@@ -150,7 +151,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: PieChartSettings = gc.settings[SparklineType.PieChart] ??= getSettings(gc);
+    const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {

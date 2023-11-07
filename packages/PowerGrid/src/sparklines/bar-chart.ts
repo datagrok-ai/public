@@ -6,7 +6,8 @@ import {
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit
+  Hit,
+  isSummarySettingsBase
 } from './shared';
 
 const minH = 0.05;
@@ -17,8 +18,8 @@ interface BarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
-  const settings: BarChartSettings = gc.settings[SparklineType.BarChart] ??=
-    getSettingsBase(gc, SparklineType.BarChart);
+  const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
   settings.globalScale ??= false;
   settings.colorCode ??= false;
   return settings;
@@ -98,7 +99,8 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: BarChartSettings = gc.settings[SparklineType.BarChart] ??= getSettings(gc);
+    const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.BarChart] ??= getSettings(gc);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +
