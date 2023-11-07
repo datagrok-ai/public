@@ -926,7 +926,7 @@ function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void 
 function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number {
   const bondsMap = constructBondsMap(monomer);
   let doubleBondedOxygen = 0;
-  const sentinel = Math.pow(monomer.atoms.atomTypes.length, 2);
+  const sentinel = monomer.atoms.atomTypes.length;
   let i = 0;
   // iterate over the nodes bonded to the carbon and find the double one
   while (doubleBondedOxygen === 0) {
