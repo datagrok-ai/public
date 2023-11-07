@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {getSettingsBase, names, SparklineType, SummarySettingsBase} from '../sparklines/shared';
+import {getSettingsBase, isSummarySettingsBase, names, SparklineType, SummarySettingsBase} from '../sparklines/shared';
 import {GridCell, GridColumn} from 'datagrok-api/src/grid';
 import {GridCellElement, LabelElement, Scene} from './scene';
 
@@ -27,7 +27,8 @@ interface FormSettings extends SummarySettingsBase {
 
 function getSettings(gc: DG.GridColumn): FormSettings {
   gc.settings ??= {};
-  const settings: FormSettings = gc.settings[SparklineType.Form] ??= getSettingsBase(gc, SparklineType.Form);
+  const settings: FormSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.Form] ??= getSettingsBase(gc, SparklineType.Form);
   settings.colorCode ??= true;
   return settings;
 }
@@ -165,7 +166,8 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: FormSettings = gc.settings[SparklineType.Form] ??= getSettings(gc);
+    const settings: FormSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.Form] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {

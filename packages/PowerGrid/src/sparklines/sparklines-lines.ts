@@ -7,7 +7,8 @@ import {
   SummarySettingsBase,
   Hit,
   distance,
-  createTooltip
+  createTooltip,
+  isSummarySettingsBase
 } from './shared';
 
 const minDistance = 5;
@@ -38,8 +39,8 @@ interface SparklineSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
-  const settings: SparklineSettings = gc.settings[SparklineType.Sparkline] ??=
-    getSettingsBase(gc, SparklineType.Sparkline);
+  const settings: SparklineSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.Sparkline] ??= getSettingsBase(gc, SparklineType.Sparkline);
   settings.globalScale ??= false;
   settings.colorCode ??= true;
   return settings;
@@ -152,7 +153,8 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    const settings: SparklineSettings = gridColumn.settings[SparklineType.Sparkline] ??= getSettings(gridColumn);
+    const settings: SparklineSettings = isSummarySettingsBase(gridColumn.settings) ? gridColumn.settings :
+      gridColumn.settings[SparklineType.Sparkline] ??= getSettings(gridColumn);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +
