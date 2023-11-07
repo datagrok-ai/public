@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {drawMoleculeToCanvas, getRdKitModule, getRdKitService, getUncommonAtomsAndBonds} from '../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas, getRdKitModule, getRdKitService, getUncommonAtomsAndBonds}
+  from '../utils/chem-common-rdkit';
 
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -9,11 +10,12 @@ import {chemSpace} from './chem-space';
 import $ from 'cash-dom';
 import {ISubstruct} from '../rendering/rdkit-cell-renderer';
 import {SUBSTRUCT_COL} from '../constants';
-import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer} from '@datagrok-libraries/utils/src/render-lines-on-sp';
+import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer}
+  from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { RDModule } from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { debounceTime } from 'rxjs/operators';
-import { getSigFigs } from '../utils/chem-common';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {debounceTime} from 'rxjs/operators';
+import {getSigFigs} from '../utils/chem-common';
 
 const MMP_COLNAME_FROM = 'From';
 const MMP_COLNAME_TO = 'To';
@@ -132,7 +134,7 @@ function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
 }
 
 function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.Column, mmpRules: MmpRules,
-  allCasesNumber: number, rdkitModule: RDModule): {
+  allCasesNumber: number): {
   maxAct: number,
   diffs: Float32Array,
   linesIdxs: Uint32Array,
@@ -214,7 +216,7 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
   //creating cases grid
   const pairsFromCol = DG.Column.fromStrings(MMP_COLNAME_FROM, molFrom);
   const pairsToCol = DG.Column.fromStrings(MMP_COLNAME_TO, molTo);
-  const singleDiffCol = DG.Column.fromFloat32Array(MMP_COLNAME_DIFF, diffs);  
+  const singleDiffCol = DG.Column.fromFloat32Array(MMP_COLNAME_DIFF, diffs);
   const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, molFrom.length);
   const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);
@@ -309,10 +311,12 @@ function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewe
   };
 
   //@ts-ignore
-  const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer, MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y,
+  const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
+    MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y,
     lines, ScatterPlotCurrentLineStyle.bold);
 
-  const drawMolPair = (molecules: string[], substr: (ISubstruct | null)[], idx: number, div: HTMLDivElement, vertical?: boolean) => {
+  const drawMolPair =
+  (molecules: string[], substr: (ISubstruct | null)[], idx: number, div: HTMLDivElement, vertical?: boolean) => {
     ui.empty(div);
     const hosts = vertical ? ui.divV([]) : ui.divH([]);
     const canvasWidth = 200;
@@ -394,7 +398,6 @@ async function getInverseSubstructuresAndAlign(from: string[], to: string[], mod
   const mcs = await getMmpMcs(from, to);
 
   for (let i = 0; i < from.length; i++) {
-
     //aligning molecules
     const mcsMol = module.get_qmol(mcs[i]);
     mcsMol.set_new_coords();
@@ -419,7 +422,7 @@ async function getInverseSubstructuresAndAlign(from: string[], to: string[], mod
     fromAligned[i] = mol1.get_molblock();
     toAligned[i] = mol2.get_molblock();
 
-    //highlight fragment 
+    //highlight fragment
     const matches = mol1.get_substruct_matches(mcsMol);
     for (let i = 0; i < matches.length; i++) {
       
@@ -580,7 +583,7 @@ export class MmpAnalysis {
 
     //Transformations tab
     const {maxAct, diffs, linesIdxs, allPairsGrid, casesGrid, lines} =
-      await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, module);
+      await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid);
@@ -641,7 +644,8 @@ export class MmpAnalysis {
       pairsFrom[i] = diffFrom.get(cases[i]);
       pairsTo[i] = diffTo.get(cases[i]);
     }
-    const [inverse1, inverse2, fromAligned, toAligned] = await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
+    const [inverse1, inverse2, fromAligned, toAligned] =
+      await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
     for (let i = 0; i < cases.length; i++) {
       diffFrom.set(cases[i], fromAligned[i]);
       diffTo.set(cases[i], toAligned[i]);
