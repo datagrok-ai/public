@@ -561,7 +561,6 @@ export class MmpAnalysis {
 
     this.refilterAllPairs(true);
 
-    this.allPairsGrid.table.currentRowIdx = 0;
     this.allPairsGrid.table.onCurrentRowChanged.subscribe(() => {
       if (this.allPairsGrid.table.currentRowIdx !== -1)
         this.refreshPair(this.rdkitModule);
