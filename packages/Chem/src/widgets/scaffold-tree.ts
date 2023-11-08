@@ -961,7 +961,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   
 
   removeNode(node: TreeViewGroup) {
-    const dialog = ui.dialog({title: 'Delete scaffold'});
+    const dialog = ui.dialog({title: 'Remove scaffold'});
     dialog
       .add(ui.divText('This cannot be undone. Are you sure?'))
       .addButton('Yes', () => {
@@ -1021,6 +1021,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (changeBitwise)
       this._bitOpInput!.value = BitwiseOp.OR;
+    this.clearNotIcon(this.tree.children);
     
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1497,7 +1498,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const labelDiv = ui.divText(label);
     const iconsDiv = ui.divV([
       ui.iconFA('trash-alt', () => {
-        const dialog = ui.dialog({title: 'Delete orphans'});
+        const dialog = ui.dialog({title: 'Remove orphans card'});
         dialog
         .add(ui.divText('This cannot be undone. Are you sure?'))
         .addButton('Yes', () => {
@@ -1505,7 +1506,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           dialog.close();
         })
         .show();
-      }, 'Remove orphans'),
+      }, 'Remove orphans card'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
       ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
@@ -1660,6 +1661,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
+  clearNotIcon(tree: DG.TreeViewNode[]) {
+    tree.map((group) => {
+      const castedGroup = group as DG.TreeViewGroup;
+      if (!isOrphans(castedGroup)) {
+        this.setNotBitOperation(castedGroup, false);
+        if (castedGroup.children)
+          this.clearNotIcon(castedGroup.children)
+      }
+    });
+  }
+
   onFrameAttached(dataFrame: DG.DataFrame): void {
     ui.empty(this.root);
 
@@ -1745,6 +1757,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       tooltip.removeAttribute('data');
       if (text !== null && text !== undefined)
         tooltip.innerHTML = text;
+    }));
+
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
+      this.clearFilters();
+      this.clearNotIcon(this.tree.children);
     }));
 
     this.render();

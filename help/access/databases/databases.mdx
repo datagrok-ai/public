@@ -432,94 +432,57 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 :::
 
-## Debug query
+## Debugging query
 
-Query debugger lets you find common problems, and optimize query performance.
-**To open query debugger**, right-click on the query and select "Debug", or click on the "bug" icon on
-top of the query editor.
+Query debugging helps you fix and improve query performance.
 
-There are two parameters that can significantly influence execution time of query - **Fetch size** and **Init fetch size**.
+To start debugging:
 
-**Fetch size**. Gives the JDBC driver a hint as to the number of rows that should be fetched from the database
-when more rows are needed for this ResultSet object. If the fetch size specified is zero, the JDBC driver .
-Grok Connect under the hood not only uses this value as fetch size for ResultSet but also as the number
-of rows that will be sent to the server in one WebSocket message. And consequently, this value for User-Agent equals
-the number of rows that will be rendered on the screen by 1 workaround.
-By default, this value is calculated automatically by Grok Connect based on the average size of the row to achieve a maximum message size of 10 Mb
-that is sent to the server by WebSocket. This parameter can be specified in megabytes to limit the maximum message size.
+1. Right-click on the saved query and select **Debug**. The form appears.
+2. Fill in **Fetch size** input. This parameter sets the number of rows the JDBC driver fetches from the database and sends to the server in one WebSocket message. It also affects how many rows are shown on the screen in one workaround. You can also specify this parameter in megabytes to limit the message size.
+3. Optionally fill in **Init fetch size** input. This parameter is the same as **Fetch size**, but it applies to [Statement](https://docs.oracle.com/javase/8/docs/api/java/sql/Statement.html) and affects how fast the Statement executes and the first rows of the DataFrame appear on the screen.
+4. Check **Optimize fetch size** to run the query with several predefined **Fetch sizes** and get execution times.
+5. Press **OK**. Debugging starts.
 
 :::note
 
-To get consistent results for debugging **Fetch size** parameter should be specified.
+You can debug queries in [Query Editor](#query-editor) by clicking on the "bug" icon on top of the editor. Also, you can start debugging from the **Context Panel** using the **Debug** section.
 
 :::
 
-To specify **Fetch size** for debugging use the corresponding input field in the debug section.
-If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
+When you finish debugging with **Optimize fetch size** off, you will see the execution results, **Summary**, and detailed logs. **Summary** shows the times of different stages of query execution. These metrics help you evaluate how factors like network speed, data complexity, etc. affect performance. **Summary** also explains what each metric means.
 
-<details>
-<summary> Here's an example </summary>
+:::note
 
-```sql
---meta.connectFetchSize: 10000
-SELECT * FROM very_big_table
+The network connection or the local disk load can affect the result a lot. For better evaluation, run **Debug** several times in a row.
+
+:::
+
+You can always return to **Summary** and detailed logs to analyze them later. In order to do this:
+
+1. Navigate to the desired saved query and expand the tree with historical runs.
+2. Click on the run and open **Context Panel**.
+3. Expand **Log** section. **Summary** and detailed logs are hidden under the appropriate subsection.
+
+:::note
+
+**Summary** and detailed logs are only available for queries that were run in Debug mode.
+
+:::
+
+To set a constant value for **Fetch size** and **Init fetch size** after analyzing **Summary** or **Optimize fetch size** results, follow these steps:
+
+1. Open the saved query in [Query Editor](#query-editor).
+2. Add the meta parameters *initConnectFetchSize* or *connectFetchSize* with the desired value to the query declaration.
+3. Save query.
+
+For example:
+
 ```
-
-Or if you want to set it in megabytes:
-
-```sql
 --meta.connectFetchSize: 10 MB
-```
-
-</details>
-
-**Init fetch size**. It is the same parameter as Fetch size, but it is set on Statement and
-influences the time taken to execute the Statement and the time of rendering of first rows of the DataFrame on the screen.
-The default value is 100.
-To specify **Init fetch size** for debug use the corresponding input field in the debug section.
-
-:::note
-
-**Init fetch size** will not influence debug run. So it is not mandatory as Fetch size.
-
-:::
-
-If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
-<details>
-<summary> Here's an example </summary>
-
-```sql
 --meta.initConnectFetchSize: 1000
-SELECT * FROM very_big_table
+SELECT * FROM data;
 ```
-
-</details>
-
-**Optimize fetch size**. When checked disables other inputs and runs several queries with different fetch sizes and displays in the end times of execution for each run.
-
-### Debug run
-
-When you press the **Debug** button with **Optimize fetch size** unchecked, under the hood Grok Connect runs 3 queries.
-First two without processing ResultSet and the last with processing. It adds 2 additional parameters to the Log Summary (see [Query logs](#query-logs)) of the query:
-
-1. **DRY_RUN** - time taken on reading ResultSet without interpretation of its values and filling of columns of DataFrame.
-2. **COLUMN_FILL** - difference between **RESULT_SET_PROCESSING_WITH_COLUMN_FILL** and **DRY_RUN**. It is close to real
-time taken to read ResultSet and process all its values.
-
-In general, Debug run helps to estimate the overhead of the interpretation of ResultSet values and filling of DataFrame columns.
-
-:::note
-
-The stability of network connection or in the case of local database load of SSD/HDD can significantly influence the result.
-So for best evaluation try to run several consecutive Debug runs.
-
-:::
-
-### Query logs
-
-When you run a query in debug mode you get results of execution and logs. Log Summary consists of various parameters that describe times of different stages of query execution.
-These metrics are helpful in the evaluation of the influence of different factors such as Networking throughput,
-the complexity of data etc. Logs can be viewed for saved queries at any time in the Log section.
 
 ## Resources
 
