@@ -67,6 +67,8 @@ enum NODE_TYPE {
   TEST = 'TEST'
 }
 
+const DART_TESTS_CAT = 'Dart Tests';
+
 export class TestManager extends DG.ViewBase {
   packagesTests: IPackageTests[] = [];
   testsResultsDf: DG.DataFrame;
@@ -98,6 +100,9 @@ export class TestManager extends DG.ViewBase {
       TMStateB = true;
     }
     this.testFunctions = await this.collectPackages();
+    this.testFunctions.push({package: {name: 'Core', friendlyName: 'Core'}});
+    this.testFunctions = this.testFunctions.sort((a, b) =>
+      a.package.friendlyName.localeCompare(b.package.friendlyName));
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
       {packName: pathSegments[4], catName: pathSegments.slice(5, -1).join(': '),
@@ -126,13 +131,22 @@ export class TestManager extends DG.ViewBase {
     const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
     if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
     selectedPackage.categories === null && selectedPackage.check === false) {
-      selectedPackage.check = true;
-      await f.package.load({file: f.options.file});
-      const testModule = f.package.getModule(f.options.file);
-      if (!testModule)
-        console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-      await initAutoTests(f.package.id, testModule);
-      const allPackageTests = testModule ? testModule.tests : undefined;
+      let allPackageTests: object;
+      if (f.package.name === 'Core') {
+        allPackageTests = {};
+        allPackageTests[DART_TESTS_CAT] = {tests: [], clear: true};
+        const testFunctions = DG.Func.find({tags: ['dartTest']});
+        for (const f of testFunctions)
+          allPackageTests[DART_TESTS_CAT].tests.push(new Test(DART_TESTS_CAT, f.name, async () => await f.apply()));
+      } else {
+        selectedPackage.check = true;
+        await f.package.load({file: f.options.file});
+        const testModule = f.package.getModule(f.options.file);
+        if (!testModule)
+          console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
+        await initAutoTests(f.package.id, testModule);
+        allPackageTests = testModule ? testModule.tests : undefined;
+      }
       const packageTestsFinal: { [cat: string]: ICategory } = {};
       if (allPackageTests) {
         Object.keys(allPackageTests).forEach((cat) => {
@@ -386,12 +400,19 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    const res: DG.DataFrame = await grok.functions.call(
-      `${t.packageName}:test`, {
-        'category': t.test.category,
-        'test': t.test.name,
-        'testContext': new TestContext(false),
-      });
+    let res: DG.DataFrame;
+    if (t.packageName === 'Core') {
+      res = DG.DataFrame.fromObjects([{category: DART_TESTS_CAT, name: t.test.name,
+        success: true, result: 'OK', ms: 0, skipped: false}]);
+      await t.test.test();
+    } else {
+      res = await grok.functions.call(
+        `${t.packageName}:test`, {
+          'category': t.test.category,
+          'test': t.test.name,
+          'testContext': new TestContext(false),
+        });
+    }
     if (res.getCol('result').type !== 'string')
       res.changeColumnType('result', 'string');
     const testSucceeded = res.get('success', 0);
