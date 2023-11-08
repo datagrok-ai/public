@@ -16,6 +16,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {debounceTime} from 'rxjs/operators';
 import {getSigFigs} from '../utils/chem-common';
+import { convertMolNotation } from '../package';
 
 const MMP_COLNAME_FROM = 'From';
 const MMP_COLNAME_TO = 'To';
@@ -442,6 +443,76 @@ async function getInverseSubstructuresAndAlign(from: string[], to: string[], mod
   return [res1, res2, fromAligned, toAligned];
 }
 
+function drawMoleculeLabels(sp: DG.ScatterPlotViewer, table: DG.DataFrame, molCol: DG.Column) {
+  sp.onAfterDrawScene.pipe(debounceTime(500)).subscribe(() => {
+    const maxPointsOnScreen = 20;
+    const rowCount = table.rowCount;
+    const pointsOnScreen = new Array<DG.Point | null>(maxPointsOnScreen).fill(null);
+    const pointsOnScreenIdxs = new Uint32Array(maxPointsOnScreen);
+    const { maxX, maxY, minX, minY } = sp.viewBox;
+    const maxYWithAxisBox = maxY - sp.xAxisBox.height;
+    let counter = 0;
+    for (let i = 0; i < rowCount; i++) {
+      //@ts-ignore
+      const point = sp.pointToScreen(i);
+      //check whether point is within a viewport (on the screen)
+      if (point.x > minX && point.x < maxX && point.y > minY && point.y < maxYWithAxisBox && table.filter.get(i)) {
+        if (counter == maxPointsOnScreen)
+          return; // returning if there are more than maximum allowed points in total on the screen
+        else {
+          pointsOnScreen[counter] = point;
+          pointsOnScreenIdxs[counter] = i;
+          counter++;
+        }
+      }
+    }
+
+    const minDistance = 50;
+    const N = counter * (counter + 1) / 2;
+    const pointsToDrawIdxs = new BitArray(counter);
+    const distancesMatrix = new Float32Array(N);
+
+    //for each point check that distance to all other points is not less than minimum allowed - in this case draw label
+    for (let i = 0; i < counter; i++) {
+      let lessThenMinDist = false;
+      for (let j = 0; j < counter; j++) {
+        if (i === j)
+          continue;
+        else {
+          const dist = j < i ? distancesMatrix[(j * counter - (j - 1) * j / 2) + (i - j) - 1] :
+            pointsOnScreen[i]!.distanceTo(pointsOnScreen[j]!);
+          if (j > i)
+            distancesMatrix[(i * counter - (i - 1) * i / 2) + (j - i) - 1] = dist;
+          if (dist < minDistance) {
+            lessThenMinDist = true;
+          }
+        }
+      }
+      if (!lessThenMinDist)
+        pointsToDrawIdxs.setBit(i, true, false);
+    }
+
+    const ctxMain = sp.getInfo()['canvas'].getContext('2d') as CanvasRenderingContext2D;
+    ctxMain.beginPath();
+    ctxMain.strokeStyle = `rgba(0, 0, 0, 0.1)`;
+
+    for (let i = -1; (i = pointsToDrawIdxs.findNext(i)) !== -1;) {
+      const imageHost = ui.canvas(100, 50);
+      let molecule = molCol.get(pointsOnScreenIdxs[i]);
+      if (molCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
+        //convert to molFile to draw in coordinates similar to dataframe cell
+        molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+      }
+      drawMoleculeToCanvas(0, 0, 100, 50, imageHost, molecule);
+      ctxMain.drawImage(imageHost, pointsOnScreen[i]!.x, pointsOnScreen[i]!.y, 100, 50);
+      ctxMain.strokeRect(pointsOnScreen[i]!.x, pointsOnScreen[i]!.y, 100, 50);
+
+    }
+    ctxMain.closePath();
+
+  });
+}
+
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
   parentCol: DG.Column;
@@ -590,6 +661,7 @@ export class MmpAnalysis {
 
     //Cliffs tab
     const [sp, sliderInput] = getMmpScatterPlot(table, activities, maxAct);
+    drawMoleculeLabels(sp as DG.ScatterPlotViewer, table, molecules);
 
     //running internal chemspace
     const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, casesGrid.dataFrame, diffs, module);
