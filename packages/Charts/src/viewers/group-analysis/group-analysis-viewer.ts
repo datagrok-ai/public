@@ -170,6 +170,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     let currentFuncChoice = aggrTypesChoice;
 
     function updateColTypeDiv(choiceInput: DG.InputBase) {
+      // @ts-ignore
       currentFuncChoice = choiceInput;
       columnTypeDiv.append(choiceInput.root);
     }
