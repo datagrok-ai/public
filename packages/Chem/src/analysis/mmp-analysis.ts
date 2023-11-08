@@ -553,15 +553,18 @@ export class MmpAnalysis {
     this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
     this.transformationsMask.setAll(true);
     this.parentTable.onCurrentRowChanged.subscribe(() => {
-      this.refilterAllPairs(true);
-      this.refreshPair(this.rdkitModule);
+      if (this.parentTable.currentRowIdx !== -1) {
+        this.refilterAllPairs(true);
+        this.refreshPair(this.rdkitModule);
+      }
     });
 
     this.refilterAllPairs(true);
 
     this.allPairsGrid.table.currentRowIdx = 0;
     this.allPairsGrid.table.onCurrentRowChanged.subscribe(() => {
-      this.refreshPair(this.rdkitModule);
+      if (this.allPairsGrid.table.currentRowIdx !== -1)
+        this.refreshPair(this.rdkitModule);
     });
 
     this.mmpView = DG.View.create();
