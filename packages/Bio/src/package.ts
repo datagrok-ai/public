@@ -409,7 +409,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   let cliffsEncodeFunction: (seqCol: DG.Column, similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics) => any =
-     getEncodedSeqSpaceCol;
+    getEncodedSeqSpaceCol;
   const ncUH = UnitsHandler.getOrCreate(macroMolecule);
   const columnDistanceMetric: MmDistanceFunctionsNames | BitArrayMetrics = similarityMetric;
   const seqCol = macroMolecule;
@@ -671,8 +671,11 @@ export async function sequenceSpaceTopMenu(
 //input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
 export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
-  sequenceToMolfile(df, macroMolecule, nonlinear);
-  pi.close();
+  try {
+    await sequenceToMolfile(df, macroMolecule, nonlinear);
+  } finally {
+    pi.close();
+  }
 }
 
 //top-menu: Bio | Analyze | MSA...
