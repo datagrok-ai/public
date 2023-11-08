@@ -23,16 +23,16 @@ export async function getExternalAppViewFactories(): Promise<{[name: string]: ()
     let div: HTMLDivElement;
     try {
       div = await grok.functions.call(pluginName, data.parameters);
+      const pluginUI = new ExternalPluginUI(data.tabName, div);
+
+      // intentonally don't await for the promise
+      pluginUI.initView();
+
+      result[data.tabName] = () => pluginUI.getView();
     } catch (err) {
-      console.error(`Plugin ${pluginName} not loaded, error:`, err)
-      div = ui.divText('error loading');
+      console.warn(`Plugin ${pluginName} not loaded, reason:`, err)
+      continue;
     }
-    const pluginUI = new ExternalPluginUI(data.tabName, div);
-
-    // intentonally don't await for the promise
-    pluginUI.initView();
-
-    result[data.tabName] = () => pluginUI.getView();
   }
   return result;
 }
