@@ -256,7 +256,7 @@ const SERVICE = '_';
 const DEFAULT_TOL = '0.00005';
 export const DF_NAME = 'df';
 
-export const TEMPLATE = `#name: Stiff system
+export const TEMPLATE = `#name: Example
 #differential equations:
   dx/dt = -5.0 * x + 3.0 * y
   dy/dt = 100.0 * x - 301.0 * y
@@ -299,7 +299,7 @@ type IVP = {
   usedMathConsts: number[],
 };
 
-enum CONTROL_EXPR {
+export enum CONTROL_EXPR {
   NAME = `${CONTROL_TAG}name`,
   DIF_EQ = `${CONTROL_TAG}differential equations`,
   EXPR = `${CONTROL_TAG}expressions`,
@@ -308,7 +308,7 @@ enum CONTROL_EXPR {
   CONSTS = `${CONTROL_TAG}constants`,
   PARAMS = `${CONTROL_TAG}parameters`,
   TOL = `${CONTROL_TAG}tolerance`,
-}
+};
 
 enum ERROR_MSG {
   ODES = 'incorrect definition of the system of ordinary differential equations',

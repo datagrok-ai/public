@@ -3,13 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {initMatrOperApi, inverseMatrix, memAlloc, memFree} from '../wasm/matrix-operations-api';
-
+import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {ODEs, solveODEs} from './solver';
-import {getIVP, getScriptLines, getScriptParams, DF_NAME, TEMPLATE} from './scripting-tools';
+import {runSolverApp} from './app';
 
-import {basicSetup, EditorView} from "codemirror";
-import {python} from "@codemirror/lang-python"
 
 
 export const _package = new DG.Package();
@@ -22,32 +19,6 @@ export function info() {
 //tags: init
 export async function init() {
   await initMatrOperApi();
-}
-
-//name: check upd
-//input: int n = 3
-export function checkUpd(n: number) {
-  const size = n * n;
-
-  const mem = memAlloc(size);
-
-  const A = new Float64Array(mem.buf, mem.off1, size);
-  const invA = new Float64Array(mem.buf, mem.off2, size);
-
-  A[0] = 1; A[1] = 2; A[2] = 3;
-  A[3] = 0; A[4] = 1; A[5] = 2;
-  A[6] = 0; A[7] = 0; A[8] = 1;
-  
-  console.log('A:');
-  console.log(A);
-
-  inverseMatrix(A, n, invA);
-
-  console.log('inv A:');
-  console.log(invA);
-
-  memFree(mem.off1);
-  memFree(mem.off2);
 }
 
 //name: Example 1
@@ -388,55 +359,8 @@ export function solve(problem: ODEs): DG.DataFrame {
 }
 
 //name: EquaSleek X
+//description: Solver of ordinary differential equations systems
 //tags: app
 export async function EquaSleekX() {
-  //const odeInput = ui.textInput('', 'Enter equations:\n');  
-
-  const exportBtn = ui.button('export', () => {    
-    const scriptText = getScriptLines(getIVP(newView.state.doc.toString())).join('\n');      
-    const script = DG.Script.create(scriptText);
-    const sView = DG.ScriptView.create(script);
-    grok.shell.addView(sView);
-  });
-
-  const solveBtn = ui.bigButton('solve', async () => {    
-    const ivp = getIVP(newView.state.doc.toString());
-    const scriptText = getScriptLines(ivp).join('\n');    
-    const script = DG.Script.create(scriptText);    
-    const params = getScriptParams(ivp);    
-    const call = script.prepare(params);
-    await call.call();
-    df = call.outputs[DF_NAME];
-    view.dataFrame = call.outputs[DF_NAME];
-    view.name = df.name;
-    if (!viewer) {
-      viewer = DG.Viewer.lineChart(df, {
-        showTitle: true,
-        autoLayout: false,
-        sharex: true, 
-        multiAxis: true,
-        multiAxisLegendPosition: "RightTop",
-      });
-      view.dockManager.dock(viewer, 'right');
-    }
-  });
- 
-  let df = DG.DataFrame.create();
-  let view = grok.shell.addTableView(df);
-  let viewer: DG.Viewer | null = null;
-  view.name = 'ODEs';
-  let div = ui.divV([]);
-
-  let newView = new EditorView({
-    doc: TEMPLATE,
-    extensions: [basicSetup, python()],
-    parent: div
-  });
-
-  newView.dom.style.overflow = 'auto';
-
-  view.dockManager.dock(div, 'left');
-  div.append(ui.divH([exportBtn, solveBtn]));
-
-  console.log(newView);
+  await runSolverApp(); 
 }
