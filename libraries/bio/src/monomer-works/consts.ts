@@ -16,7 +16,7 @@ export const monomerWorksConsts = {
   V3K_END_ATOM_BLOCK: 'M  V30 END ATOM\n',
   V3K_BEGIN_BOND_BLOCK: 'M  V30 BEGIN BOND\n',
   V3K_END_BOND_BLOCK: 'M  V30 END BOND\n',
-  V3K_BOND_CONFIG: ' CFG:',
+  V3K_BOND_CONFIG: ' CFG=',
   V3K_BEGIN_DATA_LINE: 'M  V30 ',
   V3K_END: 'M  END',
   PRECISION_FACTOR: 10_000, // HELMCoreLibrary has 4 significant digits after decimal point in atom coordinates

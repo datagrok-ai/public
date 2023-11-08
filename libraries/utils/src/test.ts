@@ -261,7 +261,7 @@ export async function initAutoTests(packageId: string, module?: any) {
         await delay(wait ? wait : 2000);
         if (grok.shell.lastError)
           throw new Error(grok.shell.lastError);
-      });
+      }, {skipReason: f.options['demoSkip']});
       moduleDemo.push(test);
     }
   }
