@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import $ from 'cash-dom';
 import * as echarts from 'echarts';
 import {option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
@@ -313,7 +312,6 @@ export class RadarViewer extends DG.JsViewer {
   _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 
   render() {
-    $(this.root).empty();
     if (this.valuesColumnNames.length < 1) {
       this._showErrorMessage('Not enough data to produce the result.');
       return;
