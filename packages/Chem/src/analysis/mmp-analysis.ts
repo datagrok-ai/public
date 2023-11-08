@@ -483,7 +483,7 @@ function drawMoleculeLabels(sp: DG.ScatterPlotViewer, table: DG.DataFrame, molCo
             pointsOnScreen[i]!.distanceTo(pointsOnScreen[j]!);
           if (j > i)
             distancesMatrix[(i * counter - (i - 1) * i / 2) + (j - i) - 1] = dist;
-          if (dist < minDistance) {
+          if (dist < minDistance && pointsOnScreen[i]!.x < pointsOnScreen[j]!.x && pointsOnScreen[i]!.y < pointsOnScreen[j]!.y) {
             lessThenMinDist = true;
           }
         }
