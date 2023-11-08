@@ -2,9 +2,21 @@ import * as DG from 'datagrok-api/dg';
 import { Subject } from 'rxjs';
 import BitArray from './bit-array';
 
+export enum ScatterPlotCurrentLineStyle {
+    none = 'none',
+    bold = 'bold',
+    dashed = 'dashed'
+}
+
 type MarkerSize = {
     sizeFrom: number,
     sizeTo: number
+}
+
+export type MouseOverLineEvent = {
+    x: number;
+    y: number;
+    id: number;
 }
 
 export type ILineSeries = {
@@ -18,29 +30,34 @@ export type ILineSeries = {
     opacities?: Float32Array;   // line opacities. If they are the same for the series, use [opacity] instead
     drawArrows?: boolean;       // common parameter to draw arrows. Use [drawArrowsArr] if you need to draw arrows not for each line
     drawArrowsArr?: BitArray;   // individual parameter for each line. If they are the same for the series, use [drawArrows] instead
-
+    visibility?: BitArray;      // individual parameter for each line. Set bit to false to hide the line.
 }
 
 export class ScatterPlotLinesRenderer {
     sp: DG.ScatterPlotViewer;
     xAxisCol: DG.Column;
     yAxisCol: DG.Column;
-    currentLineIdx = -1;
+    _currentLineIdx = -1;
     lines!: ILineSeries;
-    lineClicked = new Subject<number>();
-    lineHover = new Subject<number>();
+    lineClicked = new Subject<MouseOverLineEvent>();
+    lineHover = new Subject<MouseOverLineEvent>();
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
-    mouseOverLineId: number | null = null;
+    mouseOverLineId = -1;
     multipleLinesCounts!: Uint8Array;
+    visibility: BitArray;
+    currentLineStyle: ScatterPlotCurrentLineStyle;
+    arrowWidth = 15;
 
     get currentLineId(): number {
-        return this.currentLineIdx;
+        return this._currentLineIdx;
     }
 
     set currentLineId(id: number) {
-        this.currentLineIdx = id;
-        this.sp.render(this.ctx);
+        if (id !== this._currentLineIdx) {
+            this._currentLineIdx = id;
+            this.sp.render(this.ctx);
+        }
     }
 
     set linesToRender(lines: ILineSeries) {
@@ -48,23 +65,32 @@ export class ScatterPlotLinesRenderer {
         this.sp.render(this.ctx);
     }
 
-    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILineSeries) {
+    set linesVisibility(visibility: BitArray) {
+        this.visibility = visibility;
+        this.sp.render(this.ctx);
+    }
+
+    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILineSeries,
+        currentLineStyle = ScatterPlotCurrentLineStyle.none) {
         this.sp = sp;
         this.xAxisCol = this.sp.dataFrame!.columns.byName(xAxis);
         this.yAxisCol = this.sp.dataFrame!.columns.byName(yAxis);
         this.canvas = this.sp.getInfo()['canvas'];
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
+        this.currentLineStyle = currentLineStyle;
         this.updateLines(lines);
+        this.visibility = lines.visibility ?? new BitArray(this.lines.from.length);
+        if (!lines.visibility)
+            this.visibility.setAll(true, false);
 
-        this.canvas.onmousedown = () => {
-            if (this.mouseOverLineId !== null)
-                this.lineClicked.next(this.mouseOverLineId);
+        this.canvas.onmousedown = (event: MouseEvent) => {
+            this.lineClicked.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId});
         }
 
         this.canvas.onmousemove = (event: MouseEvent) => {
             this.mouseOverLineId = this.checkCoordsOnLine(event.offsetX, event.offsetY);
-            if (this.mouseOverLineId !== null)
-                this.lineHover.next(this.mouseOverLineId);
+            if (this.mouseOverLineId !== -1)
+                this.lineHover.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId});
         }
 
         sp.onEvent('d4-before-draw-scene')
@@ -89,7 +115,8 @@ export class ScatterPlotLinesRenderer {
         const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
         const filter = this.sp.dataFrame.filter;
         for (let i = 0; i < this.lines.from.length; i++) {
-            if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i])) {
+            if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
+                let lineLen = 0;
                 const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
                 const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
                 let aX = pointFrom?.x;
@@ -105,11 +132,14 @@ export class ScatterPlotLinesRenderer {
                         this.ctx.strokeStyle = `rgba(${color},${opacity})`;
                         this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : 1;
                     }
+                    if (i === this._currentLineIdx)
+                        this.toggleCurrentLineStyle(true);
                     const multiLines = this.multipleLinesCounts[i];
                     let controlPoint: DG.Point | null = null;
                     if (multiLines) {
-                        const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo);
-                        const endtPointWithMarker = this.getPointOnDistance(bX, bY, aX, aY, sizeFrom);
+                        lineLen = this.getLineLength(aX, aY, bX, bY);
+                        const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen);
+                        const endtPointWithMarker = this.getPointOnDistance(bX, bY, aX, aY, sizeFrom, lineLen);
                         aX = startPointWithMarker.x;
                         aY = startPointWithMarker.y;
                         bX = endtPointWithMarker.x;
@@ -124,19 +154,39 @@ export class ScatterPlotLinesRenderer {
                         this.ctx.lineTo(bX, bY);
                     }
                     if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i)) {
-                        const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo) : null;
-                        const arrowCPX = multiLines ? controlPoint!.x : aX;
-                        const arrowCPY = multiLines ? controlPoint!.y : aY;
-                        this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                        if (!lineLen)
+                            lineLen = this.getLineLength(aX, aY, bX, bY);
+                        if (lineLen > this.arrowWidth) {
+                            const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen) : null;
+                            const arrowCPX = multiLines ? controlPoint!.x : aX;
+                            const arrowCPY = multiLines ? controlPoint!.y : aY;
+                            this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                        }
                     }
                     this.ctx.stroke();
                     this.ctx.closePath();
+                    if (i === this._currentLineIdx)
+                        this.toggleCurrentLineStyle(false);
                 }
             }
         }
         this.fillLeftBottomRect();
     }
 
+    toggleCurrentLineStyle(flag: boolean) {
+        switch(this.currentLineStyle){
+            case ScatterPlotCurrentLineStyle.bold: {
+                flag ? this.ctx.lineWidth += 2 : this.ctx.lineWidth -= 2;
+                break;
+            }
+            case ScatterPlotCurrentLineStyle.dashed: {
+                flag ? this.ctx.setLineDash([5, 5]) : this.ctx.setLineDash([]);
+                break;
+            }
+            default:
+                return;
+        }
+    }
 
     getMarkersSizes(spLook: any, markerSizeCol: DG.Column | null, i: number): MarkerSize {
         let sizeFrom = 3;
@@ -184,21 +234,22 @@ export class ScatterPlotLinesRenderer {
         }
     }
 
-    checkCoordsOnLine(x: number, y: number): number | null {
-        let candidateIdx = null;
+    checkCoordsOnLine(x: number, y: number): number {
+        let candidateIdx = -1;
         let minDist = null;
         let dist = null;
         const spLook = this.sp.getOptions().look;
         const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
         const filter = this.sp.dataFrame.filter;
         for (let i = 0; i < this.lines.from.length; i++) {
-            if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i])) {
+            if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
                 const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
                 const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
                 const pTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
                 if (this.multipleLinesCounts[i]) {
-                    const fromMarker = this.getPointOnDistance(pFrom.x, pFrom.y, pTo.x, pTo.y, sizeTo);
-                    const toMarker = this.getPointOnDistance(pTo.x, pTo.y, pFrom?.x, pFrom?.y, sizeFrom);
+                    const len = this.getLineLength(pFrom.x, pFrom.y, pTo.x, pTo.y);
+                    const fromMarker = this.getPointOnDistance(pFrom.x, pFrom.y, pTo.x, pTo.y, sizeTo, len);
+                    const toMarker = this.getPointOnDistance(pTo.x, pTo.y, pFrom?.x, pFrom?.y, sizeFrom, len);
                     const controlPoint = this.lines.from[i] > this.lines.to[i] ?
                         this.findControlPoint(this.multipleLinesCounts[i], fromMarker.x, fromMarker.y, toMarker.x, toMarker.y, i) :
                         this.findControlPoint(this.multipleLinesCounts[i], toMarker.x, toMarker.y, fromMarker.x, fromMarker.y, i);
@@ -226,8 +277,17 @@ export class ScatterPlotLinesRenderer {
         //adding a couple of pixels to increase the width/height of the rect
         const threshold = 2;
         return x >= xMin - threshold && x <= xMax + threshold && y >= yMin - threshold && y <= yMax + threshold ?
-            Math.abs(Math.hypot(p1.x - x, p1.y - y) + Math.hypot(p2.x - x, p2.y - y) - Math.hypot(p1.x - p2.x, p1.y - p2.y)) :
+            this.distToStraightLineSegment(x, y, p1, p2) :
             null;
+    }
+
+    distToStraightLineSegment(x: number, y: number, p1: DG.Point, p2: DG.Point) {
+        const dist = (x1: number, y1: number, x2: number, y2: number) => Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2);
+        const l = dist(p1.x, p1.y, p2.x, p2.y);
+        if (l == 0) return dist(x, y, p1.x, p1.y);
+        let t = ((x - p1.x) * (p2.x - p1.x) + (y - p1.y) * (p2.y - p1.y)) / l;
+        t = Math.max(0, Math.min(1, t));
+        return dist(x, y, p1.x + t * (p2.x - p1.x), p1.y + t * (p2.y - p1.y))
     }
 
     calculateDistToCurveLine(i: number, x: number, y: number, p1: DG.Point, p2: DG.Point,
@@ -285,10 +345,13 @@ export class ScatterPlotLinesRenderer {
         return minDist!;
     }
 
-    getPointOnDistance(p1x: number, p1y: number, p2x: number, p2y: number, distance: number): DG.Point {
-        const p1p2d = Math.sqrt(Math.pow(p2x - p1x, 2) + Math.pow(p2y - p1y, 2));
-        const dx = (p2x - p1x) / p1p2d;
-        const dy = (p2y - p1y) / p1p2d;
+    getLineLength(p1x: number, p1y: number, p2x: number, p2y: number): number {
+        return Math.sqrt(Math.pow(p2x - p1x, 2) + Math.pow(p2y - p1y, 2));
+    }
+
+    getPointOnDistance(p1x: number, p1y: number, p2x: number, p2y: number, distance: number, length: number): DG.Point {
+        const dx = (p2x - p1x) / length;
+        const dy = (p2y - p1y) / length;
         const p3x = p2x - distance * dx;
         const p3y = p2y - distance * dy;
 
@@ -311,12 +374,11 @@ export class ScatterPlotLinesRenderer {
 
     canvasArrow(path: CanvasRenderingContext2D, arrowEndX: number, arrowEndY: number, quadX: number, quadY: number): void {
         const arrowAngle = Math.atan2(quadX - arrowEndX, quadY - arrowEndY) + Math.PI;
-        const arrowWidth = 15;
-        path.moveTo(arrowEndX - (arrowWidth * Math.sin(arrowAngle - Math.PI / 10)),
-            arrowEndY - (arrowWidth * Math.cos(arrowAngle - Math.PI / 10)));
+        path.moveTo(arrowEndX - (this.arrowWidth * Math.sin(arrowAngle - Math.PI / 10)),
+            arrowEndY - (this.arrowWidth * Math.cos(arrowAngle - Math.PI / 10)));
         path.lineTo(arrowEndX, arrowEndY);
-        path.lineTo(arrowEndX - (arrowWidth * Math.sin(arrowAngle + Math.PI / 10)),
-            arrowEndY - (arrowWidth * Math.cos(arrowAngle + Math.PI / 10)));
+        path.lineTo(arrowEndX - (this.arrowWidth * Math.sin(arrowAngle + Math.PI / 10)),
+            arrowEndY - (this.arrowWidth * Math.cos(arrowAngle + Math.PI / 10)));
     }
 
 }
