@@ -70,7 +70,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
    * [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if the scaffold tree viewer or structure filter is added.
    * [#2344](https://github.com/datagrok-ai/public/issues/2344): Categorical filter hovering does not highlight data in plots.
    * [#2328](https://github.com/datagrok-ai/public/issues/2328): Viewer docked at the left or at the top is sometimes unexpectedly hidden.
-* Grid:
+* [Grid](../../visualize/viewers/grid.md):
   * [#2271](https://github.com/datagrok-ai/public/issues/2271): Introduced a property to disable "read-only" warning.
   * [#2367](https://github.com/datagrok-ai/public/issues/2367): Pinned rows improvements.
   *  [#2348](https://github.com/datagrok-ai/public/issues/2348): Add the Sync New Columns setting to the grid.
@@ -82,24 +82,24 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
     * Sorting isn't saved after the project reopens.
     * Custom cell sizes get reset when you open a project.
     * Order and Hide Columns: the Column List's hamburger menu appears in the Search field.
-* [Filter Panel](../../../visualize/viewers/filters.md):
+* [Filter Panel](../../visualize/viewers/filters.md):
   * [#2358](https://github.com/datagrok-ai/public/issues/2358): Layouts: save the persistence of filter item search visibility.
   * [#2165](https://github.com/datagrok-ai/public/issues/2165): Always add new filters to the top.
   * Fixed:
     * [#2316](https://github.com/datagrok-ai/public/issues/2316): Errors on combining scaffold tree with some other filters.
     * [#2359](https://github.com/datagrok-ai/public/issues/2359): For some filters the item search is not working when another filter search is open
     * The min and max values for dates do not fit the entire value.
-* For [Scatter plot](../../../visualize/viewers/scatter-plot.md) fixed:
+* For [Scatter plot](../../visualize/viewers/scatter-plot.mdx) fixed:
   * [#2285](https://github.com/datagrok-ai/public/issues/2285): Default marker size is not changed on moving slider.
   * [#2408](https://github.com/datagrok-ai/public/issues/2408): Incorrect tooltip for 'zoom and filter'.
   * [#2402](https://github.com/datagrok-ai/public/issues/2402): Min/max values are not saved/restored in the layout.
   * [#2330](https://github.com/datagrok-ai/public/issues/2330): Has to show empty categories like Box plot and Bar chart do.
-* [Trellis plot](../../../visualize/viewers/trellis-plot.md):
+* [Trellis plot](../../visualize/viewers/trellis-plot.md):
 
   * [#2336](https://github.com/datagrok-ai/public/issues/2336): Improved the display of outer and inner viewers properties.
   * [#2300](https://github.com/datagrok-ai/public/issues/2300): Added the ability to visualize just one category.
        
-* [Line Chart](../../../visualize/viewers/line-chart.md):
+* [Line Chart](../../visualize/viewers/line-chart.md):
   * [#2302](https://github.com/datagrok-ai/public/issues/2302): Allows to split by multiple columns.
   * [#2357](https://github.com/datagrok-ai/public/issues/2357): Custom tooltip.
   * [#2360](https://github.com/datagrok-ai/public/issues/2360): Hovering and selecting improvements:
@@ -114,20 +114,20 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
     * [#2388](https://github.com/datagrok-ai/public/issues/2388): Optimize the display of labels on the x-axis.
     * [#2350](https://github.com/datagrok-ai/public/issues/2350): 'Error loading line chart' on applying layout if line chart has a categorical X axis and **Row Source** is set to `Selected`.
 
-* [Histogram](../../../visualize/viewers/histogram.md):
+* [Histogram](../../visualize/viewers/histogram.md):
 
   * [#2197](https://github.com/datagrok-ai/public/issues/2197): Add zoom slider to X axis of Histogram.
   * Fixed:
     * [#2301](https://github.com/datagrok-ai/public/issues/2301): Histogram slider's end can be dragged out of valid range.
     * [#2364](https://github.com/datagrok-ai/public/issues/2364): Some rows are still shown if filter's range is set out of data's boundaries.
     * [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalise to filter' option: Y axis values are not updated on zooming.
-* [Box Plot](../../../visualize/viewers/box-plot.md):
+* [Box Plot](../../visualize/viewers/box-plot.md):
   * [#2203](https://github.com/datagrok-ai/public/issues/2203): Improvements for structures rendering.
   * [#2057](https://github.com/datagrok-ai/public/issues/2057): Added structures rendering on the X axis.
   * FIxed:
     * [#2270](https://github.com/datagrok-ai/public/issues/2270): Selected row dots are not brought to the foreground.
     * [#2286](https://github.com/datagrok-ai/public/issues/2286): Markers overlap with X axis and categories in some cases.
-* For [bar chart](../../../visualize/viewers/bar-chart.md):  [#2298](https://github.com/datagrok-ai/public/issues/2298): Squeezed the white space around the title.
+* For [bar chart](../../visualize/viewers/bar-chart.md):  [#2298](https://github.com/datagrok-ai/public/issues/2298): Squeezed the white space around the title.
 * Pivot table:
    * [#2166](https://github.com/datagrok-ai/public/issues/2166): Improvements: 
      * An option for filtering or reflecting a filter.
@@ -164,12 +164,12 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 ### Enhancements in packages
 
 * [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/CHANGELOG.md): ToAtomicLevel is available for non-linear HELM structures, enhancements for VdRegionsViewer and WebLogo, other improvements and bug fixes.
-* [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme): Highlighting multiple substructures with different colors inside one molecule structure; filtering by superstructure, exact structure, and similarity score; scaffold tree integration with color-coded fragments and other enhancements.
-* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme): hierarchical clustering for molecules, the ability to select all leaves from a certain node, a separate loader view to the dendrogram, the ability to switch distance calculation method for macromolecules (Hamming or Levenstein) in case of MSA, and other enhancements.
+* [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): Highlighting multiple substructures with different colors inside one molecule structure; filtering by superstructure, exact structure, and similarity score; scaffold tree integration with color-coded fragments and other enhancements.
+* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): hierarchical clustering for molecules, the ability to select all leaves from a certain node, a separate loader view to the dendrogram, the ability to switch distance calculation method for macromolecules (Hamming or Levenstein) in case of MSA, and other enhancements.
 * [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md): new [smart forms](https://community.datagrok.ai/t/powergrid-smartform/774/1) - a special cell type that renders values from multiple columns in one cell; image rendering on double click on the image URL.
 * [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): aggregations for series statistics, **Context Pane** changes, improved curves demo application, and bug fixes.
 * [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md): Select All and Deselect All functionality to all viewers, mean activity column for the Most Potent Residues viewer,  WebLogo to Selection table.
-* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts#readme): improvements for sunburst and surface plot.
+* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improvements for sunburst and surface plot.
 * [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): new chem tutorials on activity cliffs, R-group analysis, similarity and diversity search, substructure search and filtering.
 
 ## 2023-10-04 1.16.7
