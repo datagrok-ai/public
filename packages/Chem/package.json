@@ -72,7 +72,7 @@
     "style-loader": "latest",
     "css-loader": "latest",
     "ts-loader": "latest",
-    "@datagrok/chembl": "latest"
+    "@datagrok/chembl": "^1.0.34"
   },
   "browser": {
     "fs": false,
