@@ -9,7 +9,6 @@ import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
-import {deepCopy} from '../../shared-utils/utils';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
@@ -427,6 +426,35 @@ export class PipelineView extends ComputationView {
 
     const pipelineTabs = ui.tabControl(tabs);
 
+    const consistencySubs = Object.values(this.steps)
+      .map((step) => {
+        const consistencyStateIcon = ui.iconFA('exclamation-circle', null, 'This step has inconsistent inputs');
+        $(consistencyStateIcon).css({
+          'color': 'var(--orange-2)',
+          'margin-left': '3px',
+          'padding-top': '1px',
+        });
+        pipelineTabs.getPane(getVisibleStepName(step)).header.appendChild(consistencyStateIcon);
+
+        return step.view.consistencyState.subscribe((state) => {
+          if (state === 'consistent') $(consistencyStateIcon).hide();
+          if (state === 'inconsistent') $(consistencyStateIcon).show();
+        });
+      });
+    this.subs.push(...consistencySubs);
+
+    const consistencyStates = Object.values(this.steps).map((step) => step.view.consistencyState);
+    const plvConsistencySub =
+      merge(...consistencyStates)
+        .subscribe(() => {
+          if (consistencyStates.map((state) => state.value).some((v) => v === 'inconsistent'))
+            this.consistencyState.next('inconsistent');
+          else
+            this.consistencyState.next('consistent');
+        });
+
+    this.subs.push(plvConsistencySub);
+
     const tabsLine = pipelineTabs.panes[0].header.parentElement!;
     tabsLine.classList.add('d4-ribbon', 'pipeline-view');
     tabsLine.classList.remove('d4-tab-header-stripe');
@@ -445,8 +473,10 @@ export class PipelineView extends ComputationView {
     this.initialConfig.forEach((stepConfig) => {
       this.subs.push(
         this.steps[stepConfig.funcName].visibility.subscribe((newValue) => {
-          if (newValue === VISIBILITY_STATE.VISIBLE)
-            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
+          if (newValue === VISIBILITY_STATE.VISIBLE) {
+            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header)
+              .css('display', 'inherit');
+          }
 
           if (newValue === VISIBILITY_STATE.HIDDEN)
             $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();

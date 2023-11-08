@@ -29,7 +29,7 @@ export async function init(): Promise<void> {
 
 //top-menu: ML | Dimensionality Reduction | PCA...
 //name: PCA
-//description: Principal component analysis (PCA).
+//description: Principal component analysis (PCA)
 //input: dataframe table
 //input: column_list features {type: numerical}
 //input: int components = 2 {caption: Components} [Number of components.]
@@ -46,7 +46,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 
 //top-menu: ML | Dimensionality Reduction | UMAP...
 //name: UMAP
-//description: Uniform Manifold Approximation and Projection (UMAP).
+//description: Uniform Manifold Approximation and Projection (UMAP)
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
 //input: int components = 2 {caption: Components; min: 1; max: 20; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
@@ -63,7 +63,7 @@ export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, compone
 
 //top-menu: ML | Dimensionality Reduction | t-SNE...
 //name: t-SNE
-//description: t-distributed stochastic neighbor embedding (t-SNE).
+//description: t-distributed stochastic neighbor embedding (t-SNE)
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
 //input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
@@ -79,7 +79,7 @@ export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, compone
 
 //top-menu: ML | Dimensionality Reduction | SPE...
 //name: SPE
-//description: Stochastic proximity embedding (SPE).
+//description: Stochastic proximity embedding (SPE)
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
 //input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
@@ -162,7 +162,7 @@ export async function demoMultivariateAnalysis(): Promise<any>  {
 }
 
 //name: Generate linear separable dataset
-//description: Generates linear separble dataset for testing binary classificators.
+//description: Generates linear separble dataset for testing binary classificators
 //input: string name = 'Data' {caption: name; category: Dataset}
 //input: int samplesCount = 1000 {caption: samples; category: Size}
 //input: int featuresCount = 2 {caption: features; category: Size}
@@ -178,7 +178,7 @@ export async function testDataLinearSeparable(name: string, samplesCount: number
 }
 
 //name: Generate linear non-separable dataset
-//description: Generates linear non-separble dataset for testing binary classificators.
+//description: Generates linear non-separble dataset for testing binary classificators
 //input: string name = 'Data' {caption: name; category: Dataset}
 //input: double sigma = 90  {caption: sigma; category: Hyperparameters} [RBF-kernel paramater]
 //input: int samplesCount = 1000 {caption: samples; category: Size}
@@ -322,7 +322,7 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 }
 
 //top-menu: ML | Analyze | ANOVA...
-//name: One-way ANOVA
+//name: ANOVA
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
 //input: dataframe table
 //input: column factor {type: categorical}

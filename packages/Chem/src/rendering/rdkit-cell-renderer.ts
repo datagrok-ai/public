@@ -145,16 +145,38 @@ M  END
     if (mol !== null) {
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
-        let scaffoldIsMolBlock: boolean | null = null;
-        if (scaffolds.length) {
-          scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
-          const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
-          if (alignedByFirstSubstr) {
-            const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule, [], molRegenerateCoords, false,
-              { mergeQueryHs: true, isSubstructure: true }, false, substructureObj).molCtx;
-            const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
-            if (rdKitScaffoldMol) {
-              rdKitScaffoldMol.normalize_depiction(0);
+        let doNotUseMolblockWedging = false;
+        const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
+        const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
+        if (alignedByFirstSubstr) {
+          const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule, [], molRegenerateCoords, false,
+            { mergeQueryHs: true, isSubstructure: true }, false).molCtx;
+          const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
+          if (rdKitScaffoldMol) {
+            rdKitScaffoldMol.normalize_depiction(0);
+            if (molHasOwnCoords)
+              mol.normalize_depiction(0);
+            else { 
+              //need the following 4 rows for smiles with highlights to be rendered in adequate coordinates
+              mol.set_new_coords();
+              mol.normalize_depiction(1);
+              mol.straighten_depiction(false);
+              molHasOwnCoords = true;
+              doNotUseMolblockWedging = true;
+            }
+            let substructString = '';
+            try {
+              substructString = !scaffolds[0].isSuperstructure ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
+                useCoordGen: true,
+                allowRGroups: true,
+                acceptFailure: false,
+                alignOnly: molHasOwnCoords,
+              })) : mol.get_substruct_match(mol!);
+            } catch {
+              // exceptions should not be thrown anymore by RDKit, but let's play safe
+            }
+            if (substructString === '') {
+              substruct = {};
               if (molHasOwnCoords)
                 mol.normalize_depiction(0);
               else { 
@@ -210,7 +232,7 @@ M  END
           if (substructureObj)
             substruct = substructureObj;
         }
-        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
+        molCtx.useMolBlockWedging = (mol.has_coords() === 2) && !doNotUseMolblockWedging;
         if (mol.has_coords() === 0 || molRegenerateCoords) {
           mol.set_new_coords(molRegenerateCoords);
           molHasOwnCoords = false;

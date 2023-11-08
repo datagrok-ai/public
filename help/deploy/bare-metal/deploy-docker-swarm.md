@@ -3,13 +3,13 @@ title: "Docker Swarm"
 sidebar_position: 3
 ---
 
-The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
-and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) for storing files
+The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#database) for storing metadata,
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage) for storing files
 
-Datagrok requires PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) to store metadata.
+Datagrok requires PostgreSQL [database](../../develop/under-the-hood/infrastructure.md#database) to store metadata.
 We recommend using scalable and highly reliable solutions, such as [AWS RDS](https://aws.amazon.com/rds/).
 
-For [persistent file storage](../develop/under-the-hood/infrastructure.md#storage), Datagrok supports a lot of options, including cloud solutions,
+For [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage), Datagrok supports a lot of options, including cloud solutions,
 for example [AWS S3](https://aws.amazon.com/s3/) and Local File System storage.
 
 This document contains instructions to deploy Datagrok using [Docker Swarm](https://docs.docker.com/engine/swarm/)
@@ -17,8 +17,8 @@ on virtual machines or dedicated hosts with Local File System for persistent sto
 
 More information about Datagrok design and components:
 
-* [Architecture](../develop/under-the-hood/architecture.md)
-* [Infrastructure](../develop/under-the-hood/infrastructure.md)
+* [Architecture](../../develop/under-the-hood/architecture.md)
+* [Infrastructure](../../develop/under-the-hood/infrastructure.md)
 
 ## Prerequisites
 

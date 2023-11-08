@@ -5,7 +5,7 @@ title: "JavaScript API"
 
 [Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`)
-or from [packages](./develop.md#packages).
+or from [packages](../develop.md#packages).
 
 This document covers the following areas:
 
@@ -38,7 +38,7 @@ For example, to import a dataframe from a CSV file:
 1. Select the best fitting option, `grok.data`, and press `.`. The following options appear: `[demo, query, compareTables, parseCsv, upload]`.
 1. Select `grok.data.parseCsv` and press **Enter**. Use IntelliSense to provide the parameters. 
 
-![grok-intellisense](grid-adaptive-number-formatting.gif)
+![grok-intellisense](./grid-adaptive-number-formatting.gif)
 
 :::note
 
@@ -276,5 +276,5 @@ Code snippets:
 
 See also:
 
-* [JavaScript development](./develop.md)
+* [JavaScript development](../develop.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js)

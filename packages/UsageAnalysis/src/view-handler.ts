@@ -9,7 +9,7 @@ import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
-import {TestsView} from './tabs/tests';
+import {TestsView, filters} from './tabs/tests';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -31,6 +31,7 @@ export class ViewHandler {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
+    toolbox.filters.root.after(filters);
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView];
@@ -75,7 +76,13 @@ export class ViewHandler {
         }
         helpShown = true;
       }
-      grok.shell.windows.showToolbox = view.name !== 'Tests';
+      if (view.name === 'Tests') {
+        toolbox.filters.expanded = false;
+        filters.style.display = 'flex';
+      } else {
+        toolbox.filters.expanded = true;
+        filters.style.display = 'none';
+      }
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;

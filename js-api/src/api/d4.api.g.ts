@@ -15,6 +15,8 @@ export class InputType {
 
   static Bool = 'Bool';
 
+  static Switch = 'Switch';
+
   static TextArea = 'TextArea';
 
   static Text = 'Text';
@@ -22,6 +24,8 @@ export class InputType {
   static Date = 'Date';
 
   static Map = 'Map';
+
+  static File = 'File';
 
   static List = 'List';
 

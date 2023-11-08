@@ -5,11 +5,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, test, expectArray} from '@datagrok-libraries/utils/src/test';
 
-import {getMonomerLibHelper, toAtomicLevel} from '../package';
+import {toAtomicLevel} from '../package';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_STORAGE_NAME} from '../utils/monomer-lib';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {
+  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
@@ -41,13 +44,13 @@ category('toAtomicLevel', async () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibrariesSettings: any = null;
+  let userLibSettings: LibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
+    userLibSettings = await getUserLibSettings();
     // Clear settings to test default
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, {}, true);
+    await setUserLibSettingsForTests();
     await monomerLibHelper.loadLibraries(true);
 
     for (const key in testNames) {
@@ -58,7 +61,7 @@ category('toAtomicLevel', async () => {
   });
 
   after(async () => {
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, userLibrariesSettings, true);
+    await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadLibraries(true);
   });
 
@@ -75,7 +78,7 @@ category('toAtomicLevel', async () => {
   for (const key in testNames) {
     test(`${testNames[key]}`, async () => {
       await getTestResult(sourceDf[key], targetDf[key]);
-    }, {skipReason: 'GROK-13100'});
+    });
   }
 
   enum csvTests {
@@ -93,38 +96,38 @@ category('toAtomicLevel', async () => {
 
   const csvData: { [key in csvTests]: string } = {
     [csvTests.fastaDna]: `seq
-ACGTC
-CAGTGT
-TTCAAC`,
+ACGTCACGTC
+CAGTGTCAGTGT
+TTCAACTTCAAC`,
     [csvTests.fastaRna]: `seq
-ACGUC
-CAGUGU
-UUCAAC`,
+ACGUCACGUC
+CAGUGUCAGUGU
+UUCAACUUCAAC`,
     [csvTests.fastaPt]: `seq
-FWPHEY
-YNRQWYV
-MKPSEYV`,
+FWPHEYFWPHEY
+YNRQWYVYNRQWYV
+MKPSEYVMKPSEYV`,
     [csvTests.separatorDna]: `seq
-A/C/G/T/C
-C/A/G/T/G/T
-T/T/C/A/A/C`,
+A/C/G/T/C/A/C/G/T/C
+C/A/G/T/G/T/C/A/G/T/G/T
+T/T/C/A/A/C/T/T/C/A/A/C`,
     [csvTests.separatorRna]: `seq
-A*C*G*U*C
-C*A*G*U*G*U
-U*U*C*A*A*C`,
+A*C*G*U*C*A*C*G*U*C
+C*A*G*U*G*U*C*A*G*U*G*U
+U*U*C*A*A*C*U*U*C*A*A*C`,
     [csvTests.separatorPt]: `seq
-F-W-P-H-E-Y
-Y-N-R-Q-W-Y-V
-M-K-P-S-E-Y-V`,
+F-W-P-H-E-Y-F-W-P-H-E-Y
+Y-N-R-Q-W-Y-V-Y-N-R-Q-W-Y-V
+M-K-P-S-E-Y-V-M-K-P-S-E-Y-V`,
     [csvTests.separatorUn]: `seq
-meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
-meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2`,
+meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D-meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
+meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2-meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
+Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2-Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2`,
 
     [csvTests.helm]: `seq
-PEPTIDE1{meI.D-gGlu.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$
-PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
-PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$`,
+PEPTIDE1{meI.D-gGlu.Aca.N.T.dE.Thr_PO3H2.Aca.D.Thr_PO3H2.Aca.D}$$$
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr_PO3H2}$$$`,
   };
 
   /** Also detects semantic types

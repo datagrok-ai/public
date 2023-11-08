@@ -99,16 +99,23 @@ export async function getEncodedSeqSpaceCol(
     // sets distance function args in place.
     options = {scoringMatrix: monomerRes.scoringMatrix,
       alphabetIndexes: monomerHashToMatrixMap} satisfies mmDistanceFunctionArgs;
+  } else if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
+    const monomers = Array.from(charCodeMap.keys());
+    const monomerRes = await calculateMonomerSimilarity(monomers);
+    // the susbstitution matrix contains similarity, but we need distances
+    // monomerRes.scoringMatrix.forEach((row, i) => {
+    //   row.forEach((val, j) => {
+    //     monomerRes.scoringMatrix[i][j] = 1 - val;
+    //   });
+    // });
+    const monomerHashToMatrixMap: {[_: string]: number} = {};
+    Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
+      monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
+    });
+    // sets distance function args in place.
+    options = {scoringMatrix: monomerRes.scoringMatrix,
+      alphabetIndexes: monomerHashToMatrixMap} satisfies mmDistanceFunctionArgs;
   }
-  // else if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
-  //   const alphabetIndexes: any = {};
-  //   let i = 0;
-  //   charCodeMap.forEach((value) => {
-  //     alphabetIndexes[value] = i;
-  //     i++;
-  //   });
-  //   options = {alphabetIndexes};
-  // }
   return {seqList, options};
 }
 

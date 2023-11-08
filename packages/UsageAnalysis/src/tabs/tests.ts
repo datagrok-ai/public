@@ -7,8 +7,9 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 
 const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
-const filters = ui.box();
-filters.style.maxWidth = '250px';
+export const filters = ui.box();
+filters.id = 'ua-tests-filters';
+filters.style.display = 'none';
 
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
@@ -26,9 +27,9 @@ export class TestsView extends UaView {
       const dfMonth: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsMonth');
       dfMonth.getCol('status').colors.setCategorical(colors);
       const areaChart = DG.Viewer.fromType('Line chart', dfMonth, historyStyle);
-      // areaChart.root.style.marginRight = '10px';
       return areaChart.root;
     });
+    chart.style.marginRight = '12px';
 
     // Table
     const grid = ui.wait(async () => {
@@ -131,10 +132,9 @@ export class TestsView extends UaView {
       });
       cardsView.append(card);
     }
-
-    this.root.append(ui.splitH([filters, ui.splitV([
+    this.root.append(ui.splitV([
       ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {maxHeight: '150px'}}),
-      grid], null, true)]));
+      grid], null, true));
   }
 }
 

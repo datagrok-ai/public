@@ -5,7 +5,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getStats, Stats} from '../utils/statistics';
+import {getAggregatedColumnValues, getStats, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
 import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -57,7 +57,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           const stats = model.monomerPositionStats[position]![monomer]!;
           const tableMap = getStatsTableMap(stats);
 
-          const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
+          const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
 
           const resultMap = {...tableMap, ...aggregatedColMap};
           const distributionRoot = getStatsSummary(labels, hist, resultMap);
@@ -83,7 +83,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const mask = DG.BitSet.create(rowCount, (i) => monomerIndexesList.includes(posColData[i]));
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
 
-        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
+        const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
 
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
         const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
@@ -126,7 +126,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         const mask = DG.BitSet.create(rowCount,
           (i) => posColDataList.some((posColData, j) => posColData[i] === monomerCategoryIndexList[j]));
-        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
+        const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
 
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
@@ -166,8 +166,10 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const bitArray = BitArray.fromString(table.selection.toBinaryString());
         const mask = DG.BitSet.create(rowCount,
           bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
-        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
-        const stats = bitArray.allFalse || bitArray.allTrue ? {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray} :
+        const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
+        const stats = bitArray.allFalse || bitArray.allTrue ?
+          {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray,
+            mean: activityCol.stats.avg} :
           getStats(activityColData, bitArray);
         const tableMap = getStatsTableMap(stats);
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
@@ -231,6 +233,7 @@ export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number
   const tableMap: StringDictionary = {
     'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
+    'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
   if (stats.pValue !== null)
     tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);

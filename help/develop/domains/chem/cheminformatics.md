@@ -16,7 +16,7 @@ or come up with your own solution.
 
 ## Datagrok JS API
 
-We expose some commonly used functions via [JS API](../packages/js-api.md). To invoke the methods, use `grok.chem`. 
+We expose some commonly used functions via [JS API](../../packages/js-api.md). To invoke the methods, use `grok.chem`. 
 Most of the methods are asynchronous. Behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h) functions.
 
@@ -37,7 +37,7 @@ use [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minili
 
 `searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
 
-This function performs substructure search using RDKit JS. It returns a [BitSet](../packages/js-api.md#bitset).
+This function performs substructure search using RDKit JS. It returns a [BitSet](../../packages/js-api.md#bitset).
 If the i-th element in the input `column` has the pattern's substructure, the i-th bit is set to 1; otherwise, it is set to 0.
 
 `column` stands for [column](https://datagrok.ai/js-api/classes/dg.Column) that contains molecules in any

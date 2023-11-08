@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Exploratory Data Analysis Tools",
   "dependencies": {
     "@datagrok-libraries/ml": "^6.3.39",

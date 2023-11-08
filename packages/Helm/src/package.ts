@@ -112,7 +112,7 @@ function rewriteLibraries() {
 //name: helmCellRenderer
 //tags: cellRenderer
 //meta.cellType: helm
-//meta.columnTags: units=helm
+//meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();

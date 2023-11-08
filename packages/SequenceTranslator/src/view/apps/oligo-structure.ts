@@ -9,7 +9,6 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-// import {drawMolecule} from '../../utils/structures-works/draw-molecule';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {getLinkedMolfile, saveSdf} from '../../model/sequence-to-structure-utils/sdf-tab';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
@@ -176,7 +175,8 @@ export class StructureLayoutHandler {
     let molfile = '';
     try {
       const strandData = this.getStrandData();
-      molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
+      if (Object.values(strandData).some((data) => data.strand !== ''))
+        molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
     } catch (err) {
       const errStr = errorToConsole(err);
       console.error(errStr);

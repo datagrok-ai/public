@@ -389,6 +389,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
+      if (series.points.some((point) => !point.x || !point.y))
+        continue;
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
         if (data.chartOptions)
@@ -475,7 +477,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
 
       if (data.chartOptions?.showStatistics) {
-        const statistics = getSeriesStatistics(series, fitFunc);
+        const statistics = getSeriesStatistics(series, fitFunc, chartLogOptions);
         for (let j = 0; j < data.chartOptions.showStatistics.length; j++) {
           const statName = data.chartOptions.showStatistics[j];
           const prop = statisticsProperties.find(p => p.name === statName);

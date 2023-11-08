@@ -81,7 +81,7 @@ export class RadarViewer extends DG.JsViewer {
       }
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/radar-viewer.md';
+    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
   }
 
   initChartEventListeners() {

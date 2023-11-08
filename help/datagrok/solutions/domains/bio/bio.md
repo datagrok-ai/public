@@ -158,7 +158,7 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 
 Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
 
-Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/aminoacids-web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize//viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
+Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
 
 <details>
 <summary>Examples</summary>
@@ -301,7 +301,7 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 ### Sequence space
 
 Sequence space visualizes a collection of sequences in 2D such that similar sequences are placed close to each other
-(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), distance functions). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatter plot](../../visualize/viewers/3d-scatter-plot.md).
+(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), distance functions). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
 
 Sequence space analysis is particularly useful for separating groups of sequences with common motifs, such as different variants of complementarity-determining regions (CDRs) for antibodies.
 
@@ -318,7 +318,7 @@ Sequence space analysis is particularly useful for separating groups of sequence
 
 ### Hierarchical clustering
 
-Hierarchical clustering groups sequences into an interactive [dendrogram](../../visualize/viewers/dendrogram.md). In a dendrogram, distance to the nearest common node represents the degree of similarity between each pair of sequences. Clusters and their sizes can be obtained by traversing the trunk or branches of the tree and deciding at which level to cut or separate the branches. This process lets you identify different clusters based on the desired level of similarity or dissimilarity between data points.
+Hierarchical clustering groups sequences into an interactive [dendrogram](../../../../visualize/viewers/dendrogram.md). In a dendrogram, distance to the nearest common node represents the degree of similarity between each pair of sequences. Clusters and their sizes can be obtained by traversing the trunk or branches of the tree and deciding at which level to cut or separate the branches. This process lets you identify different clusters based on the desired level of similarity or dissimilarity between data points.
 
 ![Running hierarchical clustering on sequence data](img/Cluster_sequence_results.png)
 
@@ -613,7 +613,29 @@ in cycles etc. Structure at atomic level could be saved in available notations.
 <summary>How to use</summary>
 
 1. In the **Top Menu**, select **Bio** > **Convert** > **To Atomic Level**. A dialog opens.
-1. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+2. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+
+</details>
+
+### Get region
+
+With Datagrok you can extract a region of sequences in a Macromolecule column.
+The Get Region function maintains `.positionNames` and `.positionLabels` for extracted region.
+The Get Region input form shows Region input if a Macromolecule column is annotated with `.regions` tag (JSON format),
+to easy selection region of interest to extract.
+
+![Get region for Macromolecule](./img/sequence-GetRegion.gif)
+
+<details>
+<summary>How to use</summary>
+
+1. To call Get Region:
+
+    * Select **Bio** > **Convert** > **GetRegion**. A dialog opens. In the dialog select a table and a sequence column.
+    * Click on the **Hamburger** icon of a Macromolecule column. Expand section **Get Region**.
+
+2. Fill in start and end positions of the region of interest, and name of
+   a column. A new column containing sequences of the region of interest is added to the table.
 
 </details>
 

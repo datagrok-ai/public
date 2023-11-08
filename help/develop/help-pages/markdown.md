@@ -53,7 +53,7 @@ Markdown documents have metadata at the top called _front matter_. At the very t
 | `sidebar_label`  (string) |**Optional.** Use a different title for the left sidebar navigation.|
 | `sidebar_position` (number) |**Optional.** Overrides default position of a doc inside the sidebar directory.
 | `description` (string) |**Optional.** This is what appears when the page is referenced in a Google search result.|
-| `keywords` (string[ ]) |**Optional.** A list of terms that help categorize the page for SEO purposes.|
+| `keywords` (string[ ]) |**Optional.** A list of meta tags for the document page and search engines.|
 <!--
 | `unlisted` (boolean) |**Optional.** A hidden document, which is not indexed and can only be accessed via a direct link.|
 -->

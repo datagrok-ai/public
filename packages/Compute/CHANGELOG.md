@@ -1,5 +1,33 @@
 # Compute changelog
 
+## 1.17.1 (2023-11-07)
+
+### Features
+
+- ModelCatalog: Moved generic code into compute-utils
+
+## 1.17.0 (2023-11-03)
+
+### Features:
+
+- ModelCatalog: Added mandatory groups indication
+- PLV: Added inconsistent steps indication
+- PLV: Added mandatoryConsistent tag
+
+## 1.16.0 (2023-10-31)
+
+### Features:
+
+- RFV: Added input validators
+- RFV: Added input lock-states
+- RFV: Added `keepOutput` tag to control output hiding
+
+### Fixed bugs
+
+- RFV: Fixed losing focus on input disabling
+- RFV: Fixed empty tooltip appearing
+- RFV: Fixed validators & validation icon appearance
+
 ## 1.15.2 (WIP)
 
 ### Fixed bugs

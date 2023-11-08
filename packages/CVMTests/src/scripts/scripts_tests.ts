@@ -18,13 +18,6 @@ const TEST_DATAFRAME_2 = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
 
 for (const lang of langs) {
   category(`Scripts: ${lang} scripts`, () => {
-    const isClientCacheActive = grok.functions.clientCache.isRunning;
-
-    before(async () => {
-      if (isClientCacheActive)
-        await grok.functions.clientCache.stop();
-    });
-
     test('int, double, bool, string input/output', async () => {
       const int = 2;
       const double = 0.3;
@@ -122,6 +115,16 @@ for (const lang of langs) {
       expect(result, expected);
     });
 
+    test('Escaping', async () => {
+      const testStrings = ['\t\n\t\tsdfdsf\t', ' sdfds \\\'\"""', ' \n ', '\'\""\'', '\n and \\n',
+        String.raw`CO\C1=C(C(=C(C=C1)/C=N\N=C(N)N)Cl)OC`, '"', '\'', '\n', '\t', '\\', '\\n', '\\r', '\\t'];
+      for (let i = 0; i < testStrings.length; i++) {
+        const result = await grok.functions.call(`CVMTests:${lang}Echo`,
+          {'string_input': testStrings[i]});
+        expect(testStrings[i], result);
+      }
+    }, {skipReason: 'GROK-14156'});
+
     if (lang === 'Python') {
       test('Environment string', async () => {
         const result = await grok.functions.call('CVMTests:PythonAnchorsCount',
@@ -139,11 +142,6 @@ for (const lang of langs) {
           {'fileInput': files[0]});
         expect(49090022, result);
       }, {timeout: 120000});
-
-      after(async () => {
-        if (isClientCacheActive)
-          await grok.functions.clientCache.start();
-      });
     }
   });
 }

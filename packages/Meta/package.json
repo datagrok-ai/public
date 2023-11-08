@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.21",
+  "version": "3.6.42",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -314,6 +314,15 @@
         },
         "1.3.13": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.3.14": {
+          "datagrok-api": "^1.16.7"
+        },
+        "1.3.15": {
+          "datagrok-api": "^1.16.7"
+        },
+        "1.3.16": {
+          "datagrok-api": "^1.16.7"
         }
       },
       "description": "Learn and explore Datagrok through interactive tutorials and a demo app",
@@ -784,6 +793,9 @@
         },
         "1.2.0": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.2.1": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -846,6 +858,9 @@
         },
         "1.0.7": {
           "datagrok-api": "^1.6.9"
+        },
+        "1.1.0": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Commonly used platform enhancements",
@@ -1134,6 +1149,9 @@
         },
         "1.15.3": {
           "datagrok-api": "^1.16.4"
+        },
+        "1.16.0": {
+          "datagrok-api": "^1.16.4"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1387,6 +1405,9 @@
         },
         "1.7.10": {
           "datagrok-api": "^1.15.4"
+        },
+        "1.7.11": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1414,6 +1435,9 @@
         },
         "1.0.6": {
           "datagrok-api": "^1.12.0"
+        },
+        "1.0.7": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "API Samples",
@@ -1686,6 +1710,15 @@
         },
         "1.15.1": {
           "datagrok-api": "^1.16.3"
+        },
+        "1.16.1": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.17.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.17.1": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
@@ -1772,6 +1805,9 @@
         },
         "1.0.33": {
           "datagrok-api": "^1.14.1"
+        },
+        "1.0.34": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Chembl integration, commonly used queries and browser",
@@ -2491,6 +2527,12 @@
         },
         "2.11.6": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.7": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.8": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2703,6 +2745,12 @@
         },
         "1.1.33": {
           "datagrok-api": "^1.15.3"
+        },
+        "1.2.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.2.1": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2711,7 +2759,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerGrid"
       },
-      "category": "Development"
+      "category": "General"
     },
     "alation": {
       "dependencies": {
@@ -3138,6 +3186,9 @@
         },
         "1.0.12": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.0.13": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
@@ -3198,6 +3249,9 @@
         },
         "1.1.5": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3215,6 +3269,9 @@
         },
         "1.0.1": {
           "datagrok-api": "^1.13.8"
+        },
+        "1.0.2": {
+          "datagrok-api": "^1.16.1"
         }
       },
       "description": "Platform usage analysis system",
@@ -3247,6 +3304,9 @@
         },
         "1.0.6": {
           "datagrok-api": "^1.16.3"
+        },
+        "1.0.8": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Automated tests for JDBC Providers",
@@ -3338,6 +3398,9 @@
         },
         "1.2.11": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.2.12": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
@@ -3394,6 +3457,9 @@
         },
         "1.0.4": {
           "datagrok-api": "latest"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Automated CVM tests",
