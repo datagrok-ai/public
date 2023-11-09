@@ -25,7 +25,8 @@
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "@datagrok/api-tests": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
