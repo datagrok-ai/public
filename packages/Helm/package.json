@@ -15,7 +15,7 @@
     "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.38.8",
+    "@datagrok-libraries/bio": "^5.39.6",
     "@datagrok-libraries/utils": "^4.0.17",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.10.2",
@@ -35,7 +35,7 @@
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.18.0",
     "eslint-config-google": "^0.14.0",
-    "@datagrok/bio": "^2.10.17"
+    "@datagrok/bio": "^2.11.8"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
