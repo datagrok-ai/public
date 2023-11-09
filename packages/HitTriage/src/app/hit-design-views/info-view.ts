@@ -31,7 +31,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
     const appDescription = ui.divV([
-      ui.h1('Hit Design: Tailored Molecule Workflow Design Made Simple'),
+      ui.h1('Design, enrich, and collaborate on potential hits'),
       ui.div(ui.markdown(
         '-  Configure your own workflow using the template editor\n' +
         '-  Sketch molecules in the molecular spreadsheet\n' +
