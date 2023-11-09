@@ -390,6 +390,22 @@ export class TestManager extends DG.ViewBase {
     icon.style.color = 'var(--orange-2)';
   }
 
+  async runDartTest(t: IPackageTest): Promise<DG.DataFrame> {
+    console.log(`Started ${DART_TESTS_CAT} ${t.test.name}`);
+    const res = {category: DART_TESTS_CAT, name: t.test.name,
+      success: true, result: 'OK', ms: 0, skipped: false};
+    const start = Date.now();
+    try {
+      await t.test.test();
+    } catch (e) {
+      res.success = false;
+      res.result = e.toString();
+    }
+    res.ms = Date.now() - start;
+    console.log(`Finished ${DART_TESTS_CAT} ${t.test.name} for ${res.ms} ms`);
+    return DG.DataFrame.fromObjects([res]);
+  }
+
   async runTest(t: IPackageTest): Promise<boolean> {
     let runSkipped = false;
     const skipReason = t.test.options?.skipReason;
@@ -401,11 +417,9 @@ export class TestManager extends DG.ViewBase {
       debugger;
     this.testInProgress(t.resultDiv, true);
     let res: DG.DataFrame;
-    if (t.packageName === 'Core') {
-      res = DG.DataFrame.fromObjects([{category: DART_TESTS_CAT, name: t.test.name,
-        success: true, result: 'OK', ms: 0, skipped: false}]);
-      await t.test.test();
-    } else {
+    if (t.packageName === 'Core')
+      res = await this.runDartTest(t);
+    else {
       res = await grok.functions.call(
         `${t.packageName}:test`, {
           'category': t.test.category,

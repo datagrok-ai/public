@@ -356,7 +356,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   const skipReason = filter ? 'skipped' : t.options?.skipReason;
   if (!skip)
     console.log(`Started ${t.category} ${t.name}`);
-  const start = new Date();
+  const start = Date.now();
   try {
     if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
@@ -369,9 +369,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
-  const stop = new Date();
-  // @ts-ignore
-  r.ms = stop - start;
+  r.ms = Date.now() - start;
   if (!skip)
     console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
