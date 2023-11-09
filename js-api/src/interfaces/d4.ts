@@ -1995,6 +1995,8 @@ export interface ITileViewerLookSettings {
 
   columnsJson: string;
 
+  lanes: Array<string>;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
