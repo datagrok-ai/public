@@ -4,24 +4,22 @@ HitDesign is a dynamic application designed for chemists and biologists to strea
 
 ## Templates
 
-Templates in HitDesign contain essential configurations for conducting a campaign. template configuration includes:
+Templates in HitDesign contain essential configurations for conducting a campaign. Template configuration includes:
 
 - **Name** : Identifies the template.
 
 - **Campaign Prefix** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
 
-- **Additional fields** : Users can configure additional fields for the template, which will be prompted for input during campaign creation. These fields include name, type, and whether they are required or not. For example, additional field for a campaign can be a target protein name, Head scientist name, deadlile, etc.
+- **Additional fields** : Configure additional fields for the template, which will be prompted for input during campaign creation. These fields include name, type, and whether they are required or not. For example, additional field for a campaign can be a target protein name, Head scientist name, deadlile, etc.
 
-- **Stages** : Users can define stages for the campaign. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages. For example, stages can be used to organize molecules by their readiness for synthesis.
+- **Stages** : Define stages for the campaign. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages. For example, stages can be used to organize molecules by their readiness for synthesis.
 
 - **Compute functions** : HitDesign aggregates compute functions tagged with `HitTriageFunction` from Datagrok packages. Users can select from these functions to perform calculations (e.g., mass, solubility, mutagenicity, partial charges, toxicity risks, etc.) on the dataset.
 Every time user changes given molecule or adds new molecule to a dataframe, compute functions are executed automatically for that row.
 
-- **Submit function** : Users can define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
+- **Submit function** : Define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
 
-![template](images/hit-triage-filtering.png)
-
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/template-HD.png)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/template-HD.png?raw=true)
 
 ## Campaigns
 
@@ -33,30 +31,30 @@ Campaigns are built based on templates and encompass the actual hit design proce
 
 - **Functionality**: Once a campaign starts, you can add extra calculated columns, add new rows to dataframe and sketch molecules, apply changes, fileter, save or submit the campaign.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/campaign-HD.png)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign-HD.png?raw=true)
 
 ## Getting started
 
-Users can continue ongoing campaigns either directly by a link or by selecting it from the campaigns table.
+Continue ongoing campaigns either directly by a link or by selecting it from the campaigns table.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_Continue_campaign.gif)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/cuntinue_campaign_HD.gif?raw=true)
 
-Users can create a new template by clicking on the `New Template` button in the `Templates` dropdown.
+Create a new template by clicking on the `New Template` button in the `Templates` dropdown.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_create_template.gif)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/create-template-HD.gif?raw=true)
 
-Users can start a new campaign by choosing a template and filling out the required information. 
+Start a new campaign by choosing a template and filling out the required information. 
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_create_campaign.gif)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_create_campaign.gif?raw=true)
 
-After the campaign starts, users can sketch new molecules, filter, modify or add viewers to the campaign and then save them. once saved, reloading the campaign will restore the saved state.
+After the campaign starts, users can sketch new molecules, filter, modify or add viewers to the campaign and then save them. Once saved, reloading the campaign will restore the saved state.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_save_campaign.gif)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_save_campaign.gif?raw=true)
 
 Modifying or adding new molecules, will refresh the calculated columns.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_save_campaign.gif)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_save_campaign.gif?raw=true)
 
 Hit design campaign consists of two views, a main design view and a tiles view. You can access the tiles view from the views list. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_save_campaign.gif)
+![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_save_campaign.gif?raw=true)
