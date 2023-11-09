@@ -155,8 +155,9 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
       this.dataFrame!.onRowsAdded.subscribe(() => { // TODO, insertion of rows in the middle
         try {
-          const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
-          this.processedValues.push(...new Array(newRowsNum).fill(''));
+          // const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
+          // this.processedValues.push(...new Array(newRowsNum).fill(''));
+          this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
         } catch (e) {
           console.error(e);
         }
@@ -171,27 +172,27 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         }
       });
 
-      this.dataFrame!.onValuesChanged.subscribe(async () => {
+      view.grid.onCellValueEdited.subscribe(async (gc) => {
         try {
-          let newValueIdx: number | null = null;
-          for (let i = 0; i < this.processedValues.length; i++) {
-            if (this.processedValues[i] !== this.dataFrame!.get(this.molColName, i)) {
-              newValueIdx = i;
-              break;
-            }
+          if (gc.tableColumn?.name !== this.molColName) return;
+          const newValue = gc.cell.value;
+          const newValueIdx = gc.tableRowIndex!;
+
+          if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx) ||
+            this.dataFrame!.col(ViDColName)?.get(newValueIdx) === '')
+              this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
+
+          if ( this.template!.stages?.length > 0 && (!this.dataFrame!.col(TileCategoriesColName)?.get(newValueIdx) ||
+            this.dataFrame!.col(TileCategoriesColName)?.get(newValueIdx) === '')) {
+              this.dataFrame!.col(TileCategoriesColName)!.set(
+                newValueIdx, this.template!.stages[0], false);
           }
-          if (newValueIdx == null) return;
-          this.processedValues[newValueIdx] = this.dataFrame!.get(this.molColName, newValueIdx);
-          const newCellValue: string = this.processedValues[newValueIdx];
-          this.dataFrame!.col(TileCategoriesColName)!.set(newValueIdx, this.template!.stages[0], false);
-          if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx))
-          this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
 
           const computeObj = this.template!.compute;
-          if (!newCellValue || newCellValue === '')
+          if (!newValue || newValue === '')
             return;
           const calcDf =
-            await calculateSingleCellValues(newCellValue, computeObj.descriptors.args, computeObj.functions);
+          await calculateSingleCellValues(newValue, computeObj.descriptors.args, computeObj.functions);
 
           for (const col of calcDf.columns.toList()) {
             if (col.name === HitDesignMolColName) continue;
@@ -199,14 +200,50 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
               const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
               newCol.semType = col.semType;
             }
-          this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
+            this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
           }
-        this.dataFrame!.fireValuesChanged();
+          this.dataFrame!.fireValuesChanged();
         } catch (e) {
           console.error(e);
         }
-      },
-      );
+      });
+
+      // this.dataFrame!.onValuesChanged.subscribe(async () => {
+      //   try {
+      //     let newValueIdx: number | null = null;
+      //     for (let i = 0; i < this.processedValues.length; i++) {
+      //       if (this.processedValues[i] !== this.dataFrame!.get(this.molColName, i)) {
+      //         newValueIdx = i;
+      //         break;
+      //       }
+      //     }
+      //     if (newValueIdx == null) return;
+      //     this.processedValues[newValueIdx] = this.dataFrame!.get(this.molColName, newValueIdx);
+      //     const newCellValue: string = this.processedValues[newValueIdx];
+      //     this.dataFrame!.col(TileCategoriesColName)!.set(newValueIdx, this.template!.stages[0], false);
+      //     if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx))
+      //     this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
+
+      //     const computeObj = this.template!.compute;
+      //     if (!newCellValue || newCellValue === '')
+      //       return;
+      //     const calcDf =
+      //       await calculateSingleCellValues(newCellValue, computeObj.descriptors.args, computeObj.functions);
+
+      //     for (const col of calcDf.columns.toList()) {
+      //       if (col.name === HitDesignMolColName) continue;
+      //       if (!this.dataFrame!.columns.contains(col.name)) {
+      //         const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
+      //         newCol.semType = col.semType;
+      //       }
+      //     this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
+      //     }
+      //   this.dataFrame!.fireValuesChanged();
+      //   } catch (e) {
+      //     console.error(e);
+      //   }
+      // },
+      // );
     }, 300);
     const ribbons = view?.getRibbonPanels();
     if (ribbons) {
