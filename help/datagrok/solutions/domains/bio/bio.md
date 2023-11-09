@@ -1,5 +1,22 @@
 ---
 title: "Bioinformatics"
+keywords:
+  - bioinformatics
+  - macromolecule viewers
+  - interactive visualization of biological data
+  - peptides viewers
+  - peptides SAR
+  - sequence composition
+  - hierarchical clustering macromolecules
+  - oligonucleotides amino acids DNA
+  - sequence-activity relationship
+  - sequence translation
+  - split to monomers
+  - get atomic-level structure
+  - activity cliffs
+  - sequence space
+  - manage monomer libraries
+  - analyze docking results
 ---
 
 ```mdx-code-block

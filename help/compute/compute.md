@@ -1,6 +1,14 @@
 ---
 title: "Compute"
 sidebar_position: 0
+keywords:
+  - reproducible computations
+  - scientific computations
+  - productionalizing scripts
+  - low-code ui generation
+  - r python julia matlab
+  - cross-language
+  - jupyter
 ---
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
