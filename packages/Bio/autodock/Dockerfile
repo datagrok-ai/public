@@ -34,6 +34,6 @@ RUN pip install Flask
 
 COPY autodock.py /app/autodock.py
 
-EXPOSE 5000
+EXPOSE 8000
 
-CMD ["python", "autodock.py"]
+ENTRYPOINT ["python", "autodock.py", "--host", "0.0.0.0", "--port", "8000"]

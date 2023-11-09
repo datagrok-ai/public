@@ -5,11 +5,11 @@ import tempfile
 
 app = Flask(__name__)
 
-def prepare_autogrid_config(receptor_basename):
+def prepare_autogrid_config(receptor_basename, x, y, z):
     config = "%s.gpf" % receptor_basename
     with open(config, "w") as config_file:
         config_file.write("%s %s.pdbqt\n" % (receptor_basename, receptor_basename))
-        config_file.write("npts 100 100 100\n")
+        config_file.write("npts {} {} {}\n".format(x, y, z))
         config_file.write("%s.maps.fld\n" % receptor_basename)
         config_file.write("spacing 0.375\n")
         config_file.write("receptor_types A C Fe N NA OA SA\n")
@@ -48,12 +48,16 @@ def dock():
     subprocess.call(['prepare_receptor4.py', '-r', receptor_path])
     subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path])
 
-    autogrid_config = prepare_autogrid_config(receptor_basename)
+    x = int(request.form.get('x', 100))
+    y = int(request.form.get('y', 100))
+    z = int(request.form.get('z', 100))
+
+    autogrid_config = prepare_autogrid_config(receptor_basename, x, y, z)
 
     subprocess.call(['/usr/local/x86_64Linux2/autogrid4', '-p', autogrid_config, '-l', "%s.autogrid.log" % receptor_basename])
     
-    subprocess.call(['/opt/autodock-gpu', '--ffile receptor.maps.fld --lfile ligand.pdbqt --nrun 30 --resnam receptor-ligand.dlg"'])
+    subprocess.call(['/opt/autodock-gpu', '--ffile {}.maps.fld --lfile {}.pdbqt --nrun 30 --resnam {}-{}.dlg'.format(receptor_basename, ligand_basename, receptor_basename, ligand_basename)])
     return jsonify({'message': 'Preparation completed successfully'}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=8000, threaded=True)
