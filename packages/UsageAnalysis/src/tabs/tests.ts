@@ -133,7 +133,7 @@ export class TestsView extends UaView {
       cardsView.append(card);
     }
     this.root.append(ui.splitV([
-      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {maxHeight: '150px'}}),
+      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {height: '150px'}}),
       grid], null, true));
   }
 }

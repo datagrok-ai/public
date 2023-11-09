@@ -212,7 +212,6 @@ export async function _histogramDemo() {
 //name: lineChartDemo
 //description: Line chart is a simple, two-dimensional chart with an X and Y axis, each point representing a single value. The data points are joined by a line to depict a trend, usually over time.
 //meta.demoPath: Visualization | General | Line Chart
-//meta.demoSkip: skip
 export async function _lineChartDemo() {
   await viewerDemo(DG.VIEWER.LINE_CHART);
 }

@@ -163,8 +163,8 @@ group by res.name
 --name: PackagesInstallationTime
 --input: string date {pattern: datetime}
 --input: list packages
---meta1.cache: all
---meta1.invalidate: 0 0 0 * *
+--meta.cache: all
+--meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 select e.event_time, ppp.name as package, v.value::int as time
 from events e

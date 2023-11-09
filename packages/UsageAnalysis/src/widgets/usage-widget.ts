@@ -20,19 +20,19 @@ export class UsageWidget extends DG.Widget {
     uniqueUsersDiv.appendChild(ui.waitBox(async () => {
       return ui.splitH([ui.box(ui.divText('Users'),
         {style: {maxWidth: '70px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.data.query('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
+        await grok.functions.call('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
     userEventsDiv.appendChild(ui.waitBox(async () => {
       return ui.splitH([ui.box(ui.divText('Events'),
         {style: {maxWidth: '70px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.data.query('UsageAnalysis:UsersEventsSummary'), userEventsChartStyle).root, {style: {paddingRight: '12px'}})]);
+        await grok.functions.call('UsageAnalysis:UsersEventsSummary'), userEventsChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
     userErrorsDiv.appendChild(ui.waitBox(async () => {
       return ui.splitH([ui.box(ui.divText('Errors'),
         {style: {maxWidth: '70px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.data.query('UsageAnalysis:UsersErrorsSummary'), userErrorsChartStyle).root, {style: {paddingRight: '12px'}})]);
+        await grok.functions.call('UsageAnalysis:UsersErrorsSummary'), userErrorsChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
     // properties
