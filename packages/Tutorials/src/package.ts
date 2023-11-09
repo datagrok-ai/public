@@ -212,6 +212,7 @@ export async function _histogramDemo() {
 //name: lineChartDemo
 //description: Line chart is a simple, two-dimensional chart with an X and Y axis, each point representing a single value. The data points are joined by a line to depict a trend, usually over time.
 //meta.demoPath: Visualization | General | Line Chart
+//meta.demoSkip: skip
 export async function _lineChartDemo() {
   await viewerDemo(DG.VIEWER.LINE_CHART);
 }
@@ -233,6 +234,7 @@ export async function _pieChartDemo() {
 //name: trellisPlotDemo
 //description: Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.
 //meta.demoPath: Visualization | Data separation | Trellis Plot
+//meta.demoSkip: skip
 export async function _trellisPlotDemo() {
   await viewerDemo(DG.VIEWER.TRELLIS_PLOT);
 }
