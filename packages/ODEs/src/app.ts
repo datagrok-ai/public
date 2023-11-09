@@ -3,10 +3,66 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {basicSetup, EditorView} from "codemirror";
+import {EditorState} from "@codemirror/state";
 import {python} from "@codemirror/lang-python";
 import {autocompletion} from "@codemirror/autocomplete";
 
-import {getIVP, getScriptLines, getScriptParams, DF_NAME, TEMPLATE, CONTROL_EXPR} from './scripting-tools';
+import {getIVP, getScriptLines, getScriptParams, DF_NAME, CONTROL_EXPR} from './scripting-tools';
+
+/** */
+const TEMPLATE_SIMPLE = `#name: Template
+#differential equations:
+  dy/dt = -y + sin(t) / t
+
+#argument: t
+  initial = 0.01
+  final = 15.0
+  step = 0.001
+
+#initial values:  
+  y = 0`;
+
+/** */
+const TEMPLATE_COMPLEX = `This is complex template. Modify it. 
+Use multi-line formulas if needed.
+Add new equations, expressions, constants & parameters.
+Modify these description lines if required.
+
+#name: Complex Test
+#differential equations:
+  dx/dt = E1 * y + sin(t)
+
+  dy/dt = E2 * x - pow(t, 5)
+
+#expressions:
+  E1 = C1 * exp(-t) + P1
+  E2 = C2 * cos(2 * t) + P2
+
+#argument: t
+  start = 0.0
+  finish = 2.0
+  step = 0.01
+
+#initial values:
+  x = 2.0
+  y = 0.0
+
+#constants:
+  C1 = 1.0
+  C2 = 3.0
+
+#parameters:
+  P1 = 1.0
+  P2 = -1.0
+
+#tolerance: 0.00005`;
+
+/** */
+enum EDITOR_STATE {
+  CLEAR = 0,
+  SIMPLE_TEMPLATE = 1,
+  COMPLEXT_TEMPLATE = 2,
+};
 
 /** Completions with of control */
 //const completions = Object.values(CONTROL_EXPR).map((val) => {return {label: `${val}: `, type: "keyword"}});
@@ -34,17 +90,17 @@ function contrCompletions(context: any) {
 
 /** */
 export async function runSolverApp() {
-  const exportFn = () => {    
-    const scriptText = getScriptLines(getIVP(newView.state.doc.toString())).join('\n');      
+  const exportToJS = () => {    
+    const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
     const script = DG.Script.create(scriptText);
     const sView = DG.ScriptView.create(script);
     grok.shell.addView(sView);
   };
 
-  const exportBtn = ui.button('export', exportFn, 'Export to JavaScript script');
+  const exportBtn = ui.button('export', exportToJS, 'Export to JavaScript script');
 
-  const solveFn = async () => {    
-    const ivp = getIVP(newView.state.doc.toString());
+  const solve = async () => {    
+    const ivp = getIVP(editorView.state.doc.toString());
     const scriptText = getScriptLines(ivp).join('\n');    
     const script = DG.Script.create(scriptText);    
     const params = getScriptParams(ivp);    
@@ -52,20 +108,23 @@ export async function runSolverApp() {
 
     try {
       await call.call();
-      df = call.outputs[DF_NAME];
-      view.dataFrame = call.outputs[DF_NAME];
-      view.name = df.name;
-  
-      if (!viewer) {
-        viewer = DG.Viewer.lineChart(df, {
-          showTitle: true,
-          autoLayout: false,
-          sharex: true, 
-          multiAxis: true,
-          multiAxisLegendPosition: "RightTop",
-        });
-        view.dockManager.dock(viewer, 'right');
-      }
+      solutionTable = call.outputs[DF_NAME];
+      solverView.dataFrame = call.outputs[DF_NAME];
+      solverView.name = solutionTable.name;
+
+      if (solutionViewer)
+        solutionViewer.close();  
+      
+      solutionViewer = DG.Viewer.lineChart(solutionTable, {
+        showTitle: true,
+        autoLayout: false,
+        sharex: true, 
+        multiAxis: true,
+        multiAxisLegendPosition: "RightTop",
+      });
+      
+      solverView.dockManager.dock(solutionViewer, 'right');
+      
     } catch (err) {
         if (err instanceof Error) {
           const b = new DG.Balloon();
@@ -73,40 +132,85 @@ export async function runSolverApp() {
         }
   }};
   
-  const solveBtn = ui.bigButton('solve', solveFn, 'Solve the problem');
+  const solveBtn = ui.bigButton('solve', solve, 'Solve the problem');
    
-  let df = DG.DataFrame.create();
-  let view = grok.shell.addTableView(df);
-  let viewer: DG.Viewer | null = null;
-  view.name = 'Template';
-  let div = ui.divV([]);
+  let solutionTable = DG.DataFrame.create();
+  let solverView = grok.shell.addTableView(solutionTable);
+  let solutionViewer: DG.Viewer | null = null;
+  solverView.name = 'Template';
+  let div = ui.divV([]);   
 
-  let newView = new EditorView({
-    doc: TEMPLATE,
+  let editorView = new EditorView({
+    doc: TEMPLATE_SIMPLE,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     parent: div
   });
 
-  let toolTipIdx = 0;
-  const editorTooltip = ui.tooltip.bind(newView.dom, () => {
-    switch (toolTipIdx) {
-      case 0:
-        ++toolTipIdx;
-        return 'Modify name & argument if needed';
-      
-      default:
-        ++toolTipIdx;
-        return 'Start typing with "#" to add the desired required blocks';
-  }});
-  
-  newView.dom.style.overflow = 'auto';
+  let editorState: EDITOR_STATE = EDITOR_STATE.SIMPLE_TEMPLATE;
+  const editorTooltip = ui.tooltip.bind(editorView.dom, () => {
+    switch (editorState) {
+      case EDITOR_STATE.SIMPLE_TEMPLATE:      
+        return 'Modify the problem. Right-click and open complex template';
 
-  view.dockManager.dock(div, 'left');
+      case EDITOR_STATE.CLEAR:        
+        return 'Define initial value problem here or right-click & select a template';
+      
+      default:        
+        return 'Modify or add new equations, expressions, constants & parameters. Change name & tolerance if needed.';
+  }});
+
+  const openFn = () => {};
+
+  const saveFn = () => {}; 
+  
+  const setEditorContent = (str: string) => {
+    const newState = EditorState.create({
+      doc: str, 
+      extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+    });
+
+    editorView.setState(newState);
+  };  
+
+  editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
+    event.preventDefault();
+    DG.Menu.popup()
+      .item('Load...', openFn, undefined, {description: 'Load problem from local file'})
+      .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
+      .item('Clear...', () => {
+        editorState = EDITOR_STATE.CLEAR;
+        setEditorContent(''); 
+        solutionTable = DG.DataFrame.create();
+        solverView.dataFrame = solutionTable;
+        if (solutionViewer) {
+          solutionViewer.close();
+          solutionViewer = null;
+        }
+      }, undefined, {description: 'Clear problem'})
+      .separator()
+      .item('Simple...', () => {
+        editorState = EDITOR_STATE.SIMPLE_TEMPLATE;
+        setEditorContent(TEMPLATE_SIMPLE); 
+        solve();
+      }, undefined, {description: 'Open simple template'})
+      .item('Complex...', () => {
+        editorState = EDITOR_STATE.COMPLEXT_TEMPLATE;
+        setEditorContent(TEMPLATE_COMPLEX); 
+        solve();
+      }, undefined, {description: 'Open complex template'})
+      .show();    
+  });
+  
+  editorView.dom.style.overflow = 'auto';
+
+  solverView.dockManager.dock(div, 'left');
   
   div.appendChild(ui.h3(' '));
 
   const buttons = ui.buttonsInput([exportBtn, solveBtn]);
-  //buttons.style.alignSelf = 'end';
+  //buttons.style.alignSelf = 'end';  
 
-  div.appendChild(buttons);  
+  div.appendChild(buttons);
+
+  solve();
 } // runSolverApp

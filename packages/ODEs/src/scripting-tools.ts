@@ -255,21 +255,6 @@ const DIV_SIGN = '/';
 const SERVICE = '_';
 const DEFAULT_TOL = '0.00005';
 export const DF_NAME = 'df';
-
-export const TEMPLATE = `#name: Example
-#differential equations:
-  dx/dt = -5.0 * x + 3.0 * y
-  dy/dt = 100.0 * x - 301.0 * y
-
-#argument: t
-  initial = 0.0
-  final = 2.0
-  step = 0.1
-
-#initial values:
-  x = 52.29
-  y = 83.82`;
-
 const ODES_PACKAGE = 'ODEs';
 const SOLVER_FUNC = 'solve';
 
