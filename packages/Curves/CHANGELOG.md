@@ -1,5 +1,13 @@
 # Curves changelog
 
+## 1.2.13 (2023-11-09)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed curves not rendering because of undefined x if branch.
+  * Fixed linear fit not rendering.
+
 ## 1.2.12 (2023-11-02)
 
 ### Bug Fixes
