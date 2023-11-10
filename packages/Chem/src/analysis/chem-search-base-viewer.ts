@@ -5,6 +5,7 @@ import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metri
 import '../../css/chem.css';
 import { Subject } from 'rxjs';
 import { AVAILABLE_FPS } from '../constants';
+import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
@@ -51,7 +52,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumnName = col.name!;
     }
     const header = this.name === DIVERSITY ? `Most diverse structures` : `Most similar structures`;
-    this.metricsDiv = ui.divH([ui.divText(header)], 'similarity-header');
+    this.metricsDiv = ui.divH([ui.divText(header)], 'chem-similarity-header');
   }
 
   init(): void {
@@ -144,15 +145,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     return true;
   }
 
-  pickTextColorBasedOnBgColor(bgColor: string, lightColor: string, darkColor: string) {
-    const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
-    const r = parseInt(color.substring(0, 2), 16); // hexToR
-    const g = parseInt(color.substring(2, 4), 16); // hexToG
-    const b = parseInt(color.substring(4, 6), 16); // hexToB
-    return (((r * 0.299) + (g * 0.587) + (b * 0.114)) > 186) ?
-      darkColor : lightColor;
-  }
-
   createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement {
     const propsDict: {[key: string]: any} = {};
     const grid = grok.shell.tv.grid;
@@ -172,21 +164,21 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const div = ui.divV([], {style: {marginTop: '5px'}});
     for (const key of Object.keys(propsDict)) {
       const labelName = key === SIMILARITY ? '' : key;
-      const label = ui.divText(`${labelName}`, 'similarity-prop-label');
-      const value = ui.divText(`${propsDict[key].val}`, 'similarity-prop-value');
+      const label = ui.divText(`${labelName}`, 'chem-similarity-prop-label');
+      const value = ui.divText(`${propsDict[key].val}`, 'chem-similarity-prop-value');
       ui.tooltip.bind(value, key);
       if (propsDict[key].color) {
         const bgColor = DG.Color.toHtml(propsDict[key].color);
         if (this.applyColorTo === BACKGROUND) {
           value.style.backgroundColor = bgColor,
-          value.style.color = this.pickTextColorBasedOnBgColor(bgColor, '#FFFFFF', '#000000'); ;
+          value.style.color = pickTextColorBasedOnBgColor(bgColor, '#FFFFFF', '#000000');
         } else
           value.style.color = bgColor;
       }
       const item = ui.divH([
         label,
         value,
-      ], 'similarity-prop-item');
+      ], 'chem-similarity-prop-item');
       div.append(item);
     }
     return div;

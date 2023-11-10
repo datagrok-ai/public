@@ -31,7 +31,7 @@ category('UI top menu', () => {
         similarityViewer.props.limit = 5;
         await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 5,
             'molecules number inside Similarity viewer is different than expected after change "Limit" property', 3000);
-        const similarityLable = similarityViewer.root.getElementsByClassName('similarity-prop-value')[1] as HTMLElement;
+        const similarityLable = similarityViewer.root.getElementsByClassName('chem-similarity-prop-value')[1] as HTMLElement;
         if (similarityLable.innerText != '0.22')
             throw new Error('Expected Similarity Lable for 2nd molecule does not match the "Dice" metric');
         const closeBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]

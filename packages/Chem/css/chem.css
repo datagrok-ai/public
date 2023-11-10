@@ -172,11 +172,11 @@
   opacity: 1.0;
 }
 
-.similarity-header {
+.chem-similarity-header {
   justify-content: space-between;
 }
 
-.similarity-prop-label {
+.chem-similarity-prop-label {
   width: 75%;
   margin-left: 5px;
   text-align: start;
@@ -186,21 +186,42 @@
   color: var(--grey-4)
 }
 
-.similarity-prop-value {
+.chem-similarity-prop-value {
   margin-right: 5px;
   text-align: end;
   overflow-wrap: break-word;
   color: var(--grey-5);
 }
 
-.similarity-prop-item {
+.chem-similarity-prop-item {
   justify-content: space-between;
 }
 
-.similarity-search-edit {
+.chem-similarity-search-edit {
   font-size: 12px;
   padding: 4px;
   color:var(--blue-1);
+}
+
+.chem-mmpa-prop-value {
+  margin-right: 5px;
+  text-align: end;
+  color: var(--grey-5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chem-mmpa-context-pane-mol-div {
+  width: 100%;
+  justify-content: space-between;
+  min-width: 400px;
+  padding-left: 100px;
+}
+
+.chem-mmpa-context-pane-properties-div {
+  gap: 5px;
+  width: 100%;
 }
 
 .chem-scaffold-tree-toolbar {
