@@ -62,21 +62,22 @@ enum EDITOR_STATE {
   CLEAR = 0,
   BASIC_TEMPLATE = 1,
   ADVANCED_TEMPLATE = 2,
+  FROM_FILE = 3,
 };
 
 /** */
-function getSampleIVP(state: EDITOR_STATE): string {
+function getProblem(state: EDITOR_STATE): string {
   switch (state) {
     case EDITOR_STATE.BASIC_TEMPLATE:
       return TEMPLATE_BASIC;
 
     case EDITOR_STATE.ADVANCED_TEMPLATE:
-      return TEMPLATE_ADVANCED;
+      return TEMPLATE_ADVANCED;      
     
     default:
       return '';
   }
-};
+}
 
 /** Completions with of control */
 //const completions = Object.values(CONTROL_EXPR).map((val) => {return {label: `${val}: `, type: "keyword"}});
@@ -104,23 +105,31 @@ function contrCompletions(context: any) {
 
 /** */
 export async function runSolverApp() {
-  const exportToJS = () => {    
-    const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
-    const script = DG.Script.create(scriptText);
-    const sView = DG.ScriptView.create(script);
-    grok.shell.addView(sView);
+  const exportToJS = () => {
+    try {
+      const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
+      const script = DG.Script.create(scriptText);
+      const sView = DG.ScriptView.create(script);
+      grok.shell.addView(sView);
+    }
+    catch (err) {
+      if (err instanceof Error) {
+        const b = new DG.Balloon();
+        b.error(err.message);
+      }
+    }
   };
 
   const exportBtn = ui.button('export', exportToJS, 'Export to JavaScript script');
 
-  const solve = async () => {    
-    const ivp = getIVP(editorView.state.doc.toString());
-    const scriptText = getScriptLines(ivp).join('\n');    
-    const script = DG.Script.create(scriptText);    
-    const params = getScriptParams(ivp);    
-    const call = script.prepare(params);
+  const solve = async () => {  
+    try {  
+      const ivp = getIVP(editorView.state.doc.toString());
+      const scriptText = getScriptLines(ivp).join('\n');    
+      const script = DG.Script.create(scriptText);    
+      const params = getScriptParams(ivp);    
+      const call = script.prepare(params);
 
-    try {
       await call.call();
       solutionTable = call.outputs[DF_NAME];
       solverView.dataFrame = call.outputs[DF_NAME];
@@ -164,20 +173,28 @@ export async function runSolverApp() {
   const editorTooltip = ui.tooltip.bind(editorView.dom, () => {
     switch (editorState) {
       case EDITOR_STATE.BASIC_TEMPLATE:      
-        return 'Modify the problem. Right-click and open complex template';
+        return 'Modify the problem. Right-click and open an advanced template.';
 
       case EDITOR_STATE.CLEAR:        
-        return 'Define initial value problem here. Right-click and select a template';
+        return 'Define initial value problem here. Right-click and select a template.';
+
+      case EDITOR_STATE.FROM_FILE:
+        return "Press 'Solve' to get solution. Modify the problem if needed.";
       
       default:        
         return 'Modify the problem. Add new equations, expressions, constants & parameters. Change name, argument & tolerance if needed.';
   }});
 
-  const openFn = () => {};
+  const saveFn = async () => {
+    const link = document.createElement("a");
+    const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
+    link.href = URL.createObjectURL(file);
+    link.download = "equations.txt";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
 
-  const saveFn = () => {};
-
-  const setState = (state: EDITOR_STATE) => {
+  const setState = (state: EDITOR_STATE, text?: string | undefined) => {
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
@@ -188,22 +205,65 @@ export async function runSolverApp() {
     }
 
     const newState = EditorState.create({
-      doc: getSampleIVP(state), 
+      doc: text ?? getProblem(state), 
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     });
 
     editorView.setState(newState);
   };
 
+  /* Warning dialog:
+
+  let toShowWarning = true;
+
+  const rewrite = async (state: EDITOR_STATE) => {
+    setState(state);
+    if (toShowWarning && (editorState !== EDITOR_STATE.CLEAR)) {
+      ui.dialog('WARNING')
+        .add(ui.divV([ 
+          ui.divText('This action will rewrite the current problem.'),
+          ui.divText('Do you want to continue?')]))
+        .onCancel(() => {})
+        .onOK(() => setState(state))
+        .add(ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning))
+        .show();
+    }
+    else
+      setState(state);
+  };*/
+
+  const rewrite = (state: EDITOR_STATE, text?: string | undefined) => { setState(state, text); }
+
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
     DG.Menu.popup()
-      .item('Load...', openFn, undefined, {description: 'Load problem from local file'})
+      .item('Load...', async () => {
+        let text = '';
+        const dlg = ui.dialog('Open a file');
+        const fileInp = document.createElement('input');
+        fileInp.type = 'file';
+        fileInp.onchange = () => {
+          //@ts-ignore
+          const [file] = document.querySelector("input[type=file]").files;
+          const reader = new FileReader();
+          reader.addEventListener("load", () => { text = reader.result as string }, false);
+          
+          if (file) 
+            reader.readAsText(file);
+        }
+
+       dlg.add(fileInp)
+          .addButton('LOAD', () => { 
+            rewrite(EDITOR_STATE.FROM_FILE, text);
+            dlg.close();
+          })
+          .show();        
+       }, undefined, {description: 'Load problem from local file'})
       .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-      .item('Clear...', () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
+      .item('Clear...', () => rewrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
       .separator()
-      .item('Basic...', () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-      .item('Advanced...', () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
+      .item('Basic...', () => rewrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
+      .item('Advanced...', () => rewrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
       .show();    
   });
   
@@ -214,9 +274,6 @@ export async function runSolverApp() {
   div.appendChild(ui.h3(' '));
 
   const buttons = ui.buttonsInput([exportBtn, solveBtn]);
-  //buttons.style.alignSelf = 'end';  
 
-  div.appendChild(buttons);
-
-  //solve();
+  div.appendChild(buttons);  
 } // runSolverApp
