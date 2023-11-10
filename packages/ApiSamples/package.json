@@ -30,8 +30,7 @@
     "@datagrok/power-grid": "latest",
     "@datagrok/usage-analysis": "latest",
     "@datagrok/charts": "latest",
-    "@datagrok/chembl": "latest",
-    "@datagrok/demo": "latest"
+    "@datagrok/chembl": "latest"
   },
   "friendlyName": "API Samples",
   "description": "API Samples",
