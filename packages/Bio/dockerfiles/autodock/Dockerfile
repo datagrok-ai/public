@@ -30,6 +30,11 @@ RUN wget https://autodock.scripps.edu/wp-content/uploads/sites/56/2021/10/autodo
 RUN wget https://github.com/ccsb-scripps/AutoDock-GPU/releases/download/v1.5.3/adgpu-v1.5.3_linux_ocl_128wi -O /opt/autodock-gpu
 RUN chmod +x /opt/autodock-gpu
 
+RUN curl -LJO https://raw.githubusercontent.com/MolecularFlipbook/FlipbookApp/master/mfb/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_dpf4.py \
+    && mv prepare_dpf4.py /usr/local/bin/ \
+    && chmod +x /usr/local/bin/prepare_dpf4.py
+
+
 RUN pip install Flask
 
 COPY autodock.py /app/autodock.py

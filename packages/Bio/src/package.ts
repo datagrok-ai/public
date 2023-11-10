@@ -1138,7 +1138,7 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
 async function getAutodockContainer(): Promise<DockerContainer | undefined> {
   try {
     const dockerContainers: DockerContainersDataSource = await grok.dapi.docker.dockerContainers;
-    return dockerContainers.filter('bio').first();
+    return dockerContainers.filter('bio-autodock').first();
   } catch (error) {
     console.error('Failed to get the Autodock container:', error);
     return undefined;
@@ -1168,8 +1168,6 @@ export async function accessServer(receptor: DG.FileInfo, ligand: DG.FileInfo, x
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(json),
   };
-
-  console.log(params);
 
   const path = `/dock?x=${x}&y=${y}&z=${z}`;
   try {
