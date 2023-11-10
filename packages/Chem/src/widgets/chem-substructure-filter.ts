@@ -98,10 +98,7 @@ export class SubstructureFilter extends DG.Filter {
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
-    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
-      getRdKitModule());
-    return this.searchType === SubstructureSearchType.IS_SIMILAR ?
-      `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` : `${smarts}_${this.searchType}`;
+    return this.getFilterSummary(this.currentMolfile);
   }
 
   get isFiltering(): boolean {
@@ -374,8 +371,7 @@ export class SubstructureFilter extends DG.Filter {
         tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
-        getRdKitModule())}_${this.searchType}_${this.similarityCutOff}_${this.fp}`)) {
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`)) {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property 
       return;
@@ -518,5 +514,12 @@ export class SubstructureFilter extends DG.Filter {
         this.currentSearches.delete(v);
       finish();
     }
+  }
+
+  getFilterSummary(molfile: string): string {
+    const smarts = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
+      getRdKitModule());
+    return this.searchType === SubstructureSearchType.IS_SIMILAR ?
+      `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` : `${smarts}_${this.searchType}`;
   }
 }
