@@ -187,7 +187,7 @@ export class GlobeViewer extends DG.JsViewer {
 
   render() {
     if (!this._testColumns()) {
-      this._showErrorMessage('Not enough data to produce the result.');
+      this._showErrorMessage('The Globe viewer requires a minimum of 1 numerical column.');
       return;
     }
 

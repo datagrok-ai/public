@@ -241,7 +241,7 @@ export class SurfacePlot extends EChartViewer {
 
   render(computeData=false, filter=true) {
     if (!this._testColumns()) {
-      this._showErrorMessage('Not enough data to produce the result.');
+      this._showErrorMessage('The Surface Plot viewer requires a minimum of 3 columns.');
       return;
     }
 

@@ -182,7 +182,7 @@ export class SankeyViewer extends DG.JsViewer {
   render() {
     $(this.root).empty();
     if (!this._testColumns()) {
-      this._showErrorMessage('Not enough data to produce the result.');
+      this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical and 1 numerical columns.');
       return;
     }
 

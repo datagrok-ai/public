@@ -313,7 +313,7 @@ export class RadarViewer extends DG.JsViewer {
 
   render() {
     if (this.valuesColumnNames.length < 1) {
-      this._showErrorMessage('Not enough data to produce the result.');
+      this._showErrorMessage('The Radar viewer requires a minimum of 1 numerical column.');
       return;
     }
     this.chart.setOption(option);
