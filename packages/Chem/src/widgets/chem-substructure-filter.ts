@@ -229,8 +229,8 @@ export class SubstructureFilter extends DG.Filter {
           this.syncEvent = true;
         this.currentMolfile = state.molblock!;
         this.bitset = state.bitset!;
-        this.searchTypeInput.value = state.searchType;
         this.searchTypeSync = true;
+        this.searchTypeInput.value = state.searchType;
         this.similarityCutOffInput.value = state.simCutOff;
         this.similarityCutOffSync = true;
         this.fpInput.value = state.fp;
