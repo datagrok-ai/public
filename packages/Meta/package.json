@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.53",
+  "version": "3.6.54",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3502,6 +3502,19 @@
         "directory": "packages/CVMTests"
       },
       "category": "Development"
+    },
+    "samples": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.13.0"
+        }
+      },
+      "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Samples"
+      }
     }
   }
 }
