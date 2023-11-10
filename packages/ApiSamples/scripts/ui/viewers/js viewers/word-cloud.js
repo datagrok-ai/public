@@ -1,4 +1,4 @@
-const df = await grok.data.files.openTable("Demo:Files/word_cloud.csv");
+const df = await grok.data.files.openTable('Samples:Files/word_cloud.csv');
 
 let view = grok.shell.addTableView(df);
 
