@@ -81,6 +81,7 @@ import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEdit
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { DockerContainer, DockerContainersDataSource } from 'datagrok-api/dg';
 
 export const _package = new BioPackage();
 
@@ -1132,4 +1133,50 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+async function getAutodockContainer(): Promise<DockerContainer | undefined> {
+  try {
+    const dockerContainers: DockerContainersDataSource = await grok.dapi.docker.dockerContainers;
+    return dockerContainers.filter('bio').first();
+  } catch (error) {
+    console.error('Failed to get the Autodock container:', error);
+    return undefined;
+  }
+}
+
+//name: testAutodockContainer
+//input: file receptor
+//input: file ligand
+//input: int x
+//input: int y
+//input: int z
+export async function accessServer(receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number): Promise<string | null | undefined> {
+  const autodockDockerfile = await getAutodockContainer();
+
+  if (!autodockDockerfile) {
+    console.error('Autodock container is not available.');
+    return;
+  }
+
+  const json: { [key: string]: any } = {};
+  json['receptor'] = await receptor.readAsString();
+  json['ligand'] = await ligand.readAsString();
+
+  const params: RequestInit = {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(json),
+  };
+
+  console.log(params);
+
+  const path = `/dock?x=${x}&y=${y}&z=${z}`;
+  try {
+    const response = await grok.dapi.docker.dockerContainers.request(autodockDockerfile.id, path, params);
+    return response;
+  } catch (error) {
+    console.error('Failed to access the server:', error);
+    return;
+  }
 }
