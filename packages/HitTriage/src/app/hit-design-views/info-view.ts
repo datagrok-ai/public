@@ -26,7 +26,8 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   async init(presetTemplate?: HitDesignTemplate) {
-    const wikiLink = ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage');
+    const wikiLink = ui.link('Read more',
+      'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md');
     const textLink = ui.inlineText([wikiLink, '.']);
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});

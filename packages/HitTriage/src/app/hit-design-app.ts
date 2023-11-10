@@ -95,21 +95,21 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     this._submitView ??= new HitDesignSubmitView(this);
     grok.shell.windows.showHelp = false;
     //add empty rows to define stages, used for tile categories;
-    const stagesRow = this.dataFrame.getCol(TileCategoriesColName);
-    if (stagesRow) {
-      const categories = stagesRow.categories;
-      if (categories && categories.length) {
-        template.stages.forEach((s) => {
-          if (!categories.includes(s)) {
-            const newRow = this.dataFrame!.rows.addNew();
-            const idx = newRow.idx;
-            this.dataFrame!.set(TileCategoriesColName, idx, s);
-            this.dataFrame!.set(ViDColName, idx, EmptyStageCellValue);
-          }
-        });
-      }
-    }
-    this.dataFrame.rows.filter((r) => r[ViDColName] !== EmptyStageCellValue);
+    //const stagesRow = this.dataFrame.getCol(TileCategoriesColName);
+    // if (stagesRow) {
+    //   const categories = stagesRow.categories;
+    //   if (categories && categories.length) {
+    //     template.stages.forEach((s) => {
+    //       if (!categories.includes(s)) {
+    //         const newRow = this.dataFrame!.rows.addNew();
+    //         const idx = newRow.idx;
+    //         this.dataFrame!.set(TileCategoriesColName, idx, s);
+    //         this.dataFrame!.set(ViDColName, idx, EmptyStageCellValue);
+    //       }
+    //     });
+    //   }
+    // }
+    //this.dataFrame.rows.filter((r) => r[ViDColName] !== EmptyStageCellValue);
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
     const designV = grok.shell.addView(this.designView);
     this.currentDesignViewId = designV.name;
@@ -158,6 +158,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           // const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
           // this.processedValues.push(...new Array(newRowsNum).fill(''));
           this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+          setTimeout(() => {
+            this.dataFrame!.col(TileCategoriesColName)!.toList().forEach((_, i) => {
+              const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
+              if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
+                this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
+            });
+          }, 10);
         } catch (e) {
           console.error(e);
         }
