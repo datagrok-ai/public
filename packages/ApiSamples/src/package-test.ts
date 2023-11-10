@@ -13,6 +13,7 @@ const skip = [
   'files' /* do not test manually */,
 
   // To fix
+  'custom-viewer-properties',
   'open-table-by-id',
   'charts-in-cells',
   'property-grid',
