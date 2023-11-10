@@ -194,11 +194,17 @@ category('Dapi: functions calls', async () => {
 });
 
 category('Dapi: functions', async () => {
+  test('Parse default value', async () => {
+    const func = await grok.functions.eval('ApiTests:dummyPackageFunctionWithDefaultValue') as DG.Func;
+    const defaultValue = func.inputs.find((p) => p.name === 'a')?.defaultValue;
+    
+    expect(defaultValue, 'test');
+  }, {skipReason: 'GROK-14233'});
+
   test('Load package function with package', async () => {
     const func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const loadedFunc = await GDF.include('package').find(func!.id);
     
-    console.log(loadedFunc);
     expect(loadedFunc.package.name, 'ApiTests');
   });
 
@@ -206,7 +212,6 @@ category('Dapi: functions', async () => {
     const func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const loadedFunc = await GDF.include('package').find(func!.id);
   
-    console.log(loadedFunc);
     expect(loadedFunc.package.name, 'ApiTests');  
   });
 });
