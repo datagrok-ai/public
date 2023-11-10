@@ -246,18 +246,15 @@ export async function runSolverApp() {
           //@ts-ignore
           const [file] = document.querySelector("input[type=file]").files;
           const reader = new FileReader();
-          reader.addEventListener("load", () => { text = reader.result as string }, false);
+          reader.addEventListener("load", () => { text = reader.result as string; rewrite(EDITOR_STATE.FROM_FILE, text);}, false);
           
           if (file) 
             reader.readAsText(file);
-        }
+        }     
 
-       dlg.add(fileInp)
-          .addButton('LOAD', () => { 
-            rewrite(EDITOR_STATE.FROM_FILE, text);
-            dlg.close();
-          })
-          .show();        
+        dlg.add(fileInp);
+        
+        fileInp.click();
        }, undefined, {description: 'Load problem from local file'})
       .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
       .item('Clear...', () => rewrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
