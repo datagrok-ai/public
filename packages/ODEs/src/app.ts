@@ -10,7 +10,7 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {getIVP, getScriptLines, getScriptParams, DF_NAME, CONTROL_EXPR} from './scripting-tools';
 
 /** */
-const TEMPLATE_SIMPLE = `#name: Template
+const TEMPLATE_BASIC = `#name: Basic 
 #differential equations:
   dy/dt = -y + sin(t) / t
 
@@ -23,12 +23,12 @@ const TEMPLATE_SIMPLE = `#name: Template
   y = 0`;
 
 /** */
-const TEMPLATE_COMPLEX = `This is complex template. Modify it. 
+const TEMPLATE_ADVANCED = `This is an advanced template. Modify it. 
 Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters.
-Modify these description lines if required.
+Edit these description lines if required.
 
-#name: Complex Test
+#name: Advanced
 #differential equations:
   dx/dt = E1 * y + sin(t)
 
@@ -60,8 +60,22 @@ Modify these description lines if required.
 /** */
 enum EDITOR_STATE {
   CLEAR = 0,
-  SIMPLE_TEMPLATE = 1,
-  COMPLEXT_TEMPLATE = 2,
+  BASIC_TEMPLATE = 1,
+  ADVANCED_TEMPLATE = 2,
+};
+
+/** */
+function getSampleIVP(state: EDITOR_STATE): string {
+  switch (state) {
+    case EDITOR_STATE.BASIC_TEMPLATE:
+      return TEMPLATE_BASIC;
+
+    case EDITOR_STATE.ADVANCED_TEMPLATE:
+      return TEMPLATE_ADVANCED;
+    
+    default:
+      return '';
+  }
 };
 
 /** Completions with of control */
@@ -141,63 +155,55 @@ export async function runSolverApp() {
   let div = ui.divV([]);   
 
   let editorView = new EditorView({
-    doc: TEMPLATE_SIMPLE,
+    doc: TEMPLATE_BASIC,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     parent: div
   });
 
-  let editorState: EDITOR_STATE = EDITOR_STATE.SIMPLE_TEMPLATE;
+  let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
   const editorTooltip = ui.tooltip.bind(editorView.dom, () => {
     switch (editorState) {
-      case EDITOR_STATE.SIMPLE_TEMPLATE:      
+      case EDITOR_STATE.BASIC_TEMPLATE:      
         return 'Modify the problem. Right-click and open complex template';
 
       case EDITOR_STATE.CLEAR:        
-        return 'Define initial value problem here or right-click & select a template';
+        return 'Define initial value problem here. Right-click and select a template';
       
       default:        
-        return 'Modify or add new equations, expressions, constants & parameters. Change name & tolerance if needed.';
+        return 'Modify the problem. Add new equations, expressions, constants & parameters. Change name, argument & tolerance if needed.';
   }});
 
   const openFn = () => {};
 
-  const saveFn = () => {}; 
-  
-  const setEditorContent = (str: string) => {
+  const saveFn = () => {};
+
+  const setState = (state: EDITOR_STATE) => {
+    editorState = state;
+    solutionTable = DG.DataFrame.create();
+    solverView.dataFrame = solutionTable;
+    
+    if (solutionViewer) {
+      solutionViewer.close();
+      solutionViewer = null;
+    }
+
     const newState = EditorState.create({
-      doc: str, 
+      doc: getSampleIVP(state), 
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     });
 
     editorView.setState(newState);
-  };  
+  };
 
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
     DG.Menu.popup()
       .item('Load...', openFn, undefined, {description: 'Load problem from local file'})
       .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-      .item('Clear...', () => {
-        editorState = EDITOR_STATE.CLEAR;
-        setEditorContent(''); 
-        solutionTable = DG.DataFrame.create();
-        solverView.dataFrame = solutionTable;
-        if (solutionViewer) {
-          solutionViewer.close();
-          solutionViewer = null;
-        }
-      }, undefined, {description: 'Clear problem'})
+      .item('Clear...', () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
       .separator()
-      .item('Simple...', () => {
-        editorState = EDITOR_STATE.SIMPLE_TEMPLATE;
-        setEditorContent(TEMPLATE_SIMPLE); 
-        solve();
-      }, undefined, {description: 'Open simple template'})
-      .item('Complex...', () => {
-        editorState = EDITOR_STATE.COMPLEXT_TEMPLATE;
-        setEditorContent(TEMPLATE_COMPLEX); 
-        solve();
-      }, undefined, {description: 'Open complex template'})
+      .item('Basic...', () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
+      .item('Advanced...', () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
       .show();    
   });
   
@@ -212,5 +218,5 @@ export async function runSolverApp() {
 
   div.appendChild(buttons);
 
-  solve();
+  //solve();
 } // runSolverApp
