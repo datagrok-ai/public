@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.2.14 (2023-11-10)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed droplines min size for rendering
+
 ## 1.2.13 (2023-11-09)
 
 ### Bug Fixes
