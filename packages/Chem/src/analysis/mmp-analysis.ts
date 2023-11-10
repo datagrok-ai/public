@@ -397,7 +397,7 @@ function getMoleculesPropertiesDiv(idxs: number[], propertiesColumnsNames: strin
 }
 
 function getPropsColNamesDiv() {
-  const labelsDiv = ui.divV([], {style: {gap: '5px'}});
+  const labelsDiv = ui.divV([], {style: {gap: '5px', width: '100px'}});
   for (const col of propColNames) {
     const label = ui.divText(`${col}`, 'chem-similarity-prop-label');
     ui.tooltip.bind(label, col);
