@@ -216,7 +216,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+export function iconImage(name: string, path: string,
+                          handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
+                          tooltipMsg: string | null = null,
+                          options: ElementOptions | null = null
+                          ): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('image-icon');
@@ -227,7 +231,7 @@ export function iconImage(name: string, path: string, handler: ((this: HTMLEleme
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
-  return i;
+  return _options(i, options);
 }
 
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {

@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {u2} from '@datagrok-libraries/utils/src/u2';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import $ from 'cash-dom';
@@ -27,23 +28,25 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
 
   async init(presetTemplate?: HitDesignTemplate) {
     const wikiLink = ui.link('Read more',
-      'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md');
-    const textLink = ui.inlineText([wikiLink, '.']);
+      'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md',
+      undefined, { style: {'margin-top': '10px'} });
+
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-    const appDescription = ui.divV([
-      ui.h1('Design, enrich, and collaborate on potential hits'),
-      ui.div(ui.markdown(
-        '-  Configure your own workflow using the template editor\n' +
-        '-  Sketch molecules in the molecular spreadsheet\n' +
-        '-  Annotate and share ideas with the team\n' +
-        '-  Calculate different molecular properties\n' +
-        '-  Customizable additional views (drag-and-drop molecules between stages)\n' +
-        '-  Submit final selection to the function of your choice\n' +
-        '-  Save campaigns and continue from where you left off\n',
-      ), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
-      textLink,
-    ]);
+    const appDescription = ui.divH([
+      u2.appHeader(_package.webRoot + '/images/icons/hit-design-icon.png',
+      ui.divV([
+        ui.h1('Design, enrich, and collaborate on potential hits'),
+        ui.div(ui.markdown(
+          '-  Configure your own workflow using the template editor\n' +
+          '-  Sketch molecules in the molecular spreadsheet\n' +
+          '-  Annotate and share ideas with the team\n' +
+          '-  Calculate different molecular properties\n' +
+          '-  Save campaigns and continue from where you left off\n' +
+          '-  Submit final selection to the function of your choice\n'
+        ), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
+        wikiLink,
+    ]))]);
     const campaignAccordionDiv = ui.div();
     const templatesDiv = ui.divH([]);
     const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');

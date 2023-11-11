@@ -1,6 +1,15 @@
 # HitDesign
 
-HitDesign is a dynamic application designed for chemists and biologists to streamline the process of designing and selecting molecular hits. It facilitates collaboration by allowing users to sketch and add molecules, calculate molecular properties, filter based on these properties or substructure search, select hits, move hits to different stages, save campaigns, and share their work with others. The application is built around templates and campaigns, providing a structured yet flexible approach to hit design process.
+HitDesign streamlines the process of designing new molecules and collaborating on molecular ideas.
+You can sketch molecules,
+calculate or predict chemical and biological properties, enrich data with information
+from the proprietary databases, filter based on these properties or substructure search, select hits, 
+move hits to different stages, save campaigns, and share your work with others.
+
+The application is built around templates and campaigns, providing a structured yet flexible approach to
+hit design process. In addition to the built-in functions for data ingestion, property calculation, and
+data submission, you can define functions specific to your company or use case, allowing for the
+seamless integration. 
 
 ## Templates
 
