@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.55",
+  "version": "3.6.56",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3518,6 +3518,20 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Samples"
       }
+    },
+    "hit-triage": {
+      "dependencies": {
+        "1.0.1": {
+          "datagrok-api": "^1.16.2"
+        }
+      },
+      "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/HitTriage"
+      },
+      "category": "Cheminformatics"
     }
   }
 }
