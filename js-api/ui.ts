@@ -376,7 +376,7 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
-export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 

@@ -96,13 +96,3 @@ table.hit-triage-table {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.ui-app-header {
-
-}
-
-.ui-app-header-icon {
-    width: 150px;
-    height: 150px;
-    margin-right: 20px;
-}

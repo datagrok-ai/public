@@ -27,26 +27,20 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   async init(presetTemplate?: HitDesignTemplate) {
-    const wikiLink = ui.link('Read more',
-      'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md',
-      undefined, { style: {'margin-top': '10px'} });
-
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-    const appDescription = ui.divH([
-      u2.appHeader(_package.webRoot + '/images/icons/hit-design-icon.png',
-      ui.divV([
-        ui.h1('Design, enrich, and collaborate on potential hits'),
-        ui.div(ui.markdown(
-          '-  Configure your own workflow using the template editor\n' +
-          '-  Sketch molecules in the molecular spreadsheet\n' +
-          '-  Annotate and share ideas with the team\n' +
-          '-  Calculate different molecular properties\n' +
-          '-  Save campaigns and continue from where you left off\n' +
-          '-  Submit final selection to the function of your choice\n'
-        ), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
-        wikiLink,
-    ]))]);
+    const appHeader = u2.appHeader({
+      iconPath: _package.webRoot + '/images/icons/hit-design-icon.png',
+      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md',
+      description:
+        '-  Configure your own workflow using the template editor\n' +
+        '-  Sketch molecules in the molecular spreadsheet\n' +
+        '-  Annotate and share ideas with the team\n' +
+        '-  Calculate different molecular properties\n' +
+        '-  Save campaigns and continue from where you left off\n' +
+        '-  Submit final selection to the function of your choice'
+    });
+
     const campaignAccordionDiv = ui.div();
     const templatesDiv = ui.divH([]);
     const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
@@ -54,7 +48,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const campaignsTable = await this.getCampaignsTable();
     $(this.root).empty();
     this.root.appendChild(ui.div([
-      ui.divV([appDescription, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
+      ui.divV([appHeader, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
       campaignsTable,
       createNewCampaignHeader,
       contentDiv,
