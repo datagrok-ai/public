@@ -137,9 +137,14 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
         info.createDate, info.rowCount, info.filtered, info.status,
         ui.icons.delete(async () => {
-          await this.deleteCampaign('Hit Design', info.name);
-          this.deletedCampaigns.push(info.name);
-          await this.init();
+          ui.dialog('Delete campaign')
+            .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
+            .onOK(async () => {
+              await this.deleteCampaign('Hit Design', info.name);
+              this.deletedCampaigns.push(info.name);
+              await this.init();
+            })
+            .show();
         }, 'Delete campaign')]),
     ['Name', 'Created', 'Total', 'Selected', 'Status', '']);
     table.style.color = 'var(--grey-5)';
