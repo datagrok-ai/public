@@ -148,6 +148,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
         }, 'Delete campaign')]),
     ['Name', 'Created', 'Total', 'Selected', 'Status', '']);
     table.style.color = 'var(--grey-5)';
+    table.style.marginLeft = '24px';
     return table;
   }
 
