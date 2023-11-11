@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
 import './u2.css';
 
@@ -39,4 +40,22 @@ export namespace u2 {
     ]);
   }
 
+
+  export namespace tools {
+
+    /** Shows the "running" indicator on {@link root} while {@link func} is executed.
+     * Handles and logs exceptions. */
+    export async function update<T>(root: HTMLElement, func: () => Promise<T>) {
+      ui.setUpdateIndicator(root, true);
+      try {
+        return await func();
+      }
+      catch (e) {
+        grok.log.error(e);
+      }
+      finally {
+        ui.setUpdateIndicator(root, false);
+      }
+    }
+  }
 }
