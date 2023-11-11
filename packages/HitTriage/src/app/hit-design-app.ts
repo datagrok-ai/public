@@ -52,6 +52,9 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
           if (grok.shell.v?.name === this.currentTilesViewId)
             await this._tilesView?.render();
+          else
+            this._tilesView?.destroy();
+
           const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', grok.shell.v?.name, () => {
             grok.shell.v = this.mainView;
             this._tilesView?.close();
@@ -158,13 +161,21 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           // const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
           // this.processedValues.push(...new Array(newRowsNum).fill(''));
           this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
-          setTimeout(() => {
-            this.dataFrame!.col(TileCategoriesColName)!.toList().forEach((_, i) => {
+          if (this.template!.stages?.length > 0) {
+            for (let i = 0; i < this.dataFrame!.rowCount; i++) {
               const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
               if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
                 this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
-            });
-          }, 10);
+            }
+          }
+          let lastAddedCell: DG.GridCell | null = null;
+          for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+            const cell = view.grid.cell(this.molColName, i);
+            if (cell.cell.value === '' || cell.cell.value === null)
+              lastAddedCell = cell;
+          }
+          if (lastAddedCell)
+            grok.functions.call('Chem:editMoleculeCell', {cell: lastAddedCell});
         } catch (e) {
           console.error(e);
         }
@@ -189,11 +200,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             this.dataFrame!.col(ViDColName)?.get(newValueIdx) === '')
               this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
 
-          if ( this.template!.stages?.length > 0 && (!this.dataFrame!.col(TileCategoriesColName)?.get(newValueIdx) ||
-            this.dataFrame!.col(TileCategoriesColName)?.get(newValueIdx) === '')) {
-              this.dataFrame!.col(TileCategoriesColName)!.set(
-                newValueIdx, this.template!.stages[0], false);
-          }
 
           const computeObj = this.template!.compute;
           if (!newValue || newValue === '')

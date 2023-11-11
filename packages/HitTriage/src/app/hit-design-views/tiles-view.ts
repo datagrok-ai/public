@@ -10,6 +10,7 @@ import {checkRibbonsHaveSubmit} from '../utils';
 import './utils.css';
 
 export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
+  private v: DG.Viewer | null = null;
   constructor(app: HitDesignApp) {
     super(app);
     this.name = 'Progress Tracker';
@@ -27,14 +28,14 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
          if (name.startsWith('~'))
           this.app.dataFrame!.columns.remove(name);
        });
-       const v = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, this.app.dataFrame!,
+       this.v = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, this.app.dataFrame!,
          {lanesColumnName: TileCategoriesColName, lanes: this.app.template?.stages ?? []});
        //this.root.appendChild(tv.root);
-       this.root.appendChild(v.root);
-       v.root.style.height = '100%';
-       v.root.style.width = '100%';
+       this.root.appendChild(this.v.root);
+       this.v.root.style.height = '100%';
+       this.v.root.style.width = '100%';
        setTimeout(() => {
-         v.view?._onAdded();
+         this.v?.view?._onAdded();
          const ribbons = grok.shell.v?.getRibbonPanels();
 
          if (ribbons) {
@@ -66,5 +67,9 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
 
   onActivated(): void {
     this.render();
+  }
+
+  public destroy(): void {
+    this.v?.detach();
   }
 }

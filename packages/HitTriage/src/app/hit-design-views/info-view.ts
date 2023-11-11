@@ -13,6 +13,7 @@ import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-templa
 import {HitBaseView} from '../base-view';
 
 export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
+  private deletedCampaigns: string[] = [];
   constructor(app: HitDesignApp) {
     super(app);
     this.name = 'Hit Design';
@@ -27,33 +28,39 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   async init(presetTemplate?: HitDesignTemplate) {
-    const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
-    const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/images/icons/hit-design-icon.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md',
-      description:
+    ui.setUpdateIndicator(this.root, true);
+    try {
+      const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
+      const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
+      const appHeader = u2.appHeader({
+        iconPath: _package.webRoot + '/images/icons/hit-design-icon.png',
+        learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md',
+        description:
         '-  Configure your own workflow using the template editor\n' +
         '-  Sketch molecules in the molecular spreadsheet\n' +
         '-  Annotate and share ideas with the team\n' +
         '-  Calculate different molecular properties\n' +
         '-  Save campaigns and continue from where you left off\n' +
-        '-  Submit final selection to the function of your choice'
-    });
+        '-  Submit final selection to the function of your choice',
+      });
 
-    const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([]);
-    const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
+      const campaignAccordionDiv = ui.div();
+      const templatesDiv = ui.divH([]);
+      const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
 
-    const campaignsTable = await this.getCampaignsTable();
-    $(this.root).empty();
-    this.root.appendChild(ui.div([
-      ui.divV([appHeader, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
-      campaignsTable,
-      createNewCampaignHeader,
-      contentDiv,
-    ]));
-    this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(() => this.app.resetBaseUrl());
+      const campaignsTable = await this.getCampaignsTable();
+      $(this.root).empty();
+      this.root.appendChild(ui.div([
+        ui.divV([appHeader, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
+        campaignsTable,
+        createNewCampaignHeader,
+        contentDiv,
+      ]));
+      await this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate);
+      this.app.resetBaseUrl();
+    } finally {
+      ui.setUpdateIndicator(this.root, false);
+    }
   }
 
   private async startNewCampaign(
@@ -114,7 +121,8 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   private async getCampaignsTable() {
-    const campaignFolders = await _package.files.list('Hit Design/campaigns');
+    const campaignFolders = (await _package.files.list('Hit Design/campaigns'))
+      .filter((f) => this.deletedCampaigns.indexOf(f.name) === -1);
     const campaignNamesMap: {[name: string]: HitDesignCampaign} = {};
     for (const folder of campaignFolders) {
       const campaignJson: HitDesignCampaign = JSON.parse(await _package.files
@@ -127,8 +135,13 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
         rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
     const table = ui.table(campaignsInfo, (info) =>
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
-        info.createDate, info.rowCount, info.filtered, info.status]),
-    ['Name', 'Created', 'Total', 'Selected', 'Status']);
+        info.createDate, info.rowCount, info.filtered, info.status,
+        ui.icons.delete(async () => {
+          await this.deleteCampaign('Hit Design', info.name);
+          this.deletedCampaigns.push(info.name);
+          await this.init();
+        }, 'Delete campaign')]),
+    ['Name', 'Created', 'Total', 'Selected', 'Status', '']);
     table.style.color = 'var(--grey-5)';
     return table;
   }

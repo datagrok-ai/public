@@ -1,0 +1,7 @@
+Molecule,Stage,V-iD,MolWt,Stereo centers,Mutagenicity,Tumorigenicity,CHEMBL molregno
+c1ccccc1,Consideration,V000001,78.11399841308594,0,High,High,16832
+c1cc2ccccc2cc1,Consideration,V000002,128.1739959716797,0,High,High,16789
+O=Cc1ccccc1,Consideration,V000003,106.1240005493164,0,High,High,16820
+C=C,Consideration,V000004,28.054000854492188,0,None,High,190956
+CCO,Consideration,V000005,46.069000244140625,0,High,High,13618
+,Consideration,,,,,,

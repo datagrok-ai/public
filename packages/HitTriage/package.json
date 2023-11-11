@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "HitTriage",
-  "version": "0.0.6",
+  "version": "1.0.0",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does it in a managed, reproducible manner, with the triage template consisting of separate steps. Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application.",
+  "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
   "sources": [
     "css/hit-triage.css"
   ],
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.8.3",
-    "@datagrok-libraries/utils": "^4.1.22",
+    "@datagrok-libraries/utils": "^4.1.24",
     "cash-dom": "latest",
     "css-loader": "^6.5.1",
     "datagrok-api": "^1.16.2",
