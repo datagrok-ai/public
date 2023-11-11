@@ -43,9 +43,9 @@ export namespace u2 {
 
   export namespace tools {
 
-    /** Shows the "running" indicator on {@link root} while {@link func} is executed.
+    /** Executes {@link func} while showing the "running" indicator on {@link root}.
      * Handles and logs exceptions. */
-    export async function update<T>(root: HTMLElement, func: () => Promise<T>) {
+    export async function runAsync<T>(root: HTMLElement, func: () => Promise<T>) {
       ui.setUpdateIndicator(root, true);
       try {
         return await func();
