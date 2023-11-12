@@ -10,10 +10,10 @@ import $ from 'cash-dom';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
-import {getLinkedMolfile, saveSdf} from '../../model/sequence-to-structure-utils/sdf-tab';
+import {getLinkedMolfile, saveSdf} from '../../model/structure-app/oligo-structure';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {MoleculeImage} from '../utils/molecule-img';
-import {StrandData} from '../../model/sequence-to-structure-utils/sdf-tab';
+import {StrandData} from '../../model/structure-app/oligo-structure';
 
 const enum DIRECTION {
   STRAIGHT = '5′ → 3′',
@@ -63,10 +63,10 @@ export class StructureLayoutHandler {
     const bottomDiv = ui.divH([boolInputsAndButton, this.moleculeImgDiv]);
     $(bottomDiv).addClass('st-structure-bottom');
 
-    const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
-    $(sdfTabBody).addClass('st-structure-body');
+    const layout = ui.divV([tableLayout, bottomDiv]);
+    $(layout).addClass('st-structure-body');
 
-    return sdfTabBody;
+    return layout;
   }
 
   private getBoolInputsAndButton(): HTMLDivElement {

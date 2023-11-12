@@ -9,15 +9,15 @@ import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
-import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
-import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
+import {SequenceToMolfileConverter} from '../../model/structure-app/sequence-to-molfile';
+import {getTranslatedSequences} from '../../model/translator-app/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/oligo-translator';
 import {DEFAULT_AXOLABS_INPUT} from '../const/ui';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
-import {FormatConverter} from '../../model/format-translation/format-converter';
+import {FormatConverter} from '../../model/translator-app/format-converter';
 import {codesToHelmDictionary} from '../../model/data-loading-utils/json-loader';
 import {DEFAULT_FORMATS} from '../../model/const';
 
