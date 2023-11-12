@@ -59,6 +59,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             grok.shell.v = this.mainView;
             this._tilesView?.close();
             this._designView?.close();
+            this._infoView.init();
             sub.unsubscribe();
           });
         }
@@ -192,7 +193,12 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
       view.grid.onCellValueEdited.subscribe(async (gc) => {
         try {
-          if (gc.tableColumn?.name !== this.molColName) return;
+          if (gc.tableColumn?.name === TileCategoriesColName) {
+            await this.saveCampaign(undefined, false);
+            return;
+          }
+          if (gc.tableColumn?.name !== this.molColName)
+            return;
           const newValue = gc.cell.value;
           const newValueIdx = gc.tableRowIndex!;
 
@@ -205,7 +211,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           if (!newValue || newValue === '')
             return;
           const calcDf =
-          await calculateSingleCellValues(newValue, computeObj.descriptors.args, computeObj.functions);
+            await calculateSingleCellValues(newValue, computeObj.descriptors.args, computeObj.functions);
 
           for (const col of calcDf.columns.toList()) {
             if (col.name === HitDesignMolColName) continue;
@@ -216,6 +222,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
           }
           this.dataFrame!.fireValuesChanged();
+          this.saveCampaign(undefined, false);
         } catch (e) {
           console.error(e);
         }
