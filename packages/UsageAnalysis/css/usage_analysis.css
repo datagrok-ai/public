@@ -90,12 +90,14 @@
 
 .ua-cards .ua-card .grok-wait {
   height: 50px;
+  margin-top: 5px;
+  gap: 5px;
 }
 
 .ua-cards .ua-card {
-  width: 100px;
+  width: 120px;
   margin: 12px;
-  /* padding: 4px; */
+  height: 80px;
   box-shadow: 0px 0px 2px var(--grey-3);
   align-items: center;
   display: flex;
@@ -103,6 +105,8 @@
   justify-content: center;
   position: relative;
   padding: 8px;
+  flex-grow: 1;
+  max-width: 120px;
 }
 
 .ua-test-card {
@@ -117,7 +121,7 @@
 }
 
 .ua-cards .ua-card > .grok-wait > .ui-div > div:first-child {
-  font-size: 32px;
+  font-size: 24px;
   line-height: 32px;
 }
 
