@@ -20,6 +20,26 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-11-13 1.17.3
+
+### Addressed Issues
+
+* (Bug) GROK-14182: ui.choiceInput breaks the old code 
+* (Bug) GROK-14210: UI: Format is ignored on floatInput 
+* (Improvement) [#2298](https://github.com/datagrok-ai/public/issues/2298): Bar Chart: squeeze the white space around the title (WIP)
+* (Improvement) [#2456](https://github.com/datagrok-ai/public/issues/2456): Scatterplot: ignore negatives and zero values when switching to log scale 
+* (Improvement) [#2480](https://github.com/datagrok-ai/public/issues/2480): Scatterplot: default range should take into account only the rows where both axes values are present 
+* (Bug) [#2485](https://github.com/datagrok-ai/public/issues/2485): Line chart: too much empty space if Y axis is logarithmic for specific data 
+* (Improvement) [#2484](https://github.com/datagrok-ai/public/issues/2484): Box plot: no indication what dot is hovered, wrong dot is selected in some cases 
+* (Bug) [#2483](https://github.com/datagrok-ai/public/issues/2483): Order and hide columns and Tooltip dialogs: cosmetic issues 
+* (Improvement) [#2467](https://github.com/datagrok-ai/public/issues/2467): Allow to set tab label for stacked viewers programmatically 
+* GROK-14215: Tiles Viewer: Ability to specify custom lane categories 
+* (Bug) [#2489](https://github.com/datagrok-ai/public/issues/2489): Colour selector opened from the 'style' section in properties panel cannot be closed 
+* (Bug) [#2503](https://github.com/datagrok-ai/public/issues/2503): Order and Hide: Tooltip with null category shouldn’t be that big 
+* (Bug) GROK-14221: ChoiceInputs are not refreshing in FRAC classification query 
+* (Improvement) GROK-14235: JS API: Utils.loadJsCss(files): dynamically load dependencies (WIP)
+
+
 ## 2023-11-03 1.17.2
 
 ### Addressed Issues
