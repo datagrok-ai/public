@@ -51,7 +51,7 @@ export namespace u2 {
         return await func();
       }
       catch (e) {
-        grok.log.error(e);
+        grok.log.error(e as string);
       }
       finally {
         ui.setUpdateIndicator(root, false);
