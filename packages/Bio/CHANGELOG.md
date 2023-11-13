@@ -10,6 +10,7 @@
 * Fix for min seq length 10, tests.
 * Fix user library settings for tests
 * Fix test substructureFilter/helm
+* Fix README.md images, GIFs size
 
 ## 2.11.0 (2023-10-25)
 
