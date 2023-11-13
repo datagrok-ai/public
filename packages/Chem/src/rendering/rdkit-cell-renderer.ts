@@ -146,18 +146,27 @@ M  END
     if (mol !== null) {
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
+        let doNotUseMolblockWedging = false;
         const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
         const { haveReferenceSmarts, parentMolScaffoldMolString } = (details as any);
         if (alignedByFirstSubstr) {
           const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule,
-            parentMolScaffoldMolString ? [{molecule: parentMolScaffoldMolString}]: [],
+            parentMolScaffoldMolString ? [{ molecule: parentMolScaffoldMolString }] : [],
             molRegenerateCoords, false, { mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString }, false).molCtx;
           const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
           if (rdKitScaffoldMol) {
             rdKitScaffoldMol.normalize_depiction(0);
             if (molHasOwnCoords)
               mol.normalize_depiction(0);
+            else {
+              //need the following 4 rows for smiles with highlights to be rendered in adequate coordinates
+              mol.set_new_coords();
+              mol.normalize_depiction(1);
+              mol.straighten_depiction(false);
+              molHasOwnCoords = true;
+              doNotUseMolblockWedging = true;
+            }
             let substructString = '';
             let useCoordGen = (details as any).useCoordGen;
             useCoordGen = (typeof useCoordGen === 'boolean' ? useCoordGen : true);
@@ -191,11 +200,11 @@ M  END
                 mol.straighten_depiction(true);
             } else
               substruct = JSON.parse(substructString);
-                if (!substruct.atoms)
-                  substruct.atoms = [];
-                if (!substruct.bonds)
-                  substruct.bonds = [];
-                _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
+            if (!substruct.atoms)
+              substruct.atoms = [];
+            if (!substruct.bonds)
+              substruct.bonds = [];
+            _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
           }
         }
         for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
@@ -216,7 +225,7 @@ M  END
             }
           }
         }
-        molCtx.useMolBlockWedging = molHasOwnCoords;
+        molCtx.useMolBlockWedging = molHasOwnCoords && !doNotUseMolblockWedging;;
         if (mol.has_coords() === 0 || molRegenerateCoords) {
           mol.set_new_coords(molRegenerateCoords);
           mol.normalize_depiction(1);
