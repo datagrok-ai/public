@@ -123,15 +123,25 @@ export class StructureLayoutHandler {
       )
     );
 
+    const clearBlock = Object.fromEntries(
+      STRANDS.map(
+        (key) => {
+          const icon = ui.iconFA('eraser', () => {coloredInput[key].inputBase.value = ''});
+          ui.tooltip.bind(icon, `Clear ${key.toUpperCase()}`);
+          return [key, icon];
+        }
+      ));
+
     const tableRows = STRANDS.map((strand) => {
       return {
         label: label[strand],
         textInput: coloredInput[strand].root,
+        clear: clearBlock[strand],
         choiceInput: directionChoiceInput[strand].root,
       };
     });
     const tableLayout = ui.table(
-      tableRows, (item) => [item.label, item.textInput, item.choiceInput]);
+      tableRows, (item) => [item.label, item.textInput, item.clear, item.choiceInput]);
     $(tableLayout).css('margin-top', '10px');
 
     for (const strand of STRANDS) {
