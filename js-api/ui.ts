@@ -186,7 +186,7 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
   return tabs;
 }
 
-/** Returns DivElement with the specified inner text
+/** Returns DivElement with the specified inner text.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {string} text
  * @param {string | ElementOptions | null} options
@@ -322,7 +322,7 @@ export function renderInline(x: HTMLElement): HTMLElement {
 }
 
 
-/** Renders inline text, calling [renderMarkup] for each non-HTMLElement
+/** Renders inline text, calling [renderMarkup] for each non-HTMLElement.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {object[]} objects
  * @returns {HTMLElement}. */
@@ -417,7 +417,7 @@ export function setUpdateIndicator(element: HTMLElement, updating: boolean = tru
 }
 
 /**
- * Creates a button with the specified text, click handler, and tooltip
+ * Creates a button with the specified text, click handler, and tooltip.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons}
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
@@ -432,7 +432,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
- * Creates a combo popup with the specified icons and items
+ * Creates a combo popup with the specified icons and items.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
  * @param {Array<string>} items
@@ -1638,7 +1638,7 @@ export namespace tools {
 
 export namespace cards {
 
-  /** Two columns, with picture on the left and details on the right 
+  /** Two columns, with picture on the left and details on the right. 
    * Example: {@link https://public.datagrok.ai/js/samples/ui/components/summary-card}
   */
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
