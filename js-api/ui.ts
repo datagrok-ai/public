@@ -216,7 +216,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+export function iconImage(name: string, path: string,
+                          handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
+                          tooltipMsg: string | null = null,
+                          options: ElementOptions | null = null
+                          ): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('image-icon');
@@ -227,7 +231,7 @@ export function iconImage(name: string, path: string, handler: ((this: HTMLEleme
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
-  return i;
+  return _options(i, options);
 }
 
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
@@ -372,7 +376,7 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
-export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
@@ -1138,14 +1142,30 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootHeight = x.getBoundingClientRect().height;
-    
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          $(b.childNodes[i]).attr('style', `height:${(rootHeight/items.length-($(b).find('.ui-split-h-divider').length*4)/items.length)}px;`);
-        } else {
-          $(b.childNodes[i]).css('height', 4);
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultHeigh = 0;
+      let noHeightCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height != '') {
+            defaultHeigh += Number(element.style.height.replace(/px$/, ''));
+          } else {
+            noHeightCount++;
+          }
+        }else{
+          element.style.height = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height == '') {
+            let height = (rootHeight-defaultHeigh-($(b).find('.ui-split-v-divider').length*4))/noHeightCount;
+            element.style.height = String(height)+'px';
+          }
         }
-      }
+      })
 
     });
 
@@ -1154,7 +1174,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 
       for (let i = 0; i < b.children.length; i++){
         if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          $(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
+          let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
+          $(b.childNodes[i]).css('height', String(height)+'px');
+          //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
         } else {
           $(b.childNodes[i]).css('height', 4);
         }
@@ -1185,14 +1207,30 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootWidth = x.getBoundingClientRect().width;
-    
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          $(b.childNodes[i]).attr('style', `width:${(rootWidth/items.length-($(b).find('.ui-split-h-divider').length*4)/items.length)}px;`);
-        } else {
-          $(b.childNodes[i]).css('width', 4);
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultWidth = 0;
+      let noWidthCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width != '') {
+            defaultWidth += Number(element.style.width.replace(/px$/, ''));
+          } else {
+            noWidthCount++;
+          }
+        }else{
+          element.style.width = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width == '') {
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            element.style.width = String(width)+'px';
+          }
         }
-      }
+      })
 
     });
 
@@ -1201,7 +1239,8 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 
       for (let i = 0; i < b.children.length; i++){
         if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          $(b.childNodes[i]).attr('style', `width:${(w-rootWidth)/b.children.length+$(b.childNodes[i]).width()}px;`);
+          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
           $(b.childNodes[i]).css('width', 4);
         }
@@ -1268,12 +1307,24 @@ function onMouseMove(e: any) {
   const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
   if (horizontal) {
       delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
-      previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
-      nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
+      //$(previousSibling).css('width', md.leftWidth + delta.x);
+      //$(nextSibling).css('width', md.rightWidth - delta.x);
+      let newPrevWidth = md.leftWidth + delta.x;
+      let newNextWidth = md.rightWidth - delta.x;
+      previousSibling.style.width = String(newPrevWidth)+'px';
+      nextSibling.style.width = String(newNextWidth)+'px';
+      //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
+      //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
   } else {
       delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
-      previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
-      nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
+      //$(previousSibling).css('height', md.topHeight + delta.y);
+      //$(nextSibling).css('height', md.bottomHeight - delta.y);
+      let newPrevHeight = md.topHeight + delta.y;
+      let newNextHeight = md.bottomHeight - delta.y;
+      previousSibling.style.height = String(newPrevHeight)+'px';
+      nextSibling.style.height = String(newNextHeight)+'px';
+      //previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
+      //nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
   }
 }
 }

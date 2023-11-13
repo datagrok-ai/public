@@ -1,5 +1,14 @@
 # PowerGrid changelog
 
+## 1.2.1 (2023-11-07)
+
+### Bug Fixes
+
+* Fixed adding summary columns not taking columns into account.
+* Added old summary column format support
+* Fixed support for bigint type
+* Fixed exception thrown onHit
+
 ## 1.2.0 (2023-11-02)
 
 ### Features

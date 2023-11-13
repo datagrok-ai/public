@@ -50,7 +50,7 @@ table.hit-triage-table {
 }
 
 .hit-triage-new-template-functions-input > .ui-box {
-    height: unset !important;
+    height: 300px;
 }
 
 .hit-triage-new-template-functions-input {

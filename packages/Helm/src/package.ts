@@ -283,7 +283,7 @@ export function getMolfiles(col: DG.Column): DG.Column {
 }
 
 //name: helmWebEditor
-//output: object
+//output: object result
 export function helmWebEditor(): HelmWebEditor {
   return new HelmWebEditor();
 }

@@ -158,3 +158,22 @@ from res
 where res.pid = any(@packages)
 group by res.name
 --end
+
+
+--name: PackagesInstallationTime
+--input: string date {pattern: datetime}
+--input: list packages
+--meta.cache: all
+--meta.invalidate: 0 0 0 * *
+--connection: System:Datagrok
+select e.event_time, ppp.name as package, v.value::int as time
+from events e
+inner join event_types t on t.id = e.event_type_id and t.source = 'audit' and t.friendly_name = 'package-version-published'
+left join event_parameter_values v 
+inner join event_parameters p on p.id = v.parameter_id and p.name = 'ms' on v.event_id = e.id
+left join event_parameter_values vp 
+inner join event_parameters pp on pp.id = vp.parameter_id and pp.name = 'package' on vp.event_id = e.id 
+inner join packages ppp on ppp.id::text = vp.value
+where @date(e.event_time)
+and (ppp.name = any(@packages) or @packages = ARRAY['all'])
+--end

@@ -8,13 +8,13 @@ import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getJsonData} from './model/data-loading-utils/json-loader';
-import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
-import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
+import {SequenceToMolfileConverter} from './model/structure-app/sequence-to-molfile';
+import {linkStrandsV3000} from './model/structure-app/mol-transformations';
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
-import {FormatConverter} from './model/format-translation/format-converter';
+import {FormatConverter} from './model/translator-app/format-converter';
 import {APP} from './view/const/ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 

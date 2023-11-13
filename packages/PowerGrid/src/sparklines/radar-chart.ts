@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit, SparklineType} from './shared';
+import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit,
+  SparklineType, isSummarySettingsBase} from './shared';
 
 
 class it {
@@ -18,10 +19,11 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
-    ...getSettingsBase(gc, SparklineType.Radar),
-    // ...{radius: 10,},
-  };
+  return isSummarySettingsBase(gc.settings) ? gc.settings :
+    (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
+      ...getSettingsBase(gc, SparklineType.Radar),
+      // ...{radius: 10,},
+    };
 }
 
 
@@ -129,7 +131,8 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: RadarChartSettings = gc.settings[SparklineType.Radar] ??= getSettings(gc);
+    const settings: RadarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.Radar] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {

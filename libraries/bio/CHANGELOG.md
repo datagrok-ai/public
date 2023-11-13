@@ -10,6 +10,7 @@
 
 * Add VdRegionsViewer `filterSource` property.
 * Add WebLogo `valueAggrType`, `valueColumnName` properties.
+* Add routines to get/set user monomer library settings.
 
 ### Bug fixes
 

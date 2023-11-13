@@ -10,7 +10,7 @@ Dimensionality reduction is an unsupervised machine learning (ML) technique that
 Principal Component Analysis (PCA) captures the most significant patterns in the data by transforming it into a new coordinate system to maximize variance along orthogonal axes.
 
 * Open a table
-* Run **Top Menu > ML > PCA...**
+* Run **Top Menu > ML > Dimensionality reduction > PCA...**
 * Select the source table and `Feature` columns
 * Set the number of principal `Components`
 * Set `Center` and/or `Scale` data pre-processing options
@@ -29,7 +29,7 @@ See also:
 Uniform Manifold Approximation and Projection (UMAP) is a nonlinear method for mapping high-dimensional data to a lower-dimensional space preserving its global and local structures.
 
 * Open a table
-* Run **Top Menu > ML > UMAP...**
+* Run **Top Menu > ML > Dimensionality reduction > UMAP...**
 * Select the source table and `Feature` columns
 * Set `Hyperparameters` and press **OK**
 
@@ -46,7 +46,7 @@ See also:
 t-distributed stochastic neighbor embedding (t-SNE) reveals the underlying complex data structure by representing its similar points as nearby neighbors in a lower-dimensional space.
 
 * Open a table
-* Run **Top Menu > ML > t-SNE...**
+* Run **Top Menu > ML > Dimensionality reduction > t-SNE...**
 * Select the source table and `Feature` columns
 * Set `Hyperparameters` and press **OK**
 
@@ -59,7 +59,7 @@ See also:
 Stochastic proximity embedding (SPE) is a self-organizing method that produces meaningful underlying dimensions from proximity data.
 
 * Open a table
-* Run **Top Menu > ML > SPE...**
+* Run **Top Menu > ML > Dimensionality reduction > SPE...**
 * Select the source table and `Feature` columns
 * Set `Hyperparameters` and press **OK**
 

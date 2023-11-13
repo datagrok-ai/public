@@ -572,6 +572,7 @@ export type ElementOptions = {
   id?: string;
   classes?: string;
   style?: object;
+  //tooltip?: string;
   processNode?: (node: HTMLElement) => void;
   onClick?: (event: PointerEvent) => void;
 };

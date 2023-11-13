@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {
   category,
   test,
@@ -48,29 +49,6 @@ for (const lang of langs) {
       expectTable(result['resultCategorical'], df);
     });
 
-    test(`Dataframe performance test 15 consequently`, async () => {
-      const results = [];
-      for (let i = 0; i < 15; i++) {
-        results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
-          {'df': TEST_DATAFRAME_1}));
-      }
-      const sum = results.reduce((p, c) => p + c, 0);
-      return toDart({'Average time': sum / results.length,
-        'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
-
-    test('Dataframe performance test 15 parallel', async () => {
-      const calls = [];
-      for (let i = 0; i < 15; i++) {
-        calls.push(getScriptTime(`CVMTests:${lang}SingleDf`,
-          {'df': TEST_DATAFRAME_1}));
-      }
-      const results = await Promise.all(calls);
-      const sum = results.reduce((p, c) => p + c, 0);
-      return toDart({'Average time': sum / results.length,
-        'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
-
     test('Map type input/output', async () => {
       const result = await grok.functions.call(`CVMTests:${lang}Map`,
         {'input_map': {'hello': 'world'}, 'unique_key': 'my_key'});
@@ -100,13 +78,6 @@ for (const lang of langs) {
       expect(column.get(0), 6);
     });
 
-    test('Calculated column performance', async () => {
-      const df = grok.data.demo.demog(10000);
-      const start = Date.now();
-      await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
-      return `Execution time: ${Date.now() - start}`;
-    }, {timeout: 120000});
-
     test('File input', async () => {
       const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');
       const result = await grok.functions.call(`CVMTests:${lang}LinesCount`,
@@ -123,7 +94,7 @@ for (const lang of langs) {
           {'string_input': testStrings[i]});
         expect(testStrings[i], result);
       }
-    }, {skipReason: 'GROK-14156'});
+    });
 
     if (lang === 'Python') {
       test('Environment string', async () => {
@@ -143,6 +114,41 @@ for (const lang of langs) {
         expect(49090022, result);
       }, {timeout: 120000});
     }
+  });
+
+  category(`Benchmarks: Scripts: ${lang} scripts`, () => {
+    test('Calculated column performance', async () => {
+      const rows = DG.Test.isInBenchmark ? 10000 : 100;
+      const df = grok.data.demo.demog(rows);
+      const start = Date.now();
+      await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
+      return `Execution time: ${Date.now() - start}`;
+    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+
+    test(`Dataframe performance test sequentially`, async () => {
+      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const results = [];
+      for (let i = 0; i < iterations; i++) {
+        results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
+          {'df': TEST_DATAFRAME_1}));
+      }
+      const sum = results.reduce((p, c) => p + c, 0);
+      return toDart({'Average time': sum / results.length,
+        'Min time': Math.min(...results), 'Max time': Math.max(...results)});
+    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+
+    test('Dataframe performance test parallel', async () => {
+      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const calls = [];
+
+      for (let i = 0; i < iterations; i++)
+        calls.push(getScriptTime(`CVMTests:${lang}SingleDf`, {'df': TEST_DATAFRAME_1}));
+
+      const results = await Promise.all(calls);
+      const sum = results.reduce((p, c) => p + c, 0);
+      return toDart({'Average time': sum / results.length,
+        'Min time': Math.min(...results), 'Max time': Math.max(...results)});
+    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
   });
 }
 

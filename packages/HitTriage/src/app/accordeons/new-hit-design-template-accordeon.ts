@@ -7,7 +7,7 @@ import '../../../css/hit-triage.css';
 import {HitDesignTemplate, IComputeDialogResult, INewTemplateResult} from '../types';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {getCampaignFieldEditors} from './new-template-accordeon';
-import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
+import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResult<HitDesignTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
@@ -97,10 +97,16 @@ export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResul
   const promise = new Promise<HitDesignTemplate>((resolve) => {
     async function onOkProxy() {
       funcInput.okProxy();
-      if (errorDiv.style.opacity === '100%') {
+      if (errorDiv.style.opacity === '100%' || !templateNameInput.value || templateNameInput.value === '') {
         grok.shell.error('Template name is empty or already exists');
         return;
       }
+
+      if (keyErrorDiv.style.opacity === '100%' || !templateKeyInput.value || templateKeyInput.value === '') {
+        grok.shell.error('Template key is empty or already exists');
+        return;
+      }
+
       const submitFunction = submitFunctionInput.value ? submitFunctionsMap[submitFunctionInput.value] : undefined;
       const out: HitDesignTemplate = {
         name: templateNameInput.value,
@@ -142,10 +148,20 @@ export function saveHitDesignTemplate(template: HitDesignTemplate) {
 export function getTileCategoryEditor() {
   const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING})];
   const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: true});
-
+  let addingItem: ItemType = {};
   function getFieldParams(): string[] {
-    return itemsGrid.items.filter((f) => f.Name).map((f) => f.Name);
+    const items = itemsGrid.items.filter((f) => f.Name).map((f) => f.Name);
+    if (addingItem.Name && addingItem.Name !== '')
+      items.push(addingItem.Name);
+    return items;
   }
+  itemsGrid.onItemAdded.subscribe((item) => {
+    addingItem = item ?? {};
+  });
+  itemsGrid.onAddingItemChanged.subscribe((item) => {
+    if (item)
+      addingItem = item.item;
+  });
 
   return {
     getFields: getFieldParams,

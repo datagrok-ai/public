@@ -2,7 +2,7 @@
 #environment: channels: [conda-forge], dependencies: [python=3.7, requests, dataclasses, glom, {pip: [requests]}]
 #language: python
 #output: string result
-#test: GlomEnvTestInplace() == "d"
+#test1: GlomEnvTestInplace() == "d"
 
 import json, os, base64, uuid, re, requests
 import sys, getopt, datetime

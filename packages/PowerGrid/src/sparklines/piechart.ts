@@ -6,7 +6,8 @@ import {
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit
+  Hit,
+  isSummarySettingsBase
 } from './shared';
 
 const minRadius = 10;
@@ -22,8 +23,8 @@ interface PieChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  const settings: PieChartSettings = gc.settings[SparklineType.PieChart] ??=
-    getSettingsBase(gc, SparklineType.PieChart);
+  const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
   settings.style ??= PieChartStyle.Radius;
   return settings;
 }
@@ -33,7 +34,7 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   for (let i = 0; i < cols.length; i++) {
     if (cols[i].isNone(row))
       continue;
-    sum += cols[i].get(row);
+    sum += cols[i].type === DG.COLUMN_TYPE.BIG_INT ? Number(cols[i].get(row)) : cols[i].get(row);
   }
   return sum;
 }
@@ -62,7 +63,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     for (let i = 0; i < cols.length; i++) {
       if (cols[i].isNone(gridCell.cell.row.idx))
         continue;
-      const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+      const endAngle = currentAngle + 2 * Math.PI * (cols[i].type === DG.COLUMN_TYPE.BIG_INT ?
+        Number(cols[i].get(row)) : cols[i].get(row)) / sum;
       if ((angle > currentAngle) && (angle < endAngle)) {
         activeColumn = i;
         break;
@@ -136,7 +138,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i].isNone(row))
           continue;
         const r = box.width / 2;
-        const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+        const endAngle = currentAngle + 2 * Math.PI * (cols[i].type === DG.COLUMN_TYPE.BIG_INT ?
+          Number(cols[i].get(row)) : cols[i].get(row)) / sum;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r, currentAngle, endAngle);
@@ -150,7 +153,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: PieChartSettings = gc.settings[SparklineType.PieChart] ??= getSettings(gc);
+    const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {

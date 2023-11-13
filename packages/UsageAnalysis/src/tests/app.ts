@@ -6,7 +6,7 @@ import {ViewHandler} from '../view-handler';
 
 category('App', () => {
   const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
-  const num = [4, 2, 2, 4, 3, 5];
+  const num = [4, 4, 2, 4, 3, 5];
   let initTime: number = 0;
 
   before(async () => {

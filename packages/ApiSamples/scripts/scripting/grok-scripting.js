@@ -1,3 +1,3 @@
 grok.functions
-  .eval('OpenServerFile("Demo:Files/beer.csv")')
+  .eval('OpenServerFile("Samples:Files/beer.csv")')
   .then((t) => grok.shell.addTableView(t[0]));

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {DEFAULT_FORMATS} from '../model/const';
-import {FormatConverter} from '../model/format-translation/format-converter';
+import {FormatConverter} from '../model/translator-app/format-converter';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
 import {formatsToHelm} from './const';
 import {_package} from '../package';

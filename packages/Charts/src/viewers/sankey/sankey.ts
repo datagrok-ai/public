@@ -90,6 +90,13 @@ export class SankeyViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
+  _testColumns() {
+    const columns = this.dataFrame.columns.toList();
+    const strColumns = columns.filter((col) => col.type === 'string');
+    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
+    return (strColumns!.length >= 2 && numColumns!.length >= 1);
+  }
+
   onTableAttached() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
@@ -97,18 +104,24 @@ export class SankeyViewer extends DG.JsViewer {
 
     this.init();
 
-    const columns = this.dataFrame.columns.toList();
-    const strColumns = columns.filter((col) => col.type === 'string');
-    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
-    this.sourceColumnName = strColumns[0].name;
-    this.targetColumnName = strColumns[1].name;
-    this.valueColumnName = numColumns[0].name;
+    if (this._testColumns()) {
+      const columns = this.dataFrame.columns.toList();
+      const strColumns = columns.filter((col) => col.type === 'string');
+      const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
+
+      this.sourceColumnName = strColumns[0].name;
+      this.targetColumnName = strColumns[1].name;
+      this.valueColumnName = numColumns[0].name;
+    }
 
     this.prepareData();
     this.render();
   }
 
   prepareData() {
+    if (!this._testColumns())
+      return;
+
     const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
     const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
@@ -164,10 +177,17 @@ export class SankeyViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+
   render() {
+    $(this.root).empty();
+    if (!this._testColumns()) {
+      this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical and 1 numerical columns.');
+      return;
+    }
+
     this.prepareData();
 
-    $(this.root).empty();
     const width = this.root.parentElement!.clientWidth - this.margin!.left - this.margin!.right;
     const height = this.root.parentElement!.clientHeight - this.margin!.top - this.margin!.bottom;
 

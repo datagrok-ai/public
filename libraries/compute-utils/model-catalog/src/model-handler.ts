@@ -1,8 +1,7 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import wu from "wu";
-import {ModelCatalogView} from "./model-catalog-view";
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -37,35 +36,67 @@ function requestMembership(groupName: string) {
   return async () => {
     try {
       const groups = await grok.dapi.groups.filter(`friendlyName="${groupName}"`).list();
-      if (groups.length === 0) {
+      if (groups.length === 0)
         throw new Error(`group with specified name is not found`);
-      }
-      if (groups.length > 1) {
+
+      if (groups.length > 1)
         throw new Error(`found more than one group with specified name`);
-      }
+
       const group = groups[0];
 
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
-      fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: "POST"})
+      fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: 'POST'});
     } catch (e: any) {
       grok.shell.error(e.toString());
     }
-  }
+  };
 }
 
 export class ModelHandler extends DG.ObjectHandler {
-  userGroups = [] as DG.Group[];
-
-  get type() {
+  override get type() {
     return 'Model';
   }
 
-  async getById(id: string): Promise<DG.Func> {
+  override async getById(id: string): Promise<DG.Func> {
     return await grok.dapi.functions.find(id);
   }
 
-  async refresh(x: DG.Script): Promise<DG.Func> {
+  override async refresh(x: DG.Script): Promise<DG.Func> {
     return await this.getById(x.id);
+  }
+
+  static async openHelp(func: DG.Func) {
+    if (func.options['readme'] != null) {
+      const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
+      const readmeText = await grok.dapi.files.readAsText(path);
+
+      grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+      grok.shell.windows.showHelp = true;
+    }
+  }
+
+  static openModel(x: DG.Func) {
+    const fc = x.prepare();
+    fc.edit();
+  }
+
+  static openModelFromFunccall(funcCall: DG.FuncCall) {
+    funcCall.edit();
+  }
+
+  // Checks whether this is the handler for [x]
+  override isApplicable(x: any) {
+    return x instanceof DG.Func && x.hasTag('model');
+  }
+
+  private userGroups!: DG.Group[];
+
+  constructor(
+    private viewName: string,
+    private funcName: string,
+    private currentPackage: DG.Package,
+  ) {
+    super();
   }
 
   getLanguageIcon(language: string) {
@@ -74,30 +105,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage('script', `/images/entities/${language}.png`);
   }
 
-  // Checks whether this is the handler for [x]
-  isApplicable(x: any) {
-    return x instanceof DG.Func && x.hasTag('model');
-  }
-
-  renderIcon(x: DG.Func, context: any = null): HTMLElement {
-    if (x.options['icon'] != null && (x.options['icon'].startsWith('http://') || x.options['icon'].startsWith('https://'))) {
-      return ui.iconImage('model-icon', x.options['icon']);
-    }
-    if (x instanceof DG.Script) {
-      return this.getLanguageIcon(x.language);
-    }
-    x = DG.Func.find({package: x.package.name, name: x.name})[0];
-    let iconUrl = x.package.getIconUrl();
-    if (x.options['icon'] != null) {
-      let packagePathSegments = iconUrl.split('/');
-      packagePathSegments.pop();
-      packagePathSegments.push(x.options['icon']);
-      iconUrl = packagePathSegments.join('/')
-    }
-    return ui.iconImage(x.package.name, iconUrl);
-  }
-
-  renderMarkup(x: DG.Func): HTMLElement {
+  override renderMarkup(x: DG.Func): HTMLElement {
     const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
     const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !this.userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
     const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
@@ -108,14 +116,14 @@ export class ModelHandler extends DG.ObjectHandler {
       bulletIcon.style.marginRight = '6px';
       bulletIcon.classList.remove('grok-icon');
       return bulletIcon;
-    }
+    };
 
     const mandatoryGroupsInfo = ui.div(ui.divV([
       ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
       ...mandatoryUserGroups.map((group) => ui.divV([
         ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
         ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
-        ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}})
+        ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}}),
       ])),
     ], {style: {gap: '10px'}})) as HTMLElement;
 
@@ -123,33 +131,51 @@ export class ModelHandler extends DG.ObjectHandler {
       addPopover(mandatoryGroupsInfo);
 
       mandatoryGroupsIcon.addEventListener('click', () => {
-        displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo)
-      })
+        displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo);
+      });
       mandatoryGroupsIcon.addEventListener('mouseover', (e) => {
         e.stopPropagation();
-      })
+      });
     }
 
     const label = ui.span([
-      this.renderIcon(x), 
-      ui.label(x.friendlyName)
+      this.renderIcon(x),
+      ui.label(x.friendlyName),
     ]);
-    const markup =  ui.divH([
+    const markup = ui.divH([
       label,
       ...hasMissingMandatoryGroups ? [ui.span([mandatoryGroupsIcon])]: [],
-    ], {style: {'justify-content': 'space-between', 'width': '100%'}})
+    ], {style: {'justify-content': 'space-between', 'width': '100%'}});
 
     if (!hasMissingMandatoryGroups) {
-      markup.ondblclick = () => { ModelHandler.openModel(x); }
-      markup.onclick = () => { ModelHandler.openHelp(x); }
-    } else {
+      markup.ondblclick = () => {ModelHandler.openModel(x);};
+      markup.onclick = () => {ModelHandler.openHelp(x);};
+    } else
       label.classList.add('d4-disabled');
-    }
+
 
     return markup;
   }
 
-  async renderPreview(x: DG.Func) {
+  override renderIcon(func: DG.Func): HTMLElement {
+    if (func.options['icon'] != null && (func.options['icon'].startsWith('http://') || func.options['icon'].startsWith('https://')))
+      return ui.iconImage('model-icon', func.options['icon']);
+
+    if (func instanceof DG.Script)
+      return this.getLanguageIcon(func.language);
+
+    func = DG.Func.find({package: func.package.name, name: func.name})[0];
+    let iconUrl = func.package.getIconUrl();
+    if (func.options['icon'] != null) {
+      const packagePathSegments = iconUrl.split('/');
+      packagePathSegments.pop();
+      packagePathSegments.push(func.options['icon']);
+      iconUrl = packagePathSegments.join('/');
+    }
+    return ui.iconImage(func.package.name, iconUrl);
+  }
+
+  override async renderPreview(x: DG.Func) {
     const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
     const editor = await grok.functions.find(editorName);
     if (editor !== null && editor instanceof DG.Func) {
@@ -163,10 +189,10 @@ export class ModelHandler extends DG.ObjectHandler {
     return super.renderPreview(x);
   }
 
-  renderProperties(func: DG.Func) {
+  override renderProperties(func: DG.Func) {
     const a = ui.accordion('ComputeModel');
     a.context = func;
-    let titleDiv = ui.div([
+    const titleDiv = ui.div([
       ui.span([this.renderIcon(func), ui.label(func.friendlyName), ui.contextActions(func), ui.star(func.id)])]);
     a.addTitle(titleDiv);
 
@@ -180,82 +206,27 @@ export class ModelHandler extends DG.ObjectHandler {
     return a.root;
   }
 
-  renderTooltip(x: DG.Func) {
-    let h = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
+  override renderTooltip(x: DG.Func) {
+    const h = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
     h.classList.add('d4-link-label');
-    let card = ui.bind(x, ui.divV([
+    const card = ui.bind(x, ui.divV([
       ui.h2(h),
-      ui.divV([ui.divText(x.description, 'ui-description')], {style: {lineHeight: '150%'}})
+      ui.divV([ui.divText(x.description, 'ui-description')], {style: {lineHeight: '150%'}}),
     ]));
     return card;
   }
 
-  renderCard(x: DG.Func, context?: any): HTMLElement {
-    let h = this.renderMarkup(x);
+  override renderCard(x: DG.Func): HTMLElement {
+    const h = this.renderMarkup(x);
     h.classList.add('d4-link-label');
-    let card = ui.bind(x, ui.h2(h));
+    const card = ui.bind(x, ui.h2(h));
     return card;
   }
 
-  static async openHelp(func: DG.Func) {
-    if (func.options['readme'] != null) {
-      const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
-      const readmeText = await grok.dapi.files.readAsText(path);
-
-      grok.shell.windows.help.showHelp(ui.markdown(readmeText));
-      grok.shell.windows.showHelp = true;
-    }
-  }
-
-  static getModelCatalogView(): ModelCatalogView {
-    let modelsView = this.findModelCatalogView();
-    if (modelsView == null) {
-      let mc: DG.Func = DG.Func.find({package:'Compute', name: 'ModelCatalog'})[0];
-      let fc = mc.prepare();
-      let view = new ModelCatalogView();
-      view.name = 'Models';
-      view.parentCall = fc;
-      grok.shell.addView(view);
-    }
-    modelsView = this.findModelCatalogView();
-    return modelsView as ModelCatalogView;
-  }
-
-  static findModelCatalogView(): ModelCatalogView | undefined {
-    return wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog') as ModelCatalogView;
-  }
-
-  static openModel(x: DG.Func) {
-    let fc = x.prepare();
-    fc.edit();
-  }
-
-  static openModelFromFunccall(funcCall: DG.FuncCall) {
-    funcCall.edit();
-  }
-
-  static bindModel(fc: DG.FuncCall) {
-    let modelsView = ModelHandler.getModelCatalogView();
-    fc.aux['showOnTaskBar'] = false;
-    if (modelsView != null) {
-      let parentCall = modelsView.parentCall;
-      if (parentCall != null) {
-        parentCall.aux['view'] = modelsView;
-        fc.parentCall = parentCall;
-      }
-    }
-  }
-
-  init() {
+  override init(): void {
     setTimeout(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      this.userGroups = (await (await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-
-      grok.functions.onBeforeRunAction.subscribe((fc) => {
-        if (fc.func.hasTag('model') || fc.func.hasTag('model-editor')) {
-          ModelHandler.bindModel(fc);
-        }
-      });
+      this.userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
     });
   }
 }

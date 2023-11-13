@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-//import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
 import 'echarts-gl';
@@ -233,7 +233,18 @@ export class SurfacePlot extends EChartViewer {
     }
   }
 
+  _testColumns() {
+    return this.dataFrame.columns.toList().length >= 3;
+  }
+
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+
   render(computeData=false, filter=true) {
+    if (!this._testColumns()) {
+      this._showErrorMessage('The Surface Plot viewer requires a minimum of 3 columns.');
+      return;
+    }
+
     this.option.grid3D.viewControl.projection = this.projection;
     this.option.backgroundColor = this.bkgcolor;
     this.option.visualMap.show = this.visualMapComponent;

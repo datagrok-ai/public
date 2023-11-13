@@ -7,4 +7,4 @@
 #condition: "F3" == signal.name
 #test: Spectrogram(ApiTests:getColumn(ApiTests:getTable('eeg'), 'F3'))
 
-pic = Demo:Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
+pic = Samples:Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)

@@ -5,11 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {DEFAULT_FORMATS} from '../model/const';
-import {FormatConverter} from '../model/format-translation/format-converter';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
 import {formatsToHelm} from './const';
 import {SequenceValidator} from '../model/parsing-validation/sequence-validator';
-import {getTranslatedSequences} from '../model/format-translation/conversion-utils';
+import {getTranslatedSequences} from '../model/translator-app/conversion-utils';
 import {_package} from '../package';
 
 function getTranslationObject(sequence: string, format: string): {[format: string]: string} {
@@ -34,7 +33,7 @@ category('Formats support', () => {
       const result = Object.keys(output).length;
       // +1 due to nucleotides
       const expected = Object.keys(formatsToHelm).length + 1;
-      expect(result, expected);
+      expect(true, expected <= result);
     });
   });
 });

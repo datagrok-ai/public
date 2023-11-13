@@ -983,7 +983,7 @@ per lin. Menu can also have a multilevel list of choices.
 let showMenu = () => {
   let showBalloon = (item) => grok.shell.info(item);
   DG.Menu.popup()
-      .item("Show info", () => {}))
+      .item("Show info", () => {})
       .separator()
       .items(["First", "Second"], showBalloon)
       .show();

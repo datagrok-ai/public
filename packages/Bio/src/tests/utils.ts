@@ -1,8 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+import {delay, expect, testEvent} from '@datagrok-libraries/utils/src/test';
+
 import {_package} from '../package-test';
-import {delay, expect} from '@datagrok-libraries/utils/src/test';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -24,7 +25,7 @@ export async function createTableView(tableName: string): Promise<DG.TableView> 
 
 
 /**
- * Tests if a table has non zero rows and columns.
+ * Tests if a table has non-zero rows and columns.
  *
  * @param {DG.DataFrame} table Target table. */
 export function _testTableIsNotEmpty(table: DG.DataFrame): void {
@@ -37,4 +38,10 @@ export async function awaitContainerStart(ms: number = 10000): Promise<void> {
   const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
   if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking')
     await delay(ms);
+}
+
+export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {
+  await delay(0);
+  await testEvent(grid.onAfterDrawContent, () => {},
+    () => { grid.invalidate(); }, timeout);
 }

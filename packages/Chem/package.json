@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -72,7 +72,7 @@
     "style-loader": "latest",
     "css-loader": "latest",
     "ts-loader": "latest",
-    "@datagrok/chembl": "latest"
+    "@datagrok/chembl": "^1.0.34"
   },
   "browser": {
     "fs": false,
