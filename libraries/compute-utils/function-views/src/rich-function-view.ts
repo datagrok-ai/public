@@ -98,6 +98,7 @@ export class RichFunctionView extends FunctionView {
   protected async onFuncCallReady() {
     await this.loadInputsOverrides();
     await this.loadInputsValidators();
+    await this.loadDefaultInputForm();
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
@@ -240,6 +241,12 @@ export class RichFunctionView extends FunctionView {
         this.validators[param.name] = call.outputs.validator;
       }
     }));
+  }
+
+  private defaultForm!: DG.InputForm;
+
+  public async loadDefaultInputForm() {
+    this.defaultForm = await DG.InputForm.forFuncCall(this.funcCall);
   }
 
   private keepOutput() {
@@ -837,12 +844,12 @@ export class RichFunctionView extends FunctionView {
     case FILE_INPUT_TYPE:
       return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
     case DG.TYPE.FLOAT:
-      const floatInput = ui.input.forProperty(prop);
+      const floatInput = this.defaultForm.getInput(prop.name);
       const format = prop.options.format;
       if (format) floatInput.format = format;
       return floatInput;
     default:
-      return ui.input.forProperty(prop);
+      return this.defaultForm.getInput(prop.name);
     }
   }
 
