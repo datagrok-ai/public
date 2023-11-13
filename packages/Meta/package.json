@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.56",
+  "version": "3.6.57",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3532,6 +3532,20 @@
         "directory": "packages/HitTriage"
       },
       "category": "Cheminformatics"
+    },
+    "file-editors": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.16.5"
+        }
+      },
+      "description": "Support for previewing and opening text file formats (PDF, DOCX)",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/FileEditors"
+      },
+      "category": "Data Access"
     }
   }
 }
