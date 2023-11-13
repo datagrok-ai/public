@@ -46,7 +46,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * Summary viewer that aggregates the numeric attributes of features.
 * Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
 * **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.
-* Automatic display of the selected columns on the **Plots** tab within the **Context Panel**.
+* **Plots** context pane automatically visualizing selected columns, see [UX updates](https://community.datagrok.ai/t/ux-updates/544/5?u=oahadzhanian.datagrok.ai) for details.
 * Lookup tables that let you initialize inputs with a set of pre-defined values. For details, see [Lookup tables](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#lookup-tables).
 * [Okta](https://www.okta.com/) support for authorization.
 
