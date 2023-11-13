@@ -105,7 +105,7 @@ This command builds your package and deploys it in debug mode for testing. You c
 * **Optional Flags**: You can use optional flags to customize the testing process:
   * `--skip-build` skips the build step.
   * `--skip-publish` skips the publishing step.
-  * `--csv` if you want to save test results. It saves the report as a CSV file in your package folder.
+  * `--csv` saves the report as a CSV file in your package folder.
   * `--gui` to see test execution in action. It disables the headless browser mode, aiding in test debugging.
   
   You can find all avalilable flags in this [table](https://github.com/datagrok-ai/public/blob/master/tools/README.md?plain=1#L122).
@@ -122,8 +122,8 @@ If an error occurred for the action triggered by the commit, it is possible to t
     * Set the list of packages you want to test, separating them with spaces (e.g., `Demo Tutorials`).
     * Choose the target branch you want to test against.
     * Finally, hit `Run workflow` button.
-    
-    Note that publish to the NPM registry is executed for the master branch only.
+
+    > Note that publish to the NPM registry is executed for the master branch only.
 3. Check that the GitHub Actions workflow finished successfully.
 4. The results are available in the actions output.
 
@@ -131,7 +131,7 @@ If an error occurred for the action triggered by the commit, it is possible to t
 
 When a GitHub Action completes, you can access the `Artifacts` section on its main page (Summary), which contains a zip archive with the results of the tests for that specific action. This archive includes three important files that can help you diagnose and resolve the problems:
 
-1. `test-console-output.log` contains the console log records generated during the test execution, including error messages, stack traces, and debugging statements. It's a good starting point for understanding what went wrong during the test run.
+1. `test-console-output.log` contains the console log records generated during the test execution, including error messages, stack traces, and debugging statements.
 
 2. `test-record.mp4` is a video recording of the test execution, which can be immensely helpful in scenarios where tests are failing occasionally or in cases where the issue is related to the user interface or some visual components.
 
@@ -139,7 +139,7 @@ When a GitHub Action completes, you can access the `Artifacts` section on its ma
 
 ## Test manager
 
-Test Manager is a tool within the Datagrok platform that provides a convenient interface to select and run package tests with further results exploration.
+[Test Manager](https://public.datagrok.ai/func/DevTools.testManager) lets you run package tests and review test results.
 Test Manager itself is a part of the [DevTools package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).
 
 To start Test Manager go to `Top menu -> Tools -> Dev -> Test manager`
@@ -175,8 +175,8 @@ Progress bar on the bottom of the page shows the percentage of completed tests.
 
 ### Reviewing results
 
-Information about test results is available via tooltip or in the context panel. Select test, category, or package to
-explore results. In case category/package contain multiple tests results are shown as a grid which can be added to
+To explore results, select a test, category, or package, and information about results is available via tooltip or in the context panel.
+In case category/package contain multiple tests results are shown as a grid which can be added to
 workspace for further exploration.
 
 ![Test results](test_results.gif)
@@ -193,7 +193,7 @@ workspace for further exploration.
     For instance, you can run tests for the "Layouts" category with: `ApiTests:test(category="Layouts")`.
 
 3. **Run Specific Tests**:
-    If you want to run a specific test within a category, include the `test` parameter.
+    To run a specific test within a category, include the `test` parameter.
     The format is:
     
     `PackageName:test(category="category-name", test="test-name")`
