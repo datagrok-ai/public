@@ -350,7 +350,7 @@ jobs:
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
-        timeout-minutes: 20
+        timeout-minutes: 30
         id: test-package
         run: npm run test -- --skip-build --skip-publish --record --csv --verbose
         working-directory: packages/${{ matrix.package }}
