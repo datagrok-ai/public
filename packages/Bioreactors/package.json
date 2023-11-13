@@ -43,6 +43,7 @@
       "url": "https://github.com/datagrok-ai/public.git",
       "directory": "packages/Bioreactors"
     },
+    "category": "",
     "sources": [
       "wasm/Bioreactor.js"
     ]
