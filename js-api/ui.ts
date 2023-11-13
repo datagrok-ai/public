@@ -127,7 +127,9 @@ export function canvas(width: number | null = null, height: number | null = null
   return result as HTMLCanvasElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h1');
   if (typeof s === 'string')
@@ -137,7 +139,9 @@ export function h1(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h2');
   if (typeof s === 'string')
@@ -147,7 +151,9 @@ export function h2(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h3');
   if (typeof s === 'string')
@@ -158,13 +164,14 @@ export function h3(s: string | Element, options: string | ElementOptions | null 
 }
 
 /** Creates an accordion with dynamically populated panes.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/accordion}
  * @returns {Accordion} */
 export function accordion(key: any = null): Accordion {
   return Accordion.create(key);
 }
 
 /**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param {Object} pages - list of page factories
  * @param {boolean} vertical
  * @returns {TabControl} */
@@ -180,6 +187,7 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
 }
 
 /** Returns DivElement with the specified inner text
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {string} text
  * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
@@ -194,12 +202,15 @@ export function tags(entity: Entity): HTMLElement {
   return api.grok_UI_Tags(entity.dart);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown}
+ */
 export function markdown(text: string): HTMLElement {
   return api.grok_UI_Markdown(text);
 }
 
 /** Returns a font-awesome icon with the specified name, handler, and tooltip.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/icons}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/icons}
  * @param {string} name - icon name (omit the "fa-" prefix)
  * @param {Function} handler
  * @param {String} tooltipMsg
@@ -312,6 +323,7 @@ export function renderInline(x: HTMLElement): HTMLElement {
 
 
 /** Renders inline text, calling [renderMarkup] for each non-HTMLElement
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {object[]} objects
  * @returns {HTMLElement}. */
 export function inlineText(objects: any[]): HTMLElement {
@@ -334,6 +346,9 @@ export function div(children: any[] | string | HTMLElement = [], options: string
   return d;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar} 
+ */
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
   let root: HTMLDivElement | null;
   let divContent: HTMLElement[] = [];
@@ -365,6 +380,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 }
 
 /** Div flex-box container that positions child elements vertically.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -373,6 +389,7 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
 }
 
 /** Div flex-box container that positions child elements horizontally.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -385,16 +402,23 @@ export function card(content: HTMLElement): HTMLDivElement {
   return div([content], 'd4-item-card');
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+ */
 export function loader(): any {
   return api.grok_UI_Loader();
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
+ */
 export function setUpdateIndicator(element: HTMLElement, updating: boolean = true): void {
   return api.grok_UI_SetUpdateIndicator(element, updating);
 }
 
 /**
  * Creates a button with the specified text, click handler, and tooltip
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons}
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
@@ -409,6 +433,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 
 /**
  * Creates a combo popup with the specified icons and items
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
@@ -427,7 +452,9 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
-/** Creates an html table based on [map]. */
+/** Creates an html table based on [map]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
+*/
 export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
   return api.grok_UI_TableFromMap(map);
 }
@@ -444,17 +471,23 @@ export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) |
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
-/** Waits for `Future<Element>` function to complete and collect its result.*/
+/** Waits for `Future<Element>` function to complete and collect its result.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+*/
 export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
-/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.*/
+/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
 
-/** Creates a visual element representing list of [items]. */
+/** Creates a visual element representing list of [items]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
+*/
 export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
   const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
   if (options?.processNode != null)
@@ -462,7 +495,9 @@ export function list(items: any[], options?: {processNode?: (node: HTMLElement) 
       options.processNode(c as HTMLElement);
   return host;
 }
-
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/iframe}
+ */
 export function iframe(options?: {src?: string, width?: string, height?: string}) {
   let frame = element('iframe') as HTMLIFrameElement;
   if (options?.src != null)
@@ -494,6 +529,9 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/image}
+ */
 export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
@@ -532,7 +570,9 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog]. */
+/** Creates a [Dialog]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
+*/
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
@@ -553,6 +593,9 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/range-slider}
+ */
 export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false, style: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
   let rs = RangeSlider.create(vertical, style);
   rs.setValues(minRange, maxRange, min, max);
@@ -561,7 +604,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
 
 /**
  * Creates a virtual list widget.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/virtual-view}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/views/virtual-view}
  * @param {number} length - number of elements
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
@@ -589,6 +632,9 @@ export function popupMenu(items: any): void {
   menu.show();
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/drag-and-drop}
+ */
 export function makeDraggable<T>(e: Element,
     options?: {
       allowCopy?: () => boolean,
@@ -645,7 +691,7 @@ export function inputs(inputs: Iterable<InputBase>, options: any = null) {
 }
 
 /** Creates new nodes tree.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tree-view}
  * @returns {TreeViewGroup} */
 export function tree(): TreeViewGroup {
   return TreeViewGroup.tree();
@@ -784,7 +830,7 @@ export function radioInput(name: string, value: string, items: string[], onValue
 }
 
 /**
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
  * @returns {rxjs.Observable} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
@@ -898,7 +944,9 @@ export class Tooltip {
     api.grok_Tooltip_Hide();
   }
 
-  /** Associated the specified visual element with the corresponding item. */
+  /** Associated the specified visual element with the corresponding item. 
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
+  */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
     if (tooltip != null){
       api.grok_Tooltip_SetOn(element, tooltip);
@@ -994,7 +1042,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
 export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
@@ -1112,7 +1160,7 @@ export class ObjectHandler {
    * It will be suggested to run in the context menu for that object, and
    * also in the "Actions" pane on the context panel.
    *
-   * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
    * @param {string} name - function name
    * @param run - a function that takes exactly one parameter
@@ -1143,6 +1191,9 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box} 
+ */
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
     item = item.root;
@@ -1166,7 +1217,9 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically. */
+/** Div flex-box container that positions child elements vertically. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters} 
+*/
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
   if (resize && items.length > 1){
@@ -1230,7 +1283,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally. */
+/** Div flex-box container that positions child elements horizontally. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
+*/
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
 
@@ -1386,30 +1441,45 @@ export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
   return root;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-75');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-25');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-50');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ */
 export function p(text: string, options: any = null): HTMLParagraphElement {
   let c = document.createElement('p');
   c.textContent = text;
@@ -1418,12 +1488,18 @@ export function p(text: string, options: any = null): HTMLParagraphElement {
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels} 
+ */
 export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
   let e = div(items, options);
   $(e).addClass('ui-panel');
   return e;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ */
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
   let c = document.createElement('label');
   c.textContent = text;
@@ -1494,10 +1570,16 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
+/**  
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs} 
+ */
 export function breadcrumbs(path: string[]): Breadcrumbs {
   return new Breadcrumbs(path);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
+ */
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
   return new DropDown(label, createElement);
 }
@@ -1540,6 +1622,9 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/file-browser}
+ */
 export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): Widget {
   return FilesWidget.create(params);
 }
@@ -1553,7 +1638,9 @@ export namespace tools {
 
 export namespace cards {
 
-  /** Two columns, with picture on the left and details on the right */
+  /** Two columns, with picture on the left and details on the right 
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/components/summary-card}
+  */
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
     return divH([
       $(picture).addClass('ui-card-picture').get()[0],
@@ -1631,7 +1718,9 @@ export namespace hints {
     return root;
   }
 
-  /** Adds a hint indication to the provided element and returns it. */
+  /** Adds a hint indication to the provided element and returns it.
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/hints}
+   */
   export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
     const id = Math.floor(Math.random() * 1000);
     const hintIndicator = document.createElement('div');
@@ -1674,7 +1763,7 @@ export namespace hints {
    * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
    * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
    * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
-   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/wizard-hints}:*/
   export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
     let targetElement: HTMLElement | undefined;
     const overlay = div([], 'ui-hint-overlay');
