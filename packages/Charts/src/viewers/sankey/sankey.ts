@@ -205,8 +205,8 @@ export class SankeyViewer extends DG.JsViewer {
 
     const nodeGroup = svg.append('g').attr('class', 'node');
 
-    const dataFrameSourceColumn = this.dataFrame.getCol('source');
-    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+    const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
+    const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
 
     const nodes = nodeGroup
       .selectAll('rect')
