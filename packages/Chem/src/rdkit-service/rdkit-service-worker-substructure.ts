@@ -245,14 +245,23 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol = this._rdKitModule.get_mol(molecules[i]);
         if (mol) {
           const res = this._rdKitModule.get_matched_fragments(mol, 1, 1, 20);
-          const length = res.fragmentsSecond.size();
+          const length = res.second.size();
           frags[i] = new Array<[string, string]>(length);
 
           for (let j = 0; j < length; j++) {
-            const fffSplit = res.fragmentsSecond.get(j).split('.');
-            const firstIsFirst = fffSplit[0].length >= fffSplit[1].length;
-            frags[i][j] = [firstIsFirst ? fffSplit[0] : fffSplit[1], firstIsFirst ? fffSplit[1] : fffSplit[0]];
+            try {
+              const fffSplit = res.second.next().get_smiles().split('.');
+              const firstIsFirst = fffSplit[0].length >= fffSplit[1].length;
+              frags[i][j] = [firstIsFirst ? fffSplit[0] : fffSplit[1], firstIsFirst ? fffSplit[1] : fffSplit[0]];
+            } catch (e: any) {
+              frags[i][j] = ['', ''];
+            } finally {
+
+            }
           }
+
+          res.first.delete();
+          res.second.delete();
         } else
           frags[i] = new Array<[string, string]>(0);
       } catch (e: any) {

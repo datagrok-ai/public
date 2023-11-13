@@ -16,7 +16,7 @@ export interface RDModule {
   writeArrayToMemory(arr: any, buff:any): any;
   MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
-  get_matched_fragments(mols: RDMol, minCuts: number, maxCuts: number, maxCutsBonds: number): {fragmentsFirst: any, fragmentsSecond: any};
+  get_matched_fragments(mol: RDMol, minCuts: number, maxCuts: number, maxCutsBonds: number): {first: MolList, second: MolList};
 }
 
 export interface RDMol {
