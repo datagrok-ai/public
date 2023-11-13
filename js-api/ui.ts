@@ -900,8 +900,48 @@ export class Tooltip {
 
   /** Associated the specified visual element with the corresponding item. */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
-    if (tooltip != null)
+    if (tooltip != null){
       api.grok_Tooltip_SetOn(element, tooltip);
+
+        tools.waitForElementInDom(element).then((el)=>{ 
+          if(el.classList.contains('d4-disabled')) {
+            let overlay = document.createElement('span');
+            overlay.style.position = 'fixed';
+
+            if ($('body').has('.d4-tooltip-overlays').length !=0)
+              $('.d4-tooltip-overlays').append(overlay)
+            else
+              $('body').append(div([overlay],'d4-tooltip-overlays'));
+            
+            let interval = setInterval(()=> {
+              let target = el.getBoundingClientRect();
+              overlay.style.left = String(target.left)+'px';
+              overlay.style.top = String(target.top)+'px';
+              overlay.style.width = String(target.width)+'px';
+              overlay.style.height = String(target.height)+'px';
+              
+              if ($('body').has(el).length == 0) { 
+                overlay.remove();
+                clearInterval(interval);
+              }
+
+            }, 100);
+
+            overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+              api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
+            });
+
+            overlay.addEventListener('mouseleave', (e:MouseEvent)=> {
+              setTimeout(()=>{
+                api.grok_Tooltip_Hide();
+              }, 250)
+            });
+
+          }
+
+        });
+      
+    }
     return element;
   }
 
