@@ -5,7 +5,6 @@ import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {expect} from '@datagrok-libraries/utils/src/test';
 
@@ -22,8 +21,8 @@ export function convert(col?: DG.Column): void {
   let tgtCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
   if (!tgtCol)
     throw new Error('No column with Macromolecule semantic type found');
-  let converter = new NotationConverter(tgtCol);
-  let currentNotation: NOTATION = converter.notation;
+  let converterUH = UnitsHandler.getOrCreate(tgtCol);
+  let currentNotation: NOTATION = converterUH.notation;
   const dialogHeader = ui.divText(
     'Current notation: ' + currentNotation,
     {
@@ -47,8 +46,8 @@ export function convert(col?: DG.Column): void {
     }
 
     tgtCol = newCol;
-    converter = new NotationConverter(tgtCol);
-    currentNotation = converter.notation;
+    converterUH = UnitsHandler.getOrCreate(tgtCol);
+    currentNotation = converterUH.notation;
     if (currentNotation === NOTATION.HELM)
       separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
@@ -117,8 +116,8 @@ export function convert(col?: DG.Column): void {
  * @param {string | null} separator Separator for SEPARATOR notation
  */
 export async function convertDo(srcCol: DG.Column, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
-  const converter = new NotationConverter(srcCol);
-  const newColumn = converter.convert(targetNotation, separator);
+  const converterUH = UnitsHandler.getOrCreate(srcCol);
+  const newColumn = converterUH.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);
 
   // Call detector directly to escape some error on detectSemanticTypes

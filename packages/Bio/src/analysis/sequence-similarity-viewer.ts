@@ -7,7 +7,6 @@ import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {TAGS as bioTAGS, getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {calcMmDistanceMatrix, dmLinearIndex} from './workers/mm-distance-worker-creator';
 import {calculateMMDistancesArray} from './workers/mm-distance-array-service';
@@ -40,7 +39,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     this.initialized = true;
   }
 
-  async render(computeData = true): Promise<void> {
+  override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.moleculeColumn) {
@@ -106,9 +105,10 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const linearizeFunc = dmLinearIndex(len);
     // array that keeps track of the indexes and scores together
     const indexWScore = Array(len).fill(0)
-      .map((_, i) => ({idx: i, score: i === this.targetMoleculeIdx ? 1 :
-        this.preComputeDistanceMatrix ? 1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)] :
-          1 - distanceArray[i]
+      .map((_, i) => ({
+        idx: i, score: i === this.targetMoleculeIdx ? 1 :
+          this.preComputeDistanceMatrix ? 1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)] :
+            1 - distanceArray[i]
       }));
     indexWScore.sort((a, b) => b.score - a.score);
     // get the most similar molecules
@@ -122,12 +122,12 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const propPanel = ui.div();
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
-    const units = resDf.col(molColName)!.getTag(DG.TAGS.UNITS);
-    const separator = resDf.col(molColName)!.getTag(bioTAGS.separator);
-    const splitter = getSplitter(units, separator);
+    const col = resDf.col(molColName)!;
+    const uh = UnitsHandler.getOrCreate(col);
+    const splitter = uh.getSplitter();
     const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
     const subParts2 = splitter(resDf.get(molColName, resDf.currentRowIdx));
-    const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
+    const canvas = createDifferenceCanvas(subParts1, subParts2, uh.units, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([

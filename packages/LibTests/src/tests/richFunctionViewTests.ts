@@ -83,7 +83,7 @@ category('RichFunctionView Inputs', async () => {
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(100);
+    await delay(300);
     await view.doRun();
     const expected = {
       'inputs': [
@@ -194,7 +194,7 @@ category('RichFunctionView Inputs', async () => {
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(100);
+    await delay(300);
     await view.doRun();
     const expected = {
       'inputs': [
@@ -268,7 +268,7 @@ category('RichFunctionView Inputs', async () => {
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValues['df']);
-    await delay(100);
+    await delay(300);
     await view.doRun();
     expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
@@ -322,7 +322,7 @@ category('RichFunctionView Inputs', async () => {
     inputsMap['data'].value = inputValuesPre['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValuesPre['df']);
-    await delay(100);
+    await delay(300);
     await view.doRun();
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
@@ -333,12 +333,158 @@ category('RichFunctionView Inputs', async () => {
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValues['df']);
-    await delay(100);
+    await delay(300);
     await view.doRun();
     expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
     expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
   });
 
+});
+
+category('RichFunctionView Validation', async () => {
+  before(async () => {
+  });
+
+  test('Validate on start', async () => {
+    const view = new RichFunctionView('Libtests:validationTest');
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(1500);
+    const results = view.getValidationState();
+    expectDeepEqual(
+      results,
+      {
+        'a': {
+          'errors': [
+            {
+              'description': 'Missing value',
+            },
+            {
+              'description': 'Out of range [1, 10] value: null',
+            },
+          ],
+          'warnings': [],
+          'notifications': [],
+          'revalidate': [],
+          'context': {},
+        },
+        'b': {
+          'errors': [
+            {
+              'description': 'Missing value',
+            },
+            {
+              'description': 'Out of range [20, 100] value: null',
+            },
+          ],
+          'warnings': [],
+          'notifications': [],
+          'revalidate': [],
+          'context': {},
+        },
+        'x': {
+          'errors': [],
+          'warnings': [
+            {
+              'description': 'Try non-null value',
+            },
+          ],
+          'notifications': [],
+          'revalidate': [],
+          'context': {},
+        },
+      },
+    );
+  });
+
+  test('Validate on input', async () => {
+    const view = new RichFunctionView('Libtests:validationTest');
+    const inputValues: Record<string, any> = {
+      a: 2.3,
+      b: 3.2,
+      x: -1,
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(1500);
+    for (const [name, input] of Object.entries(inputsMap)) {
+      input.value = inputValues[name];
+      const element = (input as any).input;
+      element.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    await delay(400);
+
+    const results = view.getValidationState();
+    expectDeepEqual(
+      results,
+      {
+        'b': {
+          'errors': [
+            {
+              'description': 'Out of range [20, 100] value: 3.2',
+            },
+          ],
+        },
+      },
+    );
+  });
+
+  test('Revalidation sequence', async () => {
+    const view = new RichFunctionView('Libtests:globalValidationTest');
+    const inputValues: Record<string, any> = {
+      a: 30,
+      b: 40,
+      c: 50,
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(1500);
+    for (const [name, input] of Object.entries(inputsMap)) {
+      input.value = inputValues[name];
+      const element = (input as any).input;
+      element.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    await delay(500);
+    const results = view.getValidationState();
+    expectDeepEqual(
+      results,
+      {
+        'a': {
+          'revalidate': [
+            'b',
+            'c',
+          ],
+          'context': {
+            'isOk': false,
+          },
+          'warnings': [
+            {
+              'description': 'Try lowering a value',
+            },
+          ],
+        },
+        'b': {
+          'warnings': [
+            {
+              'description': 'Try lowering a value as well',
+            },
+          ],
+        },
+        'c': {
+          'warnings': [
+            {
+              'description': 'Try lowering a value as well',
+            },
+          ],
+        },
+      },
+    );
+  });
 
 });

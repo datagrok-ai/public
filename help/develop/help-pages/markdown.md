@@ -53,7 +53,7 @@ Markdown documents have metadata at the top called _front matter_. At the very t
 | `sidebar_label`  (string) |**Optional.** Use a different title for the left sidebar navigation.|
 | `sidebar_position` (number) |**Optional.** Overrides default position of a doc inside the sidebar directory.
 | `description` (string) |**Optional.** This is what appears when the page is referenced in a Google search result.|
-| `keywords` (string[ ]) |**Optional.** A list of terms that help categorize the page for SEO purposes.|
+| `keywords` (string[ ]) |**Optional.** A list of meta tags for the document page and search engines.|
 <!--
 | `unlisted` (boolean) |**Optional.** A hidden document, which is not indexed and can only be accessed via a direct link.|
 -->
@@ -325,7 +325,7 @@ Use:
 * Single underscores (`_`) for _italics_.
 
 <Tabs>
-<TabItem value="italics" label="Italisize" default>
+<TabItem value="italics" label="Italicize" default>
 
 * To draw attention to a specific word or phrase.
 * Explanatory or introductory text at the start of a list item (see the _Lists_ tab for more details).
@@ -391,7 +391,7 @@ When documenting how to navigate through the Datagrok UI:
 
 If you use icon images in addition to the text description, do it as follows:
 
-* Cick the **Add new connection** (**+**) icon...
+* Click the **Add new connection** (**+**) icon...
 
 <!--
 <details>

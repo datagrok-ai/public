@@ -27,23 +27,24 @@ category('Distance', async () => {
   const prot6 = 'FWRRRRY';
 
   const protTable = `seq
-      FWRWYVKHP
-      YNRWYVKHP
-      MWRSWYCKHP`;
+FWRWYVKHPFWRWYVKHP
+YNRWYVKHPYNRWYVKHP
+MWRSWYCKHPMWRSWYCKHP`;
 
   const DNATable = `seq
-      ATAACG
-      ATCGA
-      ATCGA`;
+ATAACGATAACG
+ATCGAATCGA
+ATCGAATCGA`;
 
   const MSATable = `seq
-      ATAAC
-      ATCGA
-      ATCGA`;
+ATAACATAAC
+ATCGAATCGA
+ATCGAATCGA`;
+
   test('protein-distance-function', async () => {
     const uh = await _initMacromoleculeColumn(protTable);
     const distFunc = uh.getDistanceFunctionName();
-    expect(distFunc, MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH);
+    expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('DNA-distance-function', async () => {

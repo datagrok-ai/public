@@ -8,11 +8,16 @@ import {BuildInStructureFormat} from 'molstar/lib/mol-plugin-state/formats/struc
 import {BuildInShapeFormat} from 'molstar/lib/mol-plugin-state/formats/shape';
 import {BuildInVolumeFormat} from 'molstar/lib/mol-plugin-state/formats/volume';
 import {Unsubscribable} from 'rxjs';
-import {BiostructureProps, BiostructurePropsDefault} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+import {
+  BiostructureProps, BiostructurePropsDefault,
+  PluginLayoutControlsDisplayType, SimpleRegionStateOptionsType,
+} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {Color as msColor} from 'molstar/lib/mol-util/color';
 
 import {defaults, molecule3dFileExtensions} from './consts';
 import {parseAndVisualsData} from './molstar-viewer-open';
+import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
 
 export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer> {
   const view = grok.shell.newView(viewName);
@@ -49,7 +54,21 @@ export async function byData(data: string, name: string = 'Mol*', format: BuiltI
         binary = false;
       }
 
+      const state: Partial<PluginLayoutStateProps> = {
+        // showControls: false,
+        // isExpanded: false,
+        // regionState: {
+        //   left: SimpleRegionStateOptionsType.FULL,
+        //   top: SimpleRegionStateOptionsType.FULL,
+        //   right: SimpleRegionStateOptionsType.FULL,
+        //   bottom: SimpleRegionStateOptionsType.FULL,
+        // },
+        controlsDisplay: PluginLayoutControlsDisplayType.LANDSCAPE,
+      };
       await viewer.loadStructureFromData(data, format, binary);
+      const plugin = viewer.plugin;
+      // eslint-disable-next-line new-cap
+      await PluginCommands.Layout.Update(plugin, {state: state});
     });
   //v.handleResize();
 }
@@ -87,7 +106,7 @@ export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPro
 
   const loadingPromise = new Promise<void>(async (resolve, reject) => {
     try {
-      const { binary} = molecule3dFileExtensions[file.extension];
+      const {binary} = molecule3dFileExtensions[file.extension];
       const data: string | Uint8Array = binary ? await file.readAsBytes() : await file.readAsString();
       await parseAndVisualsData(viewer.plugin, {ext: file.extension, data: data});
       resolve();
@@ -119,7 +138,7 @@ function castProps(src: BiostructureProps): Partial<RcsbViewerProps> {
     viewportShowSelectionMode: src.viewportShowSelectionMode,
     volumeStreamingServer: src.volumeStreamingServer,
     modelUrlProviders: [],
-    extensions: []
+    extensions: [],
   };
   return res;
 }

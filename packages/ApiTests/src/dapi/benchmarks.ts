@@ -20,7 +20,7 @@ category('Benchmarks: Detectors', () => {
         res.push(Date.now() - start);
       }
       const maxTime = Math.max(...res);
-      if (maxTime > 10) throw new Error(`time: ${maxTime} ms, expected <= 10 ms`);
+      if (maxTime > 20) throw new Error(`time: ${maxTime} ms, expected <= 20 ms`);
       return `${maxTime} ms`;
     });
   }

@@ -25,29 +25,29 @@ category('top menu r-groups', () => {
     await grok.data.detectSemanticTypes(empty);
     malformed = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(malformed);
-    coreEmpty = getMCS(empty.col('smiles')!, true, true)!;
-    coreMalformed = getMCS(malformed.col('canonical_smiles')!, true, true)!;
+    coreEmpty = await getMCS(empty.col('smiles')!, true, true)!;
+    coreMalformed = await getMCS(malformed.col('canonical_smiles')!, true, true)!;
     dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_50K.csv') :
       await readDataframe('tests/spgi-100.csv');
   });
 
   test('mcs.exactAtomsExactBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
     expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-[#6]-[#7]-[#6]');
   });
 
   test('mcs.anyAtomsExactBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
     expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
   });
 
   test('mcs.exactAtomsAnyBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
     expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
   });
 
   test('mcs.anyAtomsAnyBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
     expect(mcs, DG.Test.isInBenchmark ?
       `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
       `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
@@ -143,8 +143,9 @@ M  END
   });
 
   test('rgroups.malformedInput', async () => {
-    await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
-  }, {skipReason: '#1491'});
+    const res = await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
+    expect(res.rowCount, 0);
+  });
 
   after(async () => {
     grok.shell.closeAll();

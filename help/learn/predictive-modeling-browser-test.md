@@ -8,7 +8,7 @@ them.
 
 ## Testing scenarios
 
-1. Open "Browse Models" from **Tools | Predictive Modeling**
+1. Open "Browse Models" from **ML | Models**
 
 * Model browser is open
 * You can change the view, use sort and search
@@ -17,7 +17,7 @@ them.
 
 * Models are applied successfully and correctly from context menu
 
-1. Edit [model](learn.md) from its context menu in broser
+1. Edit [model](learn.md) from its context menu in browser
 
 * Model edit dialog has been opened
 

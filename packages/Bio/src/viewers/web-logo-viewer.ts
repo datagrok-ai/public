@@ -8,25 +8,19 @@ import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
-  monomerToShort,
-  pickUpPalette,
-  pickUpSeqCol,
-  TAGS as bioTAGS,
+  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  FilterSources,
-  HorizontalAlignments,
-  IWebLogoViewer,
-  PositionHeight,
-  PositionMarginStates,
-  positionSeparator,
-  TAGS as wlTAGS,
-  VerticalAlignments,
-  WebLogoProps,
-  WebLogoPropsDefault,
+  FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates,
+  VerticalAlignments, WebLogoProps, WebLogoPropsDefault
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+
+import {AggFunc, getAgg} from '../utils/agg';
+import {errInfo} from '../utils/err-info';
+import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
 import {_package} from '../package';
 
@@ -51,14 +45,35 @@ DG.Rect.prototype.contains = function(x: number, y: number): boolean {
 
 export class PositionMonomerInfo {
   /** Sequences count with monomer in position */
-  public count: number;
+  public rowCount: number;
+  /** Aggregated value */
+  public value: number;
+  /** Aggregated value shifted to be non-negative */
+  public plotValue: number;
+
+  public valueList: (number | null)[] | null = null;
+  public valueIdx: number = 0;
 
   /** Remember screen coords rect */
   public bounds?: DG.Rect;
 
-  constructor(count: number = 0, bounds?: DG.Rect) {
-    this.count = count;
+  constructor(rowCount: number = 0, bounds?: DG.Rect) {
+    this.value = this.rowCount = rowCount;
     this.bounds = bounds;
+  }
+
+  public push(value: number | null): void {
+    if (!this.valueList) {
+      this.valueList = new Array<number>(this.rowCount);
+      this.valueIdx = 0;
+    }
+    this.valueList[this.valueIdx] = value;
+    ++this.valueIdx;
+  }
+
+  public aggregate(aggFunc: AggFunc): void {
+    this.value = aggFunc(this.valueList!) ?? 0;
+    this.valueList = null; // clear
   }
 }
 
@@ -74,8 +89,11 @@ export class PositionInfo {
 
   private readonly _freqs: { [m: string]: PositionMonomerInfo };
 
-  rowCount: number;
-  sumForHeightCalc: number;
+  sumRowCount: number = 0;
+  /** Sum of plot value */
+  sumPlotValue: number;
+  /** Sum of plot value scaled to alphabet size with pseudo-count correction */
+  sumPlotValueForHeight: number;
 
   /** freq = {}, rowCount = 0
    * @param {number} pos Position in sequence
@@ -85,14 +103,14 @@ export class PositionInfo {
    * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
    */
   constructor(pos: number, name: string, freqs?: { [m: string]: PositionMonomerInfo },
-    options?: { rowCount?: number, sumForHeightCalc?: number, label?: string }
+    options?: { sumRowCount?: number, sumValueForHeight?: number, label?: string }
   ) {
     this.pos = pos;
     this.name = name;
     this._freqs = freqs ?? {};
 
-    if (options?.rowCount) this.rowCount = options.rowCount;
-    if (options?.sumForHeightCalc) this.sumForHeightCalc = options.sumForHeightCalc;
+    if (options?.sumRowCount) this.sumRowCount = options.sumRowCount;
+    if (options?.sumValueForHeight) this.sumPlotValue = options.sumValueForHeight;
     if (options?.label) this._label = options.label;
   }
 
@@ -111,88 +129,86 @@ export class PositionInfo {
     return res;
   }
 
-  getMonomerAt(calculatedX: number, y: number): string | undefined {
-    const findRes = Object.entries(this._freqs)
-      .find(([m, pmInfo]) => {
-        return pmInfo.bounds!.contains(calculatedX, y);
-      });
-    return !!findRes ? findRes[0] : undefined;
+  /** Calculates {@link agg} aggregation function for all ${link this.freqs} and clears ${} */
+  public aggregate(agg: DG.AggregationType): void {
+    const aggFunc = getAgg(agg);
+    for (const [m, pmi] of Object.entries(this._freqs))
+      pmi.aggregate(aggFunc);
+    // this.sumValueForHeight will be calculated before drawing
   }
 
+  getMinValue() {
+    return Math.min(...Object.values(this._freqs).map((pmi) => pmi.value));
+  }
+
+  calcPlotValue(shiftAggValue: number) {
+    for (const pmi of Object.values(this._freqs))
+      pmi.plotValue = pmi.value - shiftAggValue;
+  }
+
+  /** Calculates {@link .sumPlotValue} overall position */
   calcHeights(heightMode: PositionHeight): void {
-    /*
-    this.positions[jPos].rowCount = 0;
-    for (const m in this.positions[jPos].freq)
-      this.positions[jPos].rowCount += this.positions[jPos].freq[m].count;
-    if (this.positionHeight == PositionHeight.Entropy) {
-      this.positions[jPos].sumForHeightCalc = 0;
-      for (const m in this.positions[jPos].freq) {
-        const pn = this.positions[jPos].freq[m].count / this.positions[jPos].rowCount;
-        this.positions[jPos].sumForHeightCalc += -pn * Math.log2(pn);
-      }
-    }
-    /**/
+    this.sumPlotValue = 0;
+    for (const pmi of Object.values(this._freqs))
+      this.sumPlotValue += pmi.plotValue;
 
-    this.rowCount = 0;
-    for (const [m, pmInfo] of Object.entries(this._freqs))
-      this.rowCount += pmInfo.count;
-
-    this.sumForHeightCalc = 0;
+    this.sumPlotValueForHeight = 0;
     if (heightMode === PositionHeight.Entropy) {
-      for (const [m, pmInfo] of Object.entries(this._freqs)) {
-        const pn = pmInfo.count / this.rowCount;
-        this.sumForHeightCalc += -pn * Math.log2(pn);
+      const freqsSize = Object.keys(this._freqs).length;
+      const sumPseudoCount = 0.01 * this.sumPlotValue;
+      const pseudoCount = sumPseudoCount / freqsSize;
+      for (const pmi of Object.values(this._freqs)) {
+        const pn = (pmi.plotValue + pseudoCount) / (this.sumPlotValue + sumPseudoCount);
+        this.sumPlotValueForHeight += -pn * Math.log2(pn);
       }
     } else if (heightMode === PositionHeight.full) {
-      for (const [m, pmInfo] of Object.entries(this._freqs)) {
-        const pn = pmInfo.count / this.rowCount;
-        this.sumForHeightCalc += pn;
+      for (const [_m, pmi] of Object.entries(this._freqs)) {
+        const pn = pmi.plotValue / this.sumPlotValue;
+        this.sumPlotValueForHeight += pn;
       }
     }
-    const k = 42;
   }
 
   calcScreen(
-    jPos: number, absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
-    positionWidthWithMargin: number, positionWidth: number, r: number, axisHeight: number
+    isGap: (m: string) => boolean, posIdx: number, firstVisiblePosIdx: number,
+    absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
+    positionWidthWithMargin: number, positionWidth: number, dpr: number, positionLabelsHeight: number
   ): void {
-    const dpr = window.devicePixelRatio;
-
-    const maxHeight = (heightMode == PositionHeight.Entropy) ?
-      (absoluteMaxHeight * (alphabetSizeLog - (this.sumForHeightCalc)) / alphabetSizeLog) :
+    const maxHeight = (heightMode === PositionHeight.Entropy) ?
+      (absoluteMaxHeight * (alphabetSizeLog - (this.sumPlotValueForHeight)) / alphabetSizeLog) :
       absoluteMaxHeight;
-    let y: number = axisHeight * r + (absoluteMaxHeight - maxHeight - 1);
+    let y: number = positionLabelsHeight * dpr + (absoluteMaxHeight - maxHeight - 1);
 
     const entries = Object.entries(this._freqs)
       .sort((a, b) => {
-        if (a[0] !== '-' && b[0] !== '-')
-          return b[1].count - a[1].count;
-        else if (a[0] === '-' && b[0] === '-')
+        if (!isGap(a[0]) && !isGap(b[0]))
+          return b[1].value - a[1].value;
+        else if (isGap(a[0]) && isGap(b[0]))
           return 0;
-        else if (a[0] === '-')
+        else if (isGap(a[0]))
           return -1;
-        else /* (b[0] === '-') */
+        else /* (isGap(b[0])) */
           return +1;
       });
-    for (const entry of entries) {
-      const pmInfo: PositionMonomerInfo = entry[1];
-      // const m: string = entry[0];
-      const h: number = maxHeight * pmInfo.count / this.rowCount;
+    for (const [_m, pmi] of entries) {
+      const h: number = maxHeight * pmi.plotValue / this.sumPlotValue;
 
-      pmInfo.bounds = new DG.Rect(jPos * dpr * positionWidthWithMargin, y, positionWidth * dpr, h);
+      pmi.bounds = new DG.Rect(
+        (posIdx - firstVisiblePosIdx) * dpr * positionWidthWithMargin, y,
+        positionWidth * dpr, h);
       y += h;
     }
   }
 
   render(g: CanvasRenderingContext2D,
-    fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number,
-    positionWidthWithMargin: number, firstVisibleIndex: number, cp: SeqPalette
+    isGap: (m: string) => boolean,
+    fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number, cp: SeqPalette
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
-      if (monomer !== '-') {
+      if (!isGap(monomer)) {
         const monomerTxt = monomerToShort(monomer, 5);
         const b = pmInfo.bounds!;
-        const left = b.left - positionWidthWithMargin * firstVisibleIndex;
+        const left = b.left;
 
         g.resetTransform();
         g.strokeStyle = 'lightgray';
@@ -211,6 +227,21 @@ export class PositionInfo {
       }
     }
   }
+
+  getMonomerAt(calculatedX: number, y: number): string | undefined {
+    const findRes = Object.entries(this._freqs)
+      .find(([m, pmInfo]) => {
+        return pmInfo.bounds!.contains(calculatedX, y);
+      });
+    return !!findRes ? findRes[0] : undefined;
+  }
+
+  buildCompositionTable(palette: SeqPalette): HTMLTableElement {
+    return buildCompositionTable(palette,
+      Object.assign({}, ...Object.entries(this._freqs)
+        .map(([m, pmi]) => ({[m]: pmi.rowCount})))
+    );
+  }
 }
 
 export enum PROPS_CATS {
@@ -223,6 +254,8 @@ export enum PROPS_CATS {
 export enum PROPS {
   // -- Data --
   sequenceColumnName = 'sequenceColumnName',
+  valueAggrType = 'valueAggrType',
+  valueColumnName = 'valueColumnName',
   startPositionName = 'startPositionName',
   endPositionName = 'endPositionName',
   skipEmptySequences = 'skipEmptySequences',
@@ -251,8 +284,9 @@ export enum PROPS {
 
 const defaults: WebLogoProps = WebLogoPropsDefault;
 
-enum RecalcLevel {
+enum WlRenderLevel {
   None = 0,
+  Render = 1,
   Layout = 1,
   Freqs = 2,
 }
@@ -261,7 +295,7 @@ const POSITION_LABELS_HEIGHT: number = 12;
 
 export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public static residuesSet = 'nucleotides';
-  private static viewerCount: number = -1;
+  private static viewerCount: number = 0;
 
   private viewed: boolean = false;
 
@@ -270,38 +304,42 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private initialized: boolean = false;
 
   // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
-  protected cp: SeqPalette | null = null;
+  protected palette: SeqPalette | null = null;
 
   private host?: HTMLDivElement;
   private msgHost?: HTMLElement;
   private canvas: HTMLCanvasElement;
-  private slider: DG.RangeSlider;
+  private readonly slider: DG.RangeSlider;
   private readonly textBaseline: CanvasTextBaseline;
 
   private seqCol: DG.Column<string> | null = null;
-  // private maxLength: number = 100;
   private positions: PositionInfo[] = [];
 
-  private rowsNull: number = 0;
   private visibleSlider: boolean = false;
   private allowResize: boolean = true;
   private turnOfResizeForOneSetValue: boolean = false;
 
-  // Viewer's properties (likely they should be public so that they can be set outside)
+  // Viewer's properties (likely they should be public)
   // -- Data --
   public sequenceColumnName: string | null;
+  public valueAggrType: DG.AggregationType;
+  public valueColumnName: string;
   public skipEmptySequences: boolean;
   public skipEmptyPositions: boolean;
 
   // -- Style --
-  private _positionWidth: number;
-  public positionWidth: number;
+  /** Gets value from properties or {@link setOptions} */ public positionWidth: number;
+  /** Scaled value to fit area */ private _positionWidth: number;
+  private _positionWidthWithMargin: number;
+  public get positionWidthWithMargin(): number { return this._positionWidthWithMargin; }
+
   public minHeight: number;
   public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
   public showPositionLabels: boolean;
   public positionMarginState: PositionMarginStates;
-  public positionMargin: number = 0;
+  /** Gets value from properties or setOptions */ public positionMargin: number = 0;
+  /** Scaled value to fit area */ private _positionMargin: number;
   public startPositionName: string | null;
   public endPositionName: string | null;
   public fixWidth: boolean;
@@ -309,7 +347,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public horizontalAlignment: HorizontalAlignments;
   public fitArea: boolean;
   public shrinkEmptyTail: boolean;
-  public positionHeight: string;
+  public positionHeight: PositionHeight;
 
   // -- Behavior --
   public filterSource: FilterSources;
@@ -321,20 +359,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private error: Error | null = null;
 
-  private get filter(): DG.BitSet {
-    let res: DG.BitSet;
-    switch (this.filterSource) {
-      case FilterSources.Filtered:
-        res = this.dataFrame.filter;
-        break;
-      case FilterSources.Selected:
-        res = this.dataFrame.selection;
-        break;
-    }
-    return res;
-  }
-
-  /** For startPosition equals to endPosition Length is 1 */
+  /** Full length of {@link positions}.
+   * Inclusive, for startPosition equals to endPosition Length is 1
+   */
   public get Length(): number {
     if (this.skipEmptyPositions)
       return this.positions.length;
@@ -342,42 +369,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
-  /** Calculate new position data basic on {@link positionMarginState} and {@link positionMargin} */
-  private get positionWidthWithMargin() {
-    return this._positionWidth + this.positionMarginValue;
-  }
-
-  private get positionMarginValue() {
-    if (this.positionMarginState === PositionMarginStates.AUTO &&
-      this.unitsHandler?.getAlphabetIsMultichar() === true
-    ) return this.positionMargin;
-
-    if (this.positionMarginState === PositionMarginStates.ON)
+  public get positionMarginValue(): number {
+    if (this.positionMarginState === PositionMarginStates.AUTO && this.unitsHandler!.getAlphabetIsMultichar() === true)
       return this.positionMargin;
-
-    return 0;
-  }
-
-  /** Count of position rendered for calculations countOfRenderPositions */
-  private get countOfRenderPositions() {
-    if (this.host == null)
-      return 0;
-
-    const r = window.devicePixelRatio;
-    if (r > 1)
-      return this.canvasWidthWithRatio / this.positionWidthWithMargin;
+    else if (this.positionMarginState === PositionMarginStates.ON)
+      return this.positionMargin;
     else
-      return this.canvas.width / (this.positionWidthWithMargin * r);
-  }
-
-  private get canvasWidthWithRatio() {
-    return this.canvas.width * window.devicePixelRatio;
-  }
-
-
-  /** Position of start rendering */
-  private get firstVisibleIndex(): number {
-    return (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
+      return 0;
   }
 
   constructor() {
@@ -391,6 +389,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     // -- Data --
     this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
+      {category: PROPS_CATS.DATA});
+    const aggExcludeList = [DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.MISSING_VALUE_COUNT, DG.AGG.SKEW, DG.AGG.KURT,
+      DG.AGG.SELECTED_ROWS_COUNT];
+    const aggChoices = Object.values(DG.AGG).filter((agg) => !aggExcludeList.includes(agg));
+    this.valueAggrType = this.string(PROPS.valueAggrType, defaults.valueAggrType,
+      {category: PROPS_CATS.DATA, choices: aggChoices}) as DG.AggregationType;
+    this.valueColumnName = this.string(PROPS.valueColumnName, defaults.valueColumnName,
       {category: PROPS_CATS.DATA});
     this.startPositionName = this.string(PROPS.startPositionName, defaults.startPositionName,
       {category: PROPS_CATS.DATA});
@@ -407,7 +412,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.backgroundColor = this.int(PROPS.backgroundColor, defaults.backgroundColor,
       {category: PROPS_CATS.STYLE});
     this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
-      {category: PROPS_CATS.STYLE, choices: Object.values(PositionHeight)});
+      {category: PROPS_CATS.STYLE, choices: Object.values(PositionHeight)}) as PositionHeight;
     this._positionWidth = this.positionWidth = this.float(PROPS.positionWidth, defaults.positionWidth,
       {category: PROPS_CATS.STYLE/* editor: 'slider', min: 4, max: 64, postfix: 'px' */});
 
@@ -417,7 +422,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.horizontalAlignment = this.string(PROPS.horizontalAlignment, defaults.horizontalAlignment,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(HorizontalAlignments)}) as HorizontalAlignments;
     this.fixWidth = this.bool(PROPS.fixWidth, defaults.fixWidth,
-      {category: PROPS_CATS.LAYOUT});
+      {category: PROPS_CATS.LAYOUT, userEditable: false});
     this.fitArea = this.bool(PROPS.fitArea, defaults.fitArea,
       {category: PROPS_CATS.LAYOUT});
     this.minHeight = this.float(PROPS.minHeight, defaults.minHeight,
@@ -440,38 +445,55 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const style: DG.SliderOptions = {style: 'barbell'};
     this.slider = ui.rangeSlider(0, 100, 0, 20, false, style);
     this.canvas = ui.canvas();
+    this.canvas.classList.value = 'bio-wl-canvas';
     this.canvas.style.width = '100%';
+
+    /* this.root.style.background = '#FFEEDD'; */
   }
 
   // -- Data --
 
   setData(): void {
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.setData(), in`);
+    this.viewPromise = this.viewPromise.then(async () => { // setData
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      try {
+        if (this.viewed) {
+          this.renderRequestSub.unsubscribe();
+          await this.destroyView();
+          this.viewed = false;
+        }
 
-    this.updateSeqCol();
+        this.updateSeqCol();
+        this.updateEditors();
 
-    if (!this.viewed) {
-      this.buildView();
-      this.viewed = true;
-    }
+        if (!this.viewed) {
+          await this.buildView(); //requests rendering
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        grok.shell.error(errMsg);
+        _package.logger.error(errMsg, undefined, errStack);
+      } finally {
+        this.setDataInProgress = false;
+      }
+    });
   }
 
   // -- View --
 
+  private viewPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
   private viewSubs: Unsubscribable[] = [];
 
-  private destroyView() {
+  private async destroyView(): Promise<void> {
     for (const sub of this.viewSubs) sub.unsubscribe();
     this.viewSubs = [];
 
     const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView( dataFrame = ${dataFrameTxt} ) start`);
-    super.detach();
 
-    this.viewSubs.forEach((sub) => sub.unsubscribe());
     this.host!.remove();
     this.msgHost = undefined;
     this.host = undefined;
@@ -479,13 +501,16 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView() end`);
   }
 
-  private buildView() {
+  private async buildView(): Promise<void> {
     const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView( dataFrame = ${dataFrameTxt} ) start`);
+    const dpr = window.devicePixelRatio;
+    this.viewSubs.push(DG.debounce(this.renderRequest)
+      .subscribe(this.renderRequestOnDebounce.bind(this)));
 
     this.helpUrl = '/help/visualize/viewers/web-logo.md';
 
-    this.msgHost = ui.div('No message');
+    this.msgHost = ui.div('No message', {classes: 'bio-wl-msg'});
     this.msgHost.style.display = 'none';
 
     this.canvas = ui.canvas();
@@ -499,18 +524,19 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     this.visibleSlider = false;
 
-    this.host = ui.div([this.msgHost, this.canvas]);
-
-    this.host.style.justifyContent = 'center';
-    this.host.style.alignItems = 'center';
-    this.host.style.position = 'relative';
-    this.host.style.setProperty('overflow', 'hidden', 'important');
+    this.host = ui.div([this.msgHost, this.canvas],
+      {
+        classes: 'bio-wl-host',
+        style: {
+          display: 'flex',
+          flexDirection: 'row',
+          /** For alignContent to have an effect */ flexWrap: 'wrap',
+          /* backgroundColor: '#EEFFEE' */
+        }
+      });
 
     this.root.append(this.host);
     this.root.append(this.slider.root);
-
-    this.updateSlider();
-    this.render(RecalcLevel.Freqs, 'init');
 
     if (!!this.error) {
       this.msgHost!.innerText = this.error.message;
@@ -531,6 +557,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.viewSubs.push(
       fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe(this.canvasOnWheel.bind(this)));
 
+    await this.render(WlRenderLevel.Freqs, 'buildView');
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView() end`);
   }
 
@@ -538,12 +565,17 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private rootOnSizeChanged(): void {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.rootOnSizeChanged(), start `);
 
-    this.updateSlider();
-    this.render(RecalcLevel.Layout, 'rootOnSizeChanged');
+    this.render(WlRenderLevel.Layout, 'rootOnSizeChanged');
   }
 
-  /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
-   */
+  private updateEditors(): void {
+    const valueColumnNameProp = this.props.getProperty(PROPS.valueColumnName);
+    valueColumnNameProp.choices = wu(this.dataFrame.columns.numerical)
+      .map((col) => col.name).toArray();
+    // Set valueColumnNameProp.choices has no effect
+  }
+
+  /** Assigns {@link seqCol} and {@link palette} based on {@link sequenceColumnName} and calls {@link render}(). */
   private updateSeqCol(): void {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
@@ -553,12 +585,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
       if (this.seqCol) {
         try {
-          const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
-          const separator: string = this.seqCol!.getTag(bioTAGS.separator);
           this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
 
+          this.palette = pickUpPalette(this.seqCol);
           this.updatePositions();
-          this.cp = pickUpPalette(this.seqCol);
           this.error = null;
         } catch (err: any) {
           this.seqCol = null;
@@ -571,27 +601,27 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           this.positionLabels = [];
           this.startPosition = -1;
           this.endPosition = -1;
-          this.cp = null;
+          this.palette = null;
         }
       }
     }
   }
 
   /** Updates {@link positionNames} and calculates {@link startPosition} and {@link endPosition}.
+   * Calls {@link render}() with {@link WlRenderLevel.Freqs}
    */
   private updatePositions(): void {
-    if (!this.seqCol)
-      return;
+    if (!this.seqCol) return;
 
-    const dfFilter = this.filterSource === FilterSources.Filtered ? this.dataFrame.filter :
-      this.dataFrame.selection;
-    const maxLength = wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
-      return dfFilter.get(rowI) && !!mList ? mList.length : 0;
-    }).reduce((max, l) => Math.max(max, l), 0);
+    const dfFilter = this.getFilter();
+    const maxLength: number = dfFilter.trueCount === 0 ? this.unitsHandler!.maxLength :
+      wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
+        return dfFilter.get(rowI) && !!mList ? mList.length : 0;
+      }).reduce((max, l) => Math.max(max, l), 0);
 
     /** positionNames and positionLabel can be set up through the column's tags only */
-    const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
-    const positionLabelsTxt = this.seqCol.getTag(wlTAGS.positionLabels);
+    const positionNamesTxt = this.seqCol.getTag(bioTAGS.positionNames);
+    const positionLabelsTxt = this.seqCol.getTag(bioTAGS.positionLabels);
     this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
       [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
     this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
@@ -603,33 +633,22 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.endPosition = (this.endPositionName && this.positionNames &&
       this.positionNames.includes(this.endPositionName)) ?
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
+
+    this.render(WlRenderLevel.Freqs, 'updatePositions');
   }
 
-  private get widthArea() {
-    return this.Length * this.positionWidth / window.devicePixelRatio;
-  }
+  private getFilter(): DG.BitSet {
+    let dfFilterRes: DG.BitSet;
+    switch (this.filterSource) {
+      case FilterSources.Filtered:
+        dfFilterRes = this.dataFrame.filter;
+        break;
 
-  private get heightArea() {
-    return Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
-  }
-
-  private get xScale() {
-    return this.widthArea > 0 ? (this.root.clientWidth - this.Length * this.positionMarginValue) / this.widthArea : 0;
-  }
-
-  private get yScale() {
-    return this.root.clientHeight / this.heightArea;
-  }
-
-  private checkIsHideSlider(): boolean {
-    let showSliderWithFitArea = true;
-    const minScale = Math.min(this.xScale, this.yScale);
-
-    if (((minScale == this.xScale) || (minScale <= 1)) && (this.fitArea))
-      showSliderWithFitArea = false;
-
-    return ((this.fixWidth || Math.ceil(this.canvas.width / this.positionWidthWithMargin) >= this.Length) ||
-      (showSliderWithFitArea));
+      case FilterSources.Selected:
+        dfFilterRes = this.dataFrame.selection.trueCount === 0 ? this.dataFrame.filter : this.dataFrame.selection;
+        break;
+    }
+    return dfFilterRes;
   }
 
   setSliderVisibility(visible: boolean): void {
@@ -642,28 +661,177 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
-  /** Updates {@link slider}, needed to set slider options and to update slider position. */
-  private updateSlider(): void {
-    if (this.checkIsHideSlider())
-      this.setSliderVisibility(false);
-    else
-      this.setSliderVisibility(true);
+  /** Updates {@link host}, {@link canvas}, {@link slider} .min, .max.
+   * Calls {@link render} with {@link WlRenderLevel.Layout}
+   */
+  private calcLayout(dpr: number): void {
+    if (!this.host || !this.canvas || !this.slider) return;
 
-    if ((this.slider != null) && (this.canvas != null)) {
-      const diffEndScrollAndSliderMin = Math.max(0,
-        Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length);
-      let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) +
-        Math.floor(this.canvas.width / this.positionWidthWithMargin);
-      if (this.checkIsHideSlider()) {
-        newMin = 0;
-        newMax = Math.max(newMin, this.Length - 1);
-      }
-      this.turnOfResizeForOneSetValue = true;
-      this.slider.setValues(0, this.Length,
-        newMin, newMax);
-    }
+    this.host.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
+    this.canvas.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
+
+    this._positionWidth = this.positionWidth;
+    this._positionMargin = this.positionMargin;
+    this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
+
+    if (this.fixWidth)
+      this.calcLayoutFixWidth(dpr);
+    else if (this.fitArea)
+      this.calcLayoutFitArea(dpr);
+    else
+      this.calcLayoutNoFitArea(dpr);
+
+    this.slider.root.style.width = `${this.host.clientWidth}px`;
   }
+
+  /** */
+  private calcLayoutFixWidth(dpr: number): void {
+    if (!this.host || !this.canvas || !this.slider) return; // for es-lint
+
+    this.host.classList.add('bio-wl-fixWidth');
+    this.canvas.classList.add('bio-wl-fitArea');
+
+    const areaWidth: number = this._positionWidthWithMargin * this.Length;
+    const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
+
+    this.host.style.justifyContent = HorizontalAlignments.LEFT;
+    this.host.style.removeProperty('margin-left');
+    this.host.style.removeProperty('margin-top');
+
+    this.host.style.width = this.canvas.style.width = `${areaWidth}px`;
+    this.host.style.height = this.canvas.style.height = `${areaHeight}px`;
+    this.host.style.left = this.canvas.style.left = '0';
+    this.host.style.top = this.canvas.style.top = '0';
+    this.host.style.setProperty('overflow', 'hidden', 'important');
+
+    this.slider.root.style.display = 'none';
+
+    this.slider.setValues(0, Math.max(0, this.Length - 1), 0, Math.max(0, this.Length - 1));
+
+    this.canvas.width = areaWidth * dpr;
+    this.canvas.height = areaHeight * dpr;
+  }
+
+  private calcLayoutNoFitArea(dpr: number): void {
+    if (!this.host || !this.canvas || !this.slider) return; // for es-lint
+
+    const areaWidth: number = this._positionWidthWithMargin * this.Length;
+    const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
+
+    const height = areaHeight;
+    const width = Math.min(this.root.clientWidth, areaWidth);
+
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+    this.host.style.width = `${width}px`;
+    this.host.style.height = `${this.root.clientHeight}px`;
+
+    // host style flex-direction: row;
+    this.host.style.justifyContent = this.horizontalAlignment;
+    this.host.style.alignContent =
+      this.verticalAlignment === VerticalAlignments.TOP ? 'start' :
+        this.verticalAlignment === VerticalAlignments.MIDDLE ? 'center' :
+          this.verticalAlignment === VerticalAlignments.BOTTOM ? 'end' :
+            'inherit';
+
+    if (this.root.clientHeight < this.minHeight) {
+      this.host.style.alignContent = 'start'; /* For vertical scroller to work properly */
+      this.host.style.width = `${width + 6}px`; /* */
+    }
+
+    this.host.style.width = `${this.host}px`;
+
+    const sliderVisibility = areaWidth > width;
+    this.setSliderVisibility(sliderVisibility);
+    if (sliderVisibility) {
+      this.slider.root.style.removeProperty('display');
+      this.host.style.justifyContent = 'left'; /* For horizontal scroller to prevent */
+      this.host.style.height = `${this.root.clientHeight - this.slider.root.offsetHeight}px`;
+      this.slider.root.style.top = `${this.host.offsetHeight}px`;
+
+      let newMin = Math.min(Math.max(0, this.slider.min), this.Length - 0.001);
+      let newMax = Math.min(Math.max(0, this.slider.max), this.Length - 0.001);
+
+      const visibleLength = this.root.clientWidth / this._positionWidthWithMargin;
+      newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
+      newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
+
+      this.slider.setValues(0, Math.max(this.Length - 0.001), newMin, newMax);
+    } else {
+      //
+      this.slider.setValues(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
+    }
+
+    this.canvas.width = width * dpr;
+    this.canvas.height = height * dpr;
+  }
+
+  private calcLayoutFitArea(dpr: number): void {
+    if (!this.host || !this.canvas || !this.slider) return; // for es-lint
+
+    const originalAreaWidthWoMargins: number = this._positionWidth * this.Length;
+    const originalAreaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
+
+    // TODO: scale
+    const xScale = originalAreaWidthWoMargins > 0 ?
+      (this.root.clientWidth - this.positionMarginValue * this.Length) / originalAreaWidthWoMargins : 0;
+    const yScale = this.root.clientHeight / originalAreaHeight;
+    const scale = Math.max(1, Math.min(xScale, yScale));
+
+    this._positionWidth = this.positionWidth * scale;
+    // Do not scale this._positionMargin
+    this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
+    const areaWidth = (this._positionWidth + this.positionMarginValue) * this.Length;
+    const areaHeight = scale * originalAreaHeight;
+
+    const height = areaHeight;
+    const width = Math.min(this.root.clientWidth, areaWidth);
+
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+    this.host.style.width = `${width}px`;
+    this.host.style.height = `${this.root.clientHeight}px`;
+
+    // host style flex-direction: row;
+    this.host.style.justifyContent = this.horizontalAlignment;
+    this.host.style.alignContent =
+      this.verticalAlignment === VerticalAlignments.TOP ? 'start' :
+        this.verticalAlignment === VerticalAlignments.MIDDLE ? 'center' :
+          this.verticalAlignment === VerticalAlignments.BOTTOM ? 'end' :
+            'inherit';
+
+    if (this.root.clientHeight < this.minHeight) {
+      this.host.style.alignContent = 'start'; /* For vertical scroller to work properly */
+      this.host.style.width = `${width + 6}px`; /* */
+    }
+
+    this.host.style.width = `${this.host}px`;
+
+    const sliderVisibility = areaWidth > width;
+    this.setSliderVisibility(sliderVisibility);
+    if (sliderVisibility) {
+      this.slider.root.style.removeProperty('display');
+      this.host.style.justifyContent = 'left'; /* For horizontal scroller to prevent */
+      this.host.style.height = `${this.root.clientHeight - this.slider.root.offsetHeight}px`;
+      this.slider.root.style.top = `${this.host.offsetHeight}px`;
+
+      let newMin = Math.min(Math.max(0, this.slider.min), this.Length - 0.001);
+      let newMax = Math.min(Math.max(0, this.slider.max), this.Length - 0.001);
+
+      const visibleLength = this.root.clientWidth / this._positionWidthWithMargin;
+      newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
+      newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
+
+      this.slider.setValues(0, Math.max(0, this.Length - 0.001), newMin, newMax);
+    } else {
+      //
+      this.slider.setValues(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
+    }
+
+    this.canvas.width = width * dpr;
+    this.canvas.height = height * dpr;
+  }
+
 
   /** Handler of property change events.
    * @param {DG.Property} property - property which was changed.
@@ -673,39 +841,44 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     switch (property.name) {
       case PROPS.sequenceColumnName:
+        this.updateSeqCol();
+        break;
+      case PROPS.sequenceColumnName:
       case PROPS.startPositionName:
       case PROPS.endPositionName:
       case PROPS.filterSource:
-        this.updateSeqCol();
-        break;
-      case PROPS.positionWidth:
-        this._positionWidth = this.positionWidth;
-        this.updateSlider();
-        break;
-      case PROPS.fixWidth:
-      case PROPS.fitArea:
-      case PROPS.positionMargin:
-        this.updateSlider();
-        break;
-      case PROPS.showPositionLabels:
       case PROPS.shrinkEmptyTail:
       case PROPS.skipEmptyPositions:
+      case PROPS.positionHeight: {
         this.updatePositions();
         break;
-    }
+      }
 
-    switch (property.name) {
+      case PROPS.valueColumnName:
+      case PROPS.valueAggrType: {
+        this.render(WlRenderLevel.Freqs, `onPropertyChanged(${property.name})`);
+        break;
+      }
+      // this.positionWidth obtains a new value
+      // this.updateSlider updates this._positionWidth
+      case PROPS.minHeight:
+      case PROPS.maxHeight:
+      case PROPS.positionWidth:
+      case PROPS.showPositionLabels:
       case PROPS.fixWidth:
       case PROPS.fitArea:
-      case PROPS.showPositionLabels:
-      case PROPS.positionWidth:
+      case PROPS.horizontalAlignment:
+      case PROPS.verticalAlignment:
       case PROPS.positionMargin:
-        this.render(RecalcLevel.Layout, 'onPropertyChanged');
+      case PROPS.positionMarginState: {
+        this.render(WlRenderLevel.Layout, `onPropertyChanged(${property.name})`);
         break;
+      }
 
-      default:
-        this.render(RecalcLevel.Freqs, 'onPropertyChanged');
+      case PROPS.backgroundColor: {
+        this.render(WlRenderLevel.Render, `onPropertyChanged(${property.name})`);
         break;
+      }
     }
   }
 
@@ -713,39 +886,57 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public override onTableAttached() {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached(), `);
 
-    // -- Props editors --
-
     super.onTableAttached();
     this.setData();
   }
 
   /** Remove all handlers when table is a detach  */
   public override async detach() {
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.detach(), `);
+
+    const superDetach = super.detach.bind(this);
+    this.viewPromise = this.viewPromise.then(async () => { // detach
+      if (this.setDataInProgress) return; // check setDataInProgress synced
+      if (this.viewed) {
+        await this.destroyView();
+        this.viewed = false;
+      }
+      superDetach();
+    })
+      .catch((err: any) => {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+      });
   }
 
   private _onSizeChanged: Subject<void> = new Subject<void>();
 
   public get onSizeChanged(): Observable<void> { return this._onSizeChanged; }
 
+  private _onFreqsCalculated: Subject<void> = new Subject<void>();
+
+  /** Allows {@link VdRegionsViewer} to fit enclosed WebLogo viewers */
+  public get onFreqsCalculated(): Observable<void> { return this._onFreqsCalculated; }
+
+  /** Allows {@link VdRegionsViewer} to fit enclosed WebLogo viewers */
+  private _onLayoutCalculated: Subject<void> = new Subject<void>();
+  public get onLayoutCalculated(): Observable<void> { return this._onLayoutCalculated; }
+
   // -- Routines --
 
-  getMonomer(p: DG.Point, dpr: number): [number, string | null, PositionMonomerInfo | null] {
-    const calculatedX = p.x + this.firstVisibleIndex * this.positionWidthWithMargin * dpr;
-    const jPos = Math.floor(p.x / (this.positionWidthWithMargin * dpr) + this.firstVisibleIndex);
-    const position: PositionInfo = this.positions[jPos];
+  getMonomer(p: DG.Point, dpr: number): [PositionInfo | null, string | null, PositionMonomerInfo | null] {
+    const calculatedX = p.x;
+    const jPos = Math.floor(p.x / (this._positionWidthWithMargin * dpr) + Math.floor(this.slider.min));
+    const pi: PositionInfo = this.positions[jPos];
 
-    if (position === undefined)
-      return [jPos, null, null];
+    if (!pi)
+      return [null, null, null];
 
-    const monomer: string | undefined = position.getMonomerAt(calculatedX, p.y);
+    const monomer: string | undefined = pi.getMonomerAt(calculatedX, p.y);
     if (monomer === undefined)
-      return [jPos, null, null];
+      return [pi, null, null];
 
-    return [jPos, monomer, position.getFreq(monomer)];
+    return [pi, monomer, pi.getFreq(monomer)];
   };
 
   /** Helper function for rendering
@@ -762,19 +953,32 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
-      this.positions = wu(this.positions)
-        .filter((pi) => !pi.hasMonomer('-') || pi.getFreq('-').count !== pi.rowCount).toArray();
+      this.positions = wu(this.positions).filter((pi) => {
+        const gapSymbol: string = this.unitsHandler!.defaultGapSymbol;
+        return !pi.hasMonomer(gapSymbol) || pi.getFreq(gapSymbol).rowCount !== pi.sumRowCount;
+      }).toArray();
     }
   }
 
-  private renderRequested: boolean = false;
   /** default value of RecalcLevel.Freqs is for recalc from the scratch at the beginning */
-  private recalcLevelRequested: RecalcLevel = RecalcLevel.Freqs;
+  private requestedRenderLevel: WlRenderLevel = WlRenderLevel.Freqs;
+  private readonly renderRequest: Subject<WlRenderLevel> = new Subject<WlRenderLevel>();
+  private renderRequestSub: Unsubscribable;
 
   /** Renders requested repeatedly will be performed once on window.requestAnimationFrame() */
-  render(recalcLevel: RecalcLevel, reason: string): void {
+  render(renderLevel: WlRenderLevel, reason: string): void {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>` +
-      `.render( recalcLevel=${recalcLevel}, reason='${reason}' )`);
+      `.render( recalcLevelVal=${renderLevel}, reason='${reason}' )`);
+    this.requestedRenderLevel = Math.max(this.requestedRenderLevel, renderLevel);
+    this.renderRequest.next(this.requestedRenderLevel);
+  }
+
+  /** Render WebLogo sensitive to changes in params of rendering
+   *@param {WlRenderLevel} renderLevel - indicates that need to recalculate data for rendering
+   */
+  protected async renderInt(renderLevel: WlRenderLevel): Promise<void> {
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( renderLevel=${renderLevel} ), ` +
+      `start `);
 
     /** Calculate freqs of monomers */
     const calculateFreqsInt = (): void => {
@@ -793,87 +997,117 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-      const dfFilter =
-        this.filterSource === FilterSources.Filtered ? this.dataFrame.filter : this.dataFrame.selection;
+      const dfFilter = this.getFilter();
       const dfRowCount = this.dataFrame.rowCount;
       const splitted = this.unitsHandler.splitted;
-      for (let rowI = 0; rowI < dfRowCount; ++rowI) {
-        if (dfFilter.get(rowI)) {
-          const seqMList: string[] = splitted[rowI];
-          for (let jPos = 0; jPos < length; ++jPos) {
-            const m: string = seqMList[this.startPosition + jPos] || '-';
-            const pmInfo = this.positions[jPos].getFreq(m);
-            pmInfo.count++;
+
+      for (let jPos = 0; jPos < length; ++jPos) {
+        // Here we want to build lists of values for every monomer in position jPos
+        for (let rowI = 0; rowI < dfRowCount; ++rowI) {
+          if (dfFilter.get(rowI)) {
+            const seqMList: ISeqSplitted = splitted[rowI];
+            const m: string = seqMList[this.startPosition + jPos] || this.unitsHandler.defaultGapSymbol;
+            const pi = this.positions[jPos];
+            const pmi = pi.getFreq(m);
+            ++pi.sumRowCount;
+            pmi.value = ++pmi.rowCount;
           }
         }
+        if (this.valueAggrType === DG.AGG.TOTAL_COUNT) continue;
+
+        // Now we have counts for each monomer in position jPos,
+        // this allows us to allocate list of values
+        let valueCol: DG.Column<number> | null = null;
+        try {
+          valueCol = this.dataFrame.getCol(this.valueColumnName);
+          if (!valueCol.matches('numerical')) valueCol = null;
+        } catch { valueCol = null; }
+        if (!valueCol) continue; // fallback to TOTAL_COUNT
+
+        for (let rowI = 0; rowI < dfRowCount; ++rowI) {
+          if (dfFilter.get(rowI)) { // respect the filter
+            const seqMList: ISeqSplitted = splitted[rowI];
+            const m: string = seqMList[this.startPosition + jPos] || this.unitsHandler.defaultGapSymbol;
+            const value: number | null = valueCol.get(rowI);
+            this.positions[jPos].getFreq(m).push(value);
+          }
+        }
+        this.positions[jPos].aggregate(this.valueAggrType);
       }
 
-      //#region Polish freq counts
-      for (let jPos = 0; jPos < length; jPos++) {
-        // delete this.positions[jPos].freq['-'];
-        this.positions[jPos].calcHeights(this.positionHeight as PositionHeight);
+      const shiftAggValue: number = this.valueAggrType === DG.AGG.TOTAL_COUNT ? 0 :
+        Math.min(0, Math.min(...this.positions.map((pi) => pi.getMinValue())));
+      for (let jPos = 0; jPos < length; ++jPos) {
+        this.positions[jPos].calcPlotValue(shiftAggValue);
+        this.positions[jPos].calcHeights(this.positionHeight);
       }
-      //#endregion
+
       this._removeEmptyPositions();
+      this._onFreqsCalculated.next();
     };
 
     /** Calculate layout of monomers on screen (canvas) based on freqs, required to handle mouse events */
-    const calculateLayoutInt = (dpr: number, positionLabelsHeight: number): void => {
+    const calculateLayoutInt = (firstPos: number, lastPos: number, dpr: number, positionLabelsHeight: number): void => {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
 
-      const length = this.positions.length;
-      this.calcSize();
-      const absoluteMaxHeight = this.canvas.height - positionLabelsHeight * dpr;
-      const alphabetSize = this.getAlphabetSize();
-      if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
-        grok.shell.error('WebLogo: alphabet is undefined.');
-      const alphabetSizeLog = Math.log2(alphabetSize);
-
-      for (let jPos = 0; jPos < length; jPos++) {
-        this.positions[jPos].calcScreen(jPos, absoluteMaxHeight, this.positionHeight as PositionHeight,
-          alphabetSizeLog, this.positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
+      const absoluteMaxHeight: number = this.canvas.height - positionLabelsHeight * dpr;
+      let alphabetSizeLog: number;
+      if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
+        const alphabetSize: number = this.getAlphabetSize();
+        if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
+          grok.shell.error('WebLogo: alphabet is undefined.');
+        alphabetSizeLog = Math.log2(alphabetSize);
+      } else {
+        alphabetSizeLog = Math.max(...wu.count(firstPos).takeWhile((jPos) => jPos <= lastPos)
+          .map((jPos) => this.positions[jPos].sumPlotValueForHeight));
       }
+
+      for (let jPos = firstPos; jPos <= lastPos; ++jPos) {
+        if (!(jPos in this.positions)) {
+          _package.logger.warning(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt() ` +
+            `this.positions.length = ${this.positions.length}, jPos = ${jPos}`);
+          continue;
+        }
+        this.positions[jPos].calcScreen((m) => { return this.unitsHandler!.isGap(m); },
+          jPos, this.slider.min, absoluteMaxHeight, this.positionHeight,
+          alphabetSizeLog, this._positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
+      }
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), end `);
+      this._onLayoutCalculated.next();
     };
 
-    /** Render WebLogo sensitive to changes in params of rendering
-     *@param {boolean} recalcFreqs - indicates that need to recalculate data for rendering
-     */
-    const renderInt = (recalcLevel: RecalcLevel) => {
-      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), ` +
-        `start `);
-      if (this.msgHost) {
-        if (this.seqCol && !this.cp) {
-          this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;
-          this.msgHost!.style.display = '';
-        } else {
-          this.msgHost!.style.display = 'none';
-        }
+    if (this.msgHost) {
+      if (this.seqCol && !this.palette) {
+        this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;
+        this.msgHost!.style.display = '';
+      } else {
+        this.msgHost!.style.display = 'none';
       }
+    }
 
-      if (!this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 ||
-        this.endPosition === -1 || this.host == null || this.slider == null)
-        return;
+    if (!this.seqCol || !this.dataFrame || !this.palette || this.host == null || this.slider == null)
+      return;
 
-      const g = this.canvas.getContext('2d');
-      if (!g) return;
+    const dpr: number = window.devicePixelRatio;
+    /** 0 is for no position labels */
+    const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
+    if (renderLevel >= WlRenderLevel.Freqs) calculateFreqsInt();
+    this.calcLayout(dpr); // after _skipEmptyPositions
+    if ( /* this.positions.length === 0 || */ this.startPosition === -1 /* || this.endPosition === -1*/) return;
+    const firstPos: number = Math.max(Math.floor(this.slider.min), 0);
+    const lastPos: number = Math.min(this.positions.length - 1, Math.floor(this.slider.max));
+    if (renderLevel >= WlRenderLevel.Layout)
+      calculateLayoutInt(firstPos, lastPos, window.devicePixelRatio, positionLabelsHeight);
 
-      this.slider.root.style.width = `${this.host.clientWidth}px`;
-
-      const dpr: number = window.devicePixelRatio;
-      /** 0 is for no position labels */
-      const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
-      if (recalcLevel >= RecalcLevel.Freqs) calculateFreqsInt();
-      if (recalcLevel >= RecalcLevel.Layout) calculateLayoutInt(window.devicePixelRatio, positionLabelsHeight);
-
+    const g = this.canvas.getContext('2d');
+    if (!g) return;
+    g.save();
+    try {
       const length: number = this.Length;
       g.resetTransform();
       g.fillStyle = intToHtmlA(this.backgroundColor);
       g.fillRect(0, 0, this.canvas.width, this.canvas.height);
       g.textBaseline = this.textBaseline;
-
-      const maxCountOfRowsRendered = this.countOfRenderPositions + 1;
-      const firstVisibleIndex = (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
-      const lastVisibleIndex = Math.min(length, firstVisibleIndex + maxCountOfRowsRendered);
 
       //#region Plot positionNames
       const positionFontSize = 10 * dpr;
@@ -881,143 +1115,38 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       g.fillStyle = 'black';
       g.textAlign = 'center';
       g.font = `${positionFontSize.toFixed(1)}px Roboto, Roboto Local, sans-serif`;
-      const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
-      const hScale = posNameMaxWidth < (this._positionWidth * dpr - 2) ? 1 :
-        (this._positionWidth * dpr - 2) / posNameMaxWidth;
 
-      if (positionLabelsHeight > 0) {
-        renderPositionLabels(g, dpr, hScale, this.positionWidthWithMargin, this._positionWidth,
-          this.positions, this.firstVisibleIndex, lastVisibleIndex);
+      if (positionLabelsHeight > 0 && this.positions.length > 0) {
+        renderPositionLabels(g, dpr, this._positionWidthWithMargin, this._positionWidth, positionLabelsHeight,
+          this.positions, this.slider.min, this.slider.max);
       }
       //#endregion Plot positionNames
       const fontStyle = '16px Roboto, Roboto Local, sans-serif';
       // Hacks to scale uppercase characters to target rectangle
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
-      for (let jPos = this.firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
-        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight,
-          this.positionWidthWithMargin, firstVisibleIndex, this.cp);
+      for (let jPos = firstPos; jPos <= lastPos; jPos++) {
+        this.positions[jPos].render(g, (m) => { return this.unitsHandler!.isGap(m); },
+          fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, this.palette);
       }
-
-      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), end`);
-    };
-
-    this.recalcLevelRequested = Math.max(this.recalcLevelRequested, recalcLevel);
-    if (!this.renderRequested) {
-      this.renderRequested = true;
-      // requestAnimationFrame callback will be executed after this.render()
-      switch (this.recalcLevelRequested) {
-        case RecalcLevel.Freqs:
-          /* Avoiding [Violation] 'requestAnimationFrame' handler took too much */
-          window.setTimeout(() => {
-            renderInt(this.recalcLevelRequested);
-            this.recalcLevelRequested = RecalcLevel.None;
-            this.renderRequested = false;
-          }, 0 /* next event cycle */);
-          break;
-
-        case RecalcLevel.Layout:
-        case RecalcLevel.None:
-          window.requestAnimationFrame((time: number) => {
-            renderInt(this.recalcLevelRequested);
-            this.recalcLevelRequested = RecalcLevel.None;
-            this.renderRequested = false;
-          });
-          break;
-      }
+    } finally {
+      g.restore();
     }
+
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${renderLevel} ), end`);
+  }
+
+  private renderRequestOnDebounce(renderLevel: WlRenderLevel): void {
+    this.requestedRenderLevel = WlRenderLevel.None;
+    this.renderInt(renderLevel)
+      .catch((err: any) => {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+      });
   }
 
   private _lastWidth: number;
   private _lastHeight: number;
-
-  /** Calculate canvas size an positionWidth and updates properties */
-  private calcSize() {
-    if (!this.host) return;
-
-    const dpr: number = window.devicePixelRatio;
-
-    let width: number = this.widthArea;
-    let height = this.heightArea;
-
-    if ((this.fitArea) && (!this.visibleSlider)) {
-      const scale = Math.max(1, Math.min(this.xScale, this.yScale));
-      width = width * scale;
-      height = height * scale;
-      this._positionWidth = this.positionWidth * scale;
-    }
-
-    width = this.Length * this.positionWidthWithMargin;
-
-    this.canvas.width = this.root.clientWidth * dpr;
-    this.canvas.style.width = `${this.root.clientWidth}px`;
-
-    // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
-    this.host.style.setProperty('height', `${height}px`);
-    const canvasHeight: number = this.host.clientHeight;
-    this.canvas.height = canvasHeight * dpr;
-
-    // Adjust host and root width
-    if (this.fixWidth) {
-      // full width for canvas host and root
-      this.root.style.width = this.host.style.width = `${width}px`;
-      this.root.style.height = `${height}px`;
-      this.root.style.overflow = 'hidden';
-      this.host.style.setProperty('overflow-y', 'hidden', 'important');
-    } else {
-      // allow scroll canvas in root
-      this.root.style.width = this.host.style.width = '100%';
-      this.host.style.overflowX = 'auto!important';
-      this.host.style.setProperty('text-align', this.horizontalAlignment);
-
-      const sliderHeight = this.visibleSlider ? 10 : 0;
-
-      // vertical alignment
-      let hostTopMargin = 0;
-      switch (this.verticalAlignment) {
-        case 'top':
-          hostTopMargin = 0;
-          break;
-        case 'middle':
-          hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
-          break;
-        case 'bottom':
-          hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
-          break;
-      }
-      // horizontal alignment
-      let hostLeftMargin = 0;
-      switch (this.horizontalAlignment) {
-        case HorizontalAlignments.LEFT:
-          hostLeftMargin = 0;
-          break;
-        case HorizontalAlignments.CENTER:
-          hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
-          break;
-        case HorizontalAlignments.RIGHT:
-          hostLeftMargin = Math.max(0, this.root.clientWidth - width);
-          break;
-      }
-      this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
-      this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
-      if (this.slider != null)
-        this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
-
-
-      if (this.root.clientHeight <= height) {
-        this.host.style.setProperty('height', `${this.root.clientHeight}px`);
-        this.host.style.setProperty('overflow-y', null);
-      } else {
-        this.host.style.setProperty('overflow-y', 'hidden', 'important');
-      }
-    }
-
-    if (this._lastWidth !== this.root.clientWidth && this._lastHeight !== this.root.clientHeight) {
-      this._lastWidth = this.root.clientWidth;
-      this._lastHeight = this.root.clientHeight;
-      this._onSizeChanged.next();
-    }
-  }
 
   public getAlphabetSize(): number {
     return this.unitsHandler?.getAlphabetSize() ?? 0;
@@ -1026,48 +1155,46 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   // -- Handle events --
 
   private sliderOnValuesChanged(_value: any): void {
-    if ((this.host == null)) return;
-
+    // if ((this.host == null)) return;
+    // const dpr = window.devicePixelRatio;
+    //
     try {
-      /* Resize slider if we can resize do that */
-      if ((this.allowResize) && (!this.turnOfResizeForOneSetValue) &&
-        (this.visibleSlider)) {
-        const countOfPositions = Math.ceil(this.slider.max - this.slider.min);
-        const calculatedWidth = (this.canvas.width / countOfPositions) - this.positionMarginValue;
-        // saving positionWidth value global (even if slider is not visible)
-        this.positionWidth = calculatedWidth;
-        this._positionWidth = calculatedWidth;
-      }
-      this.turnOfResizeForOneSetValue = false;
-      this.render(RecalcLevel.Layout, 'sliderOnValuesChanged');
+      const val = {
+        minRange: this.slider.minRange,
+        min: this.slider.min, max: this.slider.max,
+        maxRange: this.slider.maxRange
+      };
+      _package.logger.debug(
+        `Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
+      this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged');
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private dataFrameFilterOnChanged(_value: any): void {
-    _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()');
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()`);
     try {
       this.updatePositions();
       if (this.filterSource === FilterSources.Filtered)
-        this.render(RecalcLevel.Freqs, 'dataFrameFilterOnChanged');
+        this.render(WlRenderLevel.Freqs, 'dataFrameFilterOnChanged');
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private dataFrameSelectionOnChanged(_value: any): void {
-    _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()');
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()`);
     try {
       if (this.filterSource === FilterSources.Selected)
-        this.render(RecalcLevel.Freqs, 'dataFrameSelectionOnChanged');
+        this.render(WlRenderLevel.Freqs, 'dataFrameSelectionOnChanged');
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1078,30 +1205,38 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const args = e as MouseEvent;
 
       const cursorP: DG.Point = this.canvas.getCursorPosition(args, dpr);
-      const [jPos, monomer] = this.getMonomer(cursorP, dpr);
-      // if (jPos != undefined && monomer == undefined) {
-      //   const preEl = ui.element('pre');
-      //   preEl.innerHTML = jPos < this.positions.length ?
-      //     JSON.stringify(this.positions[jPos].freq, undefined, 2) : 'NO jPos';
-      //   const tooltipEl = ui.div([ui.div(`pos: ${jPos}`), preEl]);
-      //   ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
-      // } else
-      if (this.dataFrame && this.seqCol && monomer) {
-        const atPI: PositionInfo = this.positions[jPos];
-        const monomerAtPosSeqCount = countForMonomerAtPosition(
-          this.dataFrame, this.unitsHandler!, this.filter, monomer, atPI);
+      const [pi, monomer] = this.getMonomer(cursorP, dpr);
+      const positionLabelHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT * dpr : 0;
 
-        const tooltipEl = ui.div([
+      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
+        // Position tooltip
+
+        const tooltipRows = [ui.divText(`Position ${pi.label}`)];
+        if (this.valueAggrType === DG.AGG.TOTAL_COUNT)
+          tooltipRows.push(pi.buildCompositionTable(this.palette!));
+        const tooltipEl = ui.divV(tooltipRows);
+        ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
+      } else if (pi !== null && monomer && this.dataFrame && this.seqCol && this.unitsHandler) {
+        // Monomer at position tooltip
+        // const monomerAtPosSeqCount = countForMonomerAtPosition(
+        //   this.dataFrame, this.unitsHandler!, this.getFilter(), monomer, atPI);
+        const pmi = pi.getFreq(monomer);
+
+        const tooltipRows = [
           // ui.div(`pos ${jPos}`),
           ui.div(`${monomer}`),
-          ui.div(`${monomerAtPosSeqCount} rows`)]);
+          ui.div(`${pmi.rowCount} rows`)
+        ];
+        if (this.valueAggrType !== DG.AGG.TOTAL_COUNT)
+          tooltipRows.push(ui.div(`${this.valueAggrType}: ${pmi.value.toFixed(3)}`));
+        const tooltipEl = ui.divV(tooltipRows);
         ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
       } else {
         ui.tooltip.hide();
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1110,59 +1245,78 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     try {
       const args = e as MouseEvent;
       const dpr: number = window.devicePixelRatio;
-      const [jPos, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
+      const [pi, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
 
       // prevents deselect all rows if we miss monomer bounds
-      if (this.dataFrame && this.seqCol && this.unitsHandler && monomer) {
-        const atPI: PositionInfo = this.positions[jPos];
-
+      if (pi !== null && monomer !== null && this.dataFrame && this.seqCol && this.unitsHandler) {
         // Calculate a new BitSet object for selection to prevent interfering with existing
         const selBS: DG.BitSet = DG.BitSet.create(this.dataFrame.selection.length, (rowI: number) => {
-          return checkSeqForMonomerAtPos(this.dataFrame, this.unitsHandler!, this.filter, rowI, monomer, atPI);
+          return checkSeqForMonomerAtPos(this.dataFrame, this.unitsHandler!, this.getFilter(), rowI, monomer, pi);
         });
         this.dataFrame.selection.init((i) => selBS.get(i));
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseDown() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseDown() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private canvasOnWheel(e: WheelEvent) {
+    const dpr = window.devicePixelRatio;
     try {
-      if (!this.visibleSlider)
-        return;
-      const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((this.countOfRenderPositions) / 2), 1);
+      if (!this.visibleSlider) return;
+      const visibleLength = this.canvas.width / (this._positionWidthWithMargin * dpr);
+      const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((visibleLength) / 5), 1);
       this.slider.scrollBy(this.slider.min + countOfScrollPositions);
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 }
 
 function renderPositionLabels(g: CanvasRenderingContext2D,
-  dpr: number, hScale: number, positionWidthWithMargin: number, positionWidth: number,
-  positions: PositionInfo[], firstVisibleIndex: number, lastVisibleIndex: number): void {
-  for (let jPos = firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
-    const pos: PositionInfo = positions[jPos];
-    g.resetTransform();
-    g.setTransform(
-      hScale, 0, 0, 1,
-      jPos * positionWidthWithMargin * dpr + positionWidth * dpr / 2 -
-      positionWidthWithMargin * firstVisibleIndex, 0);
-    g.fillText(pos.label, 0, 1);
+  dpr: number, positionWidthWithMargin: number, positionWidth: number, positionLabelsHeight: number,
+  positions: PositionInfo[], firstVisiblePosIdx: number, lastVisiblePosIdx: number
+): void {
+  g.save();
+  try {
+    g.textAlign = 'center';
+
+    let maxPosNameWidth: number | null = null;
+    let maxPosNameHeight: number | null = null;
+    for (let jPos = Math.floor(firstVisiblePosIdx); jPos <= Math.floor(lastVisiblePosIdx); jPos++) {
+      const pos = positions[jPos];
+      const tm = g.measureText(pos.name);
+      const textHeight = tm.actualBoundingBoxDescent - tm.actualBoundingBoxAscent;
+      maxPosNameWidth = maxPosNameWidth === null ? tm.width : Math.max(maxPosNameWidth, tm.width);
+      maxPosNameHeight = maxPosNameHeight === null ? textHeight : Math.max(maxPosNameHeight, textHeight);
+    }
+    const hScale = maxPosNameWidth! < (positionWidth * dpr - 2) ? 1 : (positionWidth * dpr - 2) / maxPosNameWidth!;
+
+    for (let jPos = Math.floor(firstVisiblePosIdx); jPos <= Math.floor(lastVisiblePosIdx); jPos++) {
+      const pos: PositionInfo = positions[jPos];
+      const labelCenterX = (jPos - firstVisiblePosIdx) * positionWidthWithMargin * dpr + positionWidth * dpr / 2;
+      const labelTopY = (positionLabelsHeight * dpr - maxPosNameHeight!) / 2;
+      g.setTransform(
+        hScale, 0, 0,
+        1, labelCenterX, labelTopY);
+      g.measureText(pos.label);
+      g.fillText(pos.label, 0, 0);
+    }
+  } finally {
+    g.restore();
   }
 }
 
 export function checkSeqForMonomerAtPos(
   df: DG.DataFrame, unitsHandler: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
-  const seqMList: string[] = unitsHandler.splitted[rowI];
+  const seqMList: ISeqSplitted = unitsHandler.splitted[rowI];
   const seqM = at.pos < seqMList.length ? seqMList[at.pos] : null;
-  return ((seqM === monomer) || (seqM === '' && monomer === '-'));
+  return ((seqM === monomer) || (seqM === '' && monomer === unitsHandler.defaultGapSymbol));
 }
 
 export function countForMonomerAtPosition(
@@ -1171,7 +1325,7 @@ export function countForMonomerAtPosition(
   let count = 0;
   let rowI = -1;
   while ((rowI = filter.findNext(rowI, true)) != -1) {
-    const seqMList: string[] = uh.splitted[rowI];
+    const seqMList: ISeqSplitted = uh.splitted[rowI];
     const seqMPos: number = at.pos;
     const seqM: string | null = seqMPos < seqMList.length ? seqMList[seqMPos] : null;
     if (seqM === monomer) count++;

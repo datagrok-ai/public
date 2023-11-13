@@ -18,6 +18,9 @@ import {
   fitSeriesProperties,
   fitChartDataProperties,
   TAG_FIT,
+  FitParamBounds,
+  IFitChartOptions,
+  FitErrorModelType,
 } from './fit-curve';
 
 export type LogOptions = {
@@ -45,9 +48,14 @@ export function createDefaultChartData(): IFitChartData {
   };
 }
 
+/** Returns existing, or creates new dataframe default chart options. */
+export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
+  return JSON.parse(df.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
+}
+
 /** Returns existing, or creates new column default chart options. */
-export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
-  return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
+export function getColumnChartOptions(column: DG.Column): IFitChartData {
+  return JSON.parse(column.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
 }
 
 /** Returns points arrays from {@link IFitPoint} array */
@@ -61,11 +69,79 @@ export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[
   return {xs: xs, ys: ys};
 }
 
+/** Returns median from within multiple points */
+function getMedian(points: {x: number[], y: number[]}): number {
+  const mid = Math.floor(points.y.length / 2);
+  const sortedPoints = points.y.sort((a, b) => a - b);
+  const median = sortedPoints.length % 2 === 0 ? (sortedPoints[mid - 1] + sortedPoints[mid]) / 2 : sortedPoints[mid];
+  return median;
+}
+
+/** Returns median points from within multiple points with the same x. */
+function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: number[]} {
+  const medianPoints: {x: number[], y: number[]} = {x: [], y: []};
+  const currentPoints: {x: number[], y: number[]} = {x: [data.x[0]], y: [data.y[0]]};
+  for (let i = 1; i < data.x.length; i++) {
+    if (data.x[i] === currentPoints.x[0]) {
+      currentPoints.x[currentPoints.x.length] = data.x[i];
+      currentPoints.y[currentPoints.y.length] = data.y[i];
+      continue;
+    }
+    const median = getMedian(currentPoints);
+    medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
+    medianPoints.y[medianPoints.y.length] = median;
+    currentPoints.x = [data.x[i]];
+    currentPoints.y = [data.y[i]];
+  }
+  const median = getMedian(currentPoints);
+  medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
+  medianPoints.y[medianPoints.y.length] = median;
+
+  return medianPoints;
+}
+
+/** Returns logarithmic IC50 parameter bounds. */
+function logIC50ParameterBounds(ic50Bounds: FitParamBounds): FitParamBounds {
+  if (ic50Bounds) {
+    if (ic50Bounds.max !== undefined)
+      ic50Bounds.max = Math.log10(ic50Bounds.max);
+    if (ic50Bounds.min !== undefined) {
+      ic50Bounds.min = ic50Bounds.min === 0 ?
+        -Number.MAX_VALUE : Math.log10(ic50Bounds.min);
+    }
+  }
+  return ic50Bounds;
+}
+
+function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect {
+  let x = bounds.x;
+  let y = bounds.y;
+  let width = bounds.width;
+  let height = bounds.height;
+
+  if (chartOptions.minX !== undefined && chartOptions.minX !== null &&
+    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.minX > 0))) {
+    width += x - chartOptions.minX;
+    x = chartOptions.minX;
+  }
+  if (chartOptions.maxX !== undefined && chartOptions.maxX !== null &&
+    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0)))
+    width += chartOptions.maxX - (x + width);
+  if (chartOptions.minY !== undefined && chartOptions.minY !== null &&
+    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.minY > 0))) {
+    height += y - chartOptions.minY;
+    y = chartOptions.minY;
+  }
+  if (chartOptions.maxY !== undefined && chartOptions.maxY !== null &&
+    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0)))
+    height += chartOptions.maxY - (y + height);
+
+  return new DG.Rect(x, y, width, height);
+}
+
 /** Returns the bounds of an {@link IFitChartData} object */
 export function getChartBounds(chartData: IFitChartData): DG.Rect {
   const o = chartData.chartOptions;
-  if (o?.minX && o.minY && o.maxX && o.maxY)
-    return new DG.Rect(o.minX, o.minY, o.maxX - o.minX, o.maxY - o.minY);
   if (!chartData.series?.length || chartData.series.length === 0)
     return new DG.Rect(0, 0, 1, 1);
   else {
@@ -73,9 +149,11 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
     let bounds = DG.Rect.fromXYArrays(xs, ys);
     for (let i = 1; i < chartData.series!.length; i++) {
       const {xs, ys} = getPointsArrays(chartData.series[i].points);
+      if (xs.some((x) => x === undefined) || ys.some((y) => y === undefined))
+        continue;
       bounds = bounds.union(DG.Rect.fromXYArrays(xs, ys));
     }
-    return bounds;
+    return o ? changeBounds(bounds, o!): bounds;
   }
 }
 
@@ -93,24 +171,29 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
 export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitCurve {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
     y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
-  return fitData(data, fitFunc, FitErrorModel.Constant, series.parameterBounds);
+  if (series.parameterBounds && logOptions?.logX)
+    series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
+  return fitData(getMedianPoints(data), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
+    series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */
 export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction,
-  userParamsFlag: boolean): FitConfidenceIntervals {
-  const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
-    {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
-      y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  userParamsFlag: boolean, logOptions?: LogOptions): FitConfidenceIntervals {
+  const data = userParamsFlag ? {x: series.points.map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+    y: series.points.map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)} :
+    {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+      y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (!series.parameters)
     series.parameters = fitSeries(series, fitFunc).parameters;
-  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05, FitErrorModel.Constant);
+  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05,
+    series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
 /** Returns series statistics */
-export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): FitStatistics {
-  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
-    y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitStatistics {
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+    y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (!series.parameters)
     series.parameters = fitSeries(series, fitFunc).parameters;
   return getStatistics(data, series.parameters, fitFunc.y, true);

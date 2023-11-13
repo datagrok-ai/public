@@ -16,8 +16,8 @@ import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-import {PinnedColumn} from "@datagrok-libraries/gridext/src/pinned/PinnedColumn";
-import {FormCellRenderer} from "./forms/forms";
+import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
+import {FormCellRenderer} from './forms/forms';
 
 export const _package = new DG.Package();
 
@@ -143,7 +143,8 @@ export function summarizeColumns(columns: DG.Column[]) {
     const options = {gridColumnName: name.value, cellType: sparklineType.value!};
     const gridCol = grid.columns.add(options);
     gridCol.move(grid.columns.byName(columnNames[0])!.idx);
-    gridCol.settings = {columnNames: columnNames};
+    gridCol.settings ??= {};
+    gridCol.settings[sparklineType.value! as SparklineType] = {columnNames: columnNames};
     if (hide.value) {
       for (const name of columnNames)
         grid.columns.byName(name)!.visible = false;
@@ -180,10 +181,11 @@ export function addFormColumn(columns: DG.Column[]) {
     const grid = grok.shell.tv.grid;
     const left = grid.horzScroll.min;
     const columnNames = names(columnsSelector.value);
-    const options = {gridColumnName: name.value, cellType: 'smartform'};
+    const options = {gridColumnName: name.value, cellType: SparklineType.Form};
     const gridCol = grid.columns.add(options);
     gridCol.move(grid.columns.byName(columnNames[0])!.idx);
-    gridCol.settings = {columnNames: columnNames};
+    gridCol.settings ??= {};
+    gridCol.settings[SparklineType.Form] = {columnNames: columnNames};
     if (hide.value) {
       for (const name of columnNames)
         grid.columns.byName(name)!.visible = false;

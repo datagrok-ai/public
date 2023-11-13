@@ -6,7 +6,6 @@ import {welcomeView} from './welcome-view';
 import {compareColumns} from './compare-columns';
 import {AddNewColumnDialog} from './dialogs/add-new-column';
 import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/formula-lines';
-import {DistributionProfilerViewer} from './distribution-profiler';
 import {SystemStatusWidget} from './widgets/system-status-widget';
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
@@ -36,19 +35,11 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
   return new AddNewColumnDialog(call);
 }
 
-//name: distributionProfiler
-//tags: viewer
-//output: viewer result
-export function _distributionProfiler(): DistributionProfilerViewer {
-  return new DistributionProfilerViewer();
-}
-
 //name: welcomeView
-//tags: autostart
 //meta.autostartImmediate: true
-export function _welcomeView(): void {
-  if (_properties['showWelcomeView'])
-    welcomeView();
+//output: view home
+export function _welcomeView(): DG.View | undefined {
+  return welcomeView();
 }
 
 //output: widget result
@@ -178,8 +169,8 @@ export function windowsManager() {
 }
 
 //name: viewerDialog
-//description: Open "Viewer Gallery" dialog 
-//input: dynamic tv 
+//description: Open "Viewer Gallery" dialog
+//input: dynamic tv
 export function viewerDialog(tv: DG.TableView) {
   if (tv instanceof DG.TableView)
     return viewersDialog(tv, tv.table!);

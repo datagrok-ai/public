@@ -13,7 +13,6 @@ import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detecto
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
-
 export let c: DG.FuncCall;
 
 //name: renderDevPanel

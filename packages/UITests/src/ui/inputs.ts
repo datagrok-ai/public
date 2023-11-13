@@ -182,3 +182,68 @@ category('UI: Inputs', () => {
     input.root.remove();
   }
 }, {clear: false});
+
+category('UI: Choice input', () => {
+  test('fromFunction', async () => {
+    const view = grok.shell.newView();
+    const input = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
+    view.root.appendChild(input.root);
+
+    input.value = null;
+    expect(input.value == null);
+    input.value = 'Male';
+    expect(input.value, 'Male');
+    input.value = 'Female';
+    expect(input.value, 'Female');
+    // input.value = '';
+    // expect(input.value, '');
+
+    const select = document.querySelector('select.ui-input-editor') as HTMLSelectElement;
+
+    // select.value = null;
+    // expect(select.value, null);
+    select.value = 'Male';
+    expect(select.value, 'Male');
+    select.value = 'Female';
+    expect(select.value, 'Female');
+    select.value = '';
+    expect(select.value, '');
+  });
+
+  test('fromProperty', async () => {
+    const property = DG.Property.js('showPoints', DG.TYPE.STRING, {category: 'Fitting',
+      description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']});
+    const input = DG.InputBase.forProperty(property, {});
+    const view = grok.shell.newView();
+    view.root.appendChild(input.root);
+
+    input.value = null;
+    expect(input.value == null);
+    input.value = 'points';
+    expect(input.value, 'points');
+    input.value = 'candlesticks';
+    expect(input.value, 'candlesticks');
+    input.value = 'both';
+    expect(input.value, 'both');
+    // input.value = '';
+    // expect(input.value, '');
+
+    const select = document.querySelector('select.ui-input-editor') as HTMLSelectElement;
+
+    // select.value = null;
+    // expect(select.value, null);
+    select.value = 'points';
+    expect(select.value, 'points');
+    select.value = 'candlesticks';
+    expect(select.value, 'candlesticks');
+    select.value = 'both';
+    expect(select.value, 'both');
+    select.value = '';
+    expect(select.value, '');
+  });
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
+});

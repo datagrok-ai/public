@@ -6,4 +6,6 @@ export enum WORKER_CALL {
   CONVERT_MOL_NOTATION = 'convertMolNotation',
   GET_STRUCTURAL_ALERTS = 'getStructuralAlerts',
   INVALIDATE_CACHE = 'invalidateCache',
+  SET_TERMINATE_FLAG = 'setTerminateFlag',
+  MOST_COMMON_STRUCTURE = 'mostCommonStructure',
 }

@@ -5,12 +5,30 @@ on:
   workflow_dispatch: { }
   push:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
   pull_request:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
 
@@ -25,7 +43,9 @@ jobs:
     name: Lint
     needs: common-check
     runs-on: ubuntu-22.04
-    if: needs.common-check.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true' && github.event_name != 'workflow_dispatch'
+    outputs:
+      result: ${{ steps.check.outputs.result }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,12 +54,50 @@ jobs:
           node-version: 18
       - name: Install markdownlint-cli2
         run: npm install -g markdownlint-cli2
-      - name: Lint Markdown
+      - name: Lint-Fix Markdown
         id: check
         run: |
-          markdownlint-cli2 "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
+#      - name: Commit package-lock.json
+#        id: git
+#        continue-on-error: true
+#        if: steps.check.outcome == 'success'
+#        run: |
+#          git config --global user.name 'github-actions[bot]'
+#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+#          git pull
+#          continue=false
+#          if [ -n "$(git status -s help/)" ]; then
+#            git add help/
+#            skip_ci=""
+#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+#              skip_ci="[skip ci]"
+#            fi
+#            git commit -m "GitHub Actions: Fix markdownlint findings $skip_ci
+#
+#            Workflow ${{ github.workflow }} ${{ github.run_number }}
+#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+#            continue=true
+#          fi
+#          if [[ "${continue}" == "true" ]]; then
+#            count=0
+#            retries=10
+#            until git push; do
+#              exit=$?
+#              wait=$((2 ** count))
+#              count=$((count + 1))
+#              if [ $count -lt "$retries" ]; then
+#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+#                sleep $wait
+#                git pull --rebase
+#              else
+#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+#                exit $exit
+#              fi
+#            done
+#          fi
       - name: Set summary
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
@@ -57,9 +115,9 @@ jobs:
           fi
 
   convert:
-    name: Convert to HTML
-    needs: [lint, common-check]
-    if: needs.common-check.outputs.continue == 'true'
+    name: Build
+    needs: [ lint, common-check ]
+    if: always() && (needs.lint.result == 'skipped' || needs.lint.result == 'success') && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -73,15 +131,18 @@ jobs:
             js-api/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
       - name: Install hyperlink
+        if: github.event_name != 'workflow_dispatch'
         run: npm install -g @untitaker/hyperlink
       - name: Install dependencies
         run: npm install
@@ -92,14 +153,22 @@ jobs:
       - name: Build Docusaurus website
         run: npm run build
         working-directory: ./docusaurus
+      - name: Lint-Fix Markdown
+        run: |
+          npm install -g markdownlint-cli2
+          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+        continue-on-error: true
+        if: github.event_name != 'workflow_dispatch' && needs.lint.outputs.result != 'success'
       - name: Check anchors
         id: anchors
         working-directory: ./docusaurus
+        if: github.event_name != 'workflow_dispatch'
         continue-on-error: true
         run: |
           hyperlink --check-anchors build/ --sources ../help/ > ../help/_anchor-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
+        if: github.event_name != 'workflow_dispatch'
         continue-on-error: true
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
@@ -129,7 +198,7 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: [convert, common-check]
+    needs: [ convert, common-check ]
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
@@ -226,7 +295,7 @@ jobs:
 
   scrape:
     name: Scrape
-    needs: [deploy, common-check]
+    needs: [ deploy, common-check ]
     environment: Help
     concurrency:
       group: help-scrape-${{ github.ref }}

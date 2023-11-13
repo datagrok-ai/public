@@ -2,8 +2,8 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -55,8 +55,8 @@ group by date
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups

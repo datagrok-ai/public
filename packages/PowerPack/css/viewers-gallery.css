@@ -67,6 +67,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 140px;
+    cursor: pointer;
+    text-transform: capitalize;
 }
 
 .vg-card-small.disabled {

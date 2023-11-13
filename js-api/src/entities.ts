@@ -146,7 +146,7 @@ export class User extends Entity {
       "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
       "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee",
       "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
-    }
+    } as const;
   }
 }
 
@@ -646,6 +646,8 @@ export class FileInfo extends Entity {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
   // }
 
+  get data(): Uint8Array {return api.grok_FileInfo_Get_Data(this.dart);}
+
   readAsString(): Promise<string> {
     return api.grok_FileInfo_ReadAsString(this.dart);
   }
@@ -724,7 +726,7 @@ export class Group extends Entity {
       "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee",
       "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3",
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
-    }
+    } as const;
   }
 }
 
@@ -1156,6 +1158,14 @@ export class Property {
   /** Property editor */
   get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
   set editor(s: string) { api.grok_Property_Set(this.dart, 'editor', s); }
+
+  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
+  get showSlider(): string { return api.grok_Property_GetShowSlider(this.dart); }
+  set showSlider(s: string) { api.grok_Property_SetShowSlider(this.dart, s); }
+
+  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
+  get showPlusMinus(): string { return api.grok_Property_GetShowPlusMinus(this.dart); }
+  set showPlusMinus(s: string) { api.grok_Property_SetShowPlusMinus(this.dart, s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.

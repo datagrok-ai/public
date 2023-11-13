@@ -28,6 +28,11 @@ export class Point implements IPoint {
     this.y = y;
   }
 
+  /** Creates a point from an [x, y] array */
+  static fromXY(xy: number[]): Point {
+    return new Point(xy[0], xy[1]);
+  }
+
   /** Distance to the specified point. */
   distanceTo(p: Point): number {
     return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
@@ -582,6 +587,9 @@ export class GridCell {
   /** Gets or sets HTML element for this grid cell. */
   get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
+
+  /** Sets the grid cell value and fires onCellValueEdited if notify is true */
+  setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
 }
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
@@ -696,6 +704,9 @@ export class GridColumn {
 
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
+
+  /** Number of pixels required to render the longest element in the column. */
+  getDataWidth(): number { return api.grok_GridColumn_GetDataWidth(this.dart); }
 
   /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
   scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
@@ -1051,6 +1062,9 @@ export class GridCellStyle {
 
   get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
   set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
+
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
 
   /** Text color (RGBA-encoded) */
   get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }

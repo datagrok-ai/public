@@ -110,7 +110,7 @@ This command builds your package and deploys it in debug mode for testing. You c
   
   You can find all avalilable flags in this [table](https://github.com/datagrok-ai/public/blob/master/tools/README.md?plain=1#L122).
   
-If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose.mdx) to run the stand.
+If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose/docker-compose.mdx) to run the stand.
 
 ### Trigger GitHub Actions manually
 

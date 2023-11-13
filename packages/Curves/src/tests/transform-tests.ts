@@ -14,8 +14,8 @@ category('viewport', () => {
     const viewport = new Viewport(dataBounds, dataBox, false, false);
 
 		expect(viewport.xToScreen(1.5), 182.4);
-		expect(viewport.yToScreen(2.33), 58.803030303030305);
+		expect(viewport.yToScreen(2.33), 73.01346801346801);
 		expect(viewport.xToWorld(150), -0.9652173913043479);
-		expect(viewport.yToWorld(67), 1.2479999999999998);
+		expect(viewport.yToWorld(67), 2.855294117647059);
   });
 });

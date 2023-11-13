@@ -2,17 +2,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSimilarityFromDistance} from '../distance-metrics-methods';
+import {getDistanceFromSimilarity, getSimilarityFromDistance} from '../distance-metrics-methods';
 import {Subject} from 'rxjs';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import '../../css/styles.css';
 import {DimReductionMethods} from '../reduce-dimensionality';
-import {BitArrayMetrics} from '../typed-metrics/typed-metrics';
+import {BitArrayMetrics, isBitArrayMetric} from '../typed-metrics/typed-metrics';
 import {DistanceMatrix, dmLinearIndex} from '../distance-matrix';
+import { SparseMatrixResult, SparseMatrixService } from '../distance-matrix/sparse-matrix-service';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export let activityCliffsIdx = 0;
 
 export const CLIFFS_DF_NAME = 'cliffsDf';
+
+export const CLIFFS_COL_ENCODE_FN = 'cliffs_col_encode_fn';
 
 export const enum TAGS {
   activityCliffs = '.activityCliffs',
@@ -47,6 +51,8 @@ export interface ISequenceSpaceResult {
   distance?: Float32Array;
   coordinates: DG.ColumnList;
 }
+
+export type SequenceSpaceFunc = (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>;
 
 export interface ITooltipAndPanelParams {
   cashedData: any,
@@ -83,7 +89,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   methodName: DimReductionMethods, semType: string, tags: {[index: string]: string},
-  seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
+  seqSpaceFunc: SequenceSpaceFunc,
   simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
     simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>,
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
@@ -105,25 +111,45 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     methodName: methodName,
     similarityMetric: similarityMetric as BitArrayMetrics,
     embedAxesNames: axesNames,
-    options: seqSpaceOptions,
+    options: {...(seqSpaceOptions??{}), [CLIFFS_COL_ENCODE_FN]: undefined},
   };
 
   const {distance, coordinates} = await seqSpaceFunc(seqSpaceParams);
   for (const col of coordinates)
     df.columns.add(col);
 
-  let recalculatedDistances = distance;
-  const isMacroMoleculeDistance = Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric);
-  if (isMacroMoleculeDistance && !distance) {
-    recalculatedDistances =
-     DistanceMatrix.calc(seqCol.toList(), mmDistanceFunctions[similarityMetric as MmDistanceFunctionsNames]()).data;
+
+  
+  let cliffsMetrics: IActivityCliffsMetrics;
+  if (seqCol.semType === DG.SEMTYPE.MOLECULE) { // chem needs to calculate fingerprints from scratch, so different approach is needed.
+    // let recalculatedDistances = distance;
+    // const isMacroMoleculeDistance = Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric);
+    // if (isMacroMoleculeDistance && !distance) {
+    //   recalculatedDistances =
+    //   DistanceMatrix.calc(seqCol.toList(), mmDistanceFunctions[similarityMetric as MmDistanceFunctionsNames]()).data;
+    // }
+    // const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances!,
+    //   isMacroMoleculeDistance, simMatrixFunc);
+    const fingerprintsCol: DG.Column = await grok.functions.call('Chem:getMorganFingerprints', {molColumn: dimensionalityReduceCol});
+    const fpBitArrayList = fingerprintsCol.toList()
+      .map((fp: DG.BitSet) => (new BitArray(new Uint32Array(fp.getBuffer().buffer), fp.length)));
+    
+    // because chem uses different sort of similarity and distance(not in range of 0 to 1), we need to set similarity threshold differently
+    const chemSimilarityLimit = 1 - getDistanceFromSimilarity(similarityLimit);
+    const sparseMatrixRes = await new SparseMatrixService().calc(fpBitArrayList, similarityMetric, chemSimilarityLimit);
+    cliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, chemSimilarityLimit, activities);
+  } else {
+    let seqColList: string[] = seqCol.toList();
+    let opts = {};
+    if (seqSpaceOptions?.[CLIFFS_COL_ENCODE_FN]){
+      const {seqList, options} = await seqSpaceOptions[CLIFFS_COL_ENCODE_FN](seqCol, similarityMetric);
+      seqColList = seqList;
+      opts = options;
+    }
+
+    const sparseMatrixRes = await new SparseMatrixService().calc(seqColList, similarityMetric, similarityLimit, opts);
+    cliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, similarityLimit, activities);
   }
-
-  const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances!,
-    isMacroMoleculeDistance, simMatrixFunc);
-
-  const cliffsMetrics: IActivityCliffsMetrics = getActivityCliffsMetrics(simArr, similarityLimit, activities);
-
   const sali: DG.Column = getSaliCountCol(dimensionalityReduceCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,
     cliffsMetrics.n2, axesNames, activities);
   df.columns.add(sali);
@@ -332,6 +358,24 @@ async function createSimilaritiesMatrix(col: DG.Column, distance: Float32Array, 
   return simArr;
 }
 
+async function getSparseActivityCliffsMetrics(
+  sparseMatrix: SparseMatrixResult, similarityLimit: number, actirvities: DG.Column
+): Promise<IActivityCliffsMetrics> {
+  const saliVals = sparseMatrix.distance.map((d, idx) => {
+    const diff = Math.abs(actirvities.get(sparseMatrix.i[idx]) - actirvities.get(sparseMatrix.j[idx]));
+    return d != 0 ? diff / d : Infinity;
+  })
+  const simVals = sparseMatrix.distance.map((d) => 1 - d);
+  const n1 = sparseMatrix.i;
+  const n2 = sparseMatrix.j;
+  const cliffsMolIds = new Set<number>();
+  sparseMatrix.distance.forEach((_, idx) => {
+      cliffsMolIds.add(sparseMatrix.i[idx]);
+      cliffsMolIds.add(sparseMatrix.j[idx]);
+  });
+  return {simVals: simVals, saliVals: saliVals, n1: n1, n2: n2, cliffsMolIds: cliffsMolIds} as unknown as IActivityCliffsMetrics;
+} 
+
 function getActivityCliffsMetrics(simArr: (DG.Column | null)[], similarityLimit: number, activities: DG.Column): IActivityCliffsMetrics {
   const simVals: number[] = [];
   const saliVals: number[] = [];
@@ -360,8 +404,8 @@ function getActivityCliffsMetrics(simArr: (DG.Column | null)[], similarityLimit:
 
 function getSaliMinMax(saliVals: number[]): ISaliLims {
   const saliValsWithoutInfinity = saliVals.filter((it) => it !== Infinity);
-  const saliMin = Math.min(...saliValsWithoutInfinity);
-  const saliMax = Math.max(...saliValsWithoutInfinity);
+  const saliMin = saliValsWithoutInfinity.reduce((acc, val) => Math.min(acc, val), Number.MAX_VALUE) //Math.min(...saliValsWithoutInfinity);
+  const saliMax = saliValsWithoutInfinity.reduce((acc, val) => Math.max(acc, val), saliMin) //Math.max(...saliValsWithoutInfinity);
   return {max: saliMax, min: saliMin};
 }
 

@@ -7,7 +7,9 @@ import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-met
 import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
-import {getSplitter, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -103,12 +105,11 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-  const units = params.seqCol.getTag(DG.TAGS.UNITS);
-  const separator = params.seqCol.getTag(bioTAGS.separator);
-  const splitter = getSplitter(units, separator);
+  const uh = UnitsHandler.getOrCreate(params.seqCol);
+  const splitter = uh.getSplitter();
   const subParts1 = splitter(sequencesArray[0]);
   const subParts2 = splitter(sequencesArray[1]);
-  const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
+  const canvas = createDifferenceCanvas(subParts1, subParts2, uh.units, molDifferences);
   propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
 
   propPanel.append(createDifferencesWithPositions(molDifferences));
@@ -127,8 +128,8 @@ function createPropPanelField(name: string, value: number): HTMLDivElement {
 }
 
 export function createDifferenceCanvas(
-  subParts1: string[],
-  subParts2: string[],
+  subParts1: ISeqSplitted,
+  subParts2: ISeqSplitted,
   units: string,
   molDifferences: { [key: number]: HTMLCanvasElement }): HTMLCanvasElement {
   const canvas = document.createElement('canvas');

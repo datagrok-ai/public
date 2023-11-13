@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval } from 'rxjs';
+import { interval, Observable} from 'rxjs';
 
 
 export class DashboardTutorial extends Tutorial {
@@ -22,6 +22,7 @@ export class DashboardTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {grokConnect: true};
 
   protected async _run(): Promise<void> {
+    grok.shell.windows.showToolbox = true;
     this.header.textContent = this.name;
     this.describe('In this tutorial, we will learn how to query data and visualize the results.');
 
@@ -44,8 +45,8 @@ export class DashboardTutorial extends Tutorial {
     const providerRoot = $('div.d4-tree-view-group-label').filter((idx, el) =>
       (el.textContent ?? '')?.startsWith('Postgres'))[0]!;
 
-    const dlg = await this.openDialog('Create a connection to PostgreSQL server', 'Add new connection',
-      providerRoot, 'Open the context menu on the PostgreSQL connector and click "Add connection..."');
+    const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
+      providerRoot, 'Open the context menu on the Postgres connector and click "Add connection..."');
 
     await this.dlgInputAction(dlg, `Set "Name" to "${connectionName}"`, 'Name', connectionName);
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
@@ -58,7 +59,7 @@ export class DashboardTutorial extends Tutorial {
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
       'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
         el.textContent === connectionName)[0],
-      `Open the context menu on PostgreSQL | ${connectionName} and click "Add query..."`);
+      `Open the context menu on Postgres | ${connectionName} and click "Add query..."`);
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -82,8 +83,11 @@ export class DashboardTutorial extends Tutorial {
         .filter((idx, el) => el.textContent?.trim() === paramAnnotation)[0] != null)),
       null, paramQueryDescription);
 
-    const paramEditorDlg = await this.openDialog('Hit the "Play" button',
-      queryName, $('div.d4-ribbon-item').has('i.fa-play')[0]);
+    await this.buttonClickAction($('.d4-ribbon')[0]!, 'Save the query', 'SAVE');
+
+    const paramEditorDlg = await this.openDialog('Hit the "Run query..." under "Actions" on toolbox',
+      queryName, $('.d4-link-action').filter((_, el) => $(el).text() === 'Run query...')[0]);
+    
     await this.dlgInputAction(paramEditorDlg, 'Set state to "NY"', 'State', 'NY');
 
     const resultRowCount = 645;
@@ -114,6 +118,10 @@ export class DashboardTutorial extends Tutorial {
       (<HTMLInputElement>$(projectDlg.root).find('div.grok-project-summary > input.ui-input-editor')[0])?.value)),
       projectNameHint);
 
+    await this.action('Enable Data sync', new Observable((subscriber: any) => {
+      $(projectDlg.root).find('.ui-input-switch').one('click', () => subscriber.next(true));
+    }), $(projectDlg.root).find('.ui-input-switch')[0]);
+
     const sharingDescription = 'You can share a newly created project with other users of the platform. Also, ' +
       'there is a link your project will be available at. Copy it, if you prefer this way of sharing.';
     const shareDlg = await this.openDialog('Click "OK"', `Share ${projectName}`,
@@ -123,8 +131,11 @@ export class DashboardTutorial extends Tutorial {
     await this.openViewByType('Open the project gallery', DG.View.PROJECTS,
       this.getSidebarHints('Data', DG.View.PROJECTS));
 
-    await this.action('Find your project',
-      grok.events.onAccordionConstructed.pipe(filter((acc) =>
-        acc.context instanceof DG.Project && acc.context?.friendlyName == projectName)));
+    await this.action('Find and open your project',
+      grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));
+
+    await this.textInpAction($('.d4-toolbox')[0]!, 'Set State to LA', 'State', 'LA');
+
+    await this.buttonClickAction($('.d4-toolbox')[0]!, 'Click REFRESH button', 'REFRESH');
   }
 }

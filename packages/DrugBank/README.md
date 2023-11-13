@@ -1,6 +1,6 @@
 # DrugBank
 
-DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+DrugBank is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform that provides search capabilities in [DrugBank](https://go.drugbank.com/)
 [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.
 
@@ -14,5 +14,5 @@ platform that provides search capabilities in [DrugBank](https://go.drugbank.com
 
 See also:
 
-- [Similarity Search](https://datagrok.ai/help/domains/chem/similarity-search)
+- [Similarity and diversity Search](https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search)
 - [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem)

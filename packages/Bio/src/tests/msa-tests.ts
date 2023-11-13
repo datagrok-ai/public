@@ -7,7 +7,6 @@ import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-librarie
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 import {awaitContainerStart} from './utils';
-//import * as grok from 'datagrok-api/grok';
 
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
@@ -113,8 +112,8 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
     srcCol.semType = semType;
 
   const tgtCol: DG.Column = tgtDf.getCol('seq')!;
-  const msaCol: DG.Column = await runKalign(srcCol, true);
-  expectArray(msaCol.toList(), tgtCol.toList());
+  const resCol: DG.Column = await runKalign(srcCol, true);
+  expectArray(resCol.toList(), tgtCol.toList());
 }
 
 async function _testMSAOnColumn(

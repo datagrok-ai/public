@@ -2,24 +2,20 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../../package';
-import {CampaignFieldTypes, ICampaignField, ICampaignFieldType,
-  IComputeDialogResult, ITemplate, IngestType} from '../types';
+import {CampaignFieldTypes, HitTriageCampaignField, HitTriageCampaignFieldType,
+  IComputeDialogResult, HitTriageTemplate, IngestType, INewTemplateResult} from '../types';
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
+import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
-type INewTemplateResult = {
-    template: Promise<ITemplate>,
-    root: HTMLElement,
-    cancelPromise: Promise<void>,
-}
 
-export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
+export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitTriageTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
-  const availableTemplates = (await _package.files.list('templates')).map((file) => file.name.slice(0, -5));
+  const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
   const availableTemplateKeys: string[] = [];
   for (const tn of availableTemplates) {
-    const t: ITemplate = JSON.parse(await _package.files.readAsText(`templates/${tn}.json`));
+    const t: HitTriageTemplate = JSON.parse(await _package.files.readAsText(`Hit Triage/templates/${tn}.json`));
     availableTemplateKeys.push(t.key);
   }
 
@@ -54,7 +50,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
     }
   });
 
-  templateKeyInput.setTooltip('Template key used for campeign prefix');
+  templateKeyInput.setTooltip('Template key used for campaign prefix');
   templateNameInput.setTooltip('Template name');
   templateNameInput.root.style.borderBottom = 'none';
   templateKeyInput.root.style.borderBottom = 'none';
@@ -77,29 +73,50 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
       },
       functions: functions.map((f) => ({name: f.name, package: f.package.name, args: []})),
     },
-  } as unknown as ITemplate;
+  } as unknown as HitTriageTemplate;
   const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
     dummyTemplate, false);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
-
-  const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File']);
+  // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
+  const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
+  const dataSourceFunctionsMap: {[key: string]: DG.Func} = {};
+  dataSourceFunctions.forEach((func) => {
+    dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
+  });
+  const dataSourceFunctionInput = ui.choiceInput(
+    C.i18n.dataSourceFunction, Object.keys(dataSourceFunctionsMap)[0],
+    Object.keys(dataSourceFunctionsMap));
+  const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File'], () => {
+    if (ingestTypeInput.value !== 'Query')
+      dataSourceFunctionInput.root.style.display = 'none';
+    else
+      dataSourceFunctionInput.root.style.display = 'block';
+  });
 
   const fieldsEditor = getCampaignFieldEditors();
 
-  const detailsDiv = ui.divV(
-    [ui.divV([templateNameInput, errorDiv]), ui.divV([templateKeyInput, keyErrorDiv]), fieldsEditor.fieldsDiv]);
-  const accordeon = ui.accordion();
-  accordeon.root.classList.add('hit-triage-new-template-accordeon');
-  accordeon.addPane('Details', () => detailsDiv, true);
-  accordeon.addPane('Ingest', () => ingestTypeInput.root, true);
-  // accordeon.addPane('Compute', () => functionsInput.root, true);
-  accordeon.addPane('Compute', () => funcInput.root, true);
-  accordeon.addPane('Submit', () => submitFunctionInput.root, true);
+  const form = ui.div([
+    ui.h2('Details'),
+    ui.div([templateNameInput, errorDiv]),
+    ui.div([templateKeyInput, keyErrorDiv]),
+    ingestTypeInput.root,
+    dataSourceFunctionInput.root,
+    fieldsEditor.fieldsDiv,
+    ui.h2('Compute'),
+    funcInput.root,
+    ui.h2('Submit'),
+    submitFunctionInput.root,
+  ], 'ui-form');
 
-  const content = ui.div(accordeon.root);
-  const buttonsDiv = ui.divH([]);
-  content.appendChild(buttonsDiv);
-  const promise = new Promise<ITemplate>((resolve) => {
+  const buttonsDiv = ui.buttonsInput([]);
+  const buttonsContainerDiv = buttonsDiv.getElementsByClassName('ui-input-editor')?.[0] ?? buttonsDiv;
+  form.appendChild(buttonsDiv);
+  const cancelPromise = new Promise<void>((resolve) => {
+    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
+    buttonsContainerDiv.appendChild(cancelButton);
+  });
+
+  const promise = new Promise<HitTriageTemplate>((resolve) => {
     async function onOkProxy() {
       funcInput.okProxy();
       if (errorDiv.style.opacity === '100%') {
@@ -107,7 +124,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
         return;
       }
       const submitFunction = submitFunctionInput.value ? submitFunctionsMap[submitFunctionInput.value] : undefined;
-      const out: ITemplate = {
+      const out: HitTriageTemplate = {
         name: templateNameInput.value,
         key: templateKeyInput.value,
         campaignFields: fieldsEditor.getFields(),
@@ -127,71 +144,60 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
           }),
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
+        queryFunctionName: (ingestTypeInput.value === 'Query') ? dataSourceFunctionInput.value ?? undefined : undefined,
       };
       saveTemplate(out);
+      grok.shell.info('Template created successfully');
       resolve(out);
     }
-    const createTemplateButton = ui.bigButton('Create template', () => onOkProxy());
-    buttonsDiv.appendChild(createTemplateButton);
+    const createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
+    buttonsContainerDiv.appendChild(createTemplateButton);
   });
 
-  const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.bigButton('Cancel', () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
-    buttonsDiv.appendChild(cancelButton);
-  });
-  return {root: content, template: promise, cancelPromise};
+  return {root: form, template: promise, cancelPromise};
 }
 
 export function getCampaignFieldEditors() {
-  const getNewFieldEditor = () => {
-    const nameInput = ui.stringInput('Name', '', () => out.changed = true);
-    const typeInput = ui.choiceInput('Type', 'String', Object.keys(CampaignFieldTypes), () => out.changed = true);
-    const requiredInput = ui.boolInput('Required', false, () => out.changed = true);
-    requiredInput.classList.add('mx-5');
-    const out = {changed: false, nameInput, typeInput, requiredInput};
-    return out;
-  };
+  const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING}),
+    DG.Property.fromOptions({name: 'Type', type: DG.TYPE.STRING, choices: Object.keys(CampaignFieldTypes)}),
+    DG.Property.fromOptions({name: 'Required', type: DG.TYPE.BOOL})];
+  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: false});
+  itemsGrid.root.style.maxWidth = '750px';
 
-  const fields: ReturnType<typeof getNewFieldEditor>[] = [getNewFieldEditor()];
+  let addingItem: ItemType = {};
+  itemsGrid.onItemAdded.subscribe((item) => {
+    addingItem = item ?? {};
+  });
+  itemsGrid.onAddingItemChanged.subscribe((item) => {
+    if (item)
+      addingItem = item.item;
+  });
 
-  function getFieldParams(): ICampaignField[] {
-    return fields.filter((f) => f.changed && f.nameInput.value).map((f) => ({
-      name: f.nameInput.value,
-      type: f.typeInput.value as ICampaignFieldType,
-      required: f.requiredInput.value ?? false,
+  function getFieldParams(): HitTriageCampaignField[] {
+    const items = itemsGrid.items.filter((f) => f.Name).map((f) => ({
+      name: f.Name,
+      type: f.Type as HitTriageCampaignFieldType,
+      required: f.Required ?? false,
     }));
-  };
-
-  function getFieldDiv(field: ReturnType<typeof getNewFieldEditor>) {
-    const fieldDiv = ui.divH([
-      field.nameInput.root,
-      field.typeInput.root,
-      field.requiredInput.root,
-      ui.button('X', () => {
-        fieldDiv.remove();
-        fields.splice(fields.indexOf(field), 1);
-      }, 'Remove Field'),
-    ], {classes: 'hit-triage-campaign-field-div'});
-    return fieldDiv;
-  }
-  const fieldsContainer = ui.divV([ui.divText('Additional Fields', {classes: 'hit-triage-additional-fields-title'}),
-    getFieldDiv(fields[0])]);
-  const addFieldButton = ui.bigButton('+', () => {
-    if (!fields.length || fields[fields.length - 1].changed) {
-      const newField = getNewFieldEditor();
-      fields.push(newField);
-      fieldsContainer.appendChild(getFieldDiv(newField));
+    if (addingItem.Name && addingItem.Name !== '' && addingItem.Type) {
+      addingItem.Required ??= false;
+      items.push({name: addingItem.Name, type: addingItem.Type, required: addingItem.Required});
     }
-  }, 'Add field');
-  addFieldButton.classList.add('hit-triage-add-campaign-field-button');
+    return items;
+  }
+  //itemsGrid.root.style.cssText = '';
+  //itemsGrid.root.className = 'd4-flex-c';
+
+  const fieldsContainer = ui.div([
+    ui.h2('Additional fields'),
+    itemsGrid.root,
+  ]);
   return {
     getFields: getFieldParams,
-    fieldsDiv: ui.divV([fieldsContainer, addFieldButton]),
+    fieldsDiv: ui.div([fieldsContainer]),
   };
 }
 
-
-export function saveTemplate(template: ITemplate) {
-  _package.files.writeAsText(`templates/${template.name}.json`, JSON.stringify(template));
+export function saveTemplate(template: HitTriageTemplate) {
+  _package.files.writeAsText(`Hit Triage/templates/${template.name}.json`, JSON.stringify(template));
 }

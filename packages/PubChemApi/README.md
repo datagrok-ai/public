@@ -1,6 +1,6 @@
 # PubChemApi
 
-PubChemApi is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+PubChemApi is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform that provides search capabilities in the [PubChem](https://pubchem.ncbi.nlm.nih.gov/) database.
 
 ## Features
@@ -19,5 +19,5 @@ structures for the specified structure
 
 See also:
 
-- [Similarity Search](https://datagrok.ai/help/domains/chem/similarity-search)
+- [Similarity Search](https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search)
 - [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem)

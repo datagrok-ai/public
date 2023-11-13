@@ -1,18 +1,18 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResidues, showTooltip} from '../viewers/sar-viewer';
+import {SELECTION_MODE, MonomerPosition, MostPotentResidues} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {TEST_COLUMN_NAMES} from './utils';
+import {showTooltip} from '../utils/tooltips';
 
 category('Viewers: Basic', () => {
   const df = DG.DataFrame.fromCsv(aligned1);
@@ -48,36 +48,33 @@ category('Viewers: Monomer-Position', () => {
     model = tempModel;
     mpViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
 
-
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.SemanticValue, 'Grid never finished initializing', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: '9', row: 6};
     const gc = mpViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
-    expect(showTooltip(gc, 0, 0, model), true,
-      `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
+    const mp = mpViewer.getMonomerPosition(gc);
+    expect(showTooltip(model.df, model.settings.columns!, {monomerPosition: mp, x: 0, y: 0, mpStats: model.monomerPositionStats}),
+      true, `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 
   test('Modes', async () => {
     if (mpViewer === null)
       throw new Error('Monomer-Position viewer doesn\'t exist');
 
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
-      `Default Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS}`);
+    expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
+      `Default Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS}`);
 
-    mpViewer.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.INVARIANT_MAP,
-      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.INVARIANT_MAP} after switching`);
+    mpViewer.mode = SELECTION_MODE.INVARIANT_MAP;
+    expect(mpViewer.mode, SELECTION_MODE.INVARIANT_MAP,
+      `Monomer-Position mode is not ${SELECTION_MODE.INVARIANT_MAP} after switching`);
 
-    mpViewer.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
-      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
+    mpViewer.mode = SELECTION_MODE.MUTATION_CLIFFS;
+    expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
+      `Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS} after switching`);
   });
 }, {clear: false});
 
@@ -105,19 +102,17 @@ category('Viewers: Most Potent Residues', () => {
     model = tempModel;
     mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.SemanticValue, 'Grid never finished initializing', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
-    expect(showTooltip(gc, 0, 0, model), true,
-      `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
+    const mp = mprViewer.getMonomerPosition(gc);
+    expect(showTooltip(model.df, model.settings.columns!, {monomerPosition: mp, x: 0, y: 0, mpStats: model.monomerPositionStats}),
+      true, `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 });
 
@@ -143,15 +138,13 @@ category('Viewers: Logo Summary Table', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+
     lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.SemanticValue, 'Grid never finished initializing', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Properties', async () => {
     // Change Logo Summary Table Web Logo Mode property to full
@@ -172,7 +165,7 @@ category('Viewers: Logo Summary Table', () => {
 
   test('Tooltip', async () => {
     const cluster = '0';
-    const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
+    const tooltipElement = lstViewer.showTooltip({monomerOrCluster: cluster, positionOrClusterType: CLUSTER_TYPE.ORIGINAL}, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
 }, {clear: false});

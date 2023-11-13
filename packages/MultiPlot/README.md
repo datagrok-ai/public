@@ -1,6 +1,6 @@
 # MultiPlot
 
-MultiPlot is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+MultiPlot is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform.
 
 MultiPlot was developed in purpose to provide to user ability to easily create dashboards based on complex data which

@@ -1,10 +1,15 @@
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
-import * as types from './types';
-import {PositionStats, MonomerPositionStats} from '../model';
+import * as type from './types';
+import {CLUSTER_TYPE, PeptidesModel} from '../model';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {calculateMonomerPositionStatistics} from './algorithms';
+import * as rxjs from 'rxjs';
+import {TooltipOptions, showTooltipAt} from './tooltips';
+import {MonomerPositionStats, PositionStats} from './statistics';
 
 export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
@@ -13,40 +18,34 @@ export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bou
 }
 
 /** A function that sets amino acid residue cell renderer to the specified column */
-export function setAARRenderer(col: DG.Column, alphabet: string): void {
+export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
 }
 
-export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
-  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
-  twoColorMode: boolean = false, renderNums: boolean = true): void {
+  mutationCliffsSelection: type.Selection, substitutionsInfo: type.MutationCliffs | null = null,
+  renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
-  const pVal: number = positionStats[currentAAR].pValue;
-  const currentMeanDiff = positionStats[currentAAR].meanDifference;
+  const pVal = positionStats![currentMonomer]!.pValue;
+  const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
 
-  let coef: string;
-  const isMeanDeltaNegative = currentMeanDiff < 0;
-  if (pVal < 0.01)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FF7900' : '#299617';
-  else if (pVal < 0.05)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FFA500' : '#32CD32';
-  else if (pVal < 0.1)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FBCEB1' : '#98FF98';
-  else
-    coef = DG.Color.toHtml(DG.Color.lightLightGray);
+  // Transform p-value to increase intensity for smaller values and decrease for larger values
+  const maxPValComplement = 1 - positionStats!.general.maxPValue;
+  const minPValComplement = 1 - positionStats!.general.minPValue;
+  const pValCentering = Math.min(maxPValComplement, minPValComplement);
+  const centeredMaxPValComplement = maxPValComplement - pValCentering;
+  const centeredMinPValComplement = minPValComplement - pValCentering;
+  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement);
+  const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
 
+  const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
+    DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement, -centeredPValLimit, centeredPValLimit));
 
-  const minMeanDifference = twoColorMode ? 0 : monomerPositionStats.general.minMeanDifference;
-  const maxMeanDifference = twoColorMode ?
-    Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference) :
-    monomerPositionStats.general.maxMeanDifference;
-  const currentMeanDifference = twoColorMode ? Math.abs(currentMeanDiff) : currentMeanDiff;
-
-  const rCoef = (currentMeanDifference - minMeanDifference) / (maxMeanDifference - minMeanDifference);
-
+  const maxMeanDifference = Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference);
+  const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
   const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
   const radius = Math.floor(maxRadius * rCoef);
 
@@ -54,12 +53,12 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const midY = bound.y + bound.height / 2;
   canvasContext.beginPath();
   canvasContext.fillStyle = coef;
-  canvasContext.arc(midX, midY, radius < 3 ? 3 : radius, 0, Math.PI * 2, true);
+  canvasContext.arc(midX, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
   canvasContext.closePath();
   canvasContext.fill();
 
   if (renderNums) {
-    const substitutions = substitutionsInfo?.get(currentAAR)?.get(currentPosition)?.entries() ?? null;
+    const substitutions = substitutionsInfo?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
     if (substitutions !== null) {
       canvasContext.textBaseline = 'middle';
       canvasContext.textAlign = 'center';
@@ -79,64 +78,69 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
     }
   }
 
-  const aarSelection = mutationCliffsSelection[currentPosition];
-  if (aarSelection && aarSelection.includes(currentAAR))
+  const monomerSelection = mutationCliffsSelection[currentPosition];
+  if (monomerSelection && monomerSelection.includes(currentMonomer))
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect,
+export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
+  currentPosition: string, invariantMapSelection: type.Selection, cellValue: number, bound: DG.Rect,
   color: number): void {
+  //FIXME: This is a hack, because `color` value sometimes comes incomplete. E.g. we found that here `color` value is
+  // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
+  // is actually 4278190335.
+  color = DG.Color.fromHtml(DG.Color.toHtml(color));
   canvasContext.fillStyle = DG.Color.toHtml(color);
   canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
-  canvasContext.fillStyle = '#000';
+  canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  const aarSelection = invariantMapSelection[currentPosition];
-  if (aarSelection && aarSelection.includes(currentAAR))
+  const monomerSelection = invariantMapSelection[currentPosition];
+  if (monomerSelection && monomerSelection.includes(currentMonomer))
     renderCellSelection(canvasContext, bound);
 }
 
 export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string,
-  clusterSelection: string[], bound: DG.Rect): void {
+  clusterSelection: type.Selection, bound: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection.includes(cellValue))
+  if (clusterSelection[CLUSTER_TYPE.CUSTOM].includes(cellValue) || clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue))
     renderCellSelection(canvasContext, bound);
 }
 
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats, position: string,
   sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
-  drawOptions: types.DrawOptions = {}): { [monomer: string]: DG.Rect } {
+  drawOptions: type.DrawOptions = {}): { [monomer: string]: DG.Rect } {
   const pr = window.devicePixelRatio;
   drawOptions.symbolStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
-  drawOptions.marginVertical ??= 5;
-  drawOptions.marginHorizontal ??= 5;
+  drawOptions.marginVertical ??= 2;
+  drawOptions.marginHorizontal ??= 2;
+  drawOptions.selectionWidth ??= 1;
   drawOptions.textHeight ??= 13;
   drawOptions.headerStyle ??= `bold ${drawOptions.textHeight * pr}px Roboto, Roboto Local, sans-serif`;
 
   const totalSpace = (sortedOrder.length - 1) * drawOptions.upperLetterAscent; // Total space between letters
   const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpace - 1.25 * drawOptions.textHeight) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = (bounds.width - leftShift * 2) * pr;
+  const barWidth = (bounds.width - (leftShift + drawOptions.marginHorizontal)) * pr;
   const xStart = (bounds.x + leftShift) * pr;
-  const selectionWidth = 4 * pr;
-  const xSelection = (bounds.x + 3) * pr;
+  const selectionWidth = Math.min(drawOptions.selectionWidth * pr, 1);
+  const xSelection = (bounds.x + 1) * pr;
   let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
   const monomerBounds: { [monomer: string]: DG.Rect } = {};
   for (const monomer of sortedOrder) {
-    const monomerHeight = barHeight * (stats[monomer].count / rowCount);
+    const monomerHeight = barHeight * (stats[monomer]!.count / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
     const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
     monomerBounds[monomer] = currentBound;
@@ -172,4 +176,115 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   ctx.fillText(position, (bounds.x + bounds.width / 2) * pr, (bounds.y + bounds.height - drawOptions.textHeight) * pr);
 
   return monomerBounds;
+}
+
+export type CellRendererOptions = {isSelectionTable?: boolean, headerSelectedMonomers?: type.SelectionStats,
+  webLogoBounds?: WebLogoBounds, cachedWebLogoTooltip?: type.CachedWebLogoTooltip};
+export type WebLogoBounds = {[positon: string]: {[monomer: string]: DG.Rect}};
+
+export function setWebLogoRenderer(grid: DG.Grid, model: PeptidesModel, options: CellRendererOptions = {},
+  tooltipOptions: TooltipOptions = {x: 0, y: 0, mpStats: {} as MonomerPositionStats, monomerPosition: {} as type.SelectionItem}): void {
+  options.isSelectionTable ??= false;
+  if (Object.keys(tooltipOptions.mpStats).length == 0)
+    tooltipOptions.mpStats = model.monomerPositionStats;
+  if (options.isSelectionTable && (!options.webLogoBounds || !options.cachedWebLogoTooltip)) {
+    throw new Error('Peptides: Cannot set WebLogo renderer for selection table without `headerSelectedMonomers`, ' +
+      '`webLogoBounds` and `cachedWebLogoTooltip` options.');
+  }
+
+  options.webLogoBounds ??= model.webLogoBounds;
+  options.cachedWebLogoTooltip ??= model.cachedWebLogoTooltip;
+  const df = grid.dataFrame;
+  grid.setOptions({'colHeaderHeight': 130});
+  const headerRenderer = (gcArgs: DG.GridCellRenderArgs): void => {
+    const ctx = gcArgs.g;
+    const bounds = gcArgs.bounds;
+    const col = gcArgs.cell.tableColumn;
+
+    ctx.save();
+    try {
+      ctx.beginPath();
+      ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+      ctx.clip();
+
+      //TODO: optimize
+      if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
+        const isDfFiltered = df.filter.anyFalse;
+        const stats = (isDfFiltered || options.isSelectionTable ?
+          calculateMonomerPositionStatistics(df, model.positionColumns.toArray(), {isFiltered: true, columns: [col.name]}) :
+          model.monomerPositionStats)[col.name];
+        if (!stats)
+          return;
+        //TODO: precalc on stats creation
+        const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
+          if (a === '' || a === '-')
+            return +1;
+          else if (b === '' || b === '-')
+            return -1;
+          return 0;
+        }).filter((v) => v !== 'general');
+
+        options.webLogoBounds![col.name] = drawLogoInBounds(ctx, bounds, stats, col.name,
+          sortedStatsOrder, df.filter.trueCount, model.cp, options.headerSelectedMonomers ? options.headerSelectedMonomers[col.name] : {});
+        gcArgs.preventDefault();
+      }
+    } catch (e) {
+      console.warn(`PeptidesHeaderLogoError: couldn't render WebLogo for column \`${col!.name}\`. ` +
+        `See original error below.`);
+      console.warn(e);
+    } finally {
+      ctx.restore();
+    }
+  };
+  grid.onCellRender.subscribe((gcArgs) => headerRenderer(gcArgs));
+
+  const eventAction = (ev: MouseEvent): void => {
+    const cell = grid.hitTest(ev.offsetX, ev.offsetY);
+    if (cell?.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER) {
+      const monomerPosition = findWebLogoMonomerPosition(cell, ev, (options.webLogoBounds ?? model.webLogoBounds));
+      if (monomerPosition === null) {
+        if (!options.isSelectionTable)
+          model.unhighlight();
+        return;
+      }
+      tooltipOptions.monomerPosition = monomerPosition;
+      requestBarchartAction(ev, monomerPosition, model, df, options, tooltipOptions);
+      if (!options.isSelectionTable)
+          model.highlightMonomerPosition(monomerPosition);
+    }
+  };
+
+  // The following events makes the barchart interactive
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+}
+
+function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionItem, model: PeptidesModel, df: DG.DataFrame,
+  options: CellRendererOptions, tooltipOptions: TooltipOptions): void {
+  if (ev.type === 'click' && !options.isSelectionTable)
+    model.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+  else {
+    const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
+    if (options.cachedWebLogoTooltip!.bar === bar)
+      ui.tooltip.show(options.cachedWebLogoTooltip!.tooltip!, ev.clientX, ev.clientY);
+    else {
+      options.cachedWebLogoTooltip!.bar = bar;
+      tooltipOptions.x = ev.clientX;
+      tooltipOptions.y = ev.clientY;
+      tooltipOptions.monomerPosition = monomerPosition;
+      options.cachedWebLogoTooltip!.tooltip = showTooltipAt(df, model.settings.columns!, tooltipOptions);
+    }
+  }
+}
+
+function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBounds: WebLogoBounds): type.SelectionItem | null {
+  const barCoords = webLogoBounds[cell.tableColumn!.name];
+  for (const [monomer, coords] of Object.entries(barCoords)) {
+    const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
+    const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
+    if (isIntersectingX && isIntersectingY)
+      return {monomerOrCluster: monomer, positionOrClusterType: cell.tableColumn!.name};
+  }
+
+  return null;
 }

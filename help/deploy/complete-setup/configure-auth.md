@@ -3,40 +3,60 @@ title: "Configure authentication"
 sidebar_position: 1
 ---
 
-Out-of-the-box, Datagrok offers many authentication methods, including popular methods such as SSO and OAuth.
+Datagrok supports many [authentication](../../govern/authentication.md) methods, including popular methods such as SSO and OAuth:
 
-To accommodate any enterprise needs, we can develop a customer-specific integration.
+* [General](#general-login-password-authentication) (login-password)
+* [LDAP](#ldap-authentication)
+* [Google](#oauth-authentication)
+* [OpenID](#openid-authentication)
+* GitHub
+* Facebook
 
-All methods can be enabled separately or combined.
+You can enable all methods separately or combined.
 
-[Learn more about authentification](../govern/authentication.md).
+<!-- markdownlint-disable no-bare-urls -->
+If supported authentication methods do not work for you, contact us on info@datagrok.ai, and we will discuss options for your specific case.
+<!-- markdownlint-enable no-bare-urls -->
 
-## Common options
+## General (login-password) authentication
 
-If you want to display something on the login window, set the 'Prompt' option
-![Login prompt](login-prompt.png)
+General (login-password) authentication is the most basic method to authenticate users with Datagrok.
 
-Enable the 'Send Welcome Email' option to send welcome emails to new signed-up users.
+To configure login-password authentication:
 
-## Login-password authentication
+1. Go to the **Settings** > **Users and Sessions**. This section contains all authentication settings.
+2. To use the login-password method, enable '_Internal authentication_' in General section
+3. To disable signup uncheck '_Signup Allowed_' option
+4. To restrict from which domains people can sign up to the platform, use the '_Signup Domains Whitelist_' option. You can set several domains separated with commas.
+5. To force people to use active emails, enable the '_Require Email Confirm_' option .
 
-It is the most basic method to authenticate users with Datagrok.
+For login-password authentication, it is important to [configure an email service](configure-smtp.md) that will deliver signup, welcome, confirmation and forgot password emails.
 
-To configure login-password authentication for Datagrok:
+### Add users
 
-1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
-2. Enable 'Internal authentication' to use the login-password method
-3. Signup option is alterable; you can disable it using the 'Signup Allowed' option
-4. To restrict from which domains people can sign up to the platform, use the 'Signup Domains Whitelist' option. You can
-   set several domains separated with commas
-5. Enable the 'Require Email Confirm' option to force people to use working emails.
+To create [user](../../govern/user.md):
 
-### Email service
+1. On the **Sidebar** go to **Manage** > **Users**. 
+2. On the **Toolbox** click **Add User**. Create new user dialog appears. 
+3. Fill all input fields and click **OK**. New User profile appears. Click **Save** on the **Top Bar**.
 
-For login-password authentication, it is important to configure an Email service that will deliver signup, welcome,
-confirmation and forgot password emails.
+Use [user groups](../../govern/group.md) to manage user permissions inside platform.
 
-[Learn how to configure SMTP for Datagrok](configure-smtp.md).
+## LDAP authentication
+
+Datagrok integrates with your LDAP or Active Directory server enabling the smooth domain authentication mechanism across all your services.
+
+1. Go to the **Settings** > **Users and Sessions**. This section contains all authentication settings.
+2. To use the LDAP method, enable '_Domain authentication_' 
+3. Enable 'Domain signup' to enable all users present on a domain controller to authenticate in the Datagrok platform.
+   If the option is disabled, it is required to create the user in the Datagrok platform first to allow the user to log
+   into the platform
+4. Configure LDAP server address/DNS name
+5. Set LDAP server port
+6. Enable LDAP SSL if you use LDAPS on your server
+7. Set LDAP Base DN. It should look like `dc=datagrok,dc=ai`.
+8. Set LDAP User DN. It should look like `CN=USER-DATAGROK,OU=users,DC=datagrok,DC=ai`
+9. Set LDAP User password
 
 ## Oauth authentication
 
@@ -61,20 +81,3 @@ Datagrok supports the OpenID protocol to allow users to be authenticated using O
    provide optional claims for the application
 7. OpenID auto-login can be enabled using the 'Open Id Auto Login' option
 8. Make sure the correct Web Root is set in 'Admin' section
-
-## LDAP authentication
-
-Datagrok can easily integrate with your LDAP server enabling the smooth domain authentication mechanism across all your
-services. You can also use Active Directory to authenticate by this method.
-
-1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
-2. Enable 'Domain authentication' to use the LDAP method
-3. Enable 'Domain signup' to enable all users present on a domain controller to authenticate in the Datagrok platform.
-   If the option is disabled, it is required to create the user in the Datagrok platform first to allow the user to log
-   into the platform
-4. Configure LDAP server address/DNS name
-5. Set LDAP server port
-6. Enable LDAP SSL if you use LDAPS on your server
-7. Set LDAP Base DN. It should look like `dc=datagrok,dc=ai`.
-8. Set LDAP User DN. It should look like `CN=USER-DATAGROK,OU=users,DC=datagrok,DC=ai`
-9. Set LDAP User password

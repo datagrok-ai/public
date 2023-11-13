@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {FitChartCellRenderer} from './fit-renderer';
 
 
 export class CellRenderViewer<TRenderer extends DG.GridCellRenderer = DG.GridCellRenderer> extends DG.JsViewer {
@@ -31,6 +32,13 @@ export class CellRenderViewer<TRenderer extends DG.GridCellRenderer = DG.GridCel
     this.canvas.onmousemove = bind(this.renderer.onMouseMove);
     this.canvas.onmouseenter = bind(this.renderer.onMouseEnter);
     this.canvas.onmouseleave = bind(this.renderer.onMouseLeave);
+  }
+
+  static fromGridCell(gridCell: DG.GridCell): CellRenderViewer {
+    const viewer = new CellRenderViewer(new FitChartCellRenderer());
+    viewer.gridCell = gridCell;
+    viewer.render();
+    return viewer;
   }
 
   render(): void {

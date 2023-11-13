@@ -16,8 +16,8 @@ limit @maxRows
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
---input: string threshold = "0.6"
-select set_config('rdkit.tanimoto_threshold', @threshold, true);
+--input: double threshold = 0.6 { min: 0, max: 1 }
+select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch
 select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 --end
@@ -40,6 +40,19 @@ select
 from
   compound_structures
 limit @maxNumberOfMolecules
+--end
+
+--name: ChemblMolregNoBySmiles
+--friendlyName: Chembl Molregno by smiles
+--input: string smiles {semType: Molecule}
+--connection: Chembl
+select
+  molregno
+from
+  compound_structures
+where
+  canonical_smiles = @smiles
+limit 1
 --end
 
 --name: StructuresByOrganism

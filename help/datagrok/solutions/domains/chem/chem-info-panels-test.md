@@ -93,9 +93,9 @@ on [Context Panel](../../datagrok/navigation.md#context-panel) for specific smil
 1. Click on "Settings" (gear icon) near "Properties" info-panel and select "Do not show"
 
 * Properties" info-panel no longer displayed on [Context Panel](../../datagrok/navigation.md#context-panel)
-* Corresponding message is shown on balun
+* Corresponding message is shown on balloon
 
-1. Open **Tools | Settengs | Info Panels**
+1. Open **Tools | Settings | Info Panels**
 
 * Dialog tab shows disabled info panels ("Properties" info-panel)
 

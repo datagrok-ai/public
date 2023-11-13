@@ -9,7 +9,6 @@ Datagrok server installation consists of two big blocks:
   * [Datlas](#datlas) - Datagrok application server
   * [Database](#database)
   * [Persistent file storage](#storage)
-  * [ElasticSearch](#elasticsearch)
   * [Credentials Management Service](../../govern/security.md#credentials)
   * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
@@ -81,7 +80,6 @@ Datagrok components are:
 * [Datlas](#datlas) - Datagrok application server
 * [Database](#database)
 * [Persistent file storage](#storage)
-* [ElasticSearch](#elasticsearch)
 * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
   separate container with a separate database.
 * [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
@@ -298,14 +296,6 @@ of our coding conventions, is fit and tuned for our goals, and lets us do the fo
 * Free-text filtering (SQL-like language)
 * ORM can extract object fields from a database without mapping them to objects
 
-### ElasticSearch
-
-[ElasticSearch](https://www.elastic.co/) provides Datagrok's full-text search. It searches in Wiki, forums, and
-datasets.
-
-ElasticSearch is configured with default settings. The Datlas application is the only one that uses it, so ElasticSearch
-does not need to be exposed outside the Datagrok docker container.
-
 ## Compute components
 
 Compute components forms Compute Virtual Machine (CVM). It is used for performing on-server computations. All components
@@ -361,7 +351,7 @@ Grok Helper exposes API for the following features:
 
 ### Jupyter Kernel Gateway
 
-[Jupyter Kernel Gateway](https://github.com/jupyter/kernel_gateway) provides the scripting feature for the platform. It
+[Jupyter Kernel Gateway](https://github.com/jupyter/kernel_gateway) provides the [scripting feature](../../compute/scripting.md) for the platform. It
 includes standard libraries for development.
 
 Available languages are: Python, R, JS, Octave, Julia.
@@ -376,9 +366,13 @@ Resources(differs based on your needs):
 * 4GB RAM
 * 4 CPU
 
-See also:
+#### Custom package repositories
 
-* [Scripting](../../compute/scripting.md)
+By default, the container Jupyter Kernel Gateway for [dynamic scripting environments](../../compute/scripting.md#environments) uses the default package repositories such as [conda-forge](https://conda-forge.org/), [PyPI](https://pypi.org/), [CRAN](https://cloud.r-project.org/). If you need to change this behaviour start the container with the custom environment variables:
+
+* To access repositories through proxy set `HTTP_PROXY` and `HTTPS_PROXY` variables 
+* To use custom conda repositories in addition to conda-forge specify `CONDA_CUSTOM_REPOSITORIES`. It takes precedence over conda-forge. Multiple repositories can be specified using space. For example: `CONDA_CUSTOM_REPOSITORIES='http://my-repo/custom/ http://his-repo/special/'`
+* To use custom pip repositories in addition set `PIP_EXTRA_INDEX_URL`. Multiple repositories can be specified using space. For example: `PIP_EXTRA_INDEX_URL='http://my-repo/custom http://his-repo/special'`
 
 ### Jupyter Notebook
 
@@ -524,4 +518,4 @@ The schema has the following tables:
 * [Configuration](../../deploy/configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](../../deploy/releases/versioning-policy.md)
-* [Try Datagrok locally](../../deploy/docker-compose.mdx)
+* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.mdx)

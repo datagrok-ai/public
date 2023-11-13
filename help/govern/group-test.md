@@ -23,12 +23,12 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 
 * New [group](../govern/group.md) was created with name "test"
 
-1. Open "Edit" dialog for "test" [group](../govern/group.md). (From contex menu or from "Actions"
+1. Open "Edit" dialog for "test" [group](../govern/group.md). (From context menu or from "Actions"
    tab on [Context Panel](../datagrok/navigation.md#context-panel))
 
 * Editing dialog is open. Here you can change name and description of [group](../govern/group.md)
 
-1. Open "Edit members" dialog for "test" [group](../govern/group.md). (From contex menu or from "
+1. Open "Edit members" dialog for "test" [group](../govern/group.md). (From context menu or from "
    Actions" tab on [Context Panel](../datagrok/navigation.md#context-panel))
 
 * "Edit members" dialog is open
@@ -72,7 +72,7 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 
 * You left the group "test"
 
-1. Request membership in "test" [group](group.md). (From contex menu or from "Actions" tab
+1. Request membership in "test" [group](group.md). (From context menu or from "Actions" tab
    on [Context Panel](../datagrok/navigation.md#context-panel))
 
 * Balloon with information about successful request
@@ -80,7 +80,7 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 * User's notification displays this request with current status (```?``` - pending request, ```x``` - rejected
   request, ```✓``` - request accepted)
 
-1. Open "Edit memberships" dialog for "test" [group](group.md). (From contex menu or from "Actions"
+1. Open "Edit memberships" dialog for "test" [group](group.md). (From context menu or from "Actions"
    tab on [Context Panel](../datagrok/navigation.md#context-panel), it is necessary to do from user with admin role in
    this group)
 
@@ -88,10 +88,10 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 * In this dialog you can request membership of current group in other groups
 * Management in this dialog is similar to others, but carried out from the position of nested group
 
-1. Open "Chat" for "test" [group](group.md). (From contex menu or from "Actions" tab
+1. Open "Chat" for "test" [group](group.md). (From context menu or from "Actions" tab
    on [Context Panel](../datagrok/navigation.md#context-panel))
 
-1. Delete "test" [group](group.md) (From contex menu or from "Actions" tab
+1. Delete "test" [group](group.md) (From context menu or from "Actions" tab
    on [Context Panel](../datagrok/navigation.md#context-panel))
 
 See also:

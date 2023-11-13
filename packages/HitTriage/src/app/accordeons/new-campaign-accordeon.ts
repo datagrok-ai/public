@@ -2,8 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../../package';
-import {UiUtils} from '@datagrok-libraries/compute-utils';
-import {CampaignFieldTypes, ITemplate, IngestType} from '../types';
+import {CampaignFieldTypes, HitTriageTemplate, IngestType} from '../types';
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 
@@ -13,38 +12,41 @@ type INewCampaignResult = {
     campaignProps: {[key: string]: any}
 }
 
-type ICampaignAccordeon = {
+type HitTriageCampaignAccordeon = {
     promise: Promise<INewCampaignResult>,
     root: HTMLElement,
     cancelPromise: Promise<void>
 }
 /** Creates a new campaign accordeon
- * @param {ITemplate}template template for the campaign. it contains file source type and
+ * @param {HitTriageTemplate}template template for the campaign. it contains file source type and
  * additional campaign fields
- * @return {ICampaignAccordeon} Object containing root element, promise for the campaign result and cancel promise
+ * @return {HitTriageCampaignAccordeon} Object containing root element, promise for the campaign result and cancel
  */
-export function newCampaignAccordeon(template: ITemplate): ICampaignAccordeon {
-  let file: File | null = null;
+export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCampaignAccordeon {
   const errorDiv = ui.divText('', {style: {color: 'red'}});
   // handling file input
-  const onFileChange = async (f: File) => {
+  let fileDf: DG.DataFrame | null = null;
+  const onFileChange = async () => {
     try {
-      const df = DG.DataFrame.fromCsv(await f.text());
-      await df.meta.detectSemanticTypes();
-      const molcol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      fileDf = dfInput.value;
+      if (!fileDf)
+        return;
+      await fileDf.meta.detectSemanticTypes();
+      const molcol = fileDf.columns.bySemType(DG.SEMTYPE.MOLECULE);
       if (!molcol) {
         errorDiv.innerText = 'No molecules column found';
         return;
       }
-      file = f;
+
       errorDiv.innerText = '';
     } catch (e) {
       errorDiv.innerText = 'Error parsing file';
     }
   };
 
-  const fileInput = UiUtils.fileInput('', null, (f: File) => onFileChange(f), undefined);
-  const fileInputDiv = ui.divV([fileInput, errorDiv]);
+  const dfInput = ui.tableInput('Dataframe', null, undefined, onFileChange);
+  onFileChange();
+  const fileInputDiv = ui.div([dfInput, errorDiv]);
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
   const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
   // for display purposes we use friendly name of the function
@@ -60,51 +62,53 @@ export function newCampaignAccordeon(template: ITemplate): ICampaignAccordeon {
     const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
     funcCall = func.prepare();
     const editor = await funcCall.getEditor();
+    editor.classList.remove('ui-form');
     funcEditorDiv.innerHTML = '';
     funcEditorDiv.appendChild(editor);
   };
-  const funcEditorDiv = ui.div();
+  const funcEditorDiv = ui.div([]);
   const dataSourceFunctionInput = ui.choiceInput(
-    'Data source function', Object.keys(dataSourceFunctionsMap)[0],
+    C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
     Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
   // call the onchange function to create an editor for the first function
   onDataFunctionChange();
-  const functionInputDiv = ui.divV([dataSourceFunctionInput, funcEditorDiv]);
+  if (template.queryFunctionName)
+    dataSourceFunctionInput.root.getElementsByTagName('select').item(0)?.setAttribute('disabled', 'true');
+  const functionInputDiv = ui.div([dataSourceFunctionInput, funcEditorDiv]);
   // if the file source is selected as 'File', no other inputs are needed so we hide the function editor
   functionInputDiv.style.display = 'none';
-  const dataInputsDiv = ui.divV([fileInputDiv, functionInputDiv]);
+  const dataInputsDiv = ui.div([fileInputDiv, functionInputDiv]);
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
   const campaignProps = template.campaignFields.map((field) =>
     DG.Property.fromOptions({name: field.name, type: CampaignFieldTypes[field.type], nullable: !field.required}));
   const campaignPropsObject: {[key: string]: any} = {};
-  const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
+  const campaignPropsForm = campaignProps.length ? ui.input.form(campaignPropsObject, campaignProps) : ui.div();
+  campaignPropsForm.classList.remove('ui-form');
   // displaying function editor or file input depending on the data source type
   if (template.dataSourceType === 'File') {
-    fileInputDiv.style.display = 'block';
+    fileInputDiv.style.display = 'inherit';
     functionInputDiv.style.display = 'none';
   } else {
     fileInputDiv.style.display = 'none';
-    functionInputDiv.style.display = 'block';
+    functionInputDiv.style.display = 'inherit';
   }
 
-  const accordeon = ui.accordion();
-  accordeon.root.classList.add('hit-triage-new-campaign-accordeon');
-  accordeon.addPane('File source', () => dataInputsDiv, true);
-  campaignProps.length && accordeon.addPane('Campaign details', () => campaignPropsForm, true);
-  const content = ui.div(accordeon.root);
-  const buttonsDiv = ui.divH([]); // div for create and cancel buttons
-  content.appendChild(buttonsDiv);
+  const form = ui.div([
+    dataInputsDiv,
+    ...(campaignProps.length ? [campaignPropsForm] : [])]);
+  const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
+  form.appendChild(buttonsDiv);
   const promise = new Promise<INewCampaignResult>((resolve) => {
     const onOkProxy = async () => {
       if (template.dataSourceType === 'File') {
-        if (!file) {
+        if (!fileDf) {
           grok.shell.error('No file selected');
           return;
         }
-        const df = DG.DataFrame.fromCsv(await file.text());
-        df.name = file.name;
+        const df = fileDf;
+        df.name = fileDf.name;
         resolve({df, type: 'File', campaignProps: campaignPropsObject});
       } else {
         const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
@@ -120,15 +124,14 @@ export function newCampaignAccordeon(template: ITemplate): ICampaignAccordeon {
         resolve({df, type: 'Query', campaignProps: campaignPropsObject});
       };
     };
-    const startCampaignButton = ui.bigButton('Start campaign', () => onOkProxy());
+    const startCampaignButton = ui.bigButton(C.i18n.StartCampaign, () => onOkProxy());
     buttonsDiv.appendChild(startCampaignButton);
   });
 
   const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.bigButton('Cancel', () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
-    buttonsDiv.appendChild(cancelButton);
+    const _cancelButton = ui.button(C.i18n.cancel, () => resolve());
+    //buttonsDiv.appendChild(cancelButton);
   });
 
-  return {promise, root: content, cancelPromise};
+  return {promise, root: form, cancelPromise};
 }

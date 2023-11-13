@@ -48,4 +48,4 @@ See also:
 
 * [Viewers](https://datagrok.ai/help/visualize/viewers)
 * [Develop custom cell renderers](https://datagrok.ai/help/develop/how-to/custom-cell-renderers)
-* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Packages](https://datagrok.ai/help/develop/#packages)
