@@ -47,7 +47,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.box = true;
     this.parentCall = options.parentCall ?? grok.functions.getCurrentCall();
     const parentView = this.parentCall?.parentCall?.aux?.['view'];
-    if (parentView && parentView.name === 'ModelHub' && !this.options.isTabbed) {
+    if (parentView && !this.options.isTabbed) {
       this.parentCall = options.parentCall ?? grok.functions.getCurrentCall();
       this.parentView = parentView;
       if (this.parentCall?.func)
