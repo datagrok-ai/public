@@ -26,6 +26,7 @@ import {ViewLayout} from "./views/view";
 import {toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
+import {toDart} from "./wrappers_impl";
 
 let api = <any>window;
 
@@ -384,20 +385,20 @@ export class AdminDataSource {
 
 
   /**
-   * Sends envelope
-   * @param envelope - message that will be sent using configured SMTP service
+   * Sends email
+   * @param email - message that will be sent using configured SMTP service
    */
-  sendEmail(envelope: Envelope): Promise<void> {
-    if (envelope.to.length === 0)
+  sendEmail(email: Email): Promise<void> {
+    if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
-    return api.grok_Dapi_Admin_Send_Email(this.dart, envelope);
+    return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
   }
 }
 
 /**
  * Represents message that can be sent over the network using the configured SMTP service
  */
-export interface Envelope {
+export interface Email {
   /**
    * Message subject
    */
