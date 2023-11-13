@@ -58,7 +58,7 @@ See
 ## Vulnerability remediation
 
 Datagrok server core is written in Dart, which is a language developed and supported by Google. We
-follow [Dart Security Best Practises](https://dart.dev/security#best-practices) to minimize the risk of introducing a
+follow [Dart Security Best Practices](https://dart.dev/security#best-practices) to minimize the risk of introducing a
 vulnerability.
 
 Every release is tested according to our [quality-assurance procedures](quality-assurance.md) which includes
@@ -104,7 +104,7 @@ company policies.
 #### CloudFormation deployment
 
 To simplify deployment with all security policies taken into consideration, we created
-an [ECS CloudFormation deployment template](deploy/deploy-amazon-cloudformation.md).
+an [ECS CloudFormation deployment template](../../../deploy/aws/deploy-amazon-cloudformation.md).
 
 CloudFormation Template is tested by [Snyk](https://snyk.io/) on every change. The results
 are [available publicly](https://github.com/datagrok-ai/public/actions/workflows/iaac.yaml).
@@ -117,5 +117,5 @@ accessed directly, all requests goes through Application Load Balancer.
 
 * [Architecture](../../../develop/under-the-hood/architecture.md)
 * [Infrastructure](../../../develop/under-the-hood/infrastructure.md)
-* [CloudFormation deployment](../../../deploy/deploy-amazon-cloudformation.md)
+* [CloudFormation deployment](../../../deploy/aws/deploy-amazon-cloudformation.md)
 * [Security](../../../govern/security.md)

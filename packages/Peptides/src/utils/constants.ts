@@ -7,6 +7,7 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
+  MEAN = 'Mean',
 }
 
 export enum LST_COLUMN_NAMES {
@@ -43,6 +44,8 @@ export enum TAGS {
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'Identity template',
   SIMILARITY_TEMPLATE = 'Similarity template',
+  ANALYSIS_COL = 'isAnalysisCol',
+  POSITION_COL = 'isPositionCol',
 }
 
 export enum SEM_TYPES {

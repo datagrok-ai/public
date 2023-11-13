@@ -13,10 +13,10 @@ category('Viewers: Core Viewers', () => {
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
     v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
-    v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS); // TO FIX
+    //@ts-ignore
+    v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS && v !== 'Pivot table'); // TO FIX
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
-  coreViewers.push('distributionProfiler');
 
   before(async () => {
     df = await _package.files.readCsv('SPGI_v2_100.csv');

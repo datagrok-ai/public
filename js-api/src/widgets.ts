@@ -16,6 +16,7 @@ import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 import '../css/tags-input.css';
+import {FuncCall} from "./functions";
 
 declare let grok: any;
 declare let DG: any;
@@ -478,14 +479,16 @@ export class Accordion extends DartWidget {
   }
 
   /** Adds a pane */
-  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null));
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null,
+    allowDragOut: boolean = true): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null, allowDragOut));
   }
 
   /** Adds a pane with the count indicator next to the title.
    * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount));
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null,
+    allowDragOut: boolean = true): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount, allowDragOut));
   }
 
   /** Removed the specified pane. */
@@ -1109,6 +1112,33 @@ export class InputBase<T = any> {
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
+}
+
+
+export class DartWrapper {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+}
+
+
+/** A form with multiple inputs inside */
+export class InputForm extends DartWrapper {
+  constructor(dart: any) { super(dart); }
+
+  /** Creates an InputForm for the specified function call. */
+  static async forFuncCall(funcCall: FuncCall): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
+  }
+
+  get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
+
+  getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
+
+  /** Occurs when user changes any input value in a form. */
+  get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
 }
 
 
@@ -1871,11 +1901,10 @@ export class DropDown {
 
     this._label = label;
     this._element = createElement();
-
-    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
     this._dropDownElement.style.visibility = 'hidden';
 
-    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+    this.root = ui.div([this._dropDownElement, this._label], 'ui-drop-down-root');
 
     this._initEventListeners();
   }

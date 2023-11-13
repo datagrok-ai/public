@@ -69,11 +69,14 @@ jobs:
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
+              job_name='Check'
               if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
+                job_name='Build'
               fi
               if [ ! -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
+                job_name='Build, test'
               fi
 
               name="$(jq -r .name "${DIR}/package.json")"
@@ -86,9 +89,10 @@ jobs:
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                     packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
                     MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
+                    job_name+=' and publish to NPM'
                   else
                     echo "Library $LIB version ${current_version} has unpublished dependencies: $unpublished_deps"
-                    echo "::notice title=${LIB}::Version ${current_version} has unpublished dependencies"
+                    echo "::notice title=${LIB}::Version ${current_version} has unpublished dependencies and is not going to be published"
                   fi
                 else
                   echo "Library $LIB version ${current_version} is already published"
@@ -96,8 +100,10 @@ jobs:
                 fi
               else
                   echo "It is an actions for PR. Publish will be skipped."
+                  echo "::notice title=${LIB}::It is an actions for PR. Publish will be skipped."
               fi
 
+              MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
               MATRIX_PUBLISH_JSON+="}"
             fi
           done
@@ -119,7 +125,7 @@ jobs:
           echo -e "continue: ${{ steps.generate-matrix.outputs.continue }}"
 
   publish:
-    name: Build and publish to npm
+    name: "${{ matrix.project }}: ${{ matrix.job_name }}"
     needs: [ metadata, common-check ]
     if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-22.04
@@ -129,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |

@@ -1,10 +1,25 @@
 # PowerGrid changelog
 
-## 1.2.0 (WIP)
+## 1.2.1 (2023-11-07)
+
+### Bug Fixes
+
+* Fixed adding summary columns not taking columns into account.
+* Added old summary column format support
+* Fixed support for bigint type
+* Fixed exception thrown onHit
+
+## 1.2.0 (2023-11-02)
 
 ### Features
 
-* Smart forms (WIP)
+* [#2208](https://github.com/datagrok-ai/public/issues/2208): Implemented SmartForms
+* Added image rendering on double clcik in ImageUrl
+
+### Bug Fixes
+
+* Removed URL rendering in ImageUrl
+* Fixed sparklines visualizations and made them configurable
 
 ## 1.1.33 (2023-08-04)
 

@@ -16,7 +16,7 @@ or come up with your own solution.
 
 ## Datagrok JS API
 
-We expose some commonly used functions via [JS API](../packages/js-api.md). To invoke the methods, use `grok.chem`. 
+We expose some commonly used functions via [JS API](../../packages/js-api.md). To invoke the methods, use `grok.chem`. 
 Most of the methods are asynchronous. Behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h) functions.
 
@@ -31,13 +31,13 @@ descriptors(table, column, descriptors);
 ```
 
 `searchSubstructure`, `getSimilarities` and `findSimilar` are client-based functions and
-use [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h). We plan to support both server-side and broser-side modes. The API remains the same.
+use [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h). We plan to support both server-side and browser-side modes. The API remains the same.
 
 ### Substructure search
 
 `searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
 
-This function performs substructure search using RDKit JS. It returns a [BitSet](../packages/js-api.md#bitset).
+This function performs substructure search using RDKit JS. It returns a [BitSet](../../packages/js-api.md#bitset).
 If the i-th element in the input `column` has the pattern's substructure, the i-th bit is set to 1; otherwise, it is set to 0.
 
 `column` stands for [column](https://datagrok.ai/js-api/classes/dg.Column) that contains molecules in any
@@ -47,7 +47,7 @@ The `settings` object allows passing the following parameters:
 
 * `molBlockFailover`: smarts which used as a substructure if `pattern` is invalid
 
-To optimize the substructure search we uses a cache of pre-computed [Pattern fingerprints](https://www.rdkit.org/docs/RDKit_Book.html#additional-information-about-the-fingerprints) and specific RDKit *Mol objects*. Fingerprints are used for preliminary filtration while *Mol objects* are used for graph-based search method [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html). Fingerprints are calculated for each molecule in `column` and *Mol objects* are created only for defined number of first molecules. It allows to decrease memory consumpution and speed up the search. When the substructure search function encounters a new `column`, it creates a cache of fingerprints and *Mol objects* for the molecules in it. Substructure search uses this cache when the function is called for the same column.
+To optimize the substructure search we uses a cache of pre-computed [Pattern fingerprints](https://www.rdkit.org/docs/RDKit_Book.html#additional-information-about-the-fingerprints) and specific RDKit *Mol objects*. Fingerprints are used for preliminary filtration while *Mol objects* are used for graph-based search method [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html). Fingerprints are calculated for each molecule in `column` and *Mol objects* are created only for defined number of first molecules. It allows to decrease memory consumption and speed up the search. When the substructure search function encounters a new `column`, it creates a cache of fingerprints and *Mol objects* for the molecules in it. Substructure search uses this cache when the function is called for the same column.
 
 Molecule strings may be invalid or not supported by RDKit JS. During indexing we skip these inputs. The corresponding bit in the bitset remains 0.. Thus, the bitset is *always* of the input `column`'s length.
 
@@ -92,7 +92,7 @@ pre-computed fingerprints. If `findSimilar` or `getSimilarities` function encoun
 To only build (aka prime) this cache without performing an actual search, e.g. in case of pre-computing the fingerprints
 in the UI, call the function passing `molecule` as an empty string `''`.
 
-If molecules are not supported by RDKit JS, we skip them durring indexing. Null is returned instead of a fingerprint. Thus, the output Column (or DataFrame) is *always* of the input `column`'s length.
+If molecules are not supported by RDKit JS, we skip them during indexing. Null is returned instead of a fingerprint. Thus, the output Column (or DataFrame) is *always* of the input `column`'s length.
 
 Examples (see on [GitHub](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem))
 

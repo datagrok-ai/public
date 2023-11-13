@@ -15,7 +15,7 @@ export const _package = new DG.Package();
 //meta.cellType: fit
 //meta.virtual: true
 //output: grid_cell_renderer result
-export function fitCellRenderer() {
+export function fitCellRenderer(): FitChartCellRenderer {
   return new FitChartCellRenderer();
 }
 
@@ -23,7 +23,7 @@ export function fitCellRenderer() {
 //description: A viewer that superimposes multiple in-cell curves on one chart
 //tags: viewer
 //output: viewer result
-export function _FitViewer() {
+export function _FitViewer(): MultiCurveViewer {
   return new MultiCurveViewer();
 }
 
@@ -31,11 +31,11 @@ export function _FitViewer() {
 //description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
 //meta.demoPath: Curves | Curve fitting
 //test: curveFitDemo() //wait: 2000
-export async function curveFitDemo() {
+export async function curveFitDemo(): Promise<void> {
   await curveDemo();
 }
 
-//tags: autostart
-export function _autoCurves(): void {
+//tags: init
+export function _initCurves(): void {
   DG.ObjectHandler.register(new FitGridCellHandler());
 }

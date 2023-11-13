@@ -216,7 +216,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+export function iconImage(name: string, path: string,
+                          handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
+                          tooltipMsg: string | null = null,
+                          options: ElementOptions | null = null
+                          ): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('image-icon');
@@ -227,7 +231,7 @@ export function iconImage(name: string, path: string, handler: ((this: HTMLEleme
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
-  return i;
+  return _options(i, options);
 }
 
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
@@ -372,7 +376,7 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
-export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
@@ -717,8 +721,8 @@ export function sliderInput(name: string, value: number | null, min: number, max
   return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
-  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
+  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items, options), onValueChanged);
 }
 
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
@@ -896,8 +900,48 @@ export class Tooltip {
 
   /** Associated the specified visual element with the corresponding item. */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
-    if (tooltip != null)
+    if (tooltip != null){
       api.grok_Tooltip_SetOn(element, tooltip);
+
+        tools.waitForElementInDom(element).then((el)=>{ 
+          if(el.classList.contains('d4-disabled')) {
+            let overlay = document.createElement('span');
+            overlay.style.position = 'fixed';
+
+            if ($('body').has('.d4-tooltip-overlays').length !=0)
+              $('.d4-tooltip-overlays').append(overlay)
+            else
+              $('body').append(div([overlay],'d4-tooltip-overlays'));
+            
+            let interval = setInterval(()=> {
+              let target = el.getBoundingClientRect();
+              overlay.style.left = String(target.left)+'px';
+              overlay.style.top = String(target.top)+'px';
+              overlay.style.width = String(target.width)+'px';
+              overlay.style.height = String(target.height)+'px';
+              
+              if ($('body').has(el).length == 0) { 
+                overlay.remove();
+                clearInterval(interval);
+              }
+
+            }, 100);
+
+            overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+              api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
+            });
+
+            overlay.addEventListener('mouseleave', (e:MouseEvent)=> {
+              setTimeout(()=>{
+                api.grok_Tooltip_Hide();
+              }, 250)
+            });
+
+          }
+
+        });
+      
+    }
     return element;
   }
 
@@ -1135,25 +1179,51 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
         spliterResize(divider, items[i], items[i + 1])
       }
     });
-    tools.handleResize(b, (w,h)=>{
-      let totalHeigh = 0;
-      let childs = 0;
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          childs++;
-        }
-        totalHeigh = totalHeigh + $(b.childNodes[i]).height();
-      }
 
-      for (let i = 0; i < b.children.length; i++){
-          if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-            $(b.childNodes[i]).css('max-height', (h-totalHeigh)/childs+$(b.childNodes[i]).height());
+    tools.waitForElementInDom(b).then((x)=>{
+      const rootHeight = x.getBoundingClientRect().height;
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultHeigh = 0;
+      let noHeightCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height != '') {
+            defaultHeigh += Number(element.style.height.replace(/px$/, ''));
           } else {
-            $(b.childNodes[i]).css('height', 4);
+            noHeightCount++;
           }
-      }
+        }else{
+          element.style.height = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height == '') {
+            let height = (rootHeight-defaultHeigh-($(b).find('.ui-split-v-divider').length*4))/noHeightCount;
+            element.style.height = String(height)+'px';
+          }
+        }
+      })
 
     });
+
+    tools.handleResize(b, (w,h)=>{
+      const rootHeight = b.getBoundingClientRect().height;
+
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+          let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
+          $(b.childNodes[i]).css('height', String(height)+'px');
+          //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
+        } else {
+          $(b.childNodes[i]).css('height', 4);
+        }
+      }
+      
+    });
+
   } else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
@@ -1165,7 +1235,6 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
   let b = box(null, options);
 
   if (resize && items.length > 1) {
-
     items.forEach((v, i) => {
       let divider = box();
       divider.className='ui-split-h-divider';
@@ -1174,25 +1243,49 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
         $(b).append(divider)
         spliterResize(divider, items[i], items[i + 1], true);
       }
-    })
+    });
 
-    tools.handleResize(b, (w,h)=>{
-      let totalWidth = 0;
-      let childs = 0;
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          childs++;
-        }
-        totalWidth = totalWidth + $(b.childNodes[i]).width();
-      }
-
-      for (let i = 0; i < b.children.length; i++){
-          if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-            $(b.childNodes[i]).css('max-width', (w-totalWidth)/childs+$(b.childNodes[i]).width());
+    tools.waitForElementInDom(b).then((x)=>{
+      const rootWidth = x.getBoundingClientRect().width;
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultWidth = 0;
+      let noWidthCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width != '') {
+            defaultWidth += Number(element.style.width.replace(/px$/, ''));
           } else {
-            $(b.childNodes[i]).css('width', 4);
+            noWidthCount++;
+          }
+        }else{
+          element.style.width = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width == '') {
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            element.style.width = String(width)+'px';
           }
         }
+      })
+
+    });
+
+    tools.handleResize(b, (w,h)=>{
+      const rootWidth = b.getBoundingClientRect().width;
+
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          $(b.childNodes[i]).css('width', String(width)+'px');
+        } else {
+          $(b.childNodes[i]).css('width', 4);
+        }
+      }
+      
     });
 
   } else {
@@ -1202,66 +1295,78 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 }
 
 function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean = false) {
-  let md: any;
-  divider.onmousedown = onMouseDown;
+let md: any;
+divider.onmousedown = onMouseDown;
 
-  if (horizontal) {
-    divider.style.cssText = `
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
-    max-width: 4px;
-    width: 4px;
-    min-width: 4px;
-    cursor: col-resize;`
-  }
-  else {
-    divider.style.cssText = `
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
-    max-height: 4px;
-    height: 4px;
-    min-height: 4px;
-    cursor: row-resize;`
-  }
+if (horizontal) {
+  divider.style.cssText = `
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+  max-width: 4px;
+  width: 4px;
+  min-width: 4px;
+  cursor: col-resize;`
+}
+else {
+  divider.style.cssText = `
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+  max-height: 4px;
+  height: 4px;
+  min-height: 4px;
+  cursor: row-resize;`
+}
 
-  divider.style.backgroundRepeat = 'no-repeat';
-  divider.style.backgroundPosition = 'center';
+divider.style.backgroundRepeat = 'no-repeat';
+divider.style.backgroundPosition = 'center';
+divider.style.backgroundColor = 'var(--grey-1)';
+
+function onMouseDown(e: any) {
+  if (!nextSibling.classList.contains('ui-box'))
+  nextSibling = nextSibling.parentElement!;
+  if (!previousSibling.classList.contains('ui-box'))
+  previousSibling = previousSibling.parentElement!;
+
+  md = {
+      e,
+      offsetLeft: divider.offsetLeft,
+      offsetTop: divider.offsetTop,
+      topHeight: previousSibling.offsetHeight,
+      bottomHeight: nextSibling.offsetHeight,
+      leftWidth: previousSibling.offsetWidth,
+      rightWidth: nextSibling.offsetWidth
+  };
+
+  divider.style.backgroundColor = 'var(--grey-2)';
+  document.onmousemove = onMouseMove;
+  document.onmouseup = () => {
   divider.style.backgroundColor = 'var(--grey-1)';
-
-  function onMouseDown(e: any) {
-    if (!nextSibling.classList.contains('ui-box'))
-      nextSibling = nextSibling.parentElement!;
-    if (!previousSibling.classList.contains('ui-box'))
-      previousSibling = previousSibling.parentElement!;
-
-      md = {
-        e,
-        offsetLeft: divider.offsetLeft,
-        offsetTop: divider.offsetTop,
-        topHeight: previousSibling.offsetHeight,
-        bottomHeight: nextSibling.offsetHeight,
-        leftWidth: previousSibling.offsetWidth,
-        rightWidth: nextSibling.offsetWidth
-      };
-
-    divider.style.backgroundColor = 'var(--grey-2)';
-    document.onmousemove = onMouseMove;
-    document.onmouseup = () => {
-      divider.style.backgroundColor = 'var(--grey-1)';
-      document.onmousemove = document.onmouseup = null;
-    }
+  document.onmousemove = document.onmouseup = null;
   }
+}
 
-  function onMouseMove(e: any) {
-      const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-      if (horizontal) {
-        delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
-        previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
-        nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-      } else {
-        delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
-        previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
-        nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
-      }
+function onMouseMove(e: any) {
+  const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+  if (horizontal) {
+      delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+      //$(previousSibling).css('width', md.leftWidth + delta.x);
+      //$(nextSibling).css('width', md.rightWidth - delta.x);
+      let newPrevWidth = md.leftWidth + delta.x;
+      let newNextWidth = md.rightWidth - delta.x;
+      previousSibling.style.width = String(newPrevWidth)+'px';
+      nextSibling.style.width = String(newNextWidth)+'px';
+      //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
+      //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
+  } else {
+      delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+      //$(previousSibling).css('height', md.topHeight + delta.y);
+      //$(nextSibling).css('height', md.bottomHeight - delta.y);
+      let newPrevHeight = md.topHeight + delta.y;
+      let newNextHeight = md.bottomHeight - delta.y;
+      previousSibling.style.height = String(newPrevHeight)+'px';
+      nextSibling.style.height = String(newNextHeight)+'px';
+      //previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
+      //nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
   }
+}
 }
 
 export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
@@ -1537,12 +1642,20 @@ export namespace hints {
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
-
-    const indicatorNode = el.getBoundingClientRect();
+    
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
-    hintIndicator.style.left = indicatorNode.left + 'px';
-    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    let setPosition = setInterval(function () {
+      if ($('body').has(el).length != 0) {
+        const indicatorNode = el.getBoundingClientRect();
+        hintIndicator.style.left = indicatorNode.left + 'px';
+        hintIndicator.style.top = indicatorNode.top + 'px';
+      } else {
+        hintIndicator.remove();
+        clearInterval(setPosition);
+      } 
+    }, 10);
 
     if (clickToClose) {
       $(el).on('click', () => {
@@ -1847,7 +1960,7 @@ export namespace css {
   }
 
   export enum table {
-    noraml = 'css-table',
+    normal = 'css-table',
     wide = 'css-table-wide'
   }
 

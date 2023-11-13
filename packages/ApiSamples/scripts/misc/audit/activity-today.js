@@ -1,4 +1,4 @@
-let view = grok.shell.newView('Usage');
+const view = grok.shell.newView('Usage');
 
-grok.data.query('UsageAnalysis:EventsOnDate', {'date': 'today'})
-  .then(t => view.append(DG.Viewer.scatterPlot(t).root));
+grok.data.query('UsageAnalysis:TopFunctions', {date: 'today', users: ['all']})
+  .then((t) => view.append(ui.block(DG.Viewer.scatterPlot(t).root)));

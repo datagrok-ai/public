@@ -7,7 +7,7 @@ See [JS API class reference](https://datagrok.ai/js-api/modules/ui) for details.
 
 The UI library provides primitives (buttons, dialogs, accordions, popups, etc), as well as
 [input controls](ui.md),
-[spreadsheets](ui.md#grid), and viewers such as [scatter plots](../../visualize/viewers/scatter-plot.md).
+[spreadsheets](ui.md#grid), and viewers such as [scatterplots](../../visualize/viewers/scatter-plot.mdx).
 See [UI class reference](https://datagrok.ai/js-api/modules/ui) for details.
 
 ### Live examples
@@ -983,7 +983,7 @@ per lin. Menu can also have a multilevel list of choices.
 let showMenu = () => {
   let showBalloon = (item) => grok.shell.info(item);
   DG.Menu.popup()
-      .item("Show info", () => {}))
+      .item("Show info", () => {})
       .separator()
       .items(["First", "Second"], showBalloon)
       .show();

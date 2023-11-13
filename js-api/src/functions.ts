@@ -180,7 +180,7 @@ export class Functions {
 export class ClientCache {
 
   /** Clears cache content. */
-  clear(): Promise<void> { return api.grok_ClientCache_Clear(); }
+  clear(metaId?:string): Promise<void> { return api.grok_ClientCache_Clear(metaId); }
 
   /** Starts client function caching service. */
   start(): Promise<void> { return api.grok_ClientCache_Start(); }

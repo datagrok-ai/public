@@ -2,6 +2,58 @@
 import { toDart } from "../wrappers";
 let api = <any>window;
 
+export class InputType {
+  static Int = 'Int';
+
+  static BigInt = 'BigInt';
+
+  static Float = 'Float';
+
+  static QNum = 'QNum';
+
+  static Slider = 'Slider';
+
+  static Bool = 'Bool';
+
+  static Switch = 'Switch';
+
+  static TextArea = 'TextArea';
+
+  static Text = 'Text';
+
+  static Date = 'Date';
+
+  static Map = 'Map';
+
+  static File = 'File';
+
+  static List = 'List';
+
+  static Color = 'Color';
+
+  static Column = 'Column';
+
+  static Columns = 'Columns';
+
+  static ColumnsMap = 'ColumnsMap';
+
+  static Radio = 'Radio';
+
+  static Choice = 'Choice';
+
+  static MultiChoice = 'MultiChoice';
+
+  static Table = 'Table';
+
+  static Molecule = 'Molecule';
+
+  static UserGroupSelector = 'UserGroupSelector';
+
+  static Dynamic = 'Dynamic';
+
+  static JsInputProxy = 'JsInputProxy';
+
+}
 export class GridCellStyleEx {
   public dart: any;
   constructor(dart: any) {

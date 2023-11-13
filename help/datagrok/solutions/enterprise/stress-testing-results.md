@@ -21,7 +21,7 @@ registered users. Of course it highly depends on usage patterns.
 TODO: The results will be automatically published in the Datagrok platform as a table with the following columns: (date,
 env, test, min duration, max duration, avg duration, error)
 
-TODO: Add the "interpetation" section for each test results section
+TODO: Add the "interpretation" section for each test results section
 
 ## Environments
 

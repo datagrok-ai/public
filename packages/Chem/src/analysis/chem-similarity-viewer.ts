@@ -120,7 +120,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         const grid = ui.div([
           renderMolecule(
             this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-          label]);
+          label], {style: {position: 'relative'}});
         let divClass = 'd4-flex-col';
         divClass += ' d4-current';
         grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
@@ -137,7 +137,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           renderMolecule(
             this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
           label,
-          molProps]);
+          molProps], {style: {position: 'relative'}});
         let divClass = 'd4-flex-col';
         if (idx == this.curIdx) {
           divClass += ' d4-current';

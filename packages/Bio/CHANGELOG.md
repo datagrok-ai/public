@@ -1,6 +1,25 @@
 # Bio changelog
 
-## 2.11.0 (WIP)
+## 2.12.0 (WIP)
+
+### Features
+
+### Bug fixes
+
+* Fix detectMacromolecule allowing double quoted sequences and gaps.
+* Fix for min seq length 10, tests.
+* Fix user library settings for tests
+* Fix test substructureFilter/helm
+
+## 2.11.0 (2023-10-25)
+
+### Features
+
+* Add VdRegionsViewer `filterSource` property.
+* Add ToAtomicLevel for non-linear HELM structures.
+* Add WebLogo aggregation function.
+* Add WebLogo position tooltip with composition table (for count).
+* Add PolyTool with Helm2Molfile support
 
 ### Bug fixes
 
@@ -13,7 +32,16 @@
 * Fix VdRegionsViewer fit width accounting position margin of WebLogo.
 * Fix similarity/diversity viewer tests.
 * Fix reset filters for Substructure Search filter.
-* Fix Macromolecule cell renderer width limit for devicePixelRatio less than 1.
+* Fix Macromolecule cell renderer width limit for `devicePixelRatio` less than 1.
+* Fix VdRegionsViewer `positionHeight` transmit to enclosed WebLogo.
+* Fix added by Split to monomers columns to be not used as a filter.
+* Fix WebLogo with `filterSource` of `Selection` to work from project.
+* Fix WebLogo with `filterSource` of `Selection` display all in case of empty selection.
+* Fix VdRegionsViewer for initial `filterSource`.
+* Fix Macromolecule cell render to skip on closed grid.
+* Fix WebLogoViewer for empty column (annotated).
+* Fix WebLogoViewer and VdRegionsViewer deadlock.
+* Fix Activity Cliffs error on Helm dataset
 
 ## 2.10.0 (2023-09-06)
 
@@ -29,7 +57,7 @@
 * Fixed UnitsHandler.posList length.
 * Fixed mistyping top menu path for Identity scoring.
 * Fixed Get Region missed in short top menu.
-* Fixed tests detectMacromoleculeBenchmark to specify test failed.  
+* Fixed tests detectMacromoleculeBenchmark to specify test failed.
 
 ## 2.9.0 (2023-08-30)
 

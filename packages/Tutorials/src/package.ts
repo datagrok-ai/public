@@ -29,7 +29,7 @@ export function trackOverview() {
     ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
   ], 'tutorials-root');
 
-  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.27);
   setPath(window.location.pathname, tutorialRunners);
 }
 
@@ -131,7 +131,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
   const registry: { [propertyName: string]: Track } = {
     'dataAnalysisTrack': eda,
     'machineLearningTrack': ml,
-    //'cheminformaticsTrack': chem,
+    'cheminformaticsTrack': chem,
     'dataAccessTrack': da,
     'dataTransformation': dataTransformation,
   };
@@ -233,6 +233,7 @@ export async function _pieChartDemo() {
 //name: trellisPlotDemo
 //description: Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.
 //meta.demoPath: Visualization | Data separation | Trellis Plot
+//meta.demoSkip: skip
 export async function _trellisPlotDemo() {
   await viewerDemo(DG.VIEWER.TRELLIS_PLOT);
 }

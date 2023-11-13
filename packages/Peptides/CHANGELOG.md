@@ -1,5 +1,77 @@
 # Peptides changelog
 
+## 1.16.0 (2023-11-05)
+
+### Features
+
+* Added Select All and Desect All functionality to all viewers.
+* Added Mean activity column for the Most Potent Residues viewer.
+* Added Mean activity to tooltips.
+* Added WebLogo to Selection table.
+
+### Bug Fixes
+
+* Fixed Logo Summary Table tooltip wouldn't show if analysis table doesn't contain column names 'Cluster'.
+* Fixed tooltips would show irrelevant info.
+
+## 1.15.3 (2023-10-26)
+
+### Bug Fixes
+
+* Fixed docking sequence space would completely remove the viewer.
+
+## 1.15.2 (2023-10-26)
+
+### Features
+
+* Improved Sequence space default parameters (changed threshold similarity from 0.8 to 0.3)
+
+## 1.15.1 (2023-10-19)
+
+### Features
+
+* Color-coding Sequence space by scaled activity.
+* Optimized Mutation Cliffs calculations to use workers.
+* Hid WebLogo positions in Logo Summary Table.
+
+### Bug Fixes
+
+* Fixed Invariant Map color coding wouldn't change when changing color column.
+
+## 1.15.0 (2023-10-12)
+
+### Features
+
+* Added Sequence Space viewer.
+* Selection panel columns now inherti width from main table.
+* Invarian Map cell values now rendered with contrast color relative to background.
+
+### Bug Fixes
+
+* Fixed WebLogo in header margin width.
+* Widgets in Context panel will now fill all the available width.
+* Fixed LST rows not resizable.
+* Fixed selection inconsistency.
+* Fixed Most Potent Residues keyboar navigation.
+* Fixed analysis not starting when there are columns of the same name.
+
+## 1.14.1 (2023-09-28)
+
+### Bug Fixes
+
+* Fixed a bug when filtering single cluster would break Logo Summary Table.
+
+## 1.14.0 (2023-09-28)
+
+### Features
+
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added icon to expand grids in property panel to fullscreen.
+
+### Bug Fixes
+
+* Fixed Distribution panel labels.
+
 ## 1.13.3 (2023-09-20)
 
 ### Features

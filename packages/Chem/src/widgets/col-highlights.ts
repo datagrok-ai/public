@@ -20,10 +20,17 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
                 'molecule': (item: ItemType) => {
                     return new CustomSketcherInput(item.molecule);
                 },
-            }
+            },
+            newItemFunction: () => ({color: '#00FF00'}),
         });
 
     itemsGrid.onItemAdded.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
+    itemsGrid.onAddingItemChanged.subscribe((item) => {
+        if (itemsGrid.items.indexOf(item.item) === -1)
+            col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items.concat([item.item])))
+        if (itemsGrid.items.filter((it => item.item.molecule === it.molecule)).length > 0 && item.fieldName === 'molecule')
+            grok.shell.warning(`Current structure has been added previously`);
+    });
     itemsGrid.onItemRemoved.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
     itemsGrid.onItemChanged.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
     return new DG.Widget(itemsGrid.root);
@@ -39,7 +46,7 @@ export class CustomSketcherInput {
         this.sketcher.syncCurrentObject = false;
         if (molecule) {
             this.molecule = molecule;
-            isSmarts(molecule) ? this.sketcher.setSmarts(molecule) : this.sketcher.setMolFile(molecule);
+            isSmarts(molecule) ? this.sketcher.setSmarts(molecule) : this.sketcher.setSmiles(molecule);
         }
         this.root = ui.div(this.sketcher.root, 'chem-col-highlight-sketcher-input');
         this.root.addEventListener('click', e => {
@@ -49,7 +56,7 @@ export class CustomSketcherInput {
             }
         }, true);
         this.sketcher.onChanged.subscribe(async () => {
-            this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getMolFile();
+            this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getSmiles();
             this.onChangeFunc();
         });
     }

@@ -39,7 +39,7 @@ To specify the condition in the script, use the 'user' variable in the following
 ```
 # condition: user.name == "john doe" || user.name == "jack smith"
 # condition: user.hasrole("chemist")
-# condition: user.inteam("high-throuput screening")
+# condition: user.inteam("high-throughput screening")
 ```
 
 ### Dataset condition
@@ -84,7 +84,7 @@ Oftentimes, it is beneficial to show users an interactive plot, pre-customized b
 is currently open.
 
 See the following info pane (viewer-scatter.grok) in action by opening (project:demog). It creates
-a [Scatter Plot](../../visualize/viewers/scatter-plot.md), sets the axes to the predefined columns, and adds a regression
+a [Scatter Plot](../../visualize/viewers/scatter-plot.mdx), sets the axes to the predefined columns, and adds a regression
 line.
 
 ```

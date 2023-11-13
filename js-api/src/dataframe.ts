@@ -815,10 +815,15 @@ export class Column<T = any> {
    * @returns {Column}
    * */
   init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
-    let type = typeof valueInitializer;
-    if (type === 'function')
+    let initType = typeof valueInitializer;
+    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME){
+      // @ts-ignore
+      api.grok_Column_Init(this.dart, (i) => toDart(valueInitializer(i)));
+    }
+    else if (initType === 'function')
       api.grok_Column_Init(this.dart, valueInitializer);
-    else if (type === 'number' || type === 'string' || type === 'boolean')
+
+    else if (initType === 'number' || initType === 'string' || initType === 'boolean')
       api.grok_Column_SetAllValues(this.dart, valueInitializer);
     return this;
   }
@@ -869,6 +874,13 @@ export class Column<T = any> {
    * @returns {string} */
   getString(i: number): string {
     return api.grok_Column_GetString(this.dart, i);
+  }
+
+  /** Returns i-th value as number
+   * @param {number} i
+   * @returns {number} */
+  getNumber(i: number): number {
+    return api.grok_Column_GetNumber(this.dart, i);
   }
 
   /** Attempts to set i-th value by converting a provided string to the corresponding strongly-typed value.
@@ -1203,7 +1215,7 @@ export class ColumnList {
    * */
   addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
-  /** Creates and adds a boolean column
+  /** Creates and adds a byte array column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
@@ -1746,6 +1758,11 @@ export class Stats {
    * @returns {Stats} */
   static fromColumn(col: Column, mask: BitSet | null = null): Stats {
     return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
+  }
+
+  /** Calculates statistics for the array of values. */
+  static fromValues(values: number[] | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array): Stats {
+    return new Stats(api.grok_Stats_FromValues(values));
   }
 
   /** Total number of values (including missing values). */

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
-category('DataFrame: Link', () => {
+category('DataFrame: Methods: Link', () => {
   let DF1: DG.DataFrame;
   let DF2: DG.DataFrame;
 

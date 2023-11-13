@@ -42,8 +42,10 @@ jobs:
           job_name="Build"
           if [[ $npm_version == ${current_version} ]]; then
             changed_version='false'
+            echo "Package $name version ${current_version} already published"
+            echo "::notice title=${name}::Version ${current_version} is already published"
           else
-            if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "release/"* ]]; then
+            if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
               changed_version='true'
               job_name="Build and publish to NPM"
               latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
@@ -56,6 +58,9 @@ jobs:
               else
                 echo "latest=false" >> $GITHUB_OUTPUT
               fi
+            else
+                echo "It is an actions for development branch. Publish will be skipped"
+                echo "::notice title=${name}::It is an actions for development branch. Publish will be skipped"
             fi
           fi
           echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
@@ -144,7 +149,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -262,7 +267,7 @@ jobs:
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
           
@@ -366,7 +371,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -445,7 +450,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:

@@ -58,7 +58,7 @@ export class OverviewView extends UaView {
     let usersSelection: DG.BitSet;
 
     function query(filter: UaFilter) {
-      df = grok.data.query('UsageAnalysis:PackagesUsageOverview', {...filter});
+      df = grok.functions.call('UsageAnalysis:PackagesUsageOverview', {...filter});
       df.then((df) => {
         packagesSelection = DG.BitSet.create(df.rowCount, (i) => true);
         usersSelection = DG.BitSet.create(df.rowCount, (i) => true);
@@ -204,9 +204,9 @@ export class OverviewView extends UaView {
       cardsView.textContent = '';
       for (const k of Object.keys(counters)) {
         cardsView.append(ui.div([ui.divText(k), ui.wait(async () => {
-          const fc = await grok.data.callQuery(counters[k], filter);
-          const valuePrev = fc.outputs.count1;
-          const valueNow = fc.outputs.count2;
+          const fc = await grok.functions.call(counters[k], filter);
+          const valuePrev = fc.count1;
+          const valueNow = fc.count2;
           const d = valueNow - valuePrev;
           return ui.div([ui.divText(`${valueNow}`),
             ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : d < 0 ? 'ua-card-minus' : ''})]);

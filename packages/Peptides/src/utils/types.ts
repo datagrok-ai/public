@@ -18,7 +18,6 @@ export type PeptidesSettings = {
   clustersColumnName?: string,
   targetColumnName?: string,
   scaling?: SCALING_METHODS,
-  isBidirectional?: boolean,
   showMonomerPosition?: boolean,
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
@@ -39,6 +38,7 @@ export type DrawOptions = {
   marginHorizontal?: number,
   headerStyle?: string,
   textHeight?: number,
+  selectionWidth?: number,
 };
 
 export type StatsInfo = {
@@ -50,3 +50,5 @@ export type StatsInfo = {
 export type RawColumn = {name: string, rawData: RawData, cat?: string[]};
 
 export type SelectionOptions = {shiftPressed: boolean, ctrlPressed: boolean};
+
+export type CachedWebLogoTooltip = {bar: string, tooltip: HTMLDivElement | null};

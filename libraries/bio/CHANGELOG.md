@@ -1,6 +1,16 @@
 # bio changelog
 
-## 5.39.0 (WIP)
+## 5.39.0 (2023-10-25)
+
+### Bug fixes
+* Fix monomer lib handler for PolyTool
+* Fix splitter with separator for quoted gaps
+
+### Features
+
+* Add VdRegionsViewer `filterSource` property.
+* Add WebLogo `valueAggrType`, `valueColumnName` properties.
+* Add routines to get/set user monomer library settings.
 
 ### Bug fixes
 
@@ -10,6 +20,8 @@
 * Add property fitWidth for VdRegionsViewer
 * Fix UnitsHandler to not replace existing tags
 * Fix VdRegionsViewer fit width accounting position margin of WebLogo
+* Fix UnitsHandler to allow empty alphabet if annotated with tag.
+* Fix UnitsHandler.maxLength to be zero for empty data.
 
 ## 5.38.0 (2023-09-06)
 

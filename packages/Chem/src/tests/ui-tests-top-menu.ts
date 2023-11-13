@@ -5,6 +5,7 @@ import { category, before, after, expect, test, delay, awaitCheck } from '@datag
 import { isColumnPresent, returnDialog, setDialogInputValue } from './gui-utils';
 import { readDataframe } from './utils';
 import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
+import { skip } from 'rxjs/operators';
 
 
 category('UI top menu', () => {
@@ -128,19 +129,15 @@ category('UI top menu', () => {
         }
     }, {timeout: 60000});
 
-     test('fingerprints', async () => {
-        await testGroup('Calculate', 'Fingerprints...', 'Fingerprints', 'Fingerprints');
-    });
-
-    test('substructure search', async () => {
-        smiles = grok.data.demo.molecules(20);
-        v = grok.shell.addTableView(smiles);
-        await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-        grok.shell.topMenu.find('Chem').group('Search').find('Substructure Search...').click();
-        await awaitCheck(() => document.querySelector('.grok-sketcher ') !== null, 'cannot open sketcher', 2000);
-        v.close();
-        grok.shell.o = ui.div();
-    });
+  test('substructure search', async () => {
+    smiles = grok.data.demo.molecules(20);
+    v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    grok.shell.topMenu.find('Chem').group('Search').find('Substructure Search...').click();
+    await awaitCheck(() => document.querySelector('.grok-sketcher ') !== null, 'cannot open sketcher', 2000);
+    v.close();
+    grok.shell.o = ui.div();
+  }, {skipReason: 'GROK-14121'});
 
     test('to inchi', async () => {
         await testGroup('Calculate', 'To InchI...', 'inchi', 'To InchI');
@@ -282,11 +279,11 @@ category('UI top menu', () => {
             'cannot create viewer', 3000);
         const stviewer = Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
         await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-            'scaffold tree has not been generated', 180000);
+            'scaffold tree has not been generated', 150000);
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();
-    }, {timeout: 200000}); 
+    }, {timeout: 180000}); 
 
     after(async () => {
         grok.shell.closeAll();

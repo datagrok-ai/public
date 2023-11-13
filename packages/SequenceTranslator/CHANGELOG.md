@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.2.0 (2023-10-27)
+
+### Features
+
+* Tabs implemented as separate apps
+
 ## 1.1.4 (2023-09-07)
 
 ### Bug fixes

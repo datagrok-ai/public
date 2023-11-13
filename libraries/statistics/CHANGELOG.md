@@ -1,5 +1,32 @@
 # statistics changelog
 
+## 1.2.10 (2023-11-09)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed curves not rendering because of undefined x if branch.
+  * Fixed linear fit not rendering.
+
+## 1.2.9 (2023-11-02)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Implemented linear function.
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed AUC calculation for logarithmic values.
+  * Fixed exception if no x or y coordinates present.
+
+## 1.2.8 (2023-10-16)
+
+### Bug Fixes
+
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Removed series name from fitSeriesProperties.
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Fixed proportional confidence interval rendering.
+
 ## 1.2.7 (2023-09-11)
 
 ### Features
@@ -7,7 +34,7 @@
 * [#2103](https://github.com/datagrok-ai/public/issues/2103): Property panel changes:
   * Added tags on the dataframe level
   * Added proper tooltips on properties
-* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added errorModel property
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added errorModel property.
 
 ### Bug Fixes
 

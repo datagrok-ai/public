@@ -34,6 +34,7 @@ import {
 
 import {convertXMLToIFitChartData} from './fit-parser';
 import {CellRenderViewer} from './cell-render-viewer';
+import { calculateSeriesStats, getChartDataAggrStats } from './fit-grid-cell-handler';
 
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
@@ -51,6 +52,8 @@ const MIN_TITLE_PX_WIDTH = 275;
 const MIN_TITLE_PX_HEIGHT = 225;
 const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 180;
 const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 140;
+const MIN_DROPLINES_VISIBILITY_PX_WIDTH = 120;
+const MIN_DROPLINES_VISIBILITY_PX_HEIGHT = 110;
 const AXES_LEFT_PX_MARGIN = 38;
 const AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS = 45;
 const AXES_TOP_PX_MARGIN = 5;
@@ -91,8 +94,8 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
     convertXMLToIFitChartData(gridCell.cell.value) :
     JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
 
-  const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
-  const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
+  const columnChartOptions = gridCell.cell.column ? getColumnChartOptions(gridCell.cell.column) : {};
+  const dfChartOptions = gridCell.cell.column ? getDataFrameChartOptions(gridCell.cell.dataFrame) : {};
 
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
@@ -120,6 +123,13 @@ export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: b
     rect.getBottom(axesBottomPxMargin).getTop(axesTopPxMargin).cutLeft(axesLeftPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
     rect.getLeft(axesLeftPxMargin).getRight(AXES_RIGHT_PX_MARGIN).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin)
   ];
+}
+
+/** Checks if the color is valid */
+export function isColorValid(color: string | null | undefined): boolean {
+  if (color === undefined || color === null || color === '')
+    return false;
+  return DG.Color.fromHtml(color) !== undefined;
 }
 
 /** Performs candlestick border drawing */
@@ -272,11 +282,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    grok.shell.o = gridCell;
-
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
+
+    grok.shell.o = gridCell;
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
@@ -297,14 +310,19 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           p.outlier = !p.outlier;
-          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
-            gridCell.cell.column.name, '.seriesNumber': i});
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
           if (columns) {
-            const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
             for (const column of columns) {
-              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
+              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+              const stats = column.tags['.seriesAggregation'] !== null ?
+                getChartDataAggrStats(data, column.tags['.seriesAggregation']) :
+                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], chartLogOptions) : null;
+              if (stats === null)
+                continue;
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);  
             }
           }
+          
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
@@ -351,9 +369,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxes = screenBounds.width >= MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT;
+    // TODO: make bigger sizes
     const showAxesLabels = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
       && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
     const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
+    const showDroplines =  w >= MIN_DROPLINES_VISIBILITY_PX_WIDTH && h >= MIN_DROPLINES_VISIBILITY_PX_HEIGHT;
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxesLabels, showTitle);
 
     const dataBounds = getChartBounds(data);
@@ -361,6 +381,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (dataBounds.y <= 0 && data.chartOptions) data.chartOptions.logY = false;
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
+    // TODO: make thinner
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
     const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
 
@@ -371,6 +392,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
+      if (series.points.some((point) => point.x === undefined || point.y === undefined))
+        continue;
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
         if (data.chartOptions)
@@ -441,7 +464,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes, showAxesLabels, chartLogOptions);
       }
   
-      if (series.droplines && showAxesLabels) {
+      if (series.droplines && showDroplines) {
         g.save();
         g.strokeStyle = 'blue';
         g.lineWidth = ratio;
@@ -457,7 +480,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
 
       if (data.chartOptions?.showStatistics) {
-        const statistics = getSeriesStatistics(series, fitFunc);
+        const statistics = getSeriesStatistics(series, fitFunc, chartLogOptions);
         for (let j = 0; j < data.chartOptions.showStatistics.length; j++) {
           const statName = data.chartOptions.showStatistics[j];
           const prop = statisticsProperties.find(p => p.name === statName);
@@ -503,9 +526,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     if (!gridCell.cell.value)
       return;
-    const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
+    const data = gridCell.cell.column?.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
 
     this.renderCurves(g, x, y, w, h, data);
   }

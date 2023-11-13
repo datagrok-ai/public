@@ -10,7 +10,7 @@ on:
 jobs:
   notify-on-failure:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' }}
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' && github.event.workflow_run.pull_requests[0].user.login != 'dependabot[bot]' }}
     steps:
 #      - name: Check for failures and send slack notification
 #        if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' }}
@@ -29,7 +29,7 @@ jobs:
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 

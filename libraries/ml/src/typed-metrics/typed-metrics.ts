@@ -84,6 +84,7 @@ export const AvailableMetrics = {
     [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING],
     [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN],
     [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
+    [MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE]: mmDistanceFunctions[MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE],
   },
   [DistanceMetricsSubjects.Number]: {
     [NumberMetricsNames.NumericDistance]: numberDistanceMetricsMethods[NumberMetricsNames.NumericDistance],

@@ -231,13 +231,14 @@ export const fitSeriesProperties: Property[] = [
   Property.js('errorModel', TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
-    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
+    'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
   Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
-  Property.js('showPoints', TYPE.STRING,
+  Property.js('showPoints', TYPE.STRING, // rewrite description
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   Property.js('showCurveConfidenceInterval', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false}),
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
+      caption: 'Confidence interval'}),
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
@@ -274,11 +275,24 @@ export class LinearFunction extends FitFunction {
   }
 
   y(params: number[], x: number): number {
-    throw new Error('Not implemented');
+    return linear(params, x);
   }
 
   getInitialParameters(x: number[], y: number[]): number[] {
-    throw new Error('Not implemented');
+    let minIndex = 0;
+    let maxIndex = 0;
+    for (let i = 1; i < x.length; i++) {
+      if (x[i] < x[minIndex])
+        minIndex = i;
+      if (x[i] > x[maxIndex])
+        maxIndex = i;
+    }
+
+    const deltaX = x[maxIndex] - x[minIndex];
+    const deltaY = y[maxIndex] - y[minIndex];
+    const A = deltaY / deltaX;
+    const B = y[maxIndex] - A * x[maxIndex];
+    return [A, B];
   }
 }
 
@@ -559,6 +573,12 @@ export function sigmoid(params: number[], x: number): number {
   return (D + (A - D) / (1 + Math.pow(10, (x - C) * B)));
 }
 
+export function linear(params: number[], x: number) {
+  const A = params[0];
+  const B = params[1];
+  return A * x + B;
+}
+
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
   let auc = 0;
 
@@ -677,5 +697,5 @@ function objectiveNormalProportional(targetFunc: (params: number[], x: number) =
   for (let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
 
-  return {value: -likelihood, const: sigma, mult: 0};
+  return {value: -likelihood, const: 0, mult: sigma};
 }

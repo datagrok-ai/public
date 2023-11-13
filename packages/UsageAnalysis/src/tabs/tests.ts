@@ -7,41 +7,44 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 
 const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
+export const filters = ui.box();
+filters.id = 'ua-tests-filters';
 
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
-  static filters: HTMLElement = ui.box();
   cardFilter: string | null = null;
   filterGroup: DG.FilterGroup | undefined = undefined;
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Tests';
+    filters.style.display = 'none';
   }
 
   async initViewers(): Promise<void> {
     // Area Chart
     const chart = ui.wait(async () => {
-      const dfMonth: DG.DataFrame = await grok.data.query('UsageAnalysis:TestsMonth');
+      const dfMonth: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsMonth');
       dfMonth.getCol('status').colors.setCategorical(colors);
       const areaChart = DG.Viewer.fromType('Line chart', dfMonth, historyStyle);
-      // areaChart.root.style.marginRight = '10px';
       return areaChart.root;
     });
+    chart.style.marginRight = '12px';
 
     // Table
     const grid = ui.wait(async () => {
-      const df: DG.DataFrame = await grok.data.query('UsageAnalysis:TestsToday');
+      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday');
       df.getCol('status').colors.setCategorical(colors);
       df.getCol('id').name = '~id';
-      if (TestsView.filters.children.length) TestsView.filters = ui.box();
-      const filters = DG.Viewer.filters(df, filtersStyle);
-      this.filterGroup = new DG.FilterGroup(filters.dart);
-      TestsView.filters.appendChild(filters.root);
+      if (filters.children.length)
+        filters.innerHTML = '';
+      const filters_ = DG.Viewer.filters(df, filtersStyle);
+      this.filterGroup = new DG.FilterGroup(filters_.dart);
+      filters.appendChild(filters_.root);
       df.onCurrentRowChanged.subscribe(async () => {
         const row = df.currentRow;
         const acc = DG.Accordion.create();
-        let history: DG.DataFrame = await grok.data.query('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
+        let history: DG.DataFrame = await grok.functions.call('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
         history.getCol('id').name = '~id';
         history.getCol('uid').name = '~uid';
         const resName = history.getCol('res_name');
@@ -108,7 +111,7 @@ export class TestsView extends UaView {
     const cardsView = ui.div([], {classes: 'ua-cards'});
     const counters = ['passed', 'failed', 'skipped'];
     cardsView.textContent = '';
-    const cardsDfP: Promise<DG.DataFrame> = grok.data.query('UsageAnalysis:TestsCount');
+    const cardsDfP: Promise<DG.DataFrame> = grok.functions.call('UsageAnalysis:TestsCount');
     for (let i = 0; i < 3; i++) {
       const c = counters[i];
       const card = ui.div([ui.divText(c), ui.wait(async () => {
@@ -129,11 +132,9 @@ export class TestsView extends UaView {
       });
       cardsView.append(card);
     }
-
     this.root.append(ui.splitV([
-      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {maxHeight: '150px'}}),
-      grid,
-    ], null, true));
+      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {height: '150px'}}),
+      grid], null, true));
   }
 }
 

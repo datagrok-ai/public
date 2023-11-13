@@ -13,6 +13,7 @@ import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
@@ -53,7 +54,7 @@ export async function demoBio01bUI() {
       .step('Find activity cliffs', async () => {
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, dimRedMethod)) as DG.ScatterPlotViewer;
+          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs

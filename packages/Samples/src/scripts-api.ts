@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+// test: juliaDup("abc") == "abcabc"
 export async function juliaDup(s: string): Promise<string> {
   return await grok.functions.call('Samples:Scripts:JuliaDup', { s });
 }

@@ -28,7 +28,7 @@ our [deployment script](https://github.com/datagrok-ai/public/blob/master/help/d
 
    * EC2 instance should be treated like Virtual Machine. It is required to create EC2 instances before the script run.
      You can check how to create instances
-     in [regular machine example preparations steps](deploy-regular.md#preparations)
+     in [regular machine example preparations steps](bare-metal/deploy-regular.md#preparations)
 
 ```bash
 sh deploy.sh

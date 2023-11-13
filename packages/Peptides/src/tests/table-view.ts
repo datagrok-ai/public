@@ -1,7 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {CLUSTER_TYPE, PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -9,6 +8,7 @@ import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {TEST_COLUMN_NAMES} from './utils';
+import {showMonomerTooltip} from '../utils/tooltips';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -36,26 +36,20 @@ category('Table view', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
 
+  after(async () => await delay(3000));
+
   test('Tooltip', async () => {
-    expect(model.showMonomerTooltip(firstPair.monomerOrCluster, 0, 0), true,
+    expect(showMonomerTooltip(firstPair.monomerOrCluster, 0, 0), true,
       `Couldn't structure for monomer ${firstPair.monomerOrCluster}`);
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;
-    const posCols = model.splitSeqDf.columns.names();
+    const posCols = model.positionColumns.toArray().map((col) => col.name);
     for (let colIdx = 1; colIdx < gridCols.length; colIdx++) {
       const col = gridCols.byIndex(colIdx)!;
       const tableColName = col.column!.name;

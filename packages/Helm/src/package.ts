@@ -3,16 +3,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {HelmWebEditor} from './helm-web-editor';
-import {HelmCellRenderer} from './cell-renderer';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {findMonomers, parseHelm} from './utils';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+
+import {findMonomers, parseHelm} from './utils';
+import {HelmWebEditor} from './helm-web-editor';
+import {HelmCellRenderer} from './cell-renderer';
 
 let monomerLib: IMonomerLib | null = null;
+
+import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 
 export const _package = new DG.Package();
 
@@ -110,7 +112,7 @@ function rewriteLibraries() {
 //name: helmCellRenderer
 //tags: cellRenderer
 //meta.cellType: helm
-//meta.columnTags: units=helm
+//meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();
@@ -281,7 +283,7 @@ export function getMolfiles(col: DG.Column): DG.Column {
 }
 
 //name: helmWebEditor
-//output: object
+//output: object result
 export function helmWebEditor(): HelmWebEditor {
   return new HelmWebEditor();
 }

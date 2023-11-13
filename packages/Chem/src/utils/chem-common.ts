@@ -9,7 +9,11 @@ const unlockFunctionForKey: any = {};
 export enum Fingerprint {
   Morgan = 'Morgan',
   RDKit = 'RDKit',
-  Pattern = 'Pattern'
+  Pattern = 'Pattern',
+  //Avalon = 'Avalon',
+  MACCS = 'MACCS',
+  AtomPair = 'AtomPair',
+  TopologicalTorsion = 'TopologicalTorsion'
 }
 
 // By https://github.com/mistval/locko
@@ -62,5 +66,6 @@ export function hexToPercentRgb(hex: string): number[] | null {
       parseInt(result[1], 16) / 256,
       parseInt(result[2], 16) / 256,
       parseInt(result[3], 16) / 256,
+      0.3
   ] : null;
 }

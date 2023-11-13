@@ -1,5 +1,28 @@
 # Tutorials changelog
 
+## 1.3.15 (WIP)
+
+### Bug Fixes
+
+* Improved Chem tutorials: Activity Cliffs, R-Group Analysis, Similarity and Diversity Search, Substructure Search and Filtering.
+* Improved Scatterplot and Dashboard tutorials.
+* Changed tutorials order in the EDA track.
+* Fixed links in tutorials.
+
+## 1.3.14 (2023-10-23)
+
+### Features
+
+* Added tests for all demo functions.
+* Added PK-PD modeling demo.
+* Added Chem tutorials: Activity Cliffs, R-Group Analysis, Similarity and Diversity Search, Substructure Search and Filtering.
+
+### Bug Fixes
+
+* Harmonized menu names.
+* Moved Bioreactor demo to Compute section.
+* Fixed multivariate analysis tutorial.
+
 ## 1.3.13 (2023-08-28)
 
 ### Bug fixes

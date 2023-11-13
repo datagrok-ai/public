@@ -62,8 +62,8 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
-import { getmolColumnHighlights } from './widgets/col-highlights';
-import { RDModule } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {getmolColumnHighlights} from './widgets/col-highlights';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -133,7 +133,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Chemistry | Most Diverse Structures
 //tags: tooltip
 //input: column col {semType: Molecule}
-//output: widget
+//output: widget result
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
   const version = col.version;
 
@@ -435,7 +435,7 @@ export function searchSubstructureEditor(call: DG.FuncCall): void {
 
 
 //top-menu: Chem | Search | Substructure Search...
-//name: Diversity Search
+//name: Substructure Search
 //input: column molecules { semType: Molecule }
 //editor: Chem:SearchSubstructureEditor
 export function SubstructureSearchTopMenu(molecules: DG.Column): void {
@@ -468,7 +468,7 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
   ui.dialog({title: 'Chemical Space'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call(true);
+      call.func.prepare(funcEditor.funcParams).call();
     })
     .show();
 }
@@ -500,18 +500,29 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
+  const pg = DG.TaskBarProgressIndicator.create(`Initializing Chemical space...`);
+
+  const progressFunc = (progress: number) => {
+    pg.update(progress, `Running Chemical space... ${progress.toFixed(0)}%`);
+  };
+
   if (table.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options);
-        progressBar.close();
+        const res =
+          await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
+        pg.close();
         return res;
       })
+      .onCancel(() => pg.close())
       .show();
-  } else
-    return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options);
+  } else {
+    const res =
+      await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
+    pg.close();
+    return res;
+  }
 }
 
 
@@ -915,11 +926,23 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
         const mol = checkMoleculeValid(cell.cell.value);
-        if (!checkMolEqualSmiles(mol, newValue))
-          cell.cell.value = newValue;
+        if (!checkMolEqualSmiles(mol, newValue)) {
+          try {
+            //@ts-ignore TODO Remove on js-api update
+            cell.setValue(newValue, true);
+          } catch {
+            cell.cell.value = newValue;
+          }
+        }
         mol?.delete();
-      } else
-        cell.cell.value = sketcher.getMolFile();
+      } else {
+        try {
+          //@ts-ignore TODO Remove on js-api update
+          cell.setValue(sketcher.getMolFile(), true);
+        } catch {
+          cell.cell.value = sketcher.getMolFile();
+        }
+      }
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show({resizable: true});
