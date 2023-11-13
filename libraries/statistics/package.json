@@ -4,11 +4,11 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.2.8",
+  "version": "1.2.10",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.16.0",
-    "@datagrok-libraries/utils": "^4.0.0",
+    "datagrok-api": "^1.17.0",
+    "@datagrok-libraries/utils": "^4.1.0",
     "cash-dom": "latest",
     "jstat": "latest",
     "dayjs": "^1.11.7"

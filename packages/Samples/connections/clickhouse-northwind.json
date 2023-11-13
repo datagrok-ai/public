@@ -5,12 +5,12 @@
   "parameters": {
     "server": "db.datagrok.ai",
     "db": "northwind",
-    "port": 8125
+    "port": 18124
   },
   "credentials": {
     "parameters": {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "1q7vemZFzzmNaETzt8P4FRSl7PLCPaKGY9gH"
     }
   },
   "dataSource": "ClickHouse",

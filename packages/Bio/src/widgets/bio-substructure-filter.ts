@@ -16,6 +16,8 @@ import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macro
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {debounceTime} from 'rxjs/operators';
 
+import {_package} from '../package-test';
+
 export class BioSubstructureFilter extends DG.Filter {
   bioFilter: BioFilterBase | null = null;
   bitset: DG.BitSet | null = null;
@@ -118,6 +120,7 @@ export class BioSubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onInputChanged(): Promise<void> {
+    _package.logger.debug('Bio: BioSubstructureFilter._onInputChanged(), start');
     if (!this.isFiltering) {
       this.bitset = null;
       this.dataFrame?.rows.requestFilter();

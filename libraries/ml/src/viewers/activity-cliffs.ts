@@ -16,6 +16,8 @@ export let activityCliffsIdx = 0;
 
 export const CLIFFS_DF_NAME = 'cliffsDf';
 
+export const CLIFFS_COL_ENCODE_FN = 'cliffs_col_encode_fn';
+
 export const enum TAGS {
   activityCliffs = '.activityCliffs',
 }
@@ -109,7 +111,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     methodName: methodName,
     similarityMetric: similarityMetric as BitArrayMetrics,
     embedAxesNames: axesNames,
-    options: seqSpaceOptions,
+    options: {...(seqSpaceOptions??{}), [CLIFFS_COL_ENCODE_FN]: undefined},
   };
 
   const {distance, coordinates} = await seqSpaceFunc(seqSpaceParams);
@@ -126,10 +128,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     //   recalculatedDistances =
     //   DistanceMatrix.calc(seqCol.toList(), mmDistanceFunctions[similarityMetric as MmDistanceFunctionsNames]()).data;
     // }
-
     // const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances!,
     //   isMacroMoleculeDistance, simMatrixFunc);
-    const fingerprintsCol: DG.Column = await grok.functions.call('Chem:getMorganFingerprints', {molColumn: seqCol});
+    const fingerprintsCol: DG.Column = await grok.functions.call('Chem:getMorganFingerprints', {molColumn: dimensionalityReduceCol});
     const fpBitArrayList = fingerprintsCol.toList()
       .map((fp: DG.BitSet) => (new BitArray(new Uint32Array(fp.getBuffer().buffer), fp.length)));
     
@@ -138,7 +139,15 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     const sparseMatrixRes = await new SparseMatrixService().calc(fpBitArrayList, similarityMetric, chemSimilarityLimit);
     cliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, chemSimilarityLimit, activities);
   } else {
-    const sparseMatrixRes = await new SparseMatrixService().calc(seqCol.toList(), similarityMetric, similarityLimit);
+    let seqColList: string[] = seqCol.toList();
+    let opts = {};
+    if (seqSpaceOptions?.[CLIFFS_COL_ENCODE_FN]){
+      const {seqList, options} = await seqSpaceOptions[CLIFFS_COL_ENCODE_FN](seqCol, similarityMetric);
+      seqColList = seqList;
+      opts = options;
+    }
+
+    const sparseMatrixRes = await new SparseMatrixService().calc(seqColList, similarityMetric, similarityLimit, opts);
     cliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, similarityLimit, activities);
   }
   const sali: DG.Column = getSaliCountCol(dimensionalityReduceCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,

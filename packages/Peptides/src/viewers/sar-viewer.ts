@@ -5,11 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {PeptidesModel, PositionStats, VIEWER_TYPE} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import wu from 'wu';
 import {SelectionItem} from '../utils/types';
-import {Stats} from '../utils/statistics';
+import {PositionStats, Stats} from '../utils/statistics';
 import {_package} from '../package';
+import {showTooltip} from '../utils/tooltips';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -75,7 +76,7 @@ export class MonomerPosition extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = '/help/domains/bio/peptides.md';
+    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     this.render();
   }
 
@@ -125,7 +126,9 @@ export class MonomerPosition extends DG.JsViewer {
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
       this.model.highlightMonomerPosition(monomerPosition);
-      return this.model.showTooltip(monomerPosition, x, y, true);
+      return showTooltip(this.model.df, this.model.settings.columns!, {fromViewer: true,
+        isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS, monomerPosition, x, y,
+        mpStats: this.model.monomerPositionStats});
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
@@ -151,7 +154,31 @@ export class MonomerPosition extends DG.JsViewer {
         this.currentGridCell = gridCell;
       }
     });
-    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPressed = ev.key.startsWith('Arrow'));
+    this.viewerGrid.root.addEventListener('keydown', (ev) => {
+      this.keyPressed = ev.key.startsWith('Arrow');
+      if (this.keyPressed)
+        return;
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey)) {
+        if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+          this.model.initInvariantMapSelection({notify: false});
+        else
+          this.model.initMutationCliffsSelection({notify: false});
+      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+        const positions = Object.keys(this.model.monomerPositionStats).filter((pos) => pos !== 'general');
+        for (const position of positions) {
+          const monomers = Object.keys(this.model.monomerPositionStats[position]!).filter((monomer) => monomer !== 'general');
+          for (const monomer of monomers) {
+            const monomerPosition = {monomerOrCluster: monomer, positionOrClusterType: position};
+            if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+              this.model.modifyInvariantMapSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+            else
+              this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+          }
+        }
+      }
+      this.model.fireBitsetChanged();
+      this.viewerGrid.invalidate();
+    });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
       if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
@@ -257,7 +284,7 @@ export class MostPotentResidues extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = '/help/domains/bio/peptides.md';
+    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     this.render();
   }
 
@@ -274,6 +301,7 @@ export class MostPotentResidues extends DG.JsViewer {
     const pValData: (number | null)[] = new Array(posData.length);
     const countData: number[] = new Array(posData.length);
     const ratioData: number[] = new Array(posData.length);
+    const meanData: number[] = new Array(posData.length);
 
     let i = 0;
     for (const [position, positionStats] of monomerPositionStatsEntries) {
@@ -312,6 +340,7 @@ export class MostPotentResidues extends DG.JsViewer {
       pValData[i] = maxEntry![1].pValue;
       countData[i] = maxEntry![1].count;
       ratioData[i] = maxEntry![1].ratio;
+      meanData[i] = maxEntry![1].mean;
       ++i;
     }
 
@@ -327,6 +356,7 @@ export class MostPotentResidues extends DG.JsViewer {
     mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.POSITION, posData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.STRING, C.COLUMNS_NAMES.MONOMER, monomerData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN_DIFFERENCE, mdData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN, meanData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.P_VALUE, pValData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.COUNT, countData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.RATIO, ratioData));
@@ -359,7 +389,8 @@ export class MostPotentResidues extends DG.JsViewer {
         monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
-      return this.model.showTooltip(monomerPosition, x, y, true);
+      return showTooltip(this.model.df, this.model.settings.columns!,
+        {fromViewer: true, isMutationCliffs: true, monomerPosition, x, y, mpStats: this.model.monomerPositionStats});
     });
     DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
@@ -378,7 +409,21 @@ export class MostPotentResidues extends DG.JsViewer {
         this.currentGridRowIdx = gridCell.gridRow;
       }
     });
-    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPressed = ev.key.startsWith('Arrow'));
+    this.viewerGrid.root.addEventListener('keydown', (ev) => {
+      this.keyPressed = ev.key.startsWith('Arrow');
+      if (this.keyPressed)
+        return;
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey))
+        this.model.initMutationCliffsSelection({notify: false});
+      else if (ev.code === 'KeyA' && ev.ctrlKey) {
+        for (let rowIdx = 0; rowIdx < mostPotentResiduesDf.rowCount; ++rowIdx) {
+          const monomerPosition = this.getMonomerPosition(this.viewerGrid.cell('Diff', rowIdx));
+          this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+        }
+      }
+      this.model.fireBitsetChanged();
+      this.viewerGrid.invalidate();
+    });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);

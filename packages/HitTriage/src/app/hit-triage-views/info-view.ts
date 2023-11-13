@@ -14,17 +14,18 @@ import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
 import {HitBaseView} from '../base-view';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
+  public readmePath = _package.webRoot + 'README_HT.md';
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
+    grok.shell.windows.help.showHelp(this.readmePath);
     this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
   }
 
   onActivated(): void {
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
+    grok.shell.windows.help.showHelp(this.readmePath);
   }
 
   async init(presetTemplate?: HitTriageTemplate): Promise<void> {
@@ -38,7 +39,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     const appDescription = ui.div([
       ui.h1('Process, analyse and filter molecules for your needs using Hit Triage:'),
       ui.div(ui.markdown(description), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
-      ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage'),
+      ui.link('Read more',
+        'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage'),
     ]);
 
     const campaignAccordionDiv = ui.div();

@@ -12,17 +12,6 @@ interface IScaffoldFilterState {
   colName: string;
 }
 
-function clearNotIcon(viewer: ScaffoldTreeViewer, tree: DG.TreeViewNode[]) {
-  tree.map((group) => {
-    const castedGroup = group as DG.TreeViewGroup;
-    if (!isOrphans(castedGroup)) {
-      viewer.setNotBitOperation(castedGroup, false);
-      if (castedGroup.children)
-        clearNotIcon(viewer, castedGroup.children)
-    }
-  });
-}
-
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
   savedTree: string = '';
@@ -34,7 +23,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs = this.viewer.subs;
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.viewer.clearFilters();
-      clearNotIcon(this.viewer, this.viewer.tree.children);
+      this.viewer.clearNotIcon(this.viewer.tree.children);
     }));
   }
 
@@ -94,7 +83,6 @@ export class ScaffoldTreeFilter extends DG.Filter {
     super.detach();
     this.viewer.clearFilters();
     this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
-    grok.shell.tv.dataFrame?.fireValuesChanged();
   }
 
   createViewer(dataFrame: DG.DataFrame) {

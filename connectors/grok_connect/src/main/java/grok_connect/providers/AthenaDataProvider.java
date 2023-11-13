@@ -8,6 +8,7 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import serialization.Types;
@@ -84,7 +85,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
     public String getConnectionStringImpl(DataConnection conn) {
         String formatString;
         String vpc = conn.get(DbCredentials.VPC_ENDPOINT);
-        if (vpc == null || vpc.isEmpty())
+        if (GrokConnectUtil.isEmpty(vpc))
             formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;";
         else
             formatString = vpc + ".athena.%s.vpce.amazonaws.com:443;";
@@ -116,7 +117,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
             add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
-        if (table != null)
+        if (GrokConnectUtil.isNotEmpty(table))
             filters.add("c.table_name = '" + table + "'");
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);

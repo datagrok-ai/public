@@ -106,7 +106,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
       return call.func.name === 'AddNewColumn' && column.name === columnNameBMI &&
         Math.abs(column.min - 12.891) < tolerance && Math.abs(column.max - 62.932) < tolerance;
       })), addNCDlgBMI.inputs.filter((input) => input.caption == '')[2]?.root, 'The body mass index (BMI) is ' +
-      `calculated as mass (kg) divided by height (m) raised to power 2. Use the "WEIGHT" and "${columnName}" ` +
+      `calculated as mass (kg) divided by height (m) raised to power 2:<br>BMI = weight / height^2<br>Use the "WEIGHT" and "${columnName}" ` +
       'columns and functions "Div" and "Pow" (or the corresponding operators). We will use this new column to ' +
       'check what happens when we change the column metadata.');
 

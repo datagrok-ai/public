@@ -60,6 +60,9 @@ export class SubstructureFilter extends DG.Filter {
   onSketcherChangedSubs?: Subscription[] = [];
   active: boolean = true;
   syncEvent = false;
+  searchTypeSync = false;
+  similarityCutOffSync = false;
+  fpSync = false;
   filterId: number;
   tableName: string = '';
   errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
@@ -127,8 +130,7 @@ export class SubstructureFilter extends DG.Filter {
 
     this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
       this.fp = this.fpInput.value;
-        if (!this.syncEvent)
-          this.searchTypeChanged.next();      
+      !this.fpSync ? this.searchTypeChanged.next() : this.fpSync = false;
     });
     this.fpInput.input.classList.add('chem-filter-fp-editor');
     this.fpInput.captionLabel.classList.add('chem-filter-fp-label');
@@ -149,8 +151,7 @@ export class SubstructureFilter extends DG.Filter {
     this.similarityCutOffInput.captionLabel.classList.add('chem-filter-sim-cutoff-label');
     this.similarityCutOffInput.onChanged(() => {
       this.similarityCutOff = this.similarityCutOffInput.value;
-      if (!this.syncEvent)
-        this.searchTypeChanged.next();  
+      !this.similarityCutOffSync ? this.searchTypeChanged.next() : this.similarityCutOffSync = false;
     });
 
     ui.tooltip.bind((this.similarityCutOffInput.root.getElementsByClassName('ui-input-slider')[0] as HTMLElement)!, 'Similarity cutoff');
@@ -229,8 +230,11 @@ export class SubstructureFilter extends DG.Filter {
         this.currentMolfile = state.molblock!;
         this.bitset = state.bitset!;
         this.searchTypeInput.value = state.searchType;
+        this.searchTypeSync = true;
         this.similarityCutOffInput.value = state.simCutOff;
+        this.similarityCutOffSync = true;
         this.fpInput.value = state.fp;
+        this.fpSync = true;
         this.sketcher.setMolFile(state.molblock!);
         this.updateFilterUiOnSketcherChanged(state.molblock!);
       }
@@ -470,15 +474,14 @@ export class SubstructureFilter extends DG.Filter {
     if (this.searchType !== SubstructureSearchType.CONTAINS)
       this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'chem-search-options-icon');
     else {
-      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()))
+      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()) && this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE)
         this.sketcher.root.appendChild(this.optionsIcon);
     }
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
     else
       this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
-    if (!this.syncEvent)
-      this.searchTypeChanged.next();
+      !this.searchTypeSync ? this.searchTypeChanged.next() : this.searchTypeSync = false;
   }
 
   onShowOptionsChanged() {

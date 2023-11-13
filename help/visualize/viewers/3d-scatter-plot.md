@@ -26,7 +26,7 @@ Controls:
 
 See also:
 
-* [2D Scatter plot](scatter-plot.md)
+* [2D Scatter plot](scatter-plot.mdx)
 * [Column selectors](column-selectors.md)
 * [Table View](../../datagrok/navigation/table-view.md)
 * [Viewers](viewers.md)

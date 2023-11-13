@@ -18,7 +18,6 @@ interactive experiences that allow [validation](#validation), controlled [vocabu
 [dynamic lookups](#lookup-tables), [referencing parameters](#referencing-other-parameters), and 
 [function chaining](#function-inputs) - without writing a single line of UI code!
 
-
 ## Function
 
 There are general parameters common to all functions, as well as parameters specific to certain function types. Not all
@@ -36,9 +35,11 @@ general parameters are required, the list of parameters depends on the function
 #output: int count [Number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
+
 </div> </details>
 
 These are the common parameters for all functions:
+
 * `name`: shows up in the user interface
 * `description`: shows up in a function tooltip
 * `tags`: comma-separated tags that you can use in search
@@ -47,6 +48,7 @@ These are the common parameters for all functions:
 * `top-menu`: Top menu path separated with pipes (`|`), such as `Chem | Gasteiger Charges`
 
 Some parameters are specific to script language and/or technology:
+
 * Script
   * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
   * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
@@ -78,7 +80,7 @@ Datagrok supports the following types in all scripting languages:
 * Scalars: `int`, `double`, `bool`, `string`, `datetime`
 * Table: `dataframe`, `column`, `column_list`
 * Collections: `list` (typically of strings)
-* `graphics`: typically a function output. See [example]()
+* `graphics`: typically a function output. See [example](https://github.com/datagrok-ai/public/blob/9f7043dbadd9be35c6f798143642de3c9145b560/packages/Chem/scripts/gasteiger_charges.py#L4)
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
 
@@ -86,13 +88,13 @@ Some of the options apply to all parameters, while other are type-specific.
 
 For all parameters:
 
-| Option      | Value  | Description                                        |
-|-------------|--------|----------------------------------------------------|
-| validators  | string | Comma-separated list of [validators](#validation) |
-| caption     | string | Custom field caption                               |
-| postfix     | string | Field postfix                                      |
-| units       | string | Value unit name                                    |
-| nullable    | bool   | Makes it an [optional parameter]()                 |
+| Option     | Value  | Description                                                               |
+|------------|--------|---------------------------------------------------------------------------|
+| validators | string | Comma-separated list of [validators](#validation)                         |
+| caption    | string | Custom field caption                                                      |
+| postfix    | string | Field postfix                                                             |
+| units      | string | Value unit name                                                           |
+| nullable   | bool   | Makes it an [optional parameter](#initial-values-and-optional-parameters) |
 
 For `dataframe` type:
 
@@ -115,7 +117,7 @@ For `string` type
 
 | Option                       | Value                                                                             | Description                                        |
 |------------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------|
-| [choices](choices)           | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
+| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
 | [suggestions](#autocomplete) | Name of a function that returns a list of strings to autocomplete user input      | Autocomplete gives you options as you type |
 
 For `numeric` types
@@ -189,6 +191,7 @@ as `@patternName(columnName)`, just like we did here for the "freight" column:
 --input: string freightValue = >= 10.0 {pattern: double}
 select * from Orders where @freightValue(freight)
 ```
+
 Different inputs would produce differently structured SQL (also dependent on the database). 
 
 | Input | SQL                                                                | Description                     |
@@ -389,6 +392,7 @@ FROM target_dictionary td
     AND td.organism = @organism
     AND oc.L1 = 'Bacteria'
 ```
+
 </div></details>
 
 ![](autocomplete.gif)
@@ -419,6 +423,41 @@ result = orders.rowCount * 2;
 ![img.png](function-input.png)
 
 
+### Input types
+
+Input fields such as text boxes or combo boxes get generated automatically based on
+the property attributes. You can also explicitly set the `inputType` option. Here, we 
+set it to `Radio` to make the input appear as a radio button instead of the combo box:
+
+```js
+//input: string fruit { choices: ["Apple", "Banana"], inputType: Radio }`
+```
+
+Input types have to match the data types (input types in bold are the default ones
+that you do not have to specify):
+
+| Input type      | Data types  | Example / description                    |
+|-----------------|-------------|------------------------------------------|
+| **Int**         | int         | { min: 0; max: 20; step: 4}              |
+| **BigInt**      | bigint      |                                          |
+| **Float**       | double      | { min: 0; max: 1; step: 0.03 }           |
+| **Bool**        | bool        |                                          |
+| **Text**        | string      |                                          |
+| **Date**        | datetime    |                                          |
+| **MultiChoice** | list        | { choices: \["A", "B"] }                 |
+| **List**        | list        | { inputType: TextArea; separators: ,}    |
+| **Column**      | column      |                                          |
+| Slider          | int, double | { min: 0; max: 20; step: 4}              |
+| Color           | string      |                                          |
+| Radio           | string      | {inputType: Radio; choices: \["A", "B"]} |
+| Molecule        | string      |                                          |
+
+![](input-types.png)
+
+Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
+for more input types.  
+
+For developers: [DG.InputBase](https://datagrok.ai/js-api/classes/dg.InputBase)
 
 ### Inputs for semantic types
 
@@ -433,7 +472,7 @@ a molecule, a molecule sketcher pops up.
 --input: string substructure = 'c1ccccc1' {semType: Molecule}
 ```
 
-![img.png](molecule-input.png)
+![](molecule-input.png)
 
 ## Examples
 

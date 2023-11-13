@@ -374,7 +374,10 @@ To save the query output as a dynamic dashboard, do the following:
 1. In the **Upload project** dialog, enter a name and description (optional) in the fields provided.
 1. Select how to store data:
     * Save the data as a static snapshot.
-    * Store the data as a generation script by toggling the **Data sync** control. The query re-executes each time the project is opened. To learn more about dynamic data updates in projects, see [Dynamic data](../../collaborate/project.md#dynamic-data).
+    * Store the data as a generation script by toggling the **Data sync**
+      control. The query re-executes each time the project is opened. To learn
+      more about dynamic data updates in projects, see [Dynamic
+      data](../../collaborate/project.md#dynamic-data).
 1. Click **OK** to upload the project.
 1. [Share](#sharing-query-results) the project with others.
 
@@ -387,7 +390,14 @@ You have two options to share query results in Datagrok:
 * Share its URL
 * Share it as a project.
 
-Each query output has a unique URL, which has all the information needed to recreate the query, including its parameters. This is especially useful for parameterized queries, where you can embed the query output on external websites with specific parameters applied. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so the query output always displays the latest data. When the users open the report, they can still change the query parameters in the **Toolbox** on the left.
+Each query output has a unique URL, which has all the information needed to
+recreate the query, including its parameters. This is especially useful for
+parameterized queries, where you can embed the query output on external websites
+with specific parameters applied. After you have executed a query, copy the URL
+from the address bar and share it with others. When this URL is accessed, a
+query gets re-executed, so the query output always displays the latest data.
+When the users open the report, they can still change the query parameters in
+the **Toolbox** on the left.
 
 :::note
 
@@ -432,126 +442,97 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 :::
 
-## Debug query
+<!--
 
-### Open debug section
+## Debugging queries
 
-To open debug section follow the next steps:
+Debugging queries helps you fix and improve query performance.
 
-<img alt="Open debug section" src={require('./debug-section-open-saved-query.gif').default} width="800px"/>
+For exisitng queries:
 
-If you have a saved data query:
+1. Right-click your query and select **Debug**. A dialog opens.
+1. In the dialog, set parameters:
+   * **Fetch size**: This parameter tells the JDBC driver how many rows to fetch from the
+     database at one time. If set to zero, the driver chooses the optimal fetch
+      size. The default limit for WebSocket messages is set to 10 MB.
+             
+      To obtain consistent debugging results, always specify the fetch size.
+      To persist the fetch size, include a meta parameter in your query:
+        
+        ```
+        --meta.connectFetchSize: 10000
+        SELECT * FROM very_big_table
+        ```
+        Or, to specify in megabytes:
 
-1. Go to **Data > Databases**.
-2. In the **Database Manager**, click the desired connector, choose saved connection, and click on saved query.
-3. Activate **Context Panel** with F2 keyboard shortcut or with the help of **Windows > Context Panel**.
-4. Click on **Debug** section.
+        ```
+        --meta.connectFetchSize: 10 MB
+        ```
+      
+   * **Init fetch size** (optional): This parameter is the same as **Fetch
+   size** but it applies to a [statement
+   object](https://docs.oracle.com/javase/8/docs/api/java/sql/Statement.html).
+   To persist this parameter, include a meta parameter in your query:
 
-:::tip
+      ```
+     --meta.initConnectFetchSize: 1000
+     SELECT * FROM very_big_table
+    ```
 
-Additionally, you can open debug window by right-clicking on saved query and clicking on Debug
-
-:::
-
-<img alt="Open debug section" src={require('./debug-section-open-new-query.gif').default} width="800px"/>
-
-If you don't have a saved query:
-
-1. Go to **Data > Databases**.
-2. In the **Database Manager**, click the desired connector, choose saved connection and click **Add query**.
-3. Write your query and click on Debug icon
-
-### Debug section parameters
-
-There are two parameters that can significantly influence execution time of query - **Fetch size** and **Init fetch size**.
-
-**Fetch size**. Gives the JDBC driver a hint as to the number of rows that should be fetched from the database
-when more rows are needed for this ResultSet object. If the fetch size specified is zero, the JDBC driver ignores the value
-and is free to make its own best guess as to what the fetch size should be.
-Grok Connect under the hood not only uses this value as fetch size for ResultSet but also as the number
-of rows that will be sent to the server in one WebSocket message. And consequently, this value for User-Agent equals
-the number of rows that will be rendered on the screen by 1 workaround.
-By default, this value is calculated automatically by Grok Connect based on the average size of the row to achieve a maximum message size of 10 Mb
-that is sent to the server by WebSocket. This parameter can be specified in megabytes to limit the maximum message size.
+   * **Optimize fetch size**: Selecting this checkbox disables manual fetch size inputs
+     and automatically tests different fetch sizes to determine the most
+     efficient one for your query.
+1. Press **OK**. A table with the fetch results opens.
 
 :::note
 
-To get consistent results for debugging **Fetch size** parameter should be specified.
+You can debug queries in [Query Editor](#query-editor) by clicking on the "bug"
+icon on top of the editor. Also, you can start debugging from the **Context
+Panel** using the **Debug** section.
 
 :::
 
-To specify **Fetch size** for debugging use the corresponding input field in the debug section.
-If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
+When you finish debugging with **Optimize fetch size** off, you will see the
+execution results, **Summary**, and detailed logs. **Summary** shows the times
+of different stages of query execution. These metrics help you evaluate how
+factors like network speed, data complexity, etc. affect performance.
+**Summary** also explains what each metric means.
 
-<details>
-<summary> Here's an example </summary>
+:::note
 
-```sql
---meta.connectFetchSize: 10000
-SELECT * FROM very_big_table
+The network connection or the local disk load can affect the result a lot. For
+better evaluation, run **Debug** several times in a row.
+
+:::
+
+You can always return to **Summary** and detailed logs to analyze them later. In order to do this:
+
+1. Navigate to the desired saved query and expand the tree with historical runs.
+2. Click on the run and open **Context Panel**.
+3. Expand **Log** section. **Summary** and detailed logs are hidden under the appropriate subsection.
+
+:::note
+
+**Summary** and detailed logs are only available for queries that were run in Debug mode.
+
+:::
+
+To set a constant value for **Fetch size** and **Init fetch size** after
+analyzing **Summary** or **Optimize fetch size** results, follow these steps:
+
+1. Open the saved query in [Query Editor](#query-editor).
+1. Add the meta parameters *initConnectFetchSize* or *connectFetchSize* with the
+   desired value to the query declaration.
+1. Save query.
+
+For example:
+
 ```
-
-Or if you want to set it in megabytes:
-
-```sql
 --meta.connectFetchSize: 10 MB
-```
-
-</details>
-
-**Init fetch size**. It is the same parameter as Fetch size, but it is set on Statement and
-influences the time taken to execute the Statement and the time of rendering of first rows of the DataFrame on the screen.
-The default value is 100.
-To specify **Init fetch size** for debug use the corresponding input field in the debug section.
-
-:::note
-
-**Init fetch size** will not influence debug run. So it is not mandatory as Fetch size.
-
-:::
-
-If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
-<details>
-<summary> Here's an example </summary>
-
-```sql
 --meta.initConnectFetchSize: 1000
-SELECT * FROM very_big_table
+SELECT * FROM data;
 ```
-
-</details>
-
-:::note
-
-Init fetch size can be set only in numbers.
-
-:::
-
-**Optimize fetch size**. When checked disables other inputs and runs several queries with different fetch sizes and displays in the end times of execution for each run.
-
-### Debug run
-
-When you press the **Debug** button with **Optimize fetch size** unchecked, under the hood Grok Connect runs 3 queries.
-First two without processing ResultSet and the last with processing. It adds 2 additional parameters to the Log Summary (see [Query logs](#query-logs)) of the query:
-
-1. **DRY_RUN** - time taken on reading ResultSet without interpretation of its values and filling of columns of DataFrame.
-2. **COLUMN_FILL** - difference between **RESULT_SET_PROCESSING_WITH_COLUMN_FILL** and **DRY_RUN**. It is close to real
-time taken to read ResultSet and process all its values.
-
-In general, Debug run helps to estimate the overhead of the interpretation of ResultSet values and filling of DataFrame columns.
-
-:::note
-
-The stability of network connection or in the case of local database load of SSD/HDD can significantly influence the result.
-So for best evaluation try to run several consecutive Debug runs.
-
-:::
-
-### Query logs
-
-When you run a query in debug mode you get results of execution and logs. Log Summary consists of various parameters that describe times of different stages of query execution.
-These metrics are helpful in the evaluation of the influence of different factors such as Networking throughput,
-the complexity of data etc. Logs can be viewed for saved queries at any time in the Log section.
+-->
 
 ## Resources
 
@@ -561,4 +542,4 @@ the complexity of data etc. Logs can be viewed for saved queries at any time in 
   * [Parameterized queries - Example](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
   * [Using lists in parameterized queries](https://www.youtube.com/watch?v=meRAEF7ogtw)
 * Tutorials
-  * [Adding parameters to functions](../../datagrok/concepts/functions/func-params-enhancement.md)
+  * [Adding parameters to functions](../../datagrok/concepts/functions/func-params-annotation.md)

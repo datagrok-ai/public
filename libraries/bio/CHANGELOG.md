@@ -4,11 +4,13 @@
 
 ### Bug fixes
 * Fix monomer lib handler for PolyTool
+* Fix splitter with separator for quoted gaps
 
 ### Features
 
 * Add VdRegionsViewer `filterSource` property.
 * Add WebLogo `valueAggrType`, `valueColumnName` properties.
+* Add routines to get/set user monomer library settings.
 
 ### Bug fixes
 

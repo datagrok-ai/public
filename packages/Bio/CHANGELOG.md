@@ -1,5 +1,16 @@
 # Bio changelog
 
+## 2.12.0 (WIP)
+
+### Features
+
+### Bug fixes
+
+* Fix detectMacromolecule allowing double quoted sequences and gaps.
+* Fix for min seq length 10, tests.
+* Fix user library settings for tests
+* Fix test substructureFilter/helm
+
 ## 2.11.0 (2023-10-25)
 
 ### Features

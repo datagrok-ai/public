@@ -6,7 +6,7 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {pickUpPalette, TAGS as bioTAGS, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {Options, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
@@ -20,15 +20,15 @@ import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
+import {calculateSelected, extractColInfo, scaleActivity} from './utils/misc';
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues, SELECTION_MODE} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
-import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap} from './widgets/distribution';
-import {getAggregatedValue, getStats, Stats} from './utils/statistics';
+import {getDistributionWidget} from './widgets/distribution';
+import {ClusterTypeStats, MonomerPositionStats, PositionStats} from './utils/statistics';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
-import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
+import {_package, getTreeHelperInstance} from './package';
 import {calculateClusterStatistics, calculateMonomerPositionStatistics, findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
@@ -36,30 +36,19 @@ import {getSelectionWidget} from './widgets/selection';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {showMonomerTooltip} from './utils/tooltips';
 
-export type SummaryStats = {
-  minCount: number, maxCount: number,
-  minMeanDifference: number, maxMeanDifference: number,
-  minPValue: number, maxPValue: number,
-  minRatio: number, maxRatio: number,
-};
-export type PositionStats = {[monomer: string]: Stats | undefined} & {general: SummaryStats};
-export type MonomerPositionStats = {[position: string]: PositionStats | undefined} & {general: SummaryStats};
-export type ClusterStats = {[cluster: string]: Stats};
 export enum CLUSTER_TYPE {
   ORIGINAL = 'original',
   CUSTOM = 'custom',
 };
 export type ClusterType = `${CLUSTER_TYPE}`;
-export type ClusterTypeStats = {[clusterType in ClusterType]: ClusterStats};
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
   MOST_POTENT_RESIDUES = 'Most Potent Residues',
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
 };
-
-export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -83,7 +72,7 @@ export class PeptidesModel {
 
   _cp?: SeqPalette;
   headerSelectedMonomers: type.SelectionStats = {};
-  webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
+  webLogoBounds: CR.WebLogoBounds = {};
   cachedWebLogoTooltip: {bar: string, tooltip: HTMLDivElement | null} = {bar: '', tooltip: null};
   _alphabet?: string;
   _dm!: DistanceMatrix;
@@ -114,7 +103,7 @@ export class PeptidesModel {
 
   get monomerPositionStats(): MonomerPositionStats {
     this._monomerPositionStats ??= calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray());
-    return this._monomerPositionStats;
+    return this._monomerPositionStats!;
   }
 
   set monomerPositionStats(mps: MonomerPositionStats) {
@@ -141,7 +130,7 @@ export class PeptidesModel {
   get clusterStats(): ClusterTypeStats {
     this._clusterStats ??= calculateClusterStatistics(this.df, this.settings.clustersColumnName!,
       this.customClusters.toArray());
-    return this._clusterStats;
+    return this._clusterStats!;
   }
 
   set clusterStats(clusterStats: ClusterTypeStats) {
@@ -479,9 +468,18 @@ export class PeptidesModel {
   updateGrid(): void {
     this.joinDataFrames();
     this.createScaledCol();
-    this.setWebLogoInteraction();
+    // this.setWebLogoInteraction();
     this.webLogoBounds = {};
-    this.setCellRenderers();
+
+    CR.setWebLogoRenderer(this.analysisView.grid, this);
+    if (!this._layoutEventInitialized) {
+      grok.events.onViewLayoutApplied.subscribe((layout) => {
+        if (layout.view.id === this.analysisView.id)
+          this.updateGrid();
+      });
+      this._layoutEventInitialized = true;
+    }
+
     this.setTooltips();
     this.setBitsetCallback();
     this.setGridProperties();
@@ -558,28 +556,6 @@ export class PeptidesModel {
       this._clusterSelection = newClusterSelection;
   }
 
-  setWebLogoInteraction(): void {
-    const sourceView = this.analysisView.grid;
-    const eventAction = (ev: MouseEvent): void => {
-      const cell = sourceView.hitTest(ev.offsetX, ev.offsetY);
-      if (cell?.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER) {
-        const monomerPosition = this.findWebLogoMonomerPosition(cell, ev);
-        if (monomerPosition === null) {
-          this.unhighlight();
-          return;
-        }
-        this.requestBarchartAction(ev, monomerPosition);
-        this.highlightMonomerPosition(monomerPosition);
-      }
-    };
-
-    // The following events makes the barchart interactive
-    rxjs.fromEvent<MouseEvent>(sourceView.overlay, 'mousemove')
-      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-    rxjs.fromEvent<MouseEvent>(sourceView.overlay, 'click')
-      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-  }
-
   highlightMonomerPosition(monomerPosition: type.SelectionItem): void {
     const bitArray = new BitArray(this.df.rowCount);
     if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
@@ -612,83 +588,6 @@ export class PeptidesModel {
     this.isHighlighting = false;
   }
 
-  findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent): type.SelectionItem | null {
-    const barCoords = this.webLogoBounds[cell.tableColumn!.name];
-    for (const [monomer, coords] of Object.entries(barCoords)) {
-      const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
-      const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
-      if (isIntersectingX && isIntersectingY)
-        return {monomerOrCluster: monomer, positionOrClusterType: cell.tableColumn!.name};
-    }
-
-    return null;
-  }
-
-  requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionItem): void {
-    if (ev.type === 'click')
-      this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
-    else {
-      const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
-      if (this.cachedWebLogoTooltip.bar === bar)
-        ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
-      else
-        this.cachedWebLogoTooltip = {bar: bar, tooltip: this.showTooltipAt(monomerPosition, ev.clientX, ev.clientY)};
-    }
-  }
-
-  setCellRenderers(): void {
-    const sourceGrid = this.analysisView.grid;
-    sourceGrid.setOptions({'colHeaderHeight': 130});
-    const headerRenderer = (gcArgs: DG.GridCellRenderArgs): void => {
-      const ctx = gcArgs.g;
-      const bounds = gcArgs.bounds;
-      const col = gcArgs.cell.tableColumn;
-
-      ctx.save();
-      try {
-        ctx.beginPath();
-        ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-        ctx.clip();
-
-        //TODO: optimize
-        if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
-          const isDfFiltered = this.df.filter.anyFalse;
-          const stats = (isDfFiltered ? calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray(),
-            {isFiltered: true, columns: [col.name]}) : this.monomerPositionStats)[col.name];
-          if (!stats)
-            return;
-          //TODO: precalc on stats creation
-          const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
-            if (a === '' || a === '-')
-              return +1;
-            else if (b === '' || b === '-')
-              return -1;
-            return 0;
-          }).filter((v) => v !== 'general');
-
-          this.webLogoBounds[col.name] = CR.drawLogoInBounds(ctx, bounds, stats, col.name, sortedStatsOrder,
-            this.df.filter.trueCount, this.cp, this.headerSelectedMonomers[col.name]);
-          gcArgs.preventDefault();
-        }
-      } catch (e) {
-        console.warn(`PeptidesHeaderLogoError: couldn't render WebLogo for column \`${col!.name}\`. ` +
-          `See original error below.`);
-        console.warn(e);
-      } finally {
-        ctx.restore();
-      }
-    };
-    sourceGrid.onCellRender.subscribe((gcArgs) => headerRenderer(gcArgs));
-
-    if (!this._layoutEventInitialized) {
-      grok.events.onViewLayoutApplied.subscribe((layout) => {
-        if (layout.view.id === this.analysisView.id)
-          this.updateGrid();
-      });
-      this._layoutEventInitialized = true;
-    }
-  }
-
   setTooltips(): void {
     this.analysisView.grid.onCellTooltip((cell, x, y) => {
       if (cell.isColHeader && cell.tableColumn!.semType === C.SEM_TYPES.MONOMER)
@@ -696,83 +595,9 @@ export class PeptidesModel {
       if (!(cell.isTableCell && cell.tableColumn!.semType === C.SEM_TYPES.MONOMER))
         return false;
 
-      this.showMonomerTooltip(cell.cell.value, x, y);
+      showMonomerTooltip(cell.cell.value, x, y);
       return true;
     });
-  }
-
-  showMonomerTooltip(monomer: string, x: number, y: number): boolean {
-    const tooltipElements: HTMLDivElement[] = [];
-    const monomerName = monomer.toLowerCase();
-
-    const mw = getMonomerWorksInstance();
-    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', monomer);
-
-    if (mol) {
-      tooltipElements.push(ui.div(monomerName));
-      const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-      tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-    } else if (monomer !== '')
-      tooltipElements.push(ui.div(monomer));
-    else
-      return true;
-
-
-    ui.tooltip.show(ui.divV(tooltipElements), x, y);
-
-    return true;
-  }
-
-  showTooltip(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): boolean {
-    if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
-      this.showMonomerTooltip(monomerPosition.monomerOrCluster, x, y);
-    else
-      this.showTooltipAt(monomerPosition, x, y, fromViewer);
-    return true;
-  }
-  //TODO: move out to viewer code
-  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): HTMLDivElement | null {
-    const stats = this.monomerPositionStats[monomerPosition.positionOrClusterType]![monomerPosition.monomerOrCluster];
-    if (!stats?.count)
-      return null;
-
-    const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
-    const distributionTable = DG.DataFrame.fromColumns(
-      [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
-    const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
-
-    const tableMap = getStatsTableMap(stats);
-    if (fromViewer) {
-      tableMap['Mean difference'] = `${tableMap['Mean difference']} (size)`;
-      if (tableMap['p-value'])
-        tableMap['p-value'] = `${tableMap['p-value']} (color)`;
-    }
-    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
-    const resultMap = {...tableMap, ...aggregatedColMap};
-
-    const labels = getDistributionLegend(`${monomerPosition.positionOrClusterType} : ${monomerPosition.monomerOrCluster}`, 'Other');
-    const distroStatsElem = getStatsSummary(labels, hist, resultMap);
-
-    ui.tooltip.show(distroStatsElem, x, y);
-
-    return distroStatsElem;
-  }
-
-  getAggregatedColumnValues(options: {filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number} = {},
-  ): StringDictionary {
-    options.filterDf ??= false;
-    options.fractionDigits ??= 3;
-
-    const filteredDf = options.filterDf && this.df.filter.anyFalse ? this.df.clone(this.df.filter) : this.df;
-
-    const colResults: StringDictionary = {};
-    for (const [colName, aggFn] of Object.entries(this.settings.columns!)) {
-      const newColName = getAggregatedColName(aggFn, colName);
-      const value = getAggregatedValue(filteredDf.getCol(colName), aggFn, options.mask);
-      colResults[newColName] = value.toFixed(options.fractionDigits);
-    }
-    return colResults;
   }
 
   setBitsetCallback(): void {

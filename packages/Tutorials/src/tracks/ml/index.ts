@@ -10,4 +10,4 @@ export const tutorials = [
   ScriptingTutorial,
 ];
 
-export const ml = new Track('Machine Learning', tutorials.map((t) => new t()), 'https://datagrok.ai/help/learn/data-science');
+export const ml = new Track('Machine Learning', tutorials.map((t) => new t()), 'https://datagrok.ai/help/learn/');

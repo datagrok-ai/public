@@ -7,6 +7,7 @@ import {TileCategoriesColName} from '../consts';
 import {HitBaseView} from '../base-view';
 import {HitDesignTemplate} from '../types';
 import {checkRibbonsHaveSubmit} from '../utils';
+import './utils.css';
 
 export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
   constructor(app: HitDesignApp) {
@@ -18,39 +19,46 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
     return new Promise<void>((resolve) =>{
       ui.empty(this.root);
 
+      // const filteredDf = DG.DataFrame.fromColumns(
+      //   this.app.dataFrame!.columns.toList().filter((col) => !col.name.startsWith('~')));
+      // const _hiidenTv = DG.TableView.create(filteredDf, true);
       //const tv = DG.TableView.create(this.app.dataFrame!, false);
-      const v = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, this.app.dataFrame!,
-        {lanesColumnName: TileCategoriesColName, autoGenerate: true});
-      //this.root.appendChild(tv.root);
-      this.root.appendChild(v.root);
-      v.root.style.height = '100%';
-      v.root.style.width = '100%';
-      setTimeout(() => {
-        v.view?._onAdded();
-        const ribbons = grok.shell.v?.getRibbonPanels();
+       this.app.dataFrame!.columns.names().forEach((name) => {
+         if (name.startsWith('~'))
+          this.app.dataFrame!.columns.remove(name);
+       });
+       const v = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, this.app.dataFrame!,
+         {lanesColumnName: TileCategoriesColName, lanes: this.app.template?.stages ?? []});
+       //this.root.appendChild(tv.root);
+       this.root.appendChild(v.root);
+       v.root.style.height = '100%';
+       v.root.style.width = '100%';
+       setTimeout(() => {
+         v.view?._onAdded();
+         const ribbons = grok.shell.v?.getRibbonPanels();
 
-        if (ribbons) {
-          const hasSubmit = checkRibbonsHaveSubmit(ribbons);
-          if (hasSubmit) {
-            resolve();
-            return;
-          }
-          const submitButton = ui.bigButton('Submit', () => {
-            const dialogContent = this.app._submitView?.render();
-            if (dialogContent) {
-              const dlg = ui.dialog('Submit');
-              dlg.add(dialogContent);
-              dlg.addButton('Save', ()=>{this.app.saveCampaign(); dlg.close();});
-              dlg.addButton('Submit', ()=>{this.app._submitView?.submit(); dlg.close();});
-              dlg.show();
-            }
-          });
-          submitButton.classList.add('hit-design-submit-button');
-          ribbons.push([submitButton]);
-          grok.shell.v.setRibbonPanels(ribbons);
-        }
-        resolve();
-      }, 5);
+         if (ribbons) {
+           const hasSubmit = checkRibbonsHaveSubmit(ribbons);
+           if (hasSubmit) {
+             resolve();
+             return;
+           }
+           const submitButton = ui.bigButton('Submit', () => {
+             const dialogContent = this.app._submitView?.render();
+             if (dialogContent) {
+               const dlg = ui.dialog('Submit');
+               dlg.add(dialogContent);
+               dlg.addButton('Save', ()=>{this.app.saveCampaign(); dlg.close();});
+               dlg.addButton('Submit', ()=>{this.app._submitView?.submit(); dlg.close();});
+               dlg.show();
+             }
+           });
+           submitButton.classList.add('hit-design-submit-button');
+           ribbons.push([submitButton]);
+           grok.shell.v.setRibbonPanels(ribbons);
+         }
+         resolve();
+       }, 5);
     });
 
     //const tv = DG.TableView.create(this.app.dataFrame!, false);

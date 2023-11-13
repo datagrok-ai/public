@@ -3,8 +3,8 @@ title: "AWS CloudFormation"
 sidebar_position: 1
 ---
 
-The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
-and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) for storing files
+The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#database) for storing metadata,
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage) for storing files
 
 This document contains instructions to deploy Datagrok using [CloudFormation](https://aws.amazon.com/cloudformation/)
 on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)
@@ -15,8 +15,8 @@ create a Datagrok infrastructure in AWS that applies to all standard security po
 
 More information about Datagrok design and components:
 
-* [Architecture](../develop/under-the-hood/architecture.md)
-* [Infrastructure](../develop/under-the-hood/infrastructure.md)
+* [Architecture](../../develop/under-the-hood/architecture.md)
+* [Infrastructure](../../develop/under-the-hood/infrastructure.md)
 
 ## Prerequisites
 

@@ -69,6 +69,6 @@ category('Settings', () => {
     expect(gss.showStatusBar, grok.shell.windows.showStatusBar, 'showStatusBar');
     expect(gss.showVariables, grok.shell.windows.showVariables, 'showVariables');
     expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
-    expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
+    // expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
   });
 });

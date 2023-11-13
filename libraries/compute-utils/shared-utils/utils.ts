@@ -9,6 +9,11 @@ import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 
+export function isInputBase(input: FuncCallInput): input is DG.InputBase {
+  const inputAny = input as any;
+  return (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+}
+
 export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
@@ -68,6 +73,7 @@ export const injectLockStates = (input: FuncCallInput) => {
 
   function setRestrictedDefault() {
     input.enabled = false;
+    if (isInputBase(input)) (input.input as HTMLInputElement).disabled = false; ;
     $(input.root).addClass('rfv-restricted-input');
     $(input.root).removeClass('rfv-restricted-unlocked-input');
     $(input.root).removeClass('rfv-inconsistent-input');
@@ -112,9 +118,11 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
   t.addOptions(validationIndicator);
   function setValidation(messages: ValidationResultBase | undefined) {
     while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
-    const icon = getValidationIcon(messages);
-    if (icon)
+    const [icon, popover] = getValidationIcon(messages);
+    if (icon && popover) {
       validationIndicator.appendChild(icon);
+      validationIndicator.appendChild(popover);
+    }
 
     t.input.classList.remove('d4-invalid');
     t.input.classList.remove('d4-partially-invalid');

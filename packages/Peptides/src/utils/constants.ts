@@ -7,6 +7,7 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
+  MEAN = 'Mean',
 }
 
 export enum LST_COLUMN_NAMES {

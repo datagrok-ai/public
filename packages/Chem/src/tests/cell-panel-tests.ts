@@ -168,5 +168,5 @@ category('cell panel', async () => {
         `descriptors table hasn\'t been created for ${mol}`, 15000);
       }
     }
-  }, { timeout: 70000 });
+  }, { timeout: 60000 });
 });

@@ -55,21 +55,19 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
   return result;
 }
 
-export async function getSequenceSpace(spaceParams: ISequenceSpaceParams,
-  progressFunc?: (epochNum: number, epochsLength: number, embedding: number[][]) => void
-): Promise<ISequenceSpaceResult> {
-  const ncUH = UnitsHandler.getOrCreate(spaceParams.seqCol);
-
-  //const distanceFName = ncUH.isMsa() ? MmDistanceFunctionsNames.HAMMING : MmDistanceFunctionsNames.LEVENSHTEIN;
-  const seqList = spaceParams.seqCol.toList();
-
+export async function getEncodedSeqSpaceCol(
+  seqCol: DG.Column, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames
+): Promise<{seqList:string[], options: {[_:string]: any}}> {
+// encodes sequences using utf charachters to also support multichar and non fasta sequences
+  const ncUH = UnitsHandler.getOrCreate(seqCol);
+  const seqList = seqCol.toList();
   const splitter = ncUH.getSplitter();
   const seqColLength = seqList.length;
   let charCodeCounter = 36;
   const charCodeMap = new Map<string, string>();
   for (let i = 0; i < seqColLength; i++) {
     const seq = seqList[i];
-    if (seqList[i] === null || spaceParams.seqCol.isNone(i)) {
+    if (seqList[i] === null || seqCol.isNone(i)) {
       seqList[i] = null;
       continue;
     }
@@ -84,8 +82,8 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams,
       seqList[i] += charCodeMap.get(char)!;
     }
   }
-
-  if (spaceParams.similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE) {
+  let options = {};
+  if (similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE) {
     const monomers = Array.from(charCodeMap.keys());
     const monomerRes = await calculateMonomerSimilarity(monomers);
     // the susbstitution matrix contains similarity, but we need distances
@@ -98,10 +96,41 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams,
     Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
       monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
     });
-    spaceParams.options.distanceFnArgs = {scoringMatrix: monomerRes.scoringMatrix,
+    // sets distance function args in place.
+    options = {scoringMatrix: monomerRes.scoringMatrix,
+      alphabetIndexes: monomerHashToMatrixMap} satisfies mmDistanceFunctionArgs;
+  } else if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
+    const monomers = Array.from(charCodeMap.keys());
+    const monomerRes = await calculateMonomerSimilarity(monomers);
+    // the susbstitution matrix contains similarity, but we need distances
+    // monomerRes.scoringMatrix.forEach((row, i) => {
+    //   row.forEach((val, j) => {
+    //     monomerRes.scoringMatrix[i][j] = 1 - val;
+    //   });
+    // });
+    const monomerHashToMatrixMap: {[_: string]: number} = {};
+    Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
+      monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
+    });
+    // sets distance function args in place.
+    options = {scoringMatrix: monomerRes.scoringMatrix,
       alphabetIndexes: monomerHashToMatrixMap} satisfies mmDistanceFunctionArgs;
   }
+  return {seqList, options};
+}
 
+export async function getSequenceSpace(spaceParams: ISequenceSpaceParams,
+  progressFunc?: (epochNum: number, epochsLength: number, embedding: number[][]) => void
+): Promise<ISequenceSpaceResult> {
+  const ncUH = UnitsHandler.getOrCreate(spaceParams.seqCol);
+  if (ncUH.isHelm())
+    return await sequenceSpaceByFingerprints(spaceParams);
+
+
+  const {seqList, options} = await getEncodedSeqSpaceCol(spaceParams.seqCol, spaceParams.similarityMetric);
+
+  spaceParams.options = spaceParams.options ?? {};
+  spaceParams.options.distanceFnArgs = options;
   const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
     seqList,
     spaceParams.methodName,

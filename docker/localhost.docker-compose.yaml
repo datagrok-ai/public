@@ -138,6 +138,23 @@ services:
     restart: on-failure
     profiles: [ "all", "db" ]
 
+  pg_rdkit:
+    image: mcs07/postgres-rdkit
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DATAGROK_DB_RDKIT_PORT:-54329}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - pgsql_rdkit
+    volumes:
+      - datagrok_postgres_rdkit:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=1000'
+    restart: on-failure
+    profiles: ["postgres_rdkit"]
+
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
     environment:
@@ -222,6 +239,7 @@ volumes:
   datagrok_demo_postgres_starbucks:
   datagrok_demo_postgres_world:
   datagrok_demo_postgres_unichem:
+  datagrok_postgres_rdkit:
 
 networks:
   datagrok:

@@ -16,7 +16,7 @@ fi
 packages_dir="$(sed 's#packages/.*#packages#' <<<"$current_dir")"
 #echo "Packages dir: $packages_dir"
 
-targetFiles=$(grep --exclude-dir node_modules --exclude '*.js.map' --exclude-dir dist -oEr "helpUrl ?(:|=) ?(string = )?('|\`)(.+help/.+)('|\`)" . | sed -Ee "s#(.*): *.*helpUrl ?(:|=) ?(string = )?('|\`)(.+help\/.+)('|\`)#\1 \5#g")
+targetFiles=$(grep --exclude-dir node_modules --exclude '*.js.map' --exclude-dir dist -oEr "(helpUrl|wiki) ?(:|=) ?(string = )?('|\`)(.+help/[^']+)('|\`)" . | sed -Ee "s#(.*): *.*(helpUrl|wiki) ?(:|=) ?(string = )?('|\`)(.+help\/[^']+)('|\`)#\1 \6#g")
 
 IFS=$'\n'
 for f in $(echo -e "$targetFiles"); do

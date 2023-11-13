@@ -27,7 +27,6 @@ export class PolyToolMonomerLibHandler {
       const monomer = this.prepareMonomer(rawMonomer);
       resultLib.push(monomer);
     });
-    console.log('resultLib:', resultLib);
     return resultLib;
   }
 

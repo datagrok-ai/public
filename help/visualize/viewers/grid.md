@@ -120,7 +120,7 @@ layout serialization).
 
 By default, color coding is applied to the column background. Optionaly you can apply it to the text:
 
-1. Right-click the column’s  header and select **Color coding > Edit**. A dialog opens.
+1. Right-click the column’s header and select **Color coding > Edit**. A dialog opens.
 2. In the dialog, set the **Apply to** setting to `text`.
 
 This option is available for all linear, categorical, and conditional schemas.
@@ -171,6 +171,16 @@ the most similar structure to the reference. This also works the other way aroun
 element, you will see the row it represents in the grid.
 
 ![Current rows](../current-rows-2.gif "Current rows")
+
+### Pinned rows
+
+Datagrok supports pinned rows functionality, where each row can be pinned based on its column name and cell value.
+Pinned rows are also saved to the layout. If you pin a non-unique row, it will be pinned but it won't be saved in the layout.
+
+To pin a row, select the row you want to pin, right-click it and open: **Pin > Pin row**. To pin multiple rows,
+select the **Pin selected rows** option.
+
+![Pinned rows](../pinned-rows.gif "Pinned rows")
 
 ### Column edit permissions
 

@@ -186,7 +186,7 @@ category('UI info panel', () => {
     },
       'number of displayed canvases with molecules does not match the expected', 10000);
     sa?.click(); await delay(10);
-    v.close();
+    v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
@@ -214,7 +214,7 @@ category('UI info panel', () => {
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
   await awaitCheck(() => {
-    return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
+    return Array.from(pp?.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === name) !== undefined;
   }, `cannot find ${name} property`, ms);
 }

@@ -50,3 +50,5 @@ export type StatsInfo = {
 export type RawColumn = {name: string, rawData: RawData, cat?: string[]};
 
 export type SelectionOptions = {shiftPressed: boolean, ctrlPressed: boolean};
+
+export type CachedWebLogoTooltip = {bar: string, tooltip: HTMLDivElement | null};

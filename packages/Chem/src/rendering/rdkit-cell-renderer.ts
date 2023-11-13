@@ -145,6 +145,7 @@ M  END
     if (mol !== null) {
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
+        let doNotUseMolblockWedging = false;
         const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
         if (alignedByFirstSubstr) {
@@ -161,6 +162,7 @@ M  END
               mol.normalize_depiction(1);
               mol.straighten_depiction(false);
               molHasOwnCoords = true;
+              doNotUseMolblockWedging = true;
             }
             let substructString = '';
             try {
@@ -204,7 +206,7 @@ M  END
             }
           }
         }
-        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
+        molCtx.useMolBlockWedging = (mol.has_coords() === 2) && !doNotUseMolblockWedging;
         if (mol.has_coords() === 0 || molRegenerateCoords) {
           mol.set_new_coords(molRegenerateCoords);
           molHasOwnCoords = false;

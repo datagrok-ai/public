@@ -645,7 +645,7 @@ export namespace chem {
 
   /**
    * Returns the specified number of most diverse molecules in the column.
-   * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}
+   * See example: {@link https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search}
    * @async
    * @param {Column} column - Column with molecules to search in
    * @param {Object} settings - Settings
@@ -775,15 +775,14 @@ export namespace chem {
     });
   }
 
-    export function drawMolecule(molString: string, w?: number, h?: number): HTMLDivElement {
-      const molDiv = ui.div();
-      grok.functions
-      .call('Chem:drawMolecule', {
-        'molStr': molString, 'w': w, 'h': h, 'popupMenu': false
-      })
+  export function drawMolecule(molString: string, w?: number, h?: number, popupMenu: boolean = false): HTMLDivElement {
+    const molDiv = ui.div();
+    grok.functions.call('Chem:drawMolecule', {
+      'molStr': molString, 'w': w, 'h': h, 'popupMenu': popupMenu
+    })
       .then((res: HTMLElement) => molDiv.append(res));
-      return molDiv;
-    }
+    return molDiv;
+  }
 
   /**
    * Sketches Molecule sketcher.
