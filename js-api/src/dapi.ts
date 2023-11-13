@@ -381,6 +381,43 @@ export class AdminDataSource {
   getServiceInfos(): Promise<ServiceInfo[]> {
     return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
+
+
+  /**
+   * Sends envelope
+   * @param envelope - message that will be sent using configured SMTP service
+   */
+  sendEmail(envelope: Envelope): Promise<void> {
+    if (envelope.to.length === 0)
+      throw new Error('Recipients list shouldn\'t be empty');
+    return api.grok_Dapi_Admin_Send_Email(this.dart, envelope);
+  }
+}
+
+/**
+ * Represents message that can be sent over the network using the configured SMTP service
+ */
+export interface Envelope {
+  /**
+   * Message subject
+   */
+  subject: string,
+  /**
+   * List of recipients
+   */
+  to: string [],
+  /**
+   * Use to specify plaintext body
+   */
+  text?: string,
+  /**
+   * Use to specify HTML body
+   */
+  html?: string,
+  /**
+   * Use to send copies of an email to additional recipients
+   */
+  bcc?: string [],
 }
 
 export interface ServiceInfo {
