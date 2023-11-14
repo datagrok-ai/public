@@ -10,7 +10,7 @@ import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-li
 import {getAggregatedColumnValues, getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
 import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
+import {getStatsSummary, getDistributionTable} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SelectionItem} from '../utils/types';
 import {_package} from '../package';
@@ -505,7 +505,7 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   createDistributionDf(activityCol: DG.Column<number>, splitMask: DG.BitSet): DG.DataFrame {
-    const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
-    return prepareTableForHistogram(table);
+    // const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
+    return getDistributionTable(activityCol, splitMask);
   }
 }
