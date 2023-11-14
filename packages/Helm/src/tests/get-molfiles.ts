@@ -10,6 +10,8 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/sr
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 
+import {awaitGrid} from './utils';
+
 category('getMolfiles', () => {
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: LibSettings;
@@ -35,15 +37,15 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$,9,8`;
     const df = DG.DataFrame.fromCsv(csv);
     const helmCol = df.getCol('Helm');
     const view = grok.shell.addTableView(df);
-    const resCol: DG.Column<string> = await grok.functions.call('Helm:getMolfiles', {col: helmCol});
 
-    await delay(100);
-    await testEvent(view.grid.onAfterDrawContent, () => {}, () => {
-      view.grid.invalidate();
-    });
+    await awaitGrid(view.grid);
+
+    const resCol: DG.Column<string> = await grok.functions.call('Helm:getMolfiles', {col: helmCol});
     expect(resCol.length, helmCol.length);
     const resMolfileList: MolfileHandlerBase[] = resCol.toList().map((molfile) => MolfileHandler.getInstance(molfile));
     expectArray(resMolfileList.map((mf) => mf.atomCount), df.getCol('atoms').toList());
     expectArray(resMolfileList.map((mf) => mf.bondCount), df.getCol('bonds').toList());
+
+    await awaitGrid(view.grid);
   });
 });
