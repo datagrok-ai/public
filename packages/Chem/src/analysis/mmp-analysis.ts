@@ -565,11 +565,7 @@ function drawMoleculeLabels(sp: DG.ScatterPlotViewer, table: DG.DataFrame, molCo
       }
     }
 
-    const minDistance = 50;
-    const N = counter * (counter + 1) / 2;
     const pointsToDrawIdxs = new BitArray(counter);
-    const distancesMatrix = new Float32Array(N);
-
     //for each point check that distance to all other points is not less than minimum allowed - in this case draw label
     for (let i = 0; i < counter; i++) {
       let lessThenMinDist = false;
@@ -577,12 +573,8 @@ function drawMoleculeLabels(sp: DG.ScatterPlotViewer, table: DG.DataFrame, molCo
         if (i === j)
           continue;
         else {
-          const dist = j < i ? distancesMatrix[(j * counter - (j - 1) * j / 2) + (i - j) - 1] :
-            pointsOnScreen[i]!.distanceTo(pointsOnScreen[j]!);
-          if (j > i)
-            distancesMatrix[(i * counter - (i - 1) * i / 2) + (j - i) - 1] = dist;
-          if (dist < minDistance && pointsOnScreen[i]!.x < pointsOnScreen[j]!.x &&
-              pointsOnScreen[i]!.y < pointsOnScreen[j]!.y)
+          if (pointsOnScreen[j]!.y > pointsOnScreen[i]!.y && pointsOnScreen[j]!.y - pointsOnScreen[i]!.y < 30 &&
+            Math.abs(pointsOnScreen[j]!.x - pointsOnScreen[i]!.x) < 70)
             lessThenMinDist = true;
         }
       }
