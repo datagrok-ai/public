@@ -44,7 +44,9 @@ export const SEQ_SPACE_SIMILARITY_METRICS = [
 export const MACROMOLECULE_SIMILARITY_METRICS = [
   MmDistanceFunctionsNames.HAMMING,
   MmDistanceFunctionsNames.LEVENSHTEIN,
-  MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE];
+  MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+  MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH
+];
 
 
 export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
