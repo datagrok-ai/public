@@ -44,6 +44,11 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
              resolve();
              return;
            }
+           const designVButton = ui.bigButton('Design view', () => {
+             const v = grok.shell.view(this.app.designViewName);
+             if (v)
+               grok.shell.v = v;
+           });
            const submitButton = ui.bigButton('Submit', () => {
              const dialogContent = this.app._submitView?.render();
              if (dialogContent) {
@@ -55,7 +60,7 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
              }
            });
            submitButton.classList.add('hit-design-submit-button');
-           ribbons.push([submitButton]);
+           ribbons.push([designVButton, submitButton]);
            grok.shell.v.setRibbonPanels(ribbons);
          }
          resolve();
