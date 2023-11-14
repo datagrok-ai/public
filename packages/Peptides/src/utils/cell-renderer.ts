@@ -250,7 +250,7 @@ export function setWebLogoRenderer(grid: DG.Grid, model: PeptidesModel, options:
       tooltipOptions.monomerPosition = monomerPosition;
       requestBarchartAction(ev, monomerPosition, model, df, options, tooltipOptions);
       if (!options.isSelectionTable)
-          model.highlightMonomerPosition(monomerPosition);
+        model.highlightMonomerPosition(monomerPosition);
     }
   };
 

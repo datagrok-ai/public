@@ -23,7 +23,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const alignedSeqCol = table.getCol(model.settings.sequenceColumnName!);
   const alignedSeqColCategories = alignedSeqCol.categories;
   const alignedSeqColData = alignedSeqCol.getRawData();
-  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityScaledColData = activityScaledCol.getRawData();
   const seenIndexes = new Map<number, number[]>();
   const uniqueSequencesBitSet = DG.BitSet.create(table.rowCount);
@@ -89,7 +89,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
 
   const pairsGrid = pairsTable.plot.grid();
   setGridProps(pairsGrid);
-  // pairsGrid.root.style.height = '150px';
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];

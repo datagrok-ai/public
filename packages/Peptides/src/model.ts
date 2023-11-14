@@ -88,6 +88,10 @@ export class PeptidesModel {
   }
 
   static getInstance(dataFrame: DG.DataFrame): PeptidesModel {
+    if (dataFrame.columns.contains(C.COLUMNS_NAMES.ACTIVITY_SCALED) && !dataFrame.columns.contains(C.COLUMNS_NAMES.ACTIVITY))
+      dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).name = C.COLUMNS_NAMES.ACTIVITY;
+
+
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     (dataFrame.temp[PeptidesModel.modelName] as PeptidesModel).init();
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
@@ -156,7 +160,7 @@ export class PeptidesModel {
         for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
           const gridCol = this._analysisView.grid.columns.byIndex(colIdx)!;
           gridCol.visible =
-            posCols.includes(gridCol.column!.name) || (gridCol.column!.name === C.COLUMNS_NAMES.ACTIVITY_SCALED);
+            posCols.includes(gridCol.column!.name) || (gridCol.column!.name === C.COLUMNS_NAMES.ACTIVITY);
         }
       }
     }
@@ -385,7 +389,7 @@ export class PeptidesModel {
   }
 
   async updateMutationCliffs(notify: boolean = true): Promise<void> {
-    const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY);
     //TODO: set categories ordering the same to share compare indexes instead of strings
     const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractColInfo);
     const targetCol = typeof this.settings.targetColumnName !== 'undefined' ?
@@ -539,7 +543,7 @@ export class PeptidesModel {
     const sourceGrid = this.analysisView.grid;
     const scaledCol = scaleActivity(this.df.getCol(this.settings.activityColumnName!), this.settings.scaling);
     //TODO: make another func
-    this.df.columns.replace(C.COLUMNS_NAMES.ACTIVITY_SCALED, scaledCol);
+    this.df.columns.replace(C.COLUMNS_NAMES.ACTIVITY, scaledCol);
 
     sourceGrid.columns.setOrder([scaledCol.name]);
   }
@@ -962,6 +966,6 @@ export class PeptidesModel {
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
-    seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY_SCALED;
+    seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY;
   }
 }

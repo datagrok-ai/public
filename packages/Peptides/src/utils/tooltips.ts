@@ -53,7 +53,7 @@ export function showTooltipAt(df: DG.DataFrame, columns: AggregationColumns, opt
   if (!stats?.count)
     return null;
 
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
   // const distributionTable = DG.DataFrame.fromColumns(
   //   [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
