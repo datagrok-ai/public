@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {UaFilter} from '../../filter';
 import {UaViewer} from './ua-viewer';
 import ColorHash from 'color-hash';
-// import {data} from 'datagrok-api/grok';
 
 const colorHash = new ColorHash();
 

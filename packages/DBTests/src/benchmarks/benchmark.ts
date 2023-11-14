@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {FuncCall} from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
 
 category('Benchmarks', () => {
   test('Sequential 100', async () => {
@@ -64,7 +64,7 @@ function getTestResult(times: number[], expectedCount: number): object {
   };
 }
 
-export async function getCallTime(call: FuncCall): Promise<number> {
+export async function getCallTime(call: DG.FuncCall): Promise<number> {
   const start = Date.now();
   await call.call();
   return Date.now() - start;

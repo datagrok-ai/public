@@ -1,13 +1,10 @@
 /* eslint-disable */
-// @ts-nocheck
 import {before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {Func, Qnum, toDart} from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import {check} from './utils';
 import {expectTable} from '../package';
 import dayjs from "dayjs";
-import {DataFrame} from "datagrok-api/dg";
 
 const demogHeavy = grok.data.demo.demog(5000000); // 90mb
 const demogMiddle = grok.data.demo.demog(1100000); // 20mb
@@ -41,18 +38,18 @@ category('Benchmarks: Client-side cache', () => {
 
   test('Tiny scalar calls no cache', async () => {
     const iterations = DG.Test.isInBenchmark ? 100000 : 100;
-    return toDart(await runLoop(false, tiny, getTinyGenerator(true, iterations)));
+    return DG.toDart(await runLoop(false, tiny, getTinyGenerator(true, iterations)));
   }, {timeout: 400000});
 
   test('Tiny scalar calls with cache', async () => {
     await tiny.apply({'x': 1});
     const iterations = DG.Test.isInBenchmark ? 100000 : 100;
-    return toDart(await runLoop(true, tiny, getTinyGenerator(true, iterations)));
+    return DG.toDart(await runLoop(true, tiny, getTinyGenerator(true, iterations)));
   }, {timeout: 400000});
 
   test('Cached dataframe', async () => {
     const type = DG.Test.isInBenchmark ? 'h' : 'l';
-    return toDart(await runLoop(true, demog, getHeavyGenerator(10, type)));
+    return DG.toDart(await runLoop(true, demog, getHeavyGenerator(10, type)));
   }, {timeout: 180000});
 
   test('Records limit, tiny', async () => {
@@ -76,7 +73,7 @@ category('Benchmarks: Client-side cache', () => {
     await runLoop(true, tiny, getTinyGenerator(false, 1000000));// populate with 1kk + 1kk records
     const after2kk = await runLoop(true, demog, getHeavyGenerator());
 
-    return toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
+    return DG.toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
   }, {timeout: 10000000000000, skipReason: 'Just for test purposes'});
 
   test('Records random stress test', async () => {
@@ -108,7 +105,7 @@ category('Benchmarks: Client-side cache', () => {
     await runLoop(true, tiny, getTinyGenerator(false, 1000000));// populate with 1kk + 1kk records
     const after2kk = await runLoop(true, otherDemog, getHeavyGenerator());
 
-    return toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
+    return DG.toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
   }, {timeout: 10000000000000, skipReason: 'Just for test purposes'});
 });
 
@@ -151,7 +148,7 @@ category('Functions: Client-side cache', () => {
     await expectSameResults(echo(DG.TYPE.STRING), {x: 'foo'});
     await expectSameResults(echo(DG.TYPE.INT), {x: 1234});
     await expectSameResults(echo(DG.TYPE.FLOAT), {x: 1234.56});
-    await expectSameResults(echo(DG.TYPE.QNUM), {x: Qnum.less(5)});
+    await expectSameResults(echo(DG.TYPE.QNUM), {x: DG.Qnum.less(5)});
     // await expectSameResults(echo(DG.TYPE.BIG_INT), {x: 9007199254740991n});
     await expectSameResults(echo(DG.TYPE.DATE_TIME), {x: dayjs.utc()})
   });
@@ -164,7 +161,7 @@ category('Functions: Client-side cache', () => {
   });
 
   test('Expiration', async () => {
-    const func = registerFunc('dataframe getNowDf()', () => DataFrame.fromCsv(`id,date
+    const func = registerFunc('dataframe getNowDf()', () => DG.DataFrame.fromCsv(`id,date
 id1,${Date.now()}`));
     const res1 = await func.apply();
 
@@ -177,7 +174,7 @@ id1,${Date.now()}`));
         db = request.result;
         transaction = db.transaction('cache_entry', 'readwrite');
         const entryStore = transaction.objectStore('cache_entry');
-        entryStore.openCursor().onsuccess = (event) => {
+        entryStore.openCursor().onsuccess = (event: any) => {
           const cursor = event.target.result;
           if (cursor) {
             let updateEntry = cursor.value;
@@ -222,7 +219,7 @@ async function expectSameResults(f: DG.Func, params?: object): Promise<any> {
   else if (Array.isArray(first))
     expectArray(first, second);
   else if (first instanceof dayjs)
-    expect(first.format('YYYY-MM-DDTHH:mm:ss'), second.format('YYYY-MM-DDTHH:mm:ss'));
+    expect((first as dayjs.Dayjs).format('YYYY-MM-DDTHH:mm:ss'), second.format('YYYY-MM-DDTHH:mm:ss'));
   else
     expect(first, second);
   return second;
@@ -247,7 +244,7 @@ async function expectExceptionAsync(action: () => Promise<void>, check?: (except
 }
 
 function registerFunc(signature: string, run: (param: any) => any, isAsync: boolean = false,
-                      invalidateOn: string = '* * * * *'): Func {
+                      invalidateOn: string = '* * * * *'): DG.Func {
   return grok.functions.register({
     signature: signature,
     run: run,
@@ -256,18 +253,19 @@ function registerFunc(signature: string, run: (param: any) => any, isAsync: bool
   });
 }
 
-async function getFunctionExecutionTime(f: Func, params: object = {}): Promise<number> {
+async function getFunctionExecutionTime(f: DG.Func, params: object = {}): Promise<number> {
   const start = Date.now();
   await f.apply(params);
   return Date.now() - start;
 }
 
-async function runLoop(cache: boolean, func: Func, argumentsProvider: Generator<void, object, object>): object {
+async function runLoop(cache: boolean, func: DG.Func, argumentsProvider: Generator<void, object, object>): Promise<object | undefined>  {
   try {
     if (!cache) {
       grok.functions.clientCache.stop();
     }
     const results = [];
+    // @ts-ignore
     for (let args of argumentsProvider())
       results.push(await getFunctionExecutionTime(func, args))
 
@@ -280,6 +278,7 @@ async function runLoop(cache: boolean, func: Func, argumentsProvider: Generator<
 }
 
 function getTinyGenerator(same: boolean = true, count: number = 1000000): Generator<void, object, object> {
+  // @ts-ignore
   return function* () {
     let n = 0;
     while (n < count) {
@@ -290,6 +289,7 @@ function getTinyGenerator(same: boolean = true, count: number = 1000000): Genera
 }
 
 function getHeavyGenerator(count: number = 5, type:string = 'h'): Generator<void, object, object> {
+  // @ts-ignore
   return function* () {
     let n = 0;
     while (n < count) {

@@ -8,7 +8,6 @@ import {
   awaitCheck,
   expectArray,
 } from '@datagrok-libraries/utils/src/test';
-import {TableView} from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
 import $ from 'cash-dom';

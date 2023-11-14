@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {delay, Test, TestContext, initAutoTests, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {c} from './package';
-import {Menu} from 'datagrok-api/dg';
 import '../css/styles.css';
 
 interface ITestManagerUI {
@@ -325,7 +324,7 @@ export class TestManager extends DG.ViewBase {
 
   setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
     node.captionLabel.addEventListener('contextmenu', (e) => {
-      const menu = Menu.popup()
+      const menu = DG.Menu.popup()
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
         })
