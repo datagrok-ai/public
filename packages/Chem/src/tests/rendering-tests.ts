@@ -5,6 +5,7 @@ import {readDataframe} from './utils';
 import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
 import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
+import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 
 category('rendering', () => {
   test('visual rendering', async () => {
@@ -46,6 +47,35 @@ category('rendering', () => {
     const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
     await scrollTable(canvas, scrollDelta, scrollCycles, 5);
   });
+
+  test('rdkit grid cell renderer benchmark', async () => {
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
+    const rowCount = df.rowCount;
+    const col = df.col(DG.Test.isInBenchmark ? 'smiles' : 'molecule')!;
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
+    const rendndererObj = await renderFunctions[0].apply();
+    const moleculeHost = ui.canvas(200, 100);
+    
+    let start = performance.now();
+    //rendering without highlights
+    for (let i = 0; i < rowCount; i++) {
+      rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, 200, 100, DG.GridCell.fromValue(col.get(i)));
+    }
+    console.log(`rendering of ${rowCount} molecules without highlight took ${performance.now() - start} milliseconds`);
+   
+    col.temp[FILTER_SCAFFOLD_TAG] = 'c1ccccc1';
+    col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '[{"color":"#00FF00","molecule":"C1CCCCC1"}]');
+    col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '[{"color":"#00FF00","molecule":"C1CCCCC1"}]');
+    col.setTag(SCAFFOLD_TREE_HIGHLIGHT, `[{"molecule":"\n  MJ201900                      \n\n  7  7  0  0  0  0  0  0  0  0999 V2000\n    0.1338    0.4232    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.5805    0.0107    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.5805   -0.8143    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.1338   -1.2268    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8483   -0.8143    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8483    0.0107    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.1338    1.2482    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\n  6  1  1  0  0  0  0\n  1  7  1  0  0  0  0\nM  END\n","color":"#ffbb78"},{"molecule":"\n  MJ201900                      \n\n  8  8  0  0  0  0  0  0  0  0999 V2000\n    0.1337    0.4232    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.5806    0.0107    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.5806   -0.8144    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.1337   -1.2270    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8484   -0.8144    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8484    0.0107    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.1337    1.2484    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2951    0.4231    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\n  6  1  1  0  0  0  0\n  1  7  1  0  0  0  0\n  2  8  1  0  0  0  0\nM  END\n","color":"#2ca02c"}]`);
+
+    //rendering with highlights
+    start = performance.now();
+    for (let i = 0; i < rowCount; i++) {
+      rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, 200, 100, DG.GridCell.fromValue(col.get(i)));
+    }
+    console.log(`rendering of ${rowCount} molecules with highlight took ${performance.now() - start} milliseconds`);
+    
+  }, {timeout: 180000});
 
   test('stereochemistry', async () => {
     const df = await readDataframe('tests/stereochemistry.csv');
