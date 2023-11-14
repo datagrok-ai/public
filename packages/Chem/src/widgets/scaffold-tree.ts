@@ -2003,7 +2003,8 @@ class SketcherDialogWrapper {
     validLabel.innerText = errorMsg ?? '';
 
     this.sketcher.onChanged.subscribe(() => {
-      const molStr = thisWrapper.sketcher.getMolFile();
+      const molStr = this.normalizeMolStr(thisWrapper.sketcher.getMolFile());
+
       errorMsg = validate(molStr, thisWrapper.node);
       valid = errorMsg === null;
       validLabel.style.color = SketcherDialogWrapper.validationColor(valid);
@@ -2019,7 +2020,7 @@ class SketcherDialogWrapper {
       thisWrapper.isMolBlock ? thisWrapper.sketcher.setMolFile(molStr) : thisWrapper.sketcher.setSmiles(molStr);
     });
     this.dialog.addButton(actionName, () => {
-      const molStr = thisWrapper.sketcher.getMolFile();
+      const molStr = this.normalizeMolStr(thisWrapper.sketcher.getMolFile());
       action(molStr, thisWrapper.node, errorMsg);
     });
 
@@ -2028,6 +2029,24 @@ class SketcherDialogWrapper {
 
     if (onClose != null)
       this.dialog.onCancel(onClose);
+  }
+
+  normalizeMolStr(molStr: string): string {
+    let mol;
+    try {
+      mol = _rdKitModule.get_mol(molStr);
+      if (mol.has_coords() === 2) {
+        mol.normalize_depiction(0);
+        molStr = mol.get_molblock();
+      }
+    } catch {
+      // do nothing
+    } finally {
+      if (mol) {
+        mol.delete();
+      }
+    }
+    return molStr;
   }
 
   set node(node: DG.TreeViewGroup) {
