@@ -58,6 +58,6 @@ export interface IVdRegionsViewer extends VdRegionsProps, IViewer {
 
 declare module 'datagrok-api/dg' {
   export interface DataFramePlotHelper {
-    fromType(viewerType: 'VdRegions', options: Partial<VdRegionsProps>): Promise<DG.Viewer & IVdRegionsViewer>;
+    fromType(viewerType: 'VdRegions', options: Partial<VdRegionsProps>): Promise<DG.Viewer<VdRegionsProps> & IVdRegionsViewer>;
   }
 }

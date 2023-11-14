@@ -6,6 +6,7 @@ import {IViewer} from './viewer';
 import {Observable} from 'rxjs';
 import {MjolnirPointerEvent} from 'mjolnir.js';
 import {PickingInfo} from '@deck.gl/core/typed';
+import {TAGS as pdbTAGS} from '../pdb/index';
 
 
 export type NodeStyleType = { [propName: string]: any };
@@ -23,7 +24,7 @@ export enum RepresentationType {
 export const NglPropsDefault = new class {
   // -- Data --
   pdb: string | null = null;
-  pdbTag: string | null = null;
+  pdbTag: string | null = pdbTAGS.PDB;
   ligandColumnName: string | null = null;
 
   // -- Style --
@@ -37,7 +38,7 @@ export const NglPropsDefault = new class {
 }();
 
 
-export type NglProps = Required<typeof NglPropsDefault>;
+export type NglProps = typeof NglPropsDefault;
 
 export interface INglViewer extends IViewer {
   setOptions(options: Partial<NglProps>): void;
@@ -47,7 +48,7 @@ export interface INglViewer extends IViewer {
 
 declare module 'datagrok-api/dg' {
   interface DataFramePlotHelper {
-    fromType(viewerType: 'NGL', options: Partial<NglProps>): Promise<DG.Viewer & INglViewer>;
+    fromType(viewerType: 'NGL', options: Partial<NglProps>): Promise<DG.Viewer<NglProps> & INglViewer>;
   }
 }
 
