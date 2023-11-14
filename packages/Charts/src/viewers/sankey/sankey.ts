@@ -199,7 +199,7 @@ export class SankeyViewer extends DG.JsViewer {
 
     const svg = select(this.root).append('svg')
       .attr('width', width + this.margin!.left + this.margin!.right)
-      .attr('height', height + this.margin!.top + this.margin!.bottom)
+      .attr('height', Math.abs(height + this.margin!.top + this.margin!.bottom))
       .append('g')
       .attr('transform', `translate(${this.margin!.left}, ${this.margin!.top})`);
 
@@ -214,7 +214,7 @@ export class SankeyViewer extends DG.JsViewer {
       .join('rect')
       .attr('x', (d) => d.x0!)
       .attr('y', (d) => d.y0!)
-      .attr('height', (d) => d.y1! - d.y0!)
+      .attr('height', (d) => Math.abs(d.y1! - d.y0!))
       .attr('width', (d) => d.x1! - d.x0!)
       .attr('fill', (d: any) => DG.Color.toRgb(this.color!(d.name)))
       .on('mouseover', (event, d: any) => {
