@@ -724,16 +724,17 @@ export namespace chem {
    * @param {string[]} descriptors - RDKit descriptors to calculate.
    * @returns {Promise<DataFrame>}
    * */
-  export function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_Descriptors(table.dart, column, descriptors, () => resolve(table), (e: any) => reject(e)));
+  export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
+    await api.grok_Chem_Descriptors(table.dart, column, descriptors);
+    return table;
   }
 
   /**
    * Returns available descriptors tree.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    * */
-  export function descriptorsTree(): Promise<object> {
-    return new Promise((resolve, reject) => api.grok_Chem_DescriptorsTree((tree: any) => resolve(JSON.parse(tree)), (e: any) => reject(e)));
+  export async function descriptorsTree(): Promise<object> {
+    return JSON.parse(api.grok_Chem_DescriptorsTree());
   }
 
   /**

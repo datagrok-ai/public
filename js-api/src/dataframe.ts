@@ -996,8 +996,7 @@ export class Column<T = any> {
       return null;
     if (type == null)
       type = this.type;
-    return new Promise((resolve, reject) => api.grok_Column_ApplyFormula(
-      this.dart, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_Column_ApplyFormula(this.dart, formula, type, treatAsString);
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType]. */
@@ -1183,11 +1182,11 @@ export class ColumnList {
    * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString);
   }
 
   _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString);
   }
 
   /** Creates and adds a string column. */

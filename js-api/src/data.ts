@@ -13,14 +13,14 @@ export class Files {
    * @param {string} path
    * @returns {Promise<DataFrame>}*/
   openTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Files_OpenTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
+    return api.grok_Files_OpenTable(path);
   }
 
   /** Reads all tables from file
    * @param {string} path
    * @returns {Promise<Array<DataFrame>>}*/
   openTables(path: string): Promise<Array<DataFrame>> {
-    return new Promise((resolve, reject) => api.grok_Files_OpenTables(path, (t: any) => resolve(t.map(toJs)), (e: any) => reject(e)));
+    return api.grok_Files_OpenTables(path);
   }
 }
 
@@ -149,7 +149,7 @@ export class Data {
    * @returns {Promise<DataFrame>}
    * */
   loadTable(csvUrl: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_LoadDataFrame(csvUrl, (t: any) => resolve(toJs(t, false)), (e: any) => reject(e)));
+    return api.grok_LoadDataFrame(csvUrl);
   }
 
   /**
@@ -218,7 +218,7 @@ export class Data {
   }
 
   detectSemanticTypes(t: DataFrame): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.dart, (_: any) => resolve(), (e: any) => reject(e)));
+    return api.grok_DetectSemanticTypes(t.dart);
   }
 }
 
