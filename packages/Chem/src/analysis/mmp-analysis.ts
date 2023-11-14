@@ -293,6 +293,7 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
     drawArrows: true,
     opacity: 0.5,
     color: '60,177,115',
+    arrowSize: 10
   };
 
   return {maxAct, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines};
@@ -329,6 +330,7 @@ function getMmpScatterPlot(table: DG.DataFrame, activities: DG.Column, maxAct: n
     color: activities.name,
     showXSelector: false,
     showYSelector: false,
+    markerDefaultSize: 7
   });
 
   const sliderInput = ui.sliderInput('Cutoff', 0, 0, maxAct);
