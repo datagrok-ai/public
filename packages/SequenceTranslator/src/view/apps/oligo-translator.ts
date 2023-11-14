@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
 import '../style/translator-app.css';
-import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
@@ -74,12 +73,19 @@ export class TranslatorLayoutHandler {
 
     const formatChoiceInput = ui.div([this.formatChoiceInput]);
 
+    const clearButton = ui.button(
+      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = '' }),
+      () => {}
+    );
+    ui.tooltip.bind(clearButton, 'Clear input');
+
     const inputTableRow = {
       format: formatChoiceInput,
       textInput: sequenceColoredInput.root,
+      clearBtn: clearButton
     };
     const upperBlock = ui.table(
-      [inputTableRow], (item) => [item.format, item.textInput]
+      [inputTableRow], (item) => [item.format, item.textInput, item.clearBtn]
     );
     upperBlock.classList.add('st-translator-input-table');
 

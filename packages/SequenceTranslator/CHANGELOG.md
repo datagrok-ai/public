@@ -5,7 +5,7 @@
 ### Features
 
 * Tabs implemented as separate apps
-* Clear buttons added to 'Structure' app
+* Clear buttons added to sequence inputs
 
 ## 1.1.4 (2023-09-07)
 

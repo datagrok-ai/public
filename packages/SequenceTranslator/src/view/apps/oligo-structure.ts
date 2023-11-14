@@ -126,9 +126,10 @@ export class StructureLayoutHandler {
     const clearBlock = Object.fromEntries(
       STRANDS.map(
         (key) => {
-          const icon = ui.iconFA('eraser', () => {coloredInput[key].inputBase.value = ''});
-          ui.tooltip.bind(icon, `Clear ${key.toUpperCase()}`);
-          return [key, icon];
+          const clearIcon = ui.icons.delete(() => { coloredInput[key].inputBase.value = '' });
+          const clearButton = ui.button(clearIcon, () => {});
+          ui.tooltip.bind(clearButton, `Clear ${key.toUpperCase()}`);
+          return [key, clearIcon];
         }
       ));
 
