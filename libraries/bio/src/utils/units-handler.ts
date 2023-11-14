@@ -15,9 +15,9 @@ import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-d
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
 
-export const Tags = new class {
+export const Temps = new class {
   /** Column's temp slot name for a UnitsHandler object */
-  uhTemp = `units-handler.${DG.SEMTYPE.MACROMOLECULE}`;
+  uh = `units-handler.${DG.SEMTYPE.MACROMOLECULE}`;
 }();
 
 export const GapSymbols: {
@@ -36,9 +36,9 @@ export type JoinerFunc = (src: ISeqSplitted) => string;
  */
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted
-  protected _units: string; // units, of the form fasta, separator
-  protected _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
-  protected _defaultGapSymbol: string;
+  protected readonly _units: string; // units, of the form fasta, separator
+  protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
+  protected readonly _defaultGapSymbol: string;
 
   private _splitter: SplitterFunc | null = null;
 
@@ -609,7 +609,7 @@ export class UnitsHandler {
   }
 
   protected constructor(col: DG.Column<string>) {
-    if (col.type != DG.TYPE.STRING)
+    if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
     const units = this._column.getTag(DG.TAGS.UNITS);
@@ -659,8 +659,9 @@ export class UnitsHandler {
 
   /** Gets a column's UnitsHandler object from temp slot or creates a new and stores it to the temp slot. */
   public static getOrCreate(col: DG.Column<string>): UnitsHandler {
-    if (!(Tags.uhTemp in col.temp)) col.temp[Tags.uhTemp] = new UnitsHandler(col);
-    return col.temp[Tags.uhTemp];
+    let res = col.temp[Temps.uh];
+    if (!res) res = col.temp[Temps.uh] = new UnitsHandler(col);
+    return res;
   }
 }
 

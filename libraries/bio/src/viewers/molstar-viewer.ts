@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {IViewer} from './viewer';
 import {PdbResDataFrameType} from '../pdb/pdb-helper';
+import {TAGS as pdbTAGS} from '../pdb/index';
 
 export enum RepresentationType {
   Cartoon = 'cartoon',
@@ -38,9 +39,9 @@ export type MolstarDataType = {
 
 export const BiostructurePropsDefault = new class {
   // -- Data --
-  data: string = 'null';
+  dataJson: string = 'null';
   pdb: string | null = null;
-  pdbTag: string | null = null;
+  pdbTag: string | null = pdbTAGS.PDB;
   ligandColumnName: string | null = null;
   pdbProvider: string = 'rcsb';
   emdbProvider: string = 'rcsb';
@@ -98,7 +99,7 @@ export const BiostructurePropsDefault = new class {
   showExportControls: boolean = false;
 }();
 
-export type BiostructureProps = Required<typeof BiostructurePropsDefault>;
+export type BiostructureProps = typeof BiostructurePropsDefault;
 
 export interface IBiostructureViewer extends IViewer {
   setOptions(options: Partial<BiostructureProps>): void;
@@ -111,6 +112,7 @@ export interface ISaguaroViewer extends IViewer {
 
 declare module 'datagrok-api/dg' {
   interface DataFramePlotHelper {
-    fromType(viewerType: 'Biostructure', options: Partial<BiostructureProps>): Promise<DG.Viewer & IBiostructureViewer>;
+    // eslint-disable-next-line max-len
+    fromType(viewerType: 'Biostructure', options: Partial<BiostructureProps>): Promise<DG.Viewer<BiostructureProps> & IBiostructureViewer>;
   }
 }
