@@ -8,6 +8,7 @@
 
 * Fix detectMacromolecule allowing double quoted sequences and gaps.
 * Fix for min seq length 10, tests.
+* Fix splitter with separator for quoted gaps
 * Fix user library settings for tests
 * Fix test substructureFilter/helm
 * Fix README.md images, GIFs size

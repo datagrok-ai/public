@@ -81,7 +81,7 @@ ATC-G-TTGC--
     });
     df.filter.fireChanged();
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
-      {'shrinkEmptyTail': true})) as WebLogoViewer;
+      {'shrinkEmptyTail': true})) as unknown as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
     }, 500);
@@ -119,7 +119,7 @@ ATC-G-TTGC--
     seqCol.setTag(bioTAGS.aligned, 'SEQ.MSA');
 
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
-      {'skipEmptyPositions': true})) as WebLogoViewer;
+      {'skipEmptyPositions': true})) as unknown as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
     }, 500);
@@ -155,7 +155,7 @@ ATC-G-TTGC--
       startPositionName: '3',
       endPositionName: '7',
       skipEmptyPositions: true,
-    })) as WebLogoViewer;
+    })) as unknown as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
     }, 500);

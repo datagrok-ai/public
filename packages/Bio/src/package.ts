@@ -1128,7 +1128,7 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 
 // -- Utils --
 
-//name: detectMacromoleculeProbe
+//name: Detect Macromolecule Probe
 //input: file file
 //input: string colName = ''
 //input: int probeCount = 100
