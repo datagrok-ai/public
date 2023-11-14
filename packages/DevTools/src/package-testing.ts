@@ -67,6 +67,7 @@ enum NODE_TYPE {
   TEST = 'TEST'
 }
 
+const APP_PREFIX: string = `/TestManager/`;
 const DART_TESTS_CAT = 'Dart Tests';
 
 export class TestManager extends DG.ViewBase {
@@ -81,9 +82,9 @@ export class TestManager extends DG.ViewBase {
   runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
-  dockLeft;
+  dockLeft?: boolean;
 
-  constructor(name, dockLeft?: boolean) {
+  constructor(name: string, dockLeft?: boolean) {
     super({});
     this.name = name;
     this.dockLeft = dockLeft;
@@ -110,6 +111,7 @@ export class TestManager extends DG.ViewBase {
     const testUIElements: ITestManagerUI = await this.createTestManagerUI(testFromUrl);
     this.testManagerView.name = this.name;
     addView(this.testManagerView);
+    this.testManagerView.path = APP_PREFIX;
     this.testManagerView.temp['ignoreCloseAll'] = true;
     this.ribbonPanelDiv = testUIElements.ribbonPanelDiv;
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
@@ -323,14 +325,23 @@ export class TestManager extends DG.ViewBase {
 
   setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
     node.captionLabel.addEventListener('contextmenu', (e) => {
-      Menu.popup()
+      const menu = Menu.popup()
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
         })
         .item('Copy', async () => {
           navigator.clipboard.writeText(node.captionLabel.innerText.trim());
         })
-        .show();
+        .item('Copy URL', async () => {
+          navigator.clipboard.writeText(`${window.location.origin}/apps/DevTools${
+            this.getPath(tests, nodeType).replaceAll(' ', '%20')}`);
+        });
+      if (nodeType === NODE_TYPE.TEST) {
+        menu.item('Run force', async () => {
+          this.runAllTests(node, tests, nodeType, true);
+        }, 1);
+      }
+      menu.show();
       e.preventDefault();
       e.stopPropagation();
     });
@@ -406,10 +417,10 @@ export class TestManager extends DG.ViewBase {
     return DG.DataFrame.fromObjects([res]);
   }
 
-  async runTest(t: IPackageTest): Promise<boolean> {
+  async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
     const skipReason = t.test.options?.skipReason;
-    if (this.runSkippedMode && skipReason) {
+    if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
       runSkipped = true;
     }
@@ -444,9 +455,26 @@ export class TestManager extends DG.ViewBase {
     return testSucceeded;
   }
 
-  async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
-    this.testManagerView.path = '/' + this.testManagerView.name.replace(' ', '');
+  getPath(tests: any, nodeType: NODE_TYPE): string {
+    let path: string;
+    switch (nodeType) {
+    case NODE_TYPE.PACKAGE:
+      path = `${APP_PREFIX}${tests.package.name}`;
+      break;
+    case NODE_TYPE.CATEGORY:
+      path = `${APP_PREFIX}${tests.packageName}/${tests.fullName}`;
+      break;
+    case NODE_TYPE.TEST:
+      path = `${APP_PREFIX}${tests.packageName}/${tests.test.category}/${tests.test.name}`;
+      break;
+    }
+    return path;
+  }
+
+  async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE, force?: boolean) {
+    this.testManagerView.path = this.getPath(tests, nodeType);
     let catsValuesSorted: ICategory[];
+    localStorage.setItem('TMState', this.testManagerView.path);
     switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
@@ -467,26 +495,20 @@ export class TestManager extends DG.ViewBase {
           testsSucceded = false;
       }
       this.updateTestResultsIcon(packageTests.resultDiv, testsSucceded);
-      this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
       progressBar.close();
       break;
     }
     case NODE_TYPE.CATEGORY: {
       const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
       await this.runTestsRecursive(tests, progressBar, tests.totalTests, 0, `${tests.packageName}/${tests.fullName}`);
-      this.testManagerView.path =
-        `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
       progressBar.close();
       break;
     }
     case NODE_TYPE.TEST: {
-      await this.runTest(tests);
-      this.testManagerView.path =
-        `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
+      await this.runTest(tests, force);
       break;
     }
     }
-    localStorage.setItem('TMState', this.testManagerView.path);
     await delay(1000);
     if (grok.shell.lastError.length > 0) {
       grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);
