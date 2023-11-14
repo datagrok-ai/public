@@ -37,17 +37,19 @@ export interface IHighlightTagInfo {
 export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
   const colorArr = color ? hexToPercentRgb(color) : [1.0, 0.7, 0.7, 1.0];
   const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-  if (substrToTakeAtomsFrom.atoms) {
-    for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-      mainSubstr.highlightAtomColors ??= {};
-      mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-    };
-  }
-  if (substrToTakeAtomsFrom.bonds) {
-    for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-      mainSubstr.highlightBondColors ??= {};
-      mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-    };
+  if (substrToTakeAtomsFrom) {
+    if (substrToTakeAtomsFrom.atoms) {
+      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+        mainSubstr.highlightAtomColors ??= {};
+        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+      };
+    }
+    if (substrToTakeAtomsFrom.bonds) {
+      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+        mainSubstr.highlightBondColors ??= {};
+        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+      };
+    }
   }
 }
 
