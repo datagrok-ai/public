@@ -10,7 +10,7 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {getIVP, getScriptLines, getScriptParams, DF_NAME, CONTROL_EXPR} from './scripting-tools';
 
 /** */
-const TEMPLATE_BASIC = `#name: Basic 
+const TEMPLATE_BASIC = `#name: Template 
 #differential equations:
   dy/dt = -y + sin(t) / t
 
@@ -120,8 +120,6 @@ export async function runSolverApp() {
     }
   };
 
-  const exportBtn = ui.button('export', exportToJS, 'Export to JavaScript script');
-
   const solve = async () => {  
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
@@ -153,9 +151,7 @@ export async function runSolverApp() {
           const b = new DG.Balloon();
           b.error(err.message);
         }
-  }};
-  
-  const solveBtn = ui.bigButton('solve', solve, 'Solve the problem');
+  }}; 
    
   let solutionTable = DG.DataFrame.create();
   let solverView = grok.shell.addTableView(solutionTable);
@@ -268,9 +264,22 @@ export async function runSolverApp() {
 
   solverView.dockManager.dock(div, 'left');
   
-  div.appendChild(ui.h3(' '));
+  div.appendChild(ui.h3(' '));  
 
-  const buttons = ui.buttonsInput([exportBtn, solveBtn]);
+  const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
+  exportIcon.classList.add("fal");
 
-  div.appendChild(buttons);  
+  const playIcon = ui.iconFA('play', solve, 'Solve (F5)');  
+  playIcon.style.color = "var(--green-2)";
+  playIcon.classList.add("fas"); 
+  
+  solverView.root.addEventListener('keydown', async (e) => {
+    if (e.key === "F5") {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      await solve();
+    }
+  });
+
+  solverView.setRibbonPanels([[exportIcon], [playIcon]]);
 } // runSolverApp
