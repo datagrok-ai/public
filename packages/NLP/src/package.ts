@@ -5,7 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemCash, getEmbeddings, getMarkedStringAndCommonWordsMap, modifyMetric, setStemmingCash, getClosest, getEmbeddingsAdv} from './stemming-tools';
+import {stemCash, getMarkedStringAndCommonWordsMap, modifyMetric, setStemmingCash, getClosest, getEmbeddingsAdv} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -399,24 +399,12 @@ export function similar(query: string): DG.Widget {
   const closest = getClosest(df, queryIdx, 6); 
 
   const uiElements = [] as HTMLElement[];
-  const filterWords = new Map<string, number>();
 
   for (let i = 0; i < closest.length; ++i) {
-    const res = getMarkedStringAndCommonWordsMap(queryIdx, source.get(closest[i]));
-
-    for (const word of res.commonWords.keys())
-      filterWords.set(word, (filterWords.get(word) ?? 0) + res.commonWords.get(word)!);
-
-    const uiElem = ui.inlineText(res.marked);
-    //@ts-ignore
-    $(uiElem).css({"cursor": "pointer"});
-    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
+    const uiElem = ui.inlineText(getMarkedStringAndCommonWordsMap(closest[i], queryIdx, source.get(closest[i])));    
     uiElements.push(uiElem);    
-    ui.tooltip.bind(uiElem, 'Click to navigate.');
     uiElements.push(ui.divText('________________________________'));    
   }
-  
-  const wgt = new DG.Widget(ui.divV(uiElements));
 
-  return wgt;
+  return new DG.Widget(ui.divV(uiElements));
 }

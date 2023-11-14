@@ -234,17 +234,14 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
 }
 
 /** Return string with marked words and a dictionary of common words. */
-export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked: string): {marked: any[], commonWords: Map<string, number>}  {
+export function getMarkedStringAndCommonWordsMap(curIdx: number, queryIdx: number, strToBeMarked: string): HTMLElement[] {
+  const df = grok.shell.t;
   const size = strToBeMarked.length;
 
   if (size === 0)
-    return {
-      marked: [] as any[], 
-      commonWords: new Map<string, number>()
-    };
+    return [];
 
   const marked = [] as any[];
-  const commonWords = new Map<string, number>();
 
   // stemmed words of the query text.
   const wordsOfQuery = stemCash.indices?.get(queryIdx);
@@ -255,6 +252,35 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
   
   // subsequence type: word or not
   let isWord = !SEPARATORS.includes(strToBeMarked[start]);
+
+  const getWgt = (word: string, toMark: boolean) => {
+    const p = ui.inlineText([word]);
+    //@ts-ignore
+    $(p).css({"cursor": "pointer"});
+    p.onclick = () => { 
+      df.currentCell = df.cell(curIdx, stemCash.colName!) 
+    };
+    p.oncontextmenu = (e) => {      
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      setTimeout(() => {
+        let view = grok.shell.getTableView(df.name);
+        let filters = view.filters() as DG.FilterGroup;
+        filters.updateOrAdd({
+          type: "text",
+          column: stemCash.colName,
+          value: word          
+        })
+       }, 500);
+    };
+    ui.tooltip.bind(p, 'Click to navigate. Right-click to add to filters');
+
+    if (toMark)
+      //@ts-ignore
+      $(p).css({"font-weight": "bold"});
+    
+    return p;
+  };
 
   // scan the string that should be marked
   while (start < size) {
@@ -273,19 +299,13 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
       if (!STOP_WORDS.includes(wordLow)) {
         const value = stemCash.dictionary?.get(stemmer(wordLow));
 
-        if (wordsOfQuery.includes(value?.index)) {
-          let p = ui.inlineText([word]);
-          //@ts-ignore
-          $(p).css({"font-weight": "bold"});
-          marked.push(p);
-          const buf = word.toLocaleLowerCase();
-          commonWords.set(buf, (commonWords.get(buf) ?? 0) + 1);          
-        }
+        if (wordsOfQuery.includes(value?.index))
+          marked.push(getWgt(word, true));
         else
-          marked.push(word);
+          marked.push(getWgt(word, false));
       }
-      else
-      marked.push(word);
+      else 
+        marked.push(getWgt(word, false));
     } // if (isWord)
 
     else {
@@ -296,14 +316,14 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
           break;
       }
 
-      marked.push(strToBeMarked.slice(start, end));
+      marked.push(getWgt(strToBeMarked.slice(start, end), false));
     }   
 
     start = end;
     isWord = !isWord;
   } // while
 
-  return {marked: marked, commonWords: commonWords};
+  return marked;
 } // getMarkedStringAndCommonWordsMap
 
 /** Modify similarity metric. */
