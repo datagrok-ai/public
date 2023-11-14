@@ -10,16 +10,16 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {getIVP, getScriptLines, getScriptParams, DF_NAME, CONTROL_EXPR} from './scripting-tools';
 
 /** */
-const TEMPLATE_BASIC = `#name: Template 
-#differential equations:
+const TEMPLATE_BASIC = `${CONTROL_EXPR.NAME}: Template 
+${CONTROL_EXPR.DIF_EQ}:
   dy/dt = -y + sin(t) / t
 
-#argument: t
+${CONTROL_EXPR.ARG}: t
   initial = 0.01
   final = 15.0
   step = 0.001
 
-#initial values:  
+${CONTROL_EXPR.INITS}:  
   y = 0`;
 
 /** */
@@ -28,34 +28,34 @@ Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters.
 Edit these description lines if required.
 
-#name: Advanced
-#differential equations:
+${CONTROL_EXPR.NAME}: Advanced
+${CONTROL_EXPR.DIF_EQ}:
   dx/dt = E1 * y + sin(t)
 
   dy/dt = E2 * x - pow(t, 5)
 
-#expressions:
+${CONTROL_EXPR.EXPR}:
   E1 = C1 * exp(-t) + P1
   E2 = C2 * cos(2 * t) + P2
 
-#argument: t
+${CONTROL_EXPR.ARG}: t
   start = 0.0
   finish = 2.0
   step = 0.01
 
-#initial values:
+${CONTROL_EXPR.INITS}:
   x = 2.0
   y = 0.0
 
-#constants:
+${CONTROL_EXPR.CONSTS}:
   C1 = 1.0
   C2 = 3.0
 
-#parameters:
+${CONTROL_EXPR.PARAMS}:
   P1 = 1.0
   P2 = -1.0
 
-#tolerance: 0.00005`;
+${CONTROL_EXPR.TOL}: 0.00005`;
 
 /** */
 enum EDITOR_STATE {
