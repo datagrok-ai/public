@@ -15,6 +15,7 @@ import {ComputationView} from './computation-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {fcToSerializable} from '../../shared-utils/utils';
 
 type StepState = {
   func: DG.Func,
@@ -618,21 +619,17 @@ export class PipelineView extends ComputationView {
     });
   }
 
-  public override exportRunJson() {
+  public override async exportRunJson() {
     if (this._lastCall) {
       const res: any = {
         isPipeline: true,
       };
       for (const [nqName, step] of Object.entries(this.steps)) {
         const lastCall = step.view.lastCall;
-        if (lastCall) {
-          res[nqName] = {
-            inputs: lastCall.inputs,
-            outputs: lastCall.outputs,
-          };
-        }
+        if (lastCall)
+          res[nqName] = await fcToSerializable(lastCall, step.view);
       }
-      const data = serialize(res);
+      const data = serialize(res, 0);
       return data;
     }
   }

@@ -5,6 +5,7 @@ import {FunctionView, PipelineView, RichFunctionView} from '../function-views';
 import {ExpectDeepEqualOptions, expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {delay, last, takeUntil, takeWhile} from 'rxjs/operators';
 import {of} from 'rxjs';
+import { fcInputFromSerializable } from './utils';
 
 export interface FunctionViewTestOptions extends ExpectDeepEqualOptions {
   initWaitTimeout?: number;
@@ -29,8 +30,10 @@ export async function testPipeline(
 export async function testFunctionView(
   spec: any, view: FunctionView | RichFunctionView, options: FunctionViewTestOptions = {}) {
   await waitForReady(view, options.initWaitTimeout ?? 1000);
-  for (const [name, data] of Object.entries(spec.inputs))
-    view.funcCall.inputs[name] = data;
+  for (const [name, data] of Object.entries(spec.inputs)) {
+    const propertyType = view.funcCall.inputParams[name].property.propertyType;
+    view.funcCall.inputs[name] = await fcInputFromSerializable(propertyType, data);
+  }
   if (view instanceof RichFunctionView) {
     const validatorsWaitTimeout = options.validatorsWaitTimeout ?? 1000;
     const state = await view.pendingValidations.pipe(
@@ -43,9 +46,9 @@ export async function testFunctionView(
       throw new Error(msg);
     }
   }
-  console.log(`running ${view.funcCall.nqName}`);
+  console.log(`running ${view.name}`);
   await view.run();
-  console.log(`checking ${view.funcCall.nqName} results`);
+  console.log(`checking ${view.name} results`);
   expectDeepEqual(view.funcCall.outputs, spec.outputs, options);
 }
 

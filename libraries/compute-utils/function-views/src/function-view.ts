@@ -9,10 +9,11 @@ import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {deepCopy, fcToJson} from '../../shared-utils/utils';
+import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {distinctUntilChanged} from 'rxjs/operators';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -514,7 +515,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public async exportRun(format: string) {
     if (format === RunDataJSON) {
-      const data = this.exportRunJson();
+      const data = await this.exportRunJson();
       if (data)
         DG.Utils.download(this.defaultExportFilename('', 'json'), data);
       return;
@@ -658,10 +659,10 @@ export abstract class FunctionView extends DG.ViewBase {
     }
   }
 
-  public exportRunJson() {
+  public async exportRunJson() {
     if (this._lastCall) {
-      const data = fcToJson(this._lastCall);
-      return data;
+      const data = await fcToSerializable(this._lastCall, this);
+      return serialize(data, 0);
     }
   }
 
