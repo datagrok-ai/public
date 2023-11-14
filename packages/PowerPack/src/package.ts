@@ -18,6 +18,7 @@ import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
 import {windowsManagerPanel} from './windows-manager';
+import {initSearch} from "./search/power-search";
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -159,6 +160,7 @@ grok.events.onContextMenu.subscribe((args) => {
 
 //tags: init
 export async function powerPackInit() {
+  initSearch();
   _properties = await _package.getProperties();
 }
 

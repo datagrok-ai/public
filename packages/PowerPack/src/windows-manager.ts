@@ -62,8 +62,7 @@ export function windowsManagerPanel() {
         ui.tooltip.bind(presentationToggle, ()=>{ return ui.div(['Presentation mode ', ui.span(['F7'], {style:{color:'var(--grey-4)'}})])})
     ]);
 
-    root.className = 'windows-manager-statusbar';
-    document.getElementsByClassName('d4-global-status-panel')[0].append(root);
+    document.getElementsByClassName('d4-global-status-panel')[0]?.append(root);
 
     setToggleState(window.showProperties, propertiesToggle);
     setToggleState(window.showConsole, consoleToggle);
