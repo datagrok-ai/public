@@ -6,8 +6,15 @@
 
 * View for imported structures allows display controls
 * Display input field to open structure on empty Biostructure viewer.
+* Add pdbqt parser, convert to PDB, tests
+* Pdbqt parser for models (poses) and target, tests
+* Pdbqt import handler
+* Context menu Download, Copy for Molecule3D grid cell
+* Add Molecule3D ligands for Biostructure viewer
 
 ### Bug fixes
+
+* Fix caching for PdbGridCellRenderer
 
 ## 1.0.11 (2023-07-24)
 

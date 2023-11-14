@@ -45,7 +45,7 @@ export class NglGlDocService implements NglGlServiceBase {
   }
 
   render(task: NglGlTask, key?: keyof any): void {
-    //_package.logger.debug('NglGlService.render() start ' + `name: ${name}`);
+    _package.logger.debug('NglGlDocService.render() start ' + `key: ${key?.toString()}`);
 
     if (key !== undefined) {
       if (key in this._queueDict) {
@@ -64,23 +64,23 @@ export class NglGlDocService implements NglGlServiceBase {
       // TODO: Use requestAnimationFrame()
       window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
     }
-    //_package.logger.debug('NglGlService.render() end ' + `name: ${name}`);
+    //_package.logger.debug('NglGlDocService.render() end ' + `name: ${name}`);
   }
 
   private async _processQueue() {
     const queueItem = this._queue.shift();
     if (!queueItem) {
-      _package.logger.error('BsV: NglGlService._processQueue() queueItem = undefined ');
+      _package.logger.error('BsV: NglGlDocService._processQueue() queueItem = undefined ');
       return;
     } // in case of empty queue
 
     const {key, task} = queueItem!;
     if (key) {
-      _package.logger.debug('NglGlService._processQueue() ' + `key = ${key.toString()}`);
+      _package.logger.debug('NglGlDocService._processQueue() ' + `key = ${key.toString()}`);
       delete this._queueDict[key];
     }
     try {
-      const r = window.devicePixelRatio;
+      const dpr = window.devicePixelRatio;
 
       // TODO: Convert string to Blob once converting PDB string column to Blob
       const stringBlob = new Blob([task.props.pdb], {type: 'text/plain'});
@@ -89,25 +89,27 @@ export class NglGlDocService implements NglGlServiceBase {
       this.key = undefined;
       // TODO: Use canvas size switching 0/1 px to required
 
-      this.ngl.removeAllComponents();
-      await this.ngl.loadFile(stringBlob, {ext: 'pdb'});
-      await this.ngl.compList[0].addRepresentation('cartoon');
-      await this.ngl.compList[0].autoView();
+      const v0 = this.ngl.removeAllComponents();
 
-      this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
-      this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
+      this.nglDiv.style.width = `${Math.floor(task.props.width) / dpr}px`;
+      this.nglDiv.style.height = `${Math.floor(task.props.height) / dpr}px`;
+      this.ngl.viewer.setSize(task.props.width / dpr, task.props.height / dpr);
       const canvas = this.ngl.viewer.renderer.domElement;
       canvas.width = Math.floor(task.props.width);
       canvas.height = Math.floor(task.props.height);
-      await this.ngl.viewer.setSize(task.props.width, task.props.height);
+
+      await this.ngl.loadFile(stringBlob, {ext: 'pdb', defaultRepresentation: true});
+      this.ngl.compList[0].addRepresentation('cartoon');
+      this.ngl.compList[0].autoView();
 
       this.task = task;
       this.key = key;
+      this.emptyCanvasHash = DG.StringUtils.hashCode(canvas.toDataURL());
       this.nglRenderedBinding = this.ngl.viewer.signals.rendered.add(this.onNglRendered, this);
-      this.ngl.viewer.render(false);
+      this.ngl.viewer.requestRender();
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
-      _package.logger.error(`BsV:NglGlService._processQueue() no rethrown error: ${errMsg}`, undefined,
+      _package.logger.error(`BsV:NglGlDocService._processQueue() no rethrown error: ${errMsg}`, undefined,
         err instanceof Error ? err.stack : undefined);
       //throw err; // Do not throw to prevent disabling queue handler
     }
@@ -134,18 +136,29 @@ export class NglGlDocService implements NglGlServiceBase {
     }
   }
 
+  private emptyCanvasHash?: number = undefined;
   private task?: NglGlTask = undefined;
   private key?: keyof any = undefined;
 
   private async onNglRendered(): Promise<void> {
-    this.nglRenderedBinding.detach();
     if (this.task === undefined) return;
-    _package.logger.debug('NglGlService.onNglRendered() ' + `key = ${JSON.stringify(this.key)}`);
+    _package.logger.debug('NglGlDocService.onNglRendered() ' + `key = ${JSON.stringify(this.key)}`);
     try {
       const canvas = this.ngl.viewer.renderer.domElement;
+      const canvasHash = DG.StringUtils.hashCode(canvas.toDataURL());
+      if (canvasHash == this.emptyCanvasHash) { // render is not ready yet
+        _package.logger.debug(`NglGlDocService.onNglRendered() empty canvas`);
+        return;
+      }
+      _package.logger.debug(`NglGlDocService.onNglRendered() ` +
+        `this.emptyCanvasHash = ${this.emptyCanvasHash}, canvasHash = ${canvasHash}`);
+
+      this.nglRenderedBinding.detach();
+
       await this.task.onAfterRender(canvas);
       this.task = undefined;
       this.key = undefined;
+      this.emptyCanvasHash = undefined;
 
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
@@ -156,7 +169,7 @@ export class NglGlDocService implements NglGlServiceBase {
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
-      _package.logger.error(`NglGlService.onNglRendered() no rethrown error : ${errMsg}`, undefined,
+      _package.logger.error(`NglGlDocService.onNglRendered() no rethrown error : ${errMsg}`, undefined,
         err instanceof Error ? err.stack : undefined);
       //throw err; // Do not throw to prevent disabling event/signal handler
     }
@@ -190,7 +203,7 @@ export class NglGlDocService implements NglGlServiceBase {
         canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number);
       const ch = 'height' in canvas && (
         canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number);
-      if (!cw || !ch) throw new Error('NglGlService.renderOnGridCell() canvas size is not available');
+      if (!cw || !ch) throw new Error('NglGlDocService.renderOnGridCell() canvas size is not available');
       gCtx.transform(bd.width / cw, 0, 0, bd.height / ch, bd.x, bd.y);
 
       gCtx.drawImage(canvas, 0 + 1, 0 + 1);

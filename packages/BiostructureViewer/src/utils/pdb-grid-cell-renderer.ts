@@ -10,6 +10,7 @@ import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-v
 import {_getNglGlService} from '../package-utils';
 
 import {_package} from '../package';
+import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
 const PDB_RENDERER_IMAGE_CACHE_KEY = 'PdbRendererImageCache';
 
@@ -46,6 +47,9 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     // twin.show(grok.shell.v as DG.TableView);
 
     const df: DG.DataFrame = gridCell.grid.dataFrame;
+    const tableCol: DG.Column | null = gridCell.tableColumn;
+    if (!tableCol) return;
+    const dockingRole: string = tableCol.getTag(DockingTags.dockingRole);
 
     const value: string = gridCell.cell.value;
     const indexStart = value.indexOf('TITLE');
@@ -57,17 +61,28 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
       .find((tv) => tv.dataFrame.id === df.id);
     if (!tview) return;
 
-    let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
-    viewer = wu(tview.viewers).find((v) => v.type === 'Biostructure') as DG.Viewer & IBiostructureViewer;
+    switch (dockingRole) {
+      case DockingRole.ligand: {
+        // Biostructure, NGL viewers track current, selected rows to display ligands
+        break;
+      }
 
-    if (!viewer) {
-      df.plot.fromType('Biostructure', {pdb: value}).then(
-        (value: DG.Widget) => {
-          viewer = value as DG.Viewer & IBiostructureViewer;
-          tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
-        }); // Ignore promise returned
-    } else {
-      viewer.setOptions({pdb: value});
+      case DockingRole.target:
+      default: {
+        let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
+        viewer = wu(tview.viewers).find((v) => {
+          return v.type === 'Biostructure' || v.type === 'NGL';
+        }) as DG.Viewer & IBiostructureViewer;
+
+        if (!viewer) {
+          df.plot.fromType('Biostructure', {pdb: value}).then(
+            (value: DG.Widget) => {
+              viewer = value as DG.Viewer & IBiostructureViewer;
+              tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+            }); // Ignore promise returned
+        } else
+          viewer.setOptions({pdb: value});
+      }
     }
   }
 
@@ -102,9 +117,10 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
       const imageCache: { [rowIdx: number]: HTMLImageElement } =
         gridCell.tableColumn.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
 
+      const cacheDisabled: boolean = false;
       const image = rowIdx in imageCache ? imageCache[rowIdx] : null;
 
-      if (!image ||
+      if (cacheDisabled || !image ||
         Math.abs(image.width / r - gridCell.gridColumn.width) > 0.5 ||
         Math.abs(image.height / r - gridCell.grid.props.rowHeight) > 0.5
       ) {
