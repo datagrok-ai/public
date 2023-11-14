@@ -13,6 +13,15 @@ import {getTime} from '../utils';
 const format = 'es-pa-u-hc-h23';
 const systemId = '00000000-0000-0000-0000-000000000000';
 
+export function getUsersTable(usersHistogram: DG.DataFrame): HTMLTableElement {
+  const usersData: {[key: string]: { e: HTMLElement, c: number }} = {};
+  for (const r of usersHistogram.rows)
+    usersData[r.uid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.uid}}`)};
+  const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
+    usersData[b].c - usersData[a].c), (k) => [usersData[k].e, usersData[k].c]);
+  return usersTable;
+}
+
 export class PackagesView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
 
@@ -124,17 +133,13 @@ export class PackagesView extends UaView {
       'To': getTime(dateTo)});
     if (options?.showDates ?? true)
       filterDiv.append(timeFilterDiv);
-    const usersData: {[key: string]: { e: HTMLElement, c: number }} = {};
-    for (const r of usersHistogram.rows)
-      usersData[r.uid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.uid}}`)};
 
     const packagesData: {[key: string]: { e: HTMLElement, c: number }} = {};
     for (const r of packagesHistogram.rows)
       packagesData[r.pid] = {c: r['sum(count)'], e: r.pid === systemId ? ui.label('Core') : ui.render(`#{x.${r.pid}}`)};
 
     const filterAccordion = DG.Accordion.create();
-    const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
-      usersData[b].c - usersData[a].c), (k) => [usersData[k].e, usersData[k].c]);
+    const usersTable = getUsersTable(usersHistogram);
     const packagesTable = ui.table(Object.keys(packagesData).sort((a, b) =>
       packagesData[b].c - packagesData[a].c), (k) => [packagesData[k].e, packagesData[k].c]);
     if (usersHistogram.rowCount > 1)
