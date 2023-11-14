@@ -91,7 +91,6 @@ export class PeptidesModel {
     if (dataFrame.columns.contains(C.COLUMNS_NAMES.ACTIVITY_SCALED) && !dataFrame.columns.contains(C.COLUMNS_NAMES.ACTIVITY))
       dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).name = C.COLUMNS_NAMES.ACTIVITY;
 
-
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     (dataFrame.temp[PeptidesModel.modelName] as PeptidesModel).init();
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
@@ -963,9 +962,25 @@ export class PeptidesModel {
       {table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName!),
         methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
         plotEmbeddings: true, sparseMatrixThreshold: 0.3, options: {'bypassLargeDataWarning': true}};
+
+    // Use counter to unsubscribe when 2 columns are hidden
+    let counter = 0;
+    const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
+      for (const col of colArgs.columns) {
+        if (col.name.startsWith('Embed_')) {
+          this.analysisView.grid.col(col.name)!.visible = false;
+          counter++;
+        }
+      }
+      if (counter === 2)
+        columnAddedSub.unsubscribe();
+    });
+
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
     seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY;
+    seqSpaceViewer.props.showXSelector = false;
+    seqSpaceViewer.props.showYSelector = false;
   }
 }

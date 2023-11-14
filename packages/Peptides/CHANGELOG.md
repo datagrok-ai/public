@@ -1,5 +1,14 @@
 # Peptides changelog
 
+## 1.17.0 (WIP)
+
+### Features
+
+* Renamed activity column to 'Activity' (was 'Scaled activity').
+* Improved input tooltip in Mutation Cliffs pairs panel.
+* Autosize grids in Mutation Cliffs pairs panel.
+* Hid sequence space embedding columns and axes selectors.
+
 ## 1.16.0 (2023-11-05)
 
 ### Features
