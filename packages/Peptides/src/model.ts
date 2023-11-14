@@ -424,7 +424,7 @@ export class PeptidesModel {
     if (!trueModel)
       return null;
 
-    const acc = ui.accordion();
+    const acc = ui.accordion('Peptides analysis panel');
     acc.root.style.width = '100%';
     const filterAndSelectionBs = trueModel.getCompoundBitset();
     const filteredTitlePart = trueModel.df.filter.anyFalse ? ` among ${trueModel.df.filter.trueCount} filtered` : '';
@@ -458,12 +458,12 @@ export class PeptidesModel {
           (ev): void => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
         removeCluster.style.visibility = trueModel.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' : 'visible';
         return ui.divV([newView, newCluster, removeCluster]);
-      });
+      }, true);
     }
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
-    acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
-    acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel));
+    acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root, true);
+    acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root, true);
+    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel), true);
 
     return acc;
   }
@@ -673,8 +673,6 @@ export class PeptidesModel {
       if (acc === null)
         return;
       grok.shell.o = acc.root;
-      for (const pane of acc.panes)
-        pane.expanded = true;
     };
 
     selection.onChanged.subscribe(() => {

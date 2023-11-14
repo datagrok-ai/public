@@ -8,6 +8,7 @@
 * Improved input tooltip in Mutation Cliffs pairs panel.
 * Autosize grids in Mutation Cliffs pairs panel.
 * Hid sequence space embedding columns and axes selectors.
+* Saving context panels state.
 
 ## 1.16.0 (2023-11-05)
 
