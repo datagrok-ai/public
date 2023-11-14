@@ -140,4 +140,5 @@ export function setGridProps(grid: DG.Grid): void {
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
   grid.root.style.maxWidth = '100%';
+  grid.autoSize(1000, 1000, 0, 0, true);
 }
