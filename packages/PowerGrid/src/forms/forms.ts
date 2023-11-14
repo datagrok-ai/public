@@ -73,14 +73,16 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const scene = new Scene(b);
 
     // molecules first
-    const molCol = cols.find((c) => c.semType == DG.SEMTYPE.MOLECULE);
-    if (molCol != null && b.width > 30 && b.height > 20) {
-      const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
-      b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
-      cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
-      const cell = gridCell.grid.cell(molCol.name, gridCell.gridRow);
-      scene.elements.push(new GridCellElement(r, cell));
+    const molCols = cols.filter((c) => c.semType == DG.SEMTYPE.MOLECULE);
+    for (let i = 0; i < molCols.length; i++) {
+      if (molCols[i] != null && b.width > 30 && b.height > 20) {
+        const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
+        b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+        const cell = gridCell.grid.cell(molCols[i].name, gridCell.gridRow);
+        scene.elements.push(new GridCellElement(r, cell));
+      }
     }
+    cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
 
     const maxNameWidth = Math.min(200, Math.max(...cols.map((c) => g.measureText(c.name).width)));
     const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * 8)));
