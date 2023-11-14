@@ -95,6 +95,8 @@ function datagrok_start() {
     fi
     # Checking do we need tu run update
     if [ "$update_installation" = true ] ; then
+        message "Updating Datagrok config file"
+        curl -o ${compose_config_path} ${datagrok_public_repo_url}
         message "Updating Datagrok to the latest version"
         docker compose -f "${compose_config_path}" --project-name datagrok --profile all pull
         docker compose -f "${compose_config_path}" --project-name datagrok --profile all  up -d --force-recreate
@@ -148,7 +150,7 @@ function datagrok_purge() {
     fi
     if user_query_yn "This action will stop Datagrok and COMPLETELY remove Datagrok installation. Are you sure?"; then
         docker compose -f "${compose_config_path}" --project-name datagrok --profile all down --volumes
-        #docker rmi $(docker images -q datagrok/*)
+        docker rmi $(docker images -q datagrok/*)
     fi
 }
 

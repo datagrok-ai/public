@@ -85,11 +85,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     else
       pairsTable.filter.setAll(true);
   });
-  aminoToInput.setTooltip('Monomer to which the mutation was made');
+  aminoToInput.setTooltip('Filter the rows by the monomer that the mutation was substituted to');
 
   const pairsGrid = pairsTable.plot.grid();
   setGridProps(pairsGrid);
-  pairsGrid.root.style.height = '150px';
+  // pairsGrid.root.style.height = '150px';
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
@@ -164,7 +164,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();
   setGridProps(uniqueSequencesGrid);
   uniqueSequencesGrid.props.rowHeight = 20;
-  uniqueSequencesGrid.root.style.height = '250px';
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
     const uniqueSelectedIndexes: number[] = [];
     for (const idx of pairsSelectedIndexes) {

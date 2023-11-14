@@ -5,6 +5,7 @@
 ### Features
 
 * View for imported structures allows display controls
+* Display input field to open structure on empty Biostructure viewer.
 
 ### Bug fixes
 

@@ -8,6 +8,7 @@ import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-m
 import $ from 'cash-dom';
 import wu from 'wu';
 import {Unsubscribable} from 'rxjs';
+import {Base64} from 'js-base64';
 
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
@@ -30,6 +31,7 @@ import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/struct
 
 import {_package} from '../../package';
 import {errInfo} from '../../utils/err-info';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -56,7 +58,7 @@ const enum PROPS_CATS {
 
 export enum PROPS {
   // -- Data --
-  data = 'data',
+  dataJson = 'dataJson',
   pdb = 'pdb',
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
@@ -102,7 +104,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private viewed: boolean = false;
 
   // -- Data --
-  [PROPS.data]: MolstarDataType | null;
+  [PROPS.dataJson]: string | null;
   [PROPS.pdb]: string;
   [PROPS.pdbTag]: string;
   [PROPS.ligandColumnName]: string;
@@ -147,8 +149,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
-    this.data = this.addProperty(PROPS.data, DG.TYPE.OBJECT, undefined,
-      {category: PROPS_CATS.DATA, userEditable: false});
+    this.dataJson = this.addProperty(PROPS.dataJson, DG.TYPE.OBJECT, undefined, {
+      category: PROPS_CATS.DATA, userEditable: false,
+      description: 'JSON encoded object of MolstarDataType with data value Base64 encoded data',
+    });
     this.pdb = this.string(PROPS.pdb, pdbDefault,
       {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
@@ -309,15 +313,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     }
 
     switch (property.name) {
-      case PROPS.data:
-        // @ts-ignore
-        if ('_original' in this.data) this.data = this.data['_original'];
-        this.setData();
-        break;
+      case PROPS.dataJson:
       case PROPS.pdb:
-      case PROPS.pdbTag:
+      case PROPS.pdbTag: {
         this.setData();
         break;
+      }
     }
   }
 
@@ -375,8 +376,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
         if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
-        if (this.data)
-          this.dataEff = this.data;
+        if (this.dataJson) {
+          const data = JSON.parse(this.dataJson);
+          data.data = Base64.decode(data.data);
+          this.dataEff = data;
+        }
 
         // -- Ligand --
         if (!this.ligandColumnName) {
@@ -492,32 +496,26 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       delete this.viewerDiv;
     }
 
-    const fileEl: HTMLInputElement = ui.element('input');
-    fileEl.type = 'file';
-    fileEl.style.display = 'none';
-    fileEl.addEventListener('change', async (_event) => {
-      const _k = 11;
-      if (fileEl.files != null && fileEl.files.length == 1) {
-        const [[fileExt, dataStr], pdbHelper]: [[string, string], IPdbHelper] = await Promise.all([
-          (async () => {
-            const file = fileEl.files![0];
-            const fileExt: string = file.name.split('.').slice(-1)[0];
-            return [fileExt, await file.text()];
-          })(),
-          _getPdbHelper()
-        ]);
-        this.setOptions({data: {ext: fileExt, data: dataStr}});
-      }
-    });
-    const fileLink = ui.link('Open...', '', '', {
-      // @ts-ignore // ui.link argument options.onClick: (node: HTMLElement) => void
-      onClick: (event: PointerEvent) => {
-        event.preventDefault();
-        $(fileEl).trigger('click');
-      },
-    });
-    this.splashDiv = ui.div([fileLink, fileEl],
-      {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
+    const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
+    const dataFileInput = DG.InputBase.forProperty(dataFileProp);
+    dataFileInput.captionLabel.innerText = 'Data file';
+    // const openBtn = ui.button('Open...', async () => {
+    //   const dataFi: DG.FileInfo = dataFileInput.value;
+    //   const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
+    //   this.setOptions({[PROPS.dataJson]: JSON.stringify({data: Base64.fromUint8Array(dataA), ext: dataFi.extension})});
+    //   const k = 42;
+    // });
+    // openBtn.disabled = true;
+    this.viewSubs.push(dataFileInput.onChanged(async () => {
+      await delay(100); /* to fill DG.FileInfo.data */
+      const dataFi: DG.FileInfo = dataFileInput.value;
+      const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
+      this.setOptions({[PROPS.dataJson]: JSON.stringify({data: Base64.fromUint8Array(dataA), ext: dataFi.extension})});
+      // openBtn.disabled = !(dataFi && (dataFi.data || dataFi.url));
+    }));
+    this.splashDiv = ui.div(
+      ui.divV([ui.inputs([dataFileInput])/*, openBtn*/]),
+      {classes: 'bsv-viewer-splash'} /* splash */);
     this.root.appendChild(this.splashDiv);
   }
 
@@ -609,7 +607,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
         refRemovingPromises.push(this.viewer!.plugin.commands.dispatch(PluginCommands.State.RemoveObject,
           {
             state: this.viewer!.plugin.state.data,
-            ref: lingandRef
+            ref: lingandRef,
           }));
       }
     }

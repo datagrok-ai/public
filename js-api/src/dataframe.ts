@@ -876,6 +876,13 @@ export class Column<T = any> {
     return api.grok_Column_GetString(this.dart, i);
   }
 
+  /** Returns i-th value as number
+   * @param {number} i
+   * @returns {number} */
+  getNumber(i: number): number {
+    return api.grok_Column_GetNumber(this.dart, i);
+  }
+
   /** Attempts to set i-th value by converting a provided string to the corresponding strongly-typed value.
    *  Returns true if text was successfully parsed and set, otherwise false.
    *  Examples: dateColumn.setString('April 1, 2020');

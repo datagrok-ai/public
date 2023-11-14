@@ -1,5 +1,21 @@
 ---
-title: "Cheminformatics"
+title: Cheminformatics
+keywords:
+  - cheminformatics
+  - SAR
+  - R-groups analysis
+  - chemical spreadsheet
+  - activity cliffs
+  - analyze docking
+  - small molecules 3D rendering
+  - chemical space analysis
+  - substructure search
+  - scaffold tree
+  - chemical scripts
+  - calculate descriptors
+  - calculate fingerprints
+  - drug likeness
+  - structural alerts
 ---
 
 ```mdx-code-block

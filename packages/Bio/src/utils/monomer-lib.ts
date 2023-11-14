@@ -5,7 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {
+  LibSettings, getUserLibSettings, setUserLibSettings, LIB_PATH
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {PolyToolMonomerLibHandler} from '@datagrok-libraries/bio/src/utils/poly-tool/monomer-lib-handler';
 import {
   createJsonMonomerLibFromSdf,
   IMonomerLibHelper,
@@ -16,17 +20,6 @@ import {
 
 import {_package} from '../package';
 
-import {PolyToolMonomerLibHandler} from '@datagrok-libraries/bio/src/utils/poly-tool/monomer-lib-handler';
-
-// -- Monomer libraries --
-export const LIB_STORAGE_NAME = 'Libraries';
-export const LIB_PATH = 'System:AppData/Bio/libraries/';
-export const LIB_DEFAULT: { [fileName: string]: string } = {'HELMCoreLibrary.json': 'HELMCoreLibrary.json'};
-
-/** Type for user settings of monomer library set to use. */
-export type LibSettings = {
-  exclude: string[],
-}
 
 export async function getLibFileNameList(): Promise<string[]> {
   // list files recursively because permissions are available for folders only
@@ -36,30 +29,6 @@ export async function getLibFileNameList(): Promise<string[]> {
       return it.fullPath.substring(LIB_PATH.length);
     }));
   return res;
-}
-
-let userLibSettingsPromise: Promise<void> = Promise.resolve();
-
-export async function getUserLibSettings(): Promise<LibSettings> {
-  let res: LibSettings;
-  userLibSettingsPromise = userLibSettingsPromise.then(async () => {
-    const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
-    res = resStr ? JSON.parse(resStr) : {exclude: []};
-
-    // Fix empty object returned in case there is no settings stored for user
-    res.exclude = res.exclude instanceof Array ? res.exclude : [];
-    console.debug(`Bio: getUserLibSettings()\n${JSON.stringify(res, undefined, 2)}`);
-  });
-  await userLibSettingsPromise;
-  return res!;
-}
-
-export async function setUserLibSetting(value: LibSettings): Promise<void> {
-  userLibSettingsPromise = userLibSettingsPromise.then(async () => {
-    console.debug(`Bio: setUserLibSettings()\n${JSON.stringify(value, undefined, 2)}`);
-    await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
-  });
-  await userLibSettingsPromise;
 }
 
 export async function manageFiles() {
@@ -88,7 +57,7 @@ export async function getLibraryPanelUI(): Promise<DG.Widget> {
           // Unchecked library add to excluded list
           if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
         }
-        setUserLibSetting(settings).then(async () => {
+        setUserLibSettings(settings).then(async () => {
           await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
           grok.shell.info('Monomer library user settings saved.');
         });
@@ -199,6 +168,9 @@ export class MonomerLib implements IMonomerLib {
   }
 }
 
+type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibHelper };
+declare const window: MonomerLibWindowType;
+
 export class MonomerLibHelper implements IMonomerLibHelper {
   private readonly _monomerLib: MonomerLib = new MonomerLib({});
 
@@ -229,7 +201,8 @@ export class MonomerLibHelper implements IMonomerLibHelper {
           getUserLibSettings(),
         ]);
         const filteredLibFnList = libFileNameList
-          .filter((libFileName) => !settings.exclude.includes(libFileName));
+          .filter((libFileName) => !settings.exclude.includes(libFileName))
+          .filter((libFileName) => settings.explicit.length > 0 ? settings.explicit.includes(libFileName) : true);
         const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
           .map((libFileName) => {
             //TODO handle whether files are in place
@@ -277,12 +250,13 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       // todo: replace by DataFrame's method after update of js-api
       function toJson(df: DG.DataFrame): any[] {
         return Array.from({length: df.rowCount}, (_, idx) =>
-          df.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+          df.columns.names().reduce((entry: { [key: string]: any }, colName) => {
             entry[colName] = df.get(colName, idx);
             return entry;
           }, {})
         );
       }
+
       const df = await fileSource.readCsv(fileName);
       const json = toJson(df);
       const polyToolMonomerLib = new PolyToolMonomerLibHandler(json);
@@ -307,11 +281,25 @@ export class MonomerLibHelper implements IMonomerLibHelper {
     return new MonomerLib(monomers);
   }
 
-  // -- Instance singleton --
-  private static _instance: MonomerLibHelper | null = null;
+  /** Reset user settings to the specified library. WARNING: clears user * settings */
+  public async selectSpecifiedLibraries(libFileNameList: string[]): Promise<void> {
+    const invalidNames = await this.getInvalidFileNames(libFileNameList);
+    if (invalidNames.length > 0)
+      throw new Error(`Cannot select libraries ${invalidNames}: no such library in the list`);
+    const settings = await getUserLibSettings();
+    settings.exclude = (await getLibFileNameList()).filter((fileName) => !libFileNameList.includes(fileName));
+    await setUserLibSettings(settings);
+  }
 
+  private async getInvalidFileNames(libFileNameList: string[]): Promise<string[]> {
+    const availableFileNames = await getLibFileNameList();
+    const invalidNames = libFileNameList.filter((fileName) => !availableFileNames.includes(fileName));
+    return invalidNames;
+  }
+
+  // -- Instance singleton --
   public static get instance(): MonomerLibHelper {
-    if (!MonomerLibHelper._instance) MonomerLibHelper._instance = new MonomerLibHelper();
-    return MonomerLibHelper._instance;
+    if (!window.$monomerLibHelper) window.$monomerLibHelper = new MonomerLibHelper();
+    return window.$monomerLibHelper;
   }
 }

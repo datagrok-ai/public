@@ -83,6 +83,7 @@ export type HitTriageCampaign = {
     columnSemTypes?: {[key: string]: string},
     rowCount?: number,
     filteredRowCount?: number,
+    layout?: string,
 };
 
 export type IChemFunctionsDialogResult = {

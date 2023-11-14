@@ -52,6 +52,8 @@ const MIN_TITLE_PX_WIDTH = 275;
 const MIN_TITLE_PX_HEIGHT = 225;
 const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 180;
 const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 140;
+const MIN_DROPLINES_VISIBILITY_PX_WIDTH = 120;
+const MIN_DROPLINES_VISIBILITY_PX_HEIGHT = 110;
 const AXES_LEFT_PX_MARGIN = 38;
 const AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS = 45;
 const AXES_TOP_PX_MARGIN = 5;
@@ -371,6 +373,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const showAxesLabels = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
       && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
     const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
+    const showDroplines =  w >= MIN_DROPLINES_VISIBILITY_PX_WIDTH && h >= MIN_DROPLINES_VISIBILITY_PX_HEIGHT;
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxesLabels, showTitle);
 
     const dataBounds = getChartBounds(data);
@@ -389,7 +392,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
-      if (series.points.some((point) => !point.x || !point.y))
+      if (series.points.some((point) => point.x === undefined || point.y === undefined))
         continue;
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
@@ -461,7 +464,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes, showAxesLabels, chartLogOptions);
       }
   
-      if (series.droplines && showAxesLabels) {
+      if (series.droplines && showDroplines) {
         g.save();
         g.strokeStyle = 'blue';
         g.lineWidth = ratio;

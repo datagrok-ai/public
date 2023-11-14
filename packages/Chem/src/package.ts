@@ -926,11 +926,23 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
         const mol = checkMoleculeValid(cell.cell.value);
-        if (!checkMolEqualSmiles(mol, newValue))
-          cell.cell.value = newValue;
+        if (!checkMolEqualSmiles(mol, newValue)) {
+          try {
+            //@ts-ignore TODO Remove on js-api update
+            cell.setValue(newValue, true);
+          } catch {
+            cell.cell.value = newValue;
+          }
+        }
         mol?.delete();
-      } else
-        cell.cell.value = sketcher.getMolFile();
+      } else {
+        try {
+          //@ts-ignore TODO Remove on js-api update
+          cell.setValue(sketcher.getMolFile(), true);
+        } catch {
+          cell.cell.value = sketcher.getMolFile();
+        }
+      }
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show({resizable: true});
@@ -1040,7 +1052,8 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
   const idxCol = fingerprints.columns.byName('indexes');
   grid.sort([], []);
   grid.setRowOrder(idxCol.toList());
-  grid.props.pinnedRows = [tableRowIdx];
+  grid.props.pinnedRowColumnNames = [molCol.name];
+  grid.props.pinnedRowValues = [value.value];
   grid.scrollToPixels(0, 0); //to address the bug in the core
 }
 

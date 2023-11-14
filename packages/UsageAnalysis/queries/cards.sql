@@ -227,6 +227,7 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --end
 
 --name: TestsCount
+--meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
 with res as (select

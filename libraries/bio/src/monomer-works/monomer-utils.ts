@@ -182,8 +182,8 @@ export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[
     rawCols[position] = {categories: monomerColCategories, data: monomerColData, emptyIndex: emptyCategoryIdx};
     if (typeof referenceMonomer === 'undefined')
       continue;
-    
-    // Calculating similarity for 
+
+    // Calculating similarity for
     const molCol = DG.Column.fromStrings('smiles',
       monomerColCategories.map((cat) => monomerLib.getMonomer('PEPTIDE', cat)?.smiles ?? ''));
     const _df = DG.DataFrame.fromColumns([molCol]); // getSimilarities expects that column is in dataframe
@@ -215,7 +215,7 @@ export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[
   return similarityCol;
 }
 
-/** Calculates chemical similarity between each pair of monomers. 
+/** Calculates chemical similarity between each pair of monomers.
  * @param {string[]} monomerSet Set of unique monomers.
  * @returns {Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}>} Ojbect containing similarity scoring matrix and monomer to index mapping. */
 export async function calculateMonomerSimilarity(monomerSet: string[],

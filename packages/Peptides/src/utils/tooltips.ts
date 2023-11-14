@@ -6,7 +6,7 @@ import * as type from './types';
 import * as C from '../utils/constants';
 
 import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
+import {getStatsSummary, getDistributionTable} from '../utils/misc';
 import {getMonomerWorksInstance} from '../package';
 import {AggregationColumns, MonomerPositionStats, getAggregatedColumnValues} from './statistics';
 
@@ -55,9 +55,9 @@ export function showTooltipAt(df: DG.DataFrame, columns: AggregationColumns, opt
 
   const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
-  const distributionTable = DG.DataFrame.fromColumns(
-    [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
-  const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
+  // const distributionTable = DG.DataFrame.fromColumns(
+  //   [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
+  const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
 
   const tableMap = getStatsTableMap(stats);
   if (options.fromViewer) {

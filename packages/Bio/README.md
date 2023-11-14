@@ -16,7 +16,7 @@ initial notation. Datagrok allows you to convert sequences between different not
 See:
 
 * [detectMacromolecule()](../Bio/detectors.js)
-* [class NotationConverter](../../libraries/bio/src/utils/notation-converter.ts)
+* [class UnitsHandler](../../libraries/bio/src/utils/units-handler.ts)
 
 ## Atomic-Level structures from sequences
 
@@ -28,7 +28,7 @@ notations.
 
 You can easily run this feature for any sequence data using the Bio package and accessing it from the top menu.
 
-![Restoring structure atomic level](../../help/uploads/macromolecules/restoreStructures.gif)
+![Restoring structure atomic level](../../help/uploads/macromolecules/restore-structures-800.gif)
 
 See:
 
@@ -52,7 +52,7 @@ See:
 
 Splitting to monomers allows splitting aligned sequences in separate monomers.
 
-![Splitting to monomers](../../help/uploads/macromolecules/splitting-to-monomers.gif)
+![Splitting to monomers](../../help/uploads/macromolecules/splitting-to-monomers-800.gif)
 
 See:
 
@@ -108,7 +108,7 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 
 See also:
 
-* [WebLogo](../../libraries/)
+* [WebLogo](../../help/visualize/viewers/web-logo.md)
 * [Viewers](../../help/visualize/viewers/viewers.md)
 * [Table view](../../help/datagrok/concepts/table.md)
 
@@ -122,7 +122,7 @@ the Bio package. Depending on the sequence type, different distance functions wi
 
 To launch the analysis from the top menu, select Bio | Structure | Sequence space.
 
-![Sequence space](../../help/uploads/macromolecules/sequence_space.gif)
+![Sequence space](../../help/uploads/macromolecules/sequence_space-800.gif)
 
 See:
 
@@ -138,7 +138,7 @@ A custom scatter plot with cliffs will be added to the right side of the grid. T
 
 To launch the analysis from the top menu, select Bio | SAR | Sequence Activity Cliffs.
 
-![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open.gif)
+![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open-800.gif)
 
 See:
 
@@ -150,7 +150,7 @@ Similarity Search tool allows users to find sequences that are most similar to t
 
 To launch the search from the top menu, select Bio | Search | Similarity Search
 
-![Running similarity search](../../help/uploads/macromolecules/similarity_search.gif)
+![Running similarity search](../../help/uploads/macromolecules/similarity_search-800.gif)
 
 ## Diversity Search
 
@@ -158,7 +158,7 @@ Diversity Search tool allows users to find sequences that are most diverse in th
 
 To launch the search from the top menu, select Bio | Search | Diversity Search
 
-![Running diversity search](../../help/uploads/macromolecules/diversity_search.gif)
+![Running diversity search](../../help/uploads/macromolecules/diversity_search-800.gif)
 
 ## Sequence scoring
 
@@ -170,7 +170,7 @@ The identity score represents a fraction of the identical monomers in correspond
 
 Identity scoring can be found in the top menu: **Bio → Calculate → Identity...**.
 
-![Running identity scoring](../../help/uploads/macromolecules/identity-scoring.gif)
+![Running identity scoring](../../help/uploads/macromolecules/identity_scoring-800.gif)
 
 ### Similarity
 
@@ -178,4 +178,4 @@ The similarity score represents the sum of fingerprint similarity of monomers in
 
 Similarity scoring can be found in the top menu: **Bio → Calculate → Similarity...**.
 
-![Running similarity scoring](../../help/uploads/macromolecules/similarity-scoring.gif)
+![Running similarity scoring](../../help/uploads/macromolecules/similarity_scoring-800.gif)

@@ -10,9 +10,12 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensional
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_DEFAULT, LIB_STORAGE_NAME} from '../utils/monomer-lib';
+import {
+  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {_package} from '../package-test';
+
 
 category('activityCliffs', async () => {
   let viewList: DG.ViewBase[] = [];
@@ -20,15 +23,15 @@ category('activityCliffs', async () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibrariesSettings: {};
+  let userLibSettings: LibSettings;
 
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
+    userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
-    await grok.dapi.userDataStorage.post(LIB_STORAGE_NAME, LIB_DEFAULT, true);
+    await setUserLibSettingsForTests();
     await monomerLibHelper.loadLibraries(true); // load default libraries
 
     viewList = [];
@@ -40,7 +43,7 @@ category('activityCliffs', async () => {
     // for (const view of viewList) view.close();
 
     // UserDataStorage.put() replaces existing data
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, userLibrariesSettings, true);
+    await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadLibraries(true); // load user settings libraries
   });
 

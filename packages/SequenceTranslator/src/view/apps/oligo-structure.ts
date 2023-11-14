@@ -9,12 +9,11 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-// import {drawMolecule} from '../../utils/structures-works/draw-molecule';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
-import {getLinkedMolfile, saveSdf} from '../../model/sequence-to-structure-utils/sdf-tab';
+import {getLinkedMolfile, saveSdf} from '../../model/structure-app/oligo-structure';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {MoleculeImage} from '../utils/molecule-img';
-import {StrandData} from '../../model/sequence-to-structure-utils/sdf-tab';
+import {StrandData} from '../../model/structure-app/oligo-structure';
 
 const enum DIRECTION {
   STRAIGHT = '5′ → 3′',
@@ -64,10 +63,10 @@ export class StructureLayoutHandler {
     const bottomDiv = ui.divH([boolInputsAndButton, this.moleculeImgDiv]);
     $(bottomDiv).addClass('st-structure-bottom');
 
-    const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
-    $(sdfTabBody).addClass('st-structure-body');
+    const layout = ui.divV([tableLayout, bottomDiv]);
+    $(layout).addClass('st-structure-body');
 
-    return sdfTabBody;
+    return layout;
   }
 
   private getBoolInputsAndButton(): HTMLDivElement {
@@ -124,15 +123,26 @@ export class StructureLayoutHandler {
       )
     );
 
+    const clearBlock = Object.fromEntries(
+      STRANDS.map(
+        (key) => {
+          const clearIcon = ui.icons.delete(() => { coloredInput[key].inputBase.value = '' });
+          const clearButton = ui.button(clearIcon, () => {});
+          ui.tooltip.bind(clearButton, `Clear ${key.toUpperCase()}`);
+          return [key, clearIcon];
+        }
+      ));
+
     const tableRows = STRANDS.map((strand) => {
       return {
         label: label[strand],
         textInput: coloredInput[strand].root,
+        clear: clearBlock[strand],
         choiceInput: directionChoiceInput[strand].root,
       };
     });
     const tableLayout = ui.table(
-      tableRows, (item) => [item.label, item.textInput, item.choiceInput]);
+      tableRows, (item) => [item.label, item.textInput, item.clear, item.choiceInput]);
     $(tableLayout).css('margin-top', '10px');
 
     for (const strand of STRANDS) {
@@ -176,7 +186,8 @@ export class StructureLayoutHandler {
     let molfile = '';
     try {
       const strandData = this.getStrandData();
-      molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
+      if (Object.values(strandData).some((data) => data.strand !== ''))
+        molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
     } catch (err) {
       const errStr = errorToConsole(err);
       console.error(errStr);

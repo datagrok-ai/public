@@ -7,13 +7,23 @@ export {tests};
 import './tests/test';
 
 const skip = [
-  'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
-  'README', '10k-columns-updates',
+  // Skipped
+  'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark',
+  'menu-customization', '10k-columns-updates', '100-million-rows',
+  'files' /* do not test manually */,
+
   // To fix
-  'scatter-plot-3d', 'network-diagram', // Break
-  'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
-  'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',
-  'add-single-filter', 'custom-filters', 'filter-group', 'dynamic-loading'
+  'custom-viewer-properties',
+  'open-table-by-id',
+  'charts-in-cells',
+  'property-grid',
+  'tree-view-adv',
+  'attached-properties',
+  'all-input-types',
+  'add-single-filter',
+  'custom-filters',
+  'filter-group',
+  'dynamic-loading'
 ];
 
 //name: test
@@ -22,6 +32,7 @@ const skip = [
 //input: object testContext {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
+  testContext = new TestContext(false, false);
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }

@@ -82,7 +82,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       `The <b>Context Panel</b> on the right now shows the settings for the pie chart.`);
    
     grok.shell.windows.showContextPanel = true;
-    await this.action('Under Inner Viewer > Data, set Category to LC/MS', new Observable((subscriber: any) => {
+    await this.action('Under Inner Viewer tab > Data, set Category to LC/MS', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
           if (m.previousSibling?.textContent === 'LC/MS') {
@@ -165,7 +165,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       });
       observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
     }), undefined, `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
-      the histogram’s settings, and under Inner Viewer tab set <b>Value</b> to <b>In-vivo Activity</b>.`);
+      the histogram’s settings, and under <b>Inner Viewer</b> tab set <b>Value</b> to <b>In-vivo Activity</b>.`);
 
     this.title('Switch axes', true);
     this.describe(`Finally, let’s change the R-groups used on the plot.`);

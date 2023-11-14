@@ -45,7 +45,17 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
   form.appendChild(buttonsDiv);
   const okPromise = new Promise<NewHitDesignCampaignRes>((resolve) => {
     const startCampaignButton = ui.bigButton(i18n.StartCampaign,
-      () => resolve({df, campaignProps: campaignPropsObject}));
+      () => {
+        for (const field of template.campaignFields) {
+          if (field.required) {
+            if (!campaignPropsObject[field.name] || campaignPropsObject[field.name] === '') {
+              grok.shell.error(`Field '${field.name}' is required`);
+              return;
+            }
+          }
+        }
+        resolve({df, campaignProps: campaignPropsObject});
+      });
     buttonsDiv.appendChild(startCampaignButton);
   });
   const cancelPromise = new Promise<void>((resolve) => {

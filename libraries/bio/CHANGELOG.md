@@ -2,14 +2,12 @@
 
 ## 5.39.0 (2023-10-25)
 
-### Bug fixes
-* Fix monomer lib handler for PolyTool
-* Fix splitter with separator for quoted gaps
-
 ### Features
 
 * Add VdRegionsViewer `filterSource` property.
 * Add WebLogo `valueAggrType`, `valueColumnName` properties.
+* Add routines to get/set user monomer library settings.
+* Add Molecule3DUnitsHandler
 
 ### Bug fixes
 
@@ -21,6 +19,9 @@
 * Fix VdRegionsViewer fit width accounting position margin of WebLogo
 * Fix UnitsHandler to allow empty alphabet if annotated with tag.
 * Fix UnitsHandler.maxLength to be zero for empty data.
+* Fix monomer lib handler for PolyTool
+* Fix splitter with separator for quoted gaps
+* Fix default value for pdbTag prop of Biostructure
 
 ## 5.38.0 (2023-09-06)
 
