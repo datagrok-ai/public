@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+
 import {
   RGROUP_CAP_GROUP_NAME,
   RGROUP_CAP_GROUP_SMILES,
@@ -8,7 +9,7 @@ import {
   RGROUPS,
   RGROUP_LABEL,
   SDF_MONOMER_NAME
-} from './constants';
+} from '../constants';
 
 export function getParts(subParts: string[], s: string): string[] {
   const j = 0;
