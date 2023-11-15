@@ -26,9 +26,10 @@ ${CONTROL_EXPR.INITS}:
 const TEMPLATE_ADVANCED = `This is an advanced template. Modify it. 
 Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters.
-Edit these description lines if required.
+Edit these header lines if required.
 
 ${CONTROL_EXPR.NAME}: Advanced
+${CONTROL_EXPR.DESCR}: 2D ordinary differential equations system sample
 ${CONTROL_EXPR.DIF_EQ}:
   dx/dt = E1 * y + sin(t)
 
@@ -82,7 +83,9 @@ function getProblem(state: EDITOR_STATE): string {
 /** Completions with of control */
 //const completions = Object.values(CONTROL_EXPR).map((val) => {return {label: `${val}: `, type: "keyword"}});
 const completions = [
-  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the problem"},
+  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the problem"},  
+  {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},// <-- TODO: discuss this completment!
+  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the problem"},// <-- TODO: discuss this completment!
   {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: "keyword", info: "block of differential equation(s) specification"},
   {label: `${CONTROL_EXPR.EXPR}:\n  `, type: "keyword", info: "block of auxiliary expressions & computations"},
   {label: `${CONTROL_EXPR.ARG}: `, type: "keyword", info: "independent variable specification"},
@@ -208,6 +211,7 @@ export async function runSolverApp() {
     editorView.setState(newState);
   };
 
+  // TODO: discuss if the following dialog is required:
   /* Warning dialog:
 
   let toShowWarning = true;

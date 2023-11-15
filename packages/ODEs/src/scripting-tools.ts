@@ -25,6 +25,8 @@ type DifEqs = {
 /** Initial Value Problem (IVP) specification type */
 type IVP = {
   name: string,
+  tags: string | null,
+  descr: string | null,
   deqs: DifEqs,
   exprs: Map<string, string> | null,
   arg: Arg,
@@ -38,6 +40,8 @@ type IVP = {
 
 export enum CONTROL_EXPR {
   NAME = `${CONTROL_TAG}name`,
+  TAGS = `${CONTROL_TAG}tags`,
+  DESCR = `${CONTROL_TAG}description`,
   DIF_EQ = `${CONTROL_TAG}equations`,
   EXPR = `${CONTROL_TAG}expressions`,
   ARG = `${CONTROL_TAG}argument`,
@@ -56,7 +60,8 @@ enum ERROR_MSG {
 
 enum ANNOT {
   NAME = '//name:',
-  TAGS = '//tags: model',
+  DESCR = '//description:',
+  TAGS = '//tags:',
   LANG = '//language: javascript',
   INPUT = '//input: double',
   OUTPUT = `//output: dataframe ${DF_NAME}`,
@@ -249,6 +254,8 @@ function getEqualities(lines: string[]): Map<string, number> {
 export function getIVP(text: string): IVP {
   // The current Initial Value Problem (IVP) specification
   let name: string;
+  let tags: string | null = null;
+  let descr: string | null = null;
   let deqs: DifEqs;
   let exprs: Map<string, string> | null = null;
   let arg: Arg;
@@ -272,6 +279,12 @@ export function getIVP(text: string): IVP {
 
     if (firstLine.startsWith(CONTROL_EXPR.NAME)) { // the 'name' block      
       name = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
+    }
+    else if (firstLine.startsWith(CONTROL_EXPR.TAGS)) { // the 'tags' block      
+      tags = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
+    }
+    else if (firstLine.startsWith(CONTROL_EXPR.DESCR)) { // the 'description' block      
+      descr = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
     }
     else if (firstLine.startsWith(CONTROL_EXPR.DIF_EQ)) { // the 'differential equations' block      
       deqs = getDifEquations(concatMultilineFormulas(lines.slice(block.begin + 1, block.end))); 
@@ -306,6 +319,8 @@ export function getIVP(text: string): IVP {
 
   return {
     name: name!,
+    tags: tags,
+    descr: descr,
     deqs: deqs!,
     exprs: exprs,
     arg: arg!,
@@ -326,7 +341,12 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   res.push(`${ANNOT.NAME} ${ivp.name}`);
 
   // the 'tags' line
-  //res.push(ANNOT.TAGS);
+  if (ivp.tags)
+    res.push(`${ANNOT.TAGS} ${ivp.tags}`);
+
+  // the 'description' line
+  if (ivp.descr)
+    res.push(`${ANNOT.DESCR} ${ivp.descr}`); 
 
   // the 'language' line
   res.push(ANNOT.LANG);
@@ -456,15 +476,3 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
 
   return res;
 }
-
-
-/*
-const ivp = getIVP(simple);
-console.log(ivp);
-
-console.log();
-
-const scriptLines = getScriptLines(ivp);
-
-for (const line of scriptLines)
-  console.log(line);*/
