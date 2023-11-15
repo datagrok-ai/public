@@ -11,11 +11,11 @@ import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
-import {ComputationView} from './computation-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {fcToSerializable} from '../../shared-utils/utils';
+import {testPipeline} from '../../shared-utils/function-views-testing';
 
 type StepState = {
   func: DG.Func,
@@ -31,7 +31,7 @@ const getVisibleStepName = (step: StepState) => {
   return step.options?.friendlyName ?? step.func.name;
 };
 
-export class PipelineView extends ComputationView {
+export class PipelineView extends FunctionView {
   public steps = {} as {[scriptNqName: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
@@ -632,5 +632,9 @@ export class PipelineView extends ComputationView {
       const data = serialize(res, 0);
       return data;
     }
+  }
+
+  public override async executeTest(spec: any) {
+    await testPipeline(spec, this);
   }
 }

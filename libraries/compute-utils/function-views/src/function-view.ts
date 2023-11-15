@@ -13,7 +13,9 @@ import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {distinctUntilChanged} from 'rxjs/operators';
-import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {FileInput} from '../../shared-components/src/file-input';
+import {testFunctionView} from '../../shared-utils/function-views-testing';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -499,6 +501,8 @@ export abstract class FunctionView extends DG.ViewBase {
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
 
+    ribbonMenu.item('Import Test JSON', () => this.importRunJsonDialog());
+
     if (this.getAbout) {
       ribbonMenu.item('About', async () => {
         const about = await this.getAbout!();
@@ -664,6 +668,31 @@ export abstract class FunctionView extends DG.ViewBase {
       const data = await fcToSerializable(this._lastCall, this);
       return serialize(data, 0);
     }
+  }
+
+  public async importRunJsonDialog() {
+    const fileInput = new FileInput('JSON file', null, null, 'application/json');
+    const showParams = { modal: true, fullScreen: true, width: 500, height: 200, center: true };
+    const confirmed = await new Promise((resolve, _reject) => {
+      ui.dialog({ title: 'Import Run JSON'})
+        .add(ui.div([
+          ui.inputs([
+            fileInput,
+          ]),
+        ]))
+        .onOK(() => resolve(true))
+        .onCancel(() => resolve(false))
+        .show(showParams)
+    });
+    if (!confirmed || !fileInput.value) {
+      return;
+    }
+    const spec = deserialize(await fileInput.value.text());
+    await this.executeTest(spec);
+  }
+
+  protected async executeTest(spec: any) {
+    await testFunctionView(spec, this);
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);
