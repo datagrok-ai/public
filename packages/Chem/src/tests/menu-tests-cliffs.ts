@@ -24,7 +24,7 @@ category('top menu activity cliffs', async () => {
 
   test('activityCliffsOpen.smiles', async () => {
     const df = DG.Test.isInBenchmark ?
-      await grok.data.files.openTable('Demo:Files/chem/smiles_10K_with_activities.csv') :
+      await grok.data.files.openTable('Samples:Files/chem/smiles_10K_with_activities.csv') :
       await readDataframe('tests/activity_cliffs_test.csv');
     await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2);
   });
