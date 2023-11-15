@@ -30,13 +30,13 @@ export async function testConnections(): Promise<DG.DataFrame> {
   // const queriesFriendlyNames: string[] = ['PostgresNormal', 'PostgresLong', 'PostgresWide'];
   const l = connections.length * tables.length * fetchSizes.length;
 
-  const df = DataFrame.fromColumns([Column.string('type', l), Column.string('fetch', l),
-    Column.string('db', l), Column.int('TTFR', l), Column.int('TTC', l)]);
+  const df = DG.DataFrame.fromColumns([DG.Column.string('type', l), DG.Column.string('fetch', l),
+    DG.Column.string('db', l), DG.Column.int('TTFR', l), DG.Column.int('TTC', l)]);
 
   let startTime: number;
   let ttfr: number;
 
-  let callCheck: (value: FuncCall) => boolean;
+  let callCheck: (value: DG.FuncCall) => boolean;
   let ttfrSet = false;
   // @ts-ignore
   grok.functions.onParamsUpdated.pipe(filter((c) => callCheck(c) && !ttfrSet)).subscribe(() => {
@@ -59,9 +59,9 @@ export async function testConnections(): Promise<DG.DataFrame> {
         df.columns.byName('fetch').set(row, fetchSize);
         df.columns.byName('db').set(row, con);
 
-        callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize &&
+        callCheck = (c: DG.FuncCall) => c.aux.get('fetchSize') == fetchSize &&
             // @ts-ignore
-            (c.func as DataQuery).connection.name == con;
+            (c.func as DG.DataQuery).connection.name == con;
 
         const preTable = con.startsWith('Snowflake') ? 'TEST.' : '';
 
