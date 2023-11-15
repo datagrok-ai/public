@@ -405,7 +405,7 @@ M  END
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
-    const alignByStructure = !!(filter.length || align.length || scaffoldTreeHighlight.length);
+    const alignByStructure = !!(filter.length || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }
