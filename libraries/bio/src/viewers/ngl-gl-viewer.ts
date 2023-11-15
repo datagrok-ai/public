@@ -57,15 +57,10 @@ export type NglGlTask = {
   name: string,
   backColor: number,
   props: { [propName: string]: any },
-  onAfterRender: (canvas: HTMLCanvasElement) => Promise<void>
+  onAfterRender: (canvas: HTMLCanvasElement) => void
 };
 
 export abstract class NglGlServiceBase {
-  public static noneSource: { type: string, data: any } = {
-    type: 'biojs',
-    data: {name: 'none', branch_length: 1, children: []}
-  };
-
   /** Queues NglGl render task
    * @param key  Specify to skip previously queued tasks with the same key
    */
