@@ -884,6 +884,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         if (child !== null) {
           enableNodeExtendArrow(child, false);
           enableNodeExtendArrow(parent, true);
+          this.setTooltipForElement(child.checkBox!, 'Select to filter');
         }
 
         if (child !== null && parent.value !== null) {
@@ -1329,8 +1330,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const thisViewer = this;
     const groupValue = group.value as ITreeNode;
     const notIcon = ui.iconFA('equals',
-      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
-      'Exclude structures containing this scaffold');
+      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot));
+    
+    notIcon.onmouseenter = (e) => {
+      const text = groupValue.bitwiseNot 
+        ? 'Show structures containing this scaffold' 
+        : 'Exclude structures containing this scaffold';
+      ui.tooltip.show(text, e.clientX, e.clientY);
+    }
+
+    notIcon.onmouseleave = (e) => ui.tooltip.hide();
 
     let chosenColor = DG.Color.toHtml(this.availableColors[0]);
     const first = this.availableColors.shift();
@@ -1436,10 +1445,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     iconsInfo.onclick = (e) => e.stopImmediatePropagation();
     iconsInfo.onmousedown = (e) => e.stopImmediatePropagation();
-    molHost.children[0].append(ui.divV([iconsInfo, iconsDiv], 'chem-mol-box-info'));
+    molHost.children[0].appendChild(ui.divV([iconsInfo, iconsDiv], 'chem-mol-box-info'));
     molHost.children[0].insertBefore(ui.divV([iconsDivLeft], 'chem-mol-box-info'), c[0]);
   }
-
 
   private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null, colorOn: boolean | null = null , checked: boolean = false, isNot: boolean = false, expanded: boolean = true, orphansBitset: DG.BitSet | null = null) : TreeViewGroup | null {
     if (this.molColumn === null)
@@ -1931,6 +1939,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     return countNodes;
   }
 
+  setTooltipForElement(element: HTMLElement, text: string) {
+    element.onmouseenter = (e) => ui.tooltip.show(text, e.clientX, e.clientY);
+    element.onmouseleave = (e) => ui.tooltip.hide();
+  }
+
   deserializeTree(json: INode, rootGroup: TreeViewGroup, createGroup: Function, countNodes: number, parent?: string) : number {
     const molStr = json.scaffold;
     const chosenColor = json.chosenColor;
@@ -1955,6 +1968,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (json.child_nodes === undefined)
       json.child_nodes = [];
 
+    this.setTooltipForElement(group.checkBox!, 'Select to filter');
     value(group).autocreated = true;
 
     for (let n = 0; n < json.child_nodes.length; ++n)
