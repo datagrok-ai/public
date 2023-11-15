@@ -35,6 +35,7 @@ import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/struct
 import {errInfo} from '../../utils/err-info';
 
 import {_package} from '../../package';
+import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -348,7 +349,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     _package.logger.debug('MolstarViewer.detach(), ');
 
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => { // detach
+    this.viewPromise = this.viewPromise.then(async () => { // detach
       await this.viewPromise;
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
@@ -370,9 +371,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           await this.destroyView('setData');
           this.viewed = false;
         }
-
-        await this.detachPromise;
-        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
         // -- PDB data --
         this.dataEff = null;
@@ -411,8 +409,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   // -- View --
 
-  private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
+  public viewPromise: Promise<void> = Promise.resolve();
   private setDataInProgress: boolean = false;
 
   private viewerDiv?: HTMLDivElement;
@@ -510,7 +507,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const dataFi: DG.FileInfo = dataFileInput.value;
       const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
       this.setOptions({
-        [PROPS.dataJson]: JSON.stringify({data: Base64.fromUint8Array(dataA), ext: dataFi.extension}),
+        [PROPS.dataJson]: buildDataJson(dataA, dataFi.extension),
       });
       // openBtn.disabled = !(dataFi && (dataFi.data || dataFi.url));
     }));
@@ -566,8 +563,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   // -- Ligands routines --
 
-  private ligands: LigandMap = {selected: [], current: null, hovered: null};
-  private ligandsPromise: Promise<void> = Promise.resolve();
+  public ligands: LigandMap = {selected: [], current: null, hovered: null};
+  public ligandsPromise: Promise<void> = Promise.resolve();
 
   /** Unify get mol* component key/ref, not static for performance
    * @param {StructureComponentRef} comp
@@ -576,12 +573,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     return comp.cell.sourceRef ?? null; // comp.version
   }
 
-  private getLigandStrOfRow(rowIdx: number): { data: string, format: string } {
+  private getLigandStrOfRow(
+    rowIdx: number,
+  ): { data: string, format: BuiltInTrajectoryFormat | TrajectoryFormatProvider } {
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
     const ligandUnits: string = ligandCol.getTag(DG.TAGS.UNITS);
     const ligandCellValue: string = ligandCol.get(rowIdx);
     let ligandValue: string;
-    let ligandFormat: string;
+    let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;
     switch (ligandCol.semType) {
       case DG.SEMTYPE.MOLECULE: {
         switch (ligandUnits) {
@@ -673,7 +672,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const {data: ligandStr, format: ligandFormat} = this.getLigandStrOfRow(rowIdx);
       const _moldata = await plugin.builders.data.rawData({data: ligandStr, label: LIGAND_LABEL});
       const _moltraj = await plugin.builders.structure.parseTrajectory(
-        _moldata, 'pdb' /* 'sdf' for molfile */);
+        _moldata, ligandFormat);
       const _model = await plugin.builders.structure.createModel(_moltraj);
       const _structure = await plugin.builders.structure.createStructure(_model);
       const _component = await plugin.builders.structure.tryCreateComponentStatic(
@@ -715,6 +714,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   // -- IMolecule3DBrowser --
 
   showStructure(data: Molecule3DData) {
-    this.setOptions({[PROPS.dataJson]: JSON.stringify(data)});
+    throw new Error('Not implemented');
   }
+}
+
+export function buildDataJson(data: Uint8Array, ext: string): string {
+  return JSON.stringify({data: Base64.fromUint8Array(data), ext: ext});
 }

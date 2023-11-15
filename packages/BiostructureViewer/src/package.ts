@@ -11,7 +11,7 @@ import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
-import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
+import {PdbGridCellRenderer, PdbGridCellRendererBack} from './utils/pdb-grid-cell-renderer';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
@@ -31,6 +31,7 @@ import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {_getNglGlService, _getPdbHelper, Package} from './package-utils';
 import {addContextMenuUI} from './utils/context-menu';
 import {importPdbqtUI} from './utils/pdbqt/import-pdbqt';
+import {IPdbGridCellRenderer} from './utils/types';
 
 export const _package: Package = new Package();
 
@@ -127,9 +128,10 @@ export async function importWithNgl(fileContent: string): Promise<DG.DataFrame[]
 //tags: file-handler
 //meta.ext: pdbqt
 //input: string fileContent
+//input: bool test =false {optional: true}
 //output: list tables
-export async function importPdbqt(fileContent: string): Promise<DG.DataFrame[]> {
-  return importPdbqtUI(fileContent);
+export async function importPdbqt(fileContent: string, test: boolean): Promise<DG.DataFrame[]> {
+  return importPdbqtUI(fileContent, test);
 }
 
 // -- File (pre)viewers --
@@ -343,6 +345,13 @@ export async function getPdbHelper(): Promise<IPdbHelper> {
 
 export async function nglViewerGen(): Promise<void> {
   _nglViewerGen();
+}
+
+//name: getPdbGridCellRenderer
+//input: object gridCol
+//output: object result
+export function getPdbGridCellRenderer(gridCol: DG.GridColumn): IPdbGridCellRenderer {
+  return PdbGridCellRendererBack.getOrCreate(gridCol);
 }
 
 //name: dockingDemo

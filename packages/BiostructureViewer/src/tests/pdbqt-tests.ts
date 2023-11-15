@@ -74,9 +74,9 @@ category('pdbqt', () => {
     await _testPdbqtParser();
   });
 
-  // test('import-models', async () => {
-  //   await _testPdbqtImportModels();
-  // });
+  test('import-models', async () => {
+    await _testPdbqtImportModels();
+  });
 
   test('import-target-only', async () => {
     await _testPdbqtImportTargetOnly();
@@ -117,24 +117,24 @@ async function _testPdbqtParser(): Promise<void> {
   }
 }
 
-// async function _testPdbqtImportModels(): Promise<void> {
-//   try {
-//     const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
-//     const df: DG.DataFrame = (await importPdbqt(cnt))[0];
-//
-//     const molCol = df.getCol(IMPORT.pdb.molColName);
-//     const uh = IMPORT.pdb.unitsHandlerClass.getOrCreate(molCol);
-//     expect(uh.units, IMPORT.pdb.units);
-//   } catch (err) {
-//     const [errMsg, errStack] = errInfo(err);
-//     _package.logger.error(errMsg, undefined, errStack);
-//     throw err;
-//   }
-// }
+async function _testPdbqtImportModels(): Promise<void> {
+  try {
+    const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
+    const df: DG.DataFrame = (await importPdbqt(cnt, true))[0];
+
+    const molCol = df.getCol(IMPORT.pdb.molColName);
+    const uh = IMPORT.pdb.unitsHandlerClass.getOrCreate(molCol);
+    expect(uh.units, IMPORT.pdb.units);
+  } catch (err) {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }
+}
 
 async function _testPdbqtImportTargetOnly(): Promise<void> {
   const cnt: string = await _package.files.readAsText('docking/3SWZ.pdbqt');
-  const dfList = await importPdbqt(cnt);
+  const dfList = await importPdbqt(cnt, true);
   expect(dfList.length, 0);
 
   const view = grok.shell.v;

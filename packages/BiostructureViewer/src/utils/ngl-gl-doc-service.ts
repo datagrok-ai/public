@@ -53,21 +53,26 @@ export class NglGlDocService implements NglGlServiceBase {
         const oldTaskI = this._queue.findIndex((item) => item.key === key);
         this._queue.splice(oldTaskI, 1);
       }
+      _package.logger.debug(`NglGlDocService.render() _queueDict[ key: ${key?.toString()} ] = <task>`);
       this._queueDict[key] = task;
     }
 
+    _package.logger.debug('NglGlDocService.render() _queue.push(), ' + `key: ${key?.toString()}`);
     this._queue.push({key, task, dt: Date.now()});
 
     if (!this._busy) {
       this._busy = true;
 
       // TODO: Use requestAnimationFrame()
+      _package.logger.debug('NglGlDocService.render(), window.setTimeout() -> this._processQueue() ');
       window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
     }
     //_package.logger.debug('NglGlDocService.render() end ' + `name: ${name}`);
   }
 
   private async _processQueue() {
+    _package.logger.debug(`NglGlDocService._processQueue(), ` +
+      `queue: ${JSON.stringify(this._queue.map((t) => t.key))}`);
     const queueItem = this._queue.shift();
     if (!queueItem) {
       _package.logger.error('BsV: NglGlDocService._processQueue() queueItem = undefined ');
@@ -75,8 +80,8 @@ export class NglGlDocService implements NglGlServiceBase {
     } // in case of empty queue
 
     const {key, task} = queueItem!;
-    if (key) {
-      _package.logger.debug('NglGlDocService._processQueue() ' + `key = ${key.toString()}`);
+    if (key !== undefined) {
+      _package.logger.debug('NglGlDocService._processQueue() ' + `key: ${key.toString()}`);
       delete this._queueDict[key];
     }
     try {
@@ -140,9 +145,9 @@ export class NglGlDocService implements NglGlServiceBase {
   private task?: NglGlTask = undefined;
   private key?: keyof any = undefined;
 
-  private async onNglRendered(): Promise<void> {
+  private onNglRendered(): void {
     if (this.task === undefined) return;
-    _package.logger.debug('NglGlDocService.onNglRendered() ' + `key = ${JSON.stringify(this.key)}`);
+    _package.logger.debug('NglGlDocService.onNglRendered() ' + `key: ${JSON.stringify(this.key)}`);
     try {
       const canvas = this.ngl.viewer.renderer.domElement;
       const canvasHash = DG.StringUtils.hashCode(canvas.toDataURL());
@@ -155,16 +160,18 @@ export class NglGlDocService implements NglGlServiceBase {
 
       this.nglRenderedBinding.detach();
 
-      await this.task.onAfterRender(canvas);
+      this.task.onAfterRender(canvas);
       this.task = undefined;
       this.key = undefined;
       this.emptyCanvasHash = undefined;
 
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
+        _package.logger.debug('NglGlDocService.onNglRendered(), window.setTimeout() -> this._processQueue() ');
         window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
       } else {
         // release flag allowing _processQueue on add queue item
+        _package.logger.debug('NglGlDocService.onNglRendered(), this._busy = false');
         this._busy = false;
       }
     } catch (err: any) {
