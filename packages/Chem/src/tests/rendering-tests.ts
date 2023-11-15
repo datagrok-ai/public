@@ -47,7 +47,7 @@ category('rendering', () => {
       .show();
   });
 
-  test('rdkit grid cell renderer', async () => {
+  test('rdkit grid cell renderer scroll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       await readDataframe('tests/sar-small_test.csv');
     const scrollCycles = DG.Test.isInBenchmark ? 1000 : 10;
@@ -57,7 +57,7 @@ category('rendering', () => {
     await scrollTable(canvas, scrollDelta, scrollCycles, 5);
   });
 
-  test('rdkit grid cell renderer benchmark', async () => {
+  test('rdkit grid cell renderer', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
     const grid = df.plot.grid();
     const rowCount = df.rowCount;
@@ -73,6 +73,20 @@ category('rendering', () => {
       rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, 200, 100, grid.cell(colName, i));
     }
     console.log(`rendering of ${rowCount} molecules without highlight took ${performance.now() - start} milliseconds`);
+    
+  }, {timeout: 180000});
+
+  test('rdkit grid cell renderer with highlights', async () => {
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
+    const grid = df.plot.grid();
+    const rowCount = df.rowCount;
+    const colName = DG.Test.isInBenchmark ? 'smiles' : 'molecule'
+    const col = df.col(colName)!;
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
+    const rendndererObj = await renderFunctions[0].apply();
+    const moleculeHost = ui.canvas(200, 100);
+    
+    let start = performance.now();
    
     col.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{
       molecule: _convertMolNotation('c1ccccc1', DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule),
