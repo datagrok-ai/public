@@ -734,7 +734,7 @@ export namespace chem {
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    * */
   export async function descriptorsTree(): Promise<object> {
-    return JSON.parse(api.grok_Chem_DescriptorsTree());
+    return JSON.parse(await api.grok_Chem_DescriptorsTree());
   }
 
   /**
