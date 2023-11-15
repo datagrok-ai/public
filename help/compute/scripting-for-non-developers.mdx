@@ -1,5 +1,5 @@
 ---
-title: "Scripting for non-professional developers"
+title: "Scripting for non-developers"
 ---
 
 ```mdx-code-block
@@ -7,37 +7,36 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-This section provides a quick introduction for Datagrok scripting.
+This section provides a quick introduction to Datagrok scripting.
 
 ## Prerequisites
 
-* Sign up and login to [public server of Datagrok](https://public.datagrok.ai/).
+* Sign up and log in to [public server of Datagrok](https://public.datagrok.ai/).
 * Alternatively, set up a [local Datagrok environment](../deploy/docker-compose/docker-compose.mdx).
 
 ## Datagrok scripting essentials
 
-This section explains basic concepts of scripting in Datagrok.
-Code examples are written in **Python** and **R**.
-However, the same concepts are applicable to all other supported languages.
+This section explains the basic concepts of scripting in Datagrok.
+Code examples are provided in **Python** and **R**.
 
 :::tip Pro tip
 
-The JavaScript historically is not considered as a language for data science.
-However, in Datagrok Javascript has several advantages
-over "traditional" data science languages, like Python or R:
+In Datagrok, JavaScript offers unique benefits compared to traditional 
+data science languages like Python or R:
 
-* JS scripts run locally in the browser,
-  so you can start them faster and achieve better responsibility to user actions.
-* Datagrok has wide range of JS API, allowing you to precisely control parameters of
-  all Datagrok viewers, call functions of Datagrok core and perform some other advanced features.
+* JavaScript script executes right in your browser, 
+  leading to shorter spin-up time and more responsive interaction with user actions.
+* Datagrok provides an extensive JavaScript API, 
+  giving you detailed control over viewer parameters, 
+  access to core Datagrok functions, and other sophisticated capabilities.
 
-Therefore, for advanced scripting in Datagrok we recommend you to try Javascript.
+For these reasons, we suggest trying JavaScript for advanced scripting in Datagrok.
 
 :::
 
 ### How to create a script
 
-You can create a script directly on the platform by two ways:
+You can create a script directly on the platform in two ways:
 
 ```mdx-code-block
 <Tabs>
@@ -48,7 +47,7 @@ You can create a script directly on the platform by two ways:
 * Select `Functions` icon on the right toolbar.
 * Select Datagrok's [Scripts section](https://public.datagrok.ai/scripts).
 * Hover over the taskbar on the left side. Toolbox appears.
-* Open **Actions** submenu and create a new script in preferred language.
+* Open the **Actions** submenu and create a new script in your preferred language.
 ![scripts](scripts.png)
 
 ```mdx-code-block
@@ -74,12 +73,12 @@ The code editor appears with the code inside.
 
 ```python
 #name: Template
-#description: Calculates number of cells in the table
+#description: Calculates the number of cells in the table
 #language: python
 #tags: template, demo
 #sample: cars.csv
 #input: dataframe table [Data table]
-#output: int count [Number of cells in table]
+#output: int count [Number of cells in the table]
 count = table.shape[0] * table.shape[1]
 ```
 
@@ -90,12 +89,12 @@ count = table.shape[0] * table.shape[1]
 
 ```r
 #name: Template
-#description: Calculates number of cells in the table
+#description: Calculates the number of cells in the table
 #language: r
 #tags: template, demo
 #sample: cars.csv
 #input: dataframe table [Data table]
-#output: int count [Number of cells in table]
+#output: int count [Number of cells in the table]
 count <- nrow(table) * ncol(table)
 ```
 
@@ -105,7 +104,6 @@ count <- nrow(table) * ncol(table)
 ```
 
 Congratulations, you've just written a script in Datagrok!
-This is a very simple example script calculating the number of cells in a dataframe.
 Let's explore how it works.
 
 ### Script header
@@ -117,70 +115,79 @@ pass to the script input parameters, and capture script output.
 The template script has the following ones:
 
 * `# name: Template`: The short name of the script.
-* `# description: Calculates number of cells in the table`: Human readable description.
+* `# description: Calculates the number of cells in the table`: The human-readable description.
 * `# language: python`: The script language.
-   See the [full list of supported languages](header-parameters.md#supported-languages)
-* `# tags: template, demo`: The list of tags used to organise and search scripts.
+* `# tags: template, demo`: The list of tags used to organize and search scripts.
 * `# input: dataframe table [Data table]`: Specification of the input parameter.
    The `table` is the parameter name, and `dataframe` is the parameter type.
-   See the [supported parameter types](header-parameters.md#format-template-for-input-and-output) for details.
-* `# output: int count [Number of cells in table]`: Specification of the output parameter:
-   The `int` variable named `count`.
+   See the [supported parameter types](../datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) for details.
+* `# output: int count [Number of cells in the table]`: Specification of the output parameter:
+   The `int` variable with the name `count`.
 
-For more details refer to the [full list of header parameters](header-parameters.md).
+For more details, refer to the [functions parameter annotation](../datagrok/concepts/functions/func-params-annotation).
+
+### Supported Languages
+
+| Language header parameter| Language       |
+|--------------------------|----------------|
+| r                        | R              |
+| python                   | Python         |
+| octave                   | Octave         |
+| julia                    | Julia          |
+| grok                     | Grok Scripting |
+| JavaScript               | JavaScript     |
 
 ### Input and output parameters
 
-The most important part of the script header is specification of input and output parameters (variables).
-Each parameter is specifies either as input or output.
-Datagrok automatically injects _input_ parameters before your script starts,
-and captures _output_ parameters when script finishes.
-Currently, there is no way to return variables form script in the middle of the script processing.
+The script header's most important part is the specification of input and output parameters (variables).
+Each parameter is specified either as input or output.
+Datagrok automatically injects _input_ parameters before the script starts
+and captures _output_ parameters when the script finishes.
+Currently, there is no way to return variables from the script in the middle of the script processing.
 
-Datagrok supports all standard type of scalar parameters (integer, float, boolean, string)
+Datagrok supports all standard types of scalar parameters (integer, float, boolean, string)
 In addition, Datagrok offers high-level parameters designed to interact with dataframes.
-You can pass to the script whole dataframe, dataframe column, list of columns,
+You can pass to the script the whole dataframe, dataframe column, list of columns,
 or a binary file.
 
-Find full list and description of supported parameters in the
-[Input and output parameters](header-parameters.md#input-and-output-parameters) section.
+Find the full list and description of supported parameters in the
+[Input and output parameters](../datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) section.
 
 ### How to run a script
 
-Let's save the script and see, how it works.
-Built-in editor has **Run** button on the top panel.
+Let's save the script and see how it works.
+The built-in editor has the **Run** button on the top panel.
 Press it to run a script. You will see the following window:
 ![Running the template script](pics/template-script-run.png)
 
 When you run a script,
-with no explicitly specified parameters,
 Datagrok analyzes header parameters
-to create an input form and properly show the outputs.
+to create an input form and show the outputs.
 
 Provide a dataframe for the script and press **Ok** to run it.
-You can choose already opened dataframe,
-open a dataframe from file, or retrieve it via SQL query.
+You can choose an already opened dataframe,
+open a dataframe from a file, or retrieve it via SQL query.
 
-After script finishes, Datagrok collects all output parameters and displays it.
-In the provided examples this is a single scalar value, so it will be shown in the **Variables** panel.
+After the script finishes, Datagrok collects all output parameters and displays them.
+In the provided example, this is a single scalar value shown in the **Variables** panel.
 You will see the following output:
 ![The template script output](pics/template-script-output.png)
 
-For additional capabilities of Datagrok script editor, see the
+For additional capabilities of the Datagrok script editor, see the
 [Working with Datagrok script editor](#working-with-datagrok-script-editor) section.
 
-## More  Datagrok scripting
+## More Datagrok scripting
 
-### Dataframes, scalars and default values
+### Dataframes, scalars, and default values
 
-The template script accepts the **dataframe** as input parameter.
+The template script accepts the **dataframe** as the input parameter.
 For [Python](https://www.python.org/) this parameter
 is a [Pandas](https://pandas.pydata.org/)
 [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html).
 [R](https://www.r-project.org/) supports dataframes natively.
 
 Let's modify it to accept and return both dataframes and scalars.
-We copy original dataframe and add a new ID column to it.
+We copy the original dataframe and add a new ID column to it.
 Also, we return the number of rows in the table.
 
 ```mdx-code-block
@@ -212,7 +219,7 @@ last_row = len(new_table)
 
 ```r
 #name: DataframeDemo
-#description: Adding new column to a dataframe
+#description: Adding a new column to a dataframe
 #language: r
 #tags: demo, dataframe
 #input: dataframe table [Data table]
@@ -232,24 +239,26 @@ last_row <- nrow(new_table)
 ```
 
 When you run the script, you will see the following dialog:
+
 ![DataframeIdDemo input](pics/dataframeiddemo-input.png)
 
 Datagrok created the script UI,
-populated default values, and creates popups with help text
+populated default values, and created popups with help text
 
-After running this scrip datagrok automatically opens new dataframe.
-It will contain additional column **ID** with the new generated row ID.
+After running this script, Datagrok automatically opens the new dataframe.
+It will contain an additional column **ID** with the generated row ID.
 
 ## Enhancing script input view
 
-You may customize script view using additional GUI-related options.
-These options are, basically, hints to create more user-friendly interface for your scripts.
-Options should be listed in curly braces in corresponding header lines.
+You may customize the script view using additional GUI-related options.
+Most of them are hints to improve the interface for your scripts.
+You should list options in curly braces in corresponding header lines.
 The order of the hints makes no difference. All options are optional.
 
 ### Input captions
 
-You can add an arbitrary caption for an input parameter. Proper caption helps user to understand the meaning of the parameter.
+You can add an arbitrary caption for an input parameter. 
+Proper caption helps the user to understand the meaning of the parameter.
 
 ```mdx-code-block
 <Tabs>
@@ -274,7 +283,8 @@ You can add an arbitrary caption for an input parameter. Proper caption helps us
 
 ### Units
 
-You can add a proper unit label for an input parameter. Unit label will appear in the input form next to the input field.
+You can add a proper unit label for an input parameter. 
+The unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
 <Tabs>
@@ -299,13 +309,14 @@ You can add a proper unit label for an input parameter. Unit label will appear i
 
 ### Adding viewers for output dataframes
 
-You can specify viewers to review output dataframes in human-friendly way.
+You can specify viewers to review output dataframes in a human-friendly way.
 Each dataframe parameter may have a list of viewers.
 For instance, the following code adds `Scatter plot`
-and `Line chart` viewers on input dataframe.
+and `Line chart` viewers on the input dataframe.
 
-You may see all available viewers opening [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv)
-and opening toolbox on the left.
+You may see all available viewers opening 
+[demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv)
+and opening the toolbox on the left.
 
 <details>
 <summary> Fantastic viewers and where to find them </summary>
@@ -345,7 +356,7 @@ outputDF.name = "DF with linechart"
 
 :::tip
 
-Default script view supports viewers for _output_ dataframes only.
+The default script view supports viewers for _output_ dataframes only.
 You may specify viewers _input_ dataframes using
 [Rich function view](scripting-advanced.mdx#using-richfunctionview-input-control)
 
@@ -355,12 +366,11 @@ You may specify viewers _input_ dataframes using
 
 Each viewer has a list of customizable properties.
 They change how the viewer is rendered and how it behaves.
-For instance, you may specify dataframe column used as X axis on scatter plot.
+For instance, you may specify the dataframe column used as the X-axis on the scatter plot.
 
-List of available properties differs for each type of viewer.
-You may right click on viewer and select `Properties` item in the context menu.
-Any of properties listed in the opened property panel
-could be specified in `viewer` option.
+The list of available properties differs for each type of viewer.
+You may right-click on the viewer and select `Properties` item in the context menu.
+In the `viewer` option, you can specify any property listed in the opened property panel.
 For example, the following code:
 
 * specifies marker type and size for linechart
@@ -368,9 +378,9 @@ For example, the following code:
 
 :::tip
 
-Viewer property should be entered in camelCase format.
+You should enter the viewer property in camelCase format.
 For example, here "Show regression line" property
-of scatteplot becomes `showRegressionLine`.
+of the scatterplot becomes `showRegressionLine`.
 
 :::
 
@@ -405,37 +415,39 @@ control allows you to create much more complex
 
 ### How to open and edit a script
 
-You can open and edit previously saved script directly on the platform using built-in editor.
 To edit an existing script:
 
-* Find it in [Scripts section](https://public.datagrok.ai/scripts).
-* Right click on script card. Context menu appears.
-* Choose **Edit** action. Built-in editor with script code opens.
+* Find it in the [Scripts section](https://public.datagrok.ai/scripts).
+* Right-click on the script card. The context menu appears.
+* Choose the **Edit** action. Built-in editor with script code opens.
 
 ### How to debug a script
 
 Currently, Datagrok has limited debugging capabilities.
 All scripts except Javascript are executed in isolated environments,
-and the only way of communication between the script and Datagrok are returned parameters.
+and the only way of communication between the script and Datagrok is output parameters.
 
-If script throws an unhandled exception, Datagrok catches it and display in an error popup:
+If the script throws an unhandled exception, Datagrok catches it and displays an error popup:
+
 ![Exception message from a script](pics/script-exception.png)
 
-However, at the moment there is no convenient way to access regular script output.
+Now, there is no convenient way to access regular script output.
 
-For big and complicated scripts we recommend you to develop it locally in your IDE,
-and then integrate it to Datagrok.
+For big and complicated scripts, we recommend you develop it locally in your IDE,
+and then integrate it into Datagrok.
 
 ### How to share a script
 
 At that point, your script is only visible to you.
 You can also
 make it available to the whole community!
-All sharing features are located in the Sharing dialog.
 
-* To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it.
-* Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges.
-* You may edit list of collaborators, grant or revoke privileges at any moment.
+All sharing features are in the **Sharing** dialog.
+
+* To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right-click on it.
+* Choose the "Share..." option in the context menu. 
+In the dialog, you will see groups and users with their privileges.
+* You may edit the list of collaborators and grant or revoke privileges at any moment.
 
 <details>
 <summary> Sharing step-by-step </summary>
@@ -449,8 +461,8 @@ All sharing features are located in the Sharing dialog.
 ### How to delete a script
 
 * Find your script in [Scripts section](https://public.datagrok.ai/scripts).
-* Right click on it. Context menu opens.
-* Choose "Delete" option.
+* Right-click on it. The context menu opens.
+* Choose **Delete** option.
 
 :::caution
 
