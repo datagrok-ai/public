@@ -5,16 +5,22 @@ const CONTROL_SEP = ':';
 const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
 const SERVICE = '_';
+const BRACE = '{';
 const DEFAULT_TOL = '0.00005';
 export const DF_NAME = 'df';
 const ODES_PACKAGE = 'ODEs';
 const SOLVER_FUNC = 'solve';
 
+type Input = {
+  value: number,
+  annot: string | null,
+};
+
 type Arg = {
   name: string,
-  start: number,
-  finish: number,
-  step: number
+  start: Input,
+  finish: Input,
+  step: Input
 };
 
 type DifEqs = {
@@ -30,9 +36,9 @@ type IVP = {
   deqs: DifEqs,
   exprs: Map<string, string> | null,
   arg: Arg,
-  inits: Map<string, number>,
-  consts: Map<string, number> | null,
-  params: Map<string, number> | null,
+  inits: Map<string, Input>,
+  consts: Map<string, Input> | null,
+  params: Map<string, Input> | null,
   tolerance: string,
   usedMathFuncs: number[],
   usedMathConsts: number[],
@@ -225,26 +231,44 @@ function getExpressions(lines: string[]): Map<string, string> {
 }
 
 /** */
+function getInput(line: string) : Input {
+  const str = line.slice(line.indexOf(EQUAL_SIGN) + 1).trim();
+  const braceIdx = str.indexOf(BRACE);
+
+  if (braceIdx === -1)
+    return {
+      value: Number(str),
+      annot: null,
+    };
+  
+  return {
+    value: Number(str.slice(0, braceIdx)),
+    annot: str.slice(braceIdx),
+  }
+}
+
+/** */
 function getArg(lines: string[]): Arg {
   if (lines.length !== 4)
     throw new Error(ERROR_MSG.ARG);
 
   return {
     name: lines[0].slice(lines[0].indexOf(CONTROL_SEP) + 1).trim(),
-    start: Number(lines[1].slice(lines[1].indexOf(EQUAL_SIGN) + 1).trim()),
-    finish: Number(lines[2].slice(lines[2].indexOf(EQUAL_SIGN) + 1).trim()),
-    step: Number(lines[3].slice(lines[3].indexOf(EQUAL_SIGN) + 1).trim())
+    start: getInput(lines[1]),
+    finish: getInput(lines[2]),
+    step: getInput(lines[3]),
   }
 }
 
 /**  */
-function getEqualities(lines: string[]): Map<string, number> {
-  const eqs = new Map<string, number>();  
+function getEqualities(lines: string[], begin: number, end: number): Map<string, Input> {
+  const source = concatMultilineFormulas(lines.slice(begin, end));
+  const eqs = new Map<string, Input>();
   let eqIdx = 0;
 
-  for (const line of lines) {    
+  for (const line of source) {    
     eqIdx = line.indexOf(EQUAL_SIGN);
-    eqs.set(line.slice(0, eqIdx).replace(' ', ''), Number(line.slice(eqIdx + 1).trim()));
+    eqs.set(line.slice(0, eqIdx).replace(' ', ''), getInput(line.slice(eqIdx + 1).trim()));
   }
 
   return eqs;
@@ -259,9 +283,9 @@ export function getIVP(text: string): IVP {
   let deqs: DifEqs;
   let exprs: Map<string, string> | null = null;
   let arg: Arg;
-  let inits: Map<string, number>;
-  let consts: Map<string, number> | null = null;
-  let params: Map<string, number> | null = null;
+  let inits: Map<string, Input>;
+  let consts: Map<string, Input> | null = null;
+  let params: Map<string, Input> | null = null;
   let tolerance = DEFAULT_TOL;
 
   // 0. Split text into lines
@@ -296,13 +320,13 @@ export function getIVP(text: string): IVP {
       arg = getArg(concatMultilineFormulas(lines.slice(block.begin, block.end)));
     }
     else if (firstLine.startsWith(CONTROL_EXPR.INITS)) { // the 'initial values' block
-      inits = getEqualities(concatMultilineFormulas(lines.slice(block.begin + 1, block.end)));
+      inits = getEqualities(lines, block.begin + 1, block.end);
     }
     else if (firstLine.startsWith(CONTROL_EXPR.CONSTS)) { // the 'constants' block
-      consts = getEqualities(concatMultilineFormulas(lines.slice(block.begin + 1, block.end)));
+      consts = getEqualities(lines, block.begin + 1, block.end);
     }
     else if (firstLine.startsWith(CONTROL_EXPR.PARAMS)) { // the 'parameters' block
-      params = getEqualities(concatMultilineFormulas(lines.slice(block.begin + 1, block.end)));
+      params = getEqualities(lines, block.begin + 1, block.end);
     }
     else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
@@ -334,6 +358,14 @@ export function getIVP(text: string): IVP {
 } // getIVP
 
 /** */
+function getInputSpec(inp: Input): string {
+  if (inp.annot)
+    return `${inp.value} ${inp.annot}`;
+
+  return `${inp.value}`;
+}
+
+/** */
 function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   const res = [] as string[];
 
@@ -356,16 +388,16 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   const t0 = `${SERVICE}${arg.name}0`;
   const t1 = `${SERVICE}${arg.name}1`;
   const h = `${SERVICE}h`
-  res.push(`${ANNOT.INPUT} ${t0} = ${arg.start} ${ANNOT.ARG_INIT}`);
-  res.push(`${ANNOT.INPUT} ${t1} = ${arg.finish} ${ANNOT.ARG_FIN}`);
-  res.push(`${ANNOT.INPUT} ${h} = ${arg.step} ${ANNOT.ARG_STEP}`);
+  res.push(`${ANNOT.INPUT} ${t0} = ${getInputSpec(arg.start)}`);
+  res.push(`${ANNOT.INPUT} ${t1} = ${getInputSpec(arg.finish)}`);
+  res.push(`${ANNOT.INPUT} ${h} = ${getInputSpec(arg.step)}`);
 
   // initial values lines
-  ivp.inits.forEach((val, key, map) => res.push(`${ANNOT.INPUT} ${key} = ${val} {${ANNOT.CAPTION} ${key}; ${ANNOT.INITS}}`));
+  ivp.inits.forEach((val, key) => res.push(`${ANNOT.INPUT} ${key} = ${getInputSpec(val)}`));
 
   // parameters lines
   if (ivp.params !== null)
-    ivp.params.forEach((val, key, map) => res.push(`${ANNOT.INPUT} ${key} = ${val} {${ANNOT.CAPTION} ${key}; ${ANNOT.PARAMS}}`));
+    ivp.params.forEach((val, key) => res.push(`${ANNOT.INPUT} ${key} = ${getInputSpec(val)}`));
 
   // the 'output' line
   if (toAddViewers)
@@ -391,7 +423,7 @@ function getScriptMainBody(ivp: IVP): string[] {
   // 1. Constants lines
   if (ivp.consts !== null) {
     res.push(SCRIPT.CONSTS);
-    ivp.consts.forEach((val, key, map) => res.push(`const ${key} = ${val};`));
+    ivp.consts.forEach((val, key) => res.push(`const ${key} = ${val.value};`));
   }
 
   // 2. The problem definition lines
@@ -465,14 +497,75 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
 
   const arg = ivp.arg;
 
-  res[`${SERVICE}${arg.name}0`] = arg.start;
-  res[`${SERVICE}${arg.name}1`] = arg.finish;
-  res[`${SERVICE}h`] = arg.step;
+  res[`${SERVICE}${arg.name}0`] = arg.start.value;
+  res[`${SERVICE}${arg.name}1`] = arg.finish.value;
+  res[`${SERVICE}h`] = arg.step.value;
 
-  ivp.inits.forEach((val, key) => res[key] = val);
+  ivp.inits.forEach((val, key) => res[key] = val.value);
 
   if (ivp.params)
-    ivp.params.forEach((val, key) => res[key] = val);
+    ivp.params.forEach((val, key) => res[key] = val.value);
 
   return res;
 }
+
+/** */
+const TEMPLATE_BASIC = `${CONTROL_EXPR.NAME}: Template 
+${CONTROL_EXPR.DIF_EQ}:
+  dy/dt = -y + sin(t) / t
+
+${CONTROL_EXPR.ARG}: t
+  initial = 0.01 {units: sec; caption: Initial; category: Time} [Initial value of t]
+  final = 15.0
+  step = 0.001{units: sec; caption: Step; category: Time} [Step of numerical solution]
+
+${CONTROL_EXPR.INITS}:  
+  y = 0`;
+
+/** */
+const TEMPLATE_ADVANCED = `NOTES. This is an advanced template. Modify it. 
+Use multi-line formulas if needed.
+Add new equations, expressions, constants & parameters.
+Edit these header lines if required.
+
+${CONTROL_EXPR.NAME}: Advanced
+${CONTROL_EXPR.DESCR}: 2D ordinary differential equations system sample
+${CONTROL_EXPR.DIF_EQ}:
+  dx/dt = E1 * y + sin(t)
+
+  dy/dt = E2 * x - pow(t, 5)
+
+${CONTROL_EXPR.EXPR}:
+  E1 = C1 * exp(-t) + P1
+  E2 = C2 * cos(2 * t) + P2
+
+${CONTROL_EXPR.ARG}: t
+  start = 0.0
+  finish = 2.0
+  step = 0.01
+
+${CONTROL_EXPR.INITS}:
+  x = 2.0
+  y = 0.0
+
+${CONTROL_EXPR.CONSTS}:
+  C1 = 1.0
+  C2 = 3.0
+
+${CONTROL_EXPR.PARAMS}:
+  P1 = 1.0
+  P2 = -1.0
+
+${CONTROL_EXPR.TOL}: 0.00005`;
+
+const lines = //TEMPLATE_BASIC;
+TEMPLATE_ADVANCED;
+
+console.log(lines);
+console.log('==============================================================================================');
+
+const ivp = getIVP(lines);
+console.log(ivp);
+
+console.log('==============================================================================================');
+console.log(getScriptLines(ivp));

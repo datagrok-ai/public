@@ -23,7 +23,7 @@ ${CONTROL_EXPR.INITS}:
   y = 0`;
 
 /** */
-const TEMPLATE_ADVANCED = `This is an advanced template. Modify it. 
+const TEMPLATE_ADVANCED = `NOTES. This is an advanced template. Modify it. 
 Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters.
 Edit these header lines if required.
