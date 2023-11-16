@@ -145,6 +145,10 @@ export class SurfacePlot extends EChartViewer {
   }
 
   onTableAttached() {
+    if (!this.dataFrame.columns.length) {
+      this._showErrorMessage('Table is empty');
+      return;
+    }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(() => this.render(false)));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
@@ -233,17 +237,17 @@ export class SurfacePlot extends EChartViewer {
     }
   }
 
-  _testColumns() {
-    return this.dataFrame.columns.toList().length >= 3;
-  }
+  // _testColumns() {
+  //   return this.dataFrame.columns.toList().length >= 3;
+  // }
 
   _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 
   render(computeData=false, filter=true) {
-    if (!this._testColumns()) {
-      this._showErrorMessage('The Surface Plot viewer requires a minimum of 3 columns.');
-      return;
-    }
+    // if (!this._testColumns()) {
+    //   this._showErrorMessage('The Surface Plot viewer requires a minimum of 3 columns.');
+    //   return;
+    // }
 
     this.option.grid3D.viewControl.projection = this.projection;
     this.option.backgroundColor = this.bkgcolor;
