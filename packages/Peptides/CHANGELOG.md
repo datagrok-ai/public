@@ -10,6 +10,10 @@
 * Hid sequence space embedding columns and axes selectors.
 * Saving context panels state.
 
+### Bug Fixes
+
+* Fixed accordion wouldn't update after selection in table view.
+
 ## 1.16.0 (2023-11-05)
 
 ### Features

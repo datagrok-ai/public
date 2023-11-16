@@ -693,27 +693,39 @@ export class PeptidesModel {
     };
 
     selection.onChanged.subscribe(() => {
-      if (this.controlFire) {
-        this.controlFire = false;
-        return;
+      try {
+        if (this.controlFire) {
+          this.controlFire = false;
+          return;
+        }
+        if (!this.isUserChangedSelection)
+          selection.copyFrom(getLatestSelection(), false);
+        this.isUserChangedSelection = true;
+      } catch (e) {
+        _package.logger.debug('Peptides: Error on selection changed');
+        _package.logger.debug(e as string);
+      } finally {
+        showAccordion();
       }
-      if (!this.isUserChangedSelection)
-        selection.copyFrom(getLatestSelection(), false);
-      showAccordion();
-      this.isUserChangedSelection = true;
     });
 
     filter.onChanged.subscribe(() => {
-      if (this.controlFire) {
-        this.controlFire = false;
-        return;
+      try {
+        if (this.controlFire) {
+          this.controlFire = false;
+          return;
+        }
+        const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+        if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
+          lstViewer.createLogoSummaryTableGrid();
+          lstViewer.render();
+        }
+      } catch (e) {
+        _package.logger.debug('Peptides: Error on filter changed');
+        _package.logger.debug(e as string);
+      } finally {
+        showAccordion();
       }
-      const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-      if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
-        lstViewer.createLogoSummaryTableGrid();
-        lstViewer.render();
-      }
-      showAccordion();
     });
 
     this.isBitsetChangedInitialized = true;
