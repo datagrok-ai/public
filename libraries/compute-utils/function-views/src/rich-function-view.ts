@@ -558,6 +558,7 @@ export class RichFunctionView extends FunctionView {
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
             'max-width': `${blockWidth}%`,
+            'max-height': '100%',
           } : {
             'flex-grow': '1',
           }}});
@@ -566,7 +567,7 @@ export class RichFunctionView extends FunctionView {
         acc.append(...wrappedViewers);
 
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1'}}));
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
