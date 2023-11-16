@@ -28,6 +28,11 @@ export class Point implements IPoint {
     this.y = y;
   }
 
+  /** Creates a point from an [x, y] array */
+  static fromXY(xy: number[]): Point {
+    return new Point(xy[0], xy[1]);
+  }
+
   /** Distance to the specified point. */
   distanceTo(p: Point): number {
     return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
@@ -582,6 +587,9 @@ export class GridCell {
   /** Gets or sets HTML element for this grid cell. */
   get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
+
+  /** Sets the grid cell value and fires onCellValueEdited if notify is true */
+  setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
 }
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';

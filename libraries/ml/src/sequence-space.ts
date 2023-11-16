@@ -11,11 +11,12 @@ export async function reduceDimensinalityWithNormalization(
   dataCol: BitArray[]|Vector[]|string[],
   methodName: string,
   similarityMetric: BitArrayMetrics | VectorMetrics | StringMetrics | MmDistanceFunctionsNames,
-  options?: any, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
+  options?: any, parallelDistanceWorkers?: boolean, progressFunc?: (epoch: number, epochsLength: number, embedding: number[][]) => void
+): Promise<IReduceDimensionalityResult> {
   const dimensionalityReduceRes: IReduceDimensionalityResult =
         await createDimensinalityReducingWorker(
             {data: dataCol, metric: similarityMetric} as ValidTypes,
-            methodName, options, parallelDistanceWorkers);
+            methodName, options, parallelDistanceWorkers, progressFunc);
 
   dimensionalityReduceRes.embedding = dimensionalityReduceRes.embedding.map((it) => normalize(it));
   return dimensionalityReduceRes;

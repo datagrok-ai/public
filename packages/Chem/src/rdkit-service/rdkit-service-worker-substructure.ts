@@ -3,6 +3,7 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
+import { SubstructureSearchType } from '../constants';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -47,14 +48,23 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return numMalformed;
   }
 
-  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Promise<Uint32Array> {
+  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
+    searchType?: SubstructureSearchType): Promise<Uint32Array> {
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
-
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule); 
+    let queryCanonicalSmiles = '';
     if (queryMol !== null) {
-      const matches = await this.searchWithPatternFps(queryMol, molecules);
+      if (searchType === SubstructureSearchType.EXACT_MATCH) {
+        try {
+          queryCanonicalSmiles = queryMol.get_smiles();
+          //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
+          queryCanonicalSmiles = this._rdKitModule.get_mol(queryMolString).get_smiles();
+        } catch {}
+      }
+      const matches = await this.searchWithPatternFps(queryMol, molecules,
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
       queryMol.delete();
       return matches;
     } else
@@ -62,36 +72,61 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
 
-  async searchWithPatternFps(queryMol: RDMol, molecules: string[]): Promise<Uint32Array> {
+  async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
+    queryCanonicalSmiles: string): Promise<Uint32Array> {
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
-      
-      if (i % this._terminationCheckDelay === 0) //every N molecules check for termination flag
+      const terminationCheckDelay = queryCanonicalSmiles ? this._terminationCheckDelay * 10 : this._terminationCheckDelay;
+
+      if (i % terminationCheckDelay === 0) //every N molecules check for termination flag
         await new Promise((r) => setTimeout(r, 0));
       if (this._requestTerminated)
         return matches.buffer;
 
-      let mol: RDMol | null = null;
-      let isCached = false;
-      try {
-        const cachedMol = this._molsCache?.get(molecules[i]);
-        mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
-        if (cachedMol || this.addToCache(mol))
-          isCached = true;
-        if (mol) {
-          if (mol.get_substruct_match(queryMol) !== '{}')
-            matches.setFast(i, true);
+      if (queryCanonicalSmiles) {
+        matches.setFast(i, molecules[i] === queryCanonicalSmiles);
+      } else {
+        let mol: RDMol | null = null;
+        let isCached = false;
+        try {
+          const cachedMol = this._molsCache?.get(molecules[i]);
+          mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+          if (cachedMol || this.addToCache(mol))
+            isCached = true;
+          if (mol) {
+            if (this.searchBySearchType(mol, queryMol, searchType))
+              matches.setFast(i, true);
+          }
+        } catch {
+          continue;
+        } finally {
+          !isCached && mol?.delete();
         }
-      } catch {
-        continue;
-      } finally {
-        !isCached && mol?.delete();
       }
     }
     return matches.buffer;
+  }
+
+  searchBySearchType(mol: RDMol, queryMol: RDMol, searchType: SubstructureSearchType): boolean {
+    switch (searchType) {
+      case SubstructureSearchType.CONTAINS:
+        return mol.get_substruct_match(queryMol) !== '{}';
+      case SubstructureSearchType.INCLUDED_IN:
+        return queryMol.get_substruct_match(mol) !== '{}';
+      case SubstructureSearchType.NOT_CONTAINS:
+          return mol.get_substruct_match(queryMol) == '{}';
+      case SubstructureSearchType.NOT_INCLUDED_IN:
+          return queryMol.get_substruct_match(mol) == '{}';
+      case SubstructureSearchType.EXACT_MATCH:
+        const match1 = mol.get_substruct_match(queryMol);
+        const match2 = queryMol.get_substruct_match(mol);
+        return match1 !== '{}' && match2 !== '{}';
+      default:
+        throw Error('Unknown search type: ' + searchType);
+    }
   }
 
 
@@ -206,4 +241,33 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._requestTerminated = flag;
   }
 
+  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): string {
+    let mols;
+    try {
+      mols = new this._rdKitModule.MolList();
+      for (let i = 0; i < molecules.length; i++) {
+        const molString = molecules[i];
+        if (!molString)
+          continue;
+        let molSafe;
+        try {
+          molSafe = getMolSafe(molString!, {}, this._rdKitModule);
+          if (molSafe.mol !== null && !molSafe.isQMol)
+            mols.append(molSafe.mol);
+        } finally {
+          molSafe?.mol?.delete();
+        }
+      }
+      let mcsSmarts: string|null = null;
+      if (mols.size() > 1) {
+        mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+          AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
+          BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
+        }));
+      }
+      return mcsSmarts ?? '';
+    } finally {
+      mols?.delete();
+    }
+  }
 }

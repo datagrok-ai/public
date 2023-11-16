@@ -1,5 +1,7 @@
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
+  ACTIVITY = 'Activity',
+  // Deprecated, used for backward compatibility with 1.16.0
   ACTIVITY_SCALED = 'Scaled activity',
   MONOMER = 'AAR',
   POSITION = 'Pos',
@@ -7,6 +9,7 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
+  MEAN = 'Mean',
 }
 
 export enum LST_COLUMN_NAMES {
@@ -29,6 +32,7 @@ export enum TAGS {
   POSITION = 'pos',
   SEPARATOR = 'separator',
   SELECTION = 'selection',
+  MUTATION_CLIFFS_SELECTION = 'mutationCliffsSelection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
   INVARIANT_MAP_SELECTION = 'invariantMapSelection',
@@ -42,6 +46,8 @@ export enum TAGS {
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'Identity template',
   SIMILARITY_TEMPLATE = 'Similarity template',
+  ANALYSIS_COL = 'isAnalysisCol',
+  POSITION_COL = 'isPositionCol',
 }
 
 export enum SEM_TYPES {

@@ -15,6 +15,7 @@ export const tests: {
 } = {};
 
 const autoTestsCatName = 'Auto Tests';
+const demoCatName = 'Demo';
 const wasRegistered: {[key: string]: boolean} = {};
 export let currentCategory: string;
 
@@ -214,44 +215,61 @@ export async function initAutoTests(packageId: string, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
   if (moduleTests[autoTestsCatName] !== undefined ||
-    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
+      moduleTests[demoCatName] !== undefined ||
+      Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
   const moduleAutoTests = [];
+  const moduleDemo = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];
-    if (!(tests && Array.isArray(tests) && tests.length)) continue;
-    for (let i = 0; i < tests.length; i++) {
-      const res = (tests[i] as string).matchAll(reg);
-      const map: {skip?: string, wait?: number, cat?: string} = {};
-      Array.from(res).forEach((arr) => {
-        if (arr[0].startsWith('skip')) map['skip'] = arr[1];
-        else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
-        else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
-      });
-      const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
-        const res = await grok.functions.eval(addNamespace(tests[i], f));
-        if (map.wait) await delay(map.wait);
-        // eslint-disable-next-line no-throw-literal
-        if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-      }, {skipReason: map.skip});
-      if (map.cat) {
-        const cat: string = autoTestsCatName + ': ' + map.cat;
-        test.category = cat;
-        if (moduleTests[cat] === undefined)
-          moduleTests[cat] = {tests: [], clear: true};
-        moduleTests[cat].tests.push(test);
-      } else {
-        moduleAutoTests.push(test);
+    const demo = f.options['demoPath'];
+    if ((tests && Array.isArray(tests) && tests.length)) {
+      for (let i = 0; i < tests.length; i++) {
+        const res = (tests[i] as string).matchAll(reg);
+        const map: {skip?: string, wait?: number, cat?: string} = {};
+        Array.from(res).forEach((arr) => {
+          if (arr[0].startsWith('skip')) map['skip'] = arr[1];
+          else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
+          else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
+        });
+        const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+          const res = await grok.functions.eval(addNamespace(tests[i], f));
+          if (map.wait) await delay(map.wait);
+          // eslint-disable-next-line no-throw-literal
+          if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
+        }, {skipReason: map.skip});
+        if (map.cat) {
+          const cat: string = autoTestsCatName + ': ' + map.cat;
+          test.category = cat;
+          if (moduleTests[cat] === undefined)
+            moduleTests[cat] = {tests: [], clear: true};
+          moduleTests[cat].tests.push(test);
+        } else {
+          moduleAutoTests.push(test);
+        }
       }
+    }
+    if (demo) {
+      const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
+      const test = new Test(demoCatName, f.friendlyName, async () => {
+        grok.shell.lastError = '';
+        await f.apply();
+        await delay(wait ? wait : 2000);
+        if (grok.shell.lastError)
+          throw new Error(grok.shell.lastError);
+      }, {skipReason: f.options['demoSkip']});
+      moduleDemo.push(test);
     }
   }
   wasRegistered[packageId] = true;
-  if (!moduleAutoTests.length) return;
-  moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
+  if (moduleAutoTests.length)
+    moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
+  if (moduleDemo.length)
+    moduleTests[demoCatName] = {tests: moduleDemo, clear: true};
 }
 
 export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
@@ -333,12 +351,12 @@ export async function runTests(options?: {category?: string, test?: string, test
 
 async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
   let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean };
-  const filter = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
+  const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
   const skipReason = filter ? 'skipped' : t.options?.skipReason;
   if (!skip)
     console.log(`Started ${t.category} ${t.name}`);
-  const start = new Date();
+  const start = Date.now();
   try {
     if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
@@ -351,9 +369,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
-  const stop = new Date();
-  // @ts-ignore
-  r.ms = stop - start;
+  r.ms = Date.now() - start;
   if (!skip)
     console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
@@ -361,8 +377,10 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   if (!filter) {
     let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
       'type': 'package', packageName, 'category': t.category, 'test': t.name};
-    if (r.result.constructor == Object)
-      params = {...params, ...r.result};
+    if (r.result.constructor == Object) {
+      const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
+      params = {...params, ...res};
+    }
     grok.log.usage(`${packageName}: ${t.category}: ${t.name}`,
       params, `test-package ${packageName}: ${t.category}: ${t.name}`);
   }
@@ -440,22 +458,26 @@ export async function expectExceptionAsync(action: () => Promise<void>,
   }
 }
 
+const catDF = DG.DataFrame.fromColumns([DG.Column.fromStrings('col', ['val1', 'val2', 'val3'])]);
+
 /**
  * Universal test for viewers. It search viewers in DOM by tags: canvas, svg, img, input, h1, a
  * @param  {string} v Viewer name
  * @param  {DG.DataFrame} df Dataframe to use. Should have at least 3 rows
  * @param  {boolean} options.detectSemanticTypes Specify whether to detect semantic types or not
  * @param  {boolean} options.readOnly If set to true, the dataframe will not be modified during the test
+ * @param  {boolean} options.arbitraryDfTest If set to false, test on arbitrary dataframe
+ * (one categorical column) will not be performed
  * @param  {object} options List of options (optional)
  * @return {Promise<void>} The test is considered successful if it completes without errors
  */
 export async function testViewer(v: string, df: DG.DataFrame,
-  options?: {detectSemanticTypes?: boolean, readOnly?: boolean}): Promise<void> {
+  options?: {detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean}): Promise<void> {
   if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
-  const tv = grok.shell.addTableView(df);
+  let tv = grok.shell.addTableView(df);
   const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
-  let selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
-    ${viewerName} input,${viewerName} h1,${viewerName} a`;
+  const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
+    ${viewerName} input,${viewerName} h1,${viewerName} a,${viewerName} .d4-viewer-error`;
   const res = [];
   try {
     let viewer = tv.addViewer(v);
@@ -489,16 +511,29 @@ export async function testViewer(v: string, df: DG.DataFrame,
     tv.resetLayout();
     res.push(Array.from(tv.viewers).length);
     tv.loadLayout(layout);
-    selector = `${viewerName} ${tag}`;
-    await awaitCheck(() => document.querySelector(selector) !== null,
+    const selector1 = `${viewerName} ${tag}`;
+    await awaitCheck(() => document.querySelector(selector1) !== null,
       'cannot load viewer from layout', 3000);
     res.push(Array.from(tv.viewers).length);
     viewer = Array.from(tv.viewers).find((v: any) => v.type !== 'Grid')!;
     expectArray(res, [2, 1, 2]);
     expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
+    if (options?.arbitraryDfTest !== false) {
+      grok.shell.closeAll();
+      await delay(100);
+      tv = grok.shell.addTableView(catDF);
+      try {
+        viewer = tv.addViewer(v);
+      } catch (e) {
+        grok.shell.closeAll();
+        DG.Balloon.closeAll();
+        return;
+      }
+      await awaitCheck(() => document.querySelector(selector) !== null,
+        'cannot load viewer on arbitrary dataset', 3000);
+    }
   } finally {
-    tv.close();
-    grok.shell.closeTable(df);
+    grok.shell.closeAll();
     DG.Balloon.closeAll();
   }
 }

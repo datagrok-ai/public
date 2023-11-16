@@ -79,7 +79,7 @@ export function splitterAsFastaSimple(seq: any): string[] {
  */
 export function getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
   return (seq: string) => {
-    return seq.split(separator, limit);
+    return !seq ? [] : seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
   };
 }
 

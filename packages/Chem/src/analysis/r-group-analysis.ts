@@ -52,7 +52,7 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
-    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis',
+    helpUrl: '/help/datagrok/solutions/domains/chem/chem.md#r-groups-analysis',
   })
     .add(ui.div([
       sketcher,

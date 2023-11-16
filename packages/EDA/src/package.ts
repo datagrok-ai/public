@@ -8,10 +8,12 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS, computeUMAP, computeTSNE, computeSPE} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
-  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
+  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
+
+import {oneWayAnova} from './stat-tools';
 
 export const _package = new DG.Package();
 
@@ -25,14 +27,14 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: ML | Dimension Reduction | PCA...
+//top-menu: ML | Dimensionality Reduction | PCA...
 //name: PCA
-//description: Principal component analysis (PCA).
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [Number of components.]
-//input: bool center = false {category: Hyperparameters} [Indicating whether the variables should be shifted to be zero centered.]
-//input: bool scale = false {category: Hyperparameters} [Indicating whether the variables should be scaled to have unit variance.]
+//description: Principal component analysis (PCA)
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2 {caption: Components} [Number of components.]
+//input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
+//input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
@@ -42,15 +44,15 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return pcaTable;
 }
 
-//top-menu: ML | Dimension Reduction | UMAP...
+//top-menu: ML | Dimensionality Reduction | UMAP...
 //name: UMAP
-//description: Uniform Manifold Approximation and Projection (UMAP).
+//description: Uniform Manifold Approximation and Projection (UMAP)
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
+//input: int components = 2 {caption: Components; min: 1; max: 20; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
 //input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
 //input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
-//input: double minDist = 0.1 {caption: Minimum distance; category: Hyperparameters} [The effective minimum distance between embedded points.]
+//input: double minDist = 0.1 {caption: Minimum distance; min: 0; max: 1; category: Hyperparameters} [The effective minimum distance between embedded points.]
 //input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
 //output: dataframe result {action:join(table)}
 export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
@@ -59,9 +61,9 @@ export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, compone
   return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
 }
 
-//top-menu: ML | Dimension Reduction | t-SNE...
+//top-menu: ML | Dimensionality Reduction | t-SNE...
 //name: t-SNE
-//description: t-distributed stochastic neighbor embedding (t-SNE).
+//description: t-distributed stochastic neighbor embedding (t-SNE)
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
 //input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
@@ -75,9 +77,9 @@ export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, compone
   return await computeTSNE(features, components, learningRate, perplexity, iterations);
 }
 
-//top-menu: ML | Dimension Reduction | SPE...
+//top-menu: ML | Dimensionality Reduction | SPE...
 //name: SPE
-//description: Stochastic proximity embedding (SPE).
+//description: Stochastic proximity embedding (SPE)
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
 //input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
@@ -92,7 +94,7 @@ export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimensio
   return await computeSPE(features, dimension, steps, cycles, cutoff, lambda);
 }
 
-//top-menu: ML | Multivariate Analysis (PLS)...
+//top-menu: ML | Analyze | Multivariate Analysis...
 //name: Multivariate Analysis (PLS)
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //input: dataframe table
@@ -160,7 +162,7 @@ export async function demoMultivariateAnalysis(): Promise<any>  {
 }
 
 //name: Generate linear separable dataset
-//description: Generates linear separble dataset for testing binary classificators.
+//description: Generates linear separble dataset for testing binary classificators
 //input: string name = 'Data' {caption: name; category: Dataset}
 //input: int samplesCount = 1000 {caption: samples; category: Size}
 //input: int featuresCount = 2 {caption: features; category: Size}
@@ -176,7 +178,7 @@ export async function testDataLinearSeparable(name: string, samplesCount: number
 }
 
 //name: Generate linear non-separable dataset
-//description: Generates linear non-separble dataset for testing binary classificators.
+//description: Generates linear non-separble dataset for testing binary classificators
 //input: string name = 'Data' {caption: name; category: Dataset}
 //input: double sigma = 90  {caption: sigma; category: Hyperparameters} [RBF-kernel paramater]
 //input: int samplesCount = 1000 {caption: samples; category: Size}
@@ -317,4 +319,17 @@ export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: st
 //output: dataframe table
 export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
   return await getPrediction(df, model); 
+}
+
+//top-menu: ML | Analyze | ANOVA...
+//name: ANOVA
+//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
+//input: dataframe table
+//input: column factor {type: categorical}
+//input: column feature {type: numerical}
+//input: double significance = 0.05 [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
+//input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
+export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
+  const res = oneWayAnova(factor, feature, significance, validate);
+  addOneWayAnovaVizualization(table, factor, feature, res);  
 }

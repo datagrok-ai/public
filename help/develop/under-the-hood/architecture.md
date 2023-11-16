@@ -72,7 +72,7 @@ requests to the server. In that mode, it lets users import data of non-trivial s
 local files in many popular data formats, clean and transform it using some tools and routines, interactively visualize
 it, and export the data. Using the server-based capabilities, it gets to another level by centrally managing data
 connections, enabling data governance and provenance, enabling scripting, providing data modeling capabilities, and
-dozens of other features outlined in our [knowledge base](../../home.md).
+dozens of other features outlined in our [knowledge base](../../datagrok/datagrok.md).
 
 In the results, Datagrok is an application that enables users to ingest, transform, analyze, visualize, model, and share
 data by combining powerful client and server capabilities. The application is highly flexible and extensible and allows

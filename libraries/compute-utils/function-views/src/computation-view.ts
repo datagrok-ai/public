@@ -49,7 +49,8 @@ export abstract class ComputationView extends FunctionView {
     await super.onFuncCallReady();
     await this.getPackageUrls();
     this.buildRibbonMenu();
-    this.changeViewName(this.parentCall!.func.friendlyName);
+    if (this.parentCall?.func)
+      this.changeViewName(this.parentCall.func.friendlyName);
   }
 
   /** Override to customize getting mocks
@@ -83,6 +84,7 @@ export abstract class ComputationView extends FunctionView {
   */
   getAbout: (() => Promise<string>) | null = async () => {
     const pack = await grok.dapi.packages.find(this.parentCall!.func.package.id);
+    //@ts-ignore
     return pack ? `${pack.friendlyName}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
   };
 

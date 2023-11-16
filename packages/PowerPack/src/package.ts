@@ -6,7 +6,6 @@ import {welcomeView} from './welcome-view';
 import {compareColumns} from './compare-columns';
 import {AddNewColumnDialog} from './dialogs/add-new-column';
 import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/formula-lines';
-import {DistributionProfilerViewer} from './distribution-profiler';
 import {SystemStatusWidget} from './widgets/system-status-widget';
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
@@ -17,8 +16,8 @@ import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wi
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
-import {TableView, VIEWER} from 'datagrok-api/dg';
 import {windowsManagerPanel} from './windows-manager';
+import {initSearch} from "./search/power-search";
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -36,19 +35,11 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
   return new AddNewColumnDialog(call);
 }
 
-//name: distributionProfiler
-//tags: viewer
-//output: viewer result
-export function _distributionProfiler(): DistributionProfilerViewer {
-  return new DistributionProfilerViewer();
-}
-
 //name: welcomeView
-//tags: autostart
 //meta.autostartImmediate: true
-export function _welcomeView(): void {
-  if (_properties['showWelcomeView'])
-    welcomeView();
+//output: view home
+export function _welcomeView(): DG.View | undefined {
+  return welcomeView();
 }
 
 //output: widget result
@@ -159,7 +150,7 @@ export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesD
 grok.events.onContextMenu.subscribe((args) => {
   const src = args.args.context;
   if (src instanceof DG.ScatterPlotViewer ||
-     (src instanceof DG.Viewer && src.getOptions()['type'] == VIEWER.LINE_CHART)) {
+     (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.LINE_CHART)) {
     const menu = args.args.menu.find('Tools');
     if (menu != null)
       menu.item('Formula Lines...', () => {formulaLinesDialog(src);});
@@ -168,6 +159,7 @@ grok.events.onContextMenu.subscribe((args) => {
 
 //tags: init
 export async function powerPackInit() {
+  initSearch();
   _properties = await _package.getProperties();
 }
 
@@ -178,8 +170,8 @@ export function windowsManager() {
 }
 
 //name: viewerDialog
-//description: Open "Viewer Gallery" dialog 
-//input: dynamic tv 
+//description: Open "Viewer Gallery" dialog
+//input: dynamic tv
 export function viewerDialog(tv: DG.TableView) {
   if (tv instanceof DG.TableView)
     return viewersDialog(tv, tv.table!);
@@ -193,7 +185,7 @@ export function viewerGallery(): void {
       const panel = view.getRibbonPanels();
       panel[0][1].remove();
 
-      const icon = ui.iconFA('', () => {viewersDialog(view as TableView, (view as TableView).table!);}, 'Add viewer');
+      const icon = ui.iconFA('', () => {viewersDialog(view as DG.TableView, (view as DG.TableView).table!);}, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
       const btn = ui.div([icon]);

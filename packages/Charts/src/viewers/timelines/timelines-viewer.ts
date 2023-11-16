@@ -240,7 +240,7 @@ export class TimelinesViewer extends EChartViewer {
     const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
 
     if (strColumns.length < 1 || numColumns.length < 1) {
-      this.showErrorMessage('Not enough data to produce the result.');
+      this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
 
@@ -640,7 +640,7 @@ export class TimelinesViewer extends EChartViewer {
     this.updateContainers();
     if (!this.splitByColumnName || ((!this.startColumnName && !this.endColumnName) &&
         (!this.eventsColumnNames || this.eventsColumnNames.length === 0))) {
-      this.showErrorMessage('Not enough data to produce the result.');
+      this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
     this.option.series[0].data = this.getSeriesData();

@@ -2,6 +2,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import { MALFORMED_DATA_WARNING_CLASS } from '../constants';
 
 export function malformedDataWarning(fingerprintCol: (BitArray | null)[], column: DG.Column): number[] {
   const malformedData: number[] = [];
@@ -17,7 +18,7 @@ export function malformedDataWarning(fingerprintCol: (BitArray | null)[], column
       for (const i of malformedData)
         column.dataFrame.selection.set(i!, true);
     });
-    grok.shell.warning(ui.div([ui.divText(message), selectRowsButton]));
+    grok.shell.warning(ui.div([ui.divText(message, MALFORMED_DATA_WARNING_CLASS), selectRowsButton]));
   }
   return malformedData as number[];
 }

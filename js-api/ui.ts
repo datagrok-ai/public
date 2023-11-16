@@ -37,6 +37,7 @@ import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
+import {ItemsGrid} from "./src/ui/items-grid";
 
 
 let api = <any>window;
@@ -126,7 +127,9 @@ export function canvas(width: number | null = null, height: number | null = null
   return result as HTMLCanvasElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h1');
   if (typeof s === 'string')
@@ -136,7 +139,9 @@ export function h1(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h2');
   if (typeof s === 'string')
@@ -146,7 +151,9 @@ export function h2(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h3');
   if (typeof s === 'string')
@@ -157,13 +164,14 @@ export function h3(s: string | Element, options: string | ElementOptions | null 
 }
 
 /** Creates an accordion with dynamically populated panes.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/accordion}
  * @returns {Accordion} */
 export function accordion(key: any = null): Accordion {
   return Accordion.create(key);
 }
 
 /**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param {Object} pages - list of page factories
  * @param {boolean} vertical
  * @returns {TabControl} */
@@ -178,7 +186,8 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
   return tabs;
 }
 
-/** Returns DivElement with the specified inner text
+/** Returns DivElement with the specified inner text.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {string} text
  * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
@@ -193,12 +202,15 @@ export function tags(entity: Entity): HTMLElement {
   return api.grok_UI_Tags(entity.dart);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown}
+ */
 export function markdown(text: string): HTMLElement {
   return api.grok_UI_Markdown(text);
 }
 
 /** Returns a font-awesome icon with the specified name, handler, and tooltip.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/icons}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/icons}
  * @param {string} name - icon name (omit the "fa-" prefix)
  * @param {Function} handler
  * @param {String} tooltipMsg
@@ -215,7 +227,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+export function iconImage(name: string, path: string,
+                          handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
+                          tooltipMsg: string | null = null,
+                          options: ElementOptions | null = null
+                          ): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('image-icon');
@@ -226,7 +242,7 @@ export function iconImage(name: string, path: string, handler: ((this: HTMLEleme
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
-  return i;
+  return _options(i, options);
 }
 
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
@@ -306,7 +322,8 @@ export function renderInline(x: HTMLElement): HTMLElement {
 }
 
 
-/** Renders inline text, calling [renderMarkup] for each non-HTMLElement
+/** Renders inline text, calling [renderMarkup] for each non-HTMLElement.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {object[]} objects
  * @returns {HTMLElement}. */
 export function inlineText(objects: any[]): HTMLElement {
@@ -329,6 +346,9 @@ export function div(children: any[] | string | HTMLElement = [], options: string
   return d;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar} 
+ */
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
   let root: HTMLDivElement | null;
   let divContent: HTMLElement[] = [];
@@ -360,6 +380,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 }
 
 /** Div flex-box container that positions child elements vertically.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -368,10 +389,11 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
 }
 
 /** Div flex-box container that positions child elements horizontally.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
-export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
@@ -380,16 +402,23 @@ export function card(content: HTMLElement): HTMLDivElement {
   return div([content], 'd4-item-card');
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+ */
 export function loader(): any {
   return api.grok_UI_Loader();
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
+ */
 export function setUpdateIndicator(element: HTMLElement, updating: boolean = true): void {
   return api.grok_UI_SetUpdateIndicator(element, updating);
 }
 
 /**
- * Creates a button with the specified text, click handler, and tooltip
+ * Creates a button with the specified text, click handler, and tooltip.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons}
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
@@ -403,7 +432,8 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
- * Creates a combo popup with the specified icons and items
+ * Creates a combo popup with the specified icons and items.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
@@ -422,7 +452,9 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
-/** Creates an html table based on [map]. */
+/** Creates an html table based on [map]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
+*/
 export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
   return api.grok_UI_TableFromMap(map);
 }
@@ -439,17 +471,23 @@ export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) |
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
-/** Waits for `Future<Element>` function to complete and collect its result.*/
+/** Waits for `Future<Element>` function to complete and collect its result.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+*/
 export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
-/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.*/
+/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
 
-/** Creates a visual element representing list of [items]. */
+/** Creates a visual element representing list of [items]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
+*/
 export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
   const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
   if (options?.processNode != null)
@@ -457,7 +495,9 @@ export function list(items: any[], options?: {processNode?: (node: HTMLElement) 
       options.processNode(c as HTMLElement);
   return host;
 }
-
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/iframe}
+ */
 export function iframe(options?: {src?: string, width?: string, height?: string}) {
   let frame = element('iframe') as HTMLIFrameElement;
   if (options?.src != null)
@@ -489,6 +529,9 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/image}
+ */
 export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
@@ -527,7 +570,9 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog]. */
+/** Creates a [Dialog]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
+*/
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
@@ -548,6 +593,9 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/range-slider}
+ */
 export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false, style: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
   let rs = RangeSlider.create(vertical, style);
   rs.setValues(minRange, maxRange, min, max);
@@ -556,7 +604,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
 
 /**
  * Creates a virtual list widget.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/virtual-view}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/views/virtual-view}
  * @param {number} length - number of elements
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
@@ -584,6 +632,9 @@ export function popupMenu(items: any): void {
   menu.show();
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/drag-and-drop}
+ */
 export function makeDraggable<T>(e: Element,
     options?: {
       allowCopy?: () => boolean,
@@ -636,11 +687,11 @@ export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
 }
 
 export function inputs(inputs: Iterable<InputBase>, options: any = null) {
-  return form([...inputs], options);
+  return form([...inputs], options, true);
 }
 
 /** Creates new nodes tree.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tree-view}
  * @returns {TreeViewGroup} */
 export function tree(): TreeViewGroup {
   return TreeViewGroup.tree();
@@ -665,10 +716,19 @@ export namespace input {
     return input;
   }
 
+  export function grid(items: any[], properties: Property[]): ItemsGrid {
+    return new ItemsGrid(items, properties);
+  }
+
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
+
+  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
+    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+  }
+
 
   // export function bySemType(semType: string) {
   //
@@ -703,12 +763,12 @@ export function intInput(name: string, value: number | null, onValueChanged: Fun
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
-export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null): InputBase<number | null> {
-  return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
+export function sliderInput(name: string, value: number | null, min: number, max: number, step: number | null = null, onValueChanged: Function | null = null): InputBase<number | null> {
+  return new InputBase(api.grok_SliderInput(name, value, min, max, step), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
-  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
+  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items, options), onValueChanged);
 }
 
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
@@ -770,7 +830,7 @@ export function radioInput(name: string, value: string, items: string[], onValue
 }
 
 /**
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
  * @returns {rxjs.Observable} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
@@ -874,6 +934,29 @@ export class tools {
       });
     });
   }
+
+  static resizeFormLabels(element: HTMLElement): void {
+    this.waitForElementInDom(element).then((form)=>{
+      if(!form.classList.contains('ui-form-condensed')) {
+        form.classList.remove('ui-form');
+        let labels: number[] = [];
+        let formLabels = $(form).find('label.ui-input-label');
+        
+        formLabels.each((i)=>{
+            let renderWidth = formLabels[i]!.getBoundingClientRect().width;
+            labels.push(renderWidth);
+        });
+        
+        formLabels.each((i)=>{
+          let label = formLabels[i] as HTMLElement;
+          label.style.minWidth = String(Math.min(...labels))+'px';
+          label.style.maxWidth = String(Math.max(...labels))+'px';
+        });
+
+        form.classList.add('ui-form')
+      }
+    });
+  }
 }
 
 /** Represents a tooltip. */
@@ -884,10 +967,52 @@ export class Tooltip {
     api.grok_Tooltip_Hide();
   }
 
-  /** Associated the specified visual element with the corresponding item. */
+  /** Associated the specified visual element with the corresponding item. 
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
+  */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
-    if (tooltip != null)
+    if (tooltip != null){
       api.grok_Tooltip_SetOn(element, tooltip);
+
+        tools.waitForElementInDom(element).then((el)=>{ 
+          if(el.classList.contains('d4-disabled')) {
+            let overlay = document.createElement('span');
+            overlay.style.position = 'fixed';
+
+            if ($('body').has('.d4-tooltip-overlays').length !=0)
+              $('.d4-tooltip-overlays').append(overlay)
+            else
+              $('body').append(div([overlay],'d4-tooltip-overlays'));
+            
+            let interval = setInterval(()=> {
+              let target = el.getBoundingClientRect();
+              overlay.style.left = String(target.left)+'px';
+              overlay.style.top = String(target.top)+'px';
+              overlay.style.width = String(target.width)+'px';
+              overlay.style.height = String(target.height)+'px';
+              
+              if ($('body').has(el).length == 0) { 
+                overlay.remove();
+                clearInterval(interval);
+              }
+
+            }, 100);
+
+            overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+              api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
+            });
+
+            overlay.addEventListener('mouseleave', (e:MouseEvent)=> {
+              setTimeout(()=>{
+                api.grok_Tooltip_Hide();
+              }, 250)
+            });
+
+          }
+
+        });
+      
+    }
     return element;
   }
 
@@ -940,7 +1065,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
 export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
@@ -1058,7 +1183,7 @@ export class ObjectHandler {
    * It will be suggested to run in the context menu for that object, and
    * also in the "Actions" pane on the context panel.
    *
-   * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
    * @param {string} name - function name
    * @param run - a function that takes exactly one parameter
@@ -1089,6 +1214,9 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box} 
+ */
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
     item = item.root;
@@ -1112,7 +1240,9 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically. */
+/** Div flex-box container that positions child elements vertically. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters} 
+*/
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
   if (resize && items.length > 1){
@@ -1125,37 +1255,64 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
         spliterResize(divider, items[i], items[i + 1])
       }
     });
-    tools.handleResize(b, (w,h)=>{
-      let totalHeigh = 0;
-      let childs = 0;
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          childs++;
-        }
-        totalHeigh = totalHeigh + $(b.childNodes[i]).height();
-      }
 
-      for (let i = 0; i < b.children.length; i++){
-          if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-            $(b.childNodes[i]).css('max-height', (h-totalHeigh)/childs+$(b.childNodes[i]).height());
+    tools.waitForElementInDom(b).then((x)=>{
+      const rootHeight = x.getBoundingClientRect().height;
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultHeigh = 0;
+      let noHeightCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height != '') {
+            defaultHeigh += Number(element.style.height.replace(/px$/, ''));
           } else {
-            $(b.childNodes[i]).css('height', 4);
+            noHeightCount++;
           }
-      }
+        }else{
+          element.style.height = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height == '') {
+            let height = (rootHeight-defaultHeigh-($(b).find('.ui-split-v-divider').length*4))/noHeightCount;
+            element.style.height = String(height)+'px';
+          }
+        }
+      })
 
     });
+
+    tools.handleResize(b, (w,h)=>{
+      const rootHeight = b.getBoundingClientRect().height;
+
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+          let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
+          $(b.childNodes[i]).css('height', String(height)+'px');
+          //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
+        } else {
+          $(b.childNodes[i]).css('height', 4);
+        }
+      }
+      
+    });
+
   } else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally. */
+/** Div flex-box container that positions child elements horizontally. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
+*/
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
 
   if (resize && items.length > 1) {
-
     items.forEach((v, i) => {
       let divider = box();
       divider.className='ui-split-h-divider';
@@ -1164,25 +1321,49 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
         $(b).append(divider)
         spliterResize(divider, items[i], items[i + 1], true);
       }
-    })
+    });
 
-    tools.handleResize(b, (w,h)=>{
-      let totalWidth = 0;
-      let childs = 0;
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          childs++;
-        }
-        totalWidth = totalWidth + $(b.childNodes[i]).width();
-      }
-
-      for (let i = 0; i < b.children.length; i++){
-          if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-            $(b.childNodes[i]).css('max-width', (w-totalWidth)/childs+$(b.childNodes[i]).width());
+    tools.waitForElementInDom(b).then((x)=>{
+      const rootWidth = x.getBoundingClientRect().width;
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultWidth = 0;
+      let noWidthCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width != '') {
+            defaultWidth += Number(element.style.width.replace(/px$/, ''));
           } else {
-            $(b.childNodes[i]).css('width', 4);
+            noWidthCount++;
+          }
+        }else{
+          element.style.width = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width == '') {
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            element.style.width = String(width)+'px';
           }
         }
+      })
+
+    });
+
+    tools.handleResize(b, (w,h)=>{
+      const rootWidth = b.getBoundingClientRect().width;
+
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          $(b.childNodes[i]).css('width', String(width)+'px');
+        } else {
+          $(b.childNodes[i]).css('width', 4);
+        }
+      }
+      
     });
 
   } else {
@@ -1192,66 +1373,78 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 }
 
 function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean = false) {
-  let md: any;
-  divider.onmousedown = onMouseDown;
+let md: any;
+divider.onmousedown = onMouseDown;
 
-  if (horizontal) {
-    divider.style.cssText = `
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
-    max-width: 4px;
-    width: 4px;
-    min-width: 4px;
-    cursor: col-resize;`
-  }
-  else {
-    divider.style.cssText = `
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
-    max-height: 4px;
-    height: 4px;
-    min-height: 4px;
-    cursor: row-resize;`
-  }
+if (horizontal) {
+  divider.style.cssText = `
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+  max-width: 4px;
+  width: 4px;
+  min-width: 4px;
+  cursor: col-resize;`
+}
+else {
+  divider.style.cssText = `
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+  max-height: 4px;
+  height: 4px;
+  min-height: 4px;
+  cursor: row-resize;`
+}
 
-  divider.style.backgroundRepeat = 'no-repeat';
-  divider.style.backgroundPosition = 'center';
+divider.style.backgroundRepeat = 'no-repeat';
+divider.style.backgroundPosition = 'center';
+divider.style.backgroundColor = 'var(--grey-1)';
+
+function onMouseDown(e: any) {
+  if (!nextSibling.classList.contains('ui-box'))
+  nextSibling = nextSibling.parentElement!;
+  if (!previousSibling.classList.contains('ui-box'))
+  previousSibling = previousSibling.parentElement!;
+
+  md = {
+      e,
+      offsetLeft: divider.offsetLeft,
+      offsetTop: divider.offsetTop,
+      topHeight: previousSibling.offsetHeight,
+      bottomHeight: nextSibling.offsetHeight,
+      leftWidth: previousSibling.offsetWidth,
+      rightWidth: nextSibling.offsetWidth
+  };
+
+  divider.style.backgroundColor = 'var(--grey-2)';
+  document.onmousemove = onMouseMove;
+  document.onmouseup = () => {
   divider.style.backgroundColor = 'var(--grey-1)';
-
-  function onMouseDown(e: any) {
-    if (!nextSibling.classList.contains('ui-box'))
-      nextSibling = nextSibling.parentElement!;
-    if (!previousSibling.classList.contains('ui-box'))
-      previousSibling = previousSibling.parentElement!;
-
-      md = {
-        e,
-        offsetLeft: divider.offsetLeft,
-        offsetTop: divider.offsetTop,
-        topHeight: previousSibling.offsetHeight,
-        bottomHeight: nextSibling.offsetHeight,
-        leftWidth: previousSibling.offsetWidth,
-        rightWidth: nextSibling.offsetWidth
-      };
-
-    divider.style.backgroundColor = 'var(--grey-2)';
-    document.onmousemove = onMouseMove;
-    document.onmouseup = () => {
-      divider.style.backgroundColor = 'var(--grey-1)';
-      document.onmousemove = document.onmouseup = null;
-    }
+  document.onmousemove = document.onmouseup = null;
   }
+}
 
-  function onMouseMove(e: any) {
-      const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-      if (horizontal) {
-        delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
-        previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
-        nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-      } else {
-        delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
-        previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
-        nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
-      }
+function onMouseMove(e: any) {
+  const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+  if (horizontal) {
+      delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+      //$(previousSibling).css('width', md.leftWidth + delta.x);
+      //$(nextSibling).css('width', md.rightWidth - delta.x);
+      let newPrevWidth = md.leftWidth + delta.x;
+      let newNextWidth = md.rightWidth - delta.x;
+      previousSibling.style.width = String(newPrevWidth)+'px';
+      nextSibling.style.width = String(newNextWidth)+'px';
+      //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
+      //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
+  } else {
+      delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+      //$(previousSibling).css('height', md.topHeight + delta.y);
+      //$(nextSibling).css('height', md.bottomHeight - delta.y);
+      let newPrevHeight = md.topHeight + delta.y;
+      let newNextHeight = md.bottomHeight - delta.y;
+      previousSibling.style.height = String(newPrevHeight)+'px';
+      nextSibling.style.height = String(newNextHeight)+'px';
+      //previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
+      //nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
   }
+}
 }
 
 export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
@@ -1271,30 +1464,45 @@ export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
   return root;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-75');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-25');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-50');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ */
 export function p(text: string, options: any = null): HTMLParagraphElement {
   let c = document.createElement('p');
   c.textContent = text;
@@ -1303,12 +1511,18 @@ export function p(text: string, options: any = null): HTMLParagraphElement {
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels} 
+ */
 export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
   let e = div(items, options);
   $(e).addClass('ui-panel');
   return e;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ */
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
   let c = document.createElement('label');
   c.textContent = text;
@@ -1317,24 +1531,55 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
-export function form(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export namespace forms {
+
+  export function normal(children: InputBase[], options: {} | null = null){
+    let d = form(children, options, true);
+    return d;
+  }
+
+  export function condensed(children: InputBase[], options: {} | null = null){
+    let d = narrowForm(children, options);
+    return d;
+  }
+
+  export function wide(children: InputBase[], options: {} | null = null){
+    let d = wideForm(children, options);
+    tools.resizeFormLabels(d);
+    return d;
+  }
+  
+}
+
+export function form(children: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLDivElement {
   let d = document.createElement('div');
   if (children != null) {
     $(d).append(children.map(x => render(x)));
   }
   _options(d, options);
   $(d).addClass('ui-form');
+  
+  if (autosize) {
+    tools.resizeFormLabels(d);
+    tools.handleResize(d, (w)=>{
+      let formWidth = d.getBoundingClientRect().width;
+      if (formWidth < 200)
+        d.className = 'ui-form ui-form-condensed';
+      else if (formWidth > 200)
+        d.className = 'ui-form';
+    })
+  }
   return d;
 }
 
 export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
-  let d = form(children, options);
+  let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
 export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
-  let d = form(children, options);
+  let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;
 }
@@ -1378,10 +1623,16 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
+/**  
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs} 
+ */
 export function breadcrumbs(path: string[]): Breadcrumbs {
   return new Breadcrumbs(path);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
+ */
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
   return new DropDown(label, createElement);
 }
@@ -1424,6 +1675,9 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/file-browser}
+ */
 export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): Widget {
   return FilesWidget.create(params);
 }
@@ -1437,7 +1691,9 @@ export namespace tools {
 
 export namespace cards {
 
-  /** Two columns, with picture on the left and details on the right */
+  /** Two columns, with picture on the left and details on the right. 
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/components/summary-card}
+  */
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
     return divH([
       $(picture).addClass('ui-card-picture').get()[0],
@@ -1515,7 +1771,9 @@ export namespace hints {
     return root;
   }
 
-  /** Adds a hint indication to the provided element and returns it. */
+  /** Adds a hint indication to the provided element and returns it.
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/hints}
+   */
   export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
     const id = Math.floor(Math.random() * 1000);
     const hintIndicator = document.createElement('div');
@@ -1526,12 +1784,20 @@ export namespace hints {
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
-
-    const indicatorNode = el.getBoundingClientRect();
+    
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
-    hintIndicator.style.left = indicatorNode.left + 'px';
-    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    let setPosition = setInterval(function () {
+      if ($('body').has(el).length != 0) {
+        const indicatorNode = el.getBoundingClientRect();
+        hintIndicator.style.left = indicatorNode.left + 'px';
+        hintIndicator.style.top = indicatorNode.top + 'px';
+      } else {
+        hintIndicator.remove();
+        clearInterval(setPosition);
+      } 
+    }, 10);
 
     if (clickToClose) {
       $(el).on('click', () => {
@@ -1550,7 +1816,7 @@ export namespace hints {
    * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
    * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
    * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
-   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/wizard-hints}:*/
   export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
     let targetElement: HTMLElement | undefined;
     const overlay = div([], 'ui-hint-overlay');
@@ -1665,174 +1931,202 @@ export namespace css {
   }
 
   export enum alignItems {
-    start = 'align-items-start',
-    end = 'align-items-end',
-    center = 'align-items-center',
-    baseline = 'align-items-baseline',
-    stretch = 'align-items-stretch',
+    start = 'css-align-items-start',
+    end = 'css-align-items-end',
+    center = 'css-align-items-center',
+    baseline = 'css-align-items-baseline',
+    stretch = 'css-align-items-stretch',
   }
 
   export enum justifyContent {
-    start = 'justify-content-start',
-    end = 'justify-content-end',
-    center = 'justify-content-center',
-    between = 'justify-content-between',
-    around = 'justify-content-around',
+    start = 'css-justify-content-start',
+    end = 'css-justify-content-end',
+    center = 'css-justify-content-center',
+    between = 'css-justify-content-between',
+    around = 'css-justify-content-around',
   }
 
   export enum gap {
-    small = 'gap-small',
-    medium = 'gap-medium',
-    large = 'gap-large',
+    small = 'css-gap-small',
+    medium = 'css-gap-medium',
+    large = 'css-gap-large',
   }
 
   export enum margin {
-    none = 'm-none',
-    small = 'm-small',
-    medium = 'm-meidum',
-    large = 'm-large',
-    auto = 'm-auto'
+    none = 'css-m-none',
+    small = 'css-m-small',
+    medium = 'css-m-medium',
+    large = 'css-m-large',
+    auto = 'css-m-auto'
   }
 
   export enum marginX {
-    none = 'mx-none',
-    small = 'mx-small',
-    medium = 'mx-meidum',
-    large = 'mx-large',
-    auto = 'mx-auto'
+    none = 'css-mx-none',
+    small = 'css-mx-small',
+    medium = 'css-mx-medium',
+    large = 'css-mx-large',
+    auto = 'css-mx-auto'
   }
 
   export enum marginY {
-    none = 'my-none',
-    small = 'my-small',
-    medium = 'my-meidum',
-    large = 'my-large',
-    auto = 'my-auto'
+    none = 'css-my-none',
+    small = 'css-my-small',
+    medium = 'css-my-medium',
+    large = 'css-my-large',
+    auto = 'css-my-auto'
   }
 
   export enum marginLeft {
-    none = 'ml-none',
-    small = 'ml-small',
-    medium = 'ml-meidum',
-    large = 'ml-large',
-    auto = 'ml-auto'
+    none = 'css-ml-none',
+    small = 'css-ml-small',
+    medium = 'css-ml-medium',
+    large = 'css-ml-large',
+    auto = 'css-ml-auto'
   }
 
   export enum marginRight {
-    none = 'mr-none',
-    small = 'mr-small',
-    medium = 'mr-meidum',
-    large = 'mr-large',
-    auto = 'mr-auto'
+    none = 'css-mr-none',
+    small = 'css-mr-small',
+    medium = 'css-mr-medium',
+    large = 'css-mr-large',
+    auto = 'css-mr-auto'
   }
 
   export enum marginTop {
-    none = 'mt-none',
-    small = 'mt-small',
-    medium = 'mt-meidum',
-    large = 'mt-large',
-    auto = 'mt-auto'
+    none = 'css-mt-none',
+    small = 'css-mt-small',
+    medium = 'css-mt-medium',
+    large = 'css-mt-large',
+    auto = 'css-mt-auto'
   }
 
   export enum marginBottom {
-    none = 'mb-none',
-    small = 'mb-small',
-    medium = 'mb-meidum',
-    large = 'mb-large',
-    auto = 'mb-auto'
+    none = 'css-mb-none',
+    small = 'css-mb-small',
+    medium = 'css-mb-medium',
+    large = 'css-mb-large',
+    auto = 'css-mb-auto'
   }
 
   export enum padding {
-    none = 'p-none',
-    small = 'p-small',
-    medium = 'p-meidum',
-    large = 'p-large',
+    none = 'css-p-none',
+    small = 'css-p-small',
+    medium = 'css-p-medium',
+    large = 'css-p-large',
   }
 
   export enum paddingX {
-    none = 'px-none',
-    small = 'px-small',
-    medium = 'px-meidum',
-    large = 'px-large',
+    none = 'css-px-none',
+    small = 'css-px-small',
+    medium = 'css-px-medium',
+    large = 'css-px-large',
   }
 
   export enum paddingY {
-    none = 'py-none',
-    small = 'py-small',
-    medium = 'py-meidum',
-    large = 'py-large',
+    none = 'css-py-none',
+    small = 'css-py-small',
+    medium = 'css-py-medium',
+    large = 'css-py-large',
   }
 
   export enum paddingLeft {
-    none = 'pl-none',
-    small = 'pl-small',
-    medium = 'pl-meidum',
-    large = 'pl-large',
+    none = 'css-pl-none',
+    small = 'css-pl-small',
+    medium = 'css-pl-medium',
+    large = 'css-pl-large',
   }
 
   export enum paddingRight {
-    none = 'pr-none',
-    small = 'pr-small',
-    medium = 'pr-meidum',
-    large = 'pr-large',
+    none = 'css-pr-none',
+    small = 'css-pr-small',
+    medium = 'css-pr-medium',
+    large = 'css-pr-large',
   }
 
   export enum paddingTop {
-    none = 'pt-none',
-    small = 'pt-small',
-    medium = 'pt-meidum',
-    large = 'pt-large',
+    none = 'css-pt-none',
+    small = 'css-pt-small',
+    medium = 'css-pt-medium',
+    large = 'css-pt-large',
   }
 
   export enum paddingBottom {
-    none = 'pb-none',
-    small = 'pb-small',
-    medium = 'pb-meidum',
-    large = 'pb-large',
+    none = 'css-pb-none',
+    small = 'css-pb-small',
+    medium = 'css-pb-medium',
+    large = 'css-pb-large',
   }
 
   export enum textSize {
-    small = 'text-small',
-    medium = 'text-meidum',
-    large = 'text-large',
+    small = 'css-text-small',
+    medium = 'css-text-medium',
+    large = 'css-text-large',
   }
 
   export enum textAlign {
-    left = 'text-left',
-    right = 'text-right',
-    center = 'text-center',
+    left = 'css-text-left',
+    right = 'css-text-right',
+    center = 'css-text-center',
   }
 
   export enum textWeight {
-    light = 'text-light',
-    normal = 'text-normal',
-    bolder = 'text-bolder',
-    bold = 'text-bold',
+    light = 'css-text-light',
+    normal = 'css-text-normal',
+    bolder = 'css-text-bolder',
+    bold = 'css-text-bold',
   }
 
   export enum textTransform {
-    lowercase = 'text-lowercase',
-    uppercase = 'text-uppercase',
-    capitalize = 'text-capitalize',
+    lowercase = 'css-text-lowercase',
+    uppercase = 'css-text-uppercase',
+    capitalize = 'css-text-capitalize',
   }
 
   export enum lineHeight {
-    small = 'lh-small',
-    medium = 'lh-medium',
-    large = 'lh-large',
+    small = 'css-lh-small',
+    medium = 'css-lh-medium',
+    large = 'css-lh-large',
   }
 
   export enum background {
-    none = 'bg-none',
-    white = 'bg-white',
-    light = 'bg-light',
+    none = 'css-bg-none',
+    white = 'css-bg-white',
+    light = 'css-bg-light',
   }
 
   export enum shadow {
-    none = 'shadow-none',
-    small = 'shadow-small',
-    medium = 'shado-medium',
-    large = 'shadow-large',
+    none = 'css-shadow-none',
+    small = 'css-shadow-small',
+    medium = 'css-shadow-medium',
+    large = 'css-shadow-large',
+  }
+
+  export enum table {
+    normal = 'css-table',
+    wide = 'css-table-wide'
+  }
+
+  export enum tableSize {
+    small = 'css-table-small',
+    medium = 'css-table-medium',
+    large = 'css-table-large'
+  }
+
+  export enum tableStyle {
+    border = 'css-table-border',
+    linesRow = 'css-table-row-lines',
+    linesCol = 'css-table-col-lines',
+    striped = 'css-table-striped'
+  }
+  
+  export enum border {
+    all = 'css-border',
+    right = 'css-border-right',
+    left = 'css-border-left',
+    top = 'css-border-top',
+    bottom = 'css-border-bottom',
+    leftRight = 'css-border-left-right',
+    topBottom = 'css-border-top-bottom'
   }
 
 }

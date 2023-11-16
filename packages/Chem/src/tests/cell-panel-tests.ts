@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, expectFloat, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdMap} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
@@ -19,6 +19,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
+import { EMPTY_MOLECULE_MESSAGE } from '../constants';
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
@@ -84,7 +85,7 @@ category('cell panel', async () => {
   //TODO: Check if image is returned; Visual test required
   test('structure3d-widget', async () => {
     for (const mol of molFormats)
-      structure3dWidget(mol);
+      await structure3dWidget(mol);
   });
 
 
@@ -157,7 +158,15 @@ category('cell panel', async () => {
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
-    for (const mol of molFormats)
-      getDescriptorsSingle(mol);
-  });
+    for (const mol of molFormats) {
+      const widget: DG.Widget = await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
+      if (mol === CONST.EMPTY) {
+        await awaitCheck(() => widget.root.innerText === EMPTY_MOLECULE_MESSAGE,
+        `empty data handled incorrectly`, 5000);
+      } else {
+        await awaitCheck(() => widget.root.querySelector('table') !== null,
+        `descriptors table hasn\'t been created for ${mol}`, 15000);
+      }
+    }
+  }, { timeout: 60000 });
 });

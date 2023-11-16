@@ -77,8 +77,10 @@ category('screening tools', () => {
 // To do: move to separate Benchmarks category
 category('screening tools: benchmarks', () => {
   before(async () => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    chemCommonRdKit.initRdKitModuleLocal();
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
   });
 
   test('structural alerts', async () => {

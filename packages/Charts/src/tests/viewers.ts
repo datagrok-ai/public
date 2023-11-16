@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 
-
 category('Viewers', () => {
   const df = grok.data.demo.demog(100);
   const viewers = DG.Func.find({package: 'Charts', tags: ['viewer']}).map((f) => f.friendlyName);
@@ -20,7 +19,7 @@ category('Viewers', () => {
         else if (['Tree', 'Sunburst'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
         else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
-      })(), {detectSemanticTypes: true});
+      })(), {detectSemanticTypes: true, arbitraryDfTest: v === 'Globe' ? false : undefined});
     }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
   }
 });

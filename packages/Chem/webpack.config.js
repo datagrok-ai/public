@@ -40,7 +40,7 @@ module.exports = (env, options) => ({
   },
   resolve: {
     fallback: { "url": false },
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx']
+    extensions: ['.wasm', '.ts', '.mjs', '.js', '.json', '.tsx']
   },
   module: {
     rules: [

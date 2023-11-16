@@ -1,8 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {awaitCheck, delay, expect} from '@datagrok-libraries/utils/src/test';
-import {chem} from 'datagrok-api/grok';
-import Sketcher = chem.Sketcher;
+import Sketcher = grok.chem.Sketcher;
 import { KetcherSketcher } from '../ketcher';
 
 const testSmiles = 'c1ccccc1';

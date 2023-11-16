@@ -70,12 +70,13 @@ export class SunburstViewer extends EChartViewer {
       const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
       const pathString: string = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
-      if (params.event.event.shiftKey || params.event.event.ctrlKey) {
+      if (params.event.event.shiftKey || params.event.event.ctrlKey || params.event.event.metaKey) {
         if (!isSectorSelected) {
           selectedSectors.push(pathString);
           this.handleDataframeSelection(path, params.event.event);
         }
-      } else if (params.event.event.shiftKey && params.event.event.ctrlKey) {
+      } else if ((params.event.event.shiftKey && params.event.event.ctrlKey) || 
+                (params.event.event.shiftKey && params.event.event.metaKey)) {
         if (isSectorSelected) {
           const index = selectedSectors.indexOf(pathString);
           selectedSectors.splice(index, 1);

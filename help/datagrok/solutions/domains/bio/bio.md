@@ -1,5 +1,22 @@
 ---
 title: "Bioinformatics"
+keywords:
+  - bioinformatics
+  - macromolecule viewers
+  - interactive visualization of biological data
+  - peptides viewers
+  - peptides SAR
+  - sequence composition
+  - hierarchical clustering macromolecules
+  - oligonucleotides amino acids DNA
+  - sequence-activity relationship
+  - sequence translation
+  - split to monomers
+  - get atomic-level structure
+  - activity cliffs
+  - sequence space
+  - manage monomer libraries
+  - analyze docking results
 ---
 
 ```mdx-code-block
@@ -16,7 +33,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Required. [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md).
 * Optional. [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer/README.md): Visualization of macromolecules in 3D.
 * Optional. [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/README.md): Rendering, editing, managing monomer libraries.
-<!--* Optional. [Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator): Translates oligonucleotide sequences between miltiple representations.-->
+<!--* Optional. [Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator): Translates oligonucleotide sequences between multiple representations.-->
 * Optional. [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides/README.md): SAR analysis for sequences.
 <!--* Optional. [Oligo Batch Calculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator/README.md): Calculators for oligonecleotide properties.-->
 
@@ -60,7 +77,7 @@ Datagrok can ingest data in [multiple file formats](../../../../access/files/sup
 and multiple notations for nucleotide and amino acid sequences, with natural and modified monomers,
 aligned and non-aligned forms.
 
-You can also create macromolecule queries against data sources using built-in quering tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
+You can also create macromolecule queries against data sources using built-in querying tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
 
 ## Exploring biological data
 
@@ -145,9 +162,7 @@ Peptide sequences are color-coded based on amino acid properties. DNA sequences 
 
 For PDB files, cells display a preview of the 3D structure. When you click a cell, a separate viewer opens up, allowing you to rotate, zoom in, or switch the color scheme.
 
-![PDB viewer](img/PDB_viewer.apng)
-
-<!--Retake to correspond to our image requirements re size-->
+![PDB viewer](img/PDB_viewer-800.gif)
 
 ```mdx-code-block
 </TabItem>
@@ -156,9 +171,19 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 
 ### Macromolecule aware viewers
 
-Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
+Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take 
+advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers.
+Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting,
+or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating
+an interconnected system ideal for exploratory data analysis.
 
-Macromolecule-specific viewers inlude [sequence logo](../../../../visualize/viewers/aminoacids-web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize//viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
+Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers
+([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)),
+and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that
+can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx),
+a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),
+a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), 
+and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
 
 <details>
 <summary>Examples</summary>
@@ -269,7 +294,7 @@ To clear the filter, use the checkbox provided. To remove the filter altogether,
 To search a dataset for matching sequences, do the following:
 
 1. In the **Top Menu**, select **Bio** > **Substructure Search...** A dialog opens.
-1. In the dialog, paste or type the sequence in the field rpovided and click **OK**. A new column is added to the table.  
+1. In the dialog, paste or type the sequence in the field provided and click **OK**. A new column is added to the table.  
 
 </details>
 
@@ -277,14 +302,18 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ## Managing monomer libraries
 
-When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer library comes with it automatically. You can add your own libraries by [adding them to a file share](../../../../access/files/files.mdx#connecting-to-file-storage). Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use the info pane to add more libraries or switch between different libraries based on your specific requirements.
+When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer
+library comes with it automatically. You can add your own libraries by [adding them to a file share](../../../../access/files/files.mdx#connecting-to-file-storage).
+Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use 
+the info pane to add more libraries or switch between different libraries based on your specific requirements.
 
 ## Sequence analysis
 
 ### Sequence composition
 
 You can create a
-[sequence logo](https://en.wikipedia.org/wiki/Sequence_logo) to show the letter composition for each position in a sequence. A sequence logo is usually created from a set of aligned sequences
+[sequence logo](https://en.wikipedia.org/wiki/Sequence_logo) to show the letter composition for each position in
+a sequence. A sequence logo is usually created from a set of aligned sequences
 and helps identify patterns and variations within those sequences.
 A common use is to visualize protein-binding sites in DNA or functional motives in proteins.
 
@@ -301,11 +330,11 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 ### Sequence space
 
 Sequence space visualizes a collection of sequences in 2D such that similar sequences are placed close to each other
-(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), distance functions). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatter plot](../../visualize/viewers/3d-scatter-plot.md).
+(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), distance functions). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
 
 Sequence space analysis is particularly useful for separating groups of sequences with common motifs, such as different variants of complementarity-determining regions (CDRs) for antibodies.
 
-![Results of Sequence space run on the sample peptides data](img/Sequence_Space_results.png)<!--retake the png in accordance with our requirements-->
+![Results of Sequence space run on the sample peptides data](img/Sequence_Space_results-800.png)
 
 <details>
 <summary> How to use </summary>
@@ -318,9 +347,13 @@ Sequence space analysis is particularly useful for separating groups of sequence
 
 ### Hierarchical clustering
 
-Hierarchical clustering groups sequences into an interactive [dendrogram](../../visualize/viewers/dendrogram.md). In a dendrogram, distance to the nearest common node represents the degree of similarity between each pair of sequences. Clusters and their sizes can be obtained by traversing the trunk or branches of the tree and deciding at which level to cut or separate the branches. This process lets you identify different clusters based on the desired level of similarity or dissimilarity between data points.
+Hierarchical clustering groups sequences into an interactive [dendrogram](../../../../visualize/viewers/dendrogram.md).
+In a dendrogram, distance to the nearest common node represents the degree of similarity between each pair of sequences.
+Clusters and their sizes can be obtained by traversing the trunk or branches of the tree and deciding at which level
+to cut or separate the branches. This process lets you identify different clusters based on the desired level
+of similarity or dissimilarity between data points.
 
-![Running hierarchical clustering on sequence data](img/Cluster_sequence_results.png)
+![Running hierarchical clustering on sequence data](img/Cluster_sequence_results-800.png)
 
 <details>
 <summary>How to use</summary>
@@ -345,7 +378,7 @@ To perform MSA, do the following:
 
 1. In the Top Menu, select **Bio** > **MSA...** . A dialog opens.
   
-  ![Multiple Sequence Alignment dialog](img/MSA_dialog.png)<!--replace png with a GIF file showing the steps-->
+  ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
 
 1. In the dialog, select the sequence column (**Sequence**) and set other parameters.
    If your data has been clustered already, you can align sequences only within the same cluster. To do so, specify a column containing clusters (**Cluster**).
@@ -412,12 +445,12 @@ or DNA sequences with measured affinity to a specific protein.
 
 To run the activity cliffs analysis, do the following:
 
-1. In the **Menu Ribbn**, select **Bio** > **Activity Cliffs...** A parameter dialog opens.
+1. In the **Menu Ribbon**, select **Bio** > **Activity Cliffs...** A parameter dialog opens.
 1. In the parameter dialog, specify the following:
    1. Select the source table, sequence column, and activity data column to analyze.
    1. Set the similarity cutoff.
    1. Select a dimensionality reduction algorithm and adjust its parameters using the **Gear** icon next to the **Method** control.
-1. Click **OK** to execute the analysis. A scatterlpot visualization is added to the view.
+1. Click **OK** to execute the analysis. A scatterplot visualization is added to the view.
 1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also has detailed information such as similarity score, activity difference score, and other data.
 
 In the scatterplot, the marker color corresponds to the level of the sequence activity, and the size represents the maximum detected activity cliff for that sequence. The opacity of the line connecting sequence pairs corresponds to the size of the activity cliff.
@@ -509,7 +542,7 @@ Use this tab to upload, modify, convert, and share modification patterns [THE FL
 <details>
 <summary>Load a pattern [CHECK]</summary>
 
-To load an existing pattern, in the **Patern options** section, select a pattern to load from the **Load Pattern** dropdown.
+To load an existing pattern, in the **Pattern options** section, select a pattern to load from the **Load Pattern** dropdown.
 
 To load a pattern from a new file, do the following:
 
@@ -607,13 +640,37 @@ This approach could be used for any given case of HELM notation
 in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
 
-![Restoring structure atomic level](../../../../uploads/macromolecules/restoreStructures.gif)<!--retake gif to compy with DG standards-->
+![Restoring structure atomic level](../../../../uploads/macromolecules/restore-structures-800.gif)
 
 <details>
 <summary>How to use</summary>
 
 1. In the **Top Menu**, select **Bio** > **Convert** > **To Atomic Level**. A dialog opens.
-1. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+2. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures
+   of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking
+   the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+
+</details>
+
+### Get region
+
+With Datagrok you can extract a region of sequences in a Macromolecule column.
+The Get Region function maintains `.positionNames` and `.positionLabels` for extracted region.
+The Get Region input form shows Region input if a Macromolecule column is annotated with `.regions` tag (JSON format),
+to easy selection region of interest to extract.
+
+![Get region for Macromolecule](./img/sequence-GetRegion.gif)
+
+<details>
+<summary>How to use</summary>
+
+1. To call Get Region:
+
+    * Select **Bio** > **Convert** > **GetRegion**. A dialog opens. In the dialog select a table and a sequence column.
+    * Click on the **Hamburger** icon of a Macromolecule column. Expand section **Get Region**.
+
+2. Fill in start and end positions of the region of interest, and name of
+   a column. A new column containing sequences of the region of interest is added to the table.
 
 </details>
 

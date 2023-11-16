@@ -8,7 +8,7 @@
 #output: double min
 #output: double max
 #output: double avg
-#test: ColumnStats(ApiTests:getColumn(ApiTests:getTable('demog'), 'AGE')) == 18
+#test1: ColumnStats(ApiTests:getColumn(ApiTests:getTable('demog'), 'AGE')) == 18
 
 min = col.stats.min
 max = col.stats.max

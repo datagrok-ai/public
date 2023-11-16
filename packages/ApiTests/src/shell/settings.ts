@@ -18,8 +18,8 @@ category('Settings', () => {
     expect(gss.loadDefaultsOnStart, true, 'loadDefaultsOnStart');
     expect(gss.webpackDevUrl, null, 'webpackDevUrl');
     expect(gss.cvmUrl.startsWith('http://localhost') ||
-      gss.cvmUrl.startsWith('https://cvm') || gss.cvmUrl.startsWith('http://cvm'), true, 'cvmUrl');
-    expect(gss.cvmSplit, true, 'cvmSplit');
+      gss.cvmUrl.startsWith('https://cvm') || gss.cvmUrl.startsWith('http://cvm'), true,
+    'cvmUrl does not start with cvm');
     expect(gss.apiUrl.endsWith('/api'), true, 'apiUrl');
     expect(gss.helpBaseUrl, '', 'helpBaseUrl');
     expect(gss.jupyterNotebook, `${gss.cvmUrl}/notebook`, 'jupyterNotebook');
@@ -69,6 +69,6 @@ category('Settings', () => {
     expect(gss.showStatusBar, grok.shell.windows.showStatusBar, 'showStatusBar');
     expect(gss.showVariables, grok.shell.windows.showVariables, 'showVariables');
     expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
-    expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
+    // expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
   });
 });

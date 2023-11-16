@@ -124,7 +124,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-host');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -141,7 +141,7 @@ export namespace chem {
     _smarts: string | null = null;
     molFileUnits = Notation.MolBlock;
 
-
+    loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
     extSketcherCanvas = ui.canvas();
     inplaceSketcherDiv: HTMLDivElement | null = null;
@@ -173,6 +173,17 @@ export namespace chem {
 
     get sketcherTypeChanged(): boolean {
       return this._sketcherTypeChanged;
+    }
+
+    get calculating(): boolean {return this.loader.classList.contains('chem-sketcher-loader-show');}
+    set calculating(value: boolean) {
+      if (value) {
+        this.loader.classList.add('chem-sketcher-loader-show');
+        this.loader.classList.remove('chem-sketcher-loader-hide');
+      } else {
+        this.loader.classList.add('chem-sketcher-loader-hide');
+        this.loader.classList.remove('chem-sketcher-loader-show');
+      }
     }
 
     getSmiles(): string {
@@ -212,7 +223,7 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string | null> {
-      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
+      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : this._smarts === null ?
         this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.Smarts) :
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smarts) : '' : this._smarts;
     }
@@ -261,12 +272,20 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
-        extractor
-          .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
-          .then((mol) => this.setMolecule(mol));
-      else
-        this.setMolecule(x);
+          if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
+            this.calculating = true;
+            extractor
+              .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
+              .then((mol) => {
+                mol ? this.setMolecule(mol) : this.setMolecule('');
+              }).catch(() => {
+                this.setMolecule('');
+              }).finally(() => {
+                this.calculating = false;
+              });
+          }
+          else
+            this.setMolecule(x);
     }
 
     constructor(mode?: SKETCHER_MODE) {
@@ -275,7 +294,8 @@ export namespace chem {
         this._mode = mode;
       this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
-      this.emptySketcherLink = ui.divText('Click to edit', 'sketch-link');
+      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link sketch-link');
+      this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       setTimeout(() => this.createSketcher(), 100);
     }
@@ -352,7 +372,7 @@ export namespace chem {
         this.updateExtSketcherContent();
       });
       ui.tooltip.bind(clearButton, 'Clear sketcher');
-      clearButton.classList.add('clear-button');
+      clearButton.classList.add('chem-clear-sketcher-button');
       clearButton.onmouseover = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseenter = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseout = () => {clearButton.style.visibility = 'hidden';};
@@ -425,10 +445,6 @@ export namespace chem {
         if (this.getSmiles() !== newSmilesValue)
           this.setValue(newSmilesValue);
 
-        const currentSmiles = this.getSmiles();
-
-        if (currentSmiles !== newSmilesValue)
-          (e?.target as HTMLTextAreaElement).value = currentSmiles ?? '';
       };
 
       this.molInput.addEventListener('keydown', (e) => {
@@ -478,10 +494,12 @@ export namespace chem {
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
+      this.calculating = false;
       this.sketcherType = currentSketcherType;
 
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
+        this.loader,
         this.host], {style: {height: '90%'}});
 
       return this.inplaceSketcherDiv;
@@ -627,7 +645,7 @@ export namespace chem {
 
   /**
    * Returns the specified number of most diverse molecules in the column.
-   * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}
+   * See example: {@link https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search}
    * @async
    * @param {Column} column - Column with molecules to search in
    * @param {Object} settings - Settings
@@ -674,7 +692,7 @@ export namespace chem {
    * */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
-      column, table, core, prefix: 'R'
+      molecules: column, df: table, core: core, prefix: 'R'
     });
   }
 
@@ -685,10 +703,13 @@ export namespace chem {
    * @param {Column} column - Column with SMILES to analyze.
    * @returns {Promise<string>}
    * */
-  export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false): Promise<string> {
+  export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
+    exactAtomSearch = true, exactBondSearch = true): Promise<string> {
     return await grok.functions.call('Chem:FindMCS', {
       'molecules': column,
       'df': table,
+      'exactAtomSearch': exactAtomSearch,
+      'exactBondSearch': exactBondSearch,
       'returnSmarts': returnSmarts
     });
   }
@@ -703,16 +724,17 @@ export namespace chem {
    * @param {string[]} descriptors - RDKit descriptors to calculate.
    * @returns {Promise<DataFrame>}
    * */
-  export function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_Descriptors(table.dart, column, descriptors, () => resolve(table), (e: any) => reject(e)));
+  export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
+    await api.grok_Chem_Descriptors(table.dart, column, descriptors);
+    return table;
   }
 
   /**
    * Returns available descriptors tree.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    * */
-  export function descriptorsTree(): Promise<object> {
-    return new Promise((resolve, reject) => api.grok_Chem_DescriptorsTree((tree: any) => resolve(JSON.parse(tree)), (e: any) => reject(e)));
+  export async function descriptorsTree(): Promise<object> {
+    return JSON.parse(await api.grok_Chem_DescriptorsTree());
   }
 
   /**
@@ -754,15 +776,14 @@ export namespace chem {
     });
   }
 
-    export function drawMolecule(molString: string, w?: number, h?: number): HTMLDivElement {
-      const molDiv = ui.div();
-      grok.functions
-      .call('Chem:drawMolecule', {
-        'molStr': molString, 'w': w, 'h': h, 'popupMenu': false
-      })
+  export function drawMolecule(molString: string, w?: number, h?: number, popupMenu: boolean = false): HTMLDivElement {
+    const molDiv = ui.div();
+    grok.functions.call('Chem:drawMolecule', {
+      'molStr': molString, 'w': w, 'h': h, 'popupMenu': popupMenu
+    })
       .then((res: HTMLElement) => molDiv.append(res));
-      return molDiv;
-    }
+    return molDiv;
+  }
 
   /**
    * Sketches Molecule sketcher.

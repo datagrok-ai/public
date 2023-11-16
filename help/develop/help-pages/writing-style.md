@@ -120,7 +120,7 @@ several ways:
 
 Avoid using passive voice. When you use passive voice, you imply that the doer of the action is unknown, unimportant, or
 cannot be named for any reason. Because technical writing is action-oriented, the use of active voice is preferred.
-Never end a sentence with a passive word. Place the subject and verd close to each other and put them at the front of a
+Never end a sentence with a passive word. Place the subject and verb close to each other and put them at the front of a
 sentence.
 
 | Instead of                                                                 | Use                                                                |
@@ -232,11 +232,11 @@ Follow these guidelines for punctuation:
 ### Commas and appositives
 
 An appositive is a noun or a phrase placed next to another noun or a phrase to modify it. Appositives can be restrictive
-and nonrestrictive. The following table summarises the use of commas with appositives:
+and nonrestrictive. The following table summarizes the use of commas with appositives:
 
 |              | Restrictive                                                             | Nonrestrictive                                                                               |
 |:-------------|:------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------|
 | Purpose      | Narrow down the meaning                                                 | Provide additional information                                                               |
 | When removed | Meaning changes                                                         | Meaning doesn't change                                                                       |
 | Comma usage  | Don't wrap in commas                                                    | Wrap in commas                                                                               |
-| Example      | Only users _who have preinstalled the package_ can access this feature. | Data augmentation, _oneof the platform capabilities_, is used to push insights to the users. |
+| Example      | Only users _who have preinstalled the package_ can access this feature. | Data augmentation, _one of the platform capabilities_, is used to push insights to the users. |

@@ -1,5 +1,110 @@
 # Curves changelog
 
+## 1.2.14 (2023-11-10)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed droplines min size for rendering
+
+## 1.2.13 (2023-11-09)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed curves not rendering because of undefined x if branch.
+  * Fixed linear fit not rendering.
+
+## 1.2.12 (2023-11-02)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Fixed exception if no x or y coordinates present.
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Property panel changes:
+  * Returned null values if lack of data in aggregated columns
+  * Replaced DG.Stats.fromColumn() with DG.Stats.fromValues()
+
+## 1.2.11 (2023-10-26)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Fixed exception thrown on adding Form viewer.
+
+## 1.2.10 (2023-10-16)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Fixed proportional confidence interval rendering.
+
+## 1.2.9 (2023-10-11)
+
+### Features
+
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Implemented aggregations for series statistics
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Fixed curves if no points present in series
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Property panel changes:
+  * Fixed the color input for the curves
+  * Inserted stat column next to curves column
+  * Fixed parameter column adding
+  * Fixed adding statistics column for null undefined series
+  * Replaced the MultiCurveViewer with CellRenderViewer in the property panel
+  * Fixed statistics calculation and rendering
+* [#2394](https://github.com/datagrok-ai/public/issues/2394): Replaced autostart tag with init tag
+
+## 1.2.8 (2023-09-25)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved the curves demo app
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Don't allow clickToToggle if small cell size
+  * Fixed margins in small cells
+
+## 1.2.7 (2023-09-11)
+
+### Features
+
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Property panel changes:
+  * Added color for the series in the property panel
+  * Added capability to store chart options on the dataframe level in tags
+  * Restructured the property panel
+  * Added dataframe and plot-only switch modes in the property panel
+  * Made the accordion to restore the property panel state
+  * Added proper tooltips on properties
+  * Implemented the capability to switch the plot state on the property panel
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Decreased the sizes for the plot title rendering
+  * Changed the min axes cell width
+  * Added errorModel property
+* [#2100](https://github.com/datagrok-ai/public/issues/2100): Made cell renderer edit mode a resizeable window
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Added documentation about property panel and error model
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added dataBounds checks in case of logarithmic values
+  * Fixed droplines rendering for linear and logarithmic modes
+  * Fixed the tooltip for small cells
+  * Fixed confidence intervals rendering for logarithmic modes
+
+## 1.2.6 (2023-08-25)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added different line styles rendering
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Added documnetation about line styles
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed the curve fitting algorithm
+  * Fixed axes scales
+
 ## 1.2.5 (2023-08-23)
 
 ### Features

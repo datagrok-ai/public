@@ -3,16 +3,16 @@ title: "Regular machine"
 sidebar_position: 1
 ---
 
-Datagrok is based on Docker containers, [database](../develop/under-the-hood/infrastructure.md#database)
-and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage).
+Datagrok is based on Docker containers, [database](../../develop/under-the-hood/infrastructure.md#database)
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage).
 
 Like a regular machine, any bare-metal server or virtual machine, including virtual machines in cloud providers, for
 example, [AWS EC2](https://aws.amazon.com/ec2/), can be used.
 
-As [database](../develop/under-the-hood/infrastructure.md#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud
+As [database](../../develop/under-the-hood/infrastructure.md#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud
 solutions for PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/).
 
-For [persistent file storage](../develop/under-the-hood/infrastructure.md#storage), Datagrok supports a lot of options, including cloud solutions,
+For [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage), Datagrok supports a lot of options, including cloud solutions,
 for example [AWS S3](https://aws.amazon.com/s3/) and Local File System storage.
 
 This document contains instructions to deploy Datagrok using [Docker Compose](https://docs.docker.com/compose/)
@@ -23,11 +23,11 @@ for production usage: one load balancer for Datagrok components and one for CVM 
 
 More information about Datagrok design and components:
 
-* [Architecture](../develop/under-the-hood/architecture.md)
-* [Infrastructure](../develop/under-the-hood/infrastructure.md)
+* [Architecture](../../develop/under-the-hood/architecture.md)
+* [Infrastructure](../../develop/under-the-hood/infrastructure.md)
 
 In case you want to jump-start using Datagrok with minimum manual effort on a local machine,
-check [Local Deployment with Docker Compose](docker-compose.mdx).
+check [Local Deployment with Docker Compose](../docker-compose/docker-compose.mdx).
 
 ## Prerequisites
 

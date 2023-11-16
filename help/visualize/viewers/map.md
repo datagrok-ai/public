@@ -9,6 +9,9 @@ Map viewer shows geospatial data on a map as either markers, or a heat map.
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Map Viewer** icon and click it.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Map');`
+
 When you add a map viewer, it tries to automatically detect columns that contain
 longitude and latitude values.
 

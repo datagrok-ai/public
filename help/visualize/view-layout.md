@@ -11,6 +11,13 @@ and later apply it to a different dataset
 To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
 choose **Clone**.
 
+:::note developers: DataFrame-synchronized tags
+Sometimes, you want presentation-related tags (such as color coding) to be defined on a table level so
+that all derived table views will pick it. In such cases, these tags need to be saved as part of the layout.
+When such layout is applied, these tags are re-applied back to table/column tags. 
+Such a tag should start with "%", i.e. "%myColorCoding".
+:::
+
 ## Viewer layout
 
 Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers/viewers.md).

@@ -2,8 +2,8 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
@@ -68,8 +68,8 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --input: int time_end
 --input: list users
 --input: list packages
---meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneFunctions(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res AS (
@@ -102,8 +102,8 @@ group by res.package, res.id, res.name, res.pid
 --input: int time_end
 --input: list users
 --input: list packages
---meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneLogs(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
@@ -133,8 +133,8 @@ group by res.source
 --input: int time_end
 --input: list users
 --input: list packages
---meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneAudit(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
@@ -157,4 +157,23 @@ select res.name, count(*)
 from res
 where res.pid = any(@packages)
 group by res.name
+--end
+
+
+--name: PackagesInstallationTime
+--input: string date {pattern: datetime}
+--input: list packages
+--meta.cache: all
+--meta.invalidate: 0 0 0 * *
+--connection: System:Datagrok
+select e.event_time, ppp.name as package, v.value::int as time
+from events e
+inner join event_types t on t.id = e.event_type_id and t.source = 'audit' and t.friendly_name = 'package-version-published'
+left join event_parameter_values v 
+inner join event_parameters p on p.id = v.parameter_id and p.name = 'ms' on v.event_id = e.id
+left join event_parameter_values vp 
+inner join event_parameters pp on pp.id = vp.parameter_id and pp.name = 'package' on vp.event_id = e.id 
+inner join packages ppp on ppp.id::text = vp.value
+where @date(e.event_time)
+and (ppp.name = any(@packages) or @packages = ARRAY['all'])
 --end

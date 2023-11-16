@@ -39,7 +39,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     this.initialized = true;
   }
 
-  async render(computeData = true): Promise<void> {
+  override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.moleculeColumn) {

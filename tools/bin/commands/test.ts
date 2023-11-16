@@ -137,7 +137,7 @@ export function test(args: TestArgs): boolean {
         console.log(`Testing ${targetPackage} package...\n`);
 
         let r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
-          return new Promise<resultObject>((resolve, reject) => {            
+          return new Promise<resultObject>((resolve, reject) => {        
             (<any>window).grok.functions.call(`${targetPackage}:test`, {
               'category': options.category,
               'testContext': testContext,
@@ -152,6 +152,7 @@ export function test(args: TestArgs): boolean {
                 failed = true;
                 failReport = `Fail reason: No package tests found${options.category ? ` for category "${options.category}"` : ''}`;
                 resolve({failReport, skipReport, passReport, failed, countReport});
+                return;
               }
 
               const cStatus = df.columns.byName('success');
@@ -174,11 +175,14 @@ export function test(args: TestArgs): boolean {
                   failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
                 }
               }
-              if (!options.verbose)
-                df.rows.removeWhere((r: any) => r.get('success'));
+              // if (!options.verbose)
+              //   df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
               resolve({failReport, skipReport, passReport, failed, csv, countReport});
-            }).catch((e: any) => reject(e));
+            }).catch((e: any) => {
+              let stack = (<any>window).DG.Logger.translateStackTrace(e.stack);
+              resolve({failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: {skip: 0, pass: 0}});
+            });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 

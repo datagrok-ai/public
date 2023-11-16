@@ -4,6 +4,9 @@ title: "Calendar"
 
 Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Calendar');`
+
 General:
 
 |                      |                       |

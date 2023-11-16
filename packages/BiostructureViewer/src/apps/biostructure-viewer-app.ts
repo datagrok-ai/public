@@ -6,6 +6,7 @@ import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {_getPdbHelper} from '../package-utils';
 
 import {_package} from '../package';
+import {BiostructureProps} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
 /** The app for biostructureViewer */
 export class BiostructureViewerApp {
@@ -47,7 +48,7 @@ export class BiostructureViewerApp {
     this.view = grok.shell.addTableView(this.df);
     this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {})) as DG.JsViewer;
+    const viewer: DG.Viewer<BiostructureProps> = (await this.view.dataFrame.plot.fromType('Biostructure', {}));
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
   }
 }

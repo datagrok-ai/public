@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {runTests, tests, TestContext, test as _test, category} from '@datagrok-libraries/utils/src/test';
-import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
 import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
@@ -31,13 +30,13 @@ export async function testConnections(): Promise<DG.DataFrame> {
   // const queriesFriendlyNames: string[] = ['PostgresNormal', 'PostgresLong', 'PostgresWide'];
   const l = connections.length * tables.length * fetchSizes.length;
 
-  const df = DataFrame.fromColumns([Column.string('type', l), Column.string('fetch', l),
-    Column.string('db', l), Column.int('TTFR', l), Column.int('TTC', l)]);
+  const df = DG.DataFrame.fromColumns([DG.Column.string('type', l), DG.Column.string('fetch', l),
+    DG.Column.string('db', l), DG.Column.int('TTFR', l), DG.Column.int('TTC', l)]);
 
   let startTime: number;
   let ttfr: number;
 
-  let callCheck: (value: FuncCall) => boolean;
+  let callCheck: (value: DG.FuncCall) => boolean;
   let ttfrSet = false;
   // @ts-ignore
   grok.functions.onParamsUpdated.pipe(filter((c) => callCheck(c) && !ttfrSet)).subscribe(() => {
@@ -60,9 +59,9 @@ export async function testConnections(): Promise<DG.DataFrame> {
         df.columns.byName('fetch').set(row, fetchSize);
         df.columns.byName('db').set(row, con);
 
-        callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize &&
+        callCheck = (c: DG.FuncCall) => c.aux.get('fetchSize') == fetchSize &&
             // @ts-ignore
-            (c.func as DataQuery).connection.name == con;
+            (c.func as DG.DataQuery).connection.name == con;
 
         const preTable = con.startsWith('Snowflake') ? 'TEST.' : '';
 
@@ -107,12 +106,13 @@ const skip = ['Redshift', 'Athena'];
 export async function initTests() {
   const connections = await grok.dapi.connections.list();
   for (const c of connections) {
-    category(('Providers:' + c.dart.z), () => {
+    const cat = c.dart.dataSource ?? c.dart.z;
+    category(('Providers:' + cat), () => {
       _test(c.friendlyName, async () => {
         const res = await c.test();
         if (res !== 'ok')
           throw new Error(res);
-      }, skip.includes(c.dart.z) ? {skipReason: 'SKIP'} : undefined);
-    });
+      }, skip.includes(cat) ? {skipReason: 'SKIP'} : undefined);
+    }, {timeout: 5000});
   }
 }

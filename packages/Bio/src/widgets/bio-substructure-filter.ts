@@ -16,8 +16,10 @@ import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macro
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {debounceTime} from 'rxjs/operators';
 
+import {_package} from '../package-test';
+
 export class BioSubstructureFilter extends DG.Filter {
-  bioFilter: FastaFilter | SeparatorFilter | HelmFilter | null = null;
+  bioFilter: BioFilterBase | null = null;
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
   onBioFilterChangedSubs?: Subscription;
@@ -75,6 +77,10 @@ export class BioSubstructureFilter extends DG.Filter {
     let onChangedEvent: any = this.bioFilter.onChanged;
     onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onBioFilterChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onInputChanged());
+
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_value: any) => {
+      this.bioFilter?.resetFilter();
+    }));
   }
 
   detach() {
@@ -114,6 +120,7 @@ export class BioSubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onInputChanged(): Promise<void> {
+    _package.logger.debug('Bio: BioSubstructureFilter._onInputChanged(), start');
     if (!this.isFiltering) {
       this.bitset = null;
       this.dataFrame?.rows.requestFilter();
@@ -123,7 +130,7 @@ export class BioSubstructureFilter extends DG.Filter {
     } else {
       this.calculating = true;
       try {
-        this.bitset = await this.bioFilter?.substrucrureSearch(this.column!)!;
+        this.bitset = await this.bioFilter?.substructureSearch(this.column!)!;
         this.calculating = false;
         this.dataFrame?.rows.requestFilter();
       } finally {
@@ -147,9 +154,11 @@ abstract class BioFilterBase {
   set substructure(s: string) {
   }
 
-  async substrucrureSearch(_column: DG.Column): Promise<DG.BitSet | null> {
+  async substructureSearch(_column: DG.Column): Promise<DG.BitSet | null> {
     return null;
   }
+
+  abstract resetFilter(): void;
 }
 
 class FastaFilter extends BioFilterBase {
@@ -175,8 +184,12 @@ class FastaFilter extends BioFilterBase {
     this.substructureInput.value = s;
   }
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    return await linearSubstructureSearch(this.substructure, column);
+  async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return linearSubstructureSearch(this.substructure, column);
+  }
+
+  resetFilter(): void {
+    this.substructureInput.value = '';
   }
 }
 
@@ -211,8 +224,8 @@ export class SeparatorFilter extends FastaFilter {
     this.substructureInput.value = s;
   }
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    return await linearSubstructureSearch(this.substructure, column, this.colSeparator);
+  async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return linearSubstructureSearch(this.substructure, column, this.colSeparator);
   }
 }
 
@@ -276,11 +289,17 @@ export class HelmFilter extends BioFilterBase {
     }
   }
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+  async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
     ui.setUpdateIndicator(this._filterPanel, true);
     await delay(10);
     const res = await helmSubstructureSearch(this.substructure, column);
     ui.setUpdateIndicator(this._filterPanel, false);
     return res;
+  }
+
+  resetFilter(): void {
+    console.debug('Bio: HelmFilter.resetFilter()');
+    this.helmSubstructure = '';
+    this.updateFilterPanel(this.substructure);
   }
 }

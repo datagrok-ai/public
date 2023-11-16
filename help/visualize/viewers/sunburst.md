@@ -2,90 +2,56 @@
 title: "Sunburst"
 ---
 
-A [sunburst diagram](https://en.wikipedia.org/wiki/Pie_chart#Ring),
-also referred to as a Ring Chart, Sunburst Chart, or Multi-level Pie Chart,
-is a visual representation used to illustrate hierarchical categories as a series of rings.
-
-The central circle represents the root node,
-and the categories within the hierarchy extend outward in rings.
-
-Each ring corresponds to a specific attribute or column.
-For example, in the picture below, the inner circle represents the "Sex" column with categories "Male" and "Female".
-The next ring represents the boolean "Control" status, indicating whether an individual is in the control group or not.
-Finally, the outer circle represents the "Race" column.
-
-![Sunburst viewer](sunburst-viewer.png)
-
-The rings in a sunburst diagram are divided and sliced
-based on their hierarchical relationship to the parent slice.
-Each sector on the outer rings represents a combination of categories from the inner rings as well.
-
-The size of the sector indicates the relative representation
-of this specific combination of categories within the dataset.
-
-In the provided picture, the large orange sector on the outer ring represents the
-proportion of individuals who belong to the "Caucasian" race,
-have a "False" control status, and are classified as "Male" in terms of sex.
-
-## Hierarchical data exploration
-
-Use the Sunburst viewer to explore the hierarchical nature of your dataset:
-
-* To **zoom** to a category, click it.
-* To **zoom out**, click the blue circle in the middle.
-* To **reset view**, press Ctrl+Shift+A.
+A sunburst viewer shows hierarchical data. Use a sunburst to understand data composition and explore patterns in multi-level categories.
 
 ![Sunburst interactive data exploration](sunburst-interactive.gif)
 
-In addition to drilling down into categories, you can select a category by using Ctrl+Click.
-When you select a category in the Sunburst viewer,
-other viewers within the application will respond to the data selection
-and dynamically update their representation.
+The center represents the top hierarchy, with each outer ring representing subsequent levels. The segment size within a ring shows its relative proportion compared to other categories at that level. Hover over any segment to see details or click it to drill down. To go back to the previous view, click the area in the center. To reset the viewer, press Ctrl+Shift+A.
 
-![Sunburst categories selection](sunburst-categories-selection.gif)
+Sunburst viewer also works with molecules. For example, you can use it to analyze structures based on shared R-groups.
 
-## Creating a Sunburst viewer
+To add a sunburst, on the **Top Menu**, click the **Add viewer** icon and select **Sunburst**.
 
-To create a **Sunburst** viewer, navigate to the **Main Menu**
-and select **Add > Javascript Viewers > Charts > Sunburst**.
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Sunburst');`
 
-When you add a sunburst viewer in Datagrok, the platform selects all columns
-with categorical data.
+:::note
 
-## Configuring a Sunburst viewer
+To use the sunburst viewer, your data must have at least 2 levels of categorization.
 
-You can set the used columns,
-and customize some minor visualization options.
-To do that, click the **Gear** icon on top of the viewer and use the **Data**
-and **Misc** info pane
-on the **Context Panel** to manage the viewer’s settings.
+:::
 
-For example, you can:
+## Configuring sunburst
 
-* Select data source for the viewer via **table** control.
-* Set the categorical columns to display via **Hierarchy** control.
-* Change the margins via **Top**, **Left**, **Bottom**, and **Right** controls.
-* Set the animation speed via **Animation Duration** option.
+To configure a sunburst, hover over the viewer's top and click the **Gear** icon. The **Context Panel** on the right updates to show the viewer settings.
+
+* To select which columns to show, use the **Data** > **Hierarchy** control.
+* To set the hierarchy for a column, adjust the order by dragging it within the **Select columns...** window. The first row represents the highest hierarchy level; the second row sets the subsequent hierarchy level, and so forth.
+
+![Sunburst configuration](sunburst-config.gif)<!--replace gif with nicer colors later-->
+
+By default, each hierarchy branch has its own distinct color. However, if a grid column is color-coded, those colors transfer to the corresponding segments in the ring for that column.
 
 ## Interaction with other viewers
 
-The **Sunburst** viewer responds to data filters and instantly changes the visualization.
+A sunburst responds to data filters and works in sync with other viewers. To select a segment within sunburst, Ctrl+Click it. This action automatically updates other viewers to mirror your selection.
 
-Selecting a category in the viewer selects
-the corresponding rows in the grid, scatter-plot, and other viewers.
+![Sunburst categories selection](sunburst-categories-selection.gif)<!--replace gif so that it also shows filters-->
 
-However, selecting rows in the grid or other viewers is reflected on the **Sunburst** viewer
-only in case if **_all_** data from the particular subcategory are selected.
+:::note 
 
-The highlighting of selected data similar to the **Pie chart viewer** will be available in further releases.
+The sunburst will only reflect selections from other viewers when all data points in the specified segment are selected.
+
+:::
 
 ## Viewer controls
 
-| Action                                   | Control                                       |
-|------------------------------------------|-----------------------------------------------|
-| Select the category and drill down to it | Click the category                            |
-| Return to one level up                   | Click the blue circle in the center of viewer |
-| Clear the category selection             | Ctrl+Shift+A                                  |
+| Action                    | Control                             |
+|---------------------------|-------------------------------------|
+| Drill down                | Click                               |
+| Select                    | Ctrl+Click                          |
+| Go back                   | Click the center area of the viewer |
+| Reset the view            | Ctrl+Shift+A                        |
 
 ## See also
 

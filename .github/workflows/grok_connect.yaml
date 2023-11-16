@@ -166,7 +166,7 @@ jobs:
           retention-days: 7
 
       - name: Prepare Slack Message
-        if: steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success'
+        if: steps.docker-artifact.outcome == 'skipped' && (steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success')
         id: slack-user
         shell: bash
         env:
@@ -176,12 +176,10 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          if [[ "${{ steps.docker-artifact.outcome == 'skipped' }}" == "true" ]]; then
-            SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
-          fi
-
           if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then
             SLACK_MESSAGE_HEADER="${SLACK_MESSAGE_HEADER}\n*Grok Connect* Docker Image version *bleeding-edge* is published to Docker Hub"
+          else
+            SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
           fi
 
           echo SLACK_MESSAGE_HEADER=$SLACK_MESSAGE_HEADER >> $GITHUB_ENV

@@ -15,6 +15,8 @@ export class Tags {
 
   static Tooltip = '.tooltip';
 
+  static TooltipShowLabels = '.tooltip-show-labels';
+
   static TooltipVisibility = '.tooltip-visibility';
 
   static TooltipForm = '.tooltip-form';
@@ -52,6 +54,8 @@ export class Tags {
   static OriginalViewName = '.orig.view.name';
 
   static CellRenderer = 'cell.renderer';
+
+  static PredefinedCellRenderer = '.predefined.cell.renderer';
 
   /// Comma-separated list of domains the entity belongs to
   static Domains = 'domains';
@@ -205,6 +209,10 @@ export class Tags {
   /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
   static LinkClickBehavior = '.linkClickBehavior';
 
+  /// Pipe-separated path that defines where this column is within the hierarchy
+  /// Used for dynamic forms construction, etc
+  static Hierarchy = 'hierarchy';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
@@ -268,8 +276,6 @@ export class FuncOptions {
 export class FuncParamOptions {
   static SemType = 'semType';
 
-  static Columns = 'columns';
-
   static Category = 'category';
 
   static Optional = 'optional';
@@ -303,5 +309,19 @@ export class FuncParamOptions {
   static Nullable = 'nullable';
 
   static Separators = 'separators';
+
+  /// Column filter.
+  /// Applies to dataframes and columns
+  /// Example: `{columns: numerical}`
+  static Columns = 'columns';
+
+  /// A viewer that visualizes the result
+  /// Example: `viewer: Line chart(x: "time", y: "temperature")`
+  static Viewer = 'viewer';
+
+  /// Works together with choices. When set to "all", changing of the choice
+  /// would trigger propagation of this choice's default values for other parameters.
+  /// Example: Compute/cars.js
+  static PropagateChoice = 'propagateChoice';
 
 }

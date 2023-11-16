@@ -1,0 +1,15 @@
+.bsv-viewer-splash {
+    width: 100%;
+    height: 100%;
+    font-size: larger;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-content: center;
+}
+
+.bsv-viewer-splash .ui-div {
+    max-width: 350px;
+    max-height: 200px;
+}

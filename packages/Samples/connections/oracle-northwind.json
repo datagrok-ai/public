@@ -4,13 +4,13 @@
   "friendlyName": "Northwind",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 1521,
+    "port": 15211,
     "db": "XEPDB1"
   },
   "credentials": {
     "parameters": {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "PnyDm2toBd6MsTGRHW4VY11yFpgjH"
     }
   },
   "dataSource": "Oracle",

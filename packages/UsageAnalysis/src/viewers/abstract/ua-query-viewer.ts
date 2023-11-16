@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {UaFilter} from '../../filter';
 import {UaViewer} from './ua-viewer';
 import ColorHash from 'color-hash';
-// import {data} from 'datagrok-api/grok';
 
 const colorHash = new ColorHash();
 
@@ -45,7 +44,7 @@ export abstract class UaQueryViewer extends UaViewer {
         this.getDataFrame!().then(this.postQuery.bind(this)).then(resolve.bind(this));
         return;
       }
-      grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
+      grok.functions.call('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
         if (dataFrame.columns.byName('count') != null)
           dataFrame.columns.byName('count').tags['format'] = '#';
         const userColumn = dataFrame.columns.byName('user');

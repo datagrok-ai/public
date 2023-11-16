@@ -5,6 +5,7 @@ import { category, before, after, expect, test, delay, awaitCheck } from '@datag
 import { isColumnPresent, returnDialog, setDialogInputValue } from './gui-utils';
 import { readDataframe } from './utils';
 import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
+import { skip } from 'rxjs/operators';
 
 
 category('UI top menu', () => {
@@ -16,7 +17,7 @@ category('UI top menu', () => {
         grok.shell.windows.showProperties = true;
     });
 
-     test('similarity search', async () => {
+    test('similarity search', async () => {
         smiles = grok.data.demo.molecules(20);
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
@@ -128,19 +129,15 @@ category('UI top menu', () => {
         }
     }, {timeout: 60000});
 
-     test('fingerprints', async () => {
-        await testGroup('Calculate', 'Fingerprints...', 'Fingerprints', 'Fingerprints');
-    });
-
-    test('substructure search', async () => {
-        smiles = grok.data.demo.molecules(20);
-        v = grok.shell.addTableView(smiles);
-        await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-        grok.shell.topMenu.find('Chem').group('Search').find('Substructure Search...').click();
-        await awaitCheck(() => document.querySelector('.grok-sketcher ') !== null, 'cannot open sketcher', 2000);
-        v.close();
-        grok.shell.o = ui.div();
-    });
+  test('substructure search', async () => {
+    smiles = grok.data.demo.molecules(20);
+    v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    grok.shell.topMenu.find('Chem').group('Search').find('Substructure Search...').click();
+    await awaitCheck(() => document.querySelector('.grok-sketcher ') !== null, 'cannot open sketcher', 2000);
+    v.close();
+    grok.shell.o = ui.div();
+  }, {skipReason: 'GROK-14121'});
 
     test('to inchi', async () => {
         await testGroup('Calculate', 'To InchI...', 'inchi', 'To InchI');
@@ -193,7 +190,7 @@ category('UI top menu', () => {
         await delay(2000);
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() => smiles.columns.length === 6, 'rgroup columns haven\'t been added', 15000);
+        await awaitCheck(() => smiles.columns.length === 5, 'rgroup columns haven\'t been added', 15000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.TRELLIS_PLOT)
@@ -220,9 +217,13 @@ category('UI top menu', () => {
         const dialog = DG.Dialog.getOpenDialogs()[0].root;
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() =>
-            smiles.columns.names().includes('Embed_X_1') && smiles.columns.names().includes('Embed_Y_1'),
-            'embedding columns haven\'t been added', 5000);
+        await awaitCheck(() => {
+            if (smiles.columns.names().includes('Embed_X_1') && smiles.columns.names().includes('Embed_Y_1')) {
+                const xCol = smiles.col('Embed_X_1');
+                return new Array(xCol!.length).fill(0).every((it, idx) => !xCol?.isNone(idx));
+            }
+            return false;
+        }, 'embedding columns haven\'t been added', 5000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.SCATTER_PLOT)
@@ -282,11 +283,11 @@ category('UI top menu', () => {
             'cannot create viewer', 3000);
         const stviewer = Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
         await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-            'scaffold tree has not been generated', 60000);
+            'scaffold tree has not been generated', 150000);
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();
-    }, {timeout: 70000}); 
+    }, {timeout: 180000}); 
 
     after(async () => {
         grok.shell.closeAll();

@@ -1,7 +1,7 @@
 <!-- TITLE: Use Cases: Access management -->
 <!-- SUBTITLE: -->
 
-# Use cases: Aaccess management
+# Use cases: Access management
 
 Owner: Alexander
 

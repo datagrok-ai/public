@@ -97,55 +97,56 @@ This package contains a collection of test cases that can serve as illustrative 
 
 ## Local testing
 
-To test packages locally before release, you can use the [datagrok toolkit](../tools/libraries.md#datagrok-toolkit).
-The easiest way is to execute the following commands:
+Testing your packages locally before releasing them is made simple with the [Datagrok tools](https://github.com/datagrok-ai/public/tree/master/tools). Follow these steps:
 
-```shell
-cd <package-dir>
-grok test [--host]
-```
-
-It will build your package and publish it in the debug mode to a specified host and run the tests. The `host` option
-should correspond to one of the server aliases provided in the configuration file (`.grok/config.yaml`). If not given,
-the default host is used for testing. The building and publishing steps can be skipped with flags `--skip-build` and
-`--skip-publish` correspondingly. The results are printed to the terminal. If you want to save a test run result,
-add the `--csv` flag (the report will be saved in a CSV file in the package folder). To see tests execution,
-pass the `--gui` flag that disables the headless browser mode. This option can help you debug your tests.
-For more detailed information and additional usage instructions, please refer to the [datagrok-tools page](https://github.com/datagrok-ai/public/tree/master/tools).
-
-If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose.mdx) to run the stand.
+* **Navigate to Package Directory**: Start by navigating to your package directory using `cd <package-dir>` command.
+* **Execute Testing**: Run the testing command: `grok test [--host]`.
+This command builds your package and deploys it in debug mode for testing. You can specify the host using the `--host` option. The host should match one of the server aliases in your configuration file (.grok/config.yaml). If you don't provide a host, the default host for testing will be used.
+* **Optional Flags**: You can use optional flags to customize the testing process:
+  * `--skip-build` skips the build step.
+  * `--skip-publish` skips the publishing step.
+  * `--csv` saves the report as a CSV file in your package folder.
+  * `--gui` to see test execution in action. It disables the headless browser mode, aiding in test debugging.
+  
+  You can find all avalilable flags in this [table](https://github.com/datagrok-ai/public/blob/master/tools/README.md?plain=1#L122).
+  
+If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose/docker-compose.mdx) to run the stand.
 
 ### Trigger GitHub Actions manually
 
 If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
 
 1. Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yml)
-2. Press `run workflow` and set packages list to test separated with spaces, for example: `Demo Tutorials`. Choose the
-   target branch. Then `Run workflow`. Note that publish to the NPM registry is executed for the master branch only.
-3. Check that the GitHub Actions workflow finished successfully
-4. The results are available in the actions output
+2. Run the Workflow:
+    * Click on `Run workflow`.
+    * Set the list of packages you want to test, separating them with spaces (e.g., `Demo Tutorials`).
+    * Choose the target branch you want to test against.
+    * Finally, hit `Run workflow` button.
+
+    > Note that publish to the NPM registry is executed for the master branch only.
+3. Check that the GitHub Actions workflow finished successfully.
+4. The results are available in the actions output.
 
 ### Troubleshooting failed tests in GitHub Actions
 
-When a GitHub Action completes, you can access the "Artifacts" section on its main page ("Summary"), which contains a zip archive with the results of the tests for that specific action. This archive typically includes three important files that can help you diagnose and resolve the problems:
+When a GitHub Action completes, you can access the `Artifacts` section on its main page (Summary), which contains a zip archive with the results of the tests for that specific action. This archive includes three important files that can help you diagnose and resolve the problems:
 
-1. `test-console-output.log`: This file contains the console log records generated during   the test execution. The console output often includes valuable information such as error messages, stack traces, and debugging statements. It's a good starting point for understanding what went wrong during the test run.
+1. `test-console-output.log` contains the console log records generated during the test execution, including error messages, stack traces, and debugging statements.
 
-2. `test-record.mp4`: This file is a video recording of the test execution. The video recording can be immensely helpful in scenarios where tests are failing intermittently or in cases where the issue is related to the user interface or visual components of your application. Watching the test execution can provide insights into the behavior of the application and identify potential areas of concern.
+2. `test-record.mp4` is a video recording of the test execution, which can be immensely helpful in scenarios where tests are failing occasionally or in cases where the issue is related to the user interface or some visual components.
 
-3. `test-report.csv`: This file is a tabular representation of the test results. It contains information about which tests passed, which failed, and also additional details such as test duration or errors. The test report can give you a quick overview of the overall test status and pinpoint specific failing tests.
+3. `test-report.csv` is a tabular representation of the test results. It contains information about which tests passed, which failed, and also additional details such as test duration or errors.
 
 ## Test manager
 
-'Test manager' is a tool within the Datagrok platform that provides a convenient interface to select and run package
-unit tests with further results exploration.
-'Test manager' itself is a part of the DevTools package.
+[Test Manager](https://public.datagrok.ai/func/DevTools.testManager) lets you run package tests and review test results.
+Test Manager itself is a part of the [DevTools package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).
 
-To start 'Test manager' go to top menu Tools -> Dev -> Test manager
+To start Test Manager go to `Top menu -> Tools -> Dev -> Test manager`
 
 ![Test manager start](test-mngr-start.png)
 
-Application starts showing a list of all packages containing unit tests. Inside each package, tests are divided by
+Application starts showing a list of all packages containing tests. Inside each package, tests are divided by
 category. Categories support multiple nesting (subcategories should be divided by `:`). To select a test or a category,
 click on it, or use keyboard.
 
@@ -174,20 +175,30 @@ Progress bar on the bottom of the page shows the percentage of completed tests.
 
 ### Reviewing results
 
-Information about test results is available via tooltip or in the context panel. Selected test, category, or package to
-explore results. In case category/package contain multiple tests results are shown as a grid which can be added to
+To explore results, select a test, category, or package, and information about results is available via tooltip or in the context panel.
+In case category/package contain multiple tests results are shown as a grid which can be added to
 workspace for further exploration.
 
 ![Test results](test_results.gif)
 
 ## Running tests in the platform console
 
-It is possible to run tests in the platform's console. Press the tilde key `~` to open the console or enable it from the
-toolbox (`Windows | Console`). To
-launch tests for a category, type `PackageName:test(category="category-name")`,
-e.g., `ApiTests:test(category="Layouts")`, or add a specific test as a
-parameter: `PackageName:test(category="category-name", test="test-name")`, e.g.,
-`ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`.
+1. **Access the Console**: To open the console, press the tilde key `~`. Alternatively, enable the console from the toolbox by navigating to `Windows` and selecting `Console`.
+
+2. **Run Tests by Category**:
+    To launch tests for a specific category, use the syntax:
+    
+    `PackageName:test(category="category-name")`
+
+    For instance, you can run tests for the "Layouts" category with: `ApiTests:test(category="Layouts")`.
+
+3. **Run Specific Tests**:
+    To run a specific test within a category, include the `test` parameter.
+    The format is:
+    
+    `PackageName:test(category="category-name", test="test-name")`
+
+    For example, you can execute the test "ViewLayout.toJson()" within the "Layouts" category with: `ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`.
 
 ## Testing public package changes
 

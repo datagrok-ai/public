@@ -30,7 +30,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
-    const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
+    const dlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
       'Multivariate Analysis (PLS)', this.getMenuItem('ML'));
     await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
     await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Features"', 'Features',

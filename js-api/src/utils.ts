@@ -188,6 +188,14 @@ export class Utils {
     a.download = filename;
     a.click();
   }
+
+  /** Loads the specified common libraries, if they were not loaded already.
+   * Use it in plugins when a big JS dependency is used infrequently,
+   * such as exporting to Excel, or showing a 3d structure.
+   * Example: `loadJsCss(['common/exceljs.min.js', 'common/exceljs.min.css'])` */
+  static async loadJsCss(files: string[]): Promise<null> {
+    return toJs(api.grok_Utils_LoadJsCss(files));
+  }
 }
 
 

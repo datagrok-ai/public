@@ -10,6 +10,8 @@ declare module 'NGL' {
     defaultRepresentation: boolean
   };
 
+  export type Colormaker = {};
+
   export class ColormakerRegistryClass {
     add(id: String, scheme: Colormaker): undefined
 
@@ -81,6 +83,7 @@ declare module 'NGL' {
     renderPending: boolean;
 
     render(picking: boolean): void;
+    requestRender(): void;
 
     setSize(width: number, height: number): void;
   }

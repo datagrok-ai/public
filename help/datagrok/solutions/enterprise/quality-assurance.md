@@ -6,11 +6,11 @@ Datagrok is an incredibly powerful platform. To give users the best possible
 performance, we have created a number of unique, proprietary technologies, such
 as [in-memory columnar database](../../../develop/under-the-hood/architecture.md#data-engine) and fast
 [visualizations](../../../develop/under-the-hood/architecture.md#viewers). To provide the seamless
-end-to-end-experience, we took ownership of [data access](../../../home.md#access),
-[data governance](../../../home.md#access),
-[data exploration](../../../home.md#explore),
-[scientific computing](../../../compute/scripting.md),[machine learning and artificial intelligence](../../../home.md#explore),
-and [collaboration](../../../home.md#share).
+end-to-end-experience, we took ownership of [data access](../../../datagrok/datagrok.md#access),
+[data governance](../../../datagrok/datagrok.md#access),
+[data exploration](../../../datagrok/datagrok.md#explore),
+[scientific computing](../../../compute/scripting.md),[machine learning and artificial intelligence](../../../datagrok/datagrok.md#explore),
+and [collaboration](../../../datagrok/datagrok.md#share).
 To make sure our enterprise customers can work with their data in a secure and
 efficient manner, we have built features like
 [authentication](../../../govern/authentication.md),

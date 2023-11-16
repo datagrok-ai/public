@@ -126,7 +126,7 @@ export const commentMap: Indexable = {
 export const queryExtension = '.sql';
 export const scriptExtensions = ['.jl', '.m', '.py', '.R'];
 export function checkScriptLocation(filepath: string): boolean {
-  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/')) &&
+  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/')) &&
     scriptExtensions.some((ext: any) => filepath.endsWith(ext))) {
     return false;
   }
@@ -157,19 +157,18 @@ export const dgToTsTypeMap: Indexable = {
   file: 'DG.FileInfo',
 };
 
-export const propertyTypes = [
-  'bool', 'int', 'float', 'string', 'datetime', 'object',
-  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
-];
+export const propertyTypes = ['int', 'bigint', 'double', 'num', 'bool', 'string'];
 
 export const headerTags = [
   'name', 'description', 'help-url', 'input', 'output', 'tags',
   'sample', 'language', 'returns', 'test', 'sidebar', 'condition',
   'top-menu', 'environment', 'require', 'editor-for', 'schedule',
-  'reference', 'editor',
+  'reference', 'editor', 'meta',
 ];
 
-export const paramRegex = new RegExp(`\/\/\\s*(${headerTags.join('|')}|meta\\.[^:]*): *(\\S+) ?(\\S+)?`);
+export const paramRegex = new RegExp(`\/\/\\s*(${headerTags.join('|')}\\.[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`);
+
+export const nameAnnRegex = /\/\/\s*(name[^:]*): ([^\n\r\[\{]+)/;
 
 export const nameRegex = /(?:|static|export\s+function|export\s+async\s+function)\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?)\).*/;
 

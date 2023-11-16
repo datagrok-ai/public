@@ -130,6 +130,7 @@ export class MonomerPlacer {
     const [monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
     const seq: string = this.col.get(rowIdx)!;
     const seqMonList: string[] = wu(this._splitter(seq)).toArray();
+    if (seqMonList.length === 0) return null;
 
     let iterationCount: number = 100;
     let left: number | null = null;

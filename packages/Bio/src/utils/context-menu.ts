@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 import {_package} from '../package';
 
@@ -15,9 +14,9 @@ export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu): void {
 
   menu.group('Copy')
     .items(tgtNotationList, (tgtNotation) => {
-      const nc = new NotationConverter(cell.column);
+      const ncUH = UnitsHandler.getOrCreate(cell.column);
       const separator = tgtNotation === NOTATION.SEPARATOR ? _package.properties.DefaultSeparator : undefined;
-      const converter = nc.getConverter(tgtNotation as NOTATION, separator);
+      const converter = ncUH.getConverter(tgtNotation as NOTATION, separator);
       const tgtSeq = converter(cell.value);
 
       if (!navigator.clipboard) {

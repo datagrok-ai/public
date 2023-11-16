@@ -10,4 +10,4 @@ pkg load dataframe;
 
 d = dataframe(df);
 
-bar(d(1:6,[xName]));
+bar(d(1:3,[xName]));

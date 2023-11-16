@@ -40,6 +40,21 @@ drag the viewer's border.
 
 ## Docking
 
+Datagrok provides a flexible window management system, where windows
+could be either dragged out and positioned manually, or set up automatically.
+
+## Top-level window docking
+
+Use `grok.shell.dockManager` to dock, undock, or reposition windows.
+See also `View.dockNode`
+
+## Nested docking
+
+Some of the views contain a nested docking manager, which allows to manage
+windows within that particular view (they cannot be undocked and docked on
+a top level, or within a different view). See `dockManager` property of the
+View class.
+
 [![Docking](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1726s)
 
 ## Selection
@@ -135,7 +150,7 @@ All visualizations are tightly coupled. Hover, selection, filtering on one viewe
 
 ![Viewers Interaction](../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
 
-For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.md):
+For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.mdx):
 
 ![Viewers Interaction 2](../../uploads/gifs/sp-hist.gif "Viewers Interaction 2")
 
@@ -167,10 +182,10 @@ the viewer.
 
 The following commands are the most common:
 
-|            |                                                                                                                                                                                                                    |
-|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Properties | Show viewer properties in the [context panel](../../datagrok/navigation/navigation.md#context-panel)                                                                                                                            |
-| Reset View | Reset zoom level. Applies for: [Scatter plot](scatter-plot.md), [Line chart](line-chart.md), [Bar chart](bar-chart.md), [3D scatter plot](3d-scatter-plot.md), and [Box plot](box-plot.md)                         |
+|            |                                                                                                                                                                                             |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Properties | Show viewer properties in the [context panel](../../datagrok/navigation/navigation.md#context-panel)                                                                                        |
+| Reset View | Reset zoom level. Applies for: [Scatter plot](scatter-plot.mdx), [Line chart](line-chart.md), [Bar chart](bar-chart.md), [3D scatter plot](3d-scatter-plot.md), and [Box plot](box-plot.md) |
 
 General commands are available under the **General** submenu:
 
@@ -253,7 +268,7 @@ To help users analyze their data in depth, our visualizations include a number o
 
 * Box plots show [p-value](box-plot.md#t-test), which allows to determine whether the findings are statistically
   significant
-* Scatter plots can display a [regression line](scatter-plot.md#regression-line) along with its equation;
+* Scatter plots can display a [regression line](scatter-plot.mdx#regression-line) along with its equation;
   moreover, it is possible to plot multiple regression lines by encoding categories with color
 * The values of Pearson's correlation coefficient computed for [correlation plots](correlation-plot.md) are
   highlighted, which makes it easy to trace the strength of relationship between given variables
@@ -285,7 +300,7 @@ choose **Clone**.
 
 |                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 |---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Scatter Plot](../../uploads/gifs/scatter-plot.gif "Scatter plot") | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br /> [Scatter Plot](scatter-plot.md) |
+| ![Scatter Plot](../../uploads/gifs/scatter-plot.gif "Scatter plot") | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br /> [Scatter Plot](scatter-plot.mdx) |
 
 ## 3D scatter plot
 
@@ -405,7 +420,7 @@ choose **Clone**.
 
 |                                                                        |                                                                                                                                                                                                                                                                                                                |
 |------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Density Plot](../../uploads/viewers/density-plot.png "Density Plot") | Unlike [scatter plot](scatter-plot.md) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.<br />[Density Plot](density-plot.md)                |
+| ![Density Plot](../../uploads/viewers/density-plot.png "Density Plot") | Unlike [scatter plot](scatter-plot.mdx) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.<br />[Density Plot](density-plot.md)                |
 
 ## Heat map
 
@@ -417,7 +432,7 @@ choose **Clone**.
 
 |                                               |                                                                                                                                                                                                                                                       |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Markup](markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../datagrok/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
+| ![Markup](markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
 
 ## Tile viewer
 

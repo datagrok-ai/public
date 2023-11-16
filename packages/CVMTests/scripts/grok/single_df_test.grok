@@ -4,4 +4,4 @@
 #input: dataframe df
 #output: dataframe result
 
-result = df;
+result = df

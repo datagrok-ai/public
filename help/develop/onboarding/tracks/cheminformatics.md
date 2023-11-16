@@ -46,7 +46,7 @@ _Input data_. Files > App Data > Chem > sars\_small.csv
     ```
 
 3. Having obtained the string `mcsValue`, create a new column in `df`, whose cells are filled with this value:
-     * Create an `Array` of the apporpriate length, filled with `mcsValue`.
+     * Create an `Array` of the appropriate length, filled with `mcsValue`.
      * Feed this array to the constructor `DG.Column.fromList()` to get the desired `mcsCol` object.
      * Assign semantic type `Molecule` to the newly created column, with the help of `col.semType(...)`. Similarly,
        associate `Molecule` cell renderer with the help of `col.setTag(...)` method.

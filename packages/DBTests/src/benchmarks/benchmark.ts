@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {FuncCall} from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
 
 category('Benchmarks', () => {
   test('Sequential 100', async () => {
@@ -53,16 +53,18 @@ category('Benchmarks', () => {
   }, {skipReason: 'Feature of compression in development'});
 });
 
-function getTestResult(times: number[], expectedCount: number): String {
+function getTestResult(times: number[], expectedCount: number): object {
   const totalTime = times.reduce((acc, currentValue) => acc + currentValue, 0);
-  return `Total execution time of all calls, ms: ${totalTime}\n` +
-      `Percentage of success: ${Math.round((times.length / expectedCount) * 100)}%\n` +
-      `Average execution time, ms: ${totalTime / times.length}\n` +
-      `Max execution time, ms: ${Math.max(...times)}\n` +
-      `Min execution time, ms: ${Math.min(...times)}\n`;
+  return {
+    'Total execution time of all calls, ms': totalTime,
+    'Percentage of success': Math.round((times.length / expectedCount) * 100),
+    'Average execution time, ms': totalTime / times.length,
+    'Max execution time, ms': Math.max(...times),
+    'Min execution time, ms': Math.min(...times),
+  };
 }
 
-export async function getCallTime(call: FuncCall): Promise<number> {
+export async function getCallTime(call: DG.FuncCall): Promise<number> {
   const start = Date.now();
   await call.call();
   return Date.now() - start;

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
-  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
+  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME,
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
 import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';
@@ -95,6 +95,7 @@ export function createMomomersMolDict(lib: any[]): { [key: string]: string | any
   return dict;
 }
 
+
 export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];
   for (let i = 0; i < table.rowCount; i++) {
@@ -181,8 +182,8 @@ export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[
     rawCols[position] = {categories: monomerColCategories, data: monomerColData, emptyIndex: emptyCategoryIdx};
     if (typeof referenceMonomer === 'undefined')
       continue;
-    
-    // Calculating similarity for 
+
+    // Calculating similarity for
     const molCol = DG.Column.fromStrings('smiles',
       monomerColCategories.map((cat) => monomerLib.getMonomer('PEPTIDE', cat)?.smiles ?? ''));
     const _df = DG.DataFrame.fromColumns([molCol]); // getSimilarities expects that column is in dataframe
@@ -212,4 +213,30 @@ export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[
 
   const similarityCol = DG.Column.fromFloat32Array('Similarity', totalSimilarity);
   return similarityCol;
+}
+
+/** Calculates chemical similarity between each pair of monomers.
+ * @param {string[]} monomerSet Set of unique monomers.
+ * @returns {Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}>} Ojbect containing similarity scoring matrix and monomer to index mapping. */
+export async function calculateMonomerSimilarity(monomerSet: string[],
+): Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}> {
+  const libHelper = await getMonomerLibHelper();
+  const monomerLib = libHelper.getBioLib();
+  const scoringMatrix: number[][] = [];
+  const alphabetIndexes: {[id: string]: number} = {};
+  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
+  const monomerMoleculesCol = DG.Column.fromStrings('smiles', monomerMolecules);
+
+  for (let monomerIndex = 0; monomerIndex < monomerMolecules.length; ++monomerIndex) {
+    const monomer = monomerSet[monomerIndex];
+    alphabetIndexes[monomer] = monomerIndex;
+    const monomerMol = monomerMolecules[monomerIndex];
+    const similarityScores = monomerMol === '' ? new Array(monomerMolecules.length).fill(0) :
+      (await grok.chem.getSimilarities(monomerMoleculesCol, monomerMol))!.getRawData();
+    similarityScores[monomerIndex] = 1;
+
+    scoringMatrix[monomerIndex] = Array.from(similarityScores);
+  }
+
+  return {scoringMatrix, alphabetIndexes};
 }

@@ -7,6 +7,7 @@ import '../../../css/hit-triage.css';
 import {HitDesignTemplate, IComputeDialogResult, INewTemplateResult} from '../types';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {getCampaignFieldEditors} from './new-template-accordeon';
+import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResult<HitDesignTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
@@ -76,7 +77,7 @@ export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResul
   const detailsDiv = ui.divV(
     [ui.divV([templateNameInput, errorDiv]), ui.divV([templateKeyInput, keyErrorDiv]), fieldsEditor.fieldsDiv]);
 
-  const form = ui.divV(
+  const form = ui.div(
     [ui.h2('Details'),
       detailsDiv,
       ui.h2('Stages'),
@@ -86,18 +87,26 @@ export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResul
       ui.h2('Submit'),
       submitFunctionInput.root,
     ], 'ui-form');
-  const content = ui.div(form);
-  const buttonsDiv = ui.divH([]);
+  const buttonsDiv = ui.buttonsInput([]);
   form.appendChild(buttonsDiv);
-
-
+  const buttonsContainerDiv = buttonsDiv.getElementsByClassName('ui-input-editor')?.[0] ?? buttonsDiv;
+  const cancelPromise = new Promise<void>((resolve) => {
+    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
+    buttonsContainerDiv.appendChild(cancelButton);
+  });
   const promise = new Promise<HitDesignTemplate>((resolve) => {
     async function onOkProxy() {
       funcInput.okProxy();
-      if (errorDiv.style.opacity === '100%') {
+      if (errorDiv.style.opacity === '100%' || !templateNameInput.value || templateNameInput.value === '') {
         grok.shell.error('Template name is empty or already exists');
         return;
       }
+
+      if (keyErrorDiv.style.opacity === '100%' || !templateKeyInput.value || templateKeyInput.value === '') {
+        grok.shell.error('Template key is empty or already exists');
+        return;
+      }
+
       const submitFunction = submitFunctionInput.value ? submitFunctionsMap[submitFunctionInput.value] : undefined;
       const out: HitDesignTemplate = {
         name: templateNameInput.value,
@@ -125,14 +134,10 @@ export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResul
       resolve(out);
     }
     const createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
-    buttonsDiv.appendChild(createTemplateButton);
+    buttonsContainerDiv.appendChild(createTemplateButton);
   });
-  const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
-    //buttonsDiv.appendChild(cancelButton);
-  });
-  return {root: content, template: promise, cancelPromise};
+
+  return {root: form, template: promise, cancelPromise};
 }
 
 export function saveHitDesignTemplate(template: HitDesignTemplate) {
@@ -141,44 +146,25 @@ export function saveHitDesignTemplate(template: HitDesignTemplate) {
 
 
 export function getTileCategoryEditor() {
-  const getNewFieldEditor = (defVal: string = '') => {
-    const nameInput = ui.stringInput('Name', defVal, () => out.changed = true);
-    nameInput.root.style.width = '100%';
-    const out = {changed: defVal !== '', nameInput};
-    return out;
-  };
-  const fields: ReturnType<typeof getNewFieldEditor>[] = [getNewFieldEditor('Stage 1')];
+  const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING})];
+  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: true});
+  let addingItem: ItemType = {};
   function getFieldParams(): string[] {
-    return fields.filter((f) => f.changed && f.nameInput.value && f.nameInput.value !== '')
-      .map((f) => f.nameInput.value);
-  };
-  function getFieldDiv(field: ReturnType<typeof getNewFieldEditor>) {
-    const removeButton = ui.icons.delete(() => {
-      if (fields.length > 1) {
-        fieldDiv.remove();
-        fields.splice(fields.indexOf(field), 1);
-      }
-    }, 'Remove Field');
-    removeButton.style.marginLeft = '15px';
-    const addFieldButton = ui.icons.add(() => {
-      if (!fields.length || fields[fields.length - 1].changed) {
-        const newField = getNewFieldEditor();
-        fields.push(newField);
-        fieldsContainer.appendChild(getFieldDiv(newField));
-      }
-    }, 'Add field');
-    addFieldButton.classList.add('hit-triage-add-campaign-field-button');
-    field.nameInput.addOptions(removeButton);
-    field.nameInput.addOptions(addFieldButton);
-    const fieldDiv = ui.divH([
-      field.nameInput.root,
-    ], {classes: 'hit-triage-campaign-field-div', style: {width: '400px'}});
-    return fieldDiv;
+    const items = itemsGrid.items.filter((f) => f.Name).map((f) => f.Name);
+    if (addingItem.Name && addingItem.Name !== '')
+      items.push(addingItem.Name);
+    return items;
   }
-  const fieldsContainer = ui.divV([getFieldDiv(fields[0])], 'ui-form');
+  itemsGrid.onItemAdded.subscribe((item) => {
+    addingItem = item ?? {};
+  });
+  itemsGrid.onAddingItemChanged.subscribe((item) => {
+    if (item)
+      addingItem = item.item;
+  });
 
   return {
     getFields: getFieldParams,
-    fieldsDiv: fieldsContainer,
+    fieldsDiv: itemsGrid.root,
   };
 }

@@ -71,6 +71,35 @@ export const HELM_CORE_FIELDS = [
 
 export const SDF_MONOMER_NAME = 'MonomerName';
 
+/** For PolyTool  */
+export const helmFieldsToPolyToolInputFields = {
+  [HELM_REQUIRED_FIELDS.SYMBOL]: 'Short Name',
+  [HELM_REQUIRED_FIELDS.NAME]: 'Medium Name',
+  [HELM_REQUIRED_FIELDS.SMILES]: 'SMILES',
+};
+
+/** For PolyTool  */
+export const R_GROUP_BLOCK_DUMMY = [
+  {
+    'capGroupSmiles': '[*:1][H]',
+    'alternateId': 'R1-H',
+    'capGroupName': 'H',
+    'label': 'R1'
+  },
+  {
+    'capGroupSmiles': 'O[*:2]',
+    'alternateId': 'R2-OH',
+    'capGroupName': 'OH',
+    'label': 'R2'
+  },
+  {
+    'capGroupSmiles': '[*:3][H]',
+    'alternateId': 'R3-H',
+    'capGroupName': 'H',
+    'label': 'R3'
+  }
+];
+
 // todo: ideally, keys should be expressed via constants
 export const jsonSdfMonomerLibDict = {
   'monomerType': null,
@@ -86,6 +115,28 @@ export const jsonSdfMonomerLibDict = {
   'symbol': 'MonomerCode'
 };
 
+export const DUMMY_MONOMER = {
+  'monomerType': 'Backbone',
+  'smiles': '',
+  'name': '',
+  'author': 'Datagrok',
+  'molfile': '',
+  'naturalAnalog': '',
+  'rgroups': [],
+  'createDate': null,
+  'id': 0,
+  'polymerType': 'PEPTIDE',
+  'symbol': ''
+};
 // range of hex nubers used in PepSea library to endode monomers
 export const MONOMER_ENCODE_MIN = 0x100;
 export const MONOMER_ENCODE_MAX = 0x40A;
+
+export const RIBOSE_SYMBOL = 'r';
+export const DEOXYRIBOSE_SYMBOL = 'd';
+export const PHOSPHATE_SYMBOL = 'p';
+export const HELM_WRAPPERS_REGEXP = new RegExp(
+  `[${RIBOSE_SYMBOL}${DEOXYRIBOSE_SYMBOL}]\\((\\w)\\)${PHOSPHATE_SYMBOL}?`,
+  'g'
+);
+

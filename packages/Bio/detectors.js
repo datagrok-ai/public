@@ -81,6 +81,19 @@ class BioPackageDetectors extends DG.Package {
       s.startsWith('RNA1{') || s.startsWith('DNA1{');
   }
 
+  //name: detectMacromoleculeEnableStore
+  //output: object result
+  detectMacromoleculeEnableStore() {
+    return window.$detectMacromoleculeStore = {last: null};
+  }
+
+  /** Returns last object (stores it if enabled earlier). */
+  detectMacromoleculeStoreLast() {
+    const last = {};
+    if (window.$detectMacromoleculeStore) window.$detectMacromoleculeStore.last = last;
+    return last;
+  }
+
   //tags: semTypeDetector
   //input: column col
   //output: string semType
@@ -89,18 +102,26 @@ class BioPackageDetectors extends DG.Package {
     console.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
     const t1 = Date.now();
     try {
+      const last = this.detectMacromoleculeStoreLast();
       const colName = col.name;
       const colNameLikely = this.likelyColNamePartList.some(
         (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
-      const seqMinLength = colNameLikely ? 3 : 5;
+      const seqMinLength = colNameLikely ? 7 : 10;
+      const maxBadRatio = colNameLikely ? 0.05 : 0.005;
 
       // Fail early
-      if (col.type !== DG.TYPE.STRING) return null;
+      if (col.type !== DG.TYPE.STRING) {
+        last.rejectReason = `The column must be of type '${DG.TYPE.STRING}'.`;
+        return null;
+      }
 
       const categoriesSample = [...new Set((col.length < SEQ_SAMPLE_LIMIT ?
-          wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
-          this.sample(col, SEQ_SAMPLE_LIMIT)
-      ).map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : ''))];
+        wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
+        this.sample(col, SEQ_SAMPLE_LIMIT))
+        .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
+        .filter((seq) => seq.length !== 0/* skip empty values for detector */),
+      )];
+      last.categoriesSample = categoriesSample;
 
       // To collect alphabet freq three strategies can be used:
       // as chars, as fasta (single or within square brackets), as with the separator.
@@ -145,31 +166,47 @@ class BioPackageDetectors extends DG.Package {
         return res;
         // return isUrlRe.test(s);
       };
-      const isUrl = categoriesSample.every((v) => { return !v || isUrlCheck(v); });
-      if (isUrl) return null;
+      const isUrl = categoriesSample.every((v) => !v || isUrlCheck(v));
+      if (isUrl) {
+        last.rejectReason = 'URL detected.';
+        return null;
+      }
 
       // TODO: Detect HELM sequence
       // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
       const statsAsChars = this.getStats(categoriesSample, seqMinLength,
         this.getSplitterAsChars(SEQ_SAMPLE_LENGTH_LIMIT));
       // Empty statsAsShars.freq alphabet means no strings of enough length presented in the data
-      if (Object.keys(statsAsChars.freq).length === 0) return null;
+      if (Object.keys(statsAsChars.freq).length === 0) {
+        last.rejectReason = 'Monomer set (alphabet) is empty.';
+        return null;
+      }
 
       const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, colNameLikely ? -0.05 : 0);
-      if (decoy !== ALPHABET.UN) return null;
+      if (decoy !== ALPHABET.UN) {
+        last.rejectReason = `Decoy alphabet '${decoy}' detected.`;
+        return null;
+      }
 
-      const separator = this.detectSeparator(statsAsChars.freq, categoriesSample);
-      if (this.checkForbiddenSeparator(separator)) return null;
+      const separator = this.detectSeparator(statsAsChars.freq, categoriesSample, seqMinLength);
+      const checkForbiddenSeparatorRes = this.checkForbiddenSeparator(separator);
+      if (checkForbiddenSeparatorRes) {
+        last.rejectReason = `Separator '${separator}' is forbidden.`;
+        return null;
+      }
 
       const units = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
       const gapSymbol = separator ? '' : '-';
       const splitter = separator ? this.getSplitterWithSeparator(separator, SEQ_SAMPLE_LENGTH_LIMIT) :
         this.getSplitterAsFasta(SEQ_SAMPLE_LENGTH_LIMIT);
 
-      if (statsAsChars.sameLength) {
+      if (statsAsChars.sameLength) { // MSA FASTA single character
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.20 : 0);
-        if (alphabet === ALPHABET.UN) return null;
+        if (alphabet === ALPHABET.UN) {
+          last.rejectReason = `MSA FASTA single character alphabet is not allowed to be 'UN'.`;
+          return null;
+        }
 
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
@@ -184,22 +221,38 @@ class BioPackageDetectors extends DG.Package {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
         const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
         // Empty monomer alphabet is not allowed
-        if (Object.keys(stats.freq).length === 0) return null;
-        // Long monomer names for sequences with separators have constraints
-        if (
-          ((units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) &&
-            this.checkForbiddenMultichar(stats.freq)) ||
-          ((units === NOTATION.FASTA && !alphabetIsMultichar) &&
-            this.checkForbiddenSinglechar(stats.freq))
-        ) {
+        if (Object.keys(stats.freq).length === 0) {
+          last.rejectReason = 'Monomer set (alphabet) is empty';
           return null;
+        }
+        // Single- and multi-char monomer names for sequences with separators have constraints
+        if (units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) {
+          const badSet = this.checkBadMultichar(stats.freq);
+          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
+          if (badCount / allCount > maxBadRatio) {
+            last.rejectReason = `Forbidden multi-char monomers: ` +
+              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
+            return null;
+          }
+        }
+        if (units === NOTATION.FASTA && !alphabetIsMultichar) {
+          const badSet = this.checkBadSinglechar(stats.freq);
+          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
+          if (badCount / allCount > maxBadRatio) {
+            last.rejectReason = `Forbidden single-char monomers: ` +
+              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
+            return null;
+          }
         }
 
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely ? 0.15 : 0);
-        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) return null;
+        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) {
+          last.rejectReason = `FASTA single character alphabet is not allowed to be 'UN'.`;
+          return null;
+        }
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         col.setTag(DG.TAGS.UNITS, units);
@@ -214,11 +267,12 @@ class BioPackageDetectors extends DG.Package {
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } catch (err) {
-      let errMsg = err instanceof Error ? err.message : err.toString();
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      const errStack = err instanceof Error ? err.stack : undefined;
       const colTops = wu.count(0).take(Math.max(col.length, 4)).map((rowI) => col.get(rowI))
         .reduce((a, b) => a === undefined ? b : a + '\n' + b, undefined);
-      errMsg += `\n${colTops}`;
-      console.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}`);
+      console.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}` +
+        `${errStack ? '\n' + errStack : ''}` + `\n${colTops}`);
     } finally {
       const t2 = Date.now();
       console.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
@@ -230,7 +284,7 @@ class BioPackageDetectors extends DG.Package {
    * @param freq Dictionary of characters freqs
    * @param sample A string array of seqs sample
    */
-  detectSeparator(freq, categoriesSample) {
+  detectSeparator(freq, categoriesSample, seqMinLength) {
     // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
@@ -259,7 +313,7 @@ class BioPackageDetectors extends DG.Package {
 
     // Splitter with separator test application
     const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
-    const stats = this.getStats(categoriesSample, 0, splitter);
+    const stats = this.getStats(categoriesSample, seqMinLength, splitter);
     // TODO: Test for Gamma/Erlang distribution
     const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
     const mLengthAvg = wu.entries(stats.freq)
@@ -283,19 +337,28 @@ class BioPackageDetectors extends DG.Package {
     return forbiddenSepRe.test(separator);
   }
 
-  /** Spaces, dots and colons are nor allowed in multichar monomer names.
-   * The monomer name/label cannot contain digits only.
+  /** Dots and colons are nor allowed in multichar monomer names (but space is allowed).
+   * The monomer name/label cannot contain digits only (but single digit is allowed).
    */
-  checkForbiddenMultichar(freq) {
-    const forbiddenRe = /[ .:]|^\d+$/i;
-    const forbiddenMonomerList = Object.keys(freq).filter((m) => forbiddenRe.test(m));
-    return forbiddenMonomerList.length > 0;
+  checkBadMultichar(freq) {
+    const badRe = /[ .:]|^\d+$/i;
+    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
   }
 
   /** Space, dot, colon, semicolon, digit, underscore are not allowed as singe char monomer names.*/
-  checkForbiddenSinglechar(freq) {
-    const forbiddenRe = /[ .:;\d_]/i;
-    return Object.keys(freq).some((m) => forbiddenRe.test(m));
+  checkBadSinglechar(freq) {
+    const badRe = /[ .:;\d_]/i;
+    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
+  }
+
+  calcBad(freq, forbiddenSet) {
+    let allCount = 0;
+    let forbiddenCount = 0;
+    for (const [m, count] of Object.entries(freq)) {
+      if (forbiddenSet.has(m)) forbiddenCount += freq[m];
+      allCount += freq[m];
+    }
+    return [forbiddenCount, allCount];
   }
 
   // /** Without a separator, special symbols or digits are not allowed as monomers. */
@@ -395,22 +458,9 @@ class BioPackageDetectors extends DG.Package {
     };
   }
 
-  getSplitterWithSeparator(separator, lengthLimit) {
-    return function(seq) {
-      // if (!!lengthLimit) {
-      //   const res = new Array(lengthLimit);
-      //   let pos = 0, count = 0;
-      //   while (pos < seq.length && count < lengthLimit) {
-      //     const newPos = seq.indexOf(separator, pos);
-      //     res[count] = seq.substring(pos, newPos);
-      //     count++;
-      //     pos = newPos;
-      //   }
-      //
-      //   return res.slice(0, count);
-      // } else {
-      return seq.split(separator, lengthLimit);
-      // }
+  getSplitterWithSeparator(separator, limit) {
+    return (seq) => {
+      return !seq ? [] : seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
     };
   }
 

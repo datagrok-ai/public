@@ -4,13 +4,13 @@
   "friendlyName": "MSSQLDBTests",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 1434,
+    "port": 14332,
     "db": "test"
   },
   "credentials" : {
     "parameters" : {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "aGzdbRG997a6oy5M44FQLRmPICDnl28s7cGq"
     }
   },
   "dataSource": "MS SQL",

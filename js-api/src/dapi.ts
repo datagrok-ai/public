@@ -46,9 +46,7 @@ export class Dapi {
   /** Retrieves entities from server by list of IDs
    *  @returns {Promise<Entity[]>} */
   getEntities(ids: string[]): Promise<Entity[]> {
-    return new Promise((resolve, reject) => api.grok_Dapi_Entities_GetEntities(ids, (q: any) => {
-      return resolve(q.map(toJs));
-    }, (e: any) => reject(e)));
+    return api.grok_Dapi_Entities_GetEntities(ids);
   }
 
   /** Entities API endpoint
@@ -251,20 +249,20 @@ export class HttpDataSource<T> {
       this.filter(options.filter);
     if (options.order !== undefined)
       this.order(options.order);
-    return new Promise((resolve, reject) => api.grok_DataSource_List(this.dart, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
+    return api.grok_DataSource_List(this.dart);
   }
 
   /** Counts entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   count(): Promise<number> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Count(this.dart, (q: number) => resolve(q), (e: any) => reject(e)));
+    return api.grok_DataSource_Count(this.dart);
   }
 
   /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
    *  @returns `Promise<object>`  */
   first(): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_First(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_DataSource_First(this.dart);
   }
 
   /** Returns an entity with the specified id.
@@ -273,17 +271,17 @@ export class HttpDataSource<T> {
    *  @param {string} id - GUID of the corresponding object
    *  @returns `{Promise<object>}` - entity. */
   find(id: string): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Find(this.dart, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_DataSource_Find(this.dart, id);
   }
 
   /** Saves an entity. */
   save(e: Entity): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Save(this.dart, e.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_DataSource_Save(this.dart, e.dart);
   }
 
   /** Deletes an entity. */
   delete(e: Entity): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.dart, e.dart, () => resolve(), (e: any) => reject(e)));
+    return api.grok_DataSource_Delete(this.dart, e.dart);
   }
 
   /** Turns off package versions isolation. This DataSource will return all entities in all versions, not only the current one **/
@@ -379,7 +377,7 @@ export class AdminDataSource {
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
    *  @returns {Promise<Map>} */
   getServiceInfos(): Promise<ServiceInfo[]> {
-    return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 }
 
@@ -511,21 +509,21 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
    * @param {Map[]} props
    * @returns {Promise} */
   saveProperties(props: Map<Property, any>): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SaveProperties(this.dart, props, (_: any) => resolve(), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_SaveProperties(this.dart, props);
   }
 
   /** Returns entity properties
    * @param {Entity} entity
    * @returns {Promise<Map>} props */
   getProperties(entity: Entity): Promise<Map<Property, any>> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(this.dart, entity.dart, (p: Map<Property, any> | PromiseLike<Map<Property, any>>) => resolve(p), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_GetProperties(this.dart, entity.dart);
   }
 
   /** Deletes entity properties
    * @param {Map[]} props
    * @returns {Promise} */
   deleteProperties(props: Map<Property, any>): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.dart, props, (_: any) => resolve(), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_DeleteProperties(this.dart, props);
   }
 }
 
@@ -587,7 +585,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
    * @param {Entity} e
    * @returns {Promise<Credentials>} */
   forEntity(e: Entity): Promise<Credentials> {
-    return new Promise((resolve, reject) => api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart);
   }
 }
 
@@ -805,7 +803,6 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
   rebuild(id: string): Promise<boolean> {
     return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, id);
   }
-
 }
 
 /** Functionality to work with Dockerfiles
@@ -829,6 +826,11 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   /* Makes a request to container with dockerfileId */
   request(id: string, path: string, params: ResponseInit): Promise<string | null> {
     return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
+  }
+
+  /* Get container logs */
+  getContainerLogs(id: string, limit: number = 10000): Promise<string | null> {
+    return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, id, limit);
   }
 }
 

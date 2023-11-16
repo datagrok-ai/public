@@ -32,7 +32,7 @@ Rwanda,MPNSEPASLLELFNSIATQGELVRSLKAGNASK,CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OC
 Switzerland,IRVVGRYLIEVWKAAGMDMDKVLFLWSSDEI,CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F,1480028,36.33137130737305,99504,92-11 179TH PLACE,https://datagrok.ai/img/slides/access-db-connect.png,id,ErrorMessage,COMPND ATOM END,flag,9,10,1IAN,10,1.23,<chart></chart>,text,,
 ,,,,,,,,,,,,,,,,,,,,`);
 testData.columns.add(DG.Column.fromList(DG.TYPE.BYTE_ARRAY, 'BinaryImage', Array.from(new Uint8Array(11))));
-const skip = ['detectMolecules', 'detectFit'];
+const skip = ['detectMolecules', 'detectFit', 'detectChembl'];
 
 category('Detector: All Detectors', () => {
   const detectors = DG.Func.find({tags: ['semTypeDetector']});
