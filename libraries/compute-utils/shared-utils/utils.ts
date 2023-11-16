@@ -8,6 +8,8 @@ import html2canvas from 'html2canvas';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {FunctionView, RichFunctionView} from '../function-views';
 
 export function isInputBase(input: FuncCallInput): input is DG.InputBase {
   const inputAny = input as any;
@@ -182,3 +184,32 @@ export const plotToSheet =
       ext: {width: canvas.width, height: canvas.height},
     });
   };
+
+
+// additional JSON converions, view is need for files
+export async function fcToSerializable(fc: DG.FuncCall, view: FunctionView | RichFunctionView) {
+  const inputs: Record<string,any> = {};
+  for (const [name, value] of Object.entries(fc.inputs)) {
+    const {property} = view.funcCall.inputParams[name];
+    inputs[name] = await fcInputToSerializable(property, value, view);
+  }
+  return {
+    inputs,
+    outputs: fc.outputs,
+  };
+}
+
+async function fcInputToSerializable(property: DG.Property, value: any, view: FunctionView | RichFunctionView) {
+  if ((property.propertyType as any) === 'file' && (view as any)!.getInput) {
+    const fileInput = (view as any).getInput(property.name);
+    return fileInput.value.arrayBuffer();
+  }
+  return value;
+}
+
+export async function fcInputFromSerializable(propertyType: string, value: any) {
+  if (propertyType === 'file') {
+    return new File([value], '');
+  }
+  return value;
+}
