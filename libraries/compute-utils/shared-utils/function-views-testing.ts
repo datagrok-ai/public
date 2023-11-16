@@ -46,10 +46,11 @@ export async function testFunctionView(
       throw new Error(msg);
     }
   }
-  console.log(`running ${view.name}`);
+  console.log(`running ${view.func.nqName}`);
   await view.run();
-  console.log(`checking ${view.name} results`);
+  console.log(`checking ${view.func.nqName} results`);
   expectDeepEqual(view.funcCall.outputs, spec.outputs, options);
+  console.log(`${view.func.nqName} ok`);
 }
 
 async function waitForReady(view: FunctionView, timeout: number) {
