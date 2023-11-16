@@ -196,7 +196,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
-    let monomerType = 'HELM_AA';
+    let monomerType: string;
     if (peptidesCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
       const sampleSeq = peptidesCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';

@@ -4,11 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {pickUpPalette, TAGS as bioTAGS, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {monomerToShort, pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
-import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {BitArrayMetrics, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -34,21 +34,20 @@ import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {showMonomerTooltip} from './utils/tooltips';
 
 export enum CLUSTER_TYPE {
   ORIGINAL = 'original',
   CUSTOM = 'custom',
-};
+}
 export type ClusterType = `${CLUSTER_TYPE}`;
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
   MOST_POTENT_RESIDUES = 'Most Potent Residues',
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
-};
+}
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -74,7 +73,6 @@ export class PeptidesModel {
   headerSelectedMonomers: type.SelectionStats = {};
   webLogoBounds: CR.WebLogoBounds = {};
   cachedWebLogoTooltip: {bar: string, tooltip: HTMLDivElement | null} = {bar: '', tooltip: null};
-  _alphabet?: string;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
 
@@ -241,7 +239,7 @@ export class PeptidesModel {
 
   get splitByPos(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] || '00')[0];
-    return splitByPosFlag === '1' ? true : false;
+    return splitByPosFlag === '1';
   }
 
   set splitByPos(flag: boolean) {
@@ -251,7 +249,7 @@ export class PeptidesModel {
 
   get splitByMonomer(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] || '00')[1];
-    return splitByPosFlag === '1' ? true : false;
+    return splitByPosFlag === '1';
   }
 
   set splitByMonomer(flag: boolean) {
@@ -332,7 +330,10 @@ export class PeptidesModel {
         updateViewersData = true;
         break;
       case 'mutationCliffs':
-        this.updateMutationCliffs();
+        this.updateMutationCliffs().then(() => {
+          (this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition)?.viewerGrid.invalidate();
+          (this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues)?.viewerGrid.invalidate();
+        }).catch((e) => _package.logger.debug(e));
         break;
       case 'stats':
         this.monomerPositionStats = calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray());
@@ -379,14 +380,6 @@ export class PeptidesModel {
     lstViewer?.render();
   }
 
-  get identityTemplate(): string {
-    return this.df.getTag(C.TAGS.IDENTITY_TEMPLATE) ?? '';
-  }
-
-  set identityTemplate(template: string) {
-    this.df.setTag(C.TAGS.IDENTITY_TEMPLATE, template);
-  }
-
   async updateMutationCliffs(notify: boolean = true): Promise<void> {
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY);
     //TODO: set categories ordering the same to share compare indexes instead of strings
@@ -410,9 +403,7 @@ export class PeptidesModel {
 
   buildSplitSeqDf(): DG.DataFrame {
     const sequenceCol = this.df.getCol(this.settings.sequenceColumnName!);
-    const splitSeqDf = splitAlignedSequences(sequenceCol);
-
-    return splitSeqDf;
+    return splitAlignedSequences(sequenceCol);
   }
 
   getCompoundBitset(): DG.BitSet {
@@ -428,7 +419,33 @@ export class PeptidesModel {
     acc.root.style.width = '100%';
     const filterAndSelectionBs = trueModel.getCompoundBitset();
     const filteredTitlePart = trueModel.df.filter.anyFalse ? ` among ${trueModel.df.filter.trueCount} filtered` : '';
-    acc.addTitle(ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`));
+    const getSelectionString = (selection: type.Selection): string => {
+      const selectedMonomerPositions: string[] = [];
+      for (const [pos, monomerList] of Object.entries(selection)) {
+        for (const monomer of monomerList)
+          selectedMonomerPositions.push(`${pos}:${monomer}`);
+      }
+      return selectedMonomerPositions.join(', ');
+    };
+
+    const selectionDescription = [];
+    const selectedClusters = trueModel.clusterSelection[CLUSTER_TYPE.ORIGINAL]
+        .concat(trueModel.clusterSelection[CLUSTER_TYPE.CUSTOM]).join(', ');
+    if (selectedClusters.length !== 0)
+      ui.divText(`Selected clusters: ${selectedClusters}`);
+    const selectedMonomerPositions = getSelectionString(trueModel.invariantMapSelection);
+    if (selectedMonomerPositions.length !== 0)
+      selectionDescription.push(ui.divText(`Selected monomer-positions: ${selectedMonomerPositions}`));
+    const selectedMutationCliffs = getSelectionString(trueModel.mutationCliffsSelection);
+    if (selectedMutationCliffs.length !== 0)
+      selectionDescription.push(ui.divText(`Selected mutation cliffs pairs: ${selectedMutationCliffs}`));
+
+    const descritionsHost = ui.div(ui.divV(selectionDescription));
+    acc.addTitle(ui.divV([
+      ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`),
+      descritionsHost,
+    ], 'css-gap-small'));
+
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
         const newView = ui.label('New view');
@@ -802,7 +819,9 @@ export class PeptidesModel {
       ui.tooltip.bind(calculateIdentity, 'Adds a column with fractions of matching monomers against sequence in the current row');
       calculateIdentity.onclick = (): void => {
         const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
-        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY);
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY)
+            .then((col: DG.Column<number>) => col.setTag(C.TAGS.IDENTITY_TEMPLATE, seqCol.get(this.df.currentRowIdx)))
+            .catch((e) => _package.logger.debug(e));
       };
       actionsHost.append(ui.span([calculateIdentity], 'd4-markdown-row'));
 
@@ -811,7 +830,9 @@ export class PeptidesModel {
       ui.tooltip.bind(calculateSimilarity, 'Adds a column with sequence similarity scores against sequence in the current row');
       calculateSimilarity.onclick = (): void => {
         const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
-        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY);
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY)
+            .then((col: DG.Column<number>) => col.setTag(C.TAGS.SIMILARITY_TEMPLATE, seqCol.get(this.df.currentRowIdx)))
+            .catch((e) => _package.logger.debug(e));
       };
       actionsHost.append(ui.span([calculateSimilarity], 'd4-markdown-row'));
     }));
@@ -833,8 +854,12 @@ export class PeptidesModel {
     }));
 
     this.fireBitsetChanged(true);
-    if (typeof this.settings.targetColumnName === 'undefined')
-      this.updateMutationCliffs();
+    if (typeof this.settings.targetColumnName === 'undefined') {
+      this.updateMutationCliffs().then(() => {
+        (this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition)?.viewerGrid.invalidate();
+        (this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues)?.viewerGrid.invalidate();
+      }).catch((e) => _package.logger.debug(e));
+    }
 
     this.analysisView.grid.invalidate();
   }
