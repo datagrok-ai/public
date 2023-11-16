@@ -218,8 +218,7 @@ export class TestManager extends DG.ViewBase {
       t.resultDiv = testPassed;
       this.setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
       ui.tooltip.bind(item.root,
-        () => this.getTestsInfoGrid(
-          `Package = ${t.packageName} and category = ${t.test.category} and name =  ${t.test.name}`,
+        () => this.getTestsInfoGrid({package: t.packageName, category: t.test.category, name: t.test.name},
           NODE_TYPE.TEST, true));
       if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name)
         this.selectedNode = item;
@@ -332,8 +331,8 @@ export class TestManager extends DG.ViewBase {
           navigator.clipboard.writeText(node.captionLabel.innerText.trim());
         })
         .item('Copy URL', async () => {
-          navigator.clipboard.writeText(`${window.location.origin}/apps/DevTools${
-            this.getPath(tests, nodeType).replaceAll(' ', '%20')}`);
+          navigator.clipboard.writeText(encodeURI(`${window.location
+            .origin}/apps/DevTools${this.getPath(tests, nodeType)}`));
         });
       if (nodeType === NODE_TYPE.TEST) {
         menu.item('Run force', async () => {
@@ -594,11 +593,10 @@ export class TestManager extends DG.ViewBase {
     return acc.root;
   };
 
-  resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE) {
-    return nodeType === NODE_TYPE.PACKAGE ? `Package = ${tests.package.name}` :
-      nodeType === NODE_TYPE.CATEGORY ?
-        `Package = ${tests.packageName} and category IN (${tests.subCatsNames.join(',')})` :
-        `Package = ${tests.packageName} and category = ${tests.test.category} and name = ${tests.test.name}`;
+  resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE): object {
+    return nodeType === NODE_TYPE.PACKAGE ? {package: tests.package.name} :
+      nodeType === NODE_TYPE.CATEGORY ? {package: tests.packageName, category: tests.fullName} :
+        {package: tests.packageName, category: tests.test.category, name: tests.test.name};
   }
 
   testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -615,7 +613,7 @@ export class TestManager extends DG.ViewBase {
     ]);
   }
 
-  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
+  getTestsInfoGrid(condition: object, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
     let info = ui.divText('No tests have been run');
     if (this.testsResultsDf) {
       const testInfo = this.testsResultsDf
