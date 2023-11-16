@@ -1,5 +1,6 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
+// Control constants
 const CONTROL_TAG = '#';
 const CONTROL_SEP = ':';
 const EQUAL_SIGN = '=';
@@ -8,14 +9,20 @@ const SERVICE = '_';
 const BRACE = '{';
 const DEFAULT_TOL = '0.00005';
 export const DF_NAME = 'df';
+
+/** Solver package name */
 const ODES_PACKAGE = 'ODEs';
+
+/** Numerical solver function */
 const SOLVER_FUNC = 'solve';
 
+/** Numerical input specification */
 type Input = {
   value: number,
   annot: string | null,
 };
 
+/** Argument of IVP specification */
 type Arg = {
   name: string,
   start: Input,
@@ -23,6 +30,7 @@ type Arg = {
   step: Input
 };
 
+/** Differential equations specification */
 type DifEqs = {
   equations: Map<string, string>,
   solutionNames: string[]
@@ -44,6 +52,7 @@ type IVP = {
   usedMathConsts: number[],
 };
 
+/** Control expressions for the problem specifying */
 export enum CONTROL_EXPR {
   NAME = `${CONTROL_TAG}name`,
   TAGS = `${CONTROL_TAG}tags`,
@@ -57,6 +66,7 @@ export enum CONTROL_EXPR {
   TOL = `${CONTROL_TAG}tolerance`,
 };
 
+/** Specific error messeges */
 enum ERROR_MSG {
   ODES = 'incorrect definition of the system of ordinary differential equations',
   CONTROL_EXPR = `unsupported control expression with the tag '${CONTROL_TAG}'`,
@@ -64,6 +74,7 @@ enum ERROR_MSG {
   INITS = 'incorrect initial values specification',
 }
 
+/** Datagrok annatations */
 enum ANNOT {
   NAME = '//name:',
   DESCR = '//description:',
@@ -81,6 +92,7 @@ enum ANNOT {
   VIEWERS = 'viewer: Line chart(block: 100, sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)'
 }
 
+/** JS-scripting components */
 enum SCRIPT {
   CONSTS = '\n// constants',
   ODE_COM = '\n// the problem definition',
@@ -99,21 +111,18 @@ enum SCRIPT {
   MATH_CONST_COM = '\n// used Math-constants',
 }
 
+/** Limits of the problem specification */
 type Block = {
   begin: number,
   end: number
 }
 
-/** */
+/** Elementary math tools */
 const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh',];
-
-/** */
-const POW_IDX = 0;
-
-/** */
+const POW_IDX = MATH_FUNCS.indexOf('pow');
 const MATH_CONSTS = ['PI', 'E', ];
 
-/**  */
+/** Get strat of the problem skipping note-lines */
 function getStartOfProblemDef(lines: string[]): number {
   const linesCount = lines.length;
   let idx = 0;
@@ -125,17 +134,10 @@ function getStartOfProblemDef(lines: string[]): number {
       throw new Error(ERROR_MSG.ODES);
   }
 
-  let i = idx;
-  
-  while (i < linesCount) {
-    //console.log(`line ${i}:${lines[i]}`);
-    ++i;
-  }
-
   return idx;
 }
 
-/** */
+/** Get limits of blocks specifying IVP */
 function getBlocks(lines: string[], start: number): Block[] {
   const linesCount = lines.length;
   let beg = start;
@@ -159,7 +161,7 @@ function getBlocks(lines: string[], start: number): Block[] {
   return blocks;
 }
 
-/** */
+/** Concatenate multi-line formulas & expressions */
 function concatMultilineFormulas(source: string[]): string[] {
   const res: string[] = [ source[0] ];
 
@@ -183,7 +185,7 @@ function concatMultilineFormulas(source: string[]): string[] {
   return res;
 }
 
-/** */
+/** Get indeces of math functions used in the current text */
 function getUsedMathIds(text: string, mathIds: string[]) {
   const res = [] as number[];
   const size = mathIds.length;  
@@ -195,7 +197,7 @@ function getUsedMathIds(text: string, mathIds: string[]) {
   return res;  
 }
 
-/** */
+/** Get differential equations */
 function getDifEquations(lines: string[]): DifEqs {
   const deqs = new Map<string, string>();
   const names = [] as string[];
@@ -217,7 +219,7 @@ function getDifEquations(lines: string[]): DifEqs {
   };
 }
 
-/**  */
+/** Get expressions of IVP */
 function getExpressions(lines: string[]): Map<string, string> {
   const exprs = new Map<string, string>();  
   let eqIdx = 0;
@@ -230,7 +232,7 @@ function getExpressions(lines: string[]): Map<string, string> {
   return exprs;
 }
 
-/** */
+/** Get input specification */
 function getInput(line: string) : Input {
   const str = line.slice(line.indexOf(EQUAL_SIGN) + 1).trim();
   const braceIdx = str.indexOf(BRACE);
@@ -247,7 +249,7 @@ function getInput(line: string) : Input {
   }
 }
 
-/** */
+/** Get argument (independent variable) of IVP */
 function getArg(lines: string[]): Arg {
   if (lines.length !== 4)
     throw new Error(ERROR_MSG.ARG);
@@ -260,7 +262,7 @@ function getArg(lines: string[]): Arg {
   }
 }
 
-/**  */
+/** Get equlities specification */
 function getEqualities(lines: string[], begin: number, end: number): Map<string, Input> {
   const source = concatMultilineFormulas(lines.slice(begin, end));
   const eqs = new Map<string, Input>();
@@ -274,7 +276,7 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
   return eqs;
 }
 
-/** */
+/** Get initial value problem specification given in the text */
 export function getIVP(text: string): IVP {
   // The current Initial Value Problem (IVP) specification
   let name: string;
@@ -357,7 +359,7 @@ export function getIVP(text: string): IVP {
   };
 } // getIVP
 
-/** */
+/** Return input specification, required for annotation generating */
 function getInputSpec(inp: Input): string {
   if (inp.annot)
     return `${inp.value} ${inp.annot}`;
@@ -365,7 +367,7 @@ function getInputSpec(inp: Input): string {
   return `${inp.value}`;
 }
 
-/** */
+/** Generate annotation lines */
 function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   const res = [] as string[];
 
@@ -412,11 +414,12 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   return res;
 } // getAnnot
 
-/** */
+/** Returns math functions arguments string */
 function getMathArg(funcIdx: number): string {
   return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
 }
 
+/** Return main body of JS-script */
 function getScriptMainBody(ivp: IVP): string[] {  
   const res = [] as string[];
 
@@ -486,12 +489,12 @@ function getScriptMainBody(ivp: IVP): string[] {
   return res;
 } // getScriptMainBody
 
-/** */
+/** Return JS-script lines */
 export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   return getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
 }
 
-/** */
+/** Return parameters of JS-script */
 export function getScriptParams(ivp: IVP): Record<string, number> {
   const res = {} as Record<string, number>;
 
@@ -509,8 +512,8 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
   return res;
 }
 
-/** */
-const TEMPLATE_BASIC = `${CONTROL_EXPR.NAME}: Template 
+// TODO: to remove the following debugging lines:
+/*const TEMPLATE_BASIC = `${CONTROL_EXPR.NAME}: Template 
 ${CONTROL_EXPR.DIF_EQ}:
   dy/dt = -y + sin(t) / t
 
@@ -522,7 +525,7 @@ ${CONTROL_EXPR.ARG}: t
 ${CONTROL_EXPR.INITS}:  
   y = 0`;
 
-/** */
+
 const TEMPLATE_ADVANCED = `NOTES. This is an advanced template. Modify it. 
 Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters.
@@ -568,4 +571,4 @@ const ivp = getIVP(lines);
 console.log(ivp);
 
 console.log('==============================================================================================');
-console.log(getScriptLines(ivp));
+console.log(getScriptLines(ivp));*/
