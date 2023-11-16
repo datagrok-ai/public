@@ -148,6 +148,7 @@ M  END
     if (mol !== null) {
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
+        let molHasRebuiltCoords = false;
         const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
         const { haveReferenceSmarts, parentMolScaffoldMolString } = (details as any);
@@ -160,11 +161,12 @@ M  END
             rdKitScaffoldMol.normalize_depiction(0);
             if (molHasOwnCoords)
               mol.normalize_depiction(0);
-            else if (scaffolds[0].isSuperstructure) {
-              //need the following 3 rows for smiles with highlights to be rendered in adequate coordinates
+            else if (!haveReferenceSmarts) {
+              //need the following 4 rows for smiles with highlights to be rendered in adequate coordinates
               mol.set_new_coords();
               mol.normalize_depiction(1);
               mol.straighten_depiction(false);
+              molHasRebuiltCoords = true;
             }
             let substructString = '';
             let useCoordGen = (details as any).useCoordGen;
@@ -173,7 +175,7 @@ M  END
               useCoordGen,
               allowRGroups: true,
               acceptFailure: false,
-              alignOnly: molHasOwnCoords,
+              alignOnly: molHasOwnCoords || molHasRebuiltCoords,
             };
             let referenceSmarts;
             if (haveReferenceSmarts) {
