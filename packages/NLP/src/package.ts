@@ -5,7 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemCash, getMarkedStringAndCommonWordsMap, modifyMetric, setStemmingCash, getClosest, getEmbeddingsAdv} from './stemming-tools';
+import {stemCash, getMarkedString, modifyMetric, setStemmingCash, getClosest, getEmbeddingsAdv} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -401,7 +401,7 @@ export function similar(query: string): DG.Widget {
   const uiElements = [] as HTMLElement[];
 
   for (let i = 0; i < closest.length; ++i) {
-    const uiElem = ui.inlineText(getMarkedStringAndCommonWordsMap(closest[i], queryIdx, source.get(closest[i])));    
+    const uiElem = ui.inlineText(getMarkedString(closest[i], queryIdx, source.get(closest[i])));    
     uiElements.push(uiElem);    
     uiElements.push(ui.divText('________________________________'));    
   }

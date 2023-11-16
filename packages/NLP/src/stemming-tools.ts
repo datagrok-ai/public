@@ -25,6 +25,7 @@ type StemCash = {
   mostCommon: Set<number> | undefined,
   metricDef: Map<string, MetricInfo> | undefined,
   aggrDistance: DISTANCE_TYPE | undefined,
+  filters: DG.FilterGroup | undefined,
 };
 
 /** Column (feature) usage specification: type, metric & use. */
@@ -43,6 +44,7 @@ export var stemCash: StemCash = {
   mostCommon: undefined,
   metricDef: undefined,
   aggrDistance: undefined,
+  filters: undefined,
 };
 
 const RATIO = 0.05;
@@ -234,7 +236,7 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
 }
 
 /** Return string with marked words and a dictionary of common words. */
-export function getMarkedStringAndCommonWordsMap(curIdx: number, queryIdx: number, strToBeMarked: string): HTMLElement[] {
+export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked: string): HTMLElement[] {
   const df = grok.shell.t;
   const size = strToBeMarked.length;
 
@@ -263,15 +265,36 @@ export function getMarkedStringAndCommonWordsMap(curIdx: number, queryIdx: numbe
     p.oncontextmenu = (e) => {      
       e.stopImmediatePropagation();
       e.preventDefault();
+
       setTimeout(() => {
+        if (!stemCash.filters) {
+          let view = grok.shell.getTableView(df.name);
+          stemCash.filters = view.filters() as DG.FilterGroup;
+          stemCash.filters.updateOrAdd({
+            type: "text",
+            column: stemCash.colName,
+            value: word          
+          });
+        } 
+        else {
+          const state = stemCash.filters.getStates(stemCash.colName!, "text")[0];
+          //@ts-ignore
+          state.value = word;
+          stemCash.filters.updateOrAdd(state as DG.FilterState);
+        }
+      }, 500);
+
+      /*setTimeout(() => {
         let view = grok.shell.getTableView(df.name);
         let filters = view.filters() as DG.FilterGroup;
         filters.updateOrAdd({
           type: "text",
           column: stemCash.colName,
           value: word          
-        })
-       }, 500);
+        });
+
+        console.log(filters);
+       }, 500);*/
     };
     ui.tooltip.bind(p, 'Click to navigate. Right-click to add to filters');
 
@@ -448,6 +471,7 @@ export function setStemmingCash(df: DG.DataFrame, source: DG.Column): void {
     stemCash.mostCommon = stemmingRes.mostCommon;
     stemCash.metricDef = getSingleSourceMetricsMap(source);
     stemCash.aggrDistance = getDefaultDistnce();
+    stemCash.filters = undefined;
   }
 }
 
