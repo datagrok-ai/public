@@ -92,7 +92,7 @@ export class SankeyViewer extends DG.JsViewer {
 
   _testColumns() {
     const columns = this.dataFrame.columns.toList();
-    const strColumns = columns.filter((col) => col.type === 'string');
+    const strColumns = columns.filter((col) => col.type === 'string' && col.categories.length <= 50);
     const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
     return (strColumns!.length >= 2 && numColumns!.length >= 1);
   }
@@ -106,7 +106,7 @@ export class SankeyViewer extends DG.JsViewer {
 
     if (this._testColumns()) {
       const columns = this.dataFrame.columns.toList();
-      const strColumns = columns.filter((col) => col.type === 'string');
+      const strColumns = columns.filter((col) => col.type === 'string' && col.categories.length <= 50);
       const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
 
       this.sourceColumnName = strColumns[0].name;
@@ -182,7 +182,8 @@ export class SankeyViewer extends DG.JsViewer {
   render() {
     $(this.root).empty();
     if (!this._testColumns()) {
-      this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical and 1 numerical columns.');
+      // eslint-disable-next-line max-len
+      this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical (less than 50 unique categories) and 1 numerical columns.');
       return;
     }
 
