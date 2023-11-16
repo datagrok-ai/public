@@ -39,7 +39,7 @@ See also:
 
 Datagrok 1.17 release focuses on stability, performance, and usability improvements:
 
-* Initial Settings that enable you to configure all necessary options before using the platform.
+* The ability configure the platform through the **Settings** wizard.
 * Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
 * Function view now shows function signature if parameters are not user-editable.
 * Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/function_results_cache#client-side-cache)
