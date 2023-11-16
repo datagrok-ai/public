@@ -8,7 +8,9 @@ import './tests/pdb-helper-tests';
 import './tests/pdb-tests';
 import './tests/pdb-grid-cell-renderer-tests';
 import './tests/molstar-preview-tests';
+import './tests/molstar-viewer-tests';
 import './tests/viewers';
+import './tests/pdbqt-tests';
 
 // This _package object is for tests only.
 // Call package functions to test code calling package.ts/_package object.

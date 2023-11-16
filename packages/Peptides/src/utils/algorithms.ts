@@ -24,7 +24,7 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
   options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
   options.isFiltered ??= false;
   const monomerPositionObject = {general: {}} as MonomerPositionStats & {general: SummaryStats};
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
   let sourceDfLen = df.rowCount;
 
@@ -131,7 +131,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
   const customClustColNamesList = customClusters.map((v) => v.name);
 
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityColData = activityCol.getRawData() as Float64Array;
 
   const origClustStats: ClusterStats = {};

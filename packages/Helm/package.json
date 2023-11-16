@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.21",
+  "version": "2.1.22",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -16,6 +16,7 @@
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^5.39.6",
+    "@datagrok-libraries/chem-meta": "^1.2.1",
     "@datagrok-libraries/utils": "^4.0.17",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.10.2",

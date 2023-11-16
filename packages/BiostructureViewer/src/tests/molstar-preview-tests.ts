@@ -3,8 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
-import {_packageName} from './utils';
 import {previewMolstarUI} from '../viewers/molstar-viewer/utils';
+
+import {_package} from '../package-test';
 
 const validFileNames = ['1bdq.pdb', '1bdq.sdf', 'dc.mol2',
   '4tkx.mmcif', 'example.xyz', 'grofile.gro', 'pdbqt.pdbqt'];
@@ -35,7 +36,7 @@ category('MolstarPreview', () => {
   validFileNames.forEach((fn) => {
     test(`open${fn.substring(fn.indexOf('.'), fn.length)}`, async () => {
       let noException = true;
-      const folderName: string = `System:AppData/${_packageName}/samples`;
+      const folderName: string = `System:AppData/${_package.name}/samples`;
       const file = (
         await grok.dapi.files.list(folderName, false, fn))[0];
 
@@ -53,7 +54,7 @@ category('MolstarPreview', () => {
   // tests that opening csv through molstar causes exception. visually, error balloon should appear
   test('negative-openCsvFile', async () => {
     let noException = true;
-    const folderName: string = `System:AppData/${_packageName}/samples`;
+    const folderName: string = `System:AppData/${_package.name}/samples`;
     const file = (await grok.dapi.files.list(folderName, false, 'dock.csv'))[0];
 
     try {

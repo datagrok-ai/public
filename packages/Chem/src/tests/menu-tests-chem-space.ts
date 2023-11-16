@@ -31,7 +31,7 @@ category('top menu chem space', async () => {
   });
 
   test('chemSpaceOpens.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_100K.zip') : smallDf;
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_100K.zip') : smallDf;
     await _testChemSpaceReturnsResult(df, 'smiles');
   });
 

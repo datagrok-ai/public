@@ -74,8 +74,12 @@
 }
 
 .ua-package-widget {
-  height: 180px;
-  max-width: 400px !important;
+  max-height: 180px;
+  max-width: 380px !important;
+}
+
+.ua-package-widget > label {
+  margin-left: 5px;
 }
 
 .ua-markup label {
@@ -121,7 +125,7 @@
 }
 
 .ua-cards .ua-card > .grok-wait > .ui-div > div:first-child {
-  font-size: 24px;
+  font-size: 32px;
   line-height: 32px;
 }
 

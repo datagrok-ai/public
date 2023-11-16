@@ -13,7 +13,7 @@ import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
-import {u2} from "@datagrok-libraries/utils/src/u2";
+import {u2} from '@datagrok-libraries/utils/src/u2';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;
@@ -54,7 +54,7 @@ async function openDemoData(chosenFile: string): Promise<void> {
 //tags: app
 export function Peptides(): void {
   const appHeader = u2.appHeader({
-    iconPath:  _package.getIconUrl(),
+    iconPath: _package.getIconUrl(),
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
     description:
       '- Automatically recognizes peptides in your data\n' +
@@ -62,7 +62,7 @@ export function Peptides(): void {
       '- Logo plots to explore sequence composition\n' +
       '- Hierarchical clustering\n' +
       '- Sequence space to analyze clustering and activity cliffs\n' +
-      '- Finds statistically significant changes in activity for monomer/positions\n'
+      '- Finds statistically significant changes in activity for monomer/positions\n',
   });
 
   const windows = grok.shell.windows;

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {initSearch, powerSearch} from './search/power-search';
+import {powerSearch} from './search/power-search';
 import {widgetHost, getSettings, UserWidgetsSettings} from './utils';
 
 export function welcomeView(): DG.View | undefined {
@@ -12,10 +12,6 @@ export function welcomeView(): DG.View | undefined {
     const params = new URLSearchParams(window.location.search.slice(1));
     searchStr = params.get('q') ?? '';
   }
-
-  // let's not add this view if the platform was opened via a specific link
-  if (searchStr == null && window.location.pathname != '/' && window.location.pathname != '/login.html')
-    return undefined;
 
   const input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
@@ -49,8 +45,6 @@ export function welcomeView(): DG.View | undefined {
       }
     }
   });
-
-  initSearch();
 
   function doSearch(s: string) {
     input.value = s;

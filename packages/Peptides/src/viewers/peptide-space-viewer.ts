@@ -78,7 +78,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
         //     this.model.fireBitsetChanged(true);
         // });
 
-        const colorCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+        const colorCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY);
         edf.columns.add(colorCol);
 
         const viewerOptions = {

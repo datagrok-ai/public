@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {getSettingsBase, isSummarySettingsBase, names, SparklineType, SummarySettingsBase} from '../sparklines/shared';
-import {GridCell, GridColumn} from 'datagrok-api/src/grid';
 import {GridCellElement, LabelElement, Scene} from './scene';
 
 type ColumnNamesVisibility = 'Auto' | 'Always' | 'Never';
@@ -56,7 +55,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return SparklineType.Form; }
 
-  getDefaultSize(gridColumn: GridColumn): { width?: number | null; height?: number | null; } {
+  getDefaultSize(gridColumn: DG.GridColumn): { width?: number | null; height?: number | null; } {
     return {
       width: 200,
       height: getSettings(gridColumn).columnNames.length * 20
@@ -155,7 +154,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  onMouseMove(gridCell: GridCell, e: MouseEvent) {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
     const el = scene.hitTest(e.x, e.y);
     if (el?.style?.tooltip)
       setTimeout(() => ui.tooltip.show(el.style!.tooltip!, el.bounds.right + 10, el.bounds.top));
@@ -163,7 +162,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     //super.onMouseMove(gridCell, e);
   }
 
-  onMouseDown(gridCell: GridCell, e: MouseEvent): void {
+  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
     grok.shell.o = this.makeBestScene(gridCell).toCanvas();
   }
 

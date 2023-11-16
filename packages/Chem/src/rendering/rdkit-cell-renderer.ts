@@ -37,17 +37,19 @@ export interface IHighlightTagInfo {
 export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
   const colorArr = color ? hexToPercentRgb(color) : [1.0, 0.7, 0.7, 1.0];
   const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-  if (substrToTakeAtomsFrom.atoms) {
-    for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-      mainSubstr.highlightAtomColors ??= {};
-      mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-    };
-  }
-  if (substrToTakeAtomsFrom.bonds) {
-    for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-      mainSubstr.highlightBondColors ??= {};
-      mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-    };
+  if (substrToTakeAtomsFrom) {
+    if (substrToTakeAtomsFrom.atoms) {
+      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+        mainSubstr.highlightAtomColors ??= {};
+        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+      };
+    }
+    if (substrToTakeAtomsFrom.bonds) {
+      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+        mainSubstr.highlightBondColors ??= {};
+        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+      };
+    }
   }
 }
 
@@ -403,7 +405,7 @@ M  END
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
-    const alignByStructure = !!(filter.length || align.length || scaffoldTreeHighlight.length);
+    const alignByStructure = !!(filter.length || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }

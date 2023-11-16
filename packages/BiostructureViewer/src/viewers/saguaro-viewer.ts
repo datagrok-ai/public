@@ -9,6 +9,7 @@ import {v4 as uuidv4} from 'uuid';
 import {RcsbFv, RcsbFvDisplayTypes, RcsbFvRowConfigInterface} from '@rcsb/rcsb-saguaro';
 import {RcsbFvBoardConfigInterface} from '@rcsb/rcsb-saguaro/build/RcsbFv/RcsbFvConfig/RcsbFvConfigInterface';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
 import {_package} from '../package';
 

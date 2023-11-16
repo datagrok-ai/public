@@ -17,7 +17,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   if (!table.selection.anyTrue)
     return new DG.Widget(ui.divText('No distribution'));
 
-  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityColData = activityCol.getRawData();
   const rowCount = activityCol.length;
   const selectionObject = model.invariantMapSelection;
@@ -213,7 +213,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false): DG.Viewer<DG.IHistogramLookSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
-    valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+    valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
     splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
     legendVisibility: 'Never',
     showXAxis: true,

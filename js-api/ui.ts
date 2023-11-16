@@ -687,7 +687,7 @@ export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
 }
 
 export function inputs(inputs: Iterable<InputBase>, options: any = null) {
-  return form([...inputs], options);
+  return form([...inputs], options, true);
 }
 
 /** Creates new nodes tree.
@@ -763,8 +763,8 @@ export function intInput(name: string, value: number | null, onValueChanged: Fun
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
-export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null): InputBase<number | null> {
-  return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
+export function sliderInput(name: string, value: number | null, min: number, max: number, step: number | null = null, onValueChanged: Function | null = null): InputBase<number | null> {
+  return new InputBase(api.grok_SliderInput(name, value, min, max, step), onValueChanged);
 }
 
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
@@ -932,6 +932,29 @@ export class tools {
         childList: true,
         subtree: true
       });
+    });
+  }
+
+  static resizeFormLabels(element: HTMLElement): void {
+    this.waitForElementInDom(element).then((form)=>{
+      if(!form.classList.contains('ui-form-condensed')) {
+        form.classList.remove('ui-form');
+        let labels: number[] = [];
+        let formLabels = $(form).find('label.ui-input-label');
+        
+        formLabels.each((i)=>{
+            let renderWidth = formLabels[i]!.getBoundingClientRect().width;
+            labels.push(renderWidth);
+        });
+        
+        formLabels.each((i)=>{
+          let label = formLabels[i] as HTMLElement;
+          label.style.minWidth = String(Math.min(...labels))+'px';
+          label.style.maxWidth = String(Math.max(...labels))+'px';
+        });
+
+        form.classList.add('ui-form')
+      }
     });
   }
 }
@@ -1508,7 +1531,27 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
-export function form(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export namespace forms {
+
+  export function normal(children: InputBase[], options: {} | null = null){
+    let d = form(children, options, true);
+    return d;
+  }
+
+  export function condensed(children: InputBase[], options: {} | null = null){
+    let d = narrowForm(children, options);
+    return d;
+  }
+
+  export function wide(children: InputBase[], options: {} | null = null){
+    let d = wideForm(children, options);
+    tools.resizeFormLabels(d);
+    return d;
+  }
+  
+}
+
+export function form(children: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLDivElement {
   let d = document.createElement('div');
   if (children != null) {
     $(d).append(children.map(x => render(x)));
@@ -1516,17 +1559,27 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   _options(d, options);
   $(d).addClass('ui-form');
   
+  if (autosize) {
+    tools.resizeFormLabels(d);
+    tools.handleResize(d, (w)=>{
+      let formWidth = d.getBoundingClientRect().width;
+      if (formWidth < 200)
+        d.className = 'ui-form ui-form-condensed';
+      else if (formWidth > 200)
+        d.className = 'ui-form';
+    })
+  }
   return d;
 }
 
 export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
-  let d = form(children, options);
+  let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
 export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
-  let d = form(children, options);
+  let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;
 }

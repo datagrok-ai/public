@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {ScatterPlotViewer} from 'datagrok-api/dg';
 
 export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
   get name() : string { return 'scatterplot'; }

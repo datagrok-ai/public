@@ -83,6 +83,7 @@ declare module 'NGL' {
     renderPending: boolean;
 
     render(picking: boolean): void;
+    requestRender(): void;
 
     setSize(width: number, height: number): void;
   }

@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {_package} from '../package';
+
 export function errMsg(err: any): string {
   if (typeof err === 'string' || err instanceof String)
     return err as string;
@@ -25,4 +27,10 @@ export function errStack(err: any): string | undefined {
 
 export function errInfo(err: any): [string, string | undefined] {
   return [errMsg(err), errStack(err)];
+}
+
+export function defaultErrorHandler(err: any): void {
+  const [errMsg, errStack] = errInfo(err);
+  _package.logger.error(errMsg, undefined, errStack);
+  grok.shell.error(errMsg);
 }

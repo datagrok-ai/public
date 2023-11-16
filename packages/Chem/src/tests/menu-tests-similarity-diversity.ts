@@ -125,13 +125,13 @@ category('top menu similarity/diversity', () => {
   });
 
   test('testSimilaritySearch.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') : molecules;
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_1M.zip') : molecules;
     await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0),
       BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan);
   });
 
   test('testDiversitySearch.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') : molecules;
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_1M.zip') : molecules;
     await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
   });
 

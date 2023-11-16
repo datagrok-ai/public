@@ -1,6 +1,3 @@
-import {UaView} from './ua';
-import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -47,7 +44,7 @@ export class LogView extends UaView {
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
         });
-        filters.append(DG.Viewer.filters(t).root);
+        filters.append(DG.Viewer.filters(t, filtersStyle).root);
 
         viewer.columns.setOrder(['source', 'user', 'event_time', 'event_description']);
         viewer.col('user')!.cellType = 'html';
@@ -121,3 +118,7 @@ export class LogView extends UaView {
     ]));
   }
 }
+
+const filtersStyle = {
+  columnNames: ['source', 'user', 'event_time'],
+};

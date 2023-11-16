@@ -2,33 +2,33 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package-test';
 import {after, before, category, delay, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
-import {findMonomers, parseHelm} from '../utils';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {
+  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
-const LIB_STORAGE_NAME = 'Libraries';
-export const LIB_DEFAULT: { [fileName: string]: string } = {'HELMCoreLibrary.json': 'HELMCoreLibrary.json'};
+import {findMonomers, parseHelm} from '../utils';
 
 
 /** Tests with default monomer library */
 category('findMonomers', () => {
-
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibrariesSettings: any = null;
+  let userLibSettings: LibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
+    userLibSettings = await getUserLibSettings();
 
     // Tests 'findMonomers' requires default monomer library loaded
-    await grok.dapi.userDataStorage.post(LIB_STORAGE_NAME, LIB_DEFAULT, true);
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.loadLibraries(true); // load default libraries for tests
   });
 
   after(async () => {
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, userLibrariesSettings, true);
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadLibraries(true);
   });
 
   const tests: { [testName: string]: { test: string, tgt: Set<string> } } = {
