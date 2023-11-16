@@ -8,7 +8,9 @@ keywords:
   - low-code ui generation
   - r python julia matlab
   - cross-language
-  - jupyter
+  - modeling complex systems processes
+  - ordinary differential equations solver
+  - interactive modeling of physical processes
 ---
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
