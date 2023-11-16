@@ -160,7 +160,7 @@ The built-in editor has the **Run** button on the top panel.
 Press it to run a script. You will see the following window:
 ![Running the template script](pics/template-script-run.png)
 
-When you run a script,
+When you run a script, 
 Datagrok analyzes header parameters
 to create an input form and show the outputs.
 
@@ -172,6 +172,22 @@ After the script finishes, Datagrok collects all output parameters and displays 
 In the provided example, this is a single scalar value shown in the **Variables** panel.
 You will see the following output:
 ![The template script output](pics/template-script-output.png)
+
+:::tip Pro tip
+
+Depending on the metadata associated with the parameters, the editor can be
+enriched by [validators](scripting-advanced#parameter-validators), [choices](scripting-advanced#parameter-choices),
+and [suggestions](scripting-advanced#parameter-suggestions). Validators, choices, and suggestions are
+[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways 
+(db query, script, etc), and reused.
+
+:::
+
+### Running previously saved scripts
+
+To run the previously saved script, find it in the **Scripts** section and execute it.
+
+![Script run example](../uploads/gifs/scripting-visualization.gif "Scripting")
 
 For additional capabilities of the Datagrok script editor, see the
 [Working with Datagrok script editor](#working-with-datagrok-script-editor) section.

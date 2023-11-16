@@ -2,26 +2,22 @@
 title: "Advanced scripting in Datagrok"
 ---
 
-This section described advanced capabilities of Datagrok scripting.
+This section describes the advanced capabilities of Datagrok scripting.
 
-### Output values validation
+## Output values validation
 
 Datagrok functions return zero, one or more typed arguments.
-Any single run of the function shall always return as many
-output values as specified in the header, all having corresponding types.
-It is expected that the output values would be
-assigned throughout the script code, so that they are defined by the end of the script.
-If for some reason this doesn't
-happen, the two things will follow:
+Datagro expects that all output values are assigned in the script code
+ so that they are defined by the end of the script.
+If this doesn't happen, the two things will follow:
 
-1. The unset output values would still be returned, but valued as `null`-s.
-
-2. A warning `Output value ${output.param.name} was not set` will be print to
+1. The unset output values will be returned as `null`-s.
+2. A warning `Output value ${output.param.name} was not set` will be printed in the 
    [Datagrok Console](../datagrok/navigation/navigation.md#console) (open it with `Ctrl-~`).
 
-In this script the value `c3` is missed to be set:
+In this script, the value `c3` is missed to be set:
 
-```
+```R
 #name: TestMissingInputsR
 #language: r
 #output: int c1
@@ -33,7 +29,7 @@ c2 <- 15
 
 Running the script produces the following output to the console:
 
-```
+```R
 Output value c3 was not set
   c1: 12
   c2: 15
@@ -42,103 +38,30 @@ Output value c3 was not set
 
 We recommend using the Datagrok Console while validating your scripts.
 
-### Advanced ways to execute scripts
-
-First of all, a script can be executed right from the script editor (see picture below).
-
-Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). In this case, it gets
-registered in the platform as a
-[function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
-
-* From the [console](../datagrok/navigation/navigation.md#console)
-* From the data job
-* From the [transformations editor](../transform/recipe-editor.md)
-* From the [function browser](https://public.datagrok.ai/functions)
-
-![Scripting](../uploads/gifs/scripting-visualization.gif "Scripting")
-
-When a function is invoked with no explicitly specified parameters, a dialog is shown. The UI is automatically generated
-by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
-enriched by [validators](#parameter-validators), [choices](#parameter-choices),
-and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways (db query, script,
-etc), and reused.
-
-Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
-
-```javascript
-grok.functions.call(`${packageName}:${scriptName}`, { params });
-```
-
-To see it in action, open this
-[code snippet](https://public.datagrok.ai/js/samples/scripting/scripting) from our samples gallery. There you can find
-more examples, such as
-[adding a progress indicator](https://public.datagrok.ai/js/samples/functions/progress) to the user interface.
-
-Scripts that have multiple output parameters may require a different approach. The
-`grok.functions.call` method returns only the first output value, thus, in order to get all of them, you should work
-with a function call:
-
-```javascript
-let f = await grok.functions.eval(`${packageName}:${scriptName}`);
-let call = f.prepare({ params });
-await call.call();
-call.getParamValue('paramName');
-```
-
-In the first line we evaluate an expression and get the function that corresponds to our script. After passing the input
-parameters and executing the script, we can retrieve any output value by the parameter's name.
-
 ## Environments
 
 ### Conda environments
 
-Each script can be given a specific environment configuration under which it will run, including the language verison
-and a set of libraries. [Conda](https://docs.conda.io/en/latest/)
-is used as the environment management system. Conda environment is specified as a yaml configuration file or a string.
+Each script can use a specific environment configuration under which it will run, 
+including the language version and a set of libraries. 
 
-The benefit of using a Conda environment is that it gives a completely sandboxed, controlled area for running scripts,
-and only takes time once to be pre-created and later be re-used by a reference with no delay for resolving dependencies
+Datagrok uses [Conda](https://docs.conda.io/en/latest/)
+as the environment management system. 
+A Conda environment gives a sandboxed, controlled area for running scripts,
+and only takes time to be pre-created.  
+Later, the script uses the pre-created environment with no delay for resolving dependencies
 and installing language versions.
 
-In Datagrok, Conda environment confinugration can be specified either right inside the script, or as part of
-a [package](../develop/develop.md#packages). The package can be both the one containing the script or any other deployed
-package with specified environment and available under your current user.
-
-#### Specify environment in a package
-
-Environment configuration is stored in the default Conda yaml format and can be
-[exported](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
-or [created manually](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually)
-.
-
-Configurations are stored in the same repository with the script, in the folder called
-`environments` located under the repository root. Here is an
-[example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
-for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define its own
-configurations as well (
-[see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts)).
-
-If the `#environment` tag in the script header is not specified, the script uses the configuration defined in
-[`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
-
-This is how to define the "Chemprop" environment in the script header:
-
-```
-#environment: Chemprop
-```
-
-In this case, the environment `Chemprop` should be specified in a file
-`environments/Chemprop.yaml` inside the package where this script belongs.
-
-Datagrok identifies and resolves environments by their names. If an environment referred in a script wasn't previously
-used, it will first be created on the
-[Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components). This may take up to several minutes.
-If it was used at least once, a previously created environment will be re-used with no delay to run the script.
+In Datagrok, Conda environment confinugration can be specified either right inside the script, 
+or as part of
+a [package](../develop/develop.md#packages). 
+The package can be both the one containing the script or any other deployed
+package available under your current user with a specified environment.
 
 #### Specify environment in-place
 
-Set an `environment` parameter of the script to a one-liner yaml specifying the standard Conda yaml config, but omitting
+Set an `environment` parameter of the script to a one-liner YAML 
+following the standard Conda yaml config, but omitting
 its name and enclosing braces `{}`. For example, we need to use the following Conda yaml config:
 
 ```yaml
@@ -168,90 +91,187 @@ target = {'a': {'b': {'c': 'd'}}}
 result = glom(target, 'a.b.c')  # returns 'd'
 ```
 
-When the script runs first time, the environment will be created on
-the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components), which may take some time, up to
-several minutes. However, on the second run and onwards this environment will simply be reused. If the environment
-string is changed in this script to some other environment which was previously created in same way even in some other
-script, this environment will also be picked up and reused. These environments are handeled by Datagrok using MD5 hashes
-of their body strings.
+When the script runs the first time, Datagrok creates the environment on
+the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components), 
+which may take some time, up to several minutes. 
+For all next script runs, Datagrok will reuse this environment. 
+
+Datagrok handles in-pace environments using MD5 hashes of their body strings.
+Therefore, if you change the environment string to another previously created environment 
+(even in some other script), 
+Datagrok will pick it up and reuse it. 
+
+#### Specify the environment in a package
+
+Configurations are stored in conda YAML format in the same repository with the script 
+in the folder `environments` under the repository root. 
+You can create an environment YAML
+[manually](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually)
+or
+[export it](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
+form your existing Conda environment.
+If the `#environment` tag in the script header is not specified, the script uses the configuration defined in
+[`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
+
+Here is an
+[example of configuration](https://github.com/datagrok-ai/public/tree/master/environments)
+for the [Datagrok public repository](https://github.com/datagrok-ai/public). 
+Also, a package can define its own
+configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts)).
+
+This is how to define the "Chemprop" environment in the script header:
+
+```python
+#environment: Chemprop
+```
+
+In this case, the environment `Chemprop` should be specified in a file
+`environments/Chemprop.yaml` inside the package where this script belongs.
+
+Datagrok identifies and resolves environments by their names. 
+If an environment referred in a script wasn't previously
+used, Datagrok will create it on the
+[Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components). 
+This operation can take up to several minutes.
+Datagrok will reuse a previously created environment for all subsequent runs 
+with no delay.
 
 #### Reference an environment from another package
 
-An environment `SomeEnv` specified in a package `SomePackage` is available from all scripts in the platform for
-referencing as `SomePackage:SomeEnv`. If the package `SomePackage` is available to the current user, the reference will
-work. Such environment reference is abailable in both package scripts and ad-hoc scripts created in the platform UI.
+An environment `SomeEnv` specified in a package `SomePackage` 
+is available from all scripts in the platform for
+referencing as `SomePackage:SomeEnv`. 
+If the package `SomePackage` is available to the current user, the reference will
+work. 
+
+Such environment reference is available in both package and ad-hoc scripts.
 
 #### Global environments
 
-Environment referencing is a handy way to organize global (organization-wide) environments. This will let an
-administrator version such common environments through a dedicated package, and exactly one physical environment will be
-re-used by many users, which is more space and time efficient.
+Environment referencing is a handy way to organize global (organization-wide) environments. 
+You can version such common environments through a dedicated package, 
+and one physical environment will be re-used by many users, which is more space- and time-efficient.
 
-Do the following steps:
+To achieve it, do the following steps:
 
-1. Agree that one package, say, `GlobalEnvs` will now contain global environments
+1. Choose one package, say, `GlobalEnvs`, which will contain global environments.
 2. Choose a common prefix to name these global environments with, say, `Global`
 3. Name all global environments in this package with the chosen prefix: `Global<ENVIRONMENT_NAME>`
-4. Publish `GlobalEnvs` platform as `--release` to the platform and share it to `All Users`, or to the group of users
-   you want to have access to these environments
+4. Publish `GlobalEnvs` package as `--release` to the platform and share it with the `All Users` group 
+   or with the specific group of users you want to have access to these environments
 5. Let other users know these environments are now available as
    `GlobalEnvs:Global<ENVIRONMENT_NAME>`
 
-In the future, a script editor will be provided in Datagrok. For the property `#environment:` of the script, it will
-enumerate in a dropdown list all available environments for the current user and the current script.
-
-#### Common practices with Conda environments
-
-It is a [known](https://github.com/conda/conda/issues/8051#issuecomment-464199791)
-[issue](https://github.com/conda/conda/issues/8051#issuecomment-631862928)
-[of Conda](https://github.com/conda/conda/issues/8051#issuecomment-808789923) that it tends to sometimes take a large
-time to resolve (set up) an environment. Datagrok will interrupt Conda environment creation if it takes more than 5
-minutes.
-
-While we haven't found a workaround to this feature of Conda, we can recommend a way forward if you encounter a timing
-problem with your Conda environment. It is often possible to find an equivalent set of packages from `pip` repositories.
-Using `pip` via Conda environments doesn't have timing issues, and we advise to use the `pip` section of Conda yaml spec
-to set up your libraries of interest.
+In the future, for the `# environment:` property, the Datagrok script editor will
+show all available environments for the current user and the current script in a dropdown list.
 
 #### Conda and Pip custom repositories
 
-By default, conda uses conda-forge and pypi repositories to install packages. It is possible to specify custom conda and pip repositories in environments, for example to use `http://my-repo/custom/` as conda repository and `https://mirrors.sustech.edu.cn/pypi/simple` as pip repository use the following code
+By default, conda uses conda-forge and pypi repositories to install packages. 
+It is possible to specify custom conda and pip repositories in environments. 
+For example, to use `http://my-repo/custom/` as Conda repository 
+and `https://mirrors.sustech.edu.cn/pypi/simple` as PIP repository use the following code:
 
-```
+```python
 # environment: channels: [http://my-repo/custom/], dependencies: [python=3.8, glom, {pip: [--index-url https://mirrors.sustech.edu.cn/pypi/simple, requests]}]
 ```
 
+#### Common issues with Conda environments
+
+It is a [known](https://github.com/conda/conda/issues/8051#issuecomment-464199791)
+[issue](https://github.com/conda/conda/issues/8051#issuecomment-631862928)
+[of Conda](https://github.com/conda/conda/issues/8051#issuecomment-808789923) 
+that sometimes it takes a large
+time to resolve (set up) an environment. 
+Datagrok will interrupt Conda environment creation if it takes more than 5
+minutes.
+
+We can recommend a way forward if you encounter a timing
+problem with your Conda environment. 
+It is often possible to find an equivalent set of packages from `pip` repositories.
+Using `pip` via Conda environments doesn't have timing issues, 
+and we advise you to use the `pip` section of Conda YAML spec
+to set up your libraries of interest.
+
 ### Renv environments
 
-[_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R
+[_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. 
+Datagrok runs each R
 script in a temporary folder with a unique name. This folder becomes an
 _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a
 [full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/r/renv_spelling.R)):
 
-```
+```R
 #language: r
-...
+
 renv::init()
 renv::install("hunspell@3.0.1")
-...
 ```
 
-An _renv_ session only impacts the R environment for this one single run, and no other R scripts running in parallel by
-the users of the platform are aware of this local script environment.
-_Renv_ uses a global package cache. It caches a package requested once with `renv::install` and re-uses whenever it is
-requested onward. However, in case the latest package version is requested, such as in `renv::install("hunspell")`, _
-renv_ connects to remote R package repositories assuring if the cached package needs to be updated to the newer version.
-This may introduce a significant delay into the script, several seconds in practice. To avoid this, we recommend
+An _renv_ session only impacts the R environment for this one single run.
+No other R scripts are aware of this local script environment.
+
+_Renv_ uses a global package cache. 
+It caches a package requested once with `renv::install` and re-uses it whenever it is
+requested. 
+
+However, in case the latest package version is requested, 
+such as in `renv::install("hunspell")`, 
+_renv_ connects to remote R package repositories 
+assuring if the cached package needs to be updated to the newer version.
+This may introduce a significant delay in the script run, several seconds in practice. 
+To avoid this, we recommend
 installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`.
 
-_Note_. At the R script's start and finish, Datagrok calls `renv::deactivate()` to assure the script's body isolation.
+_Note_. At the R script's start and finish, 
+Datagrok calls `renv::deactivate()` to assure the script's body isolation.
 Therefore, the script's author doesn't need to call
 `renv::deactivate()` manually.
 
 We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/articles/lockfile.html)
-shipped with packages similarly to how it works now for Conda `yaml` files.
+shipped with packages similar to how it works now for Conda `yaml` files.
+
+## Advanced ways to execute scripts
+
+First of all, a script can be executed right from the script editor,
+as described in [run script section](scripting-for-non-developers#how-to-run-a-script).
+
+Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). 
+In this case, it gets registered in the platform as a
+[function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
+
+* From the [console](../datagrok/navigation/navigation.md#console)
+* From the data job
+* From the [transformations editor](../transform/recipe-editor.md)
+* From the [function browser](https://public.datagrok.ai/functions)
+
+Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
+
+```javascript
+grok.functions.call(`${packageName}:${scriptName}`, { params });
+```
+
+To see it in action, open this
+[code snippet](https://public.datagrok.ai/js/samples/scripting/scripting) from our samples gallery. 
+There, you can find more examples, such as
+[adding a progress indicator](https://public.datagrok.ai/js/samples/functions/progress) to the user interface.
+
+Scripts that have multiple output parameters may require a different approach. The
+`grok.functions.call` method returns only the first output value. 
+To get all values, you should work with a function call:
+
+```javascript
+let f = await grok.functions.eval(`${packageName}:${scriptName}`);
+let call = f.prepare({ params });
+await call.call();
+call.getParamValue('paramName');
+```
+
+In the first line we evaluate an expression and get the function that corresponds to our script. 
+After passing the input parameters and executing the script, 
+we can retrieve any output value by the parameter's name.
 
 ## Parameters
 
