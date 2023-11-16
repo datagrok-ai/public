@@ -1,0 +1,47 @@
+import * as grok from 'datagrok-api/grok';
+import {delay, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {DockerContainer} from 'datagrok-api/dg';
+
+export async function awaitContainerStart(containerName: string, tries: number = 3): Promise<DockerContainer> {
+  let dockerContainer;
+  let count: number = 0;
+  do {
+    dockerContainer = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+    count++;
+    if (dockerContainer.status == 'started' || dockerContainer.status == 'checking')
+      return dockerContainer;
+    await delay(500);
+  }
+  while (count < tries);
+  throw Error('Container didn\'t start');
+}
+
+category('Packages: Docker', () => {
+  const containerName: string = 'Apitests-docker-test1';
+
+  test('Get response', async () => {
+    const container = await awaitContainerStart(containerName);
+    await testResponse(container.id);
+  }, {timeout: 30000});
+
+  test('Get build logs', async () => {
+    const image = await grok.dapi.docker.dockerImages.filter(containerName).first();
+    expect(image.status === 'ready');
+    expect(!image.logs || image.logs.length === 0, false);
+  });
+
+  test('Get container logs', async () => {
+    const container = await awaitContainerStart(containerName);
+    const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
+    expect(!logs || logs.length === 0, false);
+  });
+});
+
+async function testResponse(containerId: string): Promise<void> {
+  const params: RequestInit = {
+    method: 'GET',
+  };
+  const path = '/square?number=4';
+  const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
+  expect(response?.trim(), '{"result":16}');
+}

@@ -13,6 +13,7 @@ import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
+import {u2} from '@datagrok-libraries/utils/src/u2';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;
@@ -52,26 +53,17 @@ async function openDemoData(chosenFile: string): Promise<void> {
 //name: Peptides
 //tags: app
 export function Peptides(): void {
-  const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
-  const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
-
-  const appDescription = ui.info([
-    ui.list([
-      '- automatic recognition of peptide sequences',
-      '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
-        'multivariate analysis, etc)',
-      '- custom rendering in the spreadsheet',
-      '- interactive logo plots',
-      '- rendering residues',
-      '- structure-activity relationship:',
-      ' ',
-      'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet',
-      'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in ' +
-        'this position vs rest of the monomers in this position)',
-      'c) interactivity',
-    ]),
-  ], 'Use and analyse peptide sequence data to support your research:',
-  );
+  const appHeader = u2.appHeader({
+    iconPath: _package.getIconUrl(),
+    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
+    description:
+      '- Automatically recognizes peptides in your data\n' +
+      '- Invariant map and mutation cliffs\n' +
+      '- Logo plots to explore sequence composition\n' +
+      '- Hierarchical clustering\n' +
+      '- Sequence space to analyze clustering and activity cliffs\n' +
+      '- Finds statistically significant changes in activity for monomer/positions\n',
+  });
 
   const windows = grok.shell.windows;
   windows.showToolbox = false;
@@ -79,8 +71,7 @@ export function Peptides(): void {
   windows.showProperties = false;
 
   grok.shell.newView('Peptides', [
-    appDescription,
-    ui.info([textLink]),
+    appHeader,
     ui.divH([
       ui.button('Simple demo', () => openDemoData('aligned.csv'), ''),
       ui.button('Complex demo', () => openDemoData('aligned_2.csv'), ''),

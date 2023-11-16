@@ -14,6 +14,7 @@
 * Reset monomer placer on monomer lib changed.
 * Fix Pistoia Helm WebEditor settings for case-sensitive monomer libs.
 * Fix cell renderer monomer tooltip for polymer type
+* Patch WebEditor hanging on getTextWidth
 
 ## 2.1.16 (2023-07-21)
 

@@ -5,19 +5,18 @@ import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
 import '../style/translator-app.css';
-import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
-import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
-import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
+import {SequenceToMolfileConverter} from '../../model/structure-app/sequence-to-molfile';
+import {getTranslatedSequences} from '../../model/translator-app/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/oligo-translator';
 import {DEFAULT_AXOLABS_INPUT} from '../const/ui';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
-import {FormatConverter} from '../../model/format-translation/format-converter';
+import {FormatConverter} from '../../model/translator-app/format-converter';
 import {codesToHelmDictionary} from '../../model/data-loading-utils/json-loader';
 import {DEFAULT_FORMATS} from '../../model/const';
 
@@ -74,12 +73,19 @@ export class TranslatorLayoutHandler {
 
     const formatChoiceInput = ui.div([this.formatChoiceInput]);
 
+    const clearButton = ui.button(
+      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = '' }),
+      () => {}
+    );
+    ui.tooltip.bind(clearButton, 'Clear input');
+
     const inputTableRow = {
       format: formatChoiceInput,
       textInput: sequenceColoredInput.root,
+      clearBtn: clearButton
     };
     const upperBlock = ui.table(
-      [inputTableRow], (item) => [item.format, item.textInput]
+      [inputTableRow], (item) => [item.format, item.textInput, item.clearBtn]
     );
     upperBlock.classList.add('st-translator-input-table');
 

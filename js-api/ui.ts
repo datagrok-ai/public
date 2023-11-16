@@ -127,7 +127,9 @@ export function canvas(width: number | null = null, height: number | null = null
   return result as HTMLCanvasElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h1');
   if (typeof s === 'string')
@@ -137,7 +139,9 @@ export function h1(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h2');
   if (typeof s === 'string')
@@ -147,7 +151,9 @@ export function h2(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** @returns {HTMLHeadingElement} */
+/** 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ * @returns {HTMLHeadingElement} */
 export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h3');
   if (typeof s === 'string')
@@ -158,13 +164,14 @@ export function h3(s: string | Element, options: string | ElementOptions | null 
 }
 
 /** Creates an accordion with dynamically populated panes.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/accordion}
  * @returns {Accordion} */
 export function accordion(key: any = null): Accordion {
   return Accordion.create(key);
 }
 
 /**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param {Object} pages - list of page factories
  * @param {boolean} vertical
  * @returns {TabControl} */
@@ -179,7 +186,8 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
   return tabs;
 }
 
-/** Returns DivElement with the specified inner text
+/** Returns DivElement with the specified inner text.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {string} text
  * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
@@ -194,12 +202,15 @@ export function tags(entity: Entity): HTMLElement {
   return api.grok_UI_Tags(entity.dart);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown}
+ */
 export function markdown(text: string): HTMLElement {
   return api.grok_UI_Markdown(text);
 }
 
 /** Returns a font-awesome icon with the specified name, handler, and tooltip.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/icons}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/icons}
  * @param {string} name - icon name (omit the "fa-" prefix)
  * @param {Function} handler
  * @param {String} tooltipMsg
@@ -216,7 +227,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+export function iconImage(name: string, path: string,
+                          handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
+                          tooltipMsg: string | null = null,
+                          options: ElementOptions | null = null
+                          ): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('image-icon');
@@ -227,7 +242,7 @@ export function iconImage(name: string, path: string, handler: ((this: HTMLEleme
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
-  return i;
+  return _options(i, options);
 }
 
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
@@ -307,7 +322,8 @@ export function renderInline(x: HTMLElement): HTMLElement {
 }
 
 
-/** Renders inline text, calling [renderMarkup] for each non-HTMLElement
+/** Renders inline text, calling [renderMarkup] for each non-HTMLElement.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @param {object[]} objects
  * @returns {HTMLElement}. */
 export function inlineText(objects: any[]): HTMLElement {
@@ -330,6 +346,9 @@ export function div(children: any[] | string | HTMLElement = [], options: string
   return d;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar} 
+ */
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
   let root: HTMLDivElement | null;
   let divContent: HTMLElement[] = [];
@@ -361,6 +380,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 }
 
 /** Div flex-box container that positions child elements vertically.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -369,10 +389,11 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
 }
 
 /** Div flex-box container that positions child elements horizontally.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
-export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
@@ -381,16 +402,23 @@ export function card(content: HTMLElement): HTMLDivElement {
   return div([content], 'd4-item-card');
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+ */
 export function loader(): any {
   return api.grok_UI_Loader();
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
+ */
 export function setUpdateIndicator(element: HTMLElement, updating: boolean = true): void {
   return api.grok_UI_SetUpdateIndicator(element, updating);
 }
 
 /**
- * Creates a button with the specified text, click handler, and tooltip
+ * Creates a button with the specified text, click handler, and tooltip.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons}
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
@@ -404,7 +432,8 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
- * Creates a combo popup with the specified icons and items
+ * Creates a combo popup with the specified icons and items.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
@@ -423,7 +452,9 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
-/** Creates an html table based on [map]. */
+/** Creates an html table based on [map]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
+*/
 export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
   return api.grok_UI_TableFromMap(map);
 }
@@ -440,17 +471,23 @@ export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) |
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
-/** Waits for `Future<Element>` function to complete and collect its result.*/
+/** Waits for `Future<Element>` function to complete and collect its result.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+*/
 export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
-/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.*/
+/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/loading-indicators}
+*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
 
-/** Creates a visual element representing list of [items]. */
+/** Creates a visual element representing list of [items]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
+*/
 export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
   const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
   if (options?.processNode != null)
@@ -458,7 +495,9 @@ export function list(items: any[], options?: {processNode?: (node: HTMLElement) 
       options.processNode(c as HTMLElement);
   return host;
 }
-
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/iframe}
+ */
 export function iframe(options?: {src?: string, width?: string, height?: string}) {
   let frame = element('iframe') as HTMLIFrameElement;
   if (options?.src != null)
@@ -490,6 +529,9 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/image}
+ */
 export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
@@ -528,7 +570,9 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog]. */
+/** Creates a [Dialog]. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
+*/
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
@@ -549,6 +593,9 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/range-slider}
+ */
 export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false, style: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
   let rs = RangeSlider.create(vertical, style);
   rs.setValues(minRange, maxRange, min, max);
@@ -557,7 +604,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
 
 /**
  * Creates a virtual list widget.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/virtual-view}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/views/virtual-view}
  * @param {number} length - number of elements
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
@@ -585,6 +632,9 @@ export function popupMenu(items: any): void {
   menu.show();
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/drag-and-drop}
+ */
 export function makeDraggable<T>(e: Element,
     options?: {
       allowCopy?: () => boolean,
@@ -637,11 +687,11 @@ export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
 }
 
 export function inputs(inputs: Iterable<InputBase>, options: any = null) {
-  return form([...inputs], options);
+  return form([...inputs], options, true);
 }
 
 /** Creates new nodes tree.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tree-view}
  * @returns {TreeViewGroup} */
 export function tree(): TreeViewGroup {
   return TreeViewGroup.tree();
@@ -713,8 +763,8 @@ export function intInput(name: string, value: number | null, onValueChanged: Fun
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
-export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null): InputBase<number | null> {
-  return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
+export function sliderInput(name: string, value: number | null, min: number, max: number, step: number | null = null, onValueChanged: Function | null = null): InputBase<number | null> {
+  return new InputBase(api.grok_SliderInput(name, value, min, max, step), onValueChanged);
 }
 
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
@@ -780,7 +830,7 @@ export function radioInput(name: string, value: string, items: string[], onValue
 }
 
 /**
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
  * @returns {rxjs.Observable} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
@@ -884,6 +934,29 @@ export class tools {
       });
     });
   }
+
+  static resizeFormLabels(element: HTMLElement): void {
+    this.waitForElementInDom(element).then((form)=>{
+      if(!form.classList.contains('ui-form-condensed')) {
+        form.classList.remove('ui-form');
+        let labels: number[] = [];
+        let formLabels = $(form).find('label.ui-input-label');
+        
+        formLabels.each((i)=>{
+            let renderWidth = formLabels[i]!.getBoundingClientRect().width;
+            labels.push(renderWidth);
+        });
+        
+        formLabels.each((i)=>{
+          let label = formLabels[i] as HTMLElement;
+          label.style.minWidth = String(Math.min(...labels))+'px';
+          label.style.maxWidth = String(Math.max(...labels))+'px';
+        });
+
+        form.classList.add('ui-form')
+      }
+    });
+  }
 }
 
 /** Represents a tooltip. */
@@ -894,10 +967,52 @@ export class Tooltip {
     api.grok_Tooltip_Hide();
   }
 
-  /** Associated the specified visual element with the corresponding item. */
+  /** Associated the specified visual element with the corresponding item. 
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
+  */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
-    if (tooltip != null)
+    if (tooltip != null){
       api.grok_Tooltip_SetOn(element, tooltip);
+
+        tools.waitForElementInDom(element).then((el)=>{ 
+          if(el.classList.contains('d4-disabled')) {
+            let overlay = document.createElement('span');
+            overlay.style.position = 'fixed';
+
+            if ($('body').has('.d4-tooltip-overlays').length !=0)
+              $('.d4-tooltip-overlays').append(overlay)
+            else
+              $('body').append(div([overlay],'d4-tooltip-overlays'));
+            
+            let interval = setInterval(()=> {
+              let target = el.getBoundingClientRect();
+              overlay.style.left = String(target.left)+'px';
+              overlay.style.top = String(target.top)+'px';
+              overlay.style.width = String(target.width)+'px';
+              overlay.style.height = String(target.height)+'px';
+              
+              if ($('body').has(el).length == 0) { 
+                overlay.remove();
+                clearInterval(interval);
+              }
+
+            }, 100);
+
+            overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+              api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
+            });
+
+            overlay.addEventListener('mouseleave', (e:MouseEvent)=> {
+              setTimeout(()=>{
+                api.grok_Tooltip_Hide();
+              }, 250)
+            });
+
+          }
+
+        });
+      
+    }
     return element;
   }
 
@@ -950,7 +1065,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
 export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
@@ -1068,7 +1183,7 @@ export class ObjectHandler {
    * It will be suggested to run in the context menu for that object, and
    * also in the "Actions" pane on the context panel.
    *
-   * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
    * @param {string} name - function name
    * @param run - a function that takes exactly one parameter
@@ -1099,6 +1214,9 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box} 
+ */
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
     item = item.root;
@@ -1122,7 +1240,9 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically. */
+/** Div flex-box container that positions child elements vertically. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters} 
+*/
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
   if (resize && items.length > 1){
@@ -1138,14 +1258,30 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootHeight = x.getBoundingClientRect().height;
-    
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          $(b.childNodes[i]).attr('style', `height:${(rootHeight/items.length-($(b).find('.ui-split-h-divider').length*4)/items.length)}px;`);
-        } else {
-          $(b.childNodes[i]).css('height', 4);
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultHeigh = 0;
+      let noHeightCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height != '') {
+            defaultHeigh += Number(element.style.height.replace(/px$/, ''));
+          } else {
+            noHeightCount++;
+          }
+        }else{
+          element.style.height = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-v-divider')) {
+          if (element.style.height == '') {
+            let height = (rootHeight-defaultHeigh-($(b).find('.ui-split-v-divider').length*4))/noHeightCount;
+            element.style.height = String(height)+'px';
+          }
         }
-      }
+      })
 
     });
 
@@ -1154,7 +1290,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 
       for (let i = 0; i < b.children.length; i++){
         if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
-          $(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
+          let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
+          $(b.childNodes[i]).css('height', String(height)+'px');
+          //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
         } else {
           $(b.childNodes[i]).css('height', 4);
         }
@@ -1168,7 +1306,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally. */
+/** Div flex-box container that positions child elements horizontally. 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
+*/
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
 
@@ -1185,14 +1325,30 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootWidth = x.getBoundingClientRect().width;
-    
-      for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          $(b.childNodes[i]).attr('style', `width:${(rootWidth/items.length-($(b).find('.ui-split-h-divider').length*4)/items.length)}px;`);
-        } else {
-          $(b.childNodes[i]).css('width', 4);
+      const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
+      let defaultWidth = 0;
+      let noWidthCount = 0;
+      
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width != '') {
+            defaultWidth += Number(element.style.width.replace(/px$/, ''));
+          } else {
+            noWidthCount++;
+          }
+        }else{
+          element.style.width = '4px';
+        } 
+      });
+
+      childs.forEach((element) => { 
+        if (!element.classList.contains('ui-split-h-divider')) {
+          if (element.style.width == '') {
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            element.style.width = String(width)+'px';
+          }
         }
-      }
+      })
 
     });
 
@@ -1201,7 +1357,8 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
 
       for (let i = 0; i < b.children.length; i++){
         if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
-          $(b.childNodes[i]).attr('style', `width:${(w-rootWidth)/b.children.length+$(b.childNodes[i]).width()}px;`);
+          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
           $(b.childNodes[i]).css('width', 4);
         }
@@ -1268,12 +1425,24 @@ function onMouseMove(e: any) {
   const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
   if (horizontal) {
       delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
-      previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
-      nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
+      //$(previousSibling).css('width', md.leftWidth + delta.x);
+      //$(nextSibling).css('width', md.rightWidth - delta.x);
+      let newPrevWidth = md.leftWidth + delta.x;
+      let newNextWidth = md.rightWidth - delta.x;
+      previousSibling.style.width = String(newPrevWidth)+'px';
+      nextSibling.style.width = String(newNextWidth)+'px';
+      //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
+      //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
   } else {
       delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
-      previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
-      nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
+      //$(previousSibling).css('height', md.topHeight + delta.y);
+      //$(nextSibling).css('height', md.bottomHeight - delta.y);
+      let newPrevHeight = md.topHeight + delta.y;
+      let newNextHeight = md.bottomHeight - delta.y;
+      previousSibling.style.height = String(newPrevHeight)+'px';
+      nextSibling.style.height = String(newNextHeight)+'px';
+      //previousSibling.setAttribute('style',`height: ${(md.topHeight + delta.y)}px;`);
+      //nextSibling.setAttribute('style',`height: ${(md.bottomHeight - delta.y)}px;`);
   }
 }
 }
@@ -1295,30 +1464,45 @@ export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
   return root;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-75');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-25');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/blocks}
+ */
 export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-50');
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ */
 export function p(text: string, options: any = null): HTMLParagraphElement {
   let c = document.createElement('p');
   c.textContent = text;
@@ -1327,12 +1511,18 @@ export function p(text: string, options: any = null): HTMLParagraphElement {
   return c;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels} 
+ */
 export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
   let e = div(items, options);
   $(e).addClass('ui-panel');
   return e;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
+ */
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
   let c = document.createElement('label');
   c.textContent = text;
@@ -1341,7 +1531,27 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
-export function form(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export namespace forms {
+
+  export function normal(children: InputBase[], options: {} | null = null){
+    let d = form(children, options, true);
+    return d;
+  }
+
+  export function condensed(children: InputBase[], options: {} | null = null){
+    let d = narrowForm(children, options);
+    return d;
+  }
+
+  export function wide(children: InputBase[], options: {} | null = null){
+    let d = wideForm(children, options);
+    tools.resizeFormLabels(d);
+    return d;
+  }
+  
+}
+
+export function form(children: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLDivElement {
   let d = document.createElement('div');
   if (children != null) {
     $(d).append(children.map(x => render(x)));
@@ -1349,17 +1559,27 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   _options(d, options);
   $(d).addClass('ui-form');
   
+  if (autosize) {
+    tools.resizeFormLabels(d);
+    tools.handleResize(d, (w)=>{
+      let formWidth = d.getBoundingClientRect().width;
+      if (formWidth < 200)
+        d.className = 'ui-form ui-form-condensed';
+      else if (formWidth > 200)
+        d.className = 'ui-form';
+    })
+  }
   return d;
 }
 
 export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
-  let d = form(children, options);
+  let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
 export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
-  let d = form(children, options);
+  let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;
 }
@@ -1403,10 +1623,16 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
+/**  
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs} 
+ */
 export function breadcrumbs(path: string[]): Breadcrumbs {
   return new Breadcrumbs(path);
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
+ */
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
   return new DropDown(label, createElement);
 }
@@ -1449,6 +1675,9 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/file-browser}
+ */
 export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): Widget {
   return FilesWidget.create(params);
 }
@@ -1462,7 +1691,9 @@ export namespace tools {
 
 export namespace cards {
 
-  /** Two columns, with picture on the left and details on the right */
+  /** Two columns, with picture on the left and details on the right. 
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/components/summary-card}
+  */
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
     return divH([
       $(picture).addClass('ui-card-picture').get()[0],
@@ -1540,7 +1771,9 @@ export namespace hints {
     return root;
   }
 
-  /** Adds a hint indication to the provided element and returns it. */
+  /** Adds a hint indication to the provided element and returns it.
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/hints}
+   */
   export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
     const id = Math.floor(Math.random() * 1000);
     const hintIndicator = document.createElement('div');
@@ -1583,7 +1816,7 @@ export namespace hints {
    * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
    * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
    * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
-   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+   * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/wizard-hints}:*/
   export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
     let targetElement: HTMLElement | undefined;
     const overlay = div([], 'ui-hint-overlay');

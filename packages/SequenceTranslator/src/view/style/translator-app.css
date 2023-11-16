@@ -1,11 +1,11 @@
 /* Naming convention: class names should begin with st and app name to avoid naming collitions */
 .st-translator-input-table {
-  width: 100%;
+  /* width: 100%; */
+  margin-right: 20px;
 }
 
 .st-translator-input-table td:has(textarea) {
   width: 100%;
-  padding-right: 20px;
 }
 
 .st-translator-input-table td:has(select) {

@@ -78,7 +78,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
 
       const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
         filteringEnabled: false,
-        valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+        valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
         legendVisibility: 'Never',
         showXAxis: true,
         showColumnSelector: false,
@@ -169,7 +169,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     newDfCols.add(scaledCol);
     for (const col of currentDf.columns) {
       if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
-        if (col.name === scaledCol.name)
+        if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
           col.name = currentDf.columns.getUnusedName(col.name);
         newDfCols.add(col);
       }
@@ -196,7 +196,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
-    let monomerType = 'HELM_AA';
+    let monomerType: string;
     if (peptidesCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
       const sampleSeq = peptidesCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';

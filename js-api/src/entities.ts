@@ -69,12 +69,12 @@ export class Entity {
 
   /** Gets entity properties */
   getProperties(): Promise<{[index: string]: any}> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart, (p: any) => resolve(p), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart);
   }
 
   /** Sets entity properties */
   setProperties(props: {[index: string]: any}): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props, (_: any) => resolve(_), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props);
   }
 
   /** Returns a string representing the object */
@@ -232,7 +232,7 @@ export class Func extends Entity {
       parameters = params;
     }
 
-    return (await this.prepare(parameters).call()).getOutputParamValue();
+    return (await (this.prepare(parameters)).call()).getOutputParamValue();
   }
 
   /** Returns functions with the specified attributes. */
@@ -521,7 +521,7 @@ export class DataConnection extends Entity {
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
   test(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_DataConnection_Test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
+    return api.grok_DataConnection_Test(this.dart);
   }
 
   query(name: string, sql: string): DataQuery {
@@ -562,7 +562,7 @@ export class Notebook extends Entity {
   /** Create Notebook on server for edit.
    * @returns {Promise<string>} Current notebook's name */
   edit(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Notebook_Edit(this.dart, (f: any) => resolve(f), (e: any) => reject(e)));
+    return api.grok_Notebook_Edit(this.dart);
   }
 
   /** Environment name */
@@ -576,7 +576,7 @@ export class Notebook extends Entity {
   /** Converts Notebook to HTML code
    * @returns {Promise<string>} */
   toHtml(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Notebook_ToHtml(this.dart, (html: any) => resolve(html), (e: any) => reject(e)));
+    return api.grok_Notebook_ToHtml(this.dart);
   }
 }
 
@@ -654,7 +654,7 @@ export class FileInfo extends Entity {
 
   /** @returns {Promise<Uint8Array>} */
   readAsBytes(): Promise<Uint8Array> {
-    return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsBytes(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
+    return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
 }
 
@@ -995,17 +995,12 @@ export class Package extends Entity {
 
   /** Returns credentials for package. */
   getCredentials(): Promise<Credentials> {
-    return new Promise((resolve, reject) => api.grok_Package_Get_Credentials(this.name, (c: any) => {
-      let cred = toJs(c);
-      resolve(cred);
-    }, (e: any) => reject(e)));
+    return api.grok_Package_Get_Credentials(this.name);
   }
 
   /** Returns properties for a package. */
   getProperties(): Promise<Map<string, any>> {
-    return new Promise((resolve, reject) => api.grok_Package_Get_Properties(this.name, (props: any) => {
-      resolve(toJs(props));
-    }, (e: any) => reject(e)));
+    return api.grok_Package_Get_Properties(this.name);
   }
 
   private _files: FileSource | null = null;

@@ -19,7 +19,7 @@ export async function init() {
 }
 
 //name: Bioreactor
-//description: Controlled fab-arm exchange mechanism simulation.
+//description: Controlled fab-arm exchange mechanism simulation
 //tags: model
 //input: double initial = 0.0 {caption: Initial; category: Time, min}
 //input: double final = 1000.0 {caption: Final; category: Time, min}
@@ -61,7 +61,7 @@ export async function Bioreactor(initial: number, final: number, step: number,
 }
 
 //name: Bioreactor Demo
-//description: Controlled fab-arm exchange mechanism simulation.
+//description: Controlled fab-arm exchange mechanism simulation
 //input: double initial = 0.0 {caption: Initial; category: Time, min}
 //input: double final = 1000.0 {caption: Final; category: Time, min}
 //input: double step = 0.1 {caption: Step; category: Time, min}
@@ -118,7 +118,7 @@ export async function demoBioreactor(): Promise<any>  {
 }
 
 //name: Bioreactor (the final point results)
-//description: Controlled fab-arm exchange mechanism simulation.
+//description: Controlled fab-arm exchange mechanism simulation
 //tags: VSA
 //input: double initial = 0.0 {caption: Initial; category: Time, min}
 //input: double final = 1000.0 {caption: Final; category: Time, min}

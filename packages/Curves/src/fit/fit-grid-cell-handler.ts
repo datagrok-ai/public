@@ -8,6 +8,7 @@ import {
   getSeriesFitFunction,
   getDataFrameChartOptions,
   LogOptions,
+  getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties} from './fit-renderer';
@@ -346,6 +347,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
     function createFitPane(): HTMLElement {
       const host = ui.divV(seriesStatsInput.stringValue === 'aggregated' ? [seriesStatsInput.root, aggrTypeInput.root] : [seriesStatsInput.root]);
+      const dataBounds = getChartBounds(chartData);
+      if (dataBounds.x <= 0 && chartData.chartOptions) chartData.chartOptions.logX = false;
+      if (dataBounds.y <= 0 && chartData.chartOptions) chartData.chartOptions.logY = false;
+
       if (seriesStatsInput.stringValue === 'all') {
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
         for (let i = 0; i < chartData.series!.length; i++) {

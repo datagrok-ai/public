@@ -38,13 +38,11 @@ export class MonomerPosition extends DG.JsViewer {
     super();
     this.target = this.string(MONOMER_POSITION_PROPERTIES.TARGET, null,
       {category: SELECTION_MODE.MUTATION_CLIFFS, choices: []});
-    this.color = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
-      {category: SELECTION_MODE.INVARIANT_MAP,
-        choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
+    this.color = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY,
+      {category: SELECTION_MODE.INVARIANT_MAP, choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
     this.aggregation = this.string(MONOMER_POSITION_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: SELECTION_MODE.INVARIANT_MAP,
-        choices: Object.values(DG.AGG)
-          .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg))});
+        choices: Object.values(DG.AGG).filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg))});
   }
 
   get name(): string {return VIEWER_TYPE.MONOMER_POSITION;}
@@ -212,6 +210,14 @@ export class MonomerPosition extends DG.JsViewer {
   }
 
   render(refreshOnly = false): void {
+    // Backward compatability with 1.16.0
+    const columnProperty = this.getProperty(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME);
+    if (columnProperty) {
+      columnProperty.choices = wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name);
+      if (columnProperty.get(this) === C.COLUMNS_NAMES.ACTIVITY_SCALED)
+        columnProperty.set(this, C.COLUMNS_NAMES.ACTIVITY);
+    }
+
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});

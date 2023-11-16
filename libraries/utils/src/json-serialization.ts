@@ -15,6 +15,12 @@ export function serialize(obj: any, space = 2) {
           value: Array.from(value.toByteArray())
         };
       }
+      if (value instanceof ArrayBuffer) {
+        return {
+          [customTypeKey]: 'ArrayBuffer',
+          value: Array.from(new Uint8Array(value))
+        };
+      }
       return value;
     },
     space
@@ -38,6 +44,8 @@ export function transform(_key: string, value: any) {
     switch (value[customTypeKey]) {
     case 'DataFrame':
       return DG.DataFrame.fromByteArray(new Uint8Array(value.value));
+    case 'ArrayBuffer':
+      return new Uint8Array(value.value).buffer;
     }
   }
   return value;

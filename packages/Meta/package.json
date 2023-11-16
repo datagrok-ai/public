@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.44",
+  "version": "3.6.70",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -184,6 +184,9 @@
         },
         "1.3.40": {
           "datagrok-api": "^1.16.6"
+        },
+        "1.3.41": {
+          "datagrok-api": "^1.17.3"
         }
       },
       "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
@@ -322,6 +325,9 @@
           "datagrok-api": "^1.16.7"
         },
         "1.3.16": {
+          "datagrok-api": "^1.16.7"
+        },
+        "1.3.17": {
           "datagrok-api": "^1.16.7"
         }
       },
@@ -640,6 +646,9 @@
         },
         "1.8.4": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.8.5": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -802,6 +811,12 @@
         },
         "1.2.2": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.2.3": {
+          "datagrok-api": "^1.15.2"
+        },
+        "1.2.4": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -866,6 +881,15 @@
           "datagrok-api": "^1.6.9"
         },
         "1.1.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.1.1": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.1.2": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.1.3": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -1414,6 +1438,9 @@
         },
         "1.7.11": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.7.12": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1444,6 +1471,9 @@
         },
         "1.0.7": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.0.8": {
+          "datagrok-api": "^1.17.2"
         }
       },
       "description": "API Samples",
@@ -2539,6 +2569,12 @@
         },
         "2.11.8": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.10": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.11": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2943,6 +2979,12 @@
         },
         "2.1.19": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.21": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.22": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -3003,6 +3045,9 @@
           "datagrok-api": "^1.11.1"
         },
         "1.0.4": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.0.5": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -3195,6 +3240,12 @@
         },
         "1.0.13": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.0.15": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.0.16": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
@@ -3223,6 +3274,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.1.4": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.1.5": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -3278,6 +3332,9 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.16.1"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.16.1"
         }
       },
       "description": "Platform usage analysis system",
@@ -3312,6 +3369,12 @@
           "datagrok-api": "^1.16.3"
         },
         "1.0.8": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.0.9": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.0.10": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -3407,6 +3470,12 @@
         },
         "1.2.12": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.2.13": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.2.14": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
@@ -3475,6 +3544,47 @@
         "directory": "packages/CVMTests"
       },
       "category": "Development"
+    },
+    "samples": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.13.0"
+        }
+      },
+      "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Samples"
+      }
+    },
+    "hit-triage": {
+      "dependencies": {
+        "1.0.1": {
+          "datagrok-api": "^1.16.2"
+        }
+      },
+      "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/HitTriage"
+      },
+      "category": "Cheminformatics"
+    },
+    "file-editors": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.16.5"
+        }
+      },
+      "description": "Support for previewing and opening text file formats (PDF, DOCX)",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/FileEditors"
+      },
+      "category": "Data Access"
     }
   }
 }

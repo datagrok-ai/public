@@ -29,7 +29,7 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): H
     const sourceColCategories = sourceCol.categories;
     const getValue = numericalCols.some((col) => col.name === sourceCol.name) ? (i: number): number => sourceColRawData[i] :
       (i: number): string => sourceColCategories[sourceColRawData[i]];
-    const col = sourceCol.name === COLUMNS_NAMES.ACTIVITY_SCALED ?
+    const col = sourceCol.name === COLUMNS_NAMES.ACTIVITY ?
       newTable.columns.addNewFloat(gridCol.name).init((i) => getValue(i)) :
       newTable.columns.addNewVirtual(gridCol.name, (i) => getValue(i), sourceCol.type as DG.TYPE);
     for (const [tag, value] of sourceCol.tags)

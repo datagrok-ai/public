@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {delay, Test, TestContext, initAutoTests, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {c} from './package';
-import {Menu} from 'datagrok-api/dg';
 import '../css/styles.css';
 
 interface ITestManagerUI {
@@ -67,6 +66,9 @@ enum NODE_TYPE {
   TEST = 'TEST'
 }
 
+const APP_PREFIX: string = `/TestManager/`;
+const DART_TESTS_CAT = 'Dart Tests';
+
 export class TestManager extends DG.ViewBase {
   packagesTests: IPackageTests[] = [];
   testsResultsDf: DG.DataFrame;
@@ -79,9 +81,9 @@ export class TestManager extends DG.ViewBase {
   runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
-  dockLeft;
+  dockLeft?: boolean;
 
-  constructor(name, dockLeft?: boolean) {
+  constructor(name: string, dockLeft?: boolean) {
     super({});
     this.name = name;
     this.dockLeft = dockLeft;
@@ -98,6 +100,9 @@ export class TestManager extends DG.ViewBase {
       TMStateB = true;
     }
     this.testFunctions = await this.collectPackages();
+    this.testFunctions.push({package: {name: 'Core', friendlyName: 'Core'}});
+    this.testFunctions = this.testFunctions.sort((a, b) =>
+      a.package.friendlyName.localeCompare(b.package.friendlyName));
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
       {packName: pathSegments[4], catName: pathSegments.slice(5, -1).join(': '),
@@ -105,6 +110,7 @@ export class TestManager extends DG.ViewBase {
     const testUIElements: ITestManagerUI = await this.createTestManagerUI(testFromUrl);
     this.testManagerView.name = this.name;
     addView(this.testManagerView);
+    this.testManagerView.path = APP_PREFIX;
     this.testManagerView.temp['ignoreCloseAll'] = true;
     this.ribbonPanelDiv = testUIElements.ribbonPanelDiv;
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
@@ -126,13 +132,22 @@ export class TestManager extends DG.ViewBase {
     const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
     if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
     selectedPackage.categories === null && selectedPackage.check === false) {
-      selectedPackage.check = true;
-      await f.package.load({file: f.options.file});
-      const testModule = f.package.getModule(f.options.file);
-      if (!testModule)
-        console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-      await initAutoTests(f.package.id, testModule);
-      const allPackageTests = testModule ? testModule.tests : undefined;
+      let allPackageTests: object;
+      if (f.package.name === 'Core') {
+        allPackageTests = {};
+        allPackageTests[DART_TESTS_CAT] = {tests: [], clear: true};
+        const testFunctions = DG.Func.find({tags: ['dartTest']});
+        for (const f of testFunctions)
+          allPackageTests[DART_TESTS_CAT].tests.push(new Test(DART_TESTS_CAT, f.name, async () => await f.apply()));
+      } else {
+        selectedPackage.check = true;
+        await f.package.load({file: f.options.file});
+        const testModule = f.package.getModule(f.options.file);
+        if (!testModule)
+          console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
+        await initAutoTests(f.package.id, testModule);
+        allPackageTests = testModule ? testModule.tests : undefined;
+      }
       const packageTestsFinal: { [cat: string]: ICategory } = {};
       if (allPackageTests) {
         Object.keys(allPackageTests).forEach((cat) => {
@@ -203,8 +218,7 @@ export class TestManager extends DG.ViewBase {
       t.resultDiv = testPassed;
       this.setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
       ui.tooltip.bind(item.root,
-        () => this.getTestsInfoGrid(
-          `Package = ${t.packageName} and category = ${t.test.category} and name =  ${t.test.name}`,
+        () => this.getTestsInfoGrid({package: t.packageName, category: t.test.category, name: t.test.name},
           NODE_TYPE.TEST, true));
       if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name)
         this.selectedNode = item;
@@ -309,14 +323,23 @@ export class TestManager extends DG.ViewBase {
 
   setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
     node.captionLabel.addEventListener('contextmenu', (e) => {
-      Menu.popup()
+      const menu = DG.Menu.popup()
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
         })
         .item('Copy', async () => {
           navigator.clipboard.writeText(node.captionLabel.innerText.trim());
         })
-        .show();
+        .item('Copy URL', async () => {
+          navigator.clipboard.writeText(encodeURI(`${window.location
+            .origin}/apps/DevTools${this.getPath(tests, nodeType)}`));
+        });
+      if (nodeType === NODE_TYPE.TEST) {
+        menu.item('Run force', async () => {
+          this.runAllTests(node, tests, nodeType, true);
+        }, 1);
+      }
+      menu.show();
       e.preventDefault();
       e.stopPropagation();
     });
@@ -376,22 +399,43 @@ export class TestManager extends DG.ViewBase {
     icon.style.color = 'var(--orange-2)';
   }
 
-  async runTest(t: IPackageTest): Promise<boolean> {
+  async runDartTest(t: IPackageTest): Promise<DG.DataFrame> {
+    console.log(`Started ${DART_TESTS_CAT} ${t.test.name}`);
+    const res = {category: DART_TESTS_CAT, name: t.test.name,
+      success: true, result: 'OK', ms: 0, skipped: false};
+    const start = Date.now();
+    try {
+      await t.test.test();
+    } catch (e) {
+      res.success = false;
+      res.result = e.toString();
+    }
+    res.ms = Date.now() - start;
+    console.log(`Finished ${DART_TESTS_CAT} ${t.test.name} for ${res.ms} ms`);
+    return DG.DataFrame.fromObjects([res]);
+  }
+
+  async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
     const skipReason = t.test.options?.skipReason;
-    if (this.runSkippedMode && skipReason) {
+    if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
       runSkipped = true;
     }
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    const res: DG.DataFrame = await grok.functions.call(
-      `${t.packageName}:test`, {
-        'category': t.test.category,
-        'test': t.test.name,
-        'testContext': new TestContext(false),
-      });
+    let res: DG.DataFrame;
+    if (t.packageName === 'Core')
+      res = await this.runDartTest(t);
+    else {
+      res = await grok.functions.call(
+        `${t.packageName}:test`, {
+          'category': t.test.category,
+          'test': t.test.name,
+          'testContext': new TestContext(false),
+        });
+    }
     if (res.getCol('result').type !== 'string')
       res.changeColumnType('result', 'string');
     const testSucceeded = res.get('success', 0);
@@ -409,9 +453,26 @@ export class TestManager extends DG.ViewBase {
     return testSucceeded;
   }
 
-  async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
-    this.testManagerView.path = '/' + this.testManagerView.name.replace(' ', '');
+  getPath(tests: any, nodeType: NODE_TYPE): string {
+    let path: string;
+    switch (nodeType) {
+    case NODE_TYPE.PACKAGE:
+      path = `${APP_PREFIX}${tests.package.name}`;
+      break;
+    case NODE_TYPE.CATEGORY:
+      path = `${APP_PREFIX}${tests.packageName}/${tests.fullName}`;
+      break;
+    case NODE_TYPE.TEST:
+      path = `${APP_PREFIX}${tests.packageName}/${tests.test.category}/${tests.test.name}`;
+      break;
+    }
+    return path;
+  }
+
+  async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE, force?: boolean) {
+    this.testManagerView.path = this.getPath(tests, nodeType);
     let catsValuesSorted: ICategory[];
+    localStorage.setItem('TMState', this.testManagerView.path);
     switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
@@ -432,26 +493,20 @@ export class TestManager extends DG.ViewBase {
           testsSucceded = false;
       }
       this.updateTestResultsIcon(packageTests.resultDiv, testsSucceded);
-      this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
       progressBar.close();
       break;
     }
     case NODE_TYPE.CATEGORY: {
       const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
       await this.runTestsRecursive(tests, progressBar, tests.totalTests, 0, `${tests.packageName}/${tests.fullName}`);
-      this.testManagerView.path =
-        `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
       progressBar.close();
       break;
     }
     case NODE_TYPE.TEST: {
-      await this.runTest(tests);
-      this.testManagerView.path =
-        `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
+      await this.runTest(tests, force);
       break;
     }
     }
-    localStorage.setItem('TMState', this.testManagerView.path);
     await delay(1000);
     if (grok.shell.lastError.length > 0) {
       grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);
@@ -538,11 +593,10 @@ export class TestManager extends DG.ViewBase {
     return acc.root;
   };
 
-  resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE) {
-    return nodeType === NODE_TYPE.PACKAGE ? `Package = ${tests.package.name}` :
-      nodeType === NODE_TYPE.CATEGORY ?
-        `Package = ${tests.packageName} and category IN (${tests.subCatsNames.join(',')})` :
-        `Package = ${tests.packageName} and category = ${tests.test.category} and name = ${tests.test.name}`;
+  resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE): object {
+    return nodeType === NODE_TYPE.PACKAGE ? {package: tests.package.name} :
+      nodeType === NODE_TYPE.CATEGORY ? {package: tests.packageName, category: tests.fullName} :
+        {package: tests.packageName, category: tests.test.category, name: tests.test.name};
   }
 
   testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -559,7 +613,7 @@ export class TestManager extends DG.ViewBase {
     ]);
   }
 
-  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
+  getTestsInfoGrid(condition: object, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
     let info = ui.divText('No tests have been run');
     if (this.testsResultsDf) {
       const testInfo = this.testsResultsDf

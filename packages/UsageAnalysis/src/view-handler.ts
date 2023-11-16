@@ -53,6 +53,22 @@ export class ViewHandler {
       toolbox.applyFilter();
     }
     let helpShown = false;
+    const puButton = ui.bigButton('Usage', () => {
+      ViewHandler.getCurrentView().viewers[1].root.style.display = 'none';
+      ViewHandler.getCurrentView().viewers[0].root.style.display = 'flex';
+      puButton.disabled = true;
+      piButton.disabled = false;
+    });
+    const piButton = ui.bigButton('Installation time', () => {
+      ViewHandler.getCurrentView().viewers[0].root.style.display = 'none';
+      ViewHandler.getCurrentView().viewers[1].root.style.display = 'flex';
+      puButton.disabled = false;
+      piButton.disabled = true;
+    });
+    puButton.disabled = true;
+    const pButtons = ui.divH([puButton, piButton], 'ua-packages-buttons');
+    pButtons.style.display = 'none';
+    toolbox.filters.root.before(pButtons);
     ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
       const view = ViewHandler.UA.currentView;
       ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z]+)/, '$1' + view.name);
@@ -83,6 +99,10 @@ export class ViewHandler {
         toolbox.filters.expanded = true;
         filters.style.display = 'none';
       }
+      if (view.name === 'Packages')
+        pButtons.style.display = 'flex';
+      else
+        pButtons.style.display = 'none';
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;

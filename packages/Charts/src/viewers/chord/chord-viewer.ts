@@ -352,7 +352,7 @@ export class ChordViewer extends DG.JsViewer {
     $(this.root).empty();
 
     if (!this._testColumns()) {
-      this._showErrorMessage('Not enough data to produce the result.');
+      this._showErrorMessage('The Chord viewer requires a minimum of 2 categorical and 1 numerical columns.');
       return;
     }
 

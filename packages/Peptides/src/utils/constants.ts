@@ -1,5 +1,7 @@
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
+  ACTIVITY = 'Activity',
+  // Deprecated, used for backward compatibility with 1.16.0
   ACTIVITY_SCALED = 'Scaled activity',
   MONOMER = 'AAR',
   POSITION = 'Pos',

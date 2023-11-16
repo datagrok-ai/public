@@ -1,7 +1,6 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {TYPE} from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {RadioButtonFilter} from './filters/radio-button-filter';

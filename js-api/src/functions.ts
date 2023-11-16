@@ -352,16 +352,17 @@ export class FuncCall extends Entity {
   }
 
   /** Executes the function call */
-  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  async call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
+    await api.grok_FuncCall_Call(this.dart, showProgress, toDart(progress), options?.processed, options?.report);
+    return this;
   }
 
   cancel(): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
+    return api.grok_FuncCall_Cancel(this.dart);
   }
 
   /** Executes the function call synchronously*/
-  callSync(options?: {processed?: boolean, report?: boolean}):FuncCall {
+  callSync(options?: {processed?: boolean, report?: boolean}): FuncCall {
      return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
   }
 

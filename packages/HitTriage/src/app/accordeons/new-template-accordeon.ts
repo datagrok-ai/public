@@ -7,7 +7,7 @@ import {CampaignFieldTypes, HitTriageCampaignField, HitTriageCampaignFieldType,
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
-import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
+import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 
 export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitTriageTemplate>> {
@@ -161,14 +161,29 @@ export function getCampaignFieldEditors() {
   const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING}),
     DG.Property.fromOptions({name: 'Type', type: DG.TYPE.STRING, choices: Object.keys(CampaignFieldTypes)}),
     DG.Property.fromOptions({name: 'Required', type: DG.TYPE.BOOL})];
-  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: true});
+  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: false});
+  itemsGrid.root.style.maxWidth = '750px';
+
+  let addingItem: ItemType = {};
+  itemsGrid.onItemAdded.subscribe((item) => {
+    addingItem = item ?? {};
+  });
+  itemsGrid.onAddingItemChanged.subscribe((item) => {
+    if (item)
+      addingItem = item.item;
+  });
 
   function getFieldParams(): HitTriageCampaignField[] {
-    return itemsGrid.items.filter((f) => f.Name).map((f) => ({
+    const items = itemsGrid.items.filter((f) => f.Name).map((f) => ({
       name: f.Name,
       type: f.Type as HitTriageCampaignFieldType,
       required: f.Required ?? false,
     }));
+    if (addingItem.Name && addingItem.Name !== '' && addingItem.Type) {
+      addingItem.Required ??= false;
+      items.push({name: addingItem.Name, type: addingItem.Type, required: addingItem.Required});
+    }
+    return items;
   }
   //itemsGrid.root.style.cssText = '';
   //itemsGrid.root.className = 'd4-flex-c';

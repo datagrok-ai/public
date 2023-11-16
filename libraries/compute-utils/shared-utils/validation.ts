@@ -168,7 +168,6 @@ function renderValidationResults(messages: ValidationResultBase) {
     for (const advice of advices as Advice[]) {
       const icon = getAdviceIcon(category);
       icon!.style.marginRight = '4px';
-      icon!.style.height = '13px';
       root.appendChild(ui.divV([
         ui.divH([
           icon!,
@@ -176,7 +175,7 @@ function renderValidationResults(messages: ValidationResultBase) {
         ]),
         ...(advice.actions ?? []).map(
           (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '20px'}})),
-      ], {style: {lineHeight: '1.2'}}));
+      ]));
     }
   }
   return root;

@@ -1,5 +1,22 @@
 ---
 title: "Bioinformatics"
+keywords:
+  - bioinformatics
+  - macromolecule viewers
+  - interactive visualization of biological data
+  - peptides viewers
+  - peptides SAR
+  - sequence composition
+  - hierarchical clustering macromolecules
+  - oligonucleotides amino acids DNA
+  - sequence-activity relationship
+  - sequence translation
+  - split to monomers
+  - get atomic-level structure
+  - activity cliffs
+  - sequence space
+  - manage monomer libraries
+  - analyze docking results
 ---
 
 ```mdx-code-block
@@ -145,9 +162,7 @@ Peptide sequences are color-coded based on amino acid properties. DNA sequences 
 
 For PDB files, cells display a preview of the 3D structure. When you click a cell, a separate viewer opens up, allowing you to rotate, zoom in, or switch the color scheme.
 
-![PDB viewer](img/PDB_viewer.apng)
-
-<!--Retake to correspond to our image requirements re size-->
+![PDB viewer](img/PDB_viewer-800.gif)
 
 ```mdx-code-block
 </TabItem>
@@ -156,9 +171,19 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 
 ### Macromolecule aware viewers
 
-Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
+Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take 
+advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers.
+Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting,
+or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating
+an interconnected system ideal for exploratory data analysis.
 
-Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
+Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers
+([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)),
+and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that
+can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx),
+a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),
+a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), 
+and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
 
 <details>
 <summary>Examples</summary>
@@ -277,14 +302,18 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ## Managing monomer libraries
 
-When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer library comes with it automatically. You can add your own libraries by [adding them to a file share](../../../../access/files/files.mdx#connecting-to-file-storage). Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use the info pane to add more libraries or switch between different libraries based on your specific requirements.
+When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer
+library comes with it automatically. You can add your own libraries by [adding them to a file share](../../../../access/files/files.mdx#connecting-to-file-storage).
+Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use 
+the info pane to add more libraries or switch between different libraries based on your specific requirements.
 
 ## Sequence analysis
 
 ### Sequence composition
 
 You can create a
-[sequence logo](https://en.wikipedia.org/wiki/Sequence_logo) to show the letter composition for each position in a sequence. A sequence logo is usually created from a set of aligned sequences
+[sequence logo](https://en.wikipedia.org/wiki/Sequence_logo) to show the letter composition for each position in
+a sequence. A sequence logo is usually created from a set of aligned sequences
 and helps identify patterns and variations within those sequences.
 A common use is to visualize protein-binding sites in DNA or functional motives in proteins.
 
@@ -305,7 +334,7 @@ Sequence space visualizes a collection of sequences in 2D such that similar sequ
 
 Sequence space analysis is particularly useful for separating groups of sequences with common motifs, such as different variants of complementarity-determining regions (CDRs) for antibodies.
 
-![Results of Sequence space run on the sample peptides data](img/Sequence_Space_results.png)<!--retake the png in accordance with our requirements-->
+![Results of Sequence space run on the sample peptides data](img/Sequence_Space_results-800.png)
 
 <details>
 <summary> How to use </summary>
@@ -318,9 +347,13 @@ Sequence space analysis is particularly useful for separating groups of sequence
 
 ### Hierarchical clustering
 
-Hierarchical clustering groups sequences into an interactive [dendrogram](../../../../visualize/viewers/dendrogram.md). In a dendrogram, distance to the nearest common node represents the degree of similarity between each pair of sequences. Clusters and their sizes can be obtained by traversing the trunk or branches of the tree and deciding at which level to cut or separate the branches. This process lets you identify different clusters based on the desired level of similarity or dissimilarity between data points.
+Hierarchical clustering groups sequences into an interactive [dendrogram](../../../../visualize/viewers/dendrogram.md).
+In a dendrogram, distance to the nearest common node represents the degree of similarity between each pair of sequences.
+Clusters and their sizes can be obtained by traversing the trunk or branches of the tree and deciding at which level
+to cut or separate the branches. This process lets you identify different clusters based on the desired level
+of similarity or dissimilarity between data points.
 
-![Running hierarchical clustering on sequence data](img/Cluster_sequence_results.png)
+![Running hierarchical clustering on sequence data](img/Cluster_sequence_results-800.png)
 
 <details>
 <summary>How to use</summary>
@@ -345,7 +378,7 @@ To perform MSA, do the following:
 
 1. In the Top Menu, select **Bio** > **MSA...** . A dialog opens.
   
-  ![Multiple Sequence Alignment dialog](img/MSA_dialog.png)<!--replace png with a GIF file showing the steps-->
+  ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
 
 1. In the dialog, select the sequence column (**Sequence**) and set other parameters.
    If your data has been clustered already, you can align sequences only within the same cluster. To do so, specify a column containing clusters (**Cluster**).
@@ -607,13 +640,15 @@ This approach could be used for any given case of HELM notation
 in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
 
-![Restoring structure atomic level](../../../../uploads/macromolecules/restoreStructures.gif)<!--retake gif to comply with DG standards-->
+![Restoring structure atomic level](../../../../uploads/macromolecules/restore-structures-800.gif)
 
 <details>
 <summary>How to use</summary>
 
 1. In the **Top Menu**, select **Bio** > **Convert** > **To Atomic Level**. A dialog opens.
-2. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+2. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures
+   of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking
+   the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
 
 </details>
 

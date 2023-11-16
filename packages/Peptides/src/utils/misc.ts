@@ -31,12 +31,13 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
     throw new Error(`ScalingError: method \`${scaling}\` is not available.`);
   }
   const activityColData = activityCol.getRawData();
-  const scaledCol: DG.Column<number> = DG.Column.float(C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.length)
+  const scaledCol: DG.Column<number> = DG.Column.float(C.COLUMNS_NAMES.ACTIVITY, activityCol.length)
     .init((i) => {
       const val = activityColData[i];
       return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
     });
   scaledCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+  scaledCol.setTag(DG.TAGS.FORMULA, scaling);
   return scaledCol;
 }
 
@@ -75,28 +76,36 @@ export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHist
   return result;
 }
 
-export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
-  const activityCol: DG.Column<number> = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-  const splitCol: DG.Column<boolean> = table.getCol(C.COLUMNS_NAMES.SPLIT_COL);
+/* Creates a table to plot activity distribution. */
+export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet): DG.DataFrame {
+  // const activityCol: DG.Column<number> = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  // const splitCol: DG.Column<boolean> = table.getCol(C.COLUMNS_NAMES.SPLIT_COL);
+  const isCustomSelection = peptideSelection?.clone().xor(selection).anyTrue ?? false;
 
   const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
-  const expandedData: number[] = new Array(rowCount + splitCol.stats.sum);
-  const expandedMasks: boolean[] = new Array(expandedData.length);
-  for (let i = 0, j = 0; i < rowCount; ++i) {
-    const isSplit = splitCol.get(i)!;
+  const expandedData = new Float32Array(rowCount + selection.trueCount + (peptideSelection?.trueCount ?? 0));
+  const expandedMasks = new Uint8Array(expandedData.length);
+
+  for (let i = 0, j = 0, k = 0; i < rowCount; ++i) {
+    const isSplit = selection.get(i);
     expandedData[i] = activityColData[i];
-    expandedMasks[i] = isSplit;
+    expandedMasks[i] = isSplit ? 1 : 0;
     if (isSplit) {
       expandedData[rowCount + j] = activityColData[i];
-      expandedMasks[rowCount + j] = false;
+      expandedMasks[rowCount + j] = 0;
       ++j;
+    }
+    if (isCustomSelection) {
+      expandedData[rowCount + selection.trueCount + k] = activityColData[i];
+      expandedMasks[rowCount + selection.trueCount + k] = 2;
+      ++k;
     }
   }
 
   return DG.DataFrame.fromColumns([
-    DG.Column.fromList(DG.TYPE.FLOAT, activityCol.name, expandedData),
-    DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
+    DG.Column.fromFloat32Array(activityCol.name, expandedData, rowCount),
+    DG.Column.string(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => expandedMasks[i].toString()),
   ]);
 }
 
@@ -132,4 +141,5 @@ export function setGridProps(grid: DG.Grid): void {
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
   grid.root.style.maxWidth = '100%';
+  grid.autoSize(1000, 1000, 0, 0, true);
 }

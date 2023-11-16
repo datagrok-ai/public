@@ -1,23 +1,23 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
 import {getAggregatedColumnValues, getStats, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
-import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {getStatsSummary, getDistributionTable} from '../utils/misc';
 
-const allConst = 'All';
-const otherConst = 'Other';
+const otherConst = 'All';
 
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   if (!table.selection.anyTrue)
     return new DG.Widget(ui.divText('No distribution'));
 
-  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityColData = activityCol.getRawData();
   const rowCount = activityCol.length;
   const selectionObject = model.invariantMapSelection;
@@ -27,7 +27,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     clustersProcessedObject = Object.values(model.clusterSelection).flat();
 
   const positions = Object.keys(selectionObject);
-  let monomerStr = allConst;
+  let monomerStr = otherConst;
   let otherStr = '';
 
   const updateDistributionHost = (): void => {
@@ -50,9 +50,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
           const monomerCategoryIndex = posColCategories.indexOf(monomer);
           const mask = DG.BitSet.create(rowCount, (i) => posColData[i] === monomerCategoryIndex);
-          const distributionTable = DG.DataFrame.fromColumns(
-            [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
-          const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
+          // const distributionTable = DG.DataFrame.fromColumns(
+          //   [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
+          const hist = getActivityDistribution(getDistributionTable(activityCol, mask));
 
           const stats = model.monomerPositionStats[position]![monomer]!;
           const tableMap = getStatsTableMap(stats);
@@ -85,8 +85,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
 
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
+        // const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+        const hist = getActivityDistribution(getDistributionTable(activityCol, mask));
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const stats = getStats(activityColData, bitArray);
@@ -129,8 +129,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
 
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
+        // const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+        const hist = getActivityDistribution(getDistributionTable(activityCol, mask));
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const stats = getStats(activityColData, bitArray);
@@ -161,15 +161,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
         const labels = getDistributionLegend(monomerStr, otherStr);
 
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, table.selection)]);
-        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
+        // const distributionTable = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, table.selection)]);
+        const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection));
         const bitArray = BitArray.fromString(table.selection.toBinaryString());
         const mask = DG.BitSet.create(rowCount,
           bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
         const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
         const stats = bitArray.allFalse || bitArray.allTrue ?
-          {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray,
-            mean: activityCol.stats.avg} :
+          {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: activityCol.stats.avg} :
           getStats(activityColData, bitArray);
         const tableMap = getStatsTableMap(stats);
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
@@ -211,11 +210,10 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   return new DG.Widget(ui.divV([controlsHost, distributionHost]));
 }
 
-export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
-): DG.Viewer<DG.IHistogramLookSettings> {
+export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false): DG.Viewer<DG.IHistogramLookSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
-    valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+    valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
     splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
     legendVisibility: 'Never',
     showXAxis: true,

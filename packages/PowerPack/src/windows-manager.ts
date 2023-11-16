@@ -63,7 +63,7 @@ export function windowsManagerPanel() {
     ]);
 
     root.className = 'windows-manager-statusbar';
-    document.getElementsByClassName('d4-global-status-panel')[0].append(root);
+    document.getElementsByClassName('d4-global-status-panel')[0]?.append(root);
 
     setToggleState(window.showProperties, propertiesToggle);
     setToggleState(window.showConsole, consoleToggle);
