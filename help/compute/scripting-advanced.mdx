@@ -2,6 +2,11 @@
 title: "Advanced scripting in Datagrok"
 ---
 
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
 This section describes the advanced capabilities of Datagrok scripting.
 
 ## Output values validation
@@ -52,7 +57,7 @@ and only takes time to be pre-created.
 Later, the script uses the pre-created environment with no delay for resolving dependencies
 and installing language versions.
 
-In Datagrok, Conda environment confinugration can be specified either right inside the script, 
+In Datagrok, Conda environment configuration can be specified either right inside the script, 
 or as part of
 a [package](../develop/develop.md#packages). 
 The package can be both the one containing the script or any other deployed
@@ -61,7 +66,7 @@ package available under your current user with a specified environment.
 #### Specify environment in-place
 
 Set an `environment` parameter of the script to a one-liner YAML 
-following the standard Conda yaml config, but omitting
+following the standard Conda YAML config, but omitting
 its name and enclosing braces `{}`. For example, we need to use the following Conda yaml config:
 
 ```yaml
@@ -233,6 +238,7 @@ Therefore, the script's author doesn't need to call
 We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/articles/lockfile.html)
 shipped with packages similar to how it works now for Conda `yaml` files.
 
+
 ## Advanced ways to execute scripts
 
 First of all, a script can be executed right from the script editor,
@@ -273,190 +279,12 @@ In the first line we evaluate an expression and get the function that correspond
 After passing the input parameters and executing the script, 
 we can retrieve any output value by the parameter's name.
 
-## Parameters
-
-### Parameter validators
-
-Validators check whether the value falls in the expected range, and provide visual cue if it does not. To add a
-validator to a parameter, provide a comma-separated list of functions that will be invoked each time a value is changed.
-A null indicates that the value is valid, anything else indicates an error which gets shown to the user.
-
-A validator is a function that accepts one parameter of any type and returns a string. Choice providers are applicable
-only to string parameters.
-
-The following example adds a "containsLettersOnly" function to the "col" parameter:
-
-```
-#input: string s {validators: ["containslettersonly"]}
-#input: column col {validators: ["containsmissingvalues"]}
-```
-
-```js
-grok.functions.register({
-    signature: 'List<String> jsVal1(int input)',
-    run: (input) => input < 11 ? null : "Error val1" });
-
-grok.functions.register({
-    signature: 'List<String> jsVal2(int input)',
-    run: (input) => input > 9 ? null : "Error val2" });
-```
-
-```python
-# name: Numbers
-# language: python
-# input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
-# input: int count2 {validators: ["jsval1"]} [Number of cells in table]
-# input: int count3 {validators: ["jsval2"]} [Number of cells in table]
-```
-
-![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators")
-
-### Parameter choices
-
-Use choices to provide the editor a list of values to choose from. When choices are provided, the editor becomes a combo
-box. Choices can be either a fixed list, or a function that returns a list.
-
-A choice provider is a function with no parameters that returns a list of strings.
-
-The following example demonstrates two ways of defining choices:
-
-```
-#input: string fruit {choices: ["apple", "banana"]}
-#input: string vegetable {choices: jsveggies}
-```
-
-Here is a possible implementation of the "jsTypes" function used in the example:
-
-```javascript
-grok.functions.register({
-    signature: 'List<String> jsVeggies()',
-    run: () => ["Cucumber", "Cauliflower"]});
-```
-
-![Script Parameter Choices](../uploads/features/script-param-choices.gif "Script Parameter Choices")
-
-### Parameter suggestions
-
-Use parameter suggestions to help users enter a correct value. For instance, when entering a product name, it might make
-sense to dynamically query a database for values starting with the already entered text, and suggest to auto-complete
-the value.
-
-Suggestions are functions that take one string argument, and return a list of strings to be suggested to user.
-Suggestions work only for string parameters.
-
-The following example helps user enter a country name by dynamically retrieving a list of names from a web service:
-
-```python
-# name: Sales by country
-# language: python
-# input: string country = uk {suggestions: jsSuggestCountryName}
-```
-
-```js
-grok.functions.register({
-  signature: 'List<String> jsSuggestCountryName(String text)',
-  isAsync: true,
-  run: async function(text) {
-    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
-    return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
-  }
-});
-```
-
-![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions")
-
-#### Auto-complete via SQL
-
-The same concept could be used for SQL queries:
-
-![auto-complete-sql](auto-complete-sql.png)
-
-### Parameter editors
-
-Use parameter editor to set the output of another function to the parameter value. All function parameters will be
-seamlessly integrated to the function call form.
-
-```
-//input: dataframe table {editor: Package:DataQuery}
-//input: dataframe table {editor: Package:DataQuery(1, "France")}
-```
-
-Here, Datagrok will execute the `Package:DataQuery` function right before your script and pass the output table to the
-script as an input parameter.
-
-```
-//input: dataframe table {editor: PowerPack:DataQuery; editor-button: Outliers...}
-```
-
-Specify the `editor-button` parameter to add a button that executes your subfunction separately and allows the user to
-check the output before starting the script.
-
-### Examples
-
-```
-#input: dataframe t1 {columns:numerical} [first input data table]
-#input: dataframe t2 {columns:numerical} [second input data table]
-#input: column x {type:numerical; table:t1} [x axis column name]
-#input: column y {type:numerical} [y axis column name]
-#input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
-#input: column_list numdata {type:numerical; table:t1} [numerical columns names]
-#input: int numcomp = 2 {range:2-7} [number of components]
-#input: bool center = true [number of components]
-#input: string type = high {choices: ["high", "low"]} [type of filter]
-#output: dataframe result {action:join(t1)} [pca components]
-#output: graphics scatter [scatter plot]
-```
-
-## Filtering
-
-You can use these fields to filter scripts with [smart search](../explore/search-filter-select/smart-search.md):
-
-| Field       | Description                                                       |
-|-------------|-------------------------------------------------------------------|
-| ID          |                                                                   |
-| name        |                                                                   |
-| runs        | list of [FuncCall](../datagrok/concepts/functions/function-call.md) object |
-| createdOn   |                                                                   |
-| updatedOn   |                                                                   |
-| author      | [User](../govern/user.md) object                                  |
-| starredBy   | [User](../govern/user.md) object                                  |
-| commentedBy | [User](../govern/user.md) object                                  |
-| usedBy      | [User](../govern/user.md) object                                  |
-
-## Videos
-
-[Dev Meeting 1: Getting Started — Cross Language Support](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=954s)
-
-See also:
-
-* [Grok scripting](../develop/under-the-hood/grok-script.md)
-* [R](https://www.r-project.org/about.html)
-* [Python](https://www.python.org)
-* [Octave](https://octave.org/)
-* [Julia](https://julialang.org)
-* [JavaScript](https://www.javascript.com)
-* [Packages](../develop/develop.md#packages)
-* [JavaScript API](../develop/packages/js-api.md)
-* [Functions](../datagrok/concepts/functions/functions.md)
-* [Function call](../datagrok/concepts/functions/function-call.md)
-
-Let's take a look at a simple R script that returns a square of the input parameter:
-
-```
-#name: RSquare
-#language: r
-#input: double x
-#output: double result
-
-result = x * x
-```
-
 ## Using RichFunctionView input control
 
 The **RichFunctionView** is an advanced input control,
-allowing you to create complex full-featured interface for your script
+allowing you to create a complex full-featured interface for your script.
 
-It has all the features of basic script view, such as
+It has all the features of the basic script view, such as
 [captions](scripting-for-non-developers.mdx#input-captions),
 [viewers for outputs](scripting-for-non-developers.mdx#adding-viewers-for-output-dataframes)
 etc.
@@ -468,11 +296,11 @@ In addition to it, you can use:
 * Automatic [export](#exporting-to-a-file)
 * Saving and accessing [history](#accessing-history)
 
-To enable it, add following code to your script header:
+To enable it, add the following code to your script header:
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="python" label="Python">
+<TabItem value="python" label="Python" default>
 ```
 
 ```python
@@ -504,6 +332,7 @@ To enable it, add following code to your script header:
 </Tabs>
 ```
 
+
 :::warning Package dependency
 
 The `RichFunctionViewEditor` is a part of `Compute` package.
@@ -513,8 +342,8 @@ Ensure that `Compute` package is installed before working with `RichFunctionView
 
 :::tip
 
-Use Rich function view only when you are sure that the script works as expected.
-Features of Rich function view affect GUI only and have no effect on computations.
+Use the Rich function view only when you are sure that the script works as expected.
+Features of the Rich function view affect GUI only and do not affect computations.
 
 :::
 
@@ -552,10 +381,11 @@ You can add viewers for input dataframes. Using them, you can review your input 
 </Tabs>
 ```
 
+
 ### Grouping inputs
 
 You can group script inputs into categories using the `category` tag.
-Specified categories are rendered as separate blocks of the input form.
+Rich function view renders categories as separate blocks of the input form.
 
 ```mdx-code-block
 <Tabs>
@@ -585,7 +415,7 @@ Specified categories are rendered as separate blocks of the input form.
 
 :::tip
 
-Here we also use `caption` tag to control input fields' labels.
+Here, we also use `caption` tag to control input fields' labels.
 
 :::
 
@@ -604,8 +434,9 @@ Here we also use `caption` tag to control input fields' labels.
 ### Grouping outputs
 
 You also can specify categories for output parameters.
-In case of output parameters, `category` tag will specify the output tab used to show output parameters value.
-Following code will generate UI with 3 output tabs:
+In the case of output parameters, 
+`category` tag will specify the output tab used to show the output parameters value.
+The following code will generate UI with three output tabs:
 
 ```mdx-code-block
 <Tabs>
@@ -666,12 +497,12 @@ View includes 4 tabs in total since there is a separate tab for input dataframe 
 
 ### Exporting to a file
 
-You may use one-click export feature to save entire script run data to a local file.
-To generate export file,
+You may use the one-click export feature to save the entire script run data to a local file.
+To generate the export file,
 Select <i class="fas fa-arrow-to-bottom"></i> **Export** icon on the top panel.
 Automatic export saves all input and output values with their captions,
-units and even viewers' screenshots.
-This feature is available for all scripts using Rich function view by default.
+units, and even viewers' screenshots.
+This feature is available for all scripts using the Rich function view.
 
 <details>
 <summary> Export file example </summary>
@@ -684,14 +515,17 @@ This feature is available for all scripts using Rich function view by default.
 
 ### Accessing history
 
-Each script run is saved on the server. Saved script run includes both input and output values of the run.
+Each script run is saved on the server. The saved script run includes both the input and output values of the run.
 To review the history of runs, click on the <i class="fas fa-history"></i> **History** button on the top panel.
 
-History panel appears on the right side. To load the run into the UI, click on the corresponding card.
-The historical runs are immutable. Thus, if you load historical run and then run it again changing input values,
+The history panel appears on the right side. To load the run into the UI, click on the corresponding card.
+The historical runs are immutable. Thus, if you load a historical run, 
+change input values, and then rerun it,
 the platform will create a new historical run.
 
-This is a feature of the Rich function view.
+
+
+
 
 <!---
 
@@ -865,4 +699,146 @@ Functions. See [Grok Scripting](../develop/under-the-hood//grok-script.md) for m
 
 --->
 
-You may specify different [options](../datagrok/concepts/functions/func-params-annotation.md#options) in header.
+
+<!---
+
+
+This block is mostly a copy of the https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation page
+
+
+## Parameters
+
+### Parameter validators
+
+Validators check whether the value falls in the expected range, and provide visual cue if it does not. To add a
+validator to a parameter, provide a comma-separated list of functions that will be invoked each time a value is changed.
+A null indicates that the value is valid, anything else indicates an error which gets shown to the user.
+
+A validator is a function that accepts one parameter of any type and returns a string. Choice providers are applicable
+only to string parameters.
+
+The following example adds a "containsLettersOnly" function to the "col" parameter:
+
+```
+#input: string s {validators: ["containslettersonly"]}
+#input: column col {validators: ["containsmissingvalues"]}
+```
+
+```js
+grok.functions.register({
+    signature: 'List<String> jsVal1(int input)',
+    run: (input) => input < 11 ? null : "Error val1" });
+
+grok.functions.register({
+    signature: 'List<String> jsVal2(int input)',
+    run: (input) => input > 9 ? null : "Error val2" });
+```
+
+```python
+# name: Numbers
+# language: python
+# input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
+# input: int count2 {validators: ["jsval1"]} [Number of cells in table]
+# input: int count3 {validators: ["jsval2"]} [Number of cells in table]
+```
+
+![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators")
+
+### Parameter choices
+
+Use choices to provide the editor a list of values to choose from. When choices are provided, the editor becomes a combo
+box. Choices can be either a fixed list, or a function that returns a list.
+
+A choice provider is a function with no parameters that returns a list of strings.
+
+The following example demonstrates two ways of defining choices:
+
+```
+#input: string fruit {choices: ["apple", "banana"]}
+#input: string vegetable {choices: jsveggies}
+```
+
+Here is a possible implementation of the "jsTypes" function used in the example:
+
+```javascript
+grok.functions.register({
+    signature: 'List<String> jsVeggies()',
+    run: () => ["Cucumber", "Cauliflower"]});
+```
+
+![Script Parameter Choices](../uploads/features/script-param-choices.gif "Script Parameter Choices")
+
+### Parameter suggestions
+
+Use parameter suggestions to help users enter a correct value. For instance, when entering a product name, it might make
+sense to dynamically query a database for values starting with the already entered text, and suggest to auto-complete
+the value.
+
+Suggestions are functions that take one string argument, and return a list of strings to be suggested to user.
+Suggestions work only for string parameters.
+
+The following example helps user enter a country name by dynamically retrieving a list of names from a web service:
+
+```python
+# name: Sales by country
+# language: python
+# input: string country = uk {suggestions: jsSuggestCountryName}
+```
+
+```js
+grok.functions.register({
+  signature: 'List<String> jsSuggestCountryName(String text)',
+  isAsync: true,
+  run: async function(text) {
+    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
+    return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
+  }
+});
+```
+
+![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions")
+
+#### Auto-complete via SQL
+
+The same concept could be used for SQL queries:
+
+![auto-complete-sql](auto-complete-sql.png)
+
+### Parameter editors
+
+Use parameter editor to set the output of another function to the parameter value. All function parameters will be
+seamlessly integrated to the function call form.
+
+```
+//input: dataframe table {editor: Package:DataQuery}
+//input: dataframe table {editor: Package:DataQuery(1, "France")}
+```
+
+Here, Datagrok will execute the `Package:DataQuery` function right before your script and pass the output table to the
+script as an input parameter.
+
+```
+//input: dataframe table {editor: PowerPack:DataQuery; editor-button: Outliers...}
+```
+
+Specify the `editor-button` parameter to add a button that executes your subfunction separately and allows the user to
+check the output before starting the script.
+
+### Examples
+
+```
+#input: dataframe t1 {columns:numerical} [first input data table]
+#input: dataframe t2 {columns:numerical} [second input data table]
+#input: column x {type:numerical; table:t1} [x axis column name]
+#input: column y {type:numerical} [y axis column name]
+#input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
+#input: column_list numdata {type:numerical; table:t1} [numerical columns names]
+#input: int numcomp = 2 {range:2-7} [number of components]
+#input: bool center = true [number of components]
+#input: string type = high {choices: ["high", "low"]} [type of filter]
+#output: dataframe result {action:join(t1)} [pca components]
+#output: graphics scatter [scatter plot]
+```
+
+--->
+

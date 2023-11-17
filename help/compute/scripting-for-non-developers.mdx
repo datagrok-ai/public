@@ -192,6 +192,25 @@ To run the previously saved script, find it in the **Scripts** section and execu
 For additional capabilities of the Datagrok script editor, see the
 [Working with Datagrok script editor](#working-with-datagrok-script-editor) section.
 
+
+## Filtering
+
+You can use these fields to filter scripts with [smart search](../explore/search-filter-select/smart-search.md):
+
+| Field       | Description                                                       |
+|-------------|-------------------------------------------------------------------|
+| ID          |                                                                   |
+| name        |                                                                   |
+| runs        | list of [FuncCall](../datagrok/concepts/functions/function-call.md) object |
+| createdOn   |                                                                   |
+| updatedOn   |                                                                   |
+| author      | [User](../govern/user.md) object                                  |
+| starredBy   | [User](../govern/user.md) object                                  |
+| commentedBy | [User](../govern/user.md) object                                  |
+| usedBy      | [User](../govern/user.md) object                                  |
+
+
+
 ## More Datagrok scripting
 
 ### Dataframes, scalars, and default values
@@ -350,7 +369,7 @@ and opening the toolbox on the left.
 
 ```python
 # name: Adding viewer on output dataframe
-# language: javascript
+# language: python
 # input: dataframe inputDF
 # output: dataframe outputDF { viewer: Line chart | Scatter plot }
 
@@ -407,7 +426,7 @@ of the scatterplot becomes `showRegressionLine`.
 
 ```python
 # name: Viewers customization
-# language: javascript
+# language: python
 # input: dataframe tempData
 # output: dataframe dummyData { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
 ```
