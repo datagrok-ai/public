@@ -21,11 +21,11 @@ export enum MONOMER_POSITION_PROPERTIES {
   COLOR_COLUMN_NAME = 'color',
   AGGREGATION = 'aggregation',
   TARGET = 'target',
-};
+}
 
 /** Structure-activity relationship viewer */
 export class MonomerPosition extends DG.JsViewer {
-  _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
+  // _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
   color: string;
@@ -260,7 +260,7 @@ export class MonomerPosition extends DG.JsViewer {
 
 /** Vertical structure activity relationship viewer */
 export class MostPotentResidues extends DG.JsViewer {
-  _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
+  // _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
   keyPressed: boolean = false;
@@ -470,7 +470,7 @@ export class MostPotentResidues extends DG.JsViewer {
 }
 
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
-  colorCol?: DG.Column<number>, colorAgg?: DG.AGG, renderNums?: boolean): void {
+                    colorCol?: DG.Column<number>, colorAgg?: DG.AGG): void {
   const renderColNames = [...model.positionColumns.toArray().map((col) => col.name), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const canvasContext = args.g;
   const bound = args.bounds;
@@ -525,11 +525,10 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
     const colorColStats = colorCol!.stats;
 
     const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
-    CR.renderInvaraintMapCell(
-      canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
+    CR.renderInvariantMapCell(canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.mutationCliffsSelection, model.mutationCliffs, renderNums);
+      model.mutationCliffsSelection, model.mutationCliffs);
   }
   args.preventDefault();
   canvasContext.restore();

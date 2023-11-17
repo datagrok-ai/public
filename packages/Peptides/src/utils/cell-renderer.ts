@@ -8,12 +8,12 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateMonomerPositionStatistics} from './algorithms';
 import * as rxjs from 'rxjs';
-import {TooltipOptions, showTooltipAt} from './tooltips';
+import {showTooltipAt, TooltipOptions} from './tooltips';
 import {MonomerPositionStats, PositionStats} from './statistics';
 
 export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
-  canvasContext.strokeStyle = '#000';
-  canvasContext.lineWidth = 1;
+  canvasContext.strokeStyle = DG.Color.toHtml(DG.Color.selectedRows);
+  canvasContext.lineWidth = 3;
   canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
 }
 
@@ -26,8 +26,7 @@ export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
-  mutationCliffsSelection: type.Selection, substitutionsInfo: type.MutationCliffs | null = null,
-  renderNums: boolean = true): void {
+                                        mutationCliffsSelection: type.Selection, substitutionsInfo: type.MutationCliffs | null = null): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal = positionStats![currentMonomer]!.pValue;
   const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
@@ -57,25 +56,23 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   canvasContext.closePath();
   canvasContext.fill();
 
-  if (renderNums) {
-    const substitutions = substitutionsInfo?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
-    if (substitutions !== null) {
-      canvasContext.textBaseline = 'middle';
-      canvasContext.textAlign = 'center';
-      canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
-      canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-      canvasContext.shadowBlur = 5;
-      canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
-      const uniqueValues = new Set<number>();
+  const substitutions = substitutionsInfo?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
+  if (substitutions !== null) {
+    canvasContext.textBaseline = 'middle';
+    canvasContext.textAlign = 'center';
+    canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
+    canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+    canvasContext.shadowBlur = 5;
+    canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
+    const uniqueValues = new Set<number>();
 
-      for (const [key, value] of substitutions) {
-        uniqueValues.add(key);
-        for (const val of value)
-          uniqueValues.add(val);
-      }
-      if (uniqueValues.size !== 0)
-        canvasContext.fillText(uniqueValues.size.toString(), midX, midY);
+    for (const [key, value] of substitutions) {
+      uniqueValues.add(key);
+      for (const val of value)
+        uniqueValues.add(val);
     }
+    if (uniqueValues.size !== 0)
+      canvasContext.fillText(uniqueValues.size.toString(), midX, midY);
   }
 
   const monomerSelection = mutationCliffsSelection[currentPosition];
@@ -83,9 +80,9 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
-  currentPosition: string, invariantMapSelection: type.Selection, cellValue: number, bound: DG.Rect,
-  color: number): void {
+export function renderInvariantMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
+                                       currentPosition: string, invariantMapSelection: type.Selection, cellValue: number, bound: DG.Rect,
+                                       color: number): void {
   //FIXME: This is a hack, because `color` value sometimes comes incomplete. E.g. we found that here `color` value is
   // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
   // is actually 4278190335.
@@ -115,7 +112,6 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
     renderCellSelection(canvasContext, bound);
 }
 
-
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats, position: string,
   sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
   drawOptions: type.DrawOptions = {}): { [monomer: string]: DG.Rect } {
@@ -142,8 +138,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   for (const monomer of sortedOrder) {
     const monomerHeight = barHeight * (stats[monomer]!.count / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
-    const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
-    monomerBounds[monomer] = currentBound;
+    monomerBounds[monomer] = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
 
     ctx.resetTransform();
     if (monomer !== '-' && monomer !== '') {
@@ -160,8 +155,8 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
       ctx.font = drawOptions.symbolStyle;
       // Hacks to scale uppercase characters to target rectangle
       const widthTransform = barWidth / mTm.width;
-      const heightTransfrom = monomerHeight / drawOptions.upperLetterHeight;
-      ctx.setTransform(widthTransform, 0, 0, heightTransfrom, xStart, currentY);
+      const heightTransform = monomerHeight / drawOptions.upperLetterHeight;
+      ctx.setTransform(widthTransform, 0, 0, heightTransform, xStart, currentY);
       ctx.fillText(monomerTxt, 0, 0);
     }
     currentY += monomerHeight + drawOptions.upperLetterAscent * pr;
@@ -180,7 +175,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
 
 export type CellRendererOptions = {isSelectionTable?: boolean, headerSelectedMonomers?: type.SelectionStats,
   webLogoBounds?: WebLogoBounds, cachedWebLogoTooltip?: type.CachedWebLogoTooltip};
-export type WebLogoBounds = {[positon: string]: {[monomer: string]: DG.Rect}};
+export type WebLogoBounds = { [position: string]: { [monomer: string]: DG.Rect } };
 
 export function setWebLogoRenderer(grid: DG.Grid, model: PeptidesModel, options: CellRendererOptions = {},
   tooltipOptions: TooltipOptions = {x: 0, y: 0, mpStats: {} as MonomerPositionStats, monomerPosition: {} as type.SelectionItem}): void {

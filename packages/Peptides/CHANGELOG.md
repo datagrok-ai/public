@@ -4,11 +4,12 @@
 
 ### Features
 
-* Renamed activity column to 'Activity' (was 'Scaled activity').
+* Renamed activity column to _Activity_ (previously: _Scaled activity_).
 * Improved input tooltip in the Mutation Cliffs pairs panel.
 * Autosize grids in the Mutation Cliffs pairs panel.
 * Hid sequence space embedding columns and axes selectors.
 * Saving context panels state.
+* Selected cell now have orange thick border.
 
 ### Bug Fixes
 
