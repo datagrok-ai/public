@@ -1,5 +1,16 @@
 # Chem changelog
 
+## 1.8.6 (2023-11-17)
+
+### Bug Fixes
+
+* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem : Scaffold tree: Highlighting improvements:
+  * Add a tooltip for the checkbox
+  * Add a tooltip for NOT
+* [#2526](https://github.com/datagrok-ai/public/issues/2526): Chem : Molecules realignment improvements:
+  * Scaffold tree shouldn't reorient molecules in the grid
+* [#2533](https://github.com/datagrok-ai/public/issues/2533): RdKitService stays unresponsive as terminateFlag is not reset after substructure search has completed
+
 ## 1.8.5 (2023-11-14)
 
 ### Features
