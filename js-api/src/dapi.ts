@@ -543,7 +543,7 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   save(e: DataConnection, options?: {saveCredentials?: boolean}): Promise<DataConnection> {
     options ??= {};
     options.saveCredentials ??= true;
-    return toJs(api.grok_DataConnectionsDataSource_Save(this.dart, e.dart, options!.saveCredentials));
+    return toJs(await api.grok_DataConnectionsDataSource_Save(this.dart, e.dart, options!.saveCredentials));
   }
 
   /** Creates connection to the subdirectory of connection */
