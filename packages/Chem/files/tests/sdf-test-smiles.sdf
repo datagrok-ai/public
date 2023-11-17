@@ -345,11 +345,7 @@ NEUTRAL
 C21H18F4N8
 
 $$$$
-
-Malformed
-
-  0  0  0  0  0  0  0  0  0  0999 V2000
-M  END
+MALFORMED_INPUT_VALUE
 >  <col 1>
 2
 
