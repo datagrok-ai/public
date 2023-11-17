@@ -26,6 +26,13 @@
   visibility: hidden;
 }
 
+.chem-invalid-molecule-warning {
+  color: var(--red-3);
+  position: relative;
+  left: 60px;
+  bottom: 60px;
+}
+
 .chem-sketcher-loader-show {
   position: absolute!important;
   top: 10px!important;

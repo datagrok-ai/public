@@ -3,7 +3,7 @@
  * @module chem
  * */
 import {BitSet, Column, DataFrame} from './dataframe';
-import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, UNITS} from './const';
+import {SEMTYPE, UNITS} from './const';
 import {Subject, Subscription} from 'rxjs';
 import {Menu, Widget} from './widgets';
 import {Func} from './entities';
@@ -124,6 +124,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
+    invalidMoleculeWarning = ui.div('', 'chem-invalid-molecule-warning');
     host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
@@ -150,6 +151,9 @@ export namespace chem {
     resized = false;
     _sketcherTypeChanged = false;
     _autoResized = true;
+    _validationFunc: ((molecule: string) => string | null) = (s) => null;
+    error: string | null = null;
+    errorDiv = ui.divText('Malformed molecule');
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -193,6 +197,7 @@ export namespace chem {
     }
 
     setSmiles(x: string): void {
+      this.validate(x);
       this._smiles = x;
       this._molfile = null;
       this._smarts = null;
@@ -213,10 +218,11 @@ export namespace chem {
     }
 
     setMolFile(x: string): void {
-      this.molFileUnits = x && x.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
+      this.validate(x);
       this._molfile = x;
       this._smiles = null;
       this._smarts = null;
+      this.molFileUnits = x && x.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
       if (this.sketcher?.isInitialized) {
         this.molFileUnits === Notation.MolBlock ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
       }
@@ -229,6 +235,7 @@ export namespace chem {
     }
 
     setSmarts(x: string): void {
+      this.validate(x);
       this._smarts = x;
       this._molfile = null;
       this._smiles = null;
@@ -288,7 +295,14 @@ export namespace chem {
             this.setMolecule(x);
     }
 
-    constructor(mode?: SKETCHER_MODE) {
+    validate(x: string): void {
+      if (Sketcher.isEmptyMolfile(x))
+        this.molInput.value = '';
+      this.error = this._validationFunc(x);
+      this.updateInvalidMoleculeWarning();
+    }
+
+    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => string | null) {
       super(ui.div());
       if (mode)
         this._mode = mode;
@@ -297,6 +311,9 @@ export namespace chem {
       this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link sketch-link');
       this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
+      ui.tooltip.bind(this.errorDiv, () => this.error);
+      if (validationFunc)
+        this._validationFunc = validationFunc;
       setTimeout(() => this.createSketcher(), 100);
     }
 
@@ -379,6 +396,13 @@ export namespace chem {
       return clearButton;
     }
 
+    updateInvalidMoleculeWarning() {
+      ui.empty(this.invalidMoleculeWarning);
+      if (this.error) {
+        this.invalidMoleculeWarning.append(this.errorDiv);
+      }
+    }
+
     createExternalModeSketcher(): HTMLElement {
       const closeDlg = () => {
         this.sketcherDialogOpened = false;
@@ -393,8 +417,8 @@ export namespace chem {
           this.sketcherDialogOpened = true;
           let savedMolFile = this.getMolFile();
 
-          let dlg = ui.dialog();
-          dlg.add(this.createInplaceModeSketcher())
+          const hostDlg = ui.dialog();
+          hostDlg.add(this.createInplaceModeSketcher())
             .onOK(() => {
               this.updateExtSketcherContent();
               Sketcher.addToCollection(Sketcher.RECENT_KEY, this.getMolFile());
@@ -404,8 +428,8 @@ export namespace chem {
               this.setMolFile(savedMolFile!);
               closeDlg();
             })
-            .show({ resizable: true });
-          ui.onSizeChanged(dlg.root).subscribe((_) => {
+            .show({ resizable: true }); 
+          ui.onSizeChanged(hostDlg.root).subscribe((_) => {
             if (this.sketcherDialogOpened)
               if (!this.sketcher?.isInitialized)
                 return;
@@ -444,7 +468,6 @@ export namespace chem {
 
         if (this.getSmiles() !== newSmilesValue)
           this.setValue(newSmilesValue);
-
       };
 
       this.molInput.addEventListener('keydown', (e) => {
@@ -500,7 +523,8 @@ export namespace chem {
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
         this.loader,
-        this.host], {style: {height: '90%'}});
+        this.host,
+        this.invalidMoleculeWarning], {style: {height: '90%'}});
 
       return this.inplaceSketcherDiv;
     }
@@ -529,17 +553,18 @@ export namespace chem {
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+          const molFile = this.getMolFile();
+          this.validate(molFile);
           this.onChanged.next(null);
           for (let callback of this.listeners)
             callback();
           if (this.syncCurrentObject) {
-            const molFile = this.getMolFile();
             if (!Sketcher.isEmptyMolfile(molFile))
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
         if (molecule)
-        this.setMolecule(molecule!, this._smarts !== null);
+          this.setMolecule(molecule!, this._smarts !== null);
       });
     }
 
