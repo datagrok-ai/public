@@ -8,7 +8,7 @@
 
 ### Bug Fixes
 
-* Fixed MultiCurveViewer throws an errors when adding to an arbitrary dataset
+* Fixed MultiCurveViewer throws an error when adding to an arbitrary dataset
 
 ## 1.2.14 (2023-11-10)
 
