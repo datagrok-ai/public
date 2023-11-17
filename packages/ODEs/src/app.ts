@@ -1,3 +1,5 @@
+// Application for solving initial value problems (IVP)
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -9,7 +11,7 @@ import {autocompletion} from "@codemirror/autocomplete";
 
 import {getIVP, getScriptLines, getScriptParams, DF_NAME, CONTROL_EXPR} from './scripting-tools';
 
-/** */
+/** Basic template illustrating the simplest features */
 const TEMPLATE_BASIC = `${CONTROL_EXPR.NAME}: Template 
 ${CONTROL_EXPR.DIF_EQ}:
   dy/dt = -y + sin(t) / t
@@ -22,11 +24,11 @@ ${CONTROL_EXPR.ARG}: t
 ${CONTROL_EXPR.INITS}:  
   y = 0`;
 
-/** */
+/** Advanced template illustrating extanded features */
 const TEMPLATE_ADVANCED = `NOTES. This is an advanced template. Modify it. 
 Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters.
-Edit these header lines if required.
+Edit these notes if required.
 
 ${CONTROL_EXPR.NAME}: Advanced
 ${CONTROL_EXPR.DESCR}: 2D ordinary differential equations system sample
@@ -58,7 +60,7 @@ ${CONTROL_EXPR.PARAMS}:
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
-/** */
+/** State of IVP code editor */
 enum EDITOR_STATE {
   CLEAR = 0,
   BASIC_TEMPLATE = 1,
@@ -66,7 +68,28 @@ enum EDITOR_STATE {
   FROM_FILE = 3,
 };
 
-/** */
+/** Context help links */
+enum HELP_LINKS { // TODO: provide correct URL-s
+  QUICK_START = '/help/explore/dim-reduction.md', // link to "Quick start" page
+  FROM_SCRATCH = '/help/explore/anova.md', // link to "From scratch" page
+  EXTENSIONS = '/help/visualize/viewers/3d-scatter-plot.md', // link to "Extensions" page
+};
+
+/** Get help url with respect to the editor state */
+function getHelpUrl(state: EDITOR_STATE): string {    
+  switch (state) {
+    case EDITOR_STATE.BASIC_TEMPLATE:      
+      return HELP_LINKS.QUICK_START;
+
+    case EDITOR_STATE.CLEAR: 
+      return HELP_LINKS.FROM_SCRATCH; 
+  
+    default:
+      return HELP_LINKS.EXTENSIONS;  
+  }
+};
+
+/** Get problem with respect to IVP editor state. */
 function getProblem(state: EDITOR_STATE): string {
   switch (state) {
     case EDITOR_STATE.BASIC_TEMPLATE:
@@ -80,8 +103,7 @@ function getProblem(state: EDITOR_STATE): string {
   }
 }
 
-/** Completions with of control */
-//const completions = Object.values(CONTROL_EXPR).map((val) => {return {label: `${val}: `, type: "keyword"}});
+/** Completions of control expressions */
 const completions = [
   {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the problem"},  
   {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},// <-- TODO: discuss this completment!
@@ -95,7 +117,7 @@ const completions = [
   {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: "tolerance of numerical solution"},
 ];
 
-/** */
+/** Control expressions completion utilite */
 function contrCompletions(context: any) {
   let before = context.matchBefore(/[#]/)
   if (!context.explicit && !before) return null
@@ -106,8 +128,10 @@ function contrCompletions(context: any) {
   }
 }
 
-/** */
+/** Run solver application */
 export async function runSolverApp() {
+
+  /** Get JS-script for solving the current IVP */
   const exportToJS = () => {
     try {
       const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
@@ -123,6 +147,7 @@ export async function runSolverApp() {
     }
   };
 
+  /** Solve the current IVP */
   const solve = async () => {  
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
@@ -162,6 +187,7 @@ export async function runSolverApp() {
   solverView.name = 'Template';
   let div = ui.divV([]);   
 
+  /** Code editor for IVP specifying */
   let editorView = new EditorView({
     doc: TEMPLATE_BASIC,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
@@ -169,21 +195,8 @@ export async function runSolverApp() {
   });
 
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
-  const editorTooltip = ui.tooltip.bind(editorView.dom, () => {
-    switch (editorState) {
-      case EDITOR_STATE.BASIC_TEMPLATE:      
-        return 'Modify the problem. Right-click and open an advanced template.';
 
-      case EDITOR_STATE.CLEAR:        
-        return 'Define initial value problem here. Right-click and select a template.';
-
-      case EDITOR_STATE.FROM_FILE:
-        return "Press 'Solve' to get solution. Modify the problem if needed.";
-      
-      default:        
-        return 'Modify the problem. Add new equations, expressions, constants & parameters. Change name, argument & tolerance if needed.';
-  }});
-
+  /** Save the current IVP to file */
   const saveFn = async () => {
     const link = document.createElement("a");
     const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
@@ -193,6 +206,7 @@ export async function runSolverApp() {
     URL.revokeObjectURL(link.href);
   };
 
+  /** Set IVP code editor state */
   const setState = (state: EDITOR_STATE, text?: string | undefined) => {
     editorState = state;
     solutionTable = DG.DataFrame.create();
@@ -209,30 +223,9 @@ export async function runSolverApp() {
     });
 
     editorView.setState(newState);
+
+    solverView.helpUrl = getHelpUrl(state);
   };
-
-  // TODO: discuss if the following dialog is required:
-  /* Warning dialog:
-
-  let toShowWarning = true;
-
-  const rewrite = async (state: EDITOR_STATE) => {
-    setState(state);
-    if (toShowWarning && (editorState !== EDITOR_STATE.CLEAR)) {
-      ui.dialog('WARNING')
-        .add(ui.divV([ 
-          ui.divText('This action will rewrite the current problem.'),
-          ui.divText('Do you want to continue?')]))
-        .onCancel(() => {})
-        .onOK(() => setState(state))
-        .add(ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning))
-        .show();
-    }
-    else
-      setState(state);
-  };*/
-
-  const rewrite = (state: EDITOR_STATE, text?: string | undefined) => { setState(state, text); }
 
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
@@ -246,7 +239,10 @@ export async function runSolverApp() {
           //@ts-ignore
           const [file] = document.querySelector("input[type=file]").files;
           const reader = new FileReader();
-          reader.addEventListener("load", () => { text = reader.result as string; rewrite(EDITOR_STATE.FROM_FILE, text);}, false);
+          reader.addEventListener("load", () => { 
+            text = reader.result as string; 
+            setState(EDITOR_STATE.FROM_FILE, text);
+          }, false);
           
           if (file) 
             reader.readAsText(file);
@@ -257,18 +253,18 @@ export async function runSolverApp() {
         fileInp.click();
        }, undefined, {description: 'Load problem from local file'})
       .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-      .item('Clear...', () => rewrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
+      .item('Clear...', () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
       .separator()
-      .item('Basic...', () => rewrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-      .item('Advanced...', () => rewrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
+      .item('Basic...', () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
+      .item('Advanced...', () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
       .show();    
   });
   
   editorView.dom.style.overflow = 'auto';
+  editorView.dom.style.height = '100%';
 
   solverView.dockManager.dock(div, 'left');
-  
-  div.appendChild(ui.h3(' '));  
+  solverView.helpUrl = getHelpUrl(editorState);
 
   const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
   exportIcon.classList.add("fal");
