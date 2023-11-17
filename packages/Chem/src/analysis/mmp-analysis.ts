@@ -17,7 +17,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {debounceTime} from 'rxjs/operators';
 import {getSigFigs} from '../utils/chem-common';
 import {convertMolNotation} from '../package';
-import { FormsViewer } from '@datagrok-libraries/utils/src/viewers/forms-viewer';
+import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 
 const MMP_COLNAME_FROM = 'From';
 const MMP_COLNAME_TO = 'To';
@@ -183,7 +183,9 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
   const pairsToSmiles = new Array<string>(allCasesNumber);
   const ruleNum = new Int32Array(allCasesNumber);
 
-  const activityPairsIdxs = new BitArray(allCasesNumber);
+  const activityPairsIdxs = new Array<BitArray>(variates);
+  for (let i = 0; i < variates; i++)
+    activityPairsIdxs[i] = new BitArray(allCasesNumber);
 
   //set activity differences
   let pairIdx = 0;
@@ -209,7 +211,7 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
         if (diff > 0) {
           if (diff > maxActs[k])
             maxActs[k] = diff;
-          activityPairsIdxs.setBit(pairIdx, true, false);
+          activityPairsIdxs[k].setBit(pairIdx, true, false);
         }
 
         mean[k] += diff;
@@ -285,16 +287,24 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
   const casesGrid = pairedTransformations.plot.grid();
 
   //creating lines for rendering
-  const pointsFrom = new Uint32Array(activityPairsIdxs.trueCount());
-  const pointsTo = new Uint32Array(activityPairsIdxs.trueCount());
-  const linesIdxs = new Uint32Array(activityPairsIdxs.trueCount());
+  let allCount = 0;
+  for (let i = 0; i < variates; i++)
+    allCount += activityPairsIdxs[i].trueCount();
+
+  const pointsFrom = new Uint32Array(allCount);
+  const pointsTo = new Uint32Array(allCount);
+  const linesIdxs = new Uint32Array(allCount);
+  const colors = new Array<string>(allCount);
 
   let pairsCounter = 0;
-  for (let i = -1; (i = activityPairsIdxs.findNext(i)) !== -1;) {
-    pointsFrom[pairsCounter] = molNumFrom[i];
-    pointsTo[pairsCounter] = molNumTo[i];
-    linesIdxs[pairsCounter] = i;
-    pairsCounter++;
+  for (let j = 0; j < variates; j++) {
+    for (let i = -1; (i = activityPairsIdxs[j].findNext(i)) !== -1;) {
+      pointsFrom[pairsCounter] = molNumFrom[i];
+      pointsTo[pairsCounter] = molNumTo[i];
+      linesIdxs[pairsCounter] = i;
+      colors[pairsCounter] = j == 0 ? '60,177,115' : '255,0,0';
+      pairsCounter++;
+    }
   }
 
   const lines: ILineSeries = {
@@ -410,15 +420,15 @@ function moleculesPairInfo(line: number, linesIdxs: Uint32Array, pairsDf: DG.Dat
 
 function getMoleculesPropertiesDiv(idxs: number[], parentTable: DG.DataFrame, molColName: string): HTMLElement {
   const propertiesColumnsNames = parentTable.columns.names()
-  .filter((name) => name !== molColName && name !== MMP_COLNAME_CHEMSPACE_X
-    && name !== MMP_COLNAME_CHEMSPACE_Y && !name.startsWith('~'));
+    .filter((name) => name !== molColName && name !== MMP_COLNAME_CHEMSPACE_X &&
+      name !== MMP_COLNAME_CHEMSPACE_Y && !name.startsWith('~'));
   const formsViewer = new FormsViewer();
   //@ts-ignore
   formsViewer.dataframe = parentTable;
   formsViewer.columns = propertiesColumnsNames;
   formsViewer.fixedRowNumbers = idxs;
   formsViewer.root.classList.add('chem-mmpa-forms-viewer');
-  
+
   return ui.div(formsViewer.root, {style: {height: '100%'}});
 }
 
@@ -449,7 +459,8 @@ function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewe
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
-      moleculesPairInfo(event.id, linesIdxs, pairsDf, diffs, table, molecules.name, rdkitModule, true), event.x, event.y);
+      moleculesPairInfo(event.id, linesIdxs, pairsDf, diffs, table, molecules.name, rdkitModule, true),
+      event.x, event.y);
   });
 
   const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
@@ -882,7 +893,6 @@ export class MmpAnalysis {
         this.linesMasks[i].setAll(false, false);
         this.cutoffMasks[i].setAll(false);
       }
-
 
       for (let i = 0; i < this.lines.from.length; i++) {
         //TODO: refine
