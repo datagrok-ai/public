@@ -17,7 +17,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {debounceTime} from 'rxjs/operators';
 import {getSigFigs} from '../utils/chem-common';
 import {convertMolNotation} from '../package';
-import {pickTextColorBasedOnBgColor} from '../utils/ui-utils';
+import { FormsViewer } from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 
 const MMP_COLNAME_FROM = 'From';
 const MMP_COLNAME_TO = 'To';
@@ -47,8 +47,6 @@ type MmpRules = {
 
 let currentTab = '';
 let lastSelectedPair: number | null = null;
-let propColNames: string[] = [];
-let propLabelsDiv: HTMLDivElement = ui.div();
 
 async function getMmpFrags(molecules: DG.Column): Promise<[string, string][][]> {
   // const module = getRdKitModule();
@@ -363,7 +361,7 @@ function drawMolPair(molecules: string[], substr: (ISubstruct | null)[], div: HT
   const hosts = ui.divH([]);
   if (!tooltip)
     hosts.classList.add('chem-mmpa-context-pane-mol-div');
-  const canvasWidth = 150;
+  const canvasWidth = 170;
   const canvasHeight = 75;
   for (let i = 0; i < 2; i++) {
     const imageHost = ui.canvas(canvasWidth, canvasHeight);
@@ -374,7 +372,7 @@ function drawMolPair(molecules: string[], substr: (ISubstruct | null)[], div: HT
 };
 
 function moleculesPairInfo(line: number, linesIdxs: Uint32Array, pairsDf: DG.DataFrame, diffs: Array<Float32Array>,
-  parentTable: DG.DataFrame, rdkitModule: RDModule, tooltip?: boolean): HTMLDivElement {
+  parentTable: DG.DataFrame, molColName: string, rdkitModule: RDModule, tooltip?: boolean): HTMLDivElement {
   const div = ui.divV([], {style: {width: '100%'}});
   const moleculesDiv = ui.divH([]);
   div.append(moleculesDiv);
@@ -386,7 +384,7 @@ function moleculesPairInfo(line: number, linesIdxs: Uint32Array, pairsDf: DG.Dat
   if (!tooltip) {
     const fromIdx = pairsDf.get(MMP_COL_PAIRNUM_FROM, pairIdx);
     const toIdx = pairsDf.get(MMP_COL_PAIRNUM_TO, pairIdx);
-    const props = getMoleculesPropertiesDiv([fromIdx, toIdx], propColNames, parentTable, propLabelsDiv);
+    const props = getMoleculesPropertiesDiv([fromIdx, toIdx], parentTable, molColName);
     div.append(props);
   } else {
     //TODO: refine
@@ -410,46 +408,18 @@ function moleculesPairInfo(line: number, linesIdxs: Uint32Array, pairsDf: DG.Dat
   return div;
 };
 
-function getMoleculesPropertiesDiv(idxs: number[], propertiesColumnsNames: string[], parentTable: DG.DataFrame,
-  labelsDiv: HTMLDivElement): HTMLDivElement {
-  const grid = grok.shell.tv.grid;
-  const properties = [
-    ui.divV([], 'chem-mmpa-context-pane-properties-div'),
-    ui.divV([], 'chem-mmpa-context-pane-properties-div')];
-  for (const col of propertiesColumnsNames) {
-    const colorCoding = parentTable.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE];
-    let colorCoded = false;
-    if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF)
-      colorCoded = true;
-    for (let i = 0; i < 2; i++) {
-      const value = ui.divText(`${parentTable.get(col, idxs[i])}`, 'chem-mmpa-prop-value');
-      if (colorCoded) {
-        const color = DG.Color.toHtml(grid.cell(col, idxs[i]).color);
-        if (grid.col(col)?.isTextColorCoded)
-          value.style.color = color;
-        else {
-          value.style.backgroundColor = color,
-          value.style.color = pickTextColorBasedOnBgColor(color, '#FFFFFF', '#000000');
-        }
-      }
-      properties[i].append(value);
-    }
-  }
-  return ui.divH([
-    labelsDiv,
-    properties[0],
-    properties[1],
-  ], {style: {width: '100%'}});
-}
-
-function getPropsColNamesDiv() {
-  const labelsDiv = ui.divV([], {style: {gap: '5px', width: '100px'}});
-  for (const col of propColNames) {
-    const label = ui.divText(`${col}`, 'chem-similarity-prop-label');
-    ui.tooltip.bind(label, col);
-    labelsDiv.append(label);
-  }
-  return labelsDiv;
+function getMoleculesPropertiesDiv(idxs: number[], parentTable: DG.DataFrame, molColName: string): HTMLElement {
+  const propertiesColumnsNames = parentTable.columns.names()
+  .filter((name) => name !== molColName && name !== MMP_COLNAME_CHEMSPACE_X
+    && name !== MMP_COLNAME_CHEMSPACE_Y && !name.startsWith('~'));
+  const formsViewer = new FormsViewer();
+  //@ts-ignore
+  formsViewer.dataframe = parentTable;
+  formsViewer.columns = propertiesColumnsNames;
+  formsViewer.fixedRowNumbers = idxs;
+  formsViewer.root.classList.add('chem-mmpa-forms-viewer');
+  
+  return ui.div(formsViewer.root, {style: {height: '100%'}});
 }
 
 function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewer, lines: ILineSeries,
@@ -472,14 +442,14 @@ function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewe
   spEditor.lineClicked.subscribe((event: MouseOverLineEvent) => {
     spEditor.currentLineId = event.id;
     if (event.id !== -1) {
-      grok.shell.o = moleculesPairInfo(event.id, linesIdxs, pairsDf, diffs, table, rdkitModule);
+      grok.shell.o = moleculesPairInfo(event.id, linesIdxs, pairsDf, diffs, table, molecules.name, rdkitModule);
       lastSelectedPair = event.id;
     }
   });
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
-      moleculesPairInfo(event.id, linesIdxs, pairsDf, diffs, table, rdkitModule, true), event.x, event.y);
+      moleculesPairInfo(event.id, linesIdxs, pairsDf, diffs, table, molecules.name, rdkitModule, true), event.x, event.y);
   });
 
   const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
@@ -751,7 +721,7 @@ export class MmpAnalysis {
         this.refilterCliffs(sliderInputs.map((si) => si.value), false);
         if (lastSelectedPair) {
           grok.shell.o = moleculesPairInfo(lastSelectedPair, this.linesIdxs, this.casesGrid.dataFrame,
-            this.diffs, this.parentTable, this.rdkitModule);
+            this.diffs, this.parentTable, molecules.name, this.rdkitModule);
         }
       }
     });
@@ -792,17 +762,10 @@ export class MmpAnalysis {
     //running internal chemspace
     const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, casesGrid.dataFrame, diffs, module);
 
-    propColNames = table.columns.names()
-      .filter((name) => name !== molecules.name &&
-        name !== MMP_COLNAME_CHEMSPACE_X &&
-        name !== MMP_COLNAME_CHEMSPACE_Y);
-
-    propLabelsDiv = getPropsColNamesDiv();
-
     DG.debounce((table.onMetadataChanged), 50)
       .subscribe(async (_: any) => {
         if (lastSelectedPair && currentTab === MMP_TAB_CLIFFS)
-          grok.shell.o = moleculesPairInfo(lastSelectedPair, linesIdxs, casesGrid.dataFrame, diffs, table, module);
+          grok.shell.o = moleculesPairInfo(lastSelectedPair, linesIdxs, casesGrid.dataFrame, diffs, table, molecules.name, module);
       });
 
     return new MmpAnalysis(table, molecules, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,

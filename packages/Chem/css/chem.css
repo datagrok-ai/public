@@ -214,14 +214,18 @@
 
 .chem-mmpa-context-pane-mol-div {
   width: 100%;
-  justify-content: space-between;
-  min-width: 400px;
+  min-width: 440px;
   padding-left: 100px;
 }
 
 .chem-mmpa-context-pane-properties-div {
   gap: 5px;
   width: 100%;
+}
+
+.chem-mmpa-forms-viewer {
+  height: 100%!important;
+  width: 100%!important;
 }
 
 .chem-scaffold-tree-toolbar {
@@ -461,7 +465,7 @@
 .chem-filter-fp-label {
   margin-right: 5px!important;
 }
-arch-options-icon
+
 .chem-filter-sim-cutoff-label {
   width: 0px;
   margin: 0px!important;
