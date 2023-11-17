@@ -1,5 +1,15 @@
 # Curves changelog
 
+## 1.2.15 (2023-11-17)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added capability to substitute zeroes in curve fitting for logarithmic data
+
+### Bug Fixes
+
+* Fixed MultiCurveViewer throws an errors when adding to an arbitrary dataset
+
 ## 1.2.14 (2023-11-10)
 
 ### Bug Fixes
