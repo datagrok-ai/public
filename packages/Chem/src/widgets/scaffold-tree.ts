@@ -253,12 +253,8 @@ async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes 
     if (thisViewer.cancelled)
       return;
 
-
     const group = visibleNodes[n];
     const v = value(group);
-    if (v.init || v.orphans)
-      continue;
-
     const bitset = thisViewer.molColumn === null ?
       null :
       await handleMalformedStructures(thisViewer.molColumn, v.smiles);
@@ -395,7 +391,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   colorCodedScaffolds: IColoredScaffold[] = [];
   checkedScaffolds: IColoredScaffold[] = [];
   scaffoldLayouts: ScaffoldLayout[] = [];
-  availableColors: number[];
+  paletteColors: string[] = [];
   molColumnIdx: number = -1;
   tableIdx: number = -1;
   threshold: number;
@@ -501,7 +497,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
-    this.availableColors = DG.Color.categoricalPalette;
+    this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
     this._initMenu();
   }
 
@@ -1341,9 +1337,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     notIcon.onmouseleave = (e) => ui.tooltip.hide();
 
-    let chosenColor = DG.Color.toHtml(this.availableColors[0]);
-    const first = this.availableColors.shift();
-    this.availableColors[this.availableColors.length] = first!;
+    let chosenColor = this.paletteColors[0];
+    const first = this.paletteColors.shift();
+    this.paletteColors[this.paletteColors.length] = first!;
     
     const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
       chosenColor = value;
@@ -1497,6 +1493,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const divFolder = ui.iconFA('folder');
     divFolder.style.fontSize = '66px';
     divFolder.style.marginLeft = '140px';
+    divFolder.style.marginTop = '55px';
     divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
     divFolder.classList.add('fas', 'icon-fill');
@@ -1772,6 +1769,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.clearFilters();
       this.clearNotIcon(this.tree.children);
     }));
+
+    this.subs.push(this.dataFrame.onRowsRemoved.subscribe(async (_) => {
+      await updateAllNodesHits(thisViewer);
+    }))
 
     this.render();
 
