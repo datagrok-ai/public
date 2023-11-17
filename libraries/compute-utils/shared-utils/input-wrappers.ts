@@ -21,6 +21,7 @@ export interface FuncCallInputLockable<T = any> extends FuncCallInput<T> {
   setRestricted: () => void;
   setRestrictedUnlocked: () => void;
   setInconsistent: () => void;
+  setUserInput: () => void;
 }
 
 export type InputFactory = (params: any) => { input: FuncCallInput | FuncCallInputValidated };
@@ -39,5 +40,6 @@ export function isInputLockable(arg: any): arg is FuncCallInputLockable {
     arg?.setRestricted &&
     arg?.setRestrictedUnlocked &&
     arg?.setInconsistent &&
+    arg?.setUserInput &&
     isFuncCallInput(arg);
 }

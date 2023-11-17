@@ -95,11 +95,19 @@ export const injectLockStates = (input: FuncCallInput) => {
     $(input.root).removeClass('rfv-restricted-unlocked-input');
   }
 
+  function setUserInputDefault() {
+    input.enabled = true;
+    $(input.root).removeClass('rfv-inconsistent-input');
+    $(input.root).removeClass('rfv-restricted-input');
+    $(input.root).removeClass('rfv-restricted-unlocked-input');
+  }
+
   const inputAny = input as any;
   inputAny.setDisabled = setDisabledDefault;
   inputAny.setRestricted = setRestrictedDefault;
   inputAny.setRestrictedUnlocked = setRestrictedUnlockedDefault;
   inputAny.setInconsistent = setInconsistentDefault;
+  inputAny.setUserInput = setUserInputDefault;
 };
 
 export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.InputBase) => {

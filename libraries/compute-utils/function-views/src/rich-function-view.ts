@@ -762,6 +762,9 @@ export class RichFunctionView extends FunctionView {
 
     if (state === 'inconsistent')
       input.setInconsistent();
+
+    if (state === 'user input')
+      input.setUserInput();
   }
 
   private getRestrictedValue(paramName: string) {
