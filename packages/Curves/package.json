@@ -8,7 +8,7 @@
     "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^1.2.10",
+    "@datagrok-libraries/statistics": "^1.2.11",
     "@datagrok-libraries/utils": "^4.1.0",
     "@types/wu": "^2.1.42",
     "cash-dom": "latest",
