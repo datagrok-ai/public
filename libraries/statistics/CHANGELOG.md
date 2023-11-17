@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.2.11 (2023-11-17)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added allowXZeroes property for logarithmic data.
+
 ## 1.2.10 (2023-11-09)
 
 ### Bug Fixes
