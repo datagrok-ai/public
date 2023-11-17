@@ -7,17 +7,15 @@ Datagrok provides in-browser tool for solving [initial value problem](https://en
 
 * Go to **Apps**
 * Run **EquaSleek X**
-* Edit formulas
+* Enter formulas or modify template
 * Press <i class="fas fa-play"></i> **Run** button on the top panel
 
 ![add-to-workspace](solver.gif)
 
-Solver computes numerical solution:
+Numerical solution is obtained:
 
 ![add-to-workspace](solution.png)
 
-See also:
+Learn more in
 
 * [Quick start](quick-start.md)
-* [From scratch](from-scratch.md) creating
-* [Extensions](extensions.md) development
