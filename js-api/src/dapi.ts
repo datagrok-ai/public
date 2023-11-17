@@ -578,7 +578,7 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   }
 
   /** Saves the Connections */
-  save(e: DataConnection, options?: {saveCredentials?: boolean}): Promise<DataConnection> {
+  async save(e: DataConnection, options?: {saveCredentials?: boolean}): Promise<DataConnection> {
     options ??= {};
     options.saveCredentials ??= true;
     return toJs(await api.grok_DataConnectionsDataSource_Save(this.dart, e.dart, options!.saveCredentials));
