@@ -26,6 +26,7 @@ import {ViewLayout} from "./views/view";
 import {toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
+import {toDart} from "./wrappers_impl";
 
 let api = <any>window;
 
@@ -379,6 +380,43 @@ export class AdminDataSource {
   getServiceInfos(): Promise<ServiceInfo[]> {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
+
+
+  /**
+   * Sends email
+   * @param email - message that will be sent using configured SMTP service
+   */
+  sendEmail(email: Email): Promise<void> {
+    if (email.to.length === 0)
+      throw new Error('Recipients list shouldn\'t be empty');
+    return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
+  }
+}
+
+/**
+ * Represents message that can be sent over the network using the configured SMTP service
+ */
+export interface Email {
+  /**
+   * Message subject
+   */
+  subject: string,
+  /**
+   * List of recipients
+   */
+  to: string [],
+  /**
+   * Use to specify plaintext body
+   */
+  text?: string,
+  /**
+   * Use to specify HTML body
+   */
+  html?: string,
+  /**
+   * Use to send copies of an email to additional recipients
+   */
+  bcc?: string [],
 }
 
 export interface ServiceInfo {
