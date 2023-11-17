@@ -278,12 +278,12 @@ export abstract class Tutorial extends DG.Widget {
   endSection() {
     if (!this.currentSection) return;
     this.currentSection.classList.add('tutorials-done-section');
-    const chevron = ui.iconFA('chevron-down');
+    const chevron = ui.iconFA('chevron-left');
     chevron.classList.add('tutorials-chevron');
     const s = this.currentSection;
     s.children[0].append(chevron);
     $(chevron).on('click', () => {
-      $(chevron).toggleClass('fa-chevron-down fa-chevron-up');
+      $(chevron).toggleClass('tutorials-chevron-expanded');
       $(s).toggleClass('tutorials-done-section tutorials-done-section-expanded');
     });
     this.currentSection = undefined;
@@ -340,7 +340,7 @@ export abstract class Tutorial extends DG.Widget {
     const descriptionDiv = ui.divText('', {classes: 'grok-tutorial-step-description', style: {
       margin: '0px 0px 0px 15px',
     }});
-    const chevron = ui.iconFA('chevron-down');
+    const chevron = ui.iconFA('chevron-left');
     chevron.classList.add('tutorials-chevron');
     const instructionIndicator = ui.div([], 'grok-tutorial-entry-indicator');
     const entry = ui.divH([
@@ -381,7 +381,7 @@ export abstract class Tutorial extends DG.Widget {
       entry.append(chevron);
 
     $(chevron).on('click', () => {
-      $(chevron).toggleClass('fa-chevron-down fa-chevron-up');
+      $(chevron).toggleClass('tutorials-chevron-expanded');
       $(descriptionDiv).toggle();
     });
     ui.tooltip.bind(entry, description);
