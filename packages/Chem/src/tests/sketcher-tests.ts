@@ -97,14 +97,6 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
   qmol?.delete();
 }
 
-const validationFunc = (s: string) => {
-  const valFunc = DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0];
-  const funcCall: DG.FuncCall = valFunc.prepare({s});
-  funcCall.callSync();
-  const res = funcCall.getOutputParamValue();
-  return res;
-}
-
 async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
   const mol = rdkitModule.get_mol(exampleSmiles);
   for (const func of funcs) {
