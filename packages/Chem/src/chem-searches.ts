@@ -339,6 +339,7 @@ export async function chemSubstructureSearchLibrary(
           await rdKitService.setTerminateFlag(true);
           subFuncs!.setTerminateFlag();
           await Promise.allSettled(subFuncs.promises);
+          await rdKitService.setTerminateFlag(false);
           saveProcessedColumns();
           sub.unsubscribe();
         }
