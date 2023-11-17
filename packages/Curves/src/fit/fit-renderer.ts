@@ -89,10 +89,14 @@ export function mergeProperties(properties: DG.Property[], source: any, target: 
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
 export function getChartData(gridCell: DG.GridCell): IFitChartData {
+  // removing '|' from JSON (how did it get here?)
+  let cellValue = gridCell.cell.value as string;
+  if (cellValue.includes('|'))
+    cellValue = cellValue.replaceAll('|', '');
   const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
     (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
-    convertXMLToIFitChartData(gridCell.cell.value) :
-    JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
+    convertXMLToIFitChartData(cellValue) :
+    JSON.parse(cellValue ?? '{}') ?? {}) : createDefaultChartData();
 
   const columnChartOptions = gridCell.cell.column ? getColumnChartOptions(gridCell.cell.column) : {};
   const dfChartOptions = gridCell.cell.column ? getDataFrameChartOptions(gridCell.cell.dataFrame) : {};
@@ -269,6 +273,34 @@ function drawDropline(g: CanvasRenderingContext2D, transform: Viewport, xValue: 
   g.lineTo(transform.xToScreen(xValue), transform.yToScreen(dataBounds.minY));
 }
 
+/** Performs x zeroes substitution if log x */
+function substituteZeroes(data: IFitChartData): void {
+  for (let i = 0; i < data.series?.length!; i++) {
+    const series = data.series![i];
+    if (series.points.every((p) => p.x !== 0))
+      continue;
+    let minNonZeroX = Number.MAX_VALUE;
+    let maxNonZeroX = 0;
+    let countOfDistNonZeroX = 0;
+    const uniqueArr: number[] = [];
+    for (let j = 0; j < series.points.length; j++) {
+      if (series.points[j].x < minNonZeroX && series.points[j].x !== 0)
+        minNonZeroX = series.points[j].x;
+      if (series.points[j].x > maxNonZeroX && series.points[j].x !== 0)
+        maxNonZeroX = series.points[j].x;
+      if (!uniqueArr.includes(series.points[j].x)) {
+        uniqueArr[uniqueArr.length] = series.points[j].x;
+        countOfDistNonZeroX++;
+      }
+    }
+    const zeroSubstitute = Math.pow(10, Math.log10(minNonZeroX) - (Math.log10(maxNonZeroX) - Math.log10(minNonZeroX) / (countOfDistNonZeroX - 1)));
+    for (let j = 0; j < series.points.length; j++) {
+      if (series.points[j].x === 0)
+        series.points[j].x = zeroSubstitute;
+    }
+  }
+}
+
 export class FitChartCellRenderer extends DG.GridCellRenderer {
   get name() { return FIT_CELL_TYPE; }
 
@@ -367,6 +399,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.rect(x, y, w, h);
     g.clip();
 
+    if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX && data.series?.some((series) => series.points.some((p) => p.x === 0)))
+      substituteZeroes(data);
     const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxes = screenBounds.width >= MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT;
     // TODO: make bigger sizes
@@ -377,7 +411,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxesLabels, showTitle);
 
     const dataBounds = getChartBounds(data);
-    if (dataBounds.x <= 0 && data.chartOptions) data.chartOptions.logX = false;
+    if ((dataBounds.x < 0 && data.chartOptions) || (dataBounds.x === 0 && data.chartOptions && !data.chartOptions.allowXZeroes))
+      data.chartOptions.logX = false;
     if (dataBounds.y <= 0 && data.chartOptions) data.chartOptions.logY = false;
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
