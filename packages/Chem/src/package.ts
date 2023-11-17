@@ -63,7 +63,7 @@ import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
-import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -911,7 +911,7 @@ export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Not
 //description: Molecule
 //input: grid_cell cell
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
-  const sketcher = new Sketcher(undefined, validateMolecule);
+  const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   let molecule = cell.cell.value;
   if (unit === DG.chem.Notation.Smiles) {
@@ -926,7 +926,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
         const mol = checkMoleculeValid(cell.cell.value);
-        if (!mol || !checkMolEqualSmiles(mol, newValue))
+        if (!checkMolEqualSmiles(mol, newValue))
           cell.cell.value = newValue;
         mol?.delete();
       } else 
@@ -1352,26 +1352,6 @@ export async function demoDatabases(): Promise<void> {
 //meta.demoPath: Cheminformatics | Scaffold Tree
 export async function demoScaffold(): Promise<void> {
   _demoScaffoldTree();
-}
-
-//name: validateMolecule
-//input: string s
-//output: object result
-export function validateMolecule(s: string): string | null {
-  let logHandle: RDLog | null = null;
-  let mol: RDMol | null = null;;
-  try {
-    logHandle = _rdKitModule.set_log_capture("rdApp.error");
-    mol = getMolSafe(s, {}, _rdKitModule, true).mol;
-    let logBuffer = logHandle?.get_buffer();
-    logHandle?.clear_buffer();
-    if (!mol && !logBuffer)
-      logBuffer = 'unknown error';
-    return logBuffer ?? null;
-  } finally {
-    logHandle?.delete();
-    mol?.delete();
-  }
 }
 
 export {getMCS};
