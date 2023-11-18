@@ -33,11 +33,12 @@ import {__obs, StreamSubscription} from './src/events';
 import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
-import {Entity, Property} from './src/entities';
+import {Entity, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
+import * as d4 from './src/api/d4.api.g';
 
 
 let api = <any>window;
@@ -716,6 +717,10 @@ export namespace input {
     return input;
   }
 
+  export function forInputType(inputType: d4.InputType | string): InputBase {
+    return InputBase.forInputType(inputType);
+  }
+
   export function grid(items: any[], properties: Property[]): ItemsGrid {
     return new ItemsGrid(items, properties);
   }
@@ -729,6 +734,12 @@ export namespace input {
     return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
   }
 
+  export function userGroups(name: string, value?: User[], onValueChanged: Function | null = null): InputBase<User[]> {
+    const i = forInputType(d4.InputType.UserGroups);
+    if (value)
+      i.value = value;
+    return i;
+  }
 
   // export function bySemType(semType: string) {
   //

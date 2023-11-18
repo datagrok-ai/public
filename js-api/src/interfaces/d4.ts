@@ -237,6 +237,8 @@ export interface IHistogramLookSettings {
 
   showCharts: boolean;
 
+  legendInViewerFiltering: boolean;
+
   marginLeft: number;
 
   marginTop: number;
@@ -713,6 +715,8 @@ export interface ILineChartLookSettings {
 
   rowGroupTooltip: string;
 
+  legendInViewerFiltering: boolean;
+
   innerChartMarginTop: number;
 
   innerChartMarginBottom: number;
@@ -864,6 +868,8 @@ export interface IBarChartLookSettings {
 
   barBorderLineColor: number;
 
+  legendInViewerFiltering: boolean;
+
   outerMarginLeft: number;
 
   outerMarginRight: number;
@@ -1003,6 +1009,8 @@ export interface IBoxPlotLookSettings {
   /// Welch's t-test is used for calculating the p-value.
   showPValue: boolean;
 
+  showMouseOverPoint: boolean;
+
   statistics: Array<string>;
 
   autoLayout: boolean;
@@ -1077,6 +1085,8 @@ export interface IPieChartLookSettings {
   includeNulls: boolean;
 
   autoLayout: boolean;
+
+  legendInViewerFiltering: boolean;
 
   segmentAngleColumnName: string;
 
@@ -1203,6 +1213,9 @@ export interface ISummaryLookSettings {
 
   /// Color aggregation type.
   colorAggrType: string;
+
+  /// Custom color scheme for the color-coding.
+  colorScheme: Array<number>;
 
   invertColorScheme: boolean;
 
@@ -1501,6 +1514,12 @@ export interface ITrellisPlotLookSettings {
   globalScale: boolean;
 
   showGridlines: string;
+
+  legendInViewerFiltering: boolean;
+
+  showXSelectors: boolean;
+
+  showYSelectors: boolean;
 
   showXAxes: boolean;
 

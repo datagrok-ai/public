@@ -11,6 +11,8 @@ import {MapProxy} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
+import * as d4 from './../src/api/d4.api.g';
+
 
 import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
@@ -992,7 +994,7 @@ export class InputBase<T = any> {
   }
 
   /** Creates input for the specified input type */
-  static forInputType(inputType: string): InputBase {
+  static forInputType(inputType: string | d4.InputType): InputBase {
     return toJs(api.grok_InputBase_ForInputType(inputType));
   }
 

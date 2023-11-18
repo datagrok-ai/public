@@ -2,6 +2,27 @@
 import { toDart } from "../wrappers";
 let api = <any>window;
 
+export class ViewerEvent {
+  public dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+  static create(): ViewerEvent {
+    return new ViewerEvent(api.grok_ViewerEvent_Create());
+  }
+  get viewer(): any { return api.grok_ViewerEvent_Get_viewer(this.dart); };
+  set viewer(x: any) {api.grok_ViewerEvent_Set_viewer(this.dart, toDart(x)); }
+  get type(): string { return api.grok_ViewerEvent_Get_type(this.dart); };
+  set type(x: string) {api.grok_ViewerEvent_Set_type(this.dart, toDart(x)); }
+  get eventFlag(): boolean { return api.grok_ViewerEvent_Get_eventFlag(this.dart); };
+  set eventFlag(x: boolean) {api.grok_ViewerEvent_Set_eventFlag(this.dart, toDart(x)); }
+  get filters(): Map<string, any> { return api.grok_ViewerEvent_Get_filters(this.dart); };
+  set filters(x: Map<string, any>) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
+  get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
+  set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
+  get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
+
+}
 export class InputType {
   static Int = 'Int';
 
@@ -47,7 +68,9 @@ export class InputType {
 
   static Molecule = 'Molecule';
 
-  static UserGroupSelector = 'UserGroupSelector';
+  static User = 'User';
+
+  static UserGroups = 'UserGroups';
 
   static Dynamic = 'Dynamic';
 
