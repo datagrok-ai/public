@@ -8,8 +8,10 @@ import { View, ViewLayout } from './views/view';
 import { Viewer } from "./viewer";
 import { Column } from "./dataframe";
 import {GridCell} from "./grid";
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number = 100): rxjs.Observable<T> {
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));

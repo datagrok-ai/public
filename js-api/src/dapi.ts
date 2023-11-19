@@ -27,8 +27,9 @@ import {toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 import {toDart} from "./wrappers_impl";
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * Exposes Datagrok's server-side functionality.
@@ -307,7 +308,7 @@ export class HttpDataSource<T> {
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  @returns {HttpDataSource} */
   nextPage(): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_NextPage(this.dart);
+    this.dart = api.grok_DataSource_NextPage(this.dart, 20);
     return this;
   }
 
@@ -655,8 +656,8 @@ export class PermissionsDataSource {
    * @returns {Promise<Map>} permissions
    * */
   // { [key:string]:number; }
-  get(e: Entity): Promise<Map<string, Group[]>> {
-    let data = api.grok_Dapi_Get_Permissions(e.dart);
+  async get(e: Entity): Promise<Map<string, Group[]>> {
+    let data = await api.grok_Dapi_Get_Permissions(e.dart);
     data.view = toJs(data.view);
     data.edit = toJs(data.edit);
     return data;
@@ -832,7 +833,7 @@ export class DockerDataSource {
 /** Functionality to work with Dockerfiles
  * @extends HttpDataSource */
 export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
-  /** @constructs DockerfilesDataSource */
+
   constructor(s: any) {
     super(s);
   }
@@ -846,7 +847,6 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
 /** Functionality to work with Dockerfiles
  * @extends HttpDataSource */
 export class DockerContainersDataSource extends HttpDataSource<DockerContainer> {
-  /** @constructs DockerfilesDataSource */
   constructor(s: any) {
     super(s);
   }

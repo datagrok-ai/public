@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import * as rxjs from 'rxjs';
 import {
   AGG,
@@ -24,10 +26,11 @@ import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let grok: any;
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
@@ -131,7 +134,7 @@ export class DataFrame {
   }
 
   /** Creates a {@link DataFrame} from the specified properties with the specified row count. */
-  static fromProperties(properties: Property[], rows: number = 0) {
+  static fromProperties(properties: Property[], rows: number = 0): DataFrame {
     let df = DataFrame.create(rows);
     for (let p of properties)
       df.columns.addNew(p.name, <ColumnType>p.propertyType);
@@ -312,15 +315,8 @@ export class DataFrame {
 
   /** Current row.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get currentRow(): Row {
-    return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart));
-  }
-
-  /** Current row.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  set currentRow(idx) {
-    api.grok_DataFrame_Set_CurrentRowIdx(this.dart, idx);
-  }
+  get currentRow(): Row { return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart)); }
+  set currentRow(row: Row) { api.grok_DataFrame_Set_CurrentRowIdx(this.dart, row.idx); }
 
   /** Index of the current row. */
   get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.dart); }
@@ -1304,17 +1300,10 @@ export class ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
   }
 
-  /** @returns {ValueMatcher} */
-  static numerical(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static string(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_String(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static dateTime(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static bool(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_BoolMatcher(pattern)); }
+  static numerical(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
+  static string(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_String(pattern)); }
+  static dateTime(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
+  static bool(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Bool(pattern)); }
 
   get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
   get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }

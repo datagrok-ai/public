@@ -13,8 +13,10 @@ import $ from 'cash-dom';
 import { FuncCall } from '../dg';
 import '../css/styles.css';
 import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 declare let grok: any;
 
 export const DEFAULT_SKETCHER = 'OpenChemLib';

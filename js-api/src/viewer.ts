@@ -14,10 +14,12 @@ import {FormulaLinesHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let DG: any;
 declare let ui: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 export class TypedEventArgs<TData> {
   dart: any;
@@ -443,7 +445,7 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
-  getStates(columnName: string, filterType: String): Array<Object> {
+  getStates(columnName: string, filterType: string): Array<Object> {
     return api.grok_FilterGroup_GetStates(this.dart, columnName, filterType);
   }
 

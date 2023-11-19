@@ -19,11 +19,13 @@ import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 import '../css/tags-input.css';
 import {FuncCall} from "./functions";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let grok: any;
 declare let DG: any;
 declare let ui: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
@@ -995,7 +997,7 @@ export class InputBase<T = any> {
 
   /** Creates input for the specified input type */
   static forInputType(inputType: string | d4.InputType): InputBase {
-    return toJs(api.grok_InputBase_ForInputType(inputType));
+    return toJs(api.grok_InputBase_ForInputType(inputType as string));
   }
 
   /** Creates input for the specified column */
@@ -1825,9 +1827,9 @@ export class Legend extends DartWidget {
   get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
   set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column.dart); }
 
-  /** Whether or not to show empty categories */
-  get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
-  set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
+  /** Whether to show empty categories */
+  get showNulls(): boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
+  set showNulls(show: boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
 
   /** Position (left / right / top / bottom) */
   get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }

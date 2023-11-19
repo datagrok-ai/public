@@ -2,12 +2,14 @@ import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
 import {ColorType, MARKER_TYPE} from "./const";
 import {Point, Rect, GridCell} from "./grid";
+import {IDartApi} from "./api/grok_api.g";
+import * as DG from "./dataframe";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 declare global {
   interface CanvasRenderingContext2D {
-
     setFillStyle(fill: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
 
     setStrokeStyle(stroke: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
@@ -18,10 +20,8 @@ declare global {
 
     /**
      * Use stroke() or fill() after.
-     * @param pa: Array of points
      */
     polygon(pa: Point[]): CanvasRenderingContext2D;
-
   }
 }
 
@@ -105,7 +105,8 @@ export namespace Paint {
 
   /** Renders a marker */
   export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number | string, size: number) {
-    api.grok_Paint_Marker(g, markerType, x, y, color, size);
+    const c: number = typeof color === 'string' ? Color.fromHtml(color) : color;
+    api.grok_Paint_Marker(g, markerType, x, y, c, size);
   }
 
   /** Renders a PNG image from bytes */
@@ -228,7 +229,7 @@ export class DartList<T> implements Iterable<T> {
   get(index: number): T { return api.grok_List_Get(this.dart, index); }
 
   /** Sets the value at the given [index] in the list to [value]. */
-  set(index: number, value: T): T { return api.grok_List_Get(this.dart, index, value); }
+  set(index: number, value: T): T { return api.grok_List_Set(this.dart, index, value); }
 
   includes(item: T, start?: number) {
     const length = this.length;
