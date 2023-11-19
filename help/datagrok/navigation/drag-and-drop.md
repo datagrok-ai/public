@@ -20,3 +20,7 @@ controls can be used as a source of drag-and-drop:
 [Grid](../../visualize/viewers/grid.md), [Column Manager](../../explore/column-manager.md)
 , [Table Manager](../../explore/table-manager.md). 
 Most of the viewers, and a lot of dialogs accept columns that are being dragged.
+
+![](../../visualize/viewers/filters-drag-column.gif)
+
+![](../../visualize/filters-drag-and-drop.gif)
