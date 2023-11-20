@@ -350,8 +350,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           }, () => null, this.campaign?.template!, true);
         };
 
-        const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
-
+        const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
+        const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const tilesButton = ui.bigButton('Progress tracker', () => {
           if (!this.currentTilesViewId || !grok.shell.view(this.currentTilesViewId)) {
             this._tilesView = new HitDesignTilesView(this);
@@ -382,7 +382,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             this.campaign.template = this.template;
           ribbonButtons.unshift(calculateRibbon);
         }
-
+        ribbonButtons.unshift(addNewRowButton);
         ribbons.push(ribbonButtons);
         view.setRibbonPanels(ribbons);
       }
