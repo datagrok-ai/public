@@ -25,6 +25,6 @@ category('pdbGridCellRenderer', () => {
     await delay(0);
     await testEvent(back.renderComplete, () => {}, () => {
       grid.invalidate();
-    }, 5000);
+    }, 20000 /* prev tests cause timeouts on NGL. "Too many active WebGL contexts" */);
   });
 });

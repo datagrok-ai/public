@@ -7,14 +7,14 @@ import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-m
 
 import $ from 'cash-dom';
 import wu from 'wu';
-import {Unsubscribable} from 'rxjs';
+import {Subject, Unsubscribable} from 'rxjs';
 import {Base64} from 'js-base64';
 
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {
   BiostructureProps,
   IBiostructureViewer, MolstarDataType,
@@ -36,6 +36,7 @@ import {errInfo} from '../../utils/err-info';
 
 import {_package} from '../../package';
 import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -104,10 +105,20 @@ export enum PROPS {
 
 const pdbDefault: string = '';
 
-export type LigandMapItem = { rowIdx: number, structureRefs: Array<string> | null };
-export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | null, hovered: LigandMapItem | null };
+export type LigandMapItem = {
+  rowIdx: number,
+  structureRefs: Array<string> | null
+};
+export type LigandMap = {
+  selected: LigandMapItem[],
+  current: LigandMapItem | null,
+  hovered: LigandMapItem | null,
+};
 
 export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, IMolecule3DBrowser {
+  private static viewerCounter: number = -1;
+
+  private readonly viewerId: number = ++MolstarViewer.viewerCounter;
   private viewed: boolean = false;
 
   // -- Data --
@@ -153,6 +164,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   constructor() {
     super();
+
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
@@ -231,11 +243,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
   }
 
+  private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
+
   override onPropertyChanged(property: DG.Property | null): void {
+    _package.logger.debug(`${this.viewerToLog()}.onPropertyChanged(), start, property.name = '${property?.name}',`);
     super.onPropertyChanged(property);
 
     if (!property) {
-      console.warn('BiostructureViewer: MolstarViewer.onPropertyChanged() property is null');
+      _package.logger.warning(`${this.viewerToLog()}.onPropertyChanged() property is null`);
       return;
     }
 
@@ -323,7 +338,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       case PROPS.dataJson:
       case PROPS.pdb:
       case PROPS.pdbTag: {
-        this.setData();
+        this.setData(`onPropertyChanged( '${property.name}' )`);
         break;
       }
     }
@@ -333,7 +348,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private dataEff: MolstarDataType | null = null;
 
   override onTableAttached(): void {
-    _package.logger.debug('MolstarViewer.onTableAttached(), ');
+    _package.logger.debug(`${this.viewerToLog()}.onTableAttached(), `);
     const superOnTableAttached = super.onTableAttached.bind(this);
 
     // -- Props editors --
@@ -342,11 +357,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.props.getProperty(PROPS.pdbTag).choices = ['', ...dfTagNameList];
 
     superOnTableAttached();
-    this.setData();
+    this.setData('onTableAttached');
   }
 
   override detach(): void {
-    _package.logger.debug('MolstarViewer.detach(), ');
+    _package.logger.debug(`${this.viewerToLog()}.detach(), `);
 
     const superDetach = super.detach.bind(this);
     this.viewPromise = this.viewPromise.then(async () => { // detach
@@ -362,13 +377,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   // -- Data --
 
-  setData(): void {
-    _package.logger.debug(`MolstarViewer.setData(), in `);
+  private _setDataCallCounter = -1;
+
+  setData(reason: string): void {
+    const callId = ++this._setDataCallCounter;
+    const callLog = `setData( reason = '${reason}', callId = ${callId} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    _package.logger.debug(`${callLogPrefix}, in `);
     this.viewPromise = this.viewPromise.then(async () => { // setData
+      _package.logger.debug(`${callLogPrefix}.viewPromise, start`);
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
         if (this.viewed) {
-          await this.destroyView('setData');
+          await this.destroyView(callLog);
           this.viewed = false;
         }
 
@@ -377,7 +398,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         let pdbTag: string = pdbTAGS.PDB;
         let pdb: string | null = null;
         if (this.pdbTag) pdbTag = this.pdbTag;
-        if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
+        if (this.dataFrame && this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
         if (this.dataJson) {
@@ -387,14 +408,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         }
 
         // -- Ligand --
-        if (!this.ligandColumnName) {
+        if (this.dataFrame && !this.ligandColumnName) {
           const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
           if (molCol)
             this.ligandColumnName = molCol.name;
         }
 
         if (!this.viewed) {
-          await this.buildView('setData');
+          await this.buildView(callLog);
           this.viewed = true;
         }
       } catch (err: any) {
@@ -404,6 +425,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       } finally {
         this.setDataInProgress = false;
       }
+      _package.logger.debug(`${callLogPrefix}.viewPromise, end `);
     });
   }
 
@@ -426,7 +448,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
 
   private async destroyView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarViewer.destroyView( purpose='${purpose}' ) `);
+    _package.logger.debug(`${this.viewerToLog()}.destroyView( purpose = '${purpose}' ), start `);
     for (const sub of this.viewSubs) sub.unsubscribe();
     this.viewSubs = [];
 
@@ -436,22 +458,30 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       delete this.splashDiv;
     }
 
-    if (this.viewer) {
+    if (this.viewerDiv) {
       // Clear viewer
-      await this.viewer.clear();
+      // await this.viewer.clear();
+      await disposeRcsbViewer(this.viewer!, this.viewerDiv);
+      delete this.viewer;
+      this.viewerDiv.remove();
+      delete this.viewerDiv;
     }
+    _package.logger.debug(`${this.viewerToLog()}.destroyView( purpose = '${purpose}' ), end `);
   }
 
   private async buildView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarViewer.buildView( purpose='${purpose}' ) `);
+    _package.logger.debug(`${this.viewerToLog()}.buildView( purpose = '${purpose}' ), start `);
     if (this.dataEff)
-      await this.buildViewWithData();
+      await this.buildViewWithData(`buildView( purpose = '${purpose}' )`);
     else
       await this.buildViewWithoutData();
+    _package.logger.debug(`${this.viewerToLog()}.buildView( purpose = '${purpose}' ), end `);
   }
 
-  private async buildViewWithData() {
-    if (!this.dataEff) throw new Error('MolstarViewer.buildViewWithPdb() dataEff is empty');
+  private async buildViewWithData(purpose: string): Promise<void> {
+    const callLogPrefix = `${this.viewerToLog()}.buildViewWithData( purpose = '${purpose}' )`;
+    _package.logger.debug(`${callLogPrefix}, start`);
+    if (!this.dataEff) throw new Error(`${callLogPrefix} dataEff is empty`);
 
     // Fill in viewer
     if (!this.viewerDiv) {
@@ -465,7 +495,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const props: Partial<RcsbViewerProps> = {};
 
       Object.assign(props, this.viewerProps);
-      this.viewer = new RcsbViewer(this.viewerDiv, props);
+      // this.viewer = new RcsbViewer(this.viewerDiv, props);
+      this.viewer = await createRcsbViewer(this.viewerDiv, props);
     }
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
     const df: DG.DataFrame = this.dataFrame;
@@ -487,14 +518,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.viewSubs.push(df.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
 
     await this.buildViewLigands();
+    _package.logger.debug(`${callLogPrefix}, end`);
   }
 
   private async buildViewWithoutData() {
     if (this.viewerDiv) {
-      await this.viewer!.clear();
+      await disposeRcsbViewer(this.viewer!, this.viewerDiv);
       delete this.viewer;
-
-      $(this.viewerDiv).empty();
       this.viewerDiv.remove();
       delete this.viewerDiv;
     }
@@ -524,7 +554,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private calcSize(): void {
     const cw: number = this.root.clientWidth;
     const ch: number = this.root.clientHeight;
-    _package.logger.debug(`MolstarViewer.calcSize( ${cw.toString()} x ${ch.toString()} )`);
+    _package.logger.debug(`${this.viewerToLog()}.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
     if (this.viewerDiv && this.viewer) {
       this.viewerDiv.style.width = `${cw}px`;
@@ -542,29 +572,28 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   // -- Handle events --
 
   private rootOnSizeChanged(_value: any): void {
-    _package.logger.debug('MolstarViewer.rootOnSizeChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.rootOnSizeChanged() `);
     this.calcSize();
   }
 
   private dataFrameOnSelectionChanged(_value: any): void {
-    _package.logger.debug('BiostructureViewer.dataFrameOnSelectionChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnSelectionChanged() `);
     this.rebuildViewLigands();
   }
 
   private dataFrameOnCurrentRowChanged(_value: any): void {
-    _package.logger.debug('MolstarViewer.dataFrameOnCurrentRowChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
     this.rebuildViewLigands();
   }
 
   private dataFrameOnMouseOverRowChanged(_value: any): void {
-    _package.logger.debug('BiostructureViewer.dataFrameOnMouseOverRowChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnMouseOverRowChanged() `);
     this.rebuildViewLigands();
   }
 
   // -- Ligands routines --
 
   public ligands: LigandMap = {selected: [], current: null, hovered: null};
-  public ligandsPromise: Promise<void> = Promise.resolve();
 
   /** Unify get mol* component key/ref, not static for performance
    * @param {StructureComponentRef} comp
@@ -575,7 +604,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private getLigandStrOfRow(
     rowIdx: number,
-  ): { data: string, format: BuiltInTrajectoryFormat | TrajectoryFormatProvider } {
+  ): {
+    data: string,
+    format: BuiltInTrajectoryFormat | TrajectoryFormatProvider
+  } {
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
     const ligandUnits: string = ligandCol.getTag(DG.TAGS.UNITS);
     const ligandCellValue: string = ligandCol.get(rowIdx);

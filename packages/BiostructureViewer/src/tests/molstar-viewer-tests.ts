@@ -41,12 +41,12 @@ category('MolstarViewer', () => {
     // expect(viewer.ligands.selected.length, 0);
 
     df.currentRowIdx = 0;
-    await Promise.all([awaitGrid(view.grid), viewer.viewPromise, viewer.ligandsPromise]);
+    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
     expect(viewer.ligands.current !== null, true, 'The current ligand expected');
     expect(viewer.ligands.selected.length, 0);
 
     df.selection.init((rowI) => rowI === 1 || rowI === 2);
-    await Promise.all([awaitGrid(view.grid), viewer.viewPromise, viewer.ligandsPromise]);
+    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.selected.length, 2);
   });
@@ -72,12 +72,12 @@ category('MolstarViewer', () => {
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
 
     df.currentRowIdx = 0;
-    await Promise.all([awaitGrid(view.grid), viewer.viewPromise, viewer.ligandsPromise]);
+    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
     expect(viewer.ligands.current !== null, true, 'The current ligand expected');
     expect(viewer.ligands.selected.length, 0);
 
     df.selection.init((rowI) => rowI === 1 || rowI === 2);
-    await Promise.all([awaitGrid(view.grid), viewer.viewPromise, viewer.ligandsPromise]);
+    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.selected.length, 2);
   });

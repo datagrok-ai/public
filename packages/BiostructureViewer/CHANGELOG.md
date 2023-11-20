@@ -17,6 +17,11 @@
 * Fix caching for PdbGridCellRenderer
 * Fix MolstarViewer for Molecule ligands, tests
 * Fix pdbGridCellRenderer, test
+* Fix NglGlDocService to not miss tasks, refactor, handle errors, restore by timeout count limit
+* Fix MolstarViewer for dataFrame detach
+* Fix MolstarViewer usages to dispose WebGL on view closing, Could not create WebGL program
+* Fix NglViewer ensure create, waits first render
+* Fix MolstarViewer ensure creat, wait canvas3dInit
 
 ## 1.0.11 (2023-07-24)
 

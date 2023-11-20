@@ -7,9 +7,12 @@ import {handleError} from './utils';
 import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 import {_package} from '../package';
+import {awaitGrid} from '../tests/utils';
+import {NglViewer} from '../viewers/ngl-viewer';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 const ligandsDataFn: string = 'samples/1bdq-obs-pred.sdf';
-const structureDataFn: string = 'samples/1bdq.pdb';
+const structureDataFn: string = 'samples/1bdq-wo-ligands.pdb';
 
 export async function demoBio06NoScript(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Demo Docking Conformations ...');
@@ -27,7 +30,7 @@ export async function demoBio06NoScript(): Promise<void> {
       showSelectedRowsLigands: true,
       showCurrentRowLigand: true,
       showMouseOverRowLigand: true,
-    });
+    }) as unknown as NglViewer;
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.62);
 
     grok.shell.windows.showHelp = true;
@@ -37,6 +40,8 @@ export async function demoBio06NoScript(): Promise<void> {
       // @ts-ignore
       grok.shell.windows.help.showHelp(viewer.helpUrl);
     }
+
+    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
   } finally {
     pi.close();
   }

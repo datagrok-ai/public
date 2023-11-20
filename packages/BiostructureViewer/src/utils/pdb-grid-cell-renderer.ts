@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
 import {_getNglGlService} from '../package-utils';

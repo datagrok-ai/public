@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {INglViewer, NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
