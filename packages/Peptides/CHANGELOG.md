@@ -10,6 +10,8 @@
 * Hid sequence space embedding columns and axes selectors.
 * Saving context panels state.
 * Selected cell now have orange thick border.
+* Distribution panel now shows distribution for (1) all activity values, (2) selected rows, (3) peptides selection from
+  viewers if mismatched with total selection.
 
 ### Bug Fixes
 

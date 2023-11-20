@@ -9,8 +9,8 @@ import * as CR from '../utils/cell-renderer';
 import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {getAggregatedColumnValues, getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
-import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary, getDistributionTable} from '../utils/misc';
+import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
+import {getDistributionPanel, getDistributionTable} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SelectionItem} from '../utils/types';
 import {_package} from '../package';
@@ -20,7 +20,7 @@ const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}
 export enum LST_PROPERTIES {
   WEB_LOGO_MODE = 'webLogoMode',
   MEMBERS_RATIO_THRESHOLD = 'membersRatioThreshold',
-};
+}
 
 export class LogoSummaryTable extends DG.JsViewer {
   _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
@@ -387,7 +387,7 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   clusterFromSelection(): void {
-    const currentSelection = this.model.getCompoundBitset();
+    const currentSelection = this.model.getVisibleSelection();
     const viewerDf = this.viewerGrid.dataFrame;
     const viewerDfCols = viewerDf.columns;
     const viewerDfColsLength = viewerDfCols.length;
@@ -417,7 +417,9 @@ export class LogoSummaryTable extends DG.JsViewer {
                 col.name === C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
                   col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
                     col.name in aggregatedValues ? aggregatedValues[col.name] :
-        console.warn(`PeptidesLSTWarn: value for column ${col.name} is undefined`)! || null;
+                      undefined;
+      if (typeof newClusterVals[i] === 'undefined')
+        _package.logger.warning(`PeptidesLSTWarn: value for column ${col.name} is undefined`);
     }
     viewerDf.rows.addNew(newClusterVals);
 
@@ -486,12 +488,11 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer, rowCount);
     const distributionTable = this.createDistributionDf(activityCol, mask);
-    const labels = getDistributionLegend(`Cluster: ${cluster.monomerOrCluster}`, 'Other');
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
     const aggregatedColMap = getAggregatedColumnValues(this.model.df, this.model.settings.columns!, {filterDf: true, mask: mask});
     const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
-    const tooltip = getStatsSummary(labels, hist, resultMap);
+    const tooltip = getDistributionPanel(hist, resultMap);
 
     ui.tooltip.show(tooltip, x, y);
 

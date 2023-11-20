@@ -4,13 +4,6 @@ import * as C from './constants';
 import * as type from './types';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
-export function getTypedArrayConstructor(
-  maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
-  return maxNum < 256 ? Uint8Array :
-    maxNum < 65536 ? Uint16Array :
-      Uint32Array;
-}
-
 export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
@@ -69,44 +62,62 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
   };
 }
 
-export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
-  statsMap: StringDictionary): HTMLDivElement {
-  const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
+enum SPLIT_CATEGORY {
+  SELECTION = 'Selection',
+  ALL = 'All',
+  PEPTIDES_SELECTION = 'Peptides selection',
+}
+
+export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>, statsMap: StringDictionary, labelMap: { [key in SPLIT_CATEGORY]?: string } = {}): HTMLDivElement {
+  const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
+  const labels = [];
+  const categories = splitCol.categories as SPLIT_CATEGORY[]
+  const rawData = splitCol.getRawData();
+  for (let categoryIdx = 0; categoryIdx < categories.length; ++categoryIdx) {
+    if (!Object.values(SPLIT_CATEGORY).includes(categories[categoryIdx]))
+      continue;
+    const color = DG.Color.toHtml(splitCol.colors.getColor(rawData.indexOf(categoryIdx)));
+    const label = ui.label(labelMap[categories[categoryIdx]] ?? categories[categoryIdx], {style: {color}});
+    labels.push(label);
+  }
+
+  const result = ui.divV([ui.divV(labels), hist.root, ui.tableFromMap(statsMap)]);
   hist.root.style.maxHeight = '75px';
   return result;
 }
 
 /* Creates a table to plot activity distribution. */
 export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet): DG.DataFrame {
-  // const activityCol: DG.Column<number> = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-  // const splitCol: DG.Column<boolean> = table.getCol(C.COLUMNS_NAMES.SPLIT_COL);
-  const isCustomSelection = peptideSelection?.clone().xor(selection).anyTrue ?? false;
-
+  const selectionMismatch = peptideSelection?.clone().xor(selection).anyTrue ?? false;
   const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
-  const expandedData = new Float32Array(rowCount + selection.trueCount + (peptideSelection?.trueCount ?? 0));
-  const expandedMasks = new Uint8Array(expandedData.length);
+  const activityData = new Float32Array(rowCount + selection.trueCount + (selectionMismatch ? (peptideSelection?.trueCount ?? 0) : 0));
+  const categories: string[] = new Array(activityData.length);
 
   for (let i = 0, j = 0, k = 0; i < rowCount; ++i) {
-    const isSplit = selection.get(i);
-    expandedData[i] = activityColData[i];
-    expandedMasks[i] = isSplit ? 1 : 0;
-    if (isSplit) {
-      expandedData[rowCount + j] = activityColData[i];
-      expandedMasks[rowCount + j] = 0;
+    const isSelected = selection.get(i);
+    activityData[i] = activityColData[i];
+    categories[i] = isSelected ? SPLIT_CATEGORY.SELECTION : SPLIT_CATEGORY.ALL;
+    if (isSelected) {
+      activityData[rowCount + j] = activityColData[i];
+      categories[rowCount + j] = SPLIT_CATEGORY.ALL;
       ++j;
     }
-    if (isCustomSelection) {
-      expandedData[rowCount + selection.trueCount + k] = activityColData[i];
-      expandedMasks[rowCount + selection.trueCount + k] = 2;
+    if (selectionMismatch && peptideSelection?.get(i)) {
+      activityData[rowCount + selection.trueCount + k] = activityColData[i];
+      categories[rowCount + selection.trueCount + k] = SPLIT_CATEGORY.PEPTIDES_SELECTION;
       ++k;
     }
   }
 
-  return DG.DataFrame.fromColumns([
-    DG.Column.fromFloat32Array(activityCol.name, expandedData, rowCount),
-    DG.Column.string(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => expandedMasks[i].toString()),
-  ]);
+  const splitCol = DG.Column.fromStrings(C.COLUMNS_NAMES.SPLIT_COL, categories);
+  const categoryOrder = [SPLIT_CATEGORY.ALL, SPLIT_CATEGORY.SELECTION];
+  if (selectionMismatch)
+    categoryOrder.push(SPLIT_CATEGORY.PEPTIDES_SELECTION);
+  splitCol.setCategoryOrder(categoryOrder);
+
+  splitCol.colors.setCategorical();
+  return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityData), splitCol]);
 }
 
 export function addExpandIcon(grid: DG.Grid): void {
@@ -141,5 +152,5 @@ export function setGridProps(grid: DG.Grid): void {
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
   grid.root.style.maxWidth = '100%';
-  grid.autoSize(1000, 1000, 0, 0, true);
+  grid.autoSize(1000, 400, 0, 0, true);
 }

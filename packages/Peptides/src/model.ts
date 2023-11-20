@@ -21,7 +21,7 @@ import $ from 'cash-dom';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateSelected, extractColInfo, scaleActivity} from './utils/misc';
-import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues, SELECTION_MODE} from './viewers/sar-viewer';
+import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionWidget} from './widgets/distribution';
@@ -78,7 +78,6 @@ export class PeptidesModel {
 
   subs: rxjs.Subscription[] = [];
   isHighlighting: boolean = false;
-  latestSelectionItem: (type.SelectionItem & {kind: SELECTION_MODE | 'Cluster'}) | null = null;
   controlFire: boolean = false;
 
   private constructor(dataFrame: DG.DataFrame) {
@@ -406,7 +405,7 @@ export class PeptidesModel {
     return splitAlignedSequences(sequenceCol);
   }
 
-  getCompoundBitset(): DG.BitSet {
+  getVisibleSelection(): DG.BitSet {
     return this.df.selection.clone().and(this.df.filter);
   }
 
@@ -417,7 +416,7 @@ export class PeptidesModel {
 
     const acc = ui.accordion('Peptides analysis panel');
     acc.root.style.width = '100%';
-    const filterAndSelectionBs = trueModel.getCompoundBitset();
+    const filterAndSelectionBs = trueModel.getVisibleSelection();
     const filteredTitlePart = trueModel.df.filter.anyFalse ? ` among ${trueModel.df.filter.trueCount} filtered` : '';
     const getSelectionString = (selection: type.Selection): string => {
       const selectedMonomerPositions: string[] = [];
@@ -620,70 +619,46 @@ export class PeptidesModel {
     });
   }
 
+  getCombinedSelection(): DG.BitSet {
+    const combinedSelection = new BitArray(this.df.rowCount, false);
+    // Invariant map selection
+    for (const [position, monomerList] of Object.entries(this.invariantMapSelection)) {
+      for (const monomer of monomerList) {
+        const monomerPositionStats = this.monomerPositionStats[position]![monomer]!;
+        combinedSelection.or(monomerPositionStats.mask);
+      }
+    }
+
+    // Mutation cliffs selection
+    for (const [position, monomerList] of Object.entries(this.mutationCliffsSelection)) {
+      for (const monomer of monomerList) {
+        const substitutions = this.mutationCliffs?.get(monomer)?.get(position) ?? null;
+        if (substitutions === null)
+          continue;
+        for (const [key, value] of substitutions.entries()) {
+          combinedSelection.setTrue(key);
+          for (const v of value)
+            combinedSelection.setTrue(v);
+        }
+      }
+    }
+
+    // Cluster selection
+    for (const clustType of Object.keys(this.clusterSelection)) {
+      for (const clust of this.clusterSelection[clustType]) {
+        const clusterStats = this.clusterStats[clustType as CLUSTER_TYPE][clust]!;
+        combinedSelection.or(clusterStats.mask);
+      }
+    }
+
+    return DG.BitSet.fromBytes(combinedSelection.buffer.buffer, combinedSelection.length);
+  }
+
   setBitsetCallback(): void {
     if (this.isBitsetChangedInitialized)
       return;
     const selection = this.df.selection;
     const filter = this.df.filter;
-
-    const getCombinedSelection = (): DG.BitSet => {
-      const combinedSelection = new BitArray(this.df.rowCount, false);
-      // Invariant map selection
-      for (const [position, monomerList] of Object.entries(this.invariantMapSelection)) {
-        for (const monomer of monomerList) {
-          const monomerPositionStats = this.monomerPositionStats[position]![monomer]!;
-          combinedSelection.or(monomerPositionStats.mask);
-        }
-      }
-
-      // Mutation cliffs selection
-      for (const [position, monomerList] of Object.entries(this.mutationCliffsSelection)) {
-        for (const monomer of monomerList) {
-          const substitutions = this.mutationCliffs?.get(monomer)?.get(position) ?? null;
-          if (substitutions === null)
-            continue;
-          for (const [key, value] of substitutions.entries()) {
-            combinedSelection.setTrue(key);
-            for (const v of value)
-              combinedSelection.setTrue(v);
-          }
-        }
-      }
-
-      // Cluster selection
-      for (const clustType of Object.keys(this.clusterSelection)) {
-        for (const clust of this.clusterSelection[clustType]) {
-          const clusterStats = this.clusterStats[clustType as CLUSTER_TYPE][clust]!;
-          combinedSelection.or(clusterStats.mask);
-        }
-      }
-
-      return DG.BitSet.fromBytes(combinedSelection.buffer.buffer, combinedSelection.length);
-    };
-
-    const getLatestSelection = (): DG.BitSet => {
-      if (this.latestSelectionItem === null)
-        return getCombinedSelection();
-      if (this.latestSelectionItem.kind === SELECTION_MODE.INVARIANT_MAP) {
-        const monomerPositionStats = this.monomerPositionStats[this.latestSelectionItem.positionOrClusterType]![this.latestSelectionItem.monomerOrCluster]!;
-        return DG.BitSet.fromBytes(monomerPositionStats.mask.buffer.buffer, monomerPositionStats.mask.length);
-      } else if (this.latestSelectionItem.kind === SELECTION_MODE.MUTATION_CLIFFS) {
-        const substitutions = this.mutationCliffs?.get(this.latestSelectionItem.monomerOrCluster)?.get(this.latestSelectionItem.positionOrClusterType) ?? null;
-        if (substitutions === null)
-          throw new Error(`Couldn't find substitutions for ${this.latestSelectionItem.monomerOrCluster} at ${this.latestSelectionItem.positionOrClusterType}`);
-        const latestSelection = new BitArray(this.df.rowCount, false);
-        for (const [key, value] of substitutions.entries()) {
-          latestSelection.setTrue(key);
-          for (const v of value)
-            latestSelection.setTrue(v);
-        }
-        return DG.BitSet.fromBytes(latestSelection.buffer.buffer, latestSelection.length);
-      } else if (this.latestSelectionItem.kind === 'Cluster') {
-        const clusterStats = this.clusterStats[this.latestSelectionItem.positionOrClusterType as CLUSTER_TYPE][this.latestSelectionItem.monomerOrCluster]!;
-        return DG.BitSet.fromBytes(clusterStats.mask.buffer.buffer, clusterStats.mask.length);
-      }
-      throw new Error(`Unknown selection kind: ${this.latestSelectionItem.kind}`);
-    };
 
     const showAccordion = (): void => {
       const acc = this.createAccordion();
@@ -693,14 +668,13 @@ export class PeptidesModel {
     };
 
     selection.onChanged.subscribe(() => {
+      if (this.controlFire) {
+        this.controlFire = false;
+        return;
+      }
       try {
-        if (this.controlFire) {
-          this.controlFire = false;
-          return;
-        }
         if (!this.isUserChangedSelection)
-          selection.copyFrom(getLatestSelection(), false);
-        this.isUserChangedSelection = true;
+          selection.copyFrom(this.getCombinedSelection(), false);
       } catch (e) {
         _package.logger.debug('Peptides: Error on selection changed');
         _package.logger.debug(e as string);
@@ -743,6 +717,7 @@ export class PeptidesModel {
     if (fireFilterChanged)
       this.df.filter.fireChanged();
 
+    this.isUserChangedSelection = true;
     this.headerSelectedMonomers = calculateSelected(this.df);
   }
 
@@ -918,7 +893,7 @@ export class PeptidesModel {
   }
 
   addNewCluster(clusterName: string): void {
-    const newClusterCol = DG.Column.fromBitSet(clusterName, this.getCompoundBitset());
+    const newClusterCol = DG.Column.fromBitSet(clusterName, this.getVisibleSelection());
     newClusterCol.setTag(C.TAGS.CUSTOM_CLUSTER, '1');
     newClusterCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
     this.df.columns.add(newClusterCol);
@@ -926,7 +901,7 @@ export class PeptidesModel {
   }
 
   createNewView(): string {
-    const rowMask = this.getCompoundBitset();
+    const rowMask = this.getVisibleSelection();
     const newDfId = uuid.v4();
 
     const newDf = this.df.clone(rowMask);

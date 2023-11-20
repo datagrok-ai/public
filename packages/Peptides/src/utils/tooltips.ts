@@ -5,10 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import * as type from './types';
 import * as C from '../utils/constants';
 
-import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary, getDistributionTable} from '../utils/misc';
+import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
+import {getDistributionPanel, getDistributionTable} from './misc';
 import {getMonomerWorksInstance} from '../package';
-import {AggregationColumns, MonomerPositionStats, getAggregatedColumnValues} from './statistics';
+import {AggregationColumns, getAggregatedColumnValues, MonomerPositionStats} from './statistics';
 
 export type TooltipOptions = {fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number,
   monomerPosition: type.SelectionItem, mpStats: MonomerPositionStats};
@@ -55,8 +55,6 @@ export function showTooltipAt(df: DG.DataFrame, columns: AggregationColumns, opt
 
   const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
-  // const distributionTable = DG.DataFrame.fromColumns(
-  //   [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
   const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
 
   const tableMap = getStatsTableMap(stats);
@@ -68,9 +66,7 @@ export function showTooltipAt(df: DG.DataFrame, columns: AggregationColumns, opt
   const aggregatedColMap = getAggregatedColumnValues(df, columns, {mask: mask});
   const resultMap = {...tableMap, ...aggregatedColMap};
 
-  const labels = getDistributionLegend(
-    `${options.monomerPosition.positionOrClusterType} : ${options.monomerPosition.monomerOrCluster}`, 'Other');
-  const distroStatsElem = getStatsSummary(labels, hist, resultMap);
+  const distroStatsElem = getDistributionPanel(hist, resultMap);
 
   ui.tooltip.show(distroStatsElem, options.x, options.y);
 

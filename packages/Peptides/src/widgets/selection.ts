@@ -6,13 +6,13 @@ import {PeptidesModel} from '../model';
 import wu from 'wu';
 import {COLUMNS_NAMES} from '../utils/constants';
 import {addExpandIcon} from '../utils/misc';
-import {CellRendererOptions, WebLogoBounds, setWebLogoRenderer} from '../utils/cell-renderer';
+import {CellRendererOptions, setWebLogoRenderer, WebLogoBounds} from '../utils/cell-renderer';
 import {CachedWebLogoTooltip, SelectionItem} from '../utils/types';
 import {TooltipOptions} from '../utils/tooltips';
 import {calculateMonomerPositionStatistics} from '../utils/algorithms';
 
 export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): HTMLElement {
-  const compBitset = model.getCompoundBitset();
+  const compBitset = model.getVisibleSelection();
   if (compBitset.trueCount === 0)
     return ui.divText('No compounds selected');
   const newTable = DG.DataFrame.create(table.rowCount);
