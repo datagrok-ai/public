@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {toDart} from "datagrok-api/dg";
 import * as rxjs from 'rxjs';
 import * as GridUtils from '../utils/GridUtils';
 

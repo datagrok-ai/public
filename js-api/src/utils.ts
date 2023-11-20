@@ -3,7 +3,6 @@ import {toDart, toJs} from './wrappers';
 import {ColorType, MARKER_TYPE} from "./const";
 import {Point, Rect, GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
-import * as DG from "./dataframe";
 
 const api: IDartApi = <any>window;
 

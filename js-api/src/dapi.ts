@@ -23,10 +23,9 @@ import {
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
 import {ViewLayout} from "./views/view";
-import {toJs} from "./wrappers";
+import {toJs, toDart} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
-import {toDart} from "./wrappers_impl";
 import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = <any>window;
