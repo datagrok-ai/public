@@ -17,6 +17,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
+import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 
 export const _package = new DG.Package();
@@ -245,4 +246,12 @@ export function demoTestUnitsCellRenderer() {
 export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+}
+
+//name: Forms
+//description: Forms viewer
+//tags: viewer
+//output: viewer result
+export function formsViewer() {
+  return new FormsViewer();
 }

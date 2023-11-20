@@ -1,5 +1,11 @@
 # PowerGrid changelog
 
+## 1.2.2 (2023-11-20)
+
+### Features
+
+* Added Forms viewer
+
 ## 1.2.1 (2023-11-07)
 
 ### Bug Fixes
