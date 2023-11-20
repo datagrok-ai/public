@@ -1,6 +1,6 @@
 # HitTriage changelog
 
-## 1.1.0 (20/11/2023)
+## 1.1.1 (20/11/2023)
 
 ### Hit Design:
 * Bug fixes:
