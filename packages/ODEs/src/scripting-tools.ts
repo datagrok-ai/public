@@ -1,14 +1,14 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
-// Control constants
-const CONTROL_TAG = '#';
+import {CONTROL_TAG, DF_NAME, CONTROL_EXPR} from './constants';
+
+// Scripting specific constants
 const CONTROL_SEP = ':';
 const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
 const SERVICE = '_';
 const BRACE = '{';
 const DEFAULT_TOL = '0.00005';
-export const DF_NAME = 'df';
 
 /** Solver package name */
 const ODES_PACKAGE = 'ODEs';
@@ -50,20 +50,6 @@ type IVP = {
   tolerance: string,
   usedMathFuncs: number[],
   usedMathConsts: number[],
-};
-
-/** Control expressions for the problem specifying */
-export enum CONTROL_EXPR {
-  NAME = `${CONTROL_TAG}name`,
-  TAGS = `${CONTROL_TAG}tags`,
-  DESCR = `${CONTROL_TAG}description`,
-  DIF_EQ = `${CONTROL_TAG}equations`,
-  EXPR = `${CONTROL_TAG}expressions`,
-  ARG = `${CONTROL_TAG}argument`,
-  INITS = `${CONTROL_TAG}inits`,
-  CONSTS = `${CONTROL_TAG}constants`,
-  PARAMS = `${CONTROL_TAG}parameters`,
-  TOL = `${CONTROL_TAG}tolerance`,
 };
 
 /** Specific error messeges */
