@@ -91,6 +91,7 @@ M  END
   canvasCounter: number;
   molCache: DG.LruCache<String, IMolRenderingInfo> = new DG.LruCache<String, IMolRenderingInfo>();
   rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
+  sortedScaffoldsCache: DG.LruCache<String, IColoredScaffold[]> = new DG.LruCache<String, IColoredScaffold[]>();
   canvasReused: OffscreenCanvas;
 
   constructor(rdKitModule: RDModule) {
@@ -357,16 +358,26 @@ M  END
 
   _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
     const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
-    if (scaffoldArrStr) {
+    const getSortedScaffolds = (): IColoredScaffold[] => {
       const scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
-      const scaffoldArrFinal: IColoredScaffold[] = [];
-      scaffoldArr.forEach((it) => {
-        if (!it.molecule.endsWith(this.WHITE_MOLBLOCK_SUFFIX))
-          scaffoldArrFinal.push(it);
+      const scaffoldArrSorted = scaffoldArr.sort((a, b) => {
+        const getNumAtoms = (molecule: string) => {
+          if (molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule)) {
+            const mol = this._fetchMol(molecule, [], false, false, {}, false).molCtx.mol;
+            if (mol)
+              return mol.get_num_atoms();
+            return 0;
+          }
+          return 0;
+        }
+        return getNumAtoms(a.molecule) - getNumAtoms(b.molecule);
       });
-      if(!scaffoldArrFinal.length)
-        col.setTag(tagName, '');
-      return scaffoldArrFinal;
+      return scaffoldArrSorted;
+    }
+    if (scaffoldArrStr) {
+      const sortedScaffolds = this.sortedScaffoldsCache
+        .getOrCreate(scaffoldArrStr, () => getSortedScaffolds());
+      return sortedScaffolds;
     }
     return [];
   }
