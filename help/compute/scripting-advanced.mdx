@@ -7,12 +7,10 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-This section describes the advanced capabilities of Datagrok scripting.
-
 ## Output values validation
 
 Datagrok functions return zero, one or more typed arguments.
-Datagro expects that all output values are assigned in the script code
+Datagrok expects that all output values are assigned in the script code
  so that they are defined by the end of the script.
 If this doesn't happen, the two things will follow:
 
@@ -524,25 +522,22 @@ change input values, and then rerun it,
 the platform will create a new historical run.
 
 
+## How to integrate a script into third-party software
 
-
-
-<!---
-
-This part should be modes to advanced sections
-
-## How to integrate script into third-party software
-
-Datagrok was designed to be as extensible and easy to integrate with as possible, so out-of-the box
-we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
-there are some capabilities specific to models: [REST API](#rest-api) and
+Datagrok is designed to be as extensible and easy to integrate as possible.
+So, out of the box, we get many platform integration capabilities such as authentication, data access, 
+and many others. 
+In addition to that,
+there are some capabilities specific for developers: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
 
 ### REST API
 
-Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
-input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it:
+Once registered, each function gets assigned a REST API endpoint 
+that allows external code to execute it by passing the
+input parameters, along with the authentication token. 
+This allows instantaneous deployment of scientific methods for
+external consumption. To find out how to use it:
 
 - Select the script in [Scripts section](https://public.datagrok.ai/scripts).
 - Press F4 to open the context panel on the right.
@@ -561,13 +556,16 @@ Both JavaScript and Curl samples are provided.
 
 ### JS API
 
-JavaScript-based apps have access to the whole Datagrok platform via the [JS API](../develop/packages/js-api.md).
+JavaScript-based apps have access to the whole Datagrok platform via the 
+[JS API](../develop/packages/js-api.md).
 
 ### Embedding as iframe
 
 Sometimes, an app has to be included in the external web page.
-The simplest way to achieve it is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP) element. To embed a model, click on the hamburger icon in the top left corner, and choose `Embed...`.
-You will see a dialog with the HTML code on top that you can use to embed this into external site. Note that you can change parameter values right in the URL.
+The simplest way to achieve it is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP) element. 
+To embed a model, click on the hamburger icon in the top left corner and choose `Embed...`.
+You will see a dialog with the HTML code on top that you can use to embed this into an external site. 
+Note that you can change parameter values right in the URL.
 
 <details>
 <summary> Embedded iframe preview </summary>
@@ -580,130 +578,23 @@ You will see a dialog with the HTML code on top that you can use to embed this i
 
 ### JavaScript
 
-There is the set of [script examples](https://public.datagrok.ai/js/samples) available publicly.
+The set of [script examples](https://public.datagrok.ai/js/samples) is available publicly.
 Feel free to play around with them to explore different Datagrok capabilities.
 
-You may to use debugging output. Output could be written:
+You may use debugging output and write messages:
 
-- into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
-- into the console (use `console.log()` and developer console available by F12)
+* into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
+* into the console (use `console.log()` and developer console available by F12)
 
-In addition, you can use built-in Inspector to see what's happening "under the hood" of the platform. To open Inspector, use `Alt+I` hotkey.
-For example, Inspector provides an information about triggered events.
-
-### Octave
-
-Octave scripts are run in a separate container on server. This container includes following Octave packages:
-
-- [symbolic](https://gnu-octave.github.io/packages/symbolic/)
-- [optim](https://gnu-octave.github.io/packages/optim/)
-
-Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
-
-### Python
-
-Here is a script header that is prepended to your script:
-
-```
-import os
-import io
-import json
-import pandas as pd
-import requests
-from datetime import datetime, timedelta
-```
-
-See [Conda environments](scripting.md#conda-environments) for details.
-
-### R
-
-See [Renv environments](scripting.md#renv-environments) for details.
-
-:::tip Pro tip
-
-You may create and store scripts locally (as any other code)
-using [packages](https://datagrok.ai/help/develop/#packages) feature.
-
-:::\
-
-<details>
-<summary> To run a previously created script</summary>
-<div>
-
-- Find it in [Scripts secton](https://public.datagrok.ai/scripts).
-- Right click on script card. Context menu appears.
-- Choose **Run** action.
-
-</div>
-</details>
-
-### Validating inputs
-
-You can add custom validation on input values of your script. By default, the input form only validates that value is presented and has expected type.
-A validator is a JS-function that accepts one parameter of any type and returns `null` (if validation passes) or error string (if valdiation fails).
-You can add multiple validators on each input value.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="short" label="Short sample">
-```
-
-```javascript
-//input: int rowCount {validators: ["isPositive"]}
-
-grok.functions.register({
-  signature: 'List<String> isPositive(int input)',
-  run: (input) => input > 0 ? null : "Should be positive"
-});
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="full" label="Full sample">
-```
-
-```javascript
-//name: Custom validation sample
-//description: Hello world script
-//language: javascript
-//input: int rowCount {validators: ["isPositive"]}
-
-grok.functions.register({
-  signature: 'List<String> isPositive(int input)',
-  run: (input) => input > 0 ? null : "Should be positive"
-});
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![builtin-validators](builtin-validators.gif)
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-Use [Console](../datagrok/navigation/navigation.md#console) to execute it. Simply type
-`<YOUR_USER_NAME>:RSquare(3)`:
-
-```
- > RSquare(3)
-   result: 9
-```
-
-The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can call Grok
-Functions. See [Grok Scripting](../develop/under-the-hood//grok-script.md) for more details.
-
---->
+In addition, you can use the built-in Inspector to see what's happening "under the hood" of the platform. 
+To open Inspector, use the `Alt+I` hotkey.
+For example, the Inspector provides information about triggered events.
 
 
 <!---
 
-
 This block is mostly a copy of the https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation page
+need to move this code to it.
 
 
 ## Parameters

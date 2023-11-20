@@ -38,14 +38,15 @@ Without any additional effort, you have received a wide range of possibilities:
   See the [sharing](../collaborate/sharing) section for details.
 * Integrate your script in the Datagrok platform.
   For example, you can create a script plotting some graph for a molecule.
-  Using [semantic types](../catalog/semantic-types)(../catalog/semantic-types),
+  Using [semantic types](../catalog/semantic-types),
   Datagrok recognizes the meaning of the data and automatically applies the script
   when you browse macromolecule details.
 
 ## Where to find how it works
 
 * To learn the basics of Datagrok scripting, review the [Scripting for non-professional developers](scripting-for-non-developers.mdx).
-* For advanced features (input/output data validation, environments), review the [Advanced scripting](scripting-advanced.mdx).
+* For advanced features (input/output data validation, environments), review the 
+[Advanced scripting](scripting-advanced.mdx).
 * Review the [developer documentation](../develop/develop.md) for a deep dive into Datagrok scripting, using JS API, and developing custom UI components.
 
 ### Videos
