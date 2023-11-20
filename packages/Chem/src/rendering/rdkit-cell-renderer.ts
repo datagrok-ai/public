@@ -150,7 +150,7 @@ M  END
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
         let molHasRebuiltCoords = false;
-        const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
+        const scaffoldIsMolBlock = scaffolds.length && alignByFirstSubstr ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
         const { haveReferenceSmarts, parentMolScaffoldMolString } = (details as any);
         if (alignedByFirstSubstr) {
