@@ -157,11 +157,13 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
   return {root: form, template: promise, cancelPromise};
 }
 
-export function getCampaignFieldEditors() {
+export function getCampaignFieldEditors(preset?: HitTriageCampaignField[]) {
   const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING}),
     DG.Property.fromOptions({name: 'Type', type: DG.TYPE.STRING, choices: Object.keys(CampaignFieldTypes)}),
     DG.Property.fromOptions({name: 'Required', type: DG.TYPE.BOOL})];
-  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: false});
+  const itemsGrid = new ItemsGrid(
+    props, preset ? preset.map((p) => ({Name: p.name, Type: p.type, Required: p.required})) : undefined,
+    {horizontalInputNames: false});
   itemsGrid.root.style.maxWidth = '750px';
 
   let addingItem: ItemType = {};
@@ -188,8 +190,10 @@ export function getCampaignFieldEditors() {
   //itemsGrid.root.style.cssText = '';
   //itemsGrid.root.className = 'd4-flex-c';
 
+  const header = ui.h2('Additional fields');
+  ui.tooltip.bind(header, 'Additional fields to be filled by user for each campaign');
   const fieldsContainer = ui.div([
-    ui.h2('Additional fields'),
+    header,
     itemsGrid.root,
   ]);
   return {

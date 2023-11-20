@@ -66,15 +66,19 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   private async startNewCampaign(
     containerDiv: HTMLElement, templateInputDiv: HTMLElement, presetTemplate?: HitDesignTemplate,
   ) {
-    const templates = (await _package.files.list('Hit Design/templates')).map((file) => file.name.slice(0, -5));
+    const templates = (await _package.files.list('Hit Design/templates'))
+      .filter((file) => file.name.endsWith('.json'))
+      .map((file) => file.name.slice(0, -5));
     // if the template is just created and saved, it may not be in the list of templates
     if (presetTemplate && !templates.includes(presetTemplate.name))
       templates.push(presetTemplate.name);
 
+    let selectedTemplate: HitDesignTemplate | null = null;
     const onTemmplateChange = async () => {
       const templateName = templatesInput.value;
       const template: HitDesignTemplate = presetTemplate && presetTemplate.name === templateName ? presetTemplate :
         JSON.parse(await _package.files.readAsText('Hit Design/templates/' + templateName + '.json'));
+      selectedTemplate = template;
       const newCampaignAccordeon = await this.getNewCampaignAccordeon(template);
       $(containerDiv).empty();
       containerDiv.appendChild(newCampaignAccordeon);
@@ -88,7 +92,13 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const createNewtemplateButton = ui.icons.add(() => {
       this.createNewTemplate();
     }, i18n.createNewTemplate);
+
+    const cloneTemplateButton = ui.icons.copy(() => {
+      if (selectedTemplate)
+        this.createNewTemplate(selectedTemplate);
+    }, 'Clone template');
     createNewtemplateButton.style.color = '#2083d5';
+    templatesInput.addOptions(cloneTemplateButton);
     templatesInput.addOptions(createNewtemplateButton);
     await onTemmplateChange();
     $(templateInputDiv).empty();
@@ -107,16 +117,19 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       return;
     const campaign: HitDesignCampaign =
       JSON.parse(await _package.files.readAsText(`Hit Design/campaigns/${campaignId}/${CampaignJsonName}`));
+    if (campaign)
+      this.app.campaign = campaign;
     // Load the template and modify it
-    const template: HitDesignTemplate = JSON.parse(
+    const template: HitDesignTemplate = campaign.template ?? JSON.parse(
       await _package.files.readAsText(`Hit Design/templates/${campaign.templateName}.json`),
     );
     // modify the template with path to the campaign's precalculated table
-    this.app.setTemplate(template, campaignId!);
+    await this.app.setTemplate(template, campaignId!);
 
     if (campId)
       modifyUrl(HitDesignCampaignIdKey, campId);
 
+    campaign.template = template;
     return campaign;
   }
 
@@ -130,12 +143,22 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       campaignNamesMap[campaignJson.name] = campaignJson;
     }
 
-    const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
-      ({name: campaign.name, createDate: campaign.createDate,
-        rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
-    const table = ui.table(campaignsInfo, (info) =>
+    const table = ui.table(Object.values(campaignNamesMap), (info) =>
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
-        info.createDate, info.rowCount, info.filtered, info.status,
+        info.createDate,
+        info.rowCount,
+        //info.filteredRowCount,
+        info.status,
+        // ui.icons.copy(async () => {
+        //   const template = info.template ?? JSON.parse(
+        //     await _package.files.readAsText(`Hit Design/templates/${info.templateName}.json`),
+        //   );
+        //   const df = await _package.files.readCsv(`Hit Design/campaigns/${info.name}/${CampaignTableName}`);
+        //   this.app.dataFrame = df;
+        //   await this.app.setTemplate(template);
+        //   this.app.campaignProps = info.campaignFields;
+        //   await this.app.saveCampaign(undefined, false);
+        // }, 'Clone campaign'),
         ui.icons.delete(async () => {
           ui.dialog('Delete campaign')
             .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
@@ -146,7 +169,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
             })
             .show();
         }, 'Delete campaign')]),
-    ['Name', 'Created', 'Total', 'Selected', 'Status', '']);
+    ['Name', 'Created', 'Molecules', 'Status', '']);
     table.style.color = 'var(--grey-5)';
     table.style.marginLeft = '24px';
     return table;
@@ -171,8 +194,8 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     return root;
   }
 
-  private async createNewTemplate() {
-    const newTemplateAccordeon = await newHitDesignTemplateAccordeon();
+  private async createNewTemplate(preset?: HitDesignTemplate) {
+    const newTemplateAccordeon = await newHitDesignTemplateAccordeon(preset);
     // hideComponents(toRemove);
     // $(containerDiv).empty();
     // $(templateInputDiv).empty();

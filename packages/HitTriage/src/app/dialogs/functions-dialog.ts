@@ -11,9 +11,10 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
   template: Omit<HitTriageTemplate, 'dataSourceType'>, dialog?: boolean,
 ): Promise<IChemFunctionsDialogResult> {
   // if compute is in dialog form, we need to show all the functions
-  const functions = dialog ? DG.Func.find({tags: [HitTriageComputeFunctionTag]})
-    .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args: {}})) :
-    (template?.compute?.functions ?? []);
+  const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
+    .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
+      template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
+
   const useDescriptors = !!template?.compute?.descriptors?.enabled || dialog;
 
   // tree groups
@@ -49,6 +50,8 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
   useDescriptors ? {[descriptorsName]: descriptorsGroup.root} : {};
   const funcInputsMap: {[funcName: string]: DG.FuncCall} = {};
   const calculatedFunctions: {[key: string]: boolean} = {[descriptorsName]: false};
+  calculatedFunctions[descriptorsName] =
+    !!template?.compute?.descriptors?.enabled && template?.compute?.descriptors?.args?.length > 0;
   for (const func of functions) {
     const f = DG.Func.find({package: func.package, name: func.name})[0];
     const funcCall = f.prepare(func.args);
@@ -60,7 +63,9 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
     editor.style.marginLeft = '15px';
     tabControlArgs[f.friendlyName ?? f.name] = editor;
     funcNamesMap[f.friendlyName ?? f.name] = keyName;
-    calculatedFunctions[keyName] = false;
+    calculatedFunctions[keyName] = template?.compute?.functions?.some(
+      (f) => f.name === func.name && f.package === func.package,
+    ) ?? false;
     (editor.children[0] as HTMLElement).style.display = 'none'; // table input
     (editor.children[1] as HTMLElement).style.display = 'none'; // column input
     inputs.forEach((input) => {

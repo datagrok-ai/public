@@ -16,9 +16,9 @@ export async function calculateSingleCellValues(
 
   for (const func of functions) {
     const props = func.args;
-    props['table'] = table;
-    props['molecules'] = col.name;
-    await grok.functions.call(`${func.package}:${func.name}`, props);
+    // props['table'] = table;
+    // props['molecules'] = col.name;
+    await grok.functions.call(`${func.package}:${func.name}`, {...props, table: table, molecules: col.name});
   }
   return table;
 };
