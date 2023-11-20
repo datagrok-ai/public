@@ -20,7 +20,7 @@ export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bou
 /** A function that sets amino acid residue cell renderer to the specified column */
 export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
-  col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
+  col.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
 }
 
@@ -43,37 +43,37 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
     DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement, -centeredPValLimit, centeredPValLimit));
 
+  const halfWidth = bound.width / 2;
   const maxMeanDifference = Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference);
   const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
-  const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
+  const maxRadius = 0.9 * halfWidth / 2; // Fill at most 90% of the half of the cell width
   const radius = Math.floor(maxRadius * rCoef);
 
-  const midX = bound.x + bound.width / 2;
-  const midY = bound.y + bound.height / 2;
+  const midX = Math.ceil(bound.x + 1 + halfWidth);
+  const midY = Math.ceil(bound.y + 1 + bound.height / 2);
   canvasContext.beginPath();
   canvasContext.fillStyle = coef;
-  canvasContext.arc(midX, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
+  canvasContext.arc(midX - halfWidth / 2, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
   canvasContext.closePath();
   canvasContext.fill();
 
+  canvasContext.textBaseline = 'middle';
+  canvasContext.textAlign = 'end';
+  canvasContext.fillStyle = '#606060';
+  canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+  canvasContext.shadowBlur = 5;
+  canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
+  const uniqueValues = new Set<number>();
   const substitutions = substitutionsInfo?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
   if (substitutions !== null) {
-    canvasContext.textBaseline = 'middle';
-    canvasContext.textAlign = 'center';
-    canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
-    canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-    canvasContext.shadowBlur = 5;
-    canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
-    const uniqueValues = new Set<number>();
-
     for (const [key, value] of substitutions) {
       uniqueValues.add(key);
       for (const val of value)
         uniqueValues.add(val);
     }
-    if (uniqueValues.size !== 0)
-      canvasContext.fillText(uniqueValues.size.toString(), midX, midY);
   }
+  if (uniqueValues.size !== 0)
+    canvasContext.fillText(uniqueValues.size.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
 
   const monomerSelection = mutationCliffsSelection[currentPosition];
   if (monomerSelection && monomerSelection.includes(currentMonomer))

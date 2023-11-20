@@ -23,6 +23,9 @@ export enum MONOMER_POSITION_PROPERTIES {
   TARGET = 'target',
 }
 
+const MUTATION_CLIFFS_CELL_WIDTH = 40;
+const AAR_CELL_WIDTH = 30;
+
 /** Structure-activity relationship viewer */
 export class MonomerPosition extends DG.JsViewer {
   // _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
@@ -111,7 +114,8 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerPositionDf = this.createMonomerPositionDf();
     this.viewerGrid = monomerPositionDf.plot.grid();
     this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
-    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.positionColumns.toArray().map((col) => col.name)]);
+    const positionColumns = this.model.positionColumns.toArray().map((col) => col.name);
+    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...positionColumns]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
@@ -195,7 +199,21 @@ export class MonomerPosition extends DG.JsViewer {
       this.showHelp();
     });
 
-    setViewerGridProps(this.viewerGrid, false);
+    setViewerGridProps(this.viewerGrid);
+
+    // Monomer cell renderer overrides width settings. This way I ensure is "initially" set.
+    const afterDraw = this.viewerGrid.onAfterDrawContent.subscribe(() => {
+      const monomerGCol = this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!;
+      if (monomerGCol.width === AAR_CELL_WIDTH) {
+        afterDraw.unsubscribe();
+        return;
+      }
+      monomerGCol.width = AAR_CELL_WIDTH;
+      for (const posCol of positionColumns) {
+        const gcCol = this.viewerGrid.col(posCol)!;
+        gcCol.width = MUTATION_CLIFFS_CELL_WIDTH;
+      }
+    });
   }
 
   showHelp(): void {
@@ -446,9 +464,19 @@ export class MostPotentResidues extends DG.JsViewer {
         grok.shell.windows.help.showHelp(ui.markdown(text));
       }).catch((e) => grok.log.error(e));
     });
+    setViewerGridProps(this.viewerGrid);
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
-    setViewerGridProps(this.viewerGrid, true);
+    // Monomer cell renderer overrides width settings. This way I ensure is "initially" set.
+    const afterDraw = this.viewerGrid.onAfterDrawContent.subscribe(() => {
+      const monomerGCol = this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!;
+      if (monomerGCol.width === AAR_CELL_WIDTH) {
+        afterDraw.unsubscribe();
+        return;
+      }
+      monomerGCol.width = AAR_CELL_WIDTH;
+      mdCol.width = MUTATION_CLIFFS_CELL_WIDTH;
+    });
   }
 
   getMonomerPosition(gridCell: DG.GridCell): SelectionItem {
@@ -534,7 +562,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   canvasContext.restore();
 }
 
-function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): void {
+function setViewerGridProps(grid: DG.Grid): void {
   const gridProps = grid.props;
   gridProps.allowEdit = false;
   gridProps.allowRowSelection = false;
@@ -544,12 +572,5 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
   gridProps.showCurrentRowIndicator = false;
 
   gridProps.rowHeight = 20;
-  const girdCols = grid.columns;
-  const colNum = girdCols.length;
-  for (let i = 0; i < colNum; ++i) {
-    const col = girdCols.byIndex(i)!;
-    const colName = col.name;
-    col.width = isMostPotentResiduesGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.MONOMER ? 50 :
-      gridProps.rowHeight + 10;
-  }
+
 }
