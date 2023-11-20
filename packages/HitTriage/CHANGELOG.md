@@ -17,5 +17,5 @@
     * Template cloning allows to create a new template based on an existing one.
     * Ability to change the location of saved dataframe (could be users own connection) throught the `Submit` button.
     * Ability to delete campaigns from `Campaigns table`.
-    * Ability to add/duplicate molecules and edit them from the tooltip of any molecule cell.
+    * Ability to add/duplicate molecules and edit them from the context menu of any molecule cell.
 

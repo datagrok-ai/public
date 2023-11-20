@@ -210,17 +210,21 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       }));
       subs.push(grok.events.onContextMenu.subscribe((args) => {
         try {
-          const viewer = args?.args?.context;
+          const viewer: DG.Viewer = args?.args?.context;
           if (!viewer)
             return;
           if (viewer?.type !== DG.VIEWER.GRID)
             return;
-
+          if (!viewer.tableView || viewer.tableView.id !== view.id)
+            return;
           if (args?.args?.item?.tableColumn?.name !== this.molColName)
             return;
           const menu: DG.Menu = args?.args?.menu;
           if (!menu)
             return;
+          menu.item('Add new row', () => {
+            this.dataFrame!.rows.addNew(null, true);
+          });
           menu.item('Duplicate molecule', () => {
             try {
               this.dataFrame!.rows.addNew(null, true);
@@ -388,22 +392,35 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   }
 
   getSummary(): {[_: string]: any} {
+    const getFolderPath = () => {
+      const campaignIndex = this._filePath.indexOf((this.campaignId ?? this._campaign?.name)!);
+      const folderPath = campaignIndex === -1 ? this._filePath : this._filePath.substring(0, campaignIndex - 1);
+      return folderPath;
+    };
     const campaignProps = {...(this.campaign?.campaignFields ?? this.campaignProps)};
     if (this.template && this.template.campaignFields) {
       Object.entries(campaignProps).forEach(([key, value]) => {
         const field = this.template!.campaignFields!.find((f) => f.name === key);
-        if (field && field.type === 'Date' && value)
-          campaignProps[key] = (new Date(value)).toLocaleDateString();
-        else if (field && field.type === DG.SEMTYPE.MOLECULE && value)
-          campaignProps[key] = grok.chem.drawMolecule(value);
+        if (field && field.type === 'Date' && value) {
+          const dateString = (new Date(value)).toString();
+          if (dateString !== 'Invalid Date')
+            campaignProps[key] = (new Date(value)).toLocaleDateString();
+          else {
+            if (value.date)
+              campaignProps[key] = new Date(value.date).toLocaleDateString();
+            else
+              campaignProps[key] = value;
+          }
+        } else {
+          if (field && field.type === DG.SEMTYPE.MOLECULE && value)
+            campaignProps[key] = grok.chem.drawMolecule(value);
+        }
       });
     }
 
     const getPathEditor = () => {
       const editIcon = ui.icons.edit(() => {
-        const campaignIndex = this._filePath.indexOf((this.campaignId ?? this._campaign?.name)!);
-
-        const folderPath = campaignIndex === -1 ? this._filePath : this._filePath.substring(0, campaignIndex - 1);
+        const folderPath = getFolderPath();
         const newPathInput = ui.stringInput('Path', folderPath);
         const labelElement = newPathInput.root.getElementsByTagName('label').item(0);
         if (labelElement)
@@ -438,7 +455,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             this._campaign!.savePath = this._filePath;
           await this.saveCampaign(undefined, true);
           ui.empty(pathDiv);
-          link = ui.link(this._filePath,
+          const folderPath = getFolderPath();
+          link = ui.link(folderPath,
             () => this.download(this.dataFrame!, this.campaignId ?? this._campaign?.name ?? 'Molecules'),
             i18n.download);
           pathDiv.appendChild(link);
@@ -455,7 +473,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         pathDiv.appendChild(newPathInput.root);
       }, 'Edit file path');
       editIcon.style.marginLeft = '5px';
-      let link = ui.link(this._filePath,
+      const folderPath = getFolderPath();
+      let link = ui.link(folderPath,
         () => this.download(this.dataFrame!, this.campaignId ?? this._campaign?.name ?? 'Molecules'), i18n.download);
       const pathDiv = ui.divH([link, editIcon], {style: {alignItems: 'center'}});
       return pathDiv;
