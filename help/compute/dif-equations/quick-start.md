@@ -11,15 +11,21 @@ The platform ensures intuitive tools for the rapid solving systems of ordinary d
 * Run **EquaSleek X**
 * Press <i class="fas fa-play"></i> **Run** icon on the top panel
 
+![add-to-workspace](quick-start-1.gif)
+
 2. Modify a template
 
 * Edit formulas or add new ones
 * Click **F5** or <i class="fas fa-play"></i> **Run** icon
 
+![add-to-workspace](quick-start-2.gif)
+
 3. Use an advanced template
 
 * Rigth click and select **Templates > Advanced...**
 * Modify formulas and click **F5**
+
+![add-to-workspace](quick-start-3.gif)
 
 4. Save formulas in a local file
 
