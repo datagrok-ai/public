@@ -11,7 +11,7 @@ import {
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties} from './fit-renderer';
+import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties, substituteZeroes} from './fit-renderer';
 import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 
@@ -106,6 +106,9 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series:
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
       if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
         return null;
+      if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
+        chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
+        substituteZeroes(chartData);
       const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
       const fitResult = calculateSeriesStats(chartData.series![seriesNumber], chartLogOptions);
       return p.get(fitResult);
@@ -129,6 +132,9 @@ function addAggrStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, agg
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
       if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
         return null;
+      if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
+        chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
+        substituteZeroes(chartData);
       const fitResult = getChartDataAggrStats(chartData, aggrType);
       return p.get(fitResult);
     });
@@ -323,6 +329,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       chartData.chartOptions ? chartData.chartOptions : {});
     mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions,
       chartData.chartOptions ? chartData.chartOptions : {});
+
+    if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
+      chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
+      substituteZeroes(chartData);
 
     acc.addPane('Options', () => ui.divV([
       switchLevelInput.root,

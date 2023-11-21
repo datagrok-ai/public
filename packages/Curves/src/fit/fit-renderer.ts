@@ -274,7 +274,7 @@ function drawDropline(g: CanvasRenderingContext2D, transform: Viewport, xValue: 
 }
 
 /** Performs x zeroes substitution if log x */
-function substituteZeroes(data: IFitChartData): void {
+export function substituteZeroes(data: IFitChartData): void {
   for (let i = 0; i < data.series?.length!; i++) {
     const series = data.series![i];
     if (series.points.every((p) => p.x !== 0))
