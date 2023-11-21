@@ -54,7 +54,7 @@ Define initial values in the `#inits`-block:
 
 ## Advances
 
-The solver supports the use of *constants*, *parameters* and *expressions*.
+The solver supports the use of *constants*, *parameters*, *expressions* and *tolerance* setting.
 
 Specify constants in the `#constants`-block
 
@@ -80,7 +80,13 @@ Define auxiliary compuations in the `expressions`-block:
   E2 = C2 * cos(2 * t) + P2
 ```
 
-Expressions may depend on constants, parameters and the argument. Equations may contain results of their evaluation.
+Use expressions to simplify equations. They may depend on constants, parameters and the argument. 
+
+Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method in the `tolerance`-line:
+
+```
+#tolerance: 0.00005
+```
 
 Find more capabilities in
 

@@ -8,7 +8,7 @@ Datagrok provides in-browser tool for solving [initial value problem](https://en
 * Go to **Apps**
 * Run **EquaSleek X**
 * Enter formulas or modify template
-* Press <i class="fas fa-play"></i> **Run** icon on the top panel
+* Press <i class="fas fa-play"></i> **Run** button on the top panel
 
 ![add-to-workspace](solver.gif)
 

@@ -9,14 +9,14 @@ The platform ensures intuitive tools for the rapid solving systems of ordinary d
 
 * Go to **Apps**
 * Run **EquaSleek X**
-* Press <i class="fas fa-play"></i> **Run** icon on the top panel
+* Press <i class="fas fa-play"></i> **Run** button on the top panel
 
 ![add-to-workspace](quick-start-1.gif)
 
 2. Modify a template
 
 * Edit formulas or add new ones
-* Click **F5** or <i class="fas fa-play"></i> **Run** icon
+* Click **F5** or <i class="fas fa-play"></i> **Run** button
 
 ![add-to-workspace](quick-start-2.gif)
 
