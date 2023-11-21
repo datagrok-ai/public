@@ -139,7 +139,7 @@ export class RadarViewer extends DG.JsViewer {
         this.updateMax();
 
       break;
-    case 'showCurrentRow':
+    case 'showOnlyCurrentRow':
       if (this.showOnlyCurrentRow === true)
         this.clearData([0, 1]);
       else {
