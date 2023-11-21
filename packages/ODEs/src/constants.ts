@@ -96,8 +96,43 @@ ${CONTROL_EXPR.ARG}: t
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
-/** Case 1 */
-const USE_CASE1 = 'NOTES. Model.';
+/** Use case 1: chemical reactions, mass-action kinetics */
+const CHEM_REACT_MODEL = `The following example is taken from https://doi.org/10.1002/ijch.201800003.
+
+${CONTROL_EXPR.NAME}: Chem react
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Illustration of mass-action kinetics
+${CONTROL_EXPR.DIF_EQ}:
+  dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
+           - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4
+
+  dx2/dt = 2 * k1 * x1 - 2 * k2 * (x2)**2 
+           + k5 * (x1)**2 - k6 * x2 * x4
+
+  dx3/dt = -k3 * x1 * x3 + k4 * (x1)**2 + k6 * x2 * x4
+
+  dx4/dt = k5 * (x1)**2 - k6 * x2 * x4
+
+${CONTROL_EXPR.PARAMS}:
+  k1 = 0.7 {category: Reaction parameters}
+  k2 = 0.9 {category: Reaction parameters}
+  k3 = 1.2 {category: Reaction parameters}
+  k4 = 3.4 {category: Reaction parameters}
+  k5 = 2.3 {category: Reaction parameters}
+  k6 = 4.5 {category: Reaction parameters}
+
+${CONTROL_EXPR.INITS}:
+  x1 = 1 {units: mol/L; category: Initial concentrations}
+  x2 = 0 {units: mol/L; category: Initial concentrations}
+  x3 = 0 {units: mol/L; category: Initial concentrations}
+  x4 = 0 {units: mol/L; category: Initial concentrations}
+
+${CONTROL_EXPR.ARG}: t
+  initial = 0 {units: ms; caption: Initial; category: Time} [Initial time of simulation]
+  final = 5 {units: ms; caption: Final; category: Time} [Final time of simulation]
+  step = 0.01 {units: ms; caption: Initial; category: Time} [Time step of simlulation]
+
+${CONTROL_EXPR.TOL}: 0.00005`;
 
 /** Case 2 */
 const USE_CASE2 = 'NOTES. Super model.';
@@ -111,7 +146,7 @@ export enum TEMPLATES {
   BASIC = TEMPLATE_BASIC,
   ADVANCED = TEMPLATE_ADVANCED,
   EXTENDED = TEMPLATE_EXTENDED,
-  CASE1 = USE_CASE1,
+  CHEM_REACT = CHEM_REACT_MODEL,
   CASE2 = USE_CASE2,
   CASE3 = USE_CASE3,
 };

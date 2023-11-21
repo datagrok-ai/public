@@ -19,7 +19,7 @@ enum EDITOR_STATE {
   ADVANCED_TEMPLATE = 2,  
   FROM_FILE = 3,
   EXTENDED_TEMPLATE = 4,
-  CASE1 = 5,
+  CHEM_REACT = 5,
   CASE2 = 6,
   CASE3 = 7,
 };
@@ -59,8 +59,8 @@ function getProblem(state: EDITOR_STATE): string {
     case EDITOR_STATE.EXTENDED_TEMPLATE:
       return TEMPLATES.EXTENDED;
     
-    case EDITOR_STATE.CASE1:
-      return TEMPLATES.CASE1;
+    case EDITOR_STATE.CHEM_REACT:
+      return TEMPLATES.CHEM_REACT;
 
     case EDITOR_STATE.CASE2:
       return TEMPLATES.CASE2;    
@@ -230,8 +230,8 @@ export async function runSolverApp() {
       .item('Advanced...', () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
       .item('Extended...', () => setState(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
       .endGroup()
-      .group('Case studies')
-      .item('Model 1...', () => setState(EDITOR_STATE.CASE1), undefined, {description: 'Model'})
+      .group('Use cases')
+      .item('Chem reactions...', () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
       .item('Model 2...', () => setState(EDITOR_STATE.CASE2), undefined, {description: 'Super model'})
       .item('Model 3...', () => setState(EDITOR_STATE.CASE3), undefined, {description: 'Super cool model'})
       .endGroup()
