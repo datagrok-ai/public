@@ -8,6 +8,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
+const ERROR_CLASS = 'd4-viewer-error';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 @grok.decorators.viewer({
@@ -309,13 +310,20 @@ export class RadarViewer extends DG.JsViewer {
     return columns;
   }
 
-  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, ERROR_CLASS));}
+
+  _removeErrorMessage() {
+    const divTextElement = this.root.getElementsByClassName(ERROR_CLASS)[0];
+    if (divTextElement)
+      this.root.removeChild(divTextElement);
+  }
 
   render() {
     if (this.valuesColumnNames.length < 1) {
       this._showErrorMessage('The Radar viewer requires a minimum of 1 numerical column.');
       return;
     }
+    this._removeErrorMessage();
     this.chart.setOption(option);
   }
 
