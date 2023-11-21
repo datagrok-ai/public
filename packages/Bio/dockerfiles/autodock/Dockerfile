@@ -1,15 +1,28 @@
-FROM python:2.7
-
-ENV PYTHONUNBUFFERED 1
-
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y \
+FROM ubuntu:20.04
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get -y upgrade \
+  && apt-get install -y \
+    apt-utils \
+    unzip \
+    tar \
+    curl \
+    xz-utils \
+    ocl-icd-libopencl1 \
+    opencl-headers \
+    clinfo \
+    libgomp1 \
     wget \
     bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y ocl-icd-libopencl1
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+
+RUN apt-get update && apt-get install -y clinfo
+
+WORKDIR /app
 
 RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh \
     && /bin/bash /tmp/miniforge.sh -b -p /usr/local/miniforge \
