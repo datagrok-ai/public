@@ -93,6 +93,7 @@ export class SubstructureFilter extends DG.Filter {
   searchTypeChanged = new Subject();
   searchOptionsDiv = ui.div('', 'filter-search-options');
   showOptions = false;
+  searchNotCompleted = false;
   
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -248,6 +249,19 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
 
+    this.subs.push(this.dataFrame!.onEvent('d4-filter-control-active-changed').subscribe(() => {
+      //in case filter is swithed off via checkbox on filter panel, we finish current search
+      if (!this.isFiltering && this.bitset) {
+        if (!this.batchResultObservable?.closed) {
+          this.searchNotCompleted = true;
+          this.sketcher.getSmarts().then((smarts) => {
+            this.terminatePreviousSearch();
+            this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
+          });
+        }
+      }
+    }));
+
     this.currentSearches.add('');
     chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
       .then((_) => { }); // Precalculating fingerprints
@@ -294,6 +308,8 @@ export class SubstructureFilter extends DG.Filter {
           isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
         }]);
         this.active = true;
+        if (this.searchNotCompleted)
+          this._onSketchChanged();
     }
   }
 
@@ -371,11 +387,12 @@ export class SubstructureFilter extends DG.Filter {
         tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`)) {
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) && !this.searchNotCompleted) {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property 
       return;
     } else {
+      this.searchNotCompleted = false;
       this.terminatePreviousSearch();
       this.currentMolfile = newMolFile;
       this.currentSearches.add(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
