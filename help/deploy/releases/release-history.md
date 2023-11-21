@@ -1,6 +1,7 @@
 ---
 title: "Release history"
 slug: develop/admin/releases/release-history
+position: 6 # float position is supported
 ---
 
 ## Latest version
@@ -22,8 +23,6 @@ See also:
 
 ## 2023-11-13 1.17.3
 
-### Addressed Issues
-
 * (Bug) GROK-14182: ui.choiceInput breaks the old code 
 * (Bug) GROK-14210: UI: Format is ignored on floatInput 
 * (Improvement) [#2298](https://github.com/datagrok-ai/public/issues/2298): Bar Chart: squeeze the white space around the title (WIP)
@@ -42,13 +41,9 @@ See also:
 
 ## 2023-11-03 1.17.2
 
-### Addressed Issues
-
 
 
 ## 2023-11-02 1.17.1
-
-### Addressed Issues
 
 * (Improvement) GROK-14180: Implement waiting mode in db.runLocked 
 * (Bug) [#2330](https://github.com/datagrok-ai/public/issues/2330): Scatter plot: has to show empty categories like Box plot and Bar chart do 
@@ -194,15 +189,11 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 
 ## 2023-10-04 1.16.7
 
-### Addressed Issues
-
 * (Improvement): Connectors: Added gzip compression of socket message
 * (Improvement): Connectors: Added offset, fixed caching 
 * (Improvement): DataQuery: Added setting of gzip and batchSize through SQL script meta
 
 ## 2023-09-14 1.16.6
-
-### Addressed Issues
 
 * (Bug) GROK-13904: Redocking viewer leads to multiple entries in .viewers list 
 * (Bug) [#2350](https://github.com/datagrok-ai/public/issues/2350): 'Error loading line chart' on applying layout, if line chart has categorical X axis and row source = Selected 
@@ -210,16 +201,12 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 
 ## 2023-09-06 1.16.5
 
-### Addressed Issues
-
 * (Bug) GROK-13874: Box plot: incorrectly displays values on the X axis 
 * (Bug) [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalize to filter' option: Y axis values are not updated on zooming 
 * (Bug) [#2328](https://github.com/datagrok-ai/public/issues/2328): Viewer docked at the left or at the top is sometimes unexpectedly hidden 
 * (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
 
 ## 2023-08-30 1.16.4
-
-### Addressed Issues
 
 * (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
 * (Improvement) [#2057](https://github.com/datagrok-ai/public/issues/2057): Box plot has to render structures on the X axis 
@@ -235,13 +222,9 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 
 ## 2023-08-17 1.16.3
 
-### Addressed Issues
-
 * (Improvement) GROK-13737: Cleanup package if it's not in NPM and is not installed 
 
 ## 2023-08-15 1.16.2
-
-### Addressed Issues
 
 * Improvement:
 * (Improvement) [#2166](https://github.com/datagrok-ai/public/issues/2166): Pivot table: improvements 
@@ -259,8 +242,6 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 
 
 ## 2023-07-27 1.16.1
-
-### Addressed Issues
 
 * Improvements:
   * Columns pane: column preview in the grid on mouse-over 
@@ -376,8 +357,6 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 ## 2023-06-29 1.15.4
 
-### Addressed Issues
-
 * Improvements: 
   * [#1730](https://github.com/datagrok-ai/public/issues/1730) Scaffold Tree: Filters panel integration.
 * Fixed:
@@ -385,8 +364,6 @@ Datagrok 1.16 release focuses on performance and usability improvements:
   * [#2061](https://github.com/datagrok-ai/public/issues/2061): DataFrame in viewer property is null on "viewer added" event.
 
 ## 2023-06-19 1.15.3
-
-### Addressed Issues
 
 * Improvements:  
   * [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements:
@@ -419,16 +396,12 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 ## 2023-06-02 1.15.2
 
-### Addressed Issues
-
 * (Bug) GROK-13157: Can't load table without initial permissions 
 * GROK-13075: Delete old and inactive containers 
 * (Improvement) GROK-13188: Datlas: Improve migration process 
 
 
 ## 2023-05-25 1.15.1
-
-### Addressed Issues
 
 * (Bug) GROK-13109: Databases | Mysql, MariaDB: Get top 100 on some tables throws an error.
 * (Bug) GROK-13157: Can't load table without initial permissions.
@@ -626,8 +599,6 @@ Added structure editing support for pinned columns.
 
 ## 2023-05-09 1.14.4
 
-### Addressed Issues
-
 * (Bug) GROK-12918: Viewers: Grid: An exception when dragging columns to the first position 
 * (Bug) [#1855](https://github.com/datagrok-ai/public/issues/1855): "Pack and zoom by filter": some data is missing 
 * (Bug) [#1852](https://github.com/datagrok-ai/public/issues/1852): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
@@ -640,21 +611,15 @@ Added structure editing support for pinned columns.
 
 ## 2023-05-03 1.14.3
 
-### Addressed Issues
-
 * (Improvement) GROK-12427: Move Chem descriptors and fingerprints to top-menu -> Calculations (WIP)
 
 
 ## 2023-04-28 1.14.2
 
-### Addressed Issues
-
 * (Improvement) GROK-12922: Cache and streaming compatibility 
 
 
 ## 2023-04-20 1.14.1
-
-### Addressed Issues
 
 * (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop 
 * (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last 
@@ -944,8 +909,6 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-05-16 1.13.15
 
-### Addressed Issues
-
 * GROK-12596: Core: Viewers: support for NaN and +/\- Infinity (WIP)
 * [#1616](https://github.com/datagrok-ai/public/issues/1616): Scatter plot: zoom slider behavior is inconsistent for inverted axes
 * [#1671](https://github.com/datagrok-ai/public/issues/1671): Line chart: connects the first and last values when resizing the window
@@ -953,13 +916,9 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-04-18 1.13.13
 
-### Addressed Issues
-
 * (Bug) [#1808](https://github.com/datagrok-ai/public/issues/1808) Line chart with logarithmic Y axis is rendering data points incorrectly
 
 ## 2023-04-12 1.13.12
-
-### Addressed Issues
 
 * (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1583): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
 * (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1761): Out of memory on adding viewer with specific data
@@ -972,20 +931,14 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-03-29 1.13.10
 
-### Addressed Issues
-
 * (Bug) GROK-12646: for_entity method is very slow
 
 ## 2023-03-28 1.13.9
-
-### Addressed Issues
 
 * (Bug) GROK-12646: for_entity method is very slow (WIP)
 
 
 ## 2023-03-22 1.13.8
-
-### Addressed Issues
 
 * (Enhancement) [#1552](https://github.com/datagrok-ai/public/issues/1552): Scatter Plot: line labels enhancements
 * (Bug) [#1613](https://github.com/datagrok-ai/public/issues/1613): 'Error loading scatter plot' for specific data on applying layout
@@ -1059,19 +1012,13 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-03-14 1.13.7
 
-### Addressed Issues
-
 * fixes #1609 FilterGroup.add issue
 
 ## 2023-02-22 1.13.3
 
-### Addressed Issues
-
 * (Bug) Connecting to local file storage results in error (WIP)
 
 ## 2023-02-21 1.13.2
-
-### Addressed Issues
 
 * 1583 manual sketcher resizing (#1598)
 * closes #1599 Coloring and format changes are reset unexpectedly on interacting with filters if group tooltip was set
@@ -1079,16 +1026,12 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-02-15 1.13.1
 
-### Addressed Issues
-
 * Standard color schemes : update "Traffic Lights" palette
 * Grid: Enable getCellEditor for meta.columnTags
 * Grid: Fix for getGridCell
 * fix grid demo dir in its package.json
 
 ## 2023-02-13 1.13.0
-
-### Addressed Issues
 
 * update GrokConnect to version 1.1.0
 * Charts: syntax fixes in tree-viewer.ts
@@ -1515,8 +1458,6 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-01-27 Dev build 1.12.1
 
-### Addressed Issues
-
 * (Bug) File Shares: Mount Windows shares (WIP)
 * (Bug) FuncCall.options can't be saved to DB
 * (Bug) Package can't be installed with npm proxy specified
@@ -1770,8 +1711,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2023-01-06 Dev build 1.11.2
 
-### Addressed Issues
-
 * Save table linking to project
 * #1412 column selector dialog position in prop panel
 * closes #1344 Legend for continuous colorColumn
@@ -1785,11 +1724,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-12-23 Dev build 1.11.1
 
-### Addressed Issues
-
 ## 2022-12-22 Dev build 1.11.0
-
-### Addressed Issues
 
 * #1236 Color coding: ability to invert colors for linear color coding
 * Elemental analysis: minor fixes (columns hadn't been added if dataset already had the columns with such names)
@@ -1972,8 +1907,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed readBinaryDataFrame method
 
 ## 2022-11-22 Dev build 1.9.0
-
-### Addressed Issues
 
 * bio lib: Fix properly naming for packages/GUIDE.MD
 * Bio: Add VdRegionsViewer.positionHeight with default 'Entropy', fix args of exported package functions, fix
@@ -2438,8 +2371,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: CI: KyotoCabinet version based on python 3.8
 
 ## 2022-11-08 Dev build 1.8.3
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -2936,8 +2867,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-11-02 Dev build 1.8.2
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -3387,8 +3316,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-10-19 Dev build 1.8.0
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -3806,13 +3733,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-10-06 Dev build 1.6.12
 
-### Addressed Issues
-
 * closes #953 Filters turned off status is not saved in layout
 
 ## 2022-09-15 Dev build 1.6.11
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -4126,8 +4049,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-09-08 Dev build 1.6.9
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -4377,8 +4298,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Test: Skip Grok Compute tests because of compatility
 
 ## 2022-09-07 Dev build 1.6.8
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -4641,8 +4560,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-09-06 Dev build 1.6.7
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -4898,8 +4815,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-09-01 Dev build 1.6.6
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -5126,8 +5041,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio: Fix typing for grok.functions and RDKit interfaces, fix WebLogo-positions tests
 
 ## 2022-08-30 Dev build 1.6.5
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -5357,8 +5270,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-08-29 Dev build 1.6.4
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -5573,8 +5484,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-18 Dev build 1.5.1
 
-### Addressed Issues
-
 * resizing on right side
 * Fixed admin session
 * Ability to save favorites for groups
@@ -5617,8 +5526,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-15 Dev build 1.5.0
 
-### Addressed Issues
-
 * resizing on right side
 * Fixed admin session
 * Ability to save favorites for groups
@@ -5653,8 +5560,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-07 Dev build 1.4.14
 
-### Addressed Issues
-
 * Ability to save favorites for groups
 * Packages: improve package sources check
 * JS UI Test: Density Plot
@@ -5665,8 +5570,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * #740: Peptide Space tooltip
 
 ## 2022-07-07 Dev build 1.4.13
-
-### Addressed Issues
 
 * (Bug) Integration tests: ChemMapIdentifiers test fails
 * CardView: Ribbon shortcuts (WIP)
@@ -5690,8 +5593,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-05 Dev build 1.4.12
 
-### Addressed Issues
-
 * Document viewer properties (WIP)
 * Status Bar
 * Popup: ability to show context menu next to the element
@@ -5706,8 +5607,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * CSS fix
 
 ## 2022-07-04 Dev build 1.4.11
-
-### Addressed Issues
 
 * Document viewer properties (WIP)
 * string fields
@@ -5724,21 +5623,15 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-01 Dev build 1.4.10
 
-### Addressed Issues
-
 * JS UI Test: Pie Chart
 * Better units CSS
 * fix $ sign
 
 ## 2022-07-01 Dev build 1.4.9
 
-### Addressed Issues
-
 * dont explicitly set description with several lines
 
 ## 2022-07-01 Dev build 1.4.8
-
-### Addressed Issues
 
 * Properties: an option to reorder rows in column grid for multi-column property editor
 * Document viewer properties (WIP)
@@ -5757,8 +5650,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-29 Dev build 1.4.7
 
-### Addressed Issues
-
 * #741: Peptides Space fix
 * Peptide space tests fix and performance benchmark
 * Helm: Updating the sizes of the HelmWebEditor
@@ -5768,14 +5659,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-29 Dev build 1.4.6
 
-### Addressed Issues
-
 * OligoBatchCalculator: fix of using new modification
 * Compute: Model Catalog Groups editor #658
 
 ## 2022-06-29 Dev build 1.4.5
-
-### Addressed Issues
 
 * Test manager: ability to run tests using url (WIP)
 * Exercises: fixes
@@ -5791,8 +5678,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed routes order
 
 ## 2022-06-28 Dev build 1.4.4
-
-### Addressed Issues
 
 * [Calculated columns] \- Min() and Max() are not compatible with date and datetime columns #689
 * JS API: add initial sync option to grok.data.linkTables
@@ -5831,8 +5716,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-23 Dev build 1.4.3
 
-### Addressed Issues
-
 * Simplified JsConvertible
 * Closes #709: Filter panel is not synchronised across different views
 * (Bug) Correlation plot: histogram cells are not shown
@@ -5845,8 +5728,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio pckg: Fix VdRegions viewer registering
 
 ## 2022-06-21 Dev build 1.4.2
-
-### Addressed Issues
 
 * Grok Spawner: create endpoint for docker build from Dockerfile
 * Packages Manager (WIP)
@@ -5870,13 +5751,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-17 Dev build 1.4.1
 
-### Addressed Issues
-
 * Packages Manager (WIP)
 
 ## 2022-06-17 Dev build 1.4.0
-
-### Addressed Issues
 
 * KeyPair::encryptString/decryptString methods fixed for UTF8 symbols
 * Grid: add cell context action
@@ -5892,26 +5769,18 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-15 Dev build 1.3.5
 
-### Addressed Issues
-
 * MLB: Fix camelCase in DataLoader and setup.cmd
 
 ## 2022-06-15 Dev build 1.3.4
-
-### Addressed Issues
 
 * Row number is not clickable after applying saved layout #679
 * JS API: convert datetime to dayjs object in DG.toJs
 
 ## 2022-06-15 Dev build 1.3.3
 
-### Addressed Issues
-
 * Fixed missing taskbar
 
 ## 2022-06-15 Dev build 1.3.2
-
-### Addressed Issues
 
 * Packages: Debug packages permissions fix (WIP)
 * Closes #701: ositioning of Hamburger menus with inserted pinned columns
@@ -5930,8 +5799,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-13 Dev build 1.3.1
 
-### Addressed Issues
-
 * Formatting: add a missing format alias for floats
 * Packages: change package card view for debug versions
 * Compute: UX harmonization #180 URL fix
@@ -5943,8 +5810,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Packages: add categories
 
 ## 2022-06-12 Dev build 1.3.0
-
-### Addressed Issues
 
 * Packages manager WIP
 * Packages manager WIP Some styling
@@ -5979,8 +5844,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-08 Dev build 1.2.1
 
-### Addressed Issues
-
 * (Bug) Dev: Beta users and test track (WIP)
 * SequenceTranslator: update JS API version
 * Fixed Datlas tests
@@ -5993,8 +5856,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #87 Charts: migrate to TypeScript
 
 ## 2022-06-08 Dev build 1.2.0
-
-### Addressed Issues
 
 * Closes #405: Switching table for a viewer: column selection dropdown/dialog in properties panel is not updated
 * Row number is not clickable after applying saved layout #679
@@ -6010,8 +5871,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-07 Dev build 1.1.9
 
-### Addressed Issues
-
 * Chem: changed logic of empty molecule check
 * OligoBatchCalculator: fix of not valid data in additional modifications table
 * SequenceTranslator: fix of conversion
@@ -6019,15 +5878,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-07 Dev build 1.1.8
 
-### Addressed Issues
-
 * Removed debug printout.
 * Closes #576: Changing the order of values of categorical columns is not reflected in the filter panel
 * Remove COMPOSE_PROFILES
 
 ## 2022-06-06 Dev build 1.1.7
-
-### Addressed Issues
 
 * Closes #654: Chem: ability to import mol files V3000
 * Closes #640: How to switch Structure Search to categorical filter
@@ -6063,8 +5918,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-05-27 Dev build 1.1.5
 
-### Addressed Issues
-
 * New Datagrok Image with caching layers
 * Create release notes for every release
 * Js-Api: fixed bug with function name in chem sketcher
@@ -6072,13 +5925,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-05-27 Dev build 1.1.4
 
-### Addressed Issues
-
 * JS API: add Property options
 
 ## 2022-05-26 Dev build 1.1.3
-
-### Addressed Issues
 
 * Closes #648: Viewers: Column selectors: Interactivity: previous column is not set back on mouse leave
 * Closes #535: Chem: Structure filter (MarvinJS) cannot be removed from filter panel once added
@@ -6106,8 +5955,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-05-24 Dev build 1.1.2
 
-### Addressed Issues
-
 * Closes #641: Grid.autoSize(maxWidth, maxHeight)
 * Grok Scaler
 * Unable to set value to datetime column from JS (WIP)
@@ -6119,8 +5966,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * ApiTests: linting
 
 ## 2022-05-23 Dev build 1.1.1
-
-### Addressed Issues
 
 * Sidebar integration improvements
 * PowerGrid: code cleanup, added a description to the "Global Scale", gave friendly names to renderers.
@@ -6140,8 +5985,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas split to libraries (WIP)
 
 ## 2022-05-20 Stable version 1.0.0
-
-### Addressed Issues
 
 * Packages: get compatible npm package versions
 * (Bug) connection.close in JdbcDataProvider.execute didn't account for exceptions other than SQLException

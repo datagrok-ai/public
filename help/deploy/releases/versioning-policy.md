@@ -1,5 +1,6 @@
 ---
 title: "Versioning policy"
+position: 4 # float position is supported
 ---
 
 We follow one of the most common versioning strategies for our
