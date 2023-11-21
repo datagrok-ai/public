@@ -814,7 +814,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         iconRoot!.setAttribute('tooltip', errorMsg);
 
       if (finalColor)
-        this.makeColorIconActive(group, finalColor!);
+        this.makeColorIconActiveOrInactive(group, finalColor!, true);
       
       thisViewer.updateSizes();
       thisViewer.updateUI();
@@ -903,7 +903,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           thisViewer.highlightCanvas(child, color!, substructure);
         
           if (color) {
-            thisViewer.makeColorIconActive(child, color);
+            thisViewer.makeColorIconActiveOrInactive(child, color, true);
             childValue.parentColor = color;
           }
         }
@@ -1128,23 +1128,25 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     canvas.replaceWith(coloredCanvas);
   }
 
-  makeColorIconActive(group: DG.TreeViewGroup, color: string | null) {
+  makeColorIconActiveOrInactive(group: DG.TreeViewGroup, color: string | null, active: boolean) {
     const colorIcon = getColorIcon(group);
     const paletteIcon = getPaletteIcon(group);
-    colorIcon!.classList.remove('fal');
-    colorIcon!.classList.add('fas');
-    colorIcon!.style.cssText += ('color: ' + color + ' !important');
-    paletteIcon!.classList.remove('color-is-not-set');
-    enableColorIcon(colorIcon!, true);
-  }
-
-  makeColorIconInactive(group: DG.TreeViewGroup) {
-    const paletteIcon = getPaletteIcon(group);
-    const colorIcon = getColorIcon(group);
-    colorIcon!.classList.remove('fas');
-    colorIcon!.classList.add('fal');
-    enableColorIcon(colorIcon!, false);
-    disablePaletteIcon(paletteIcon!);
+    colorIcon!.classList.remove('fal', 'fas', 'fad');
+    if (active) {
+      if (value(group).colorOn) {
+        colorIcon!.classList.add('fas');
+        colorIcon!.style.cssText = `color: ${color} !important; opacity: 0.4;`;
+      } else {
+        colorIcon!.classList.add('fad');
+        colorIcon!.style.cssText = `--fa-primary-color: #ffffff; --fa-secondary-color: ${color} !important;`;
+      }
+      paletteIcon!.classList.remove('color-is-not-set');
+    } else {
+      colorIcon!.classList.add('fal');
+      colorIcon!.style.cssText = `opacity: 0.4`;
+      disablePaletteIcon(paletteIcon!);
+    }
+    enableColorIcon(colorIcon!, active);
   }
 
   getParentSmilesIterative(group: DG.TreeViewGroup | DG.TreeViewNode): any {
@@ -1186,7 +1188,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         groupValue.parentColor = parentColor;
         
         if (parentColor === chosenColor && (!groupValue.chosenColor || (!groupValue.colorOn && groupValue.chosenColor))) {
-          this.makeColorIconActive(group, chosenColor);
+          this.makeColorIconActiveOrInactive(group, chosenColor, true);
           this.highlightCanvas(group, chosenColor, smiles);
         }
   
@@ -1211,9 +1213,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         } else {
           const color = groupValue.parentColor!;
           if (color)
-            this.makeColorIconActive(group, color);
+            this.makeColorIconActiveOrInactive(group, color, true);
           else
-            this.makeColorIconInactive(group);
+            this.makeColorIconActiveOrInactive(group, null, false);
           this.highlightCanvas(group, color, smilesFinal);
         }
 
@@ -1250,11 +1252,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       removeElementByMolecule(this.colorCodedScaffolds, smiles);
    
     if ((!groupValue.parentColor && !groupValue.chosenColor) || (!groupValue.parentColor) || (!groupValue.chosenColor)) {
-      this.makeColorIconInactive(group);
+      this.makeColorIconActiveOrInactive(group, null, false);
       delete groupValue.chosenColor;
     }
     else
-      this.makeColorIconActive(group, color!);
+      this.makeColorIconActiveOrInactive(group, color!, true);
 
     this.highlightCanvas(group, color!, substr);
 
@@ -1263,7 +1265,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   setHighlightAndColor(group: TreeViewGroup, smiles: string, chosenColor: string): void {
-    this.makeColorIconActive(group, chosenColor);
+    this.makeColorIconActiveOrInactive(group, chosenColor, true);
     this.highlightCanvas(group, chosenColor, smiles);
 
     if (this.colorCodedScaffolds.length > 0) {
@@ -1372,7 +1374,25 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       chosenColor = groupValue.chosenColor!;
       this.setColorToHighlight(group, chosenColor, groupValue.colorOn);
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-    }, 'Assigns color to the scaffold');
+    });
+
+    colorIcon.onmouseenter = (e) => {
+      let text;
+      const parentColor = value(group).parentColor;
+      const chosenColor = value(group).chosenColor;
+    
+      if (!parentColor && !chosenColor)
+        text = 'Assign color to the scaffold';
+      else if (value(group).colorOn)
+        text = 'Color picked by user'
+      else
+        text = 'Color inherited from parent';
+
+      ui.tooltip.show(text, e.clientX, e.clientY);
+    };    
+
+    colorIcon.onmouseleave = (e) => ui.tooltip.hide();
+
     this.updateColorIcon(colorIcon, chosenColor);
 
     colorIcon.onclick = (e) => {
@@ -1473,7 +1493,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     if (color) {
-      this.makeColorIconActive(group, color);
+      this.makeColorIconActiveOrInactive(group, color, true);
       if (chosenColor)
         value(group).chosenColor = chosenColor; 
       if (parentColor)
