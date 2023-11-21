@@ -1,10 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {checkHTMLElement} from './utils';
 
+import {checkHTMLElement} from './utils';
 import {before, after, awaitCheck, category, test, delay} from '@datagrok-libraries/utils/src/test';
-import {checkDialog} from '../gui/gui-utils';
 
 category('UI: Tables', () => {
   let v: DG.View;
@@ -195,9 +194,12 @@ category('UI: Tables: Link', () => {
     grok.shell.addTableView(df1);
     grok.shell.addTableView(df2);
     grok.shell.topMenu.find('Data').find('Link Tables...').click();
-    await awaitCheck(() => checkDialog('Link Tables'), 'Dialog is not open', 1000);
-    const dialog = returnDialog('Link Tables')!;
-    setDialogInputValue(dialog, 'Link Type', linkType);
+    let dialog: DG.Dialog | undefined;
+    await awaitCheck(() => {
+      dialog = returnDialog('Link Tables');
+      return !!dialog;
+    }, 'Dialog is not open', 1000);
+    setDialogInputValue(dialog!, 'Link Type', linkType);
     await delay(50);
     const link = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok.ui-btn-raised'))
       .find((el) => (el as HTMLElement).innerText === 'LINK') as HTMLElement;

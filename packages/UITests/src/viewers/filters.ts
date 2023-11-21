@@ -20,7 +20,7 @@ id1_0003,id2_003,id3_3`;
 
   test('twoCategorical', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv1);
-    const view: TableView = grok.shell.addTableView(df);
+    const view: DG.TableView = grok.shell.addTableView(df);
 
     const filterList: { [p: string]: string }[] = [
       {column: 'id1', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id1 label'},
@@ -41,7 +41,7 @@ id1_0003,id2_003,id3_3`;
 
   test('customBetweenCategorical', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv1);
-    const view: TableView = grok.shell.addTableView(df);
+    const view: DG.TableView = grok.shell.addTableView(df);
 
     const filterList: { [p: string]: string }[] = [
       {column: 'id1', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id1 label'},

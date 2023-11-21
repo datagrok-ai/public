@@ -137,7 +137,7 @@ When a GitHub Action completes, you can access the `Artifacts` section on its ma
 
 3. `test-report.csv` is a tabular representation of the test results. It contains information about which tests passed, which failed, and also additional details such as test duration or errors.
 
-## Test manager
+## Test Manager
 
 [Test Manager](https://public.datagrok.ai/func/DevTools.testManager) lets you run package tests and review test results.
 Test Manager itself is a part of the [DevTools package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).

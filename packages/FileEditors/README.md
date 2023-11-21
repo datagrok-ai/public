@@ -21,7 +21,7 @@ Currently, we support PDF and DOCX formats, with plans to include more in the fu
    - Right-click on a file and choose "Open" from the context menu.
    - Drag-n-drop is also supported.
 
-![FileEditors in Action](./img/usage.gif)
+<img src="./img/usage.gif" height="500" width='800'/>
 
 ---
 
