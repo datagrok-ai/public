@@ -16,10 +16,6 @@ import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 
 
-const SOURCE_COLUMN_TAG = '.sourceColumn';
-const SERIES_NUMBER_TAG = '.seriesNumber';
-const SERIES_AGGREGATION_TAG = '.seriesAggregation';
-const STATISTICS_TAG = '.statistics';
 const CHART_OPTIONS = 'chartOptions';
 const SERIES_OPTIONS = 'seriesOptions';
 enum MANIPULATION_LEVEL {
@@ -88,57 +84,6 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
     top: DG.Stats.fromValues(topValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
     bottom: DG.Stats.fromValues(bottomValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
   };
-}
-
-function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series: IFitSeries, seriesNumber: number): void {
-  const grid = chartColumn.grid;
-  const column = DG.Column.float(`${chartColumn.name}_${series.name}_${p.name}`, chartColumn.column?.length);
-  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
-  column.tags[SERIES_NUMBER_TAG] = seriesNumber;
-  column.tags[STATISTICS_TAG] = p.name;
-
-  column
-    .init((i) => {
-      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
-      if (gridCell.cell.value === '')
-        return null;
-      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
-        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
-      if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
-        return null;
-      if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
-        chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
-        substituteZeroes(chartData);
-      const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-      const fitResult = calculateSeriesStats(chartData.series![seriesNumber], chartLogOptions);
-      return p.get(fitResult);
-    });
-  grid.dataFrame.columns.insert(column, chartColumn.idx);
-}
-
-function addAggrStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, aggrType: string): void {
-  const grid = chartColumn.grid;
-  const column = DG.Column.float(`${chartColumn.name}_${aggrType}_${p.name}`, chartColumn.column?.length);
-  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
-  column.tags[SERIES_AGGREGATION_TAG] = aggrType;
-  column.tags[STATISTICS_TAG] = p.name;
-
-  column
-    .init((i) => {
-      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
-      if (gridCell.cell.value === '')
-        return null;
-      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
-        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
-      if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
-        return null;
-      if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
-        chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
-        substituteZeroes(chartData);
-      const fitResult = getChartDataAggrStats(chartData, aggrType);
-      return p.get(fitResult);
-    });
-  grid.dataFrame.columns.insert(column, chartColumn.idx);
 }
 
 function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, options: string): void {
@@ -372,9 +317,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
           host.appendChild(ui.panel([
             ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
             ui.input.form(seriesStatistics, statisticsProperties, {
-              onCreated: (input) => input.root.appendChild(
-                ui.iconFA('plus', () => addStatisticsColumn(gridCell.gridColumn, input.property, series, i),
-                  `Calculate ${input.property.name} for the whole column`))
+              onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
+                  const funcParams = {chartColumn: gridCell.gridColumn, p: input.property, seriesName: series.name, seriesNumber: i};
+                  await DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false})
+                }, `Calculate ${input.property.name} for the whole column`))
             })
           ]));
         }
@@ -384,9 +330,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         host.appendChild(ui.panel([
             ui.h1(`series ${aggrTypeInput.stringValue}`),
             ui.input.form(seriesStatistics, statisticsProperties, {
-              onCreated: (input) => input.root.appendChild(
-                ui.iconFA('plus', () => addAggrStatisticsColumn(gridCell.gridColumn, input.property, aggrTypeInput.stringValue),
-                  `Calculate ${input.property.name} for the whole column`))
+              onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
+                  const funcParams = {chartColumn: gridCell.gridColumn, p: input.property, aggrType: aggrTypeInput.stringValue};
+                  await DG.Func.find({name: 'addAggrStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false})
+                }, `Calculate ${input.property.name} ${aggrTypeInput.stringValue} for the whole column`))
             })
           ]));
       }
