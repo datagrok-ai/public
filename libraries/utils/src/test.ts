@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
+import {testData} from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
-import {DataFrame} from 'datagrok-api/dg';
 
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
@@ -16,6 +16,7 @@ export const tests: {
 
 const autoTestsCatName = 'Auto Tests';
 const demoCatName = 'Demo';
+const detectorsCatName = 'Detectors';
 const wasRegistered: {[key: string]: boolean} = {};
 export let currentCategory: string;
 
@@ -123,7 +124,7 @@ export function expectFloat(actual: number, expected: number, tolerance = 0.001,
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
 }
 
-export function expectTable(actual: DataFrame, expected: DataFrame, error?: string): void {
+export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame, error?: string): void {
   const expectedRowCount = expected.rowCount;
   const actualRowCount = actual.rowCount;
   expect(actualRowCount, expectedRowCount, `${error ?? ''}, row count`);
@@ -222,6 +223,7 @@ export async function initAutoTests(packageId: string, module?: any) {
   }
   const moduleAutoTests = [];
   const moduleDemo = [];
+  const moduleDetectors = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
   for (const f of packFunctions) {
@@ -264,12 +266,25 @@ export async function initAutoTests(packageId: string, module?: any) {
       }, {skipReason: f.options['demoSkip']});
       moduleDemo.push(test);
     }
+    if (f.hasTag('semTypeDetector')) {
+      const test = new Test(detectorsCatName, f.friendlyName, async () => {
+        const arr = [];
+        for (const col of testData.clone().columns) {
+          const res = await f.apply([col]);
+          arr.push(res || col.semType);
+        }
+        expect(arr.filter((i) => i).length, 1);
+      }, {skipReason: f.options['skipTest']});
+      moduleDetectors.push(test);
+    }
   }
   wasRegistered[packageId] = true;
   if (moduleAutoTests.length)
     moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
   if (moduleDemo.length)
     moduleTests[demoCatName] = {tests: moduleDemo, clear: true};
+  if (moduleDetectors.length)
+    moduleTests[detectorsCatName] = {tests: moduleDetectors, clear: false};
 }
 
 export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
