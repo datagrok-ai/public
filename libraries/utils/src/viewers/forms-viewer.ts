@@ -6,6 +6,7 @@ import {Observable} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import '../../css/forms.css';
 
+const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
 
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
@@ -64,7 +65,7 @@ export class FormsViewer extends DG.JsViewer {
 
   onTableAttached() {
     if (this.fieldsColumnNames === null)
-      this.fieldsColumnNames = this.dataFrame.columns.names();
+      this.setfieldsColumnNames(this.dataFrame.columns.names());
 
     const sub = (stream: Observable<unknown>, action: Function) => {
       this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));
@@ -87,6 +88,14 @@ export class FormsViewer extends DG.JsViewer {
       () => this.virtualView.refreshItem(this.mouseOverPos!));
 
     this.render();
+  }
+
+  setfieldsColumnNames(dfColumns: string[]) {
+    if (dfColumns.length > 20) {
+      grok.shell.warning(COLS_LIMIT_EXCEEDED_WARNING);
+      this.fieldsColumnNames = dfColumns.slice(0, 20);
+    } else
+      this.fieldsColumnNames = dfColumns;
   }
 
   updatefieldsColumnNames() {
@@ -182,6 +191,8 @@ export class FormsViewer extends DG.JsViewer {
     ui.empty(this.columnHeadersDiv);
     if (this.dataFrame.currentRowIdx === -1)
       this.dataFrame.currentRowIdx = 0;
+    if (this.dataFrame.mouseOverRowIdx === -1)
+      this.dataFrame.mouseOverRowIdx = 0;
 
     this.renderHeader();
 
