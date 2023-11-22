@@ -134,7 +134,7 @@ ${CONTROL_EXPR.ARG}: t
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
-/** Use case 1: Robertson's chemical reaction model - stiff ODEs */
+/** Use case 2: Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `NOTES. The classic example of stiff ODEs: the Robertson problem.
 
 ${CONTROL_EXPR.NAME}: Robertson
@@ -145,20 +145,46 @@ ${CONTROL_EXPR.DIF_EQ}:
   dy/dt = 0.04 * x - 10000 * y * z - 30000000 * y**2
   dz/dt = 30000000 * y**2
 
-  ${CONTROL_EXPR.INITS}:
+${CONTROL_EXPR.INITS}:
   x = 1 {units: mol/L; caption: X; category: Initial concentrations}
   y = 0 {units: mol/L; caption: Y; category: Initial concentrations}
   z = 0 {units: mol/L; caption: Z; category: Initial concentrations}
 
-  ${CONTROL_EXPR.ARG}: t
+${CONTROL_EXPR.ARG}: t
   start = 0 {units: sec; caption: Initial; category: Time} [Initial time of simulation]
   finish = 40 {units: sec; caption: Final; category: Time} [Final time of simulation]
   step = 0.01 {units: sec; caption: Step; category: Time} [Time step of simlulation]
 
-  ${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 0.0000001`;
 
-/** Case 3 */
-const USE_CASE3 = 'NOTES. Super cool model.';
+/** Use case 3: Fermentation process simulation */
+const FERMENTATION_MODEL = ` NOTES. The following problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
+
+${CONTROL_EXPR.NAME}: Fermentation
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Simulation of fermentation process in the ethanol production
+${CONTROL_EXPR.DIF_EQ}:
+  dP/dt = r * X
+  dS/dt = -q * X
+  dX/dt = V * S / (K + S) * X
+
+${CONTROL_EXPR.ARG}: t
+  initial = 0 {units: d; caption: Initial; category: Time} [Initial time of simulation]
+  final = 70 {units: d; caption: Final; category: Time} [Final time of simulation]
+  step = 0.01 {units: d; caption: Step; category: Time} [Time step of simlulation]
+
+${CONTROL_EXPR.INITS}:  
+  P = 4.276 {units: ml/ml; caption: ethanol; category: Initials} [Concentration of ethanol]
+  S = 0.3185 {units: mg/ml; caption: glucose; category: Initials} [Concentration of glucose]
+  X = 0.092 {units: mg/ml; caption: Saccharomyces; category: Initials} [Saccharomyces wet weight]
+
+${CONTROL_EXPR.PARAMS}:
+  r = 1.3455 {units: mg/ml; category: Parameters} [The growth rate of ethanol]
+  q = 0.011129 {units: mg/ml; category: Parameters} [The rate of glucose consumption]
+  V = 0.087 {units: mg/ml; category: Parameters} [The maximal growth rate of Saccharomyces]
+  K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
+  
+${CONTROL_EXPR.TOL}: 0.0000001`;
 
 /** Initial value problem templates */
 export enum TEMPLATES {
@@ -168,5 +194,5 @@ export enum TEMPLATES {
   EXTENDED = TEMPLATE_EXTENDED,
   CHEM_REACT = CHEM_REACT_MODEL,
   ROBERTSON = ROBERTSON_MODEL,
-  CASE3 = USE_CASE3,
+  FERMENTATION = FERMENTATION_MODEL,
 };
