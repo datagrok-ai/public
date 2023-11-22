@@ -22,9 +22,9 @@ const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
 
 const testNames: { [k: string]: string } = {
-  PT: 'peptides fasta',
-  DNA: 'dna fasta',
-  MSA: 'msa separator',
+  PT: 'peptides-fasta',
+  DNA: 'dna-fasta',
+  MSA: 'msa-separator',
 };
 
 const inputPath: { [k: string]: string } = {
