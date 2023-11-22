@@ -12,6 +12,10 @@
 	font-weight: bold;
 	position: absolute;
 	left: 10px;
+	width: 100px;
+	white-space: nowrap;
+	overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .d4-multi-form-form {
@@ -23,9 +27,6 @@
 	visibility: hidden;
 }
 
-.d4-multi-form-value {
-}
-
 .d4-multi-form #vlist {
 	height: initial;
 	overflow-x: visible!important;
@@ -33,4 +34,9 @@
 
 .d4-multi-form .ui-input-editor {
 	padding: initial;
+}
+
+.d4-multi-form-form > input[type="checkbox"] {
+	height: 13px;
+	margin-top: 15px;
 }

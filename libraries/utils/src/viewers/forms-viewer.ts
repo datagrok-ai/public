@@ -2,15 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
-
-
+import {Observable} from 'rxjs';
+import {filter} from 'rxjs/operators';
 import '../../css/forms.css';
 
 
 export class FormsViewer extends DG.JsViewer {
-
   get type(): string { return 'FormsViewer'; }
 
   fieldsColumnNames: string[];
@@ -79,7 +76,7 @@ export class FormsViewer extends DG.JsViewer {
     sub(this.dataFrame.onMetadataChanged, () => this.render());
 
     sub(this.dataFrame.onColumnsRemoved, () => {
-      this.updatefieldsColumnNames();  
+      this.updatefieldsColumnNames();
       this.render();
     });
 
@@ -104,8 +101,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(property: DG.Property): void {
-    if (property.name === 'showCurrentRow' || property.name === 'showMouseOverRow' || property.name === 'showSelectedRows' &&
-      property.get(this) === true && this.showFixedRows)
+    if (property.name === 'showCurrentRow' || property.name === 'showMouseOverRow' ||
+      property.name === 'showSelectedRows' && property.get(this) === true && this.showFixedRows)
       grok.shell.warning(`Cannot set ${property.name} to true since fixed rows are set`);
     this.render();
   }
@@ -145,7 +142,6 @@ export class FormsViewer extends DG.JsViewer {
           return ui.div();
 
         const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
-        input.onChanged(() => this.dataFrame.set(name, row, input.value));
         if (input) {
           input.input.setAttribute('column', name);
           input.value = this.dataFrame.get(name, row);
@@ -160,7 +156,7 @@ export class FormsViewer extends DG.JsViewer {
           return input.input;
         }
         return ui.div();
-      },
+      }
       ), 'd4-multi-form-form');
 
     form.onclick = () => this.dataFrame.currentRowIdx = row;
@@ -171,8 +167,10 @@ export class FormsViewer extends DG.JsViewer {
 
   render() {
     if (!this.showFixedRows) {
-      if (this.showSelectedRows)
-        this.indexes = this.dataFrame.selection.trueCount > 0 ? Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
+      if (this.showSelectedRows) {
+        this.indexes = this.dataFrame.selection.trueCount > 0 ?
+          Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
+      }
     }
 
     ui.empty(this.columnHeadersDiv);
