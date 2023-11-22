@@ -33,14 +33,6 @@ function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observabl
   });
 }
 
-const requiresExternalBind = (prop: DG.Property) => {
-  const propertyType = prop.propertyType;
-
-  return propertyType === DG.TYPE.DATA_FRAME ||
-  (propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice) ||
-  propertyType === FILE_INPUT_TYPE as any;
-};
-
 export interface AfterInputRenderPayload {
   prop: DG.Property;
   input: InputVariants;
@@ -741,10 +733,6 @@ export class RichFunctionView extends FunctionView {
       state = (this.funcCall.inputParams[name].property.propertyType === DG.TYPE.DATA_FRAME) ? 'disabled': 'restricted';
 
     this.funcCall.inputs[name] = value;
-    input.notify = false;
-    input.value = value;
-    input.notify = true;
-
     this.setInputLockState(input, name, value, state);
   }
 
@@ -1060,7 +1048,7 @@ export class RichFunctionView extends FunctionView {
     ).subscribe((newParam) => {
       const newValue = this.funcCall[field][newParam.name];
       // don't update UI if an update is triggered by UI
-      if (!stopUIUpdates && requiresExternalBind(val.property)) {
+      if (!stopUIUpdates) {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
@@ -1098,14 +1086,11 @@ export class RichFunctionView extends FunctionView {
     const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
-
-      if (requiresExternalBind(val.property)) {
-        try {
-          stopUIUpdates = true;
-          this.funcCall[field][val.name] = t.value;
-        } finally {
-          stopUIUpdates = false;
-        }
+      try {
+        stopUIUpdates = true;
+        this.funcCall[field][val.name] = t.value;
+      } finally {
+        stopUIUpdates = false;
       }
     });
     this.subs.push(sub4);
