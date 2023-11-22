@@ -159,6 +159,12 @@ export class RadarViewer extends DG.JsViewer {
           data.push({
             name: `row ${i}`,
             value: this.columns.map((c) => Number(c.get(i))),
+            label: {
+              show: this.showValues,
+              formatter: function(params: any) {
+                return StringUtils.formatNumber(params.value) as string;
+              },
+            },
           });
         }
       } else {
