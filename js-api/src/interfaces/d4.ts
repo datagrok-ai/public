@@ -1242,6 +1242,45 @@ export interface ISummaryLookSettings {
 
 }
 
+export interface ISparklinesLookSettings {
+  /// List of columns to show aggregations on
+  columnNames: Array<string>;
+
+  /// List of aggregations for the columns
+  aggregations: Array<string>;
+
+  sparklineType: string;
+
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  colorColumnName: string;
+
+  /// Color aggregation type.
+  colorAggrType: string;
+
+  //StreamController _changes;
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  // Viewer description that gets shown at the *Descriptor Position*.
+  // Markup is supported.
+  description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+}
+
 export interface IGridLookSettings {
   /// Determines the rows shown in grid
   /// Indicates whether the grid is editable.
