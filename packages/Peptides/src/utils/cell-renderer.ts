@@ -3,13 +3,14 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as type from './types';
-import {CLUSTER_TYPE, PeptidesModel} from '../model';
+import {PeptidesModel} from '../model';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateMonomerPositionStatistics} from './algorithms';
 import * as rxjs from 'rxjs';
 import {showTooltipAt, TooltipOptions} from './tooltips';
 import {MonomerPositionStats, PositionStats} from './statistics';
+import {CLUSTER_TYPE} from '../viewers/logo-summary';
 
 export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = DG.Color.toHtml(DG.Color.selectedRows);

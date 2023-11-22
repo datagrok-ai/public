@@ -1,8 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
-import {_package} from '../package-test';
 import {findMutations} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {extractColInfo} from '../utils/misc';
@@ -11,7 +10,7 @@ import {extractColInfo} from '../utils/misc';
 category('Algorithms', () => {
   let activityCol: type.RawData;
   let monomerColumns: type.RawColumn[];
-  let settings: type.PeptidesSettings;
+  let settings: type.PartialPeptidesSettings;
   let targetCol: type.RawColumn;
 
   before(async () => {

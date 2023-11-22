@@ -17,7 +17,7 @@ export enum SETTINGS_PANES {
   VIEWERS = 'Viewers',
   MUTATION_CLIFFS = 'Mutation Cliffs',
   COLUMNS = 'Columns',
-};
+}
 
 export enum GENERAL_INPUTS {
   ACTIVITY = 'Activity',
@@ -55,7 +55,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const currentMinActivityDelta = settings.minActivityDelta ?? 0;
   const currentColumns = settings.columns ?? {};
 
-  const result: type.PeptidesSettings = {};
+  const result: type.PartialPeptidesSettings = {};
   const inputs: PaneInputs = {};
 
   // General pane options

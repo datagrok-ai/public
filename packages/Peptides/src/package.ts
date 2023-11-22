@@ -16,7 +16,7 @@ import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
 let monomerWorks: MonomerWorks | null = null;
-let treeHelper: ITreeHelper | null = null;
+let treeHelper: ITreeHelper;
 
 export const _package = new DG.Package();
 
@@ -24,7 +24,7 @@ export function getMonomerWorksInstance(): MonomerWorks | null {
   return monomerWorks;
 }
 
-export function getTreeHelperInstance(): ITreeHelper | null {
+export function getTreeHelperInstance(): ITreeHelper {
   return treeHelper;
 }
 

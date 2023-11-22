@@ -1,4 +1,3 @@
-
 import * as type from './types';
 
 export type ParallelMutationReturnType = {
@@ -20,7 +19,7 @@ export class ParallelMutationCliffs {
   }
 
   public async calc(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-    settings: type.PeptidesSettings = {},
+                    settings: type.PartialPeptidesSettings = {},
     targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {},
   ): Promise<type.MutationCliffs> {
     const substitutionsInfo: type.MutationCliffs = new Map();

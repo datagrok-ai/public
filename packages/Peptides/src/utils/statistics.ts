@@ -3,7 +3,7 @@ import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {RawData} from './types';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {ClusterType} from '../model';
+import {ClusterType} from '../viewers/logo-summary';
 
 export type Stats = {
   count: number,

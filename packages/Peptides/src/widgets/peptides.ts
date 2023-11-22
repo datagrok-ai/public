@@ -11,6 +11,8 @@ import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {LST_PROPERTIES} from "../viewers/logo-summary";
+
 
 /** Peptide analysis widget.
  * @param {DG.DataFrame} df Working table
@@ -192,7 +194,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       const clusterCol = newDf.getCol(clustersColumn.name);
       if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
         newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-      settings.clustersColumnName = clustersColumn.name;
+      // settings.clustersColumnName = clustersColumn.name;
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
@@ -214,8 +216,13 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     // Cloning dataframe with applied filter. If filter is not applied, cloning is
     // needed anyway to allow filtering on the original dataframe
     model = PeptidesModel.getInstance(newDf.clone(bitset));
-    if (clustersColumn)
-      await model.addLogoSummaryTable();
+    if (clustersColumn) {
+      const lstProps = {
+        [LST_PROPERTIES.CLUSTERS_COLUMN_NAME]: clustersColumn.name,
+        [LST_PROPERTIES.SEQUENCE_COLUMN_NAME]: peptidesCol.name,
+      };
+      await model.addLogoSummaryTable(lstProps);
+    }
     await model.addMonomerPosition();
     await model.addMostPotentResidues();
 

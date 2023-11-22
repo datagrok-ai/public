@@ -2,14 +2,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
-import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {SELECTION_MODE, MonomerPosition, MostPotentResidues} from '../viewers/sar-viewer';
+import {MonomerPosition, MostPotentResidues, SELECTION_MODE} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
-import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
+import {CLUSTER_TYPE, LogoSummaryTable, LST_PROPERTIES} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {TEST_COLUMN_NAMES} from './utils';
 import {showTooltip} from '../utils/tooltips';

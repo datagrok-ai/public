@@ -2,14 +2,22 @@ import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
 import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
-import {CLUSTER_TYPE} from '../model';
+import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {ClusterStats, ClusterTypeStats, MonomerPositionStats, PositionStats, Stats, SummaryStats, getStats} from './statistics';
+import {
+  ClusterStats,
+  ClusterTypeStats,
+  getStats,
+  MonomerPositionStats,
+  PositionStats,
+  Stats,
+  SummaryStats
+} from './statistics';
 
 export type TargetOptions = {targetCol?: type.RawColumn | null, currentTarget?: string | null};
 
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-  settings: type.PeptidesSettings = {}, targetOptions: TargetOptions = {}): Promise<type.MutationCliffs> {
+                                    settings: type.PartialPeptidesSettings = {}, targetOptions: TargetOptions = {}): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
   if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);

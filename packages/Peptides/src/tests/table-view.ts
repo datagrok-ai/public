@@ -1,14 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay, after} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {CLUSTER_TYPE, PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {startAnalysis} from '../widgets/peptides';
 import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {TEST_COLUMN_NAMES} from './utils';
 import {showMonomerTooltip} from '../utils/tooltips';
+import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -96,30 +97,32 @@ category('Table view', () => {
     }
     expect(selection.trueCount, 0, `Selection count is not equal to 0 after clearing monomer-position selection`);
 
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    expect(lstViewer !== null, true, `Couldn't find Logo Summary Table viewer`);
     // Select first cluster
-    model.modifyClusterSelection(firstCluster);
-    expect(model.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), true,
+    lstViewer!.modifyClusterSelection(firstCluster);
+    expect(lstViewer!.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), true,
       `Cluster ${firstCluster.monomerOrCluster} is not selected`);
     expect(selection.trueCount, firstCluster.count, `Selection count is not equal to ${firstCluster.count} for ` +
       `cluster ${firstCluster.monomerOrCluster}`);
 
     // Select second cluster
-    model.modifyClusterSelection(secondCluster, {shiftPressed: true, ctrlPressed: false});
-    expect(model.clusterSelection[secondCluster.positionOrClusterType].includes(secondCluster.monomerOrCluster), true,
+    lstViewer!.modifyClusterSelection(secondCluster, {shiftPressed: true, ctrlPressed: false});
+    expect(lstViewer!.clusterSelection[secondCluster.positionOrClusterType].includes(secondCluster.monomerOrCluster), true,
       `Cluster ${secondCluster.monomerOrCluster} is not selected`);
     expect(selection.trueCount, firstCluster.count + secondCluster.count, `Selection count is not equal to ` +
       `${firstCluster.count + secondCluster.count} for cluster ${firstCluster.monomerOrCluster} and cluster ${secondCluster.monomerOrCluster}`);
 
     // Deselect first cluster
-    model.modifyClusterSelection(firstCluster, {shiftPressed: true, ctrlPressed: true});
-    expect(model.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), false,
+    lstViewer!.modifyClusterSelection(firstCluster, {shiftPressed: true, ctrlPressed: true});
+    expect(lstViewer!.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), false,
       `Cluster ${firstCluster.monomerOrCluster} is still selected after deselection`);
     expect(selection.trueCount, secondCluster.count, `Selection count is not equal to ${secondCluster.count} for ` +
       `cluster ${secondCluster.monomerOrCluster} after deselection of cluster ${firstCluster.monomerOrCluster}`);
 
     // Clear selection
-    model.initClusterSelection();
-    expect(model.isClusterSelectionEmpty, true, `Selection is not empty after clearing cluster selection`);
+    lstViewer!.initClusterSelection();
+    expect(lstViewer!.isClusterSelectionEmpty, true, `Selection is not empty after clearing cluster selection`);
     expect(selection.trueCount, 0, `Selection count is not equal to 0 after clearing cluster selection`);
   });
 

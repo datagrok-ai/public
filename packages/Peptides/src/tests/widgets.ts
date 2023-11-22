@@ -1,19 +1,19 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay, after} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from '../utils/constants';
-import {PANES_INPUTS, SETTINGS_PANES, getSettingsDialog} from '../widgets/settings';
+import {getSettingsDialog, PANES_INPUTS, SETTINGS_PANES} from '../widgets/settings';
 import {getDistributionWidget} from '../widgets/distribution';
 import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
-import {LogoSummaryTable} from '../viewers/logo-summary';
+import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -189,11 +189,11 @@ category('Widgets: Actions', () => {
       throw new Error('Logo summary table viewer is not found');
 
     // Check that custom clusters are not created yet
-    expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters before creating one');
+    expect(wu(lstViewer.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters before creating one');
 
     // Create custom cluster
     lstViewer.clusterFromSelection();
-    const customClusterList = wu(model.customClusters).toArray();
+    const customClusterList = wu(lstViewer.customClusters).toArray();
     expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
     const clustName = customClusterList[0].name;
     expect(model.df.col(clustName) !== null, true, 'Expected to have custom cluster column in the table');
@@ -201,9 +201,9 @@ category('Widgets: Actions', () => {
       'Expected to have custom cluster in the Logo Summary Table');
 
     // Remove custom cluster
-    model.modifyClusterSelection({monomerOrCluster: clustName, positionOrClusterType: CLUSTER_TYPE.CUSTOM});
+    lstViewer.modifyClusterSelection({monomerOrCluster: clustName, positionOrClusterType: CLUSTER_TYPE.CUSTOM});
     lstViewer.removeCluster();
-    expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
+    expect(wu(lstViewer.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
     expect(model.df.col(clustName) === null, true,
       'Expected to have no custom cluster column in the table');
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,

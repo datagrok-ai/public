@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {SCALING_METHODS} from './constants';
-import {ClusterType} from '../model';
+import {ClusterType} from '../viewers/logo-summary';
 
 export type DataFrameDict = {[key: string]: DG.DataFrame};
 
@@ -13,11 +13,10 @@ export type SelectionItem = {positionOrClusterType: string | ClusterType, monome
 export type SelectionStats = {[positionOrClusterType: string | ClusterType]: { [monomerOrCluster: string]: number}};
 
 export type PeptidesSettings = {
-  sequenceColumnName?: string,
-  activityColumnName?: string,
-  clustersColumnName?: string,
+  sequenceColumnName: string,
+  activityColumnName: string,
   targetColumnName?: string,
-  scaling?: SCALING_METHODS,
+  scaling: SCALING_METHODS,
   showMonomerPosition?: boolean,
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
@@ -26,6 +25,8 @@ export type PeptidesSettings = {
   minActivityDelta?: number,
   columns?: {[col: string]: DG.AggregationType},
 };
+
+export type PartialPeptidesSettings = Partial<PeptidesSettings>;
 
 export type DrawOptions = {
   symbolStyle?: string,
