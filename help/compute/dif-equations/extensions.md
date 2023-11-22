@@ -40,7 +40,7 @@ The created script can be found in the platform `Scripts`.
 
 Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
 
-```
+```python
 #name: Bioreaction
 #tags: model
 #description: Complex bioreaction simulation
@@ -56,7 +56,7 @@ Apply annotations in your project to get better UI. Append them, when defining *
 
 Group inputs by specifying their `category`:
 
-```
+```python
 #parameters:
   P1 = 1 {category: Parameters}
   P2 = -1 {category: Parameters}
@@ -64,7 +64,7 @@ Group inputs by specifying their `category`:
 
 Add `units`:
 
-```
+```python
 #inits:
   x = 2 {units: C; category: Initial values}
   y = 0 {units: C; category: Initial values}
@@ -72,7 +72,7 @@ Add `units`:
 
 Define the desired `caption`:
 
-```
+```python
 #argument: t
   start = 0 {caption: Initial; units: min; category: Time}
   finish = 2 {caption: Final; units: min; category: Time}
@@ -81,7 +81,7 @@ Define the desired `caption`:
 
 Provide hints in brackets `[ ]`:
 
-```
+```python
   P1 = 1 {category: Parameters} [P1 parameter tooltip]
 ```
 

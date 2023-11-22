@@ -21,13 +21,13 @@ A project defines [initial value problem](https://en.wikipedia.org/wiki/Initial_
 
 Start with the line defining a name:
 
-```
+```python
 #name: Problem1
 ```
 
 Place differential equations in the `#equations`-block:
 
-```
+```python
 #equations:
   dx/dt = x + y + exp(t)
   dy/dt = x - y - cos(t)
@@ -35,7 +35,7 @@ Place differential equations in the `#equations`-block:
 
 Set variable, its *initial*, *final* and *step* in the `#argument`-block:
 
-```
+```python
 #argument: t
   initial = 0
   final = 1
@@ -46,7 +46,7 @@ Datagrok provides a numerical solution within the range *[initial, final]* with 
 
 Define initial values in the `#inits`-block:
 
-```
+```python
 #inits:
   x = 2
   y = 5
@@ -58,7 +58,7 @@ The solver supports the use of *constants*, *parameters*, *expressions* and *tol
 
 Specify constants in the `#constants`-block
 
-```
+```python
 #constants:
   C1 = 1
   C2 = 3
@@ -66,7 +66,7 @@ Specify constants in the `#constants`-block
 
 Set parameters in the `#parameters`-block:
 
-```
+```python
 #parameters:
   P1 = 1
   P2 = -1
@@ -74,7 +74,7 @@ Set parameters in the `#parameters`-block:
 
 Define auxiliary compuations in the `expressions`-block:
 
-```
+```python
 #expressions:
   E1 = C1 * t + P1
   E2 = C2 * cos(2 * t) + P2
@@ -84,7 +84,7 @@ Use expressions to simplify equations. They may depend on constants, parameters 
 
 Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method in the `tolerance`-line:
 
-```
+```python
 #tolerance: 0.00005
 ```
 
