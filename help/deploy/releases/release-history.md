@@ -18,7 +18,7 @@ position: 6 # float position is supported
 | [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
 See also:
-- [Versioning policy](versioning-policy.md)
+- [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
 ## 2023-11-13 1.17.3
@@ -170,7 +170,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * Ability to set choice items and values separately.
 * Option to allow `DG.Accordion` panes dragging.
 
-#### [JS API](../../../develop/js-api.md)
+#### [JS API](../../../develop/packages/js-api.md)
 
 * [#2118](https://github.com/datagrok-ai/public/issues/2118): API configuration to define layout import settings 
  * Capability to set grid cell value with `onCellValueEdited` event.
