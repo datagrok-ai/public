@@ -91,11 +91,13 @@ export class FormsViewer extends DG.JsViewer {
 
   updatefieldsColumnNames() {
     const newColumns = this.dataFrame.columns.names();
-    for (let i = 0; i < this.fieldsColumnNames.length; i++) {
+    let counter = this.fieldsColumnNames.length;
+    for (let i = 0; i < counter; i++) {
       const colIdx = newColumns.indexOf(this.fieldsColumnNames[i]);
       if (colIdx === -1) {
         this.fieldsColumnNames.splice(i, 1);
-        return;
+        counter--;
+        i--;
       }
     }
   }
@@ -174,6 +176,8 @@ export class FormsViewer extends DG.JsViewer {
     }
 
     ui.empty(this.columnHeadersDiv);
+    if (this.dataFrame.currentRowIdx === -1)
+      this.dataFrame.currentRowIdx = 0;
 
     this.renderHeader();
 
