@@ -76,6 +76,13 @@ export class FormsViewer extends DG.JsViewer {
     sub(this.dataFrame.selection.onChanged, () => this.render());
     sub(this.dataFrame.filter.onChanged, () => this.render());
 
+    sub(this.dataFrame.onMetadataChanged, () => this.render());
+
+    sub(this.dataFrame.onColumnsRemoved, () => {
+      this.updatefieldsColumnNames();  
+      this.render();
+    });
+
     sub(this.dataFrame.onCurrentRowChanged.pipe(filter((_) => this.showCurrentRow)),
       () => this.virtualView.refreshItem(this.currentRowPos!));
 
@@ -83,6 +90,17 @@ export class FormsViewer extends DG.JsViewer {
       () => this.virtualView.refreshItem(this.mouseOverPos!));
 
     this.render();
+  }
+
+  updatefieldsColumnNames() {
+    const newColumns = this.dataFrame.columns.names();
+    for (let i = 0; i < this.fieldsColumnNames.length; i++) {
+      const colIdx = newColumns.indexOf(this.fieldsColumnNames[i]);
+      if (colIdx === -1) {
+        this.fieldsColumnNames.splice(i, 1);
+        return;
+      }
+    }
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -127,6 +145,7 @@ export class FormsViewer extends DG.JsViewer {
           return ui.div();
 
         const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
+        input.onChanged(() => this.dataFrame.set(name, row, input.value));
         if (input) {
           input.input.setAttribute('column', name);
           input.value = this.dataFrame.get(name, row);
