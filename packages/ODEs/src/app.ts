@@ -20,7 +20,7 @@ enum EDITOR_STATE {
   FROM_FILE = 3,
   EXTENDED_TEMPLATE = 4,
   CHEM_REACT = 5,
-  CASE2 = 6,
+  ROBERT = 6,
   CASE3 = 7,
 };
 
@@ -62,8 +62,8 @@ function getProblem(state: EDITOR_STATE): string {
     case EDITOR_STATE.CHEM_REACT:
       return TEMPLATES.CHEM_REACT;
 
-    case EDITOR_STATE.CASE2:
-      return TEMPLATES.CASE2;    
+    case EDITOR_STATE.ROBERT:
+      return TEMPLATES.ROBERTSON;    
 
     case EDITOR_STATE.CASE3:
       return TEMPLATES.CASE3;
@@ -232,7 +232,7 @@ export async function runSolverApp() {
       .endGroup()
       .group('Use cases')
       .item('Chem reactions...', () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-      .item('Model 2...', () => setState(EDITOR_STATE.CASE2), undefined, {description: 'Super model'})
+      .item('Robertson model...', () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
       .item('Model 3...', () => setState(EDITOR_STATE.CASE3), undefined, {description: 'Super cool model'})
       .endGroup()
       .show();    

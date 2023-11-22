@@ -128,14 +128,34 @@ ${CONTROL_EXPR.INITS}:
   x4 = 0 {units: mol/L; category: Initial concentrations}
 
 ${CONTROL_EXPR.ARG}: t
-  initial = 0 {units: ms; caption: Initial; category: Time} [Initial time of simulation]
-  final = 5 {units: ms; caption: Final; category: Time} [Final time of simulation]
-  step = 0.01 {units: ms; caption: Initial; category: Time} [Time step of simlulation]
+  initial = 0 {units: min; caption: Initial; category: Time} [Initial time of simulation]
+  final = 5 {units: min; caption: Final; category: Time} [Final time of simulation]
+  step = 0.01 {units: min; caption: Step; category: Time} [Time step of simlulation]
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
-/** Case 2 */
-const USE_CASE2 = 'NOTES. Super model.';
+/** Use case 1: Robertson's chemical reaction model - stiff ODEs */
+const ROBERTSON_MODEL = `NOTES. The classic example of stiff ODEs: the Robertson problem.
+
+${CONTROL_EXPR.NAME}: Robertson
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
+${CONTROL_EXPR.DIF_EQ}:
+  dx/dt = -0.04 * x + 10000 * y * z
+  dy/dt = 0.04 * x - 10000 * y * z - 30000000 * y**2
+  dz/dt = 30000000 * y**2
+
+  ${CONTROL_EXPR.INITS}:
+  x = 1 {units: mol/L; caption: X; category: Initial concentrations}
+  y = 0 {units: mol/L; caption: Y; category: Initial concentrations}
+  z = 0 {units: mol/L; caption: Z; category: Initial concentrations}
+
+  ${CONTROL_EXPR.ARG}: t
+  start = 0 {units: sec; caption: Initial; category: Time} [Initial time of simulation]
+  finish = 40 {units: sec; caption: Final; category: Time} [Final time of simulation]
+  step = 0.01 {units: sec; caption: Step; category: Time} [Time step of simlulation]
+
+  ${CONTROL_EXPR.TOL}: 0.0000001`;
 
 /** Case 3 */
 const USE_CASE3 = 'NOTES. Super cool model.';
@@ -147,6 +167,6 @@ export enum TEMPLATES {
   ADVANCED = TEMPLATE_ADVANCED,
   EXTENDED = TEMPLATE_EXTENDED,
   CHEM_REACT = CHEM_REACT_MODEL,
-  CASE2 = USE_CASE2,
+  ROBERTSON = ROBERTSON_MODEL,
   CASE3 = USE_CASE3,
 };
