@@ -31,7 +31,7 @@ export interface IColoredScaffold {
 
 export interface IHighlightTagInfo {
   scaffolds?: IColoredScaffold[],
-  alighByFirstSubtruct: boolean,
+  alignByFirstSubstruct: boolean,
 }
 
 export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
@@ -405,7 +405,7 @@ M  END
 
     if (highlightInfo.scaffolds) {
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, highlightInfo.scaffolds, true, false, false, cellStyle, highlightInfo.alighByFirstSubtruct);
+        molString, highlightInfo.scaffolds, true, false, false, cellStyle, highlightInfo.alignByFirstSubstruct);
     } else
       this.highlightByScaffoldCol(g, x, y, w, h, gridCell, cellStyle, colTemp, molString);
   }
@@ -415,9 +415,9 @@ M  END
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
-    const alignByStructure = !!(filter.length || align.length);
+    const alignByStructure = !!align.length;
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
-    return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
+    return {scaffolds: scaffolds?.length ? scaffolds : undefined, alignByFirstSubstruct: alignByStructure};
   }
 
   highlightByScaffoldCol(g: any, x: number, y: number, w: number, h: number,
