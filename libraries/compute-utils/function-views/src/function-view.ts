@@ -63,12 +63,16 @@ export abstract class FunctionView extends DG.ViewBase {
    * Runs after an initial FuncCall loading done.
    */
   protected async onFuncCallReady() {
-    await historyUtils.augmentCallWithFunc(this.funcCall);
+    await historyUtils.augmentCallWithFunc(this.funcCall, false);
     if (!this.options.isTabbed) {
       if (!this.name || this.name === 'New view')
         this.changeViewName(this.funcCall.func.friendlyName);
-      if (this.func.package)
-        await this.getPackageData();
+      try {
+        if (this.func.package)
+          await this.getPackageData();
+      } catch (e) {
+        console.log(e);
+      }
     }
 
     this.build();
@@ -672,9 +676,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public async importRunJsonDialog() {
     const fileInput = new FileInput('JSON file', null, null, 'application/json');
-    const showParams = { modal: true, fullScreen: true, width: 500, height: 200, center: true };
+    const showParams = {modal: true, fullScreen: true, width: 500, height: 200, center: true};
     const confirmed = await new Promise((resolve, _reject) => {
-      ui.dialog({ title: 'Import Run JSON'})
+      ui.dialog({title: 'Import Run JSON'})
         .add(ui.div([
           ui.inputs([
             fileInput,
@@ -682,11 +686,11 @@ export abstract class FunctionView extends DG.ViewBase {
         ]))
         .onOK(() => resolve(true))
         .onCancel(() => resolve(false))
-        .show(showParams)
+        .show(showParams);
     });
-    if (!confirmed || !fileInput.value) {
+    if (!confirmed || !fileInput.value)
       return;
-    }
+
     const spec = deserialize(await fileInput.value.text());
     await this.executeTest(spec);
   }
