@@ -165,8 +165,12 @@ export class FormsViewer extends DG.JsViewer {
           if (this.colorCode) {
             const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
             const color = grid.cell(name, row).color;
-            input.input.style.color = DG.Color.toHtml(DG.Color.getContrastColor(color));
-            input.input.style.backgroundColor = DG.Color.toHtml(color);
+            if (grid.col(name)?.isTextColorCoded)
+              input.input.style.color = DG.Color.toHtml(color);
+            else {
+              input.input.style.color = DG.Color.toHtml(DG.Color.getContrastColor(color));
+              input.input.style.backgroundColor = DG.Color.toHtml(color);
+            }
           }
 
           return input.input;
