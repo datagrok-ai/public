@@ -307,7 +307,7 @@ export class HttpDataSource<T> {
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  @returns {HttpDataSource} */
   nextPage(): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_NextPage(this.dart, 20);
+    this.dart = api.grok_DataSource_NextPage(this.dart);
     return this;
   }
 

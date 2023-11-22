@@ -115,7 +115,7 @@ export interface IDartApi {
   grok_DataSource_By(s: any, i: Num): any;
   grok_DataSource_AllPackageVersions(s: any): any;
   grok_DataSource_Page(s: any, i: Num): any;
-  grok_DataSource_NextPage(s: any, i: Num): any;
+  grok_DataSource_NextPage(s: any): any;
   grok_DataSource_WhereSmart(s: any, w: String): any;
   grok_DataSource_Order(s: any, name: String, desc: Bool): any;
   grok_GetType(x: any): any;
