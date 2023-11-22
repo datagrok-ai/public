@@ -34,6 +34,7 @@
 
 .d4-multi-form .ui-input-editor {
 	padding: initial;
+	pointer-events: none;
 }
 
 .d4-multi-form-form > input[type="checkbox"] {

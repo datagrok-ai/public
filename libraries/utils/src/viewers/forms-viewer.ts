@@ -103,8 +103,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(property: DG.Property): void {
-    if (property.name === 'showCurrentRow' || property.name === 'showMouseOverRow' ||
-      property.name === 'showSelectedRows' && property.get(this) === true && this.showFixedRows)
+    if ((property.name === 'showCurrentRow' || property.name === 'showMouseOverRow' ||
+      property.name === 'showSelectedRows' && property.get(this) === true) && this.showFixedRows)
       grok.shell.warning(`Cannot set ${property.name} to true since fixed rows are set`);
     this.render();
   }
@@ -131,6 +131,7 @@ export class FormsViewer extends DG.JsViewer {
   get mouseOverPos() { return this.showMouseOverRow ? (this.showCurrentRow ? 1 : 0) : null; }
 
   renderForm(row: number) {
+    const savedIdx = row;
     if (this.showCurrentRow && row === this.currentRowPos)
       row = this.dataFrame.currentRowIdx;
     else if (this.showMouseOverRow && row === this.mouseOverPos)
@@ -161,9 +162,12 @@ export class FormsViewer extends DG.JsViewer {
       }
       ), 'd4-multi-form-form');
 
-    form.onclick = () => this.dataFrame.currentRowIdx = row;
-    form.onmouseenter = () => this.dataFrame.mouseOverRowIdx = row;
-    form.onmouseleave = () => this.dataFrame.mouseOverRowIdx = -1;
+    if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
+      form.onclick = () => this.dataFrame.currentRowIdx = row;
+    if (!this.showMouseOverRow || savedIdx !== this.mouseOverPos) {
+      form.onmouseenter = () => this.dataFrame.mouseOverRowIdx = row;
+      form.onmouseleave = () => this.dataFrame.mouseOverRowIdx = -1;
+    }
     return form;
   }
 
