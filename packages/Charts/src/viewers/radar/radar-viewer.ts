@@ -65,7 +65,10 @@ export class RadarViewer extends DG.JsViewer {
     this.columns = this.getColumns();
     for (const c of this.columns) {
       const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-      option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
+      if (c.type === 'datetime')
+        option.radar.indicator.push({name: c.name, max: this.getYearFromDate(c.max), min: this.getYearFromDate(c.min)});
+      else
+        option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
     }
     this.updateMin();
     this.updateMax();
@@ -99,7 +102,6 @@ export class RadarViewer extends DG.JsViewer {
     this.init();
     this.initChartEventListeners();
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
-      .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
       .map((c: DG.Column) => c.name);
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
@@ -198,6 +200,10 @@ export class RadarViewer extends DG.JsViewer {
     this.render();
   }
 
+  getYearFromDate(value: number) {
+    return new Date(Math.floor(value) / 1000).getFullYear()
+  }
+
   checkConditions() {
     if (this.showMin === true)
       this.updateMin();
@@ -264,6 +270,8 @@ export class RadarViewer extends DG.JsViewer {
   updateRow() {
     option.series[2].data[0] = {
       value: this.columns.map((c) => {
+        if (c.type === 'datetime')
+          return this.getYearFromDate(c.getRawData()[this.dataFrame.currentRowIdx]);
         const value = Number(c.get(this.dataFrame.currentRowIdx));
         return value != -2147483648 ? value : 0;
       }),
@@ -303,10 +311,6 @@ export class RadarViewer extends DG.JsViewer {
     }
     else
       columns = numericalColumns.slice(0, 20);
-    for (let i = 0; i < columns.length; ++i) {
-      if (columns[i].type === DG.TYPE.DATE_TIME)
-        columns.splice(i, 1);
-    }
     return columns;
   }
 
@@ -331,11 +335,13 @@ export class RadarViewer extends DG.JsViewer {
   getQuantile(columns: DG.Column<any>[], percent: number) {
     const result = [];
     for (const c of columns) {
-      const sortedValues = Array.from(c.values()).filter((value) => {
-        if (typeof value === 'bigint')
-          return value !== BigInt('-2147483648');
-        return value !== -2147483648;
-      }).sort((a, b) => Number(a) - Number(b));
+      const datetime = c.getRawData().map((value: number) => this.getYearFromDate(value));
+      const values = c.type === 'datetime' ? datetime : Array.from(c.values());
+      const isValidValue = (value: number) => typeof value === 'bigint' 
+        ? value !== BigInt('-2147483648')
+        : value !== -2147483648;
+      const sortedValues = values.filter(isValidValue).sort((a, b) => Number(a) - Number(b));
+
       const idx = Math.floor(percent * (sortedValues.length - 1));
       const value = sortedValues[idx];
       result.push(Number(value));
