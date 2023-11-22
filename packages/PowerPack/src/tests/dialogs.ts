@@ -3,30 +3,25 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, expect, expectArray, expectFloat,
   expectObject, isDialogPresent, test} from '@datagrok-libraries/utils/src/test';
-import {AddNewColumnDialog} from './add-new-column';
-import {FormulaLinesDialog} from './formula-lines';
-import {FUNC_TESTS, EXCLUDED} from './func-tests';
+import {AddNewColumnDialog} from '../dialogs/add-new-column';
+import {FormulaLinesDialog} from '../dialogs/formula-lines';
+import {FUNC_TESTS} from './utils';
 
 
 category('Dialogs', () => {
-  let tv: DG.TableView;
   let df: DG.DataFrame;
-  const dialogs: DG.Dialog[] = [];
 
   before(async () => {
     df = grok.data.demo.demog(2);
-    tv = grok.shell.addTableView(df);
+    grok.shell.addTableView(df);
   });
 
   test('AddNewColumn', async () => {
     const dlg = new AddNewColumnDialog();
-    dialogs.push(dlg.uiDialog!);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
-    const funcs = DG.Func.find();
+    const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({name: name})[0]);
 
     for (const f of funcs) {
-      if (!(f.name in FUNC_TESTS) || EXCLUDED.includes(f.name))
-        continue;
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
         dlg.inputName!.value = columnName;
@@ -36,7 +31,7 @@ category('Dialogs', () => {
           await awaitCheck(() => df.columns.contains(columnName));
           const column = df.col(columnName)!;
           expectTyped(column.get(0), result == null && column.type === DG.TYPE.STRING ? '' : result);
-        } catch(e) {
+        } catch (e) {
           throw new Error(`Expression: ${expression}: ${(e as Error).message}`);
         }
       }
@@ -45,16 +40,14 @@ category('Dialogs', () => {
 
   test('FormulaLines', async () => {
     const dlg = new FormulaLinesDialog(df);
-    dialogs.push(dlg.dialog);
     await awaitCheck(() => isDialogPresent(dlg.dialog.title));
   });
 
   after(async () => {
-    dialogs.forEach((d) => d.close());
-    tv.close();
-    grok.shell.closeTable(df);
+    grok.shell.closeAll();
+    DG.Balloon.closeAll();
   });
-});
+}, {clear: false});
 
 function expectTyped(actual: any, expected: any) {
   if (expected == null)

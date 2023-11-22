@@ -17,7 +17,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
-import {initSearch} from "./search/power-search";
+import {initSearch} from './search/power-search';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -185,7 +185,8 @@ export function viewerGallery(): void {
       const panel = view.getRibbonPanels();
       panel[0][1].remove();
 
-      const icon = ui.iconFA('', () => {viewersDialog(view as DG.TableView, (view as DG.TableView).table!);}, 'Add viewer');
+      const icon = ui.iconFA('',
+        () => {viewersDialog(view as DG.TableView, (view as DG.TableView).table!);}, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
       const btn = ui.div([icon]);

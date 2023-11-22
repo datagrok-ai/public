@@ -7,6 +7,7 @@ import './dataframe/events';
 import './dataframe/datetime-columns-join';
 import './dataframe/dataframe-join';
 import './dataframe/dataframe-link';
+// import './dataframe/add-new-column';
 import './functions/functions';
 import './functions/conversion-functions';
 import './functions/date-functions';
