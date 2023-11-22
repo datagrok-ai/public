@@ -120,7 +120,7 @@ export class FormsViewer extends DG.JsViewer {
 
   renderHeader() {
     ui.empty(this.columnHeadersDiv);
-    const form = this.renderForm(0);
+    const form = this.renderForm(0, true);
     form.classList.add('temp');
     document.body.appendChild(form);
 
@@ -139,14 +139,18 @@ export class FormsViewer extends DG.JsViewer {
   get currentRowPos() { return this.showCurrentRow ? 0 : null; }
   get mouseOverPos() { return this.showMouseOverRow ? (this.showCurrentRow ? 1 : 0) : null; }
 
-  renderForm(row: number) {
+  renderForm(row: number, header?: boolean) {
     const savedIdx = row;
-    if (this.showCurrentRow && row === this.currentRowPos)
+    if (header)
+      row = 0;
+    else {
+      if (this.showCurrentRow && row === this.currentRowPos)
       row = this.dataFrame.currentRowIdx;
     else if (this.showMouseOverRow && row === this.mouseOverPos)
       row = this.dataFrame.mouseOverRowIdx;
     else
       row = this.indexes[row - (this.showCurrentRow ? 1 : 0) - (this.showMouseOverRow ? 1 : 0)];
+    }
 
     const form = ui.divV(
       this.fieldsColumnNames.map((name) => {
@@ -189,10 +193,6 @@ export class FormsViewer extends DG.JsViewer {
     }
 
     ui.empty(this.columnHeadersDiv);
-    if (this.dataFrame.currentRowIdx === -1)
-      this.dataFrame.currentRowIdx = 0;
-    if (this.dataFrame.mouseOverRowIdx === -1)
-      this.dataFrame.mouseOverRowIdx = 0;
 
     this.renderHeader();
 
