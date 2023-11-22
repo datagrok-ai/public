@@ -774,8 +774,8 @@ export function intInput(name: string, value: number | null, onValueChanged: Fun
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
-export function sliderInput(name: string, value: number | null, min: number, max: number, step: number | null = null, onValueChanged: Function | null = null): InputBase<number | null> {
-  return new InputBase(api.grok_SliderInput(name, value, min, max, step), onValueChanged);
+export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null, options: {step: number | null} | null): InputBase<number | null> {
+  return new InputBase(api.grok_SliderInput(name, value, min, max, options?.step), onValueChanged);
 }
 
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
