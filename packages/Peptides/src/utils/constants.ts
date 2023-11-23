@@ -48,6 +48,8 @@ export enum TAGS {
   SIMILARITY_TEMPLATE = 'Similarity template',
   ANALYSIS_COL = 'isAnalysisCol',
   POSITION_COL = 'isPositionCol',
+  M_P_STATS_CACHE = '.MPStatsCache',
+  INVARIANT_MAP_COLOR_CACHE = '.InvariantMapColorCache',
 }
 
 export enum SEM_TYPES {

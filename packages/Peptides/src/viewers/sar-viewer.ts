@@ -85,6 +85,10 @@ export class MonomerPosition extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (property.name === MONOMER_POSITION_PROPERTIES.TARGET)
       this.model.updateMutationCliffs().then(() => this.render(true));
+    // this will cause colors to recalculate
+    this.model.df.columns.toList().forEach((col) => {
+      col.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = null;
+    });
 
     this.render(true);
   }
@@ -177,6 +181,8 @@ export class MonomerPosition extends DG.JsViewer {
               this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
           }
         }
+      } else {
+        return;
       }
       this.model.fireBitsetChanged();
       this.viewerGrid.invalidate();
@@ -374,6 +380,7 @@ export class MostPotentResidues extends DG.JsViewer {
     pValData.length = i;
     countData.length = i;
     ratioData.length = i;
+    meanData.length = i;
 
     const mprDf = DG.DataFrame.create(i); // Subtract 'general' entry from mp-stats
     const mprDfCols = mprDf.columns;
@@ -444,6 +451,8 @@ export class MostPotentResidues extends DG.JsViewer {
           const monomerPosition = this.getMonomerPosition(this.viewerGrid.cell('Diff', rowIdx));
           this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
         }
+      } else {
+        return;
       }
       this.model.fireBitsetChanged();
       this.viewerGrid.invalidate();
@@ -539,20 +548,28 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   if (isInvariantMap) {
     const value = currentPosStats![currentMonomer]!.count;
     const positionCol = model.df.getCol(currentPosition);
-    const positionColData = positionCol.getRawData();
-    const positionColCategories = positionCol.categories;
+    const colorCache: {[_: string]: number} = positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] ?? {};
+    let color: number | null = null;
+    if (colorCache[currentMonomer])
+      color = colorCache[currentMonomer];
+    else {
+      const positionColData = positionCol.getRawData();
+      const positionColCategories = positionCol.categories;
 
-    const colorColData = colorCol!.getRawData();
-    const colorValuesIndexes: number[] = [];
-    for (let i = 0; i < positionCol.length; ++i) {
-      if (positionColCategories[positionColData[i]] === currentMonomer)
-        colorValuesIndexes.push(i);
+      const colorColData = colorCol!.getRawData();
+      const colorValuesIndexes: number[] = [];
+      for (let i = 0; i < positionCol.length; ++i) {
+        if (positionColCategories[positionColData[i]] === currentMonomer)
+          colorValuesIndexes.push(i);
+      }
+      const cellColorDataCol = DG.Column.float('color', colorValuesIndexes.length)
+        .init((i) => colorColData[colorValuesIndexes[i]]);
+      const colorColStats = colorCol!.stats;
+
+      color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
+      colorCache[currentMonomer] = color;
+      positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = colorCache;
     }
-    const cellColorDataCol = DG.Column.float('color', colorValuesIndexes.length)
-      .init((i) => colorColData[colorValuesIndexes[i]]);
-    const colorColStats = colorCol!.stats;
-
-    const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
     CR.renderInvariantMapCell(canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,

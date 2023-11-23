@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {monomerToShort, pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {monomerToShort, pickUpPalette, TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -966,11 +967,29 @@ export class PeptidesModel {
   }
 
   async addSequenceSpace(): Promise<void> {
+    let seqCol = this.df.getCol(this.settings.sequenceColumnName!);
+    const uh = UnitsHandler.getOrCreate(seqCol);
+    const isHelm = uh.isHelm();
+    if (isHelm) {
+      try {
+        grok.shell.warning('Column is in HELM notation. Sequences space will linearize sequences from position 0 prior to analysis');
+        const linearCol = uh.convert(NOTATION.SEPARATOR, '/');
+        const newName = this.df.columns.getUnusedName(`Separator(${seqCol.name})`);
+        linearCol.name = newName;
+        this.df.columns.add(linearCol, true);
+        this.analysisView.grid.col(newName)!.visible = false;
+        seqCol = linearCol;
+      } catch (e) {
+        grok.shell.error('Error on converting HELM notation to linear notation');
+        grok.shell.error(e as string);
+        return;
+      }
+    }
     const seqSpaceParams: {table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
       similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, plotEmbeddings: boolean,
       sparseMatrixThreshold?: number, options?: (IUMAPOptions | ITSNEOptions) & Options} =
-      {table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName!),
-        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+      {table: this.df, molecules: seqCol,
+        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH,
         plotEmbeddings: true, sparseMatrixThreshold: 0.3, options: {'bypassLargeDataWarning': true}};
 
     // Use counter to unsubscribe when 2 columns are hidden
