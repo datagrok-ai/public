@@ -1215,7 +1215,7 @@ export interface ISummaryLookSettings {
   colorAggrType: string;
 
   /// Custom color scheme for the color-coding.
-  colorScheme: Array<number>;
+  colorSchemes: Array<Array<number>>;
 
   invertColorScheme: boolean;
 
