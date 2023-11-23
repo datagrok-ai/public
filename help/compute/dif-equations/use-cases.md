@@ -43,3 +43,20 @@ See also
 
 * [Law of mass action](https://en.wikipedia.org/wiki/Law_of_mass_action)
 * [Chemical kinetics](https://en.wikipedia.org/wiki/Chemical_kinetics)
+
+## Robertson model
+
+Robertson’s chemical reaction model is a well-known example of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation). It describes the process:
+
+![add-to-workspace](robertson-network.png)
+
+The platform computes
+
+![add-to-workspace](robertson-result.png)
+
+Numerical solution of stiff problems is a complicated task. Datagrok's ODEs suite has tools for such cases. Both stiff and non-stiff equations are easily solved.
+
+See also
+
+* [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
+* [Numerical methods](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
