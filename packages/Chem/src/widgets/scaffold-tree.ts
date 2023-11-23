@@ -794,7 +794,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           removeElementByMolecule(this.checkedScaffolds, groupValue.smiles);
           this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: substructure, color: finalColor};
           if (group.children)
-            thisViewer.setColorToChildren(group.children, finalColor!, molStrSketcher);
+            thisViewer.setColorToChildren(group.children, finalColor!, substructure);
         } else {
           molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer);
         }
