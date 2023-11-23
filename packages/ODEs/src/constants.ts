@@ -174,9 +174,9 @@ ${CONTROL_EXPR.ARG}: t
   step = 0.01 {units: d; caption: Step; category: Time} [Time step of simlulation]
 
 ${CONTROL_EXPR.INITS}:  
-  P = 4.276 {units: ml/ml; caption: ethanol; category: Initials} [Concentration of ethanol]
-  S = 0.3185 {units: mg/ml; caption: glucose; category: Initials} [Concentration of glucose]
-  X = 0.092 {units: mg/ml; caption: Saccharomyces; category: Initials} [Saccharomyces wet weight]
+  P = 4.276 {units: ml/ml; caption: ethanol (P); category: Initials} [Concentration of ethanol]
+  S = 0.3185 {units: mg/ml; caption: glucose (S); category: Initials} [Concentration of glucose]
+  X = 0.092 {units: mg/ml; caption: Saccharomyces (X); category: Initials} [Saccharomyces wet weight]
 
 ${CONTROL_EXPR.PARAMS}:
   r = 1.3455 {units: mg/ml; category: Parameters} [The growth rate of ethanol]
