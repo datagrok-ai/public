@@ -26,6 +26,7 @@ interface IMolRenderingInfo {
 export interface IColoredScaffold {
   molecule: string,
   color?: string,
+  priority?: number,
   isSuperstructure?: string
 }
 
@@ -370,6 +371,13 @@ M  END
           }
           return 0;
         }
+        a.priority = a.priority ?? 1;
+        b.priority = b.priority ?? 1;
+
+        if (a.priority !== b.priority) {
+          return b.priority - a.priority;
+        }
+
         return getNumAtoms(a.molecule) - getNumAtoms(b.molecule);
       });
       return scaffoldArrSorted;
