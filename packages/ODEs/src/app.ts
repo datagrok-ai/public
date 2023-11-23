@@ -232,7 +232,7 @@ export async function runSolverApp() {
       .endGroup()
       .group('Use cases')
       .item('Chem reactions...', () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-      .item('Robertson model...', () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
+      .item("Robertson's model...", () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
       .item('Fermentation...', () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
       .endGroup()
       .show();    

@@ -101,7 +101,7 @@ const CHEM_REACT_MODEL = `The following example is taken from https://doi.org/10
 
 ${CONTROL_EXPR.NAME}: Chem react
 ${CONTROL_EXPR.TAGS}: model
-${CONTROL_EXPR.DESCR}: Illustration of mass-action kinetics
+${CONTROL_EXPR.DESCR}: Mass-action kinetics illustration
 ${CONTROL_EXPR.DIF_EQ}:
   dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
            - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4
@@ -141,14 +141,14 @@ ${CONTROL_EXPR.NAME}: Robertson
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
 ${CONTROL_EXPR.DIF_EQ}:
-  dx/dt = -0.04 * x + 10000 * y * z
-  dy/dt = 0.04 * x - 10000 * y * z - 30000000 * y**2
-  dz/dt = 30000000 * y**2
+  dA/dt = -0.04 * A + 10000 * B * C
+  dB/dt = 0.04 * A - 10000 * B * C - 30000000 * B**2
+  dC/dt = 30000000 * B**2
 
 ${CONTROL_EXPR.INITS}:
-  x = 1 {units: mol/L; caption: X; category: Initial concentrations}
-  y = 0 {units: mol/L; caption: Y; category: Initial concentrations}
-  z = 0 {units: mol/L; caption: Z; category: Initial concentrations}
+  A = 1 {units: mol/L; category: Initial concentrations}
+  B = 0 {units: mol/L; category: Initial concentrations}
+  C = 0 {units: mol/L; category: Initial concentrations}
 
 ${CONTROL_EXPR.ARG}: t
   start = 0 {units: sec; caption: Initial; category: Time} [Initial time of simulation]
