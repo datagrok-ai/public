@@ -8,18 +8,40 @@ position: 6 # float position is supported
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.3](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.9](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.4](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
+| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
 | [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
 See also:
-- [Versioning policy](../../develop/dev-process/versioning-policy.md)
+- [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+## 2023-11-23 1.17.4
+
+### Addressed Issues
+
+* (Improvement) GROK-14235: JS API: Utils.loadJsCss(files): dynamically load dependencies (WIP)
+* (Bug) GROK-14261: HomeView from PowerPack doesn't work as expected (WIP)
+* (Bug) GROK-14229: A user cannot add anything to Favorites 
+* (Bug) GROK-14246: JS API: `items` setter on ChoiceInput creates empty option 
+* (Bug) GROK-14243: Viewers: ScatterPlot ignores initial filtration (WIP)
+* (Bug) GROK-14254: JS API: ui.input.forProperty fails on DF property 
+* (Bug) GROK-14272: JS API: ui.input.forProperty has no option to set float format 
+* (Bug) GROK-14277: Filter Panel:  Unsupported operation: NaN.ceil() error in some cases 
+* (Bug) [#2523](https://github.com/datagrok-ai/public/issues/2523): Columns added after performing structure search cannot be shown again if hidden 
+* (Improvement) [#2357](https://github.com/datagrok-ai/public/issues/2357): Line chart: Custom tooltip 
+* (Improvement) [#1063](https://github.com/datagrok-ai/public/issues/1063): A way to indicate current viewer 
+* (Bug) [#2530](https://github.com/datagrok-ai/public/issues/2530): Errors on hovering scatter plot with formula lines 
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click 
+* (Improvement) [#2480](https://github.com/datagrok-ai/public/issues/2480): Scatterplot: default range should take into account only the rows where both axes values are present 
+* (Bug) GROK-14271: JS API: defaultValue is ignored by `ui.input.forProperty` 
+* GROK-7105: Forms viewer (WIP)
+* (Bug) [#2527](https://github.com/datagrok-ai/public/issues/2527): Scatterplot: error occurs when axes are set to log scale in some cases
 
 ## 2023-11-13 1.17.3
 
