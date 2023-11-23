@@ -12,7 +12,6 @@ import {_package, getScaffoldTree, isSmarts} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rendering/rdkit-cell-renderer';
-import { hexToPercentRgb } from '../utils/chem-common';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 let attached = false;
@@ -254,6 +253,9 @@ async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes 
       return;
 
     const group = visibleNodes[n];
+    if (isOrphans(group))
+      return;
+
     const v = value(group);
     const bitset = thisViewer.molColumn === null ?
       null :
@@ -1087,7 +1089,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           } else {
             this.checkedScaffolds[this.checkedScaffolds.length] = {
               molecule:  molStr,
-              color: ''
+              color: '',
+              priority: 2,
             };
           }
           if (isParentColorOn) {
@@ -1214,8 +1217,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           const color = groupValue.parentColor!;
           if (color)
             this.makeColorIconActiveOrInactive(group, color, true);
-          else
+          else {
+            delete groupValue.parentColor;
             this.makeColorIconActiveOrInactive(group, null, false);
+          }
           this.highlightCanvas(group, color, smilesFinal);
         }
 
@@ -1381,12 +1386,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const parentColor = value(group).parentColor;
       const chosenColor = value(group).chosenColor;
     
-      if (!parentColor && !chosenColor)
-        text = 'Assign color to the scaffold';
-      else if (value(group).colorOn)
-        text = 'Color picked by user'
+      if (value(group).colorOn)
+        text = 'Color picked by user';
+      else if (parentColor && (toJs(group.parent).value as ITreeNode).colorOn)
+        text = 'Color inherited from parent'
       else
-        text = 'Color inherited from parent';
+        text = 'Assign color to the scaffold';
 
       ui.tooltip.show(text, e.clientX, e.clientY);
     };    
@@ -1442,7 +1447,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     
     if (!label) {
       handleMalformedStructures(thisViewer.molColumn!, molStrSketcher!).then((bitset: DG.BitSet) => {
-        const newLabelDiv = ui.divText(bitset.trueCount.toString());
+        const newLabelDiv = ui.divH([ui.divText(bitset.trueCount.toString())]);
         iconsInfo.replaceChildren(ui.divH([flagIcon, newLabelDiv]));
         value(group).smiles = molStrSketcher!;
         value(group).bitset = bitset;
@@ -1792,7 +1797,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.subs.push(this.dataFrame.onRowsRemoved.subscribe(async (_) => {
       await updateAllNodesHits(thisViewer);
-    }))
+    }));
 
     this.render();
 
