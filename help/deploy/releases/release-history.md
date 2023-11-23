@@ -20,6 +20,29 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-11-23 1.17.4
+
+### Addressed Issues
+
+* (Improvement) GROK-14235: JS API: Utils.loadJsCss(files): dynamically load dependencies (WIP)
+* (Bug) GROK-14261: HomeView from PowerPack doesn't work as expected (WIP)
+* (Bug) GROK-14229: A user cannot add anything to Favorites 
+* (Bug) GROK-14246: JS API: `items` setter on ChoiceInput creates empty option 
+* (Bug) GROK-14243: Viewers: ScatterPlot ignores initial filtration (WIP)
+* (Bug) GROK-14254: JS API: ui.input.forProperty fails on DF property 
+* (Bug) GROK-14272: JS API: ui.input.forProperty has no option to set float format 
+* (Bug) GROK-14277: Filter Panel:  Unsupported operation: NaN.ceil() error in some cases 
+* (Bug) [#2523](https://github.com/datagrok-ai/public/issues/2523): Columns added after performing structure search cannot be shown again if hidden 
+* (Improvement) [#2357](https://github.com/datagrok-ai/public/issues/2357): Line chart: Custom tooltip 
+* (Improvement) [#1063](https://github.com/datagrok-ai/public/issues/1063): A way to indicate current viewer 
+* (Bug) [#2530](https://github.com/datagrok-ai/public/issues/2530): Errors on hovering scatter plot with formula lines 
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click 
+* (Improvement) [#2480](https://github.com/datagrok-ai/public/issues/2480): Scatterplot: default range should take into account only the rows where both axes values are present 
+* (Bug) GROK-14271: JS API: defaultValue is ignored by `ui.input.forProperty` 
+* GROK-7105: Forms viewer (WIP)
+* (Bug) [#2527](https://github.com/datagrok-ai/public/issues/2527): Scatterplot: error occurs when axes are set to log scale in some cases 
+
+
 ## 2023-11-13 1.17.3
 
 ### Addressed Issues
