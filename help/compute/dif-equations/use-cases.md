@@ -1,32 +1,45 @@
 ---
-title: "Gallery"
+title: "Use cases"
 sidebar_position: 4
 ---
 
-*Here, models collection will be provided in the followin form:*
+Datagrok [solver](solver.md) has a wide scope of application. The high-performance computations are ensured. Several clicks are needed to create modeling app with an awesome UI.
 
-# Model 1
+Explore built-in use cases:
 
-## title {.tabset .tabset-fade}
-Smart description.
+* Go to **Apps** and run **EquaSleek X**
+* Right click and select **Use cases**
+* Choose a sample
 
-### tab Result
+![add-to-workspace](use-cases.gif)
 
-![add-to-workspace](solver.gif)
+## Chemical reactions
 
-### tab Full sample
+Deterministic [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action) models are defined by systems of nonlinear differential equations. The `Chem react` case simulates reactions given in the network
 
-```python
-#name: model 1
-#equations:
-  dy/dt = -y + sin(t) / t
+![add-to-workspace](chem-react-network.png)
 
-#argument: t
-  initial = 0.01
-  final = 15.0
-  step = 0.001
+Press <i class="fas fa-play"></i> **Run** button on the top panel and get
 
-#inits:  
-  y = 0
-```
+![add-to-workspace](chem-react-result.png)
 
+Create model:
+
+* Press <i class="fa-file-import"></i> **Export** button on the top panel
+* Press **SAVE** button
+* Press <i class="fas fa-play"></i> **Run** and check results
+
+![add-to-workspace](chem-react-to-model.gif)
+
+Find the model in `Model Catalog`:
+
+* Go to **Apps**
+* Double click on **Model Catalog**
+* Run the model
+
+![add-to-workspace](chem-react-run-model.gif)
+
+See also
+
+* [Law of mass action](https://en.wikipedia.org/wiki/Law_of_mass_action)
+* [Chemical kinetics](https://en.wikipedia.org/wiki/Chemical_kinetics)

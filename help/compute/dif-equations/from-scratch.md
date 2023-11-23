@@ -11,7 +11,7 @@ Explore built-in templates of the [solver](solver.md). They cover all capabiliti
 | `Advanced` | extra math features                       |
 | `Extended` | [extensions](extensions.md) design sample |
 
-Right-click and select **Templates** to get one of them
+Right-click and select **Templates** to get one of them:
 
 ![add-to-workspace](from-scratch.gif)
 
