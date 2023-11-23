@@ -50,7 +50,7 @@ Robertson’s chemical reaction model is a well-known example of [stiff equation
 
 ![add-to-workspace](robertson-network.png)
 
-The platform computes
+The `Robertson's model` case computes
 
 ![add-to-workspace](robertson-result.png)
 
@@ -60,3 +60,28 @@ See also
 
 * [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
 * [Numerical methods](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
+
+## Fermentation
+
+The kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation) is modelled by ordinary differential equations systems. The `Fermentation` case is an illustration.
+
+Use [Compute](../compute.md) features to create a nifty app:
+
+* Right click and select **Use cases > Fermentation...**
+* Press <i class="fas fa-play"></i> **Run** and check results
+* Press <i class="fa-file-import"></i> **Export** button
+* Append annotation with
+
+```javascript
+//meta.runOnOpen: true
+//meta.runOnInput: true
+```
+
+Save script and run the interactive model
+
+![add-to-workspace](fermentation-model.gif)
+
+Learn more
+
+* [Fermentation](https://en.wikipedia.org/wiki/Fermentation)
+* [Compute](../compute.md)
