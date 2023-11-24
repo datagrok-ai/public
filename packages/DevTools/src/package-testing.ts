@@ -577,17 +577,18 @@ export class TestManager extends DG.ViewBase {
 
   getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE, unhandled?: string) {
     const acc = ui.accordion();
+    acc.root.style.width = '100%';
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
-    acc.addPane('Results', () => ui.div(grid), true);
+    acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
     if (tests.test !== undefined) {
       acc.addPane('History', () => ui.waitBox(async () => {
-        const history = await grok.data.query('DevTools:TestHistory',
+        const history: DG.DataFrame = await grok.data.query('DevTools:TestHistory',
           {packageName: tests.packageName, category: tests.test.category, test: tests.test.name});
-        return (await history.plot.grid()).root;
+        return history.plot.grid().root;
       }), true);
     }
     return acc.root;
