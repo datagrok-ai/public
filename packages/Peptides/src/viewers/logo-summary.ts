@@ -15,7 +15,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import * as type from '../utils/types';
 import {SelectionItem} from '../utils/types';
 import {_package} from '../package';
-import {calculateClusterStatistics} from "../utils/algorithms";
+import {calculateClusterStatistics} from '../utils/algorithms';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -42,7 +42,6 @@ export class LogoSummaryTable extends DG.JsViewer {
   _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
   sequenceColumnName: string;
   clustersColumnName: string;
-  initialized: boolean = false;
   webLogoMode: string;
   membersRatioThreshold: number;
   bitsets: DG.BitSet[] = [];
@@ -52,8 +51,10 @@ export class LogoSummaryTable extends DG.JsViewer {
   constructor() {
     super();
 
-    this.sequenceColumnName = this.column(LST_PROPERTIES.SEQUENCE_COLUMN_NAME, {category: LST_CATEGORIES.GENERAL, nullable: false});
-    this.clustersColumnName = this.column(LST_PROPERTIES.CLUSTERS_COLUMN_NAME, {category: LST_CATEGORIES.GENERAL, nullable: false});
+    this.sequenceColumnName = this.column(LST_PROPERTIES.SEQUENCE_COLUMN_NAME,
+      {category: LST_CATEGORIES.GENERAL, nullable: false});
+    this.clustersColumnName = this.column(LST_PROPERTIES.CLUSTERS_COLUMN_NAME,
+      {category: LST_CATEGORIES.GENERAL, nullable: false});
 
     this.webLogoMode = this.string(LST_PROPERTIES.WEB_LOGO_MODE, PositionHeight.Entropy,
       {choices: [PositionHeight.full, PositionHeight.Entropy], category: LST_CATEGORIES.STYLE});
@@ -72,7 +73,6 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   get viewerGrid(): DG.Grid {
     this._viewerGrid ??= this.createLogoSummaryTableGrid();
-    this.initialized = true;
     return this._viewerGrid;
   }
 
@@ -84,7 +84,8 @@ export class LogoSummaryTable extends DG.JsViewer {
   _clusterStats?: ClusterTypeStats;
 
   get clusterStats(): ClusterTypeStats {
-    this._clusterStats ??= calculateClusterStatistics(this.dataFrame, this.clustersColumnName, this.customClusters.toArray());
+    this._clusterStats ??= calculateClusterStatistics(this.dataFrame, this.clustersColumnName,
+      this.customClusters.toArray());
     return this._clusterStats;
   }
 
@@ -121,7 +122,9 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   get isClusterSelectionEmpty(): boolean {
-    return (this.clusterSelection[CLUSTER_TYPE.ORIGINAL].length + this.clusterSelection[CLUSTER_TYPE.CUSTOM].length) === 0;
+    const clusterSelectionCount =
+      this.clusterSelection[CLUSTER_TYPE.ORIGINAL].length + this.clusterSelection[CLUSTER_TYPE.CUSTOM].length;
+    return clusterSelectionCount === 0;
   }
 
   get customClusters(): wu.WuIterable<DG.Column<boolean>> {
@@ -135,7 +138,9 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.render();
   }
 
-  detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
+  detach(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+  }
 
   render(): void {
     $(this.root).empty();
@@ -143,7 +148,8 @@ export class LogoSummaryTable extends DG.JsViewer {
       this.root.appendChild(ui.divText('Please, select a sequence and cluster columns in the viewer properties'));
       return;
     }
-    if (!this.initialized) {
+    if (this._viewerGrid == null) {
+      this.root.appendChild(ui.divText(`Viewer is not initialized. If it doesn't change in a few seconds, please, contact the developers`));
       return;
     }
 
@@ -171,9 +177,9 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-    if (property.name === 'membersRatioThreshold') {
+    if (property.name === 'membersRatioThreshold')
       this.updateFilter();
-    } else if (property.name === 'sequenceColumnName' || property.name === 'clustersColumnName') {
+    else if (property.name === 'sequenceColumnName' || property.name === 'clustersColumnName') {
       // this.model.settings = {sequenceColumnName: this.sequenceColName, clustersColumnName: this.clustersColumnName};
       if (this.sequenceColumnName !== null && this.clustersColumnName !== null)
         this.viewerGrid = this.createLogoSummaryTableGrid();
@@ -210,7 +216,8 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     const query: { [key: string]: string } = {};
     query[C.TAGS.CUSTOM_CLUSTER] = '1';
-    const customClustColList: DG.Column<boolean>[] = wu(filteredDfCols.byTags(query)).filter((c) => c.max > 0).toArray();
+    const customClustColList: DG.Column<boolean>[] = wu(filteredDfCols.byTags(query))
+      .filter((c) => c.max > 0).toArray();
 
     const customLST = DG.DataFrame.create(customClustColList.length);
     const customLSTCols = customLST.columns;
@@ -387,8 +394,10 @@ export class LogoSummaryTable extends DG.JsViewer {
           } else {
             const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
             viewer = await webLogoTable.plot
-              .fromType('WebLogo', {positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
-                maxHeight: 1000, minHeight: height, positionWidth: positionWidth, showPositionLabels: false});
+              .fromType('WebLogo', {
+                positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
+                maxHeight: 1000, minHeight: height, positionWidth: positionWidth, showPositionLabels: false,
+              });
             webLogoCache.set(currentRowIdx, viewer);
           }
           gridCell.element = viewer.root;
@@ -396,7 +405,7 @@ export class LogoSummaryTable extends DG.JsViewer {
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
           let viewer = distCache.get(currentRowIdx);
           if (viewer === undefined) {
-            const distributionDf = this.createDistributionDf(activityCol, clusterBitSet);
+            const distributionDf = getDistributionTable(activityCol, clusterBitSet);
             viewer = distributionDf.plot.histogram({
               filteringEnabled: false,
               valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
@@ -428,8 +437,10 @@ export class LogoSummaryTable extends DG.JsViewer {
       try {
         if (!this.keyPress || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
           return;
-        if (this.currentRowIndex !== null && this.currentRowIndex !== -1)
-          this.modifyClusterSelection(this.getCluster(grid.cell(C.LST_COLUMN_NAMES.CLUSTER, this.currentRowIndex)), {shiftPressed: true, ctrlPressed: true}, false);
+        if (this.currentRowIndex !== null && this.currentRowIndex !== -1) {
+          this.modifyClusterSelection(this.getCluster(grid.cell(C.LST_COLUMN_NAMES.CLUSTER, this.currentRowIndex)),
+            {shiftPressed: true, ctrlPressed: true}, false);
+        }
 
         this.modifyClusterSelection(this.getCluster(gridCell), {shiftPressed: true, ctrlPressed: false});
         grid.invalidate();
@@ -498,8 +509,10 @@ export class LogoSummaryTable extends DG.JsViewer {
   getCluster(gridCell: DG.GridCell): SelectionItem {
     const clustName = this.logoSummaryTable.get(C.LST_COLUMN_NAMES.CLUSTER, gridCell.tableRowIndex!);
     const clustColCat = this.dataFrame.getCol(this.clustersColumnName).categories;
-    return {positionOrClusterType: clustColCat.includes(clustName) ? CLUSTER_TYPE.ORIGINAL : CLUSTER_TYPE.CUSTOM,
-      monomerOrCluster: clustName};
+    return {
+      positionOrClusterType: clustColCat.includes(clustName) ? CLUSTER_TYPE.ORIGINAL : CLUSTER_TYPE.CUSTOM,
+      monomerOrCluster: clustName,
+    };
   }
 
   updateFilter(): void {
@@ -522,7 +535,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.bitsets.push(currentSelection.clone());
 
     const newClusterName = this.dataFrame.columns.getUnusedName('New Cluster');
-    const aggregatedValues: {[colName: string]: number} = {};
+    const aggregatedValues: { [colName: string]: number } = {};
     const aggColsEntries = Object.entries(this.model.settings.columns ?? {});
     for (const [colName, aggFn] of aggColsEntries) {
       const newColName = getAggregatedColName(aggFn, colName);
@@ -536,9 +549,9 @@ export class LogoSummaryTable extends DG.JsViewer {
         col.name === C.LST_COLUMN_NAMES.MEMBERS ? currentSelection.trueCount :
           col.name === C.LST_COLUMN_NAMES.WEB_LOGO ? null :
             col.name === C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
-              col.name === C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference:
-                col.name === C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
-                  col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
+              col.name === C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference :
+                col.name === C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue :
+                  col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio :
                     col.name in aggregatedValues ? aggregatedValues[col.name] :
                       undefined;
       if (typeof newClusterVals[i] === 'undefined')
@@ -553,7 +566,7 @@ export class LogoSummaryTable extends DG.JsViewer {
   removeCluster(): void {
     const lss = this.clusterSelection[CLUSTER_TYPE.CUSTOM];
 
-    // // Names of the clusters to remove
+    // Names of the clusters to remove
     if (lss.length === 0)
       return grok.shell.warning('No custom clusters selected to be removed');
 
@@ -574,7 +587,6 @@ export class LogoSummaryTable extends DG.JsViewer {
     clustCol.compact();
 
     this.clusterSelection[CLUSTER_TYPE.CUSTOM] = lss;
-    // this.model.clusterSelection = this.model.clusterSelection;
     this.render();
   }
 
@@ -586,7 +598,10 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.model.analysisView.grid.col(newClusterCol.name)!.visible = false;
   }
 
-  modifyClusterSelection(cluster: type.SelectionItem, options: type.SelectionOptions = {shiftPressed: false, ctrlPressed: false}, notify: boolean = true): void {
+  modifyClusterSelection(cluster: type.SelectionItem, options: type.SelectionOptions = {
+    shiftPressed: false,
+    ctrlPressed: false,
+  }, notify: boolean = true): void {
     if (notify)
       this.clusterSelection = this.model.modifySelection(this.clusterSelection, cluster, options);
     else
@@ -624,11 +639,12 @@ export class LogoSummaryTable extends DG.JsViewer {
       return null;
 
     const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer, rowCount);
-    const distributionTable = this.createDistributionDf(activityCol, mask);
+    const distributionTable = getDistributionTable(activityCol, mask);
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
-    const aggregatedColMap = getAggregatedColumnValues(this.dataFrame, this.model.settings.columns!, {filterDf: true, mask: mask});
-    const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
+    const aggregatedColMap = getAggregatedColumnValues(this.dataFrame, this.model.settings.columns!,
+      {filterDf: true, mask: mask});
+    const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};
     const tooltip = getDistributionPanel(hist, resultMap);
 
     ui.tooltip.show(tooltip, x, y);
@@ -640,10 +656,5 @@ export class LogoSummaryTable extends DG.JsViewer {
     const newDf = DG.DataFrame.fromColumns([pepCol]);
     newDf.filter.copyFrom(mask);
     return newDf;
-  }
-
-  createDistributionDf(activityCol: DG.Column<number>, splitMask: DG.BitSet): DG.DataFrame {
-    // const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
-    return getDistributionTable(activityCol, splitMask);
   }
 }

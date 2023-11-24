@@ -2,15 +2,15 @@ import * as DG from 'datagrok-api/dg';
 import {SCALING_METHODS} from './constants';
 import {ClusterType} from '../viewers/logo-summary';
 
-export type DataFrameDict = {[key: string]: DG.DataFrame};
+export type DataFrameDict = { [key: string]: DG.DataFrame };
 
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 //Monomer: (Position: (index: indexList))
 export type MutationCliffs = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
-export type Selection = {[positionOrClusterType: string | ClusterType]: string[]};
-export type SelectionItem = {positionOrClusterType: string | ClusterType, monomerOrCluster: string};
-export type SelectionStats = {[positionOrClusterType: string | ClusterType]: { [monomerOrCluster: string]: number}};
+export type Selection = { [positionOrClusterType: string | ClusterType]: string[] };
+export type SelectionItem = { positionOrClusterType: string | ClusterType, monomerOrCluster: string };
+export type SelectionStats = { [positionOrClusterType: string | ClusterType]: { [monomerOrCluster: string]: number } };
 
 export type PeptidesSettings = {
   sequenceColumnName: string,
@@ -23,7 +23,7 @@ export type PeptidesSettings = {
   showDendrogram?: boolean,
   maxMutations?: number,
   minActivityDelta?: number,
-  columns?: {[col: string]: DG.AggregationType},
+  columns?: { [col: string]: DG.AggregationType },
 };
 
 export type PartialPeptidesSettings = Partial<PeptidesSettings>;
@@ -48,8 +48,8 @@ export type StatsInfo = {
   orderedIndexes: Int32Array,
 }
 
-export type RawColumn = {name: string, rawData: RawData, cat?: string[]};
+export type RawColumn = { name: string, rawData: RawData, cat?: string[] };
 
-export type SelectionOptions = {shiftPressed: boolean, ctrlPressed: boolean};
+export type SelectionOptions = { shiftPressed: boolean, ctrlPressed: boolean, notify?: boolean };
 
-export type CachedWebLogoTooltip = {bar: string, tooltip: HTMLDivElement | null};
+export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
