@@ -584,12 +584,28 @@ export class TestManager extends DG.ViewBase {
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
-    if (tests.test !== undefined) {
+    switch (nodeType) {
+    case NODE_TYPE.PACKAGE:
+      acc.addPane('History', () => ui.waitBox(async () => {
+        const history: DG.DataFrame = await grok.data.query('DevTools:PackageHistory',
+          {packageName: tests.package.name});
+        return history.plot.grid().root;
+      }), true);
+      break;
+    case NODE_TYPE.CATEGORY:
+      acc.addPane('History', () => ui.waitBox(async () => {
+        const history: DG.DataFrame = await grok.data.query('DevTools:CategoryHistory',
+          {packageName: tests.packageName, category: tests.fullName});
+        return history.plot.grid().root;
+      }), true);
+      break;
+    case NODE_TYPE.TEST:
       acc.addPane('History', () => ui.waitBox(async () => {
         const history: DG.DataFrame = await grok.data.query('DevTools:TestHistory',
           {packageName: tests.packageName, category: tests.test.category, test: tests.test.name});
         return history.plot.grid().root;
       }), true);
+      break;
     }
     return acc.root;
   };

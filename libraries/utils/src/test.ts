@@ -296,17 +296,20 @@ export async function runTests(options?: {category?: string, test?: string, test
   options ??= {};
   options!.testContext ??= new TestContext();
   grok.shell.lastError = '';
+  const categories = [];
   for (const [key, value] of Object.entries(tests)) {
     if (options?.category != undefined) {
-      if (!key.toLowerCase().startsWith(options?.category.toLowerCase()))
+      if (!key.toLowerCase().startsWith(options?.category.toLowerCase()) ||
+        value.tests?.every((t) => t.options?.skipReason))
         continue;
     }
     console.log(`Started ${key} category`);
+    categories.push(key);
     try {
       if (value.before)
         await value.before();
     } catch (x: any) {
-      value.beforeStatus = x.toString();
+      value.beforeStatus = x.stack ?? x.toString();
     }
     const t = value.tests ?? [];
     const res = [];
@@ -325,7 +328,7 @@ export async function runTests(options?: {category?: string, test?: string, test
       if (value.after)
         await value.after();
     } catch (x: any) {
-      value.afterStatus = x.toString();
+      value.afterStatus = x.stack ?? x.toString();
     }
     // Clear after category
     // grok.shell.closeAll();
@@ -346,20 +349,39 @@ export async function runTests(options?: {category?: string, test?: string, test
       });
     }
   }
-  if (options.testContext.report) {
-    const logger = new DG.Logger();
+  if (!options.test && results.length) {
     const successful = results.filter((r) => r.success).length;
     const skipped = results.filter((r) => r.skipped).length;
     const failed = results.filter((r) => !r.success);
-    const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
-    const params = {
-      successful: successful,
-      skipped: skipped,
-      failed: failed.length,
-      package: package_
-    };
-    for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
-    logger.log(description, params, 'package-tested');
+    const packageName = package_.name;
+    for (const cat of categories) {
+      const res = results.filter((r) => r.category === cat);
+      const failed_ = res.filter((r) => !r.success).length;
+      const params = {success: failed_ === 0,
+        passed: res.filter((r) => r.success).length,
+        skipped: res.filter((r) => r.skipped).length,
+        failed: failed_,
+        type: 'package', packageName, category: cat};
+      grok.log.usage(`${packageName}: ${cat}`,
+        params, `category-package ${packageName}: ${cat}`);
+    }
+    if (!options.category) {
+      const params = {success: failed.length === 0, passed: successful, skipped, failed: failed.length,
+        type: 'package', packageName};
+      grok.log.usage(packageName, params, `package-package ${packageName}`);
+    }
+    if (options.testContext.report) {
+      const logger = new DG.Logger();
+      const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
+      const params = {
+        successful: successful,
+        skipped: skipped,
+        failed: failed.length,
+        package: package_
+      };
+      for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
+      logger.log(description, params, 'package-tested');
+    }
   }
   return results;
 }
@@ -382,7 +404,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
       r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
-    r = {success: false, result: x.toString(), ms: 0, skipped: false};
+    r = {success: false, result: x.stack ?? x.toString(), ms: 0, skipped: false};
   }
   r.ms = Date.now() - start;
   if (!skip)
