@@ -217,6 +217,56 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
     fillVisibleNodes(rootGroup.children[n] as TreeViewGroup, visibleNodes);
 }
 
+function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer, column: DG.Column) {
+  const items = thisViewer.tree.items;
+  let showTooltip = true;
+  const getLabel = (group: DG.TreeViewGroup) => {
+    if (isOrphans(group)) {
+      return;
+    }
+    const labelDiv = value(group).labelDiv;
+    labelDiv.style.display = 'flex'
+    const smiles = value(group).smiles;
+    const loaderNode = labelDiv.querySelector('.grok-loader');
+    console.log(loaderNode);
+    if (!loaderNode && !labelDiv.childNodes[1]) {
+      const loaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
+      labelDiv.insertBefore(loaderDiv, labelDiv.firstChild);
+    } else if (labelDiv.firstChild && labelDiv.childNodes[1]) {
+      const newLoaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
+      labelDiv.replaceChild(newLoaderDiv, labelDiv.firstChild!);
+    }
+    handleMalformedStructures(column, smiles).then((bitset: DG.BitSet) => {
+      if (bitset.trueCount.toString() === labelDiv.childNodes[1]!.textContent) {
+        labelDiv.removeChild(labelDiv.firstChild!);
+        showTooltip = false;
+      } else {
+        labelDiv.replaceChild(ui.divText(`(${bitset.trueCount.toString()})`), labelDiv.firstChild!); 
+        showTooltip = true;
+      }
+      labelDiv.onmouseenter = (e) => {
+        if (showTooltip) {
+          ui.tooltip.show(ui.divV([
+            ui.divText(labelDiv.childNodes[1].textContent! + ' matches total'),
+            ui.divText(bitset.trueCount.toString() + ' matches filtered')
+          ]), e.clientX, e.clientY) ;
+        }
+      }
+      labelDiv.onmouseleave = (e) => ui.tooltip.hide();
+    });
+  }
+  items.map((group) => {
+    const castedGroup = group as DG.TreeViewGroup;
+    getLabel(castedGroup);
+    if (castedGroup.children) {
+      for (let i = 0; i < castedGroup.children.length; ++i) {
+        getLabel(castedGroup.children[i] as DG.TreeViewGroup);
+      }
+    }
+  })
+}
+
+
 function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
   const labelDiv = value(group).labelDiv;
   labelDiv!.innerHTML = text;
@@ -1454,10 +1504,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).labelDiv = newLabelDiv;
         this.updateFilters();
         this.filterTree(this.threshold);
+        if (this.dataFrame.filter.trueCount !== this.dataFrame.filter.length) {
+          const col = this.dataFrame.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
+          updateLabelWithLoaderOrBitset(thisViewer, col);
+        }
       });
     }
     
     value(group).labelDiv = labelDiv;
+    if (this.dataFrame.filter.trueCount !== this.dataFrame.filter.length) {
+      const col = this.dataFrame.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
+      updateLabelWithLoaderOrBitset(thisViewer, col);
+    }
 
 
     const c = molHost.getElementsByTagName('CANVAS');
@@ -1715,7 +1773,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;
-    this.tree.root.onscroll = async (e) => await updateVisibleNodesHits(thisViewer);
+    //this.tree.root.onscroll = async (e) => await updateVisibleNodesHits(thisViewer);
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
       const node: TreeViewGroup = args.args.item;
@@ -1777,10 +1835,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (this.applyFilter) {
       this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
+        console.log('in on rows filtering');
         if (thisViewer.bitset != null)
           dataFrame.filter.and(thisViewer.bitset);
       }));
     }
+
+    this.subs.push(dataFrame.onRowsFiltering.subscribe((_) => {
+      const col = dataFrame.groupBy([this.molColumn!.name]).whereRowMask(dataFrame.filter).aggregate().getCol(this.molColumn!.name);
+      updateLabelWithLoaderOrBitset(thisViewer, col);
+    }));
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
       const tooltip = args.args.element;
