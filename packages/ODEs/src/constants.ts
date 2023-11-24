@@ -14,6 +14,16 @@ export enum CONTROL_EXPR {
     CONSTS = `${CONTROL_TAG}constants`,
     PARAMS = `${CONTROL_TAG}parameters`,
     TOL = `${CONTROL_TAG}tolerance`,
+    DOSING = `${CONTROL_TAG}dosing`,
+};
+
+/** Dosing consts */
+export enum DOSING {
+  MIN_LINES_COUNT = 3,
+  DOSE_IDX = 0,
+  COUNT_IDX = 1,
+  DOSE = '_dose',
+  COUNT = '_count',
 };
 
 /** Basic template illustrating the simplest features */
@@ -186,9 +196,8 @@ ${CONTROL_EXPR.PARAMS}:
   
 ${CONTROL_EXPR.TOL}: 0.0000001`;
 
-/** PK-PD simulation*/
-const PK_PD_MODEL = `
-${CONTROL_EXPR.NAME}: PK-PD
+/** PK-PD simulation */
+const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
 ${CONTROL_EXPR.DIF_EQ}:
@@ -201,24 +210,29 @@ ${CONTROL_EXPR.EXPR}:
   C2 = centr / V2
   C3 = peri / V3
 
+${CONTROL_EXPR.DOSING}:
+  ${DOSING.DOSE} = 10000 {category: Dosing} [Dosage]
+  ${DOSING.COUNT} = 10 {category: Dosing} [Number of doses]
+  depot += ${DOSING.DOSE}
+
 ${CONTROL_EXPR.ARG}: t
-  start = 0.0 {units: h; caption: begin; category: Dosing interval} [Begin of dosing interval]
-  final = 12.0 {units: h; caption: end; category: Dosing interval} [End of dosing interval]
-  step = 0.01 {units: h; caption: step; category: Dosing interval} [Time step of simlulation]
+  start = 0 {units: h; caption: begin; category: Dosing} [Begin of dosing interval]
+  final = 12 {units: h; caption: end; category: Dosing} [End of dosing interval]
+  step = 0.01 {units: h; caption: step; category: Dosing} [Time step of simlulation]  
 
 ${CONTROL_EXPR.INITS}:  
-  depot = 10000.0 {category: Initial values}
-  centr = 0.0 {category: Initial values} [Central]
-  peri = 0.0 {category: Initial values} [Peripheral]
+  depot = 0 {category: Initial values}
+  centr = 0 {category: Initial values} [Central]
+  peri = 0 {category: Initial values} [Peripheral]
   eff = 0.2 {category: Initial values} [Effective compartment rate]
 
 ${CONTROL_EXPR.PARAMS}:
   KA = 0.3 {caption: rate constant; category: Paramters}
-  CL = 2.0 {caption: clearance; category: Paramters}
-  V2 = 4.0 {caption: central volume; category: Paramters} [Central compartment volume]
-  Q = 1.0 {caption: intercompartmental rate; category: Paramters}
-  V3 = 30.0 {caption: peripheral volume; category: Paramters} [Peripheral compartment volume]
-  EC50 = 8.0 {caption: effect; category: Paramters}
+  CL = 2 {caption: clearance; category: Paramters}
+  V2 = 4 {caption: central volume; category: Paramters} [Central compartment volume]
+  Q = 1 {caption: intercompartmental rate; category: Paramters}
+  V3 = 30 {caption: peripheral volume; category: Paramters} [Peripheral compartment volume]
+  EC50 = 8 {caption: effect; category: Paramters}
   Kin = 0.2 {caption: Kin; category: Paramters} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Paramters} [The first-order dissipation rate constant]
   

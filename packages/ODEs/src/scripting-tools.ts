@@ -1,6 +1,6 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
-import {CONTROL_TAG, DF_NAME, CONTROL_EXPR} from './constants';
+import {CONTROL_TAG, DF_NAME, CONTROL_EXPR, DOSING} from './constants';
 
 // Scripting specific constants
 const CONTROL_SEP = ':';
@@ -36,6 +36,13 @@ type DifEqs = {
   solutionNames: string[]
 };
 
+/** Dosing specification */
+type Dosing = {
+  dose: Input,
+  count: Input,
+  updates: string[],
+};
+
 /** Initial Value Problem (IVP) specification type */
 type IVP = {
   name: string,
@@ -50,6 +57,7 @@ type IVP = {
   tolerance: string,
   usedMathFuncs: number[],
   usedMathConsts: number[],
+  dosing: Dosing | null,
 };
 
 /** Specific error messeges */
@@ -58,6 +66,7 @@ enum ERROR_MSG {
   CONTROL_EXPR = `unsupported control expression with the tag '${CONTROL_TAG}'`,
   ARG = 'incorrect argument specification',
   INITS = 'incorrect initial values specification',
+  DOSING = 'incorrect dosing specification',
 }
 
 /** Datagrok annatations */
@@ -66,7 +75,8 @@ enum ANNOT {
   DESCR = '//description:',
   TAGS = '//tags:',
   LANG = '//language: javascript',
-  INPUT = '//input: double',
+  DOUBLE_INPUT = '//input: double',
+  INT_INPUT = '//input: int',
   OUTPUT = `//output: dataframe ${DF_NAME}`,
   EDITOR = '//editor: Compute:RichFunctionViewEditor',
   CAPTION = 'caption:',
@@ -80,21 +90,28 @@ enum ANNOT {
 
 /** JS-scripting components */
 enum SCRIPT {
-  CONSTS = '\n// constants',
-  ODE_COM = '\n// the problem definition',
+  CONSTS = '// constants',
+  ODE_COM = '// the problem definition',
   ODE = 'let odes = {',
-  SOLVER_COM = '\n// solve the problem',
+  SOLVER_COM = '// solve the problem',
   SOLVER = `const solver = await grok.functions.eval('${ODES_PACKAGE}:${SOLVER_FUNC}');`,
   PREPARE = 'let call = solver.prepare({problem: odes});',
   CALL = 'await call.call();',
   OUTPUT = `let ${DF_NAME} = call.getParamValue('${DF_NAME}');`,
-  SPACE = '    ',
-  SUBSPACE = '      ',
+  SPACE2 = '  ',
+  SPACE4 = '    ',
+  SPACE6 = '      ',
+  SPACE8 = '        ',
   FUNC_VALS = '// extract function values',
   EVAL_EXPR = '// evaluate expressions',
   COMP_OUT = '// compute output',
-  MATH_FUNC_COM = '\n// used Math-functions',
-  MATH_CONST_COM = '\n// used Math-constants',
+  MATH_FUNC_COM = '// used Math-functions',
+  MATH_CONST_COM = '// used Math-constants',
+  ONE_STAGE_COM = '\n// one stage solution',
+  ONE_STAGE_BEGIN = 'let _oneStage = async (',
+  ONE_STAGE_END = ') => {',
+  ASYNC_OUTPUT = `let ${DF_NAME} = await _oneStage(`,
+  RETURN_OUTPUT = `return call.getParamValue('${DF_NAME}');`,
 }
 
 /** Limits of the problem specification */
@@ -262,6 +279,21 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
   return eqs;
 }
 
+/** Get dosing specification */
+function getDosing(lines: string[], begin: number, end: number): Dosing {
+  const source = concatMultilineFormulas(lines.slice(begin, end));
+  const size = source.length;
+
+  if (size < DOSING.MIN_LINES_COUNT)
+    throw new Error(ERROR_MSG.DOSING);  
+
+  return {
+    dose: getInput(source[DOSING.DOSE_IDX]),
+    count: getInput(source[DOSING.COUNT_IDX]),
+    updates: source.slice(DOSING.COUNT_IDX + 1),
+  }
+}
+
 /** Get initial value problem specification given in the text */
 export function getIVP(text: string): IVP {
   // The current Initial Value Problem (IVP) specification
@@ -275,6 +307,7 @@ export function getIVP(text: string): IVP {
   let consts: Map<string, Input> | null = null;
   let params: Map<string, Input> | null = null;
   let tolerance = DEFAULT_TOL;
+  let dosing: Dosing | null = null;
 
   // 0. Split text into lines
   const lines = text.split('\n').filter((s) => s !== '').map((s) => s.trimStart());
@@ -319,6 +352,9 @@ export function getIVP(text: string): IVP {
     else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
     }
+    else if (firstLine.startsWith(CONTROL_EXPR.DOSING)) { // the 'dosing' block
+      dosing = getDosing(lines, block.begin + 1, block.end);
+    }
     else // error: unsupported control expression 
     {
       //console.log(firstLine);
@@ -342,6 +378,7 @@ export function getIVP(text: string): IVP {
     tolerance: tolerance,
     usedMathFuncs: getUsedMathIds(text, MATH_FUNCS),
     usedMathConsts: getUsedMathIds(text, MATH_CONSTS),
+    dosing: dosing
   };
 } // getIVP
 
@@ -371,21 +408,27 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   // the 'language' line
   res.push(ANNOT.LANG);
 
+  // the 'dosing' lines
+  if (ivp.dosing) {
+    res.push(`${ANNOT.DOUBLE_INPUT} ${DOSING.DOSE} = ${getInputSpec(ivp.dosing.dose)}`);
+    res.push(`${ANNOT.INT_INPUT} ${DOSING.COUNT} = ${getInputSpec(ivp.dosing.count)}`);
+  }
+
   // argument lines
   const arg = ivp.arg;
   const t0 = `${SERVICE}${arg.name}0`;
   const t1 = `${SERVICE}${arg.name}1`;
   const h = `${SERVICE}h`
-  res.push(`${ANNOT.INPUT} ${t0} = ${getInputSpec(arg.start)}`);
-  res.push(`${ANNOT.INPUT} ${t1} = ${getInputSpec(arg.finish)}`);
-  res.push(`${ANNOT.INPUT} ${h} = ${getInputSpec(arg.step)}`);
+  res.push(`${ANNOT.DOUBLE_INPUT} ${t0} = ${getInputSpec(arg.start)}`);
+  res.push(`${ANNOT.DOUBLE_INPUT} ${t1} = ${getInputSpec(arg.finish)}`);
+  res.push(`${ANNOT.DOUBLE_INPUT} ${h} = ${getInputSpec(arg.step)}`);
 
   // initial values lines
-  ivp.inits.forEach((val, key) => res.push(`${ANNOT.INPUT} ${key} = ${getInputSpec(val)}`));
+  ivp.inits.forEach((val, key) => res.push(`${ANNOT.DOUBLE_INPUT} ${key} = ${getInputSpec(val)}`));
 
   // parameters lines
   if (ivp.params !== null)
-    ivp.params.forEach((val, key) => res.push(`${ANNOT.INPUT} ${key} = ${getInputSpec(val)}`));
+    ivp.params.forEach((val, key) => res.push(`${ANNOT.DOUBLE_INPUT} ${key} = ${getInputSpec(val)}`));
 
   // the 'output' line
   if (toAddViewers)
@@ -405,67 +448,72 @@ function getMathArg(funcIdx: number): string {
   return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
 }
 
-/** Return main body of JS-script */
-function getScriptMainBody(ivp: IVP): string[] {  
+/** Return main body of JS-script: basic variant */
+function getScriptMainBodyBasic(ivp: IVP): string[] {  
   const res = [] as string[];
 
   // 1. Constants lines
   if (ivp.consts !== null) {
+    res.push('');
     res.push(SCRIPT.CONSTS);
     ivp.consts.forEach((val, key) => res.push(`const ${key} = ${val.value};`));
   }
 
   // 2. The problem definition lines
+  res.push('');
   res.push(SCRIPT.ODE_COM);
   res.push(SCRIPT.ODE);
-  res.push(`${SCRIPT.SPACE}name: '${ivp.name}',`);
+  res.push(`${SCRIPT.SPACE4}name: '${ivp.name}',`);
 
   // 2.1) argument
   const t = ivp.arg.name;
   const t0 = `${SERVICE}${t}0`;
   const t1 = `${SERVICE}${t}1`;
   const h = `${SERVICE}h`;
-  res.push(`${SCRIPT.SPACE}arg: {name: '${t}', start: ${t0}, finish: ${t1}, step: ${h}},`);
+  res.push(`${SCRIPT.SPACE4}arg: {name: '${t}', start: ${t0}, finish: ${t1}, step: ${h}},`);
 
   const names = ivp.deqs.solutionNames;
 
   // 2.2) initial values
-  res.push(`${SCRIPT.SPACE}initial: [${names.join(', ')}],`);
+  res.push(`${SCRIPT.SPACE4}initial: [${names.join(', ')}],`);
 
   // 2.3) the right-hand side of the problem
-  res.push(`${SCRIPT.SPACE}func: (${t}, ${SERVICE}y, ${SERVICE}output) => {`);
+  res.push(`${SCRIPT.SPACE4}func: (${t}, ${SERVICE}y, ${SERVICE}output) => {`);
 
-  res.push(`${SCRIPT.SUBSPACE}${SCRIPT.FUNC_VALS}`);
-  names.forEach((name, idx) => res.push(`${SCRIPT.SUBSPACE}const ${name} = ${SERVICE}y[${idx}];`));
+  res.push(`${SCRIPT.SPACE6}${SCRIPT.FUNC_VALS}`);
+  names.forEach((name, idx) => res.push(`${SCRIPT.SPACE6}const ${name} = ${SERVICE}y[${idx}];`));
 
   if (ivp.exprs !== null) {
-    res.push(`\n${SCRIPT.SUBSPACE}${SCRIPT.EVAL_EXPR}`);
-    ivp.exprs.forEach((val, key, map) => res.push(`${SCRIPT.SUBSPACE}const ${key} = ${val};`));
+    res.push(`\n${SCRIPT.SPACE6}${SCRIPT.EVAL_EXPR}`);
+    ivp.exprs.forEach((val, key, map) => res.push(`${SCRIPT.SPACE6}const ${key} = ${val};`));
   }
 
-  res.push(`\n${SCRIPT.SUBSPACE}${SCRIPT.FUNC_VALS}`);
-  names.forEach((name, idx) => res.push(`${SCRIPT.SUBSPACE}${SERVICE}output[${idx}] = ${ivp.deqs.equations.get(name)};`));
+  res.push(`\n${SCRIPT.SPACE6}${SCRIPT.COMP_OUT}`);
+  names.forEach((name, idx) => res.push(`${SCRIPT.SPACE6}${SERVICE}output[${idx}] = ${ivp.deqs.equations.get(name)};`));
 
-  res.push(`${SCRIPT.SPACE}},`);
+  res.push(`${SCRIPT.SPACE4}},`);
 
   // 2.4) final lines of the problem specification
-  res.push(`${SCRIPT.SPACE}tolerance: ${ivp.tolerance},`);
-  res.push(`${SCRIPT.SPACE}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
+  res.push(`${SCRIPT.SPACE4}tolerance: ${ivp.tolerance},`);
+  res.push(`${SCRIPT.SPACE4}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push('};');
 
   // 3. Math functions
   if (ivp.usedMathFuncs.length > 0) {
+    res.push('');
     res.push(SCRIPT.MATH_FUNC_COM);
     ivp.usedMathFuncs.forEach((i) => res.push(`const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`));
   }
 
   // 4. Math constants
   if (ivp.usedMathConsts.length > 0) {
+    res.push('');
     res.push(SCRIPT.MATH_CONST_COM);
     ivp.usedMathConsts.forEach((i) => res.push(`const ${MATH_CONSTS[i]} = Math.${MATH_CONSTS[i]};`));
   }
 
   // 5. The 'call solver' lines
+  res.push('');
   res.push(SCRIPT.SOLVER_COM);
   res.push(SCRIPT.SOLVER);
   res.push(SCRIPT.PREPARE);
@@ -473,7 +521,104 @@ function getScriptMainBody(ivp: IVP): string[] {
   res.push(SCRIPT.OUTPUT);
 
   return res;
-} // getScriptMainBody
+} // getScriptMainBodyBasic
+
+/** Return function for JS-script */
+function getScriptFunc(ivp: IVP): string[] {  
+  const res = [] as string[];
+
+  // 0. Function declaration
+  res.push(SCRIPT.ONE_STAGE_COM);
+  res.push(`${SCRIPT.ONE_STAGE_BEGIN} ${SCRIPT.ONE_STAGE_END}`);
+
+  // 1. Constants lines
+  if (ivp.consts !== null) {
+    res.push('');
+    res.push(SCRIPT.SPACE2 + SCRIPT.CONSTS);
+    ivp.consts.forEach((val, key) => res.push(`${SCRIPT.SPACE2}const ${key} = ${val.value};`));
+  }
+
+  // 2. The problem definition lines
+  res.push(SCRIPT.SPACE2 + SCRIPT.ODE_COM);
+  res.push(SCRIPT.SPACE2 + SCRIPT.ODE);
+  res.push(`${SCRIPT.SPACE6}name: '${ivp.name}',`);
+
+  // 2.1) argument
+  const t = ivp.arg.name;
+  const t0 = `${SERVICE}${t}0`;
+  const t1 = `${SERVICE}${t}1`;
+  const h = `${SERVICE}h`;
+  res.push(`${SCRIPT.SPACE6}arg: {name: '${t}', start: ${t0}, finish: ${t1}, step: ${h}},`);
+
+  const names = ivp.deqs.solutionNames;
+
+  // 2.2) initial values
+  res.push(`${SCRIPT.SPACE6}initial: [${names.join(', ')}],`);
+
+  // 2.3) the right-hand side of the problem
+  res.push(`${SCRIPT.SPACE6}func: (${t}, ${SERVICE}y, ${SERVICE}output) => {`);
+
+  res.push(`${SCRIPT.SPACE8}${SCRIPT.FUNC_VALS}`);
+  names.forEach((name, idx) => res.push(`${SCRIPT.SPACE8}const ${name} = ${SERVICE}y[${idx}];`));
+
+  if (ivp.exprs !== null) {
+    res.push(`\n${SCRIPT.SPACE8}${SCRIPT.EVAL_EXPR}`);
+    ivp.exprs.forEach((val, key, map) => res.push(`${SCRIPT.SPACE8}const ${key} = ${val};`));
+  }
+
+  res.push(`\n${SCRIPT.SPACE8}${SCRIPT.COMP_OUT}`);
+  names.forEach((name, idx) => res.push(`${SCRIPT.SPACE8}${SERVICE}output[${idx}] = ${ivp.deqs.equations.get(name)};`));
+
+  res.push(`${SCRIPT.SPACE6}},`);
+
+  // 2.4) final lines of the problem specification
+  res.push(`${SCRIPT.SPACE6}tolerance: ${ivp.tolerance},`);
+  res.push(`${SCRIPT.SPACE6}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
+  res.push(`${SCRIPT.SPACE2}};`);
+
+  // 3. Math functions
+  if (ivp.usedMathFuncs.length > 0) {
+    res.push('');
+    res.push(SCRIPT.SPACE2 + SCRIPT.MATH_FUNC_COM);
+    ivp.usedMathFuncs.forEach((i) => res.push(`${SCRIPT.SPACE2}const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`));
+  }
+  
+  // 4. Math constants
+  if (ivp.usedMathConsts.length > 0) {
+    res.push('');
+    res.push(SCRIPT.SPACE2 + SCRIPT.MATH_CONST_COM);
+    ivp.usedMathConsts.forEach((i) => res.push(`${SCRIPT.SPACE2}const ${MATH_CONSTS[i]} = Math.${MATH_CONSTS[i]};`));
+  }  
+
+  // 5. The 'call solver' lines
+  res.push('');
+  res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER_COM);
+  res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER);
+  res.push(SCRIPT.SPACE2 + SCRIPT.PREPARE);
+  res.push(SCRIPT.SPACE2 + SCRIPT.CALL);
+  res.push(SCRIPT.SPACE2 + SCRIPT.RETURN_OUTPUT);
+
+  // 6. Close the function
+  res.push('};');
+
+  return res;
+} // getScriptFunc
+
+/** Return main body of JS-script: dosing case */
+function getScriptMainBodyDosingCase(ivp: IVP): string[] {  
+  const res = getScriptFunc(ivp);
+  res.push('');
+  res.push(`${SCRIPT.ASYNC_OUTPUT});`);
+  return res;
+} // getScriptMainBodyDosingCase
+
+/** Return main body of JS-script */
+function getScriptMainBody(ivp: IVP): string[] {
+  if (ivp.dosing)
+    return  getScriptMainBodyDosingCase(ivp);
+  
+  return getScriptMainBodyBasic(ivp);
+}
 
 /** Return JS-script lines */
 export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
@@ -483,6 +628,11 @@ export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true
 /** Return parameters of JS-script */
 export function getScriptParams(ivp: IVP): Record<string, number> {
   const res = {} as Record<string, number>;
+
+  if (ivp.dosing) {
+    res[DOSING.DOSE] = ivp.dosing.dose.value;
+    res[DOSING.COUNT] = ivp.dosing.count.value;
+  }
 
   const arg = ivp.arg;
 
@@ -545,10 +695,11 @@ ${CONTROL_EXPR.PARAMS}:
   P1 = 1.0
   P2 = -1.0
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 0.00005`;*/
 
-const lines = //TEMPLATE_BASIC;
-TEMPLATE_ADVANCED;
+/*import {TEMPLATES} from './constants';
+
+const lines = TEMPLATES.PK_PD;
 
 console.log(lines);
 console.log('==============================================================================================');
