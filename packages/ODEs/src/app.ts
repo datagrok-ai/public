@@ -22,6 +22,7 @@ enum EDITOR_STATE {
   CHEM_REACT = 5,
   ROBERT = 6,
   FERM = 7,
+  PKPD = 8,
 };
 
 /** Context help links */
@@ -67,6 +68,9 @@ function getProblem(state: EDITOR_STATE): string {
 
     case EDITOR_STATE.FERM:
       return TEMPLATES.FERMENTATION;
+
+    case EDITOR_STATE.PKPD:
+      return TEMPLATES.PK_PD;
 
     default:
       return TEMPLATES.EMPTY;
@@ -234,6 +238,8 @@ export async function runSolverApp() {
       .item('Chem reactions...', () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
       .item("Robertson's model...", () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
       .item('Fermentation...', () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
+      .separator()
+      .item('PK-PD...', () => setState(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
       .endGroup()
       .show();    
   });

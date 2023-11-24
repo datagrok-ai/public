@@ -96,7 +96,7 @@ ${CONTROL_EXPR.ARG}: t
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
-/** Use case 1: chemical reactions, mass-action kinetics */
+/** Chemical reactions, mass-action kinetics */
 const CHEM_REACT_MODEL = `The following example is taken from https://doi.org/10.1002/ijch.201800003.
 
 ${CONTROL_EXPR.NAME}: Chem react
@@ -134,7 +134,7 @@ ${CONTROL_EXPR.ARG}: t
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
-/** Use case 2: Robertson's chemical reaction model - stiff ODEs */
+/** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `NOTES. The classic example of stiff ODEs: the Robertson problem.
 
 ${CONTROL_EXPR.NAME}: Robertson
@@ -157,8 +157,8 @@ ${CONTROL_EXPR.ARG}: t
 
 ${CONTROL_EXPR.TOL}: 0.0000001`;
 
-/** Use case 3: Fermentation process simulation */
-const FERMENTATION_MODEL = ` NOTES. The following problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
+/** Fermentation process simulation */
+const FERMENTATION_MODEL = `NOTES. The following problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
 
 ${CONTROL_EXPR.NAME}: Fermentation
 ${CONTROL_EXPR.TAGS}: model
@@ -186,6 +186,44 @@ ${CONTROL_EXPR.PARAMS}:
   
 ${CONTROL_EXPR.TOL}: 0.0000001`;
 
+/** PK-PD simulation*/
+const PK_PD_MODEL = `
+${CONTROL_EXPR.NAME}: PK-PD
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
+${CONTROL_EXPR.DIF_EQ}:
+  d(depot)/dt = -KA * depot
+  d(centr)/dt = KA * depot - CL * C2 - Q * C2 + Q * C3
+  d(peri)/dt  = Q * C2 - Q * C3
+  d(eff)/dt  = Kin - Kout * (1 - C2/(EC50 + C2)) * eff
+
+${CONTROL_EXPR.EXPR}:
+  C2 = centr / V2
+  C3 = peri / V3
+
+${CONTROL_EXPR.ARG}: t
+  start = 0.0 {units: h; caption: begin; category: Dosing interval} [Begin of dosing interval]
+  final = 12.0 {units: h; caption: end; category: Dosing interval} [End of dosing interval]
+  step = 0.01 {units: h; caption: step; category: Dosing interval} [Time step of simlulation]
+
+${CONTROL_EXPR.INITS}:  
+  depot = 10000.0 {category: Initial values}
+  centr = 0.0 {category: Initial values} [Central]
+  peri = 0.0 {category: Initial values} [Peripheral]
+  eff = 0.2 {category: Initial values} [Effective compartment rate]
+
+${CONTROL_EXPR.PARAMS}:
+  KA = 0.3 {caption: rate constant; category: Paramters}
+  CL = 2.0 {caption: clearance; category: Paramters}
+  V2 = 4.0 {caption: central volume; category: Paramters} [Central compartment volume]
+  Q = 1.0 {caption: intercompartmental rate; category: Paramters}
+  V3 = 30.0 {caption: peripheral volume; category: Paramters} [Peripheral compartment volume]
+  EC50 = 8.0 {caption: effect; category: Paramters}
+  Kin = 0.2 {caption: Kin; category: Paramters} [The first-order production constant]
+  Kout = 0.2 {caption: Kout; category: Paramters} [The first-order dissipation rate constant]
+  
+${CONTROL_EXPR.TOL}: 0.000000001`;
+
 /** Initial value problem templates */
 export enum TEMPLATES {
   EMPTY = '',
@@ -195,4 +233,5 @@ export enum TEMPLATES {
   CHEM_REACT = CHEM_REACT_MODEL,
   ROBERTSON = ROBERTSON_MODEL,
   FERMENTATION = FERMENTATION_MODEL,
+  PK_PD = PK_PD_MODEL,
 };
