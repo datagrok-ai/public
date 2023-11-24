@@ -3,14 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject} from 'rxjs';
-import * as NGL from 'NGL';
+import * as ngl from 'NGL';
 
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package';
 
 
-export async function awaitNgl(ngl: NGL.Stage, callLogPrefix: string): Promise<void> {
+export async function awaitNgl(ngl: ngl.Stage, callLogPrefix: string): Promise<void> {
   const onRendered = new Subject<void>();
   const onRenderedBnd = ngl.viewer.signals.rendered.add(() => { onRendered.next(); });
   const t1 = window.performance.now();

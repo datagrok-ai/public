@@ -4,16 +4,16 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import {SignalBinding} from 'signals';
-import * as NGL from 'NGL';
+import * as ngl from 'NGL';
+import {Subject} from 'rxjs';
 
+import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 
 import {errInfo} from './err-info';
+import {awaitNgl} from '../viewers/ngl-viewer-utils';
 
 import {_package} from '../package';
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
-import {Subject} from 'rxjs';
-import {awaitNgl} from '../viewers/ngl-viewer-utils';
 
 
 const TASK_TIMEOUT: number = 2000;
@@ -23,7 +23,7 @@ const NGL_TRY_LIMIT: number = 3;
 export class NglGlDocService extends NglGlServiceBase {
   private readonly nglDiv: HTMLDivElement;
 
-  private ngl: NGL.Stage | null = null;
+  private ngl: ngl.Stage | null = null;
   private nglErrorCount: number = 0;
 
   private readonly hostDiv: HTMLDivElement;
@@ -190,12 +190,12 @@ export class NglGlDocService extends NglGlServiceBase {
     // if (key === 1) throw new Error('NglGlDocService: Test error');
 
     if (this.nglErrorCount > NGL_ERROR_LIMIT) {
-      _package.logger.warning(`${callLogPrefix}, ` + 'recreate NGL.Stage, ' +
+      _package.logger.warning(`${callLogPrefix}, ` + 'recreate ngl.Stage, ' +
         `nglTimeoutCount = ${this.nglErrorCount} > ${NGL_ERROR_LIMIT}`);
       await this.reset();
     }
     if (!this.ngl) {
-      this.ngl = new NGL.Stage(this.nglDiv);
+      this.ngl = new ngl.Stage(this.nglDiv);
       await awaitNgl(this.ngl, callLogPrefix); // await NGL is ready
     } else
       this.ngl.removeAllComponents();
@@ -211,7 +211,7 @@ export class NglGlDocService extends NglGlServiceBase {
     await delay(10); /* Sometimes compList[0] is undefined, without any other error */
     const comp = this.ngl.compList[0];
     if (!comp) throw new Error(`${callLogPrefix}, ` + 'no component added');
-    comp.addRepresentation('cartoon');
+    comp.addRepresentation('cartoon', undefined);
     comp.autoView();
 
     const emptyCanvasHash = DG.StringUtils.hashCode(canvas.toDataURL());
