@@ -5,10 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
-import {RDMol, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 
-import {MonomerLibHelper} from './monomer-lib';
+import {MonomerLibHelper} from './monomer-lib/monomer-lib-helper';
 import {errInfo} from './err-info';
 
 import {_package} from '../package';

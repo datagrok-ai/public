@@ -16,7 +16,7 @@ import {
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
-  TAGS as bioTAGS, ALPHABET, NOTATION,
+  TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -48,10 +48,8 @@ import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
-import {
-  MonomerLibHelper,
-  getLibraryPanelUI
-} from './utils/monomer-lib';
+import {MonomerLibHelper} from './utils/monomer-lib/monomer-lib-helper';
+import {getLibraryPanelUI} from './utils/monomer-lib/widget';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';

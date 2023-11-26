@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
-import {MonomerLibHelper} from '../../utils/monomer-lib';
+import {MonomerLibHelper} from '../monomer-lib/monomer-lib-helper';
 import {ALL_MONOMERS, CYCLIZATION_TYPE, TRANSFORMATION_TYPE} from './const';
 import {addTransformedColumn} from './transformation';
 import * as rxjs from 'rxjs';

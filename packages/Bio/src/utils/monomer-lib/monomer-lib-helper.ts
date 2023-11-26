@@ -1,6 +1,8 @@
+/* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {getLibFileNameList} from './helpers';
 
 import {Observable, Subject} from 'rxjs';
 
@@ -14,58 +16,12 @@ import {
   createJsonMonomerLibFromSdf,
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {
-  HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE
-} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/const';
 
-import {_package} from '../package';
+import {_package} from '../../package';
 
-
-export async function getLibFileNameList(): Promise<string[]> {
-  // list files recursively because permissions are available for folders only
-  const res: string[] = await Promise.all((await grok.dapi.files.list(LIB_PATH, true, ''))
-    .map(async (it) => {
-      // Get relative path (to LIB_PATH)
-      return it.fullPath.substring(LIB_PATH.length);
-    }));
-  return res;
-}
-
-export async function manageFiles() {
-  const a = ui.dialog({title: 'Manage files'})
-    //@ts-ignore
-    .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
-    .addButton('OK', () => a.close())
-    .show();
-}
-
-export async function getLibraryPanelUI(): Promise<DG.Widget> {
-  //@ts-ignore
-  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  const inputsForm: HTMLDivElement = ui.inputs([]);
-  const libFileNameList: string[] = await getLibFileNameList();
-
-  const settings = await getUserLibSettings();
-
-  for (const libFileName of libFileNameList) {
-    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
-      () => {
-        if (libInput.value == true) {
-          // Checked library remove from excluded list
-          settings.exclude = settings.exclude.filter((l) => l != libFileName);
-        } else {
-          // Unchecked library add to excluded list
-          if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
-        }
-        setUserLibSettings(settings).then(async () => {
-          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
-          grok.shell.info('Monomer library user settings saved.');
-        });
-      });
-    inputsForm.append(libInput.root);
-  }
-  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
-}
+type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibHelper };
+declare const window: MonomerLibWindowType;
 
 export class MonomerLib implements IMonomerLib {
   public readonly error: string | undefined;
@@ -167,9 +123,6 @@ export class MonomerLib implements IMonomerLib {
     this._onChanged.next();
   }
 }
-
-type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibHelper };
-declare const window: MonomerLibWindowType;
 
 export class MonomerLibHelper implements IMonomerLibHelper {
   private readonly _monomerLib: MonomerLib = new MonomerLib({});
