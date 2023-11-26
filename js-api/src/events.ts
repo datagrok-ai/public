@@ -1,12 +1,13 @@
 import * as rxjs from 'rxjs';
+import {Observable} from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
-import { toJs } from './wrappers';
-import { Observable } from "rxjs";
+import {filter} from 'rxjs/operators';
+import {toJs} from './wrappers';
 import {FileInfo, Package} from './entities';
-import {Accordion, Dialog, InputBase} from "./widgets";
-import { View, ViewLayout } from './views/view';
-import { Viewer } from "./viewer";
-import { Column } from "./dataframe";
+import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
+import {View, ViewLayout} from './views/view';
+import {Viewer} from "./viewer";
+import {Column} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 
@@ -17,21 +18,22 @@ export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));
 }
 
-export function __obs(eventId: string, object: any = null): Observable<any> {
+export function __obs<T = any>(eventId: string, object: any = null): Observable<T> {
   if (object == null) {
-    let observable = rxjs.fromEventPattern(
+    return rxjs.fromEventPattern(
       function (handler) {
         return api.grok_OnEvent(eventId, function (x: any) {
-          handler(toJs(x));
+          const jso = toJs(x);
+          handler(jso);
         });
       },
       function (handler, dart) {
         new StreamSubscription(dart).cancel();
       }
     );
-    return observable;
-  } else {
-    let o2 = rxjs.fromEventPattern(
+  }
+  else {
+    return rxjs.fromEventPattern(
       function (handler) {
         return api.grok_OnObjectEvent(object, eventId, function (x: any) {
           handler(toJs(x));
@@ -41,7 +43,6 @@ export function __obs(eventId: string, object: any = null): Observable<any> {
         new StreamSubscription(dart).cancel();
       }
     );
-    return o2;
   }
 }
 
@@ -51,7 +52,7 @@ export function __obs(eventId: string, object: any = null): Observable<any> {
  * @returns {rxjs.Observable}
  * */
 export function observeStream(dartStream: any): Observable<any> {
-  let observable = rxjs.fromEventPattern(
+  return rxjs.fromEventPattern(
     function (handler) {
       return api.grok_Stream_Listen(dartStream, function (x: any) {
         handler(toJs(x));
@@ -61,7 +62,6 @@ export function observeStream(dartStream: any): Observable<any> {
       new StreamSubscription(dart).cancel();
     }
   );
-  return observable;
 }
 
 
@@ -176,6 +176,10 @@ export class Events {
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
+
+  get onBrowseNodeCreated(): rxjs.Observable<TreeViewNode> {
+    return __obs<TreeViewNode>('d4-tree-view-node-added').pipe(filter(n => n.rootNode.tag == 'Browse' ));
+  }
 }
 
 /*
