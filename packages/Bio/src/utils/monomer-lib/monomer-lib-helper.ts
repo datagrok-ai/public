@@ -11,7 +11,7 @@ import {
   LibSettings, getUserLibSettings, setUserLibSettings, LIB_PATH
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {PolyToolMonomerLibHandler} from '@datagrok-libraries/bio/src/utils/poly-tool/monomer-lib-handler';
+import {PolyToolMonomerLibHandler} from '../poly-tool/monomer-lib-handler';
 import {
   createJsonMonomerLibFromSdf,
   IMonomerLibHelper,
@@ -213,10 +213,12 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       const df = await fileSource.readCsv(fileName);
       const json = toJson(df);
       const polyToolMonomerLib = new PolyToolMonomerLibHandler(json);
+      console.log(`somewhere here:`);
       if (polyToolMonomerLib.isValid())
         rawLibData = polyToolMonomerLib.getJsonMonomerLib();
       else
         throw new Error('Invalid format of CSV monomer lib');
+      console.log(`rawLibData:`, rawLibData);
     } else {
       throw new Error('Monomer library of unknown file format, supported formats: SDF, JSON, CSV');
     }

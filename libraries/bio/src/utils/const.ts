@@ -71,35 +71,6 @@ export const HELM_CORE_FIELDS = [
 
 export const SDF_MONOMER_NAME = 'MonomerName';
 
-/** For PolyTool  */
-export const helmFieldsToPolyToolInputFields = {
-  [HELM_REQUIRED_FIELDS.SYMBOL]: 'Short Name',
-  [HELM_REQUIRED_FIELDS.NAME]: 'Medium Name',
-  [HELM_REQUIRED_FIELDS.SMILES]: 'SMILES',
-};
-
-/** For PolyTool  */
-export const R_GROUP_BLOCK_DUMMY = [
-  {
-    'capGroupSmiles': '[*:1][H]',
-    'alternateId': 'R1-H',
-    'capGroupName': 'H',
-    'label': 'R1'
-  },
-  {
-    'capGroupSmiles': 'O[*:2]',
-    'alternateId': 'R2-OH',
-    'capGroupName': 'OH',
-    'label': 'R2'
-  },
-  {
-    'capGroupSmiles': '[*:3][H]',
-    'alternateId': 'R3-H',
-    'capGroupName': 'H',
-    'label': 'R3'
-  }
-];
-
 // todo: ideally, keys should be expressed via constants
 export const jsonSdfMonomerLibDict = {
   'monomerType': null,
