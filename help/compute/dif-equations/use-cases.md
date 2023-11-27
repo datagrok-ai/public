@@ -85,3 +85,20 @@ Learn more
 
 * [Fermentation](https://en.wikipedia.org/wiki/Fermentation)
 * [Compute](../compute.md)
+
+## PK-PD modeling
+
+PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their relationship. It is used in drug discovery and development. The `PK-PD` case illustrates applying the dosage feature.
+
+Use [viewers](../../visualize/viewers/viewers.md) to get fancy exploration:
+
+* Right click and select **Use cases > PK-PD...**
+* Press <i class="fas fa-play"></i> **Run** and check results
+* Add [3D scatter plot](../../visualize/viewers/3d-scatter-plot.md)
+
+![add-to-workspace](pk-pd-3d.gif)
+
+Learn more
+
+* [PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)
+* [Viewers](../../visualize/viewers/viewers.md)
