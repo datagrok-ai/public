@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-
 import {Observable} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import '../../css/forms.css';
@@ -20,7 +19,6 @@ export class FormsViewer extends DG.JsViewer {
   indexes: number[];
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
-
 
   set dataframe(df: DG.DataFrame) {
     this.dataFrame = df;
@@ -60,9 +58,38 @@ export class FormsViewer extends DG.JsViewer {
     this.root.classList.add('d4-multi-form');
     this.columnHeadersDiv = ui.div([], 'd4-multi-form-header');
     this.virtualView = ui.virtualView(0, (i: number) => this.renderForm(i), false, 1);
-    const formWithHeaderDiv = ui.divH([this.columnHeadersDiv, this.virtualView.root]);
-    formWithHeaderDiv.setAttribute('style', 'overflow:visible!important');
+
+    const formWithHeaderDiv = ui.splitH([this.columnHeadersDiv, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
+    
+    ui.tools.waitForElementInDom(this.virtualView.root).then((_)=>{
+      let height = 0;
+      let virtualViewElements = this.virtualView.root.children[0].children;
+      
+      for (let i=0; i<virtualViewElements.length; i++){
+        let vheight = virtualViewElements[i].getBoundingClientRect().height;
+        if (vheight>height)
+          height = vheight;
+      }
+
+      this.columnHeadersDiv.style.cssText = `
+        oveflow:hidden!important;
+        min-height: ${height}px;
+        margin-bottom: 10px;
+      `;
+      let columnsHeaders = this.columnHeadersDiv.parentElement as HTMLElement;
+      columnsHeaders.style.cssText = `
+        overflow-y: hidden!important;
+        overflow-x: scroll!important;
+        max-width: 200px;
+        min-width: 50px;
+      `;
+
+      this.virtualView.root.addEventListener('scroll', (e:Event)=>{
+        columnsHeaders.scrollTop = this.virtualView.root.scrollTop;
+      });
+
+    });
   }
 
   onTableAttached() {
@@ -216,7 +243,7 @@ export class FormsViewer extends DG.JsViewer {
     ui.empty(this.columnHeadersDiv);
 
     this.renderHeader();
-
+    
     this.virtualView.setData(
       this.indexes.length + (this.showCurrentRow ? 1 : 0) + (this.showMouseOverRow ? 1 : 0),
       (i: number) => this.renderForm(i));

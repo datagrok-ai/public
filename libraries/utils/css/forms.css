@@ -1,5 +1,5 @@
 .d4-multi-form {
-	overflow: scroll!important;
+	overflow: hidden!important;
 }
 
 .d4-multi-form-header {
@@ -9,10 +9,9 @@
 }
 
 .d4-multi-form-column-name {
-	font-weight: bold;
 	position: absolute;
 	left: 10px;
-	width: 100px;
+	width: calc(100% - 10px);
 	white-space: nowrap;
 	overflow: hidden;
     text-overflow: ellipsis;
@@ -29,7 +28,7 @@
 
 .d4-multi-form #vlist {
 	height: initial;
-	overflow-x: visible!important;
+	overflow-x: scroll!important;
 }
 
 .d4-multi-form .ui-input-editor {
