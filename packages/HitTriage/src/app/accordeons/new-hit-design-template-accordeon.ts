@@ -167,6 +167,16 @@ export async function newHitDesignTemplateAccordeon(
               args: args,
             });
           }),
+          scripts: Object.entries(funcDialogRes?.scripts ?? {})
+            .filter(([name, _]) => name.startsWith(C.HTScriptPrefix) && name.split(':').length === 3)
+            .map(([scriptId, args]) => {
+              const scriptNameParts = scriptId.split(':');
+              return ({
+                name: scriptNameParts[1] ?? '',
+                id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
       };
