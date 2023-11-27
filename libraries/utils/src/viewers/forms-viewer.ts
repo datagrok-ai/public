@@ -6,6 +6,7 @@ import {filter} from 'rxjs/operators';
 import '../../css/forms.css';
 
 const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
+const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
@@ -157,7 +158,8 @@ export class FormsViewer extends DG.JsViewer {
       const formField = form.querySelector('[column="' + name + '"]');
       if (formField) {
         const columnLabel = ui.bind(this.dataFrame.col(name), ui.divText(name, 'd4-multi-form-column-name'));
-        columnLabel.style.top = `${(formField as HTMLElement).offsetTop + 10}px`;
+        const offsetTop = (formField as any).type === 'checkbox' ? (formField as HTMLElement).offsetTop - BOOLEAN_INPUT_TOP_MARGIN : (formField as HTMLElement).offsetTop;
+        columnLabel.style.top = `${offsetTop + 10}px`;
         this.columnHeadersDiv.appendChild(columnLabel);
       }
     }
@@ -238,6 +240,8 @@ export class FormsViewer extends DG.JsViewer {
         this.indexes = this.dataFrame.selection.trueCount > 0 ?
           Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
       }
+      else
+        this.indexes = [];
     }
 
     ui.empty(this.columnHeadersDiv);
