@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-
 import {Observable} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import '../../css/forms.css';
 
 const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
+const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
@@ -20,7 +20,6 @@ export class FormsViewer extends DG.JsViewer {
   indexes: number[];
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
-
 
   set dataframe(df: DG.DataFrame) {
     this.dataFrame = df;
@@ -44,6 +43,8 @@ export class FormsViewer extends DG.JsViewer {
   constructor() {
     super();
 
+    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/forms';
+
     // properties
     this.fieldsColumnNames = this.addProperty('fieldsColumnNames', DG.TYPE.COLUMN_LIST);
     this.colorCode = this.bool('colorCode', true);
@@ -58,9 +59,51 @@ export class FormsViewer extends DG.JsViewer {
     this.root.classList.add('d4-multi-form');
     this.columnHeadersDiv = ui.div([], 'd4-multi-form-header');
     this.virtualView = ui.virtualView(0, (i: number) => this.renderForm(i), false, 1);
-    const formWithHeaderDiv = ui.divH([this.columnHeadersDiv, this.virtualView.root]);
-    formWithHeaderDiv.setAttribute('style', 'overflow:visible!important');
+    let columnHeadersBox = ui.div(this.columnHeadersDiv);
+    const formWithHeaderDiv = ui.splitH([columnHeadersBox, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
+    
+    ui.tools.waitForElementInDom(this.virtualView.root).then((_)=>{
+      let height = 0;
+      let virtualViewElements = this.virtualView.root.children[0].children;
+
+      for (let i=0; i<virtualViewElements.length; i++){
+        let vheight = virtualViewElements[i].getBoundingClientRect().height;
+        if (vheight>height)
+          height = vheight;
+      }
+
+      this.columnHeadersDiv.style.cssText = `
+        oveflow:hidden!important;
+        min-height: ${height}px;
+        min-width: 150px;
+        flex-shrink: 0;
+      `;
+
+      let columnsHeaders = columnHeadersBox.parentElement as HTMLElement;
+      columnsHeaders.style.cssText = `
+        overflow: hidden!important;
+        max-width: 200px;
+      `;
+
+      columnHeadersBox.style.cssText = `
+        box-sizing: content-box;
+        width:100%;
+        position:relative;
+        display:flex;
+        padding-right:17px;
+        overflow: scroll!important;
+      `;
+
+      columnHeadersBox.addEventListener('scroll', (e:Event)=>{
+        this.virtualView.root.scrollTop = columnHeadersBox.scrollTop;
+      });
+      
+      this.virtualView.root.addEventListener('scroll', (e:Event)=>{
+        columnHeadersBox.scrollTop = this.virtualView.root.scrollTop;
+      });
+
+    });
   }
 
   onTableAttached() {
@@ -128,7 +171,8 @@ export class FormsViewer extends DG.JsViewer {
       const formField = form.querySelector('[column="' + name + '"]');
       if (formField) {
         const columnLabel = ui.bind(this.dataFrame.col(name), ui.divText(name, 'd4-multi-form-column-name'));
-        columnLabel.style.top = `${(formField as HTMLElement).offsetTop + 10}px`;
+        const offsetTop = (formField as any).type === 'checkbox' ? (formField as HTMLElement).offsetTop - BOOLEAN_INPUT_TOP_MARGIN : (formField as HTMLElement).offsetTop;
+        columnLabel.style.top = `${offsetTop + 10}px`;
         this.columnHeadersDiv.appendChild(columnLabel);
       }
     }
@@ -145,11 +189,11 @@ export class FormsViewer extends DG.JsViewer {
       row = 0;
     else {
       if (this.showCurrentRow && row === this.currentRowPos)
-      row = this.dataFrame.currentRowIdx;
-    else if (this.showMouseOverRow && row === this.mouseOverPos)
-      row = this.dataFrame.mouseOverRowIdx;
-    else
-      row = this.indexes[row - (this.showCurrentRow ? 1 : 0) - (this.showMouseOverRow ? 1 : 0)];
+        row = this.dataFrame.currentRowIdx;
+      else if (this.showMouseOverRow && row === this.mouseOverPos)
+        row = this.dataFrame.mouseOverRowIdx;
+      else
+        row = this.indexes[row - (this.showCurrentRow ? 1 : 0) - (this.showMouseOverRow ? 1 : 0)];
     }
 
     const form = ui.divV(
@@ -179,8 +223,23 @@ export class FormsViewer extends DG.JsViewer {
       }
       ), 'd4-multi-form-form');
 
-    if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
-      form.onclick = () => this.dataFrame.currentRowIdx = row;
+    form.onclick = (event: MouseEvent) => {
+      if (event.ctrlKey && event.shiftKey) {
+        for (let i = 0; i <= row; i++)
+          this.dataFrame.selection.set(i, false);
+      } else {
+        if (event.ctrlKey) {
+          const currentSelection = this.dataFrame.selection.get(row);
+          this.dataFrame.selection.set(row, !currentSelection);
+        } else if (event.shiftKey) {
+          for (let i = 0; i <= this.dataFrame.rowCount; i++)
+            this.dataFrame.selection.set(i, i <= row);
+        } else {
+          if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
+            this.dataFrame.currentRowIdx = row;
+        }
+      }
+    }
     if (!this.showMouseOverRow || savedIdx !== this.mouseOverPos) {
       form.onmouseenter = () => this.dataFrame.mouseOverRowIdx = row;
       form.onmouseleave = () => this.dataFrame.mouseOverRowIdx = -1;
@@ -194,12 +253,14 @@ export class FormsViewer extends DG.JsViewer {
         this.indexes = this.dataFrame.selection.trueCount > 0 ?
           Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
       }
+      else
+        this.indexes = [];
     }
 
     ui.empty(this.columnHeadersDiv);
 
     this.renderHeader();
-
+    
     this.virtualView.setData(
       this.indexes.length + (this.showCurrentRow ? 1 : 0) + (this.showMouseOverRow ? 1 : 0),
       (i: number) => this.renderForm(i));

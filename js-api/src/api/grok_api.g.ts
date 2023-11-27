@@ -960,6 +960,7 @@ export interface IDartApi {
   grok_InputBase_Get_Property(input: any): any;
   grok_InputBase_Get_Root(input: any): any;
   grok_InputBase_Get_Caption(input: any): any;
+  grok_InputBase_Set_Caption(input: any, s: String): any;
   grok_InputBase_Get_InputType(input: any): any;
   grok_InputBase_Get_Format(input: any): any;
   grok_InputBase_Set_Format(input: any, s: String): any;
@@ -1014,6 +1015,8 @@ export interface IDartApi {
   grok_TreeViewNode_CheckBox(node: any): any;
   grok_TreeViewNode_Get_Checked(node: any): any;
   grok_TreeViewNode_Set_Checked(node: any, checked: Bool): any;
+  grok_TreeViewNode_Get_Tag(node: any): any;
+  grok_TreeViewNode_Set_Tag(node: any, tag: any): any;
   grok_TreeViewNode_Text(node: any): any;
   grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool): any;
   grok_TreeViewNode_GetOrCreateGroup(node: any, text: String, value: any, expanded: Bool): any;

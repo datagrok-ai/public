@@ -1011,6 +1011,7 @@ export class InputBase<T = any> {
   get caption(): string {
     return api.grok_InputBase_Get_Caption(this.dart);
   }
+  set caption(s: string) { api.grok_InputBase_Set_Caption(this.dart, s); }
 
   /** Property if associated with */
   get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
@@ -1562,9 +1563,16 @@ export class TreeViewNode<T = any> {
     return api.grok_TreeViewNode_Root(this.dart);
   }
 
+  get rootNode(): TreeViewGroup {
+    let x: TreeViewNode = this;
+    while (x.parent)
+      x = x.parent;
+    return x as TreeViewGroup;
+  }
+
   /* Node's parent */
   get parent(): TreeViewNode {
-    return api.grok_TreeViewNode_Parent(this.dart);
+    return toJs(api.grok_TreeViewNode_Parent(this.dart));
   }
 
   /** Caption label */
@@ -1583,6 +1591,9 @@ export class TreeViewNode<T = any> {
 
   /** Node text */
   get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
+
+  get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
+  set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };

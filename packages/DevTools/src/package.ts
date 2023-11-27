@@ -81,13 +81,13 @@ export async function testManager(): Promise<void> {
 }
 
 //name: TestDetectors
-//top-menu: Tools | Dev | Test Detectors
+//top-menu: Tools | Dev | Test | Detectors...
 export function testDetectors() {
   _testDetectorsDialog();
 }
 
 //name: TestDetectorsStandard
-//top-menu: Tools | Dev | Test Detectors Standard
+//top-menu: Tools | Dev | Test | Detectors Standard
 export async function TestDetectorsStandard() {
   const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
   const df = await _testDetectorsStandard(detectorsArray);

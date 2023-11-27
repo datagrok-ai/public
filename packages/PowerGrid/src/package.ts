@@ -251,6 +251,7 @@ export function _autoPowerGrid(): void {
 //name: Forms
 //description: Forms viewer
 //tags: viewer
+//meta.icon: files/icons/formviewer.svg
 //output: viewer result
 export function formsViewer() {
   return new FormsViewer();

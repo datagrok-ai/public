@@ -142,6 +142,19 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       if (props)
         await grok.functions.call(funcName, props);
     };
+    for (const scriptName of Object.keys(resultMap.scripts ?? {})) {
+      const props = resultMap.scripts![scriptName];
+      if (props) {
+        props['table'] = this.dataFrame!;
+        props['molecules'] = this.molColName!;
+        try {
+          const s = await grok.dapi.scripts.find(scriptName);
+          await s.apply(props);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
 
     if (view) {
       const filterGroup = view.getFiltersGroup();

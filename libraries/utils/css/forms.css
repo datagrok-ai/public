@@ -1,5 +1,5 @@
 .d4-multi-form {
-	overflow: scroll!important;
+	overflow: hidden!important;
 }
 
 .d4-multi-form-header {
@@ -9,17 +9,25 @@
 }
 
 .d4-multi-form-column-name {
-	font-weight: bold;
 	position: absolute;
 	left: 10px;
-	width: 100px;
 	white-space: nowrap;
+	/*width: calc(100% - 10px);
+	
 	overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: ellipsis;*/
 }
 
 .d4-multi-form-form {
 	min-width: 170px;
+}
+
+.d4-multi-form > .ui-split-h > .ui-box:first-child:hover::-webkit-scrollbar {
+	display: block;
+}
+
+.d4-multi-form > .ui-split-h > .ui-box:first-child::-webkit-scrollbar {
+	display: none;
 }
 
 .d4-multi-form-form.temp {
@@ -29,7 +37,7 @@
 
 .d4-multi-form #vlist {
 	height: initial;
-	overflow-x: visible!important;
+	overflow-x: auto!important;
 }
 
 .d4-multi-form .ui-input-editor {

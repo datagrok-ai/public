@@ -1325,6 +1325,7 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 //meta.demoPath: Cheminformatics | Overview
 //description: Overview of Cheminformatics functionality
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoChemOverview(): Promise<void> {
   _demoChemOverview();
 }
@@ -1342,6 +1343,7 @@ export async function demoSimilarityDiversitySearch(): Promise<void> {
 //description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
 //meta.demoPath: Cheminformatics | R Group Analysis
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoRgroupAnalysis(): Promise<void> {
   _demoRgroupAnalysis();
 }
@@ -1351,6 +1353,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 //description: Searching similar structures with significant activity difference
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoActivityCliffs(): Promise<void> {
   _demoActivityCliffs();
 }
