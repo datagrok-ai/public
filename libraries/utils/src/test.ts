@@ -287,7 +287,8 @@ export async function initAutoTests(packageId: string, module?: any) {
     moduleTests[detectorsCatName] = {tests: moduleDetectors, clear: false};
 }
 
-export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
+export async function runTests(options?:
+  {category?: string, test?: string, testContext?: TestContext}, exclude?: string[]) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   await initAutoTests(package_.id);
   const results: { category?: string, name?: string, success: boolean,
@@ -298,15 +299,14 @@ export async function runTests(options?: {category?: string, test?: string, test
   grok.shell.lastError = '';
   const categories = [];
   for (const [key, value] of Object.entries(tests)) {
-    if (options?.category != undefined) {
-      if (!key.toLowerCase().startsWith(options?.category.toLowerCase()) ||
-        value.tests?.every((t) => t.options?.skipReason))
-        continue;
-    }
+    if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
+      exclude?.some((c) => key.startsWith(c)))
+      continue;
     console.log(`Started ${key} category`);
     categories.push(key);
+    const skipped = value.tests?.every((t) => t.options?.skipReason);
     try {
-      if (value.before)
+      if (value.before && !skipped)
         await value.before();
     } catch (x: any) {
       value.beforeStatus = x.stack ?? x.toString();
@@ -325,7 +325,7 @@ export async function runTests(options?: {category?: string, test?: string, test
     }
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
-      if (value.after)
+      if (value.after && !skipped)
         await value.after();
     } catch (x: any) {
       value.afterStatus = x.stack ?? x.toString();
