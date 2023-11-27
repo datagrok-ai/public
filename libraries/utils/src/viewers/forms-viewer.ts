@@ -145,11 +145,11 @@ export class FormsViewer extends DG.JsViewer {
       row = 0;
     else {
       if (this.showCurrentRow && row === this.currentRowPos)
-      row = this.dataFrame.currentRowIdx;
-    else if (this.showMouseOverRow && row === this.mouseOverPos)
-      row = this.dataFrame.mouseOverRowIdx;
-    else
-      row = this.indexes[row - (this.showCurrentRow ? 1 : 0) - (this.showMouseOverRow ? 1 : 0)];
+        row = this.dataFrame.currentRowIdx;
+      else if (this.showMouseOverRow && row === this.mouseOverPos)
+        row = this.dataFrame.mouseOverRowIdx;
+      else
+        row = this.indexes[row - (this.showCurrentRow ? 1 : 0) - (this.showMouseOverRow ? 1 : 0)];
     }
 
     const form = ui.divV(
@@ -179,8 +179,23 @@ export class FormsViewer extends DG.JsViewer {
       }
       ), 'd4-multi-form-form');
 
-    if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
-      form.onclick = () => this.dataFrame.currentRowIdx = row;
+    form.onclick = (event: MouseEvent) => {
+      if (event.ctrlKey && event.shiftKey) {
+        for (let i = 0; i <= row; i++)
+          this.dataFrame.selection.set(i, false);
+      } else {
+        if (event.ctrlKey) {
+          const currentSelection = this.dataFrame.selection.get(row);
+          this.dataFrame.selection.set(row, !currentSelection);
+        } else if (event.shiftKey) {
+          for (let i = 0; i <= this.dataFrame.rowCount; i++)
+            this.dataFrame.selection.set(i, i <= row);
+        } else {
+          if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
+            this.dataFrame.currentRowIdx = row;
+        }
+      }
+    }
     if (!this.showMouseOverRow || savedIdx !== this.mouseOverPos) {
       form.onmouseenter = () => this.dataFrame.mouseOverRowIdx = row;
       form.onmouseleave = () => this.dataFrame.mouseOverRowIdx = -1;
