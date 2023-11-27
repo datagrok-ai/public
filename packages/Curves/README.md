@@ -69,6 +69,7 @@ To render a fitted curve based on series points, you need to write it in the fol
     "yAxisName": "Activity",
     "logX": true,
     "logY": false,
+    "allowXZeroes": true,
   }
 }
 ```
@@ -105,6 +106,7 @@ Each chart has its own parameters as well, such as:
 - `title` - defines the plot title. If the plot size is enough, will render it
 - `xAxisName`, `yAxisName` - defines the x and y axis names. If the plot size is enough, will render it
 - `logX`, `logY` - defines whether the x and y data should be logarithmic or not
+- `allowXZeroes` - defines whether x zeroes allowed for logarithmic data or not. If the flag is true, it will calculate the approximate log(0) that will fit the chart
 - `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve
 (`auc`) or the coefficient of determination (`rSquared`))
 

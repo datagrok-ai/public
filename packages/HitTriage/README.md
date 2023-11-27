@@ -11,7 +11,7 @@ Common Workflow
     Define a template specifying the data source for molecules, name, key, additional needed information and compute functions. This source can be a file upload or a query in any other package tagged with `HitTriageDataSource` tag.
     The Compute functions are collected from any package with a tag `HitTriageFunction`.
 
-    ![template](https://datagrok.ai/help/uploads/hittriage/files/images/template.png)
+    ![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/template.png?raw=true)
 
 2. **Campaign Building**:
 
@@ -19,7 +19,7 @@ Common Workflow
     Provide a campaign name, select the data source, provide additional information and initiate the campaign.
     During the campaign run, the specified compute functions are executed, and their results are appended to the dataframe. For example, you can compute molecular descriptors, toxicity risks, structural alerts and more.
 
-    ![template](https://datagrok.ai/help/uploads/hittriage/files/images/campaign.png)
+    ![template](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign.png?raw=true)
 
 After running a campaign, you can submit the dataframe to any chosen function or query. or
 save the campaign for later use. Saved campaigns can be reloaded and run again by any user on the platform usign the link or the campaigns table on the first page.

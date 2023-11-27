@@ -43,11 +43,13 @@ export const CampaignFieldTypes = {
   Number: DG.TYPE.FLOAT,
   Boolean: DG.TYPE.BOOL,
   Date: DG.TYPE.DATE_TIME,
+  Molecule: DG.SEMTYPE.MOLECULE,
 } as const;
 
 export type HitTriageCampaignFieldType = keyof typeof CampaignFieldTypes;
 
-export type HitTriageCampaignField = {name: string, type: HitTriageCampaignFieldType, required?: boolean};
+export type HitTriageCampaignField =
+    {name: string, type: HitTriageCampaignFieldType, semtype?: string, required?: boolean};
 
 export type IngestType = 'File' | 'Query';
 
@@ -75,6 +77,8 @@ export type HitTriageCampaignStatus = 'In Progress' | 'Submitted';
 export type HitTriageCampaign = {
     name: string,
     templateName: string,
+    template?: HitDesignTemplate,
+    savePath?: string,
     status: HitTriageCampaignStatus,
     createDate: string,
     campaignFields: {[key: string]: any},
@@ -83,6 +87,7 @@ export type HitTriageCampaign = {
     columnSemTypes?: {[key: string]: string},
     rowCount?: number,
     filteredRowCount?: number,
+    layout?: string,
 };
 
 export type IChemFunctionsDialogResult = {

@@ -13,6 +13,15 @@ import {getTime} from '../utils';
 const format = 'es-pa-u-hc-h23';
 const systemId = '00000000-0000-0000-0000-000000000000';
 
+export function getUsersTable(usersHistogram: DG.DataFrame): HTMLTableElement {
+  const usersData: {[key: string]: { e: HTMLElement, c: number }} = {};
+  for (const r of usersHistogram.rows)
+    usersData[r.uid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.uid}}`)};
+  const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
+    usersData[b].c - usersData[a].c), (k) => [usersData[k].e, usersData[k].c]);
+  return usersTable;
+}
+
 export class PackagesView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
 
@@ -30,32 +39,9 @@ export class PackagesView extends UaView {
         t.onSelectionChanged.subscribe(async () => {
           PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Packages');
         });
-
         t.onCurrentRowChanged.subscribe(async () => {
           t.selection.setAll(false);
           t.selection.set(t.currentRowIdx, true);
-          return;
-          const rowValues = Array.from(t.currentRow.cells).map((c) => c.value);
-          const row = Object.fromEntries(t.columns.names().map((k, i) => [k, rowValues[i]]));
-          row.time_start = row.time_start.a;
-          row.time_end = row.time_end.a;
-          const filter: Filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
-            groups: [row.ugid], users: [row.uid], packages: [row.pid]};
-          const cp = DG.Accordion.create();
-          const dateFrom = new Date(row.time_start);
-          const dateTo = new Date(row.time_end);
-          cp.addPane('Details', () => {
-            return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
-              'Package': ui.render(`#{x.${row.pid}}`),
-              'From': getTime(dateFrom),
-              'To': getTime(dateTo)});
-          }, true);
-          PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo],
-            [row.package], this.uaToolbox, 'Packages');
-          PackagesView.getLogsPane(cp, filter, [dateFrom, dateTo],
-            this.uaToolbox, 'Packages');
-          PackagesView.getAuditPane(cp, filter);
-          grok.shell.o = cp.root;
         });
         return t;
       },
@@ -77,8 +63,32 @@ export class PackagesView extends UaView {
         return viewer;
       }});
 
+    const packagesTimeViewer = new UaFilterableQueryViewer({
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'Packages Installation Time',
+      queryName: 'PackagesInstallationTime',
+      // processDataFrame: (t: DG.DataFrame) => {
+      //   return t;
+      // },
+      createViewer: (t: DG.DataFrame) => {
+        const viewer = DG.Viewer.scatterPlot(t, {
+          x: 'time',
+          y: 'package',
+          color: 'time',
+          showColorSelector: false,
+          showSizeSelector: false,
+          showXSelector: false,
+          showYSelector: false,
+          invertYAxis: true,
+        });
+        return viewer;
+      }});
+
     this.viewers.push(packagesViewer);
+    this.viewers.push(packagesTimeViewer);
+    packagesTimeViewer.root.style.display = 'none';
     this.root.append(packagesViewer.root);
+    this.root.append(packagesTimeViewer.root);
   }
 
   static showSelectionContextPanel(t: DG.DataFrame, uaToolbox: UaToolbox, backToView: string, options?: {showDates: boolean}) {
@@ -123,17 +133,13 @@ export class PackagesView extends UaView {
       'To': getTime(dateTo)});
     if (options?.showDates ?? true)
       filterDiv.append(timeFilterDiv);
-    const usersData: {[key: string]: { e: HTMLElement, c: number }} = {};
-    for (const r of usersHistogram.rows)
-      usersData[r.uid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.uid}}`)};
 
     const packagesData: {[key: string]: { e: HTMLElement, c: number }} = {};
     for (const r of packagesHistogram.rows)
       packagesData[r.pid] = {c: r['sum(count)'], e: r.pid === systemId ? ui.label('Core') : ui.render(`#{x.${r.pid}}`)};
 
     const filterAccordion = DG.Accordion.create();
-    const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
-      usersData[b].c - usersData[a].c), (k) => [usersData[k].e, usersData[k].c]);
+    const usersTable = getUsersTable(usersHistogram);
     const packagesTable = ui.table(Object.keys(packagesData).sort((a, b) =>
       packagesData[b].c - packagesData[a].c), (k) => [packagesData[k].e, packagesData[k].c]);
     if (usersHistogram.rowCount > 1)

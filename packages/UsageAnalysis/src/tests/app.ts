@@ -6,7 +6,7 @@ import {ViewHandler} from '../view-handler';
 
 category('App', () => {
   const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
-  const num = [4, 2, 2, 4, 3, 5];
+  const num = [4, 4, 2, 4, 3, 5];
   let initTime: number = 0;
 
   before(async () => {
@@ -28,13 +28,14 @@ category('App', () => {
       ViewHandler.changeTab(tabs[i]);
       const view = grok.shell.v.root;
       let err = null;
+      const s = tabs[i] === 'Log' ? '.grok-wait + .d4-grid canvas' : 'canvas';
       try {
-        await awaitCheck(() => view.querySelectorAll('canvas').length === num[i], '', 10000);
+        await awaitCheck(() => view.querySelectorAll(s).length === num[i], '', 10000);
       } catch (e) {
         err = 'Tab failed to load in 10 seconds';
       }
-      await awaitCheck(() => view.querySelectorAll('canvas').length === num[i],
-        `expected ${num[i]}, got ${document.querySelectorAll('canvas').length}`, 45000);
+      await awaitCheck(() => view.querySelectorAll(s).length === num[i],
+        `expected ${num[i]}, got ${document.querySelectorAll(s).length}`, 45000);
       if (err)
         throw new Error(err);
     });

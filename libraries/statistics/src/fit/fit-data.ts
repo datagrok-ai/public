@@ -69,6 +69,14 @@ export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[
   return {xs: xs, ys: ys};
 }
 
+/** Returns median from within multiple points */
+function getMedian(points: {x: number[], y: number[]}): number {
+  const mid = Math.floor(points.y.length / 2);
+  const sortedPoints = points.y.sort((a, b) => a - b);
+  const median = sortedPoints.length % 2 === 0 ? (sortedPoints[mid - 1] + sortedPoints[mid]) / 2 : sortedPoints[mid];
+  return median;
+}
+
 /** Returns median points from within multiple points with the same x. */
 function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: number[]} {
   const medianPoints: {x: number[], y: number[]} = {x: [], y: []};
@@ -79,15 +87,15 @@ function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: num
       currentPoints.y[currentPoints.y.length] = data.y[i];
       continue;
     }
-    const mid = Math.floor(currentPoints.y.length / 2);
-    const sortedPoints = currentPoints.y.sort((a, b) => a - b);
-    const median = sortedPoints.length % 2 === 0 ? (sortedPoints[mid - 1] + sortedPoints[mid]) / 2 : sortedPoints[mid];
-
+    const median = getMedian(currentPoints);
     medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
     medianPoints.y[medianPoints.y.length] = median;
     currentPoints.x = [data.x[i]];
     currentPoints.y = [data.y[i]];
   }
+  const median = getMedian(currentPoints);
+  medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
+  medianPoints.y[medianPoints.y.length] = median;
 
   return medianPoints;
 }
@@ -141,7 +149,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
     let bounds = DG.Rect.fromXYArrays(xs, ys);
     for (let i = 1; i < chartData.series!.length; i++) {
       const {xs, ys} = getPointsArrays(chartData.series[i].points);
-      if (xs.some((x) => !x) || ys.some((y) => !y))
+      if (xs.some((x) => x === undefined) || ys.some((y) => y === undefined))
         continue;
       bounds = bounds.union(DG.Rect.fromXYArrays(xs, ys));
     }

@@ -1,18 +1,19 @@
 ---
 title: "Release history"
 slug: develop/admin/releases/release-history
+position: 6 # float position is supported
 ---
 
 ## Latest version
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.2](https://hub.docker.com/r/datagrok/datagrok)                              |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.9](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.4](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
+| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
 | [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
@@ -20,15 +21,51 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
-## 2023-11-03 1.17.2
+## 2023-11-23 1.17.4
 
 ### Addressed Issues
+
+* (Improvement) GROK-14235: JS API: Utils.loadJsCss(files): dynamically load dependencies (WIP)
+* (Bug) GROK-14261: HomeView from PowerPack doesn't work as expected (WIP)
+* (Bug) GROK-14229: A user cannot add anything to Favorites 
+* (Bug) GROK-14246: JS API: `items` setter on ChoiceInput creates empty option 
+* (Bug) GROK-14243: Viewers: ScatterPlot ignores initial filtration (WIP)
+* (Bug) GROK-14254: JS API: ui.input.forProperty fails on DF property 
+* (Bug) GROK-14272: JS API: ui.input.forProperty has no option to set float format 
+* (Bug) GROK-14277: Filter Panel:  Unsupported operation: NaN.ceil() error in some cases 
+* (Bug) [#2523](https://github.com/datagrok-ai/public/issues/2523): Columns added after performing structure search cannot be shown again if hidden 
+* (Improvement) [#2357](https://github.com/datagrok-ai/public/issues/2357): Line chart: Custom tooltip 
+* (Improvement) [#1063](https://github.com/datagrok-ai/public/issues/1063): A way to indicate current viewer 
+* (Bug) [#2530](https://github.com/datagrok-ai/public/issues/2530): Errors on hovering scatter plot with formula lines 
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click 
+* (Improvement) [#2480](https://github.com/datagrok-ai/public/issues/2480): Scatterplot: default range should take into account only the rows where both axes values are present 
+* (Bug) GROK-14271: JS API: defaultValue is ignored by `ui.input.forProperty` 
+* GROK-7105: Forms viewer (WIP)
+* (Bug) [#2527](https://github.com/datagrok-ai/public/issues/2527): Scatterplot: error occurs when axes are set to log scale in some cases
+
+## 2023-11-13 1.17.3
+
+* (Bug) GROK-14182: ui.choiceInput breaks the old code 
+* (Bug) GROK-14210: UI: Format is ignored on floatInput 
+* (Improvement) [#2298](https://github.com/datagrok-ai/public/issues/2298): Bar Chart: squeeze the white space around the title (WIP)
+* (Improvement) [#2456](https://github.com/datagrok-ai/public/issues/2456): Scatterplot: ignore negatives and zero values when switching to log scale 
+* (Improvement) [#2480](https://github.com/datagrok-ai/public/issues/2480): Scatterplot: default range should take into account only the rows where both axes values are present 
+* (Bug) [#2485](https://github.com/datagrok-ai/public/issues/2485): Line chart: too much empty space if Y axis is logarithmic for specific data 
+* (Improvement) [#2484](https://github.com/datagrok-ai/public/issues/2484): Box plot: no indication what dot is hovered, wrong dot is selected in some cases 
+* (Bug) [#2483](https://github.com/datagrok-ai/public/issues/2483): Order and hide columns and Tooltip dialogs: cosmetic issues 
+* (Improvement) [#2467](https://github.com/datagrok-ai/public/issues/2467): Allow to set tab label for stacked viewers programmatically 
+* GROK-14215: Tiles Viewer: Ability to specify custom lane categories 
+* (Bug) [#2489](https://github.com/datagrok-ai/public/issues/2489): Colour selector opened from the 'style' section in properties panel cannot be closed 
+* (Bug) [#2503](https://github.com/datagrok-ai/public/issues/2503): Order and Hide: Tooltip with null category shouldn’t be that big 
+* (Bug) GROK-14221: ChoiceInputs are not refreshing in FRAC classification query 
+* (Improvement) GROK-14235: JS API: Utils.loadJsCss(files): dynamically load dependencies (WIP)
+
+
+## 2023-11-03 1.17.2
 
 
 
 ## 2023-11-02 1.17.1
-
-### Addressed Issues
 
 * (Improvement) GROK-14180: Implement waiting mode in db.runLocked 
 * (Bug) [#2330](https://github.com/datagrok-ai/public/issues/2330): Scatter plot: has to show empty categories like Box plot and Bar chart do 
@@ -37,378 +74,142 @@ See also:
 
 ## 2023-10-31 1.17.0
 
-### Addressed Issues
+Datagrok 1.17 release focuses on stability, performance, and usability improvements:
 
-* (Improvement) GROK-13475: Add the ability to configure proxies and rewrite the registry for JKG 
-* GROK-13513: JS API: Expose writeBinaryDataframes method (WIP)
-* GROK-6339: Core: Client-side caching of function results 
-* GROK-13277: ApiSamples: tests 
-* (Bug) GROK-12163: Helm: HelmCellRenderer.onMouseMove() error 
-* GROK-12354: Demo: script functionality tests 
-* (Improvement) GROK-13495: Core | URL renderer: Add LinkClickBehavior tag to control link click behavior 
-* (Bug) [#2117](https://github.com/datagrok-ai/public/issues/2117): Pinned columns are not displayed properly with some row source options for the table (WIP)
-* GROK-12457: Apps: launch test 
-* GROK-13080: Investigate the option to create test Snowflake for Grok Connect tests 
-* GROK-13469: Calculate drug likeness, toxicity and alerts for whole table from widgets 
-* (Bug) GROK-13354: Bio | Substructure search: doesn't work on Helm 
-* (Improvement) [#2144](https://github.com/datagrok-ai/public/issues/2144): Save Trellis inner viewers' states when switching between them 
-* (Improvement) [#2127](https://github.com/datagrok-ai/public/issues/2127): Density plot: auto layout 
-* (Improvement) [#2131](https://github.com/datagrok-ai/public/issues/2131): Tree map: auto layout 
-* (Bug) GROK-13538: Tree map: 'NullError: method not found: 'a' on null' error when adding viewers 
-* (Bug) [#2139](https://github.com/datagrok-ai/public/issues/2139): Scaffold tree stops working after adding an invalid structure 
-* (Improvement) [#2129](https://github.com/datagrok-ai/public/issues/2129): Network diagram: auto layout (WIP)
-* (Bug) GROK-13505: Projects: 'Bad state: No element' error ocurs when refreshing data 
-* (Bug) GROK-13509: Databases | Join DB Tables: An error occurs when selecting any checkbox 
-* (Bug) GROK-12751: Webservices | OpenWeatherMap: Unable to calculate default value "München,DE" error on the Run tab 
-* (Bug) GROK-13545: Line chart: error when hovering over some columns (e.g. Board Name) in ColumnInput 
-* (Bug) [#2154](https://github.com/datagrok-ai/public/issues/2154): Scaffold Tree: harmonization 
-* (Bug) GROK-13541: Line chart stops showing data after changing the Table setting 
-* (Bug) GROK-13542: Line chart doesn't respond on Filter (Context Pane) 
-* (Improvement) [#2121](https://github.com/datagrok-ai/public/issues/2121): Histogram: auto layout 
-* GROK-12602: Help | Viewers: add documentation about Sunburst 
-* (Improvement) [#2124](https://github.com/datagrok-ai/public/issues/2124): Pie chart: auto layout 
-* (Improvement) [#2123](https://github.com/datagrok-ai/public/issues/2123): Bar chart: auto layout 
-* GROK-12578: Usage Analysis: add & fix tests 
-* (Improvement) GROK-13522: Surface Plot: fixes 
-* (Bug) GROK-13536: Grid: 'NullError: method not found: 'Q' on null' error when applying a layout 
-* (Improvement) [#2101](https://github.com/datagrok-ai/public/issues/2101): Curves: Improve curves properties and rendering (WIP)
-* (Bug) GROK-13539: Bar chart: throws an error when Row Source is set to MouseOverGroup 
-* (Bug) [#1960](https://github.com/datagrok-ai/public/issues/1960): "Link Tables" does not persist when table data refreshed/reloaded 
-* (Bug) GROK-13528: Line chart: incorrect behavior on linked table 
-* (Bug) GROK-13560: Trellis with an inner pie chart: error when setting the Category for the pie chart 
-* (Improvement) [#2120](https://github.com/datagrok-ai/public/issues/2120): Scatter plot: auto layout 
-* (Improvement) [#2122](https://github.com/datagrok-ai/public/issues/2122): Line chart: auto layout 
-* (Improvement) [#2118](https://github.com/datagrok-ai/public/issues/2118): API configuration to define layout import settings 
-* (Bug) GROK-13563: Columns pane: first click does not scroll the grid to the corresponding column 
-* (Bug) GROK-13562: Default cell size drops for pinned columns. 
-* (Bug) GROK-13543: Line chart: error when adding Overview > Area Chart 
-* (Improvement) GROK-13410: Curves: Improve J&J curves parsing and rendering, write tests 
-* (Improvement) GROK-13575: Columns pane: column preview in the grid on mouse-over 
-* (Bug) GROK-13576: Socket pool is tainted if there was no network connection when it was created 
-* (Improvement) [#2049](https://github.com/datagrok-ai/public/issues/2049): Line Chart: min/max properties 
-* (Bug) [#2135](https://github.com/datagrok-ai/public/issues/2135): ScaffoldTree in filter panel issues 
-* (Bug) GROK-13566:  throws an error when deleting rows with an opened Trellis plot 
-* GROK-13579: Color Coding for toxicity 
-* GROK-12136: Bio: Stability and polishings 
-* (Bug) [#2011](https://github.com/datagrok-ai/public/issues/2011): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied 
-* (Bug) GROK-13586: Chem | _chemFindSimilar fails 
-* (Improvement) GROK-13585: Datlas: Retry LocalStorage calls in case of error in Proxy Storage Server 
-* (Improvement) [#2126](https://github.com/datagrok-ai/public/issues/2126): Matrix Plot: auto layout 
-* (Bug) [#2163](https://github.com/datagrok-ai/public/issues/2163): Line chart lines are displayed incorrectly in some cases (drop below the X axis) 
-* (Bug) GROK-13559: Credentials manager for WebServices is not always working 
-* (Improvement) GROK-13564: Columns pane: ability to filter by semantic type 
-* (Improvement) GROK-12850: Browser (WIP)
-* (Bug) GROK-13587: Grid: errors occur when running Tools > Data Science > Cluster 
-* (Bug) GROK-13591: Grid: the content of columns, where color coding is applied to the text, disappears 
-* (Improvement) GROK-13573: grok-tools: improvements 
-* (Bug) GROK-13590:  An issue with using the collect() function within an opencypher query with Neptune 
-* (Bug) GROK-13389: Link tables: an error occurs when trying to link two results of the same query 
-* (Bug) GROK-13597: Scatter plot: error with specific data and log scale axis  
-* GROK-13600: Databases: Add query throws an error 
-* (Improvement) [#2166](https://github.com/datagrok-ai/public/issues/2166): Pivot table: improvements 
-* (Bug) GROK-13609: Incorrect value for scalar parameters in DB 
-* GROK-13611: Chem: remove Molecular Descriptors app 
-* (Improvement) GROK-12548: Tutorials | Demo: Improve the demo app to describe platform capabilities 
-* GROK-13605: Databases: warning balloon should appear if there is no connection with GrokConnect 
-* GROK-13435: Bio: Add Copy items to Macromolecule cell context menu  
-* GROK-13607: Release notes 1.16.0 and changelogs 
-* GROK-13615: Add schema browsing support 
-* (Improvement) GROK-13394: Chem DB APIs: Use threshold for similarity (WIP)
-* (Improvement) GROK-13376: Bioreactor | SA demo (WIP)
-* (Bug) GROK-13617: FuncCall not serialized properly 
-* (Improvement) [#2098](https://github.com/datagrok-ai/public/issues/2098): Charts | Sunburst: UI/UX improvements 
-* [#2048](https://github.com/datagrok-ai/public/issues/2048): Compute: Relax file input type 
-* GROK-13608: Fix tooltips with long sentences 
-* GROK-13584: JS API Test: add checks for unhandled exceptions 
-* (Improvement) [#2165](https://github.com/datagrok-ai/public/issues/2165): Filter Panel: Always add new filters to the top  (WIP)
-* (Improvement) [#2097](https://github.com/datagrok-ai/public/issues/2097): Charts | Sunburst: Add reset viewer functionality 
-* (Bug) GROK-13526: Interpret URLs as hyperlinks: incorrect behavior with line wrapping  (WIP)
-* (Improvement) [#2096](https://github.com/datagrok-ai/public/issues/2096): Charts | Sunburst: Add different click types, highlighting, selection 
-* (Improvement) GROK-13593: Chem: Icons for files 
-* (Improvement) GROK-13620: Prevent parallel execution of the same migration query 
-* (Improvement) [#2197](https://github.com/datagrok-ai/public/issues/2197): Add zoom slider to X axis of Histogram 
-* (Bug) GROK-13629: Proxy Storage: Sometimes `user` is null in credentials (WIP)
-* (Bug) GROK-13624: Error when when saving credentials for a newly created user 
-* (Improvement) GROK-13631: If function shouldn't calculate unused value 
-* (Bug) GROK-13632: when starting an unsaved query with parameters in dataQueryView, the form with editing parameters is not shown on the first run 
-* (Improvement) GROK-13583: TM: save state 
-* GROK-11231: Datagrok C++ functions (WIP)
-* (Improvement) [#2106](https://github.com/datagrok-ai/public/issues/2106): Curves: Write documentation (WIP)
-* (Bug) GROK-13642: GridExt | html cells overlay pinned columns  
-* (Improvement) [#2208](https://github.com/datagrok-ai/public/issues/2208): PowerGrid: SmartForm (WIP)
-* (Bug) GROK-13510: Scripts:  'undefined is not iterable (cannot read property Symbol(Symbol.iterator))' error 
-* (Bug) GROK-13644: Exception on saving integer package properties 
-* (Bug) GROK-13122: PI connection: timezone convertions (WIP)
-* (Bug) GROK-13651: Databases | Connections: testing connection issue 
-* (Bug) GROK-13653: Access provider issue 
-* (Bug) [#2198](https://github.com/datagrok-ai/public/issues/2198): Pivot table: editing and saving issues 
-* (Bug) GROK-12663: Scatter plot: categorical legend breaks on dataframe change 
-* (Improvement) GROK-13656: Grid: adaptive cell rendering for numbers: color-code if the column width is too small (WIP)
-* (Bug) GROK-13659: Bio | Tools: Fix MaxMonomerLength Macromolecule cell renderer 
-* [#831](https://github.com/datagrok-ai/public/issues/831): HitTriage (WIP)
-* (Bug) GROK-13657: Welcome | Learn | Wiki: fix links 
-* (Bug) GROK-13257: Chem | Structural Alerts, Curate, Elemental Analysis: for SPGI, it defaults to Core instead of Structure 
-* (Bug) GROK-13673: Postgres | Chembl | Browse | Specified number of ChEMBL structures: error when running form the sidebar 
-* GROK-13677: Remove debugQuery from DebugSettings 
-* GROK-13001: Viewers: handling of doubles, infinity, -infinity, NaN, and large scale floating point numbers 
-* (Improvement) [#2057](https://github.com/datagrok-ai/public/issues/2057): Box plot has to render structures on the X axis 
-* (Bug) GROK-13667: Grid: resizing columns incorrect handling 
-* (Bug) GROK-13666: Datlas: Cannot read large files (>10 Mb) on JnJ (WIP)
-* (Bug) GROK-13684: if the sql script in editor has been edited and some @inputs have been removed, it will still add them to the params and then the form will be rendered with these parameters 
-* (Bug) GROK-13671: Databases | Parametrized queries: do not generate lists of values 
-* (Bug) GROK-13507: Databases | PostgresDart: when running the parameterized query Orders from the sidebar, an error occurs 
-* GROK-13640: Bio: WebLogo property to control positions' labels visibility 
-* (Improvement) GROK-13643: Grok-tools: check improvements 
-* (Improvement) GROK-13691: Replace Multivariate Analysis to ML  
-* (Bug) GROK-13554: Tutorials | Multivariate Analysis, Chem: do not recognize some steps as completed (WIP)
-* (Bug) GROK-13310: Bio | Tools: Fix Split to monomers 
-* (Bug) GROK-13693: Scripts Manager: doesn't show all scripts 
-* (Bug) GROK-13448: "Refresh"-ing DB query resets the sizes of Grid cells 
-* (Improvement) GROK-13709: Packages: Set .X to distinguish manually deployed versions 
-* (Bug) GROK-13710: Author category filter doesn't work 
-* (Bug) GROK-13658: Order and Hide Columns: the Column List's hamburger menu appears in the Search field (WIP)
-* (Bug) GROK-13124: Context Pane: adding properties as a column works incorrectly 
-* (Bug) GROK-13712: Unable to download file 
-* (Improvement) GROK-13708: Bio | Tools: Optimize WebLogo with splitterAsFastaSimple 
-* (Bug) GROK-12898: Chem | Descriptors: error on clicking the Select button 
-* (Bug) GROK-13540: Bar chart: throws an error when setting Axis Type to logarithmic (WIP)
-* (Bug) [#2060](https://github.com/datagrok-ai/public/issues/2060): Projects:  the tabs order is changed from the original uploaded project state 
-* (Bug) [#2104](https://github.com/datagrok-ai/public/issues/2104): Curves: Fix Neo curves detectors (if needed) (WIP)
-* (Bug) GROK-13713: Chem | Incorrect molecule rendering 
-* (Improvement) GROK-13715: Anonymous session 
-* (Improvement) [#2203](https://github.com/datagrok-ai/public/issues/2203): Box plot: improvements for structures rendering 
-* (Bug) GROK-13717: Unable to use scripts in add new column 
-* (Bug) GROK-13719: After applying Refresh several times, there is an error:  `Resulting message size [x] is too large for configured max of [y]` 
-* (Bug) GROK-13718: Grid: custom renderers: custom cell sizes get reset when you open a project 
-* GROK-13724: Add dbValueUuid field to FuncCallParam 
-* (Improvement) GROK-13720: JS-API: Fix description of length, ColumnList 
-* (Bug) GROK-13727: When run dataquery with changed parameters from context menu in the refresh pane of table_view default parameters are displayed 
-* GROK-13172: Chem | implement substructure search using JSSubstructLibrary 
-* (Improvement) [#2105](https://github.com/datagrok-ai/public/issues/2105): Curves: Outliers and curves colors changes (WIP)
-* (Bug) GROK-13711: Bar chart: error after reapplying a layout in some cases 
-* GROK-13721: UA: Test Track 
-* (Improvement) GROK-13729: Grid: shift+drag to select multiple columns 
-* (Improvement) GROK-13737: Cleanup package if it's not in NPM and is not installed 
-* (Improvement) GROK-13732: Python scripts harmonization 
-* (Improvement) GROK-13743: Ability to set choice items and value separately 
-* (Bug) GROK-13481: JS API: Package loaded via `dapi` has empty webRoot 
-* (Bug) GROK-13750: Can't create custom viewer from JS 
-* (Bug) [#2272](https://github.com/datagrok-ai/public/issues/2272): Loading page performance issues 
-* (Improvement) GROK-13571: Chem | Ability to terminate substructure search if substructure has been changed 
-* (Bug) [#2270](https://github.com/datagrok-ai/public/issues/2270): Box plot: selected row dots are not brought to the foreground 
-* GROK-13756: Fix datetime parameter 
-* GROK-13757: Fix column_list parameter 
-* GROK-13758: Fix boolean parameter support 
-* GROK-13755: Create tests for Python scripts 
-* (Improvement) GROK-13744: R scripts harmonization 
-* GROK-13760: Create tests for Julia scripts 
-* (Improvement) [#2271](https://github.com/datagrok-ai/public/issues/2271): Table: introduce a property to disable "read-only" warning  
-* (Improvement) [#1063](https://github.com/datagrok-ai/public/issues/1063): A way to indicate current viewer 
-* GROK-13731: Scripts harmonization (WIP)
-* (Bug) GROK-13534: Scatterplot: incorrect behavior when switching colorcoding type in grid 
-* GROK-13751: Data | Join tables: doesn't work 
-* (Bug) GROK-13738: Line chart: duplicated values on Y axis 
-* (Improvement) GROK-13745: Julia scripts harmonization 
-* (Bug) GROK-13771: Databases | Postgres | Northwind: error when running the productDetails query 
-* (Bug) GROK-13772: Databases | Postgres | Starbucks | stores in @state with sales greater than @sales: error 
-* (Bug) GROK-13327: Chem |  Substructure Search: two identical panels open on the Filter Panel 
-* (Improvement) GROK-13780: Nodejs scripts harmonization (WIP)
-* (Bug) GROK-13791: Chem | Chemical space (using t-SNE) fails on smiles dataset 
-* (Improvement) GROK-12526: Bio | Top menu structurization 
-* (Improvement) [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements (WIP)
-* (Bug) GROK-13802: Chem | fingerprints from top menu fail 
-* (Improvement) GROK-13803: Grok scripts harmonization (WIP)
-* (Bug) GROK-12452: Scripting: R, Julia, NodeJS, Octave do not support map input type (WIP)
-* (Bug) [#2292](https://github.com/datagrok-ai/public/issues/2292): Charts | Sunburst: doesn't respond on table switching 
-* (Bug) GROK-13259: Bio | Substructure Search: wrong styles in the dialog 
-* GROK-13790: Peptides | fix tests for package publishing 
-* GROK-12946: Chem | UI tests (WIP)
-* GROK-12310: Auto-generated JS API from Dart code (WIP)
-* (Bug) [#2284](https://github.com/datagrok-ai/public/issues/2284): Certain scenarios make it impossible to move or stack a viewer 
-* (Bug) [#2286](https://github.com/datagrok-ai/public/issues/2286): Box plot: markers overlap with X axis and categories in some cases 
-* (Bug) [#2293](https://github.com/datagrok-ai/public/issues/2293): Cannot search in 'order and hide columns' if table contains a summary column 
-* (Bug) GROK-13813: Filter Panel: `NullError: method not found: 'c' on null` 
-* (Bug) GROK-13815: Chem | sketcher inchi test fails (WIP)
-* GROK-12242: Chem | Sketchers: set up smarts to the sketchers (WIP)
-* (Bug) GROK-13357: Tutorials: the original table inherits the actions from the tutorial, if it's not complete 
-* GROK-13664: Provide ML / UMAP, ML / tSNE, ML / SPE features via the package EDA 
-* (Bug) GROK-13823: PowerGrid: Remove URL rendering in ImageUrl 
-* (Improvement) GROK-13825: PowerGrid | ImageUrl: Show full image on double click or in the context panel (WIP)
-* (Bug) GROK-13826: Tutorials | Calculated Columns: doesn't recognize some steps as completed (WIP)
-* GROK-13824: Tutorials app: fix doc links  
-* (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
-* (Bug) [#2285](https://github.com/datagrok-ai/public/issues/2285): Scatter plot: default marker size is not changed on moving slider 
-* (Improvement) [#2300](https://github.com/datagrok-ai/public/issues/2300): Trellis plot:  add the ability to visualize just one category 
-* (Bug) [#2316](https://github.com/datagrok-ai/public/issues/2316):  Errors on combining scaffold tree with some other filters 
-* (Improvement) [#2103](https://github.com/datagrok-ai/public/issues/2103): Curves: Property panel changes (WIP)
-* (Bug) [#2301](https://github.com/datagrok-ai/public/issues/2301): Histogram slider's end can be dragged out of valid range 
-* (Bug) GROK-13843: ScatterPlot: displaying the legend issues 
-* (Improvement) [#2276](https://github.com/datagrok-ai/public/issues/2276): Peptides: UI/UX improvements (WIP)
-* GROK-13107: Bio | Tools: Substructure search for Helm (WIP)
-* (Bug) GROK-13848: Chem | Substructure search results flickering 
-* (Bug) GROK-11664: Test engine: Run tests by name and not by condition 
-* (Improvement) GROK-13850: Test Manager: improve hierarchy 
-* (Improvement) [#2100](https://github.com/datagrok-ai/public/issues/2100): Curves: Improve cell renderer edit mode (WIP)
-* (Improvement) GROK-13827: Fix file input 
-* GROK-13852: Create tests for Octave scripts 
-* GROK-13855: Initial Setup view (WIP)
-* (Improvement) GROK-12316: Core: Number inputs: ability to use slider 
-* (Improvement) GROK-13857: Core: Shell: Ability to customize ribbon panels (WIP)
-* (Improvement) [#2302](https://github.com/datagrok-ai/public/issues/2302): Line chart: Allow to split by multiple columns 
-* (Bug) [#2297](https://github.com/datagrok-ai/public/issues/2297): Viewers | Tooltip: a custom tooltip should not be limited in the number of values 
-* GROK-13754: Improve help docs contribution page (WIP)
-* (Bug) GROK-13874: Box plot: incorrectly displays values on the X axis 
-* (Bug) [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalise to filter' option: Y axis values are not updated on zooming 
-* GROK-13748: Bio: GetRegion for Macromolecule 
-* (Bug) [#2328](https://github.com/datagrok-ai/public/issues/2328): Viewer docked at the left or at the top is sometimes unexpectedly hidden 
-* (Improvement) GROK-13890: OpenId OKTA support 
-* GROK-13798: Macromolecules | todo (WIP)
-* GROK-13849: Tests for all demo functions 
-* (Bug) GROK-13904: Redocking viewer leads to multiple entries in .viewers list 
-* GROK-13765: Chem | Cheminformatics for developers docs 
-* (Improvement) [#2335](https://github.com/datagrok-ai/public/issues/2335): Tooltip harmonization 
-* GROK-13912: Chem | Do not recalculate 3D coords if exist 
-* GROK-13907: Help | ANOVA 
-* (Bug) GROK-13873: Chem | Filter Panel: when opening, the error repeats many times (WIP)
-* GROK-13714: Update PCA/UMAP/tSNE docs 
-* (Bug) GROK-13909: Arrow: an error occurs when opening files 
-* (Bug) GROK-13906: Demo | Radar viewer: an error occurs when closing 
-* (Bug) GROK-13934: Core | Grid: Double click on row number throws exception 
-* GROK-13817: Chem | Highlighting multiple substructures 
-* (Bug) [#2330](https://github.com/datagrok-ai/public/issues/2330): Scatter plot: has to show empty categories like Box plot and Bar chart do 
-* GROK-13809: Update peptides SAR documentation (WIP)
-* (Bug) GROK-13892: Charts | Surface plot: error occurs when hovering over datetime column in column selector 
-* (Bug) [#2350](https://github.com/datagrok-ai/public/issues/2350): 'Error loading line chart' on applying layout, if line chart has categorical X axis and row source = Selected 
-* (Bug) GROK-13472: Bio | Tools: VdRegionsViewer fit positionWidth for WebLogos 
-* (Improvement) [#2306](https://github.com/datagrok-ai/public/issues/2306): Implement hierarchical clustering for molecules (WIP)
-* (Improvement) GROK-13933: Add support of other than CSV formats to TableInput 
-* (Improvement) GROK-13936: Chem | Highlight inverse 
-* (Improvement) GROK-13918: Core | Grid: Sorting isn't saved after project reopening 
-* (Improvement) GROK-13917: Grid: syncNewColumns 
-* GROK-13955: Grid: DataFrame cell renderer 
-* (Bug) [#2344](https://github.com/datagrok-ai/public/issues/2344): Categorical filter hovering does not highlight data in plots 
-* GROK-13645: JS API Test: package settings (WIP)
-* (Improvement) GROK-13880: Bio | Helm: support for case-sensitive monomer symbols in WebEditor 
-* (Bug) GROK-13961: Bio | Helm: is not rendered properly 
-* (Bug) GROK-13962: Bio: Fix cell renderer width limit for devicePixelRatio less than 1 
-* (Bug) GROK-13970: Run option in Dev panel does not work 
-* (Bug) GROK-13967: Chem | fingerprints from compute fix 
-* (Improvement) [#2303](https://github.com/datagrok-ai/public/issues/2303): 3-point-colour scheme for gradient colors (WIP)
-* GROK-13972: ApiSamples: fix/rewrite scripts (WIP)
-* (Improvement) GROK-13679: Improve file input/output for Python/R scripting (WIP)
-* GROK-13966: Chem | expose fingerprints options for similarity, diversity 
-* (Bug) GROK-13983: Scatterplot: incorrect behavior when Row Source = FilteredSelected 
-* (Improvement) GROK-13990: Grid: improve default datetime column width 
-* GROK-13989: Core: in-grid tables: support for linked tables (WIP)
-* GROK-13991: Grid: Table cells: ability to render table cells with any viewer 
-* (Improvement) GROK-13992: Grid: ability to clone grid columns (not affecting the dataframe) 
-* (Bug) GROK-13982: Scatterplot: works incorrectly when Row Source = SelectedOrCurrent 
-* (Bug) GROK-13986: Scatterplot: for markers, the legend is not saved in the layout 
-* (Bug) GROK-13980: Scatter plot: error when setting linear colorcoding and then Marker 
-* GROK-13993: Umap with sparse matrix 
-* GROK-13229: Variance-based approach 
-* (Bug) GROK-13977: Scatterplot: setting another Table doesn't work 
-* GROK-11848: Project hierarchy UX and UI (WIP)
-* (Improvement) [#2358](https://github.com/datagrok-ai/public/issues/2358): Layouts: save the persistence of filter item search visibility 
-* (Improvement) [#2298](https://github.com/datagrok-ai/public/issues/2298): Bar Chart: squeeze the white space around the title 
-* GROK-13396: Dockerfiles: enhancements 
-* (Bug) GROK-13957: Helm: Show tooltip on Helm monomer rendered with WebEditor (WIP)
-* (Improvement) [#2367](https://github.com/datagrok-ai/public/issues/2367): Core | Grid: Pinned rows improvements 
-* GROK-14002: Grid: Rows context panel: Content pane 
-* GROK-14010: Chem | remove core fingerprints 
-* (Bug) GROK-14014: Bio | Notation convertion generates wrong HELM for DNA 
-* GROK-13947: Usage Analysis: Usage tab for packages 
-* (Improvement) GROK-13971: Improve exporting of logs to CloudWatch 
-* GROK-13994: Chem | Implement filter by superstructure, exact structure, similarity score 
-* GROK-11775: Sim & Fit | Web Autosolver (WIP)
-* (Bug) GROK-13979: Scatterplot: editing conditional colorcoding in grid doesn't change the legend on scatterplot 
-* (Bug) GROK-13028: Core | Network diagram: Column name fields aren't set properly if you set them in options 
-* (Bug) GROK-8994: Network Diagram: the viewer responds to outer key events 
-* (Improvement) GROK-14027: Chem | Filter panel: rewrite the old value when Current value > Use as filter is used 
-* GROK-14031: JS UI Test: Table Linking 
-* (Bug) GROK-14033: FormViewer.form returns boolean instead of Form 
-* (Bug) GROK-14003: LineChart | Legend: incorrect behavior (WIP)
-* (Improvement) [#2360](https://github.com/datagrok-ai/public/issues/2360): Line chart:  hovering and selecting improvements 
-* GROK-13680: JS API Test: DataFrame 
-* (Improvement) GROK-13953: Core | Color input: Change the color input to the color coding one 
-* GROK-13723: Help: rewrite the scatterplot documentation 
-* (Bug) GROK-14006: Trellis plot: doesn't show data when Table is switched 
-* (Bug) GROK-14015: Grid | Filter Panel: error when cloning 
-* (Bug) GROK-14032: Line Chart: rendering and performance issues on >200K rows datasets 
-* (Bug) GROK-8789: Packages: PdfViewer won't work 
-* (Bug) GROK-14048: TableView doesn't support path changing 
-* (Improvement) GROK-14051: Tags that start with "%" should be serialized to the layout and back 
-* GROK-14052: Core | Grid: Custom column order is not saved after refresh 
-* (Improvement) [#2130](https://github.com/datagrok-ai/public/issues/2130): Box plot: auto layout 
-* [#2394](https://github.com/datagrok-ai/public/issues/2394): Curves: Replace autostart tag with init tag 
-* (Bug) GROK-14024: Demo | Chemical databases: infinite loading on Run 
-* (Bug) GROK-14053: Core | URL renderer: Fix URL tooltip rendering 
-* (Bug) GROK-14054: Core | Text renderer: Last word in the cell isn't rendered properly (WIP)
-* (Improvement) [#2357](https://github.com/datagrok-ai/public/issues/2357): Line chart: Custom tooltip 
-* GROK-7279: FunctionView (WIP)
-* GROK-14055: Functions: input lookup tables 
-* (Bug) GROK-14037: Chem | Scaffold tree: wrong handling of checkboxes enabling 
-* (Improvement) [#2273](https://github.com/datagrok-ai/public/issues/2273): Implement global permissions for some entities 
-* (Bug) [#2388](https://github.com/datagrok-ai/public/issues/2388): Line chart: Optimize the display of labels on the x-axis 
-* (Bug) [#2364](https://github.com/datagrok-ai/public/issues/2364): Some rows are still shown if filter's range is set out of data's boundaries 
-* (Improvement) [#2355](https://github.com/datagrok-ai/public/issues/2355): Chem: Integrate Scaffold Tree with color-coded fragments 
-* (Improvement) [#2396](https://github.com/datagrok-ai/public/issues/2396): Line chart with split performance issue on large amounts of data  
-* GROK-13871: EDA | ANOVA: TS implementation (WIP)
-* (Improvement) GROK-13131: Bio | Tools: BiostructureViewer support formats 
-* (Improvement) GROK-14025: Tutorials: reduce startup loads 
-* GROK-13009: PKPD: Rewrite using a new engine and showcase it as a demo 
-* (Improvement) GROK-14071: Core | Stats: Add capability to get stats from values array in JS API 
-* GROK-11511: Client-side caching of query results 
-* GROK-14060: Chem: Generic method to draw lines on scatter plot (to use in activity cliffs, mmpa, etc.) 
-* (Improvement) GROK-14074: Core | GridCell: Add capability to set grid cell value with onCellValueEdited event in JS API 
-* (Improvement) GROK-12304: DG.Accordion allows panes dragging 
-* (Bug) [#2402](https://github.com/datagrok-ai/public/issues/2402): Scatter plot: min/max values are not saved/restored in the layout 
-* GROK-14047: Core | Viewers: Summary viewer (WIP)
-* GROK-14083: Core: "Plots" context panel for multiple columns (WIP)
-* (Improvement) GROK-14084: Core: Legend: Improve auto sizing 
-* (Bug) [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold tree viewer: coloring can't be saved to the Layout 
-* (Improvement) GROK-14085: Move Bioreactor Demo to the Compute section 
-* (Improvement) GROK-13466: Clickable URLs 
-* [#2406](https://github.com/datagrok-ai/public/issues/2406): GROK-14085: Bioreactor: Demo update 
-* (Improvement) [#2368](https://github.com/datagrok-ai/public/issues/2368): Sketcher | structure lookup service: fix the behavior 
-* (Bug) [#2408](https://github.com/datagrok-ai/public/issues/2408): Scatter plot: incorrect tooltip for 'zoom and filter' 
-* (Bug) [#2359](https://github.com/datagrok-ai/public/issues/2359): Filter Panel: for some filters the item search is not working when another filter search is open 
-* (Bug) GROK-14094: Browser: active view is unexpectedly changed 
-* GROK-971: Harmonize 'Settings' dialog (WIP)
-* GROK-14101: Core: InputForm (WIP)
-* (Bug) GROK-13996: Grid: can't move the column to the first position without adding it to the Filter Panel 
-* (Improvement) GROK-14059: Add distribution of settings between servers using message queue 
-* GROK-14099: Peptides: Mutation cliffs in parallel workers 
-* (Bug) GROK-14110: Databases| Postgres | Chembl: GetTop100 on each table throws an error 
-* (Bug) GROK-14113: PC plot: throws an error if you set Color to the column with 'Infinity' values 
-* (Bug) GROK-13363: Top Menu | Bio: The grouping of menu items works only when the full menu is enabled 
-* (Bug) GROK-14072: Projects:  query results can't be opened after saving to the project with sync 
-* (Improvement) GROK-14123: Ability to execute query without connection access (WIP)
-* null 
-* (Improvement) GROK-14124: EDA | ANOVA: Rename & move under Analyze top menu 
-* (Bug) GROK-14009: Trellis plot: after reapplying the layout the inner viewer can't be changed to pie chart 
-* (Improvement) GROK-14125: Help | ANOVA: Update wiki with respect to changes GROK-14124 
-* (Bug) GROK-14126: Tutorials | MVA: Fix tutorial with respect to menu changes 
-* (Improvement) GROK-14133: Core | Slider input: Add step for the slider input (WIP)
-* (Improvement) GROK-13889: Scripting | Variables: Add the scrollbar to the variables window 
-* (Bug) GROK-14132: Browse | Plugins | API Samples (any plugin): throw an error 
-* (Bug) GROK-14017: Filter Panel: the min and max values for dates do not fit the entire value 
-* (Bug) GROK-13888: Order and Hide Columns breaks when the filter panel is open 
-* (Bug) GROK-14007: Trellis plot: error when changing axes 
-* (Bug) [#2395](https://github.com/datagrok-ai/public/issues/2395): Line chart: unaggregated tooltip and hovered row do not match in some cases 
-* (Bug) GROK-14148: HIstogram, Treemap: incorrect behavior on switching the Table property (WIP)
-* (Bug) GROK-14147: Bar chart: NaN.ceil() error when setting Value on some data 
-* (Bug) [#2454](https://github.com/datagrok-ai/public/issues/2454): Categories contain duplicate values using datadriven queries 
-* (Improvement) [#2336](https://github.com/datagrok-ai/public/issues/2336): Trellis plot: improve the display of outer and inner viewers properties 
-* (Bug) GROK-14136: Peptides | SAR: errors when running (WIP)
-* (Bug) GROK-13946: Trellis plot: error on some Row Source values 
-* (Bug) GROK-14156: Context Panel | Gasteiger | Add as column: errors and no result (WIP)
-* (Bug) GROK-14163: Browse | Plugins| test: 'Bad state: No element' error 
+* The ability to configure the platform through the **Settings** wizard.
+* Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
+* Function view now shows function signature if parameters are not user-editable.
+* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/function_results_cache#client-side-cache)
+* Summary viewer that aggregates the numeric attributes of features.
+* Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
+* **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.
+* **Plots** context pane automatically visualizing selected columns, see [UX updates](https://community.datagrok.ai/t/ux-updates/544/5?u=oahadzhanian.datagrok.ai) for details.
+* Lookup tables that let you initialize inputs with a set of pre-defined values. For details, see [Lookup tables](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#lookup-tables).
+* [Okta](https://www.okta.com/) support for authorization.
 
+### Visualization and usability improvements
+
+* [#2335](https://github.com/datagrok-ai/public/issues/2335): Tooltip harmonization.
+* [#1063](https://github.com/datagrok-ai/public/issues/1063): A way to indicate current viewer.
+* Auto sizing for viewers' legend.
+* New color input for color coding.
+* Columns pane: the ability to filter columns by semantic type and preview their content in the grid on mouse-over.
+* Viewers: handling of doubles, `infinity`, `-infinity`, `NaN`, and large-scale floating point numbers.
+* Slider in number inputs.
+* Fixed:
+   * [#2368](https://github.com/datagrok-ai/public/issues/2368): Sketcher | structure lookup service: fix the behavior.
+   * [#1960](https://github.com/datagrok-ai/public/issues/1960): "Link Tables" does not persist when table data refreshed/reloaded.
+   * [#2011](https://github.com/datagrok-ai/public/issues/2011): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied.
+   * [#2060](https://github.com/datagrok-ai/public/issues/2060): Projects: the tabs order is changed from the original uploaded project state.
+   * [#2272](https://github.com/datagrok-ai/public/issues/2272): Loading page performance issues.
+   * [#2284](https://github.com/datagrok-ai/public/issues/2284): Certain scenarios make it impossible to move or stack a viewer.
+   * [#2297](https://github.com/datagrok-ai/public/issues/2297): Viewers | Tooltip: a custom tooltip should not be limited in the number of values.
+   * [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if the scaffold tree viewer or structure filter is added.
+   * [#2344](https://github.com/datagrok-ai/public/issues/2344): Categorical filter hovering does not highlight data in plots.
+   * [#2328](https://github.com/datagrok-ai/public/issues/2328): Viewer docked at the left or at the top is sometimes unexpectedly hidden.
+* [Grid](../../visualize/viewers/grid.md):
+  * [#2271](https://github.com/datagrok-ai/public/issues/2271): Introduced a property to disable "read-only" warning.
+  * [#2367](https://github.com/datagrok-ai/public/issues/2367): Pinned rows improvements.
+  *  [#2348](https://github.com/datagrok-ai/public/issues/2348): Add the Sync New Columns setting to the grid.
+  * Custom column order is now saved after refresh.
+  * The ability to clone grid columns not affecting the dataframe.
+  * Column selection by holding Shift and mouse-dragging the column header, see [Grid updates](https://community.datagrok.ai/t/grid-updates/616/11).
+  * Fixed:
+    * [#2293](https://github.com/datagrok-ai/public/issues/2293): Cannot search in 'order and hide columns' if table contains a summary column
+    * Sorting isn't saved after the project reopens.
+    * Custom cell sizes get reset when you open a project.
+    * Order and Hide Columns: the Column List's hamburger menu appears in the Search field.
+* [Filter Panel](../../visualize/viewers/filters.md):
+  * [#2358](https://github.com/datagrok-ai/public/issues/2358): Layouts: save the persistence of filter item search visibility.
+  * [#2165](https://github.com/datagrok-ai/public/issues/2165): Always add new filters to the top.
+  * Fixed:
+    * [#2316](https://github.com/datagrok-ai/public/issues/2316): Errors on combining scaffold tree with some other filters.
+    * [#2359](https://github.com/datagrok-ai/public/issues/2359): For some filters the item search is not working when another filter search is open
+    * The min and max values for dates do not fit the entire value.
+* For [Scatter plot](../../visualize/viewers/scatter-plot.mdx) fixed:
+  * [#2285](https://github.com/datagrok-ai/public/issues/2285): Default marker size is not changed on moving slider.
+  * [#2408](https://github.com/datagrok-ai/public/issues/2408): Incorrect tooltip for 'zoom and filter'.
+  * [#2402](https://github.com/datagrok-ai/public/issues/2402): Min/max values are not saved/restored in the layout.
+  * [#2330](https://github.com/datagrok-ai/public/issues/2330): Has to show empty categories like Box plot and Bar chart do.
+* [Trellis plot](../../visualize/viewers/trellis-plot.md):
+
+  * [#2336](https://github.com/datagrok-ai/public/issues/2336): Improved the display of outer and inner viewers properties.
+  * [#2300](https://github.com/datagrok-ai/public/issues/2300): Added the ability to visualize just one category.
+       
+* [Line Chart](../../visualize/viewers/line-chart.md):
+  * [#2302](https://github.com/datagrok-ai/public/issues/2302): Allows to split by multiple columns.
+  * [#2357](https://github.com/datagrok-ai/public/issues/2357): Custom tooltip.
+  * [#2360](https://github.com/datagrok-ai/public/issues/2360): Hovering and selecting improvements:
+    * Hovering over a line highlights data on other viewers.
+    * Ctrl+click, Shift +click, and Ctrl+Shift +click selection toggling actions for lines
+    * Clicking the line selects the values on other viewers.
+  * [#2049](https://github.com/datagrok-ai/public/issues/2049): Added min/max properties.
+  * [#2396](https://github.com/datagrok-ai/public/issues/2396): Line chart with split performance issue on large amounts of data.
+  * Fixed:
+    * [#2163](https://github.com/datagrok-ai/public/issues/2163): Line chart lines are displayed incorrectly in some cases (drop below the X axis).
+    * [#2395](https://github.com/datagrok-ai/public/issues/2395): Unaggregated tooltip and hovered row do not match in some cases.
+    * [#2388](https://github.com/datagrok-ai/public/issues/2388): Optimize the display of labels on the x-axis.
+    * [#2350](https://github.com/datagrok-ai/public/issues/2350): 'Error loading line chart' on applying layout if line chart has a categorical X axis and **Row Source** is set to `Selected`.
+
+* [Histogram](../../visualize/viewers/histogram.md):
+
+  * [#2197](https://github.com/datagrok-ai/public/issues/2197): Add zoom slider to X axis of Histogram.
+  * Fixed:
+    * [#2301](https://github.com/datagrok-ai/public/issues/2301): Histogram slider's end can be dragged out of valid range.
+    * [#2364](https://github.com/datagrok-ai/public/issues/2364): Some rows are still shown if filter's range is set out of data's boundaries.
+    * [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalise to filter' option: Y axis values are not updated on zooming.
+* [Box Plot](../../visualize/viewers/box-plot.md):
+  * [#2203](https://github.com/datagrok-ai/public/issues/2203): Improvements for structures rendering.
+  * [#2057](https://github.com/datagrok-ai/public/issues/2057): Added structures rendering on the X axis.
+  * FIxed:
+    * [#2270](https://github.com/datagrok-ai/public/issues/2270): Selected row dots are not brought to the foreground.
+    * [#2286](https://github.com/datagrok-ai/public/issues/2286): Markers overlap with X axis and categories in some cases.
+* For [bar chart](../../visualize/viewers/bar-chart.md):  [#2298](https://github.com/datagrok-ai/public/issues/2298): Squeezed the white space around the title.
+* Pivot table:
+   * [#2166](https://github.com/datagrok-ai/public/issues/2166): Improvements: 
+     * An option for filtering or reflecting a filter.
+     * The **Row Source** setting.
+     * Provided a way to collapse the configuration via the **Show Header** option.
+  * Fixed [#2198](https://github.com/datagrok-ai/public/issues/2198): Editing and saving issues.
+
+### Data Access
+
+* Improvements:
+  * Schema browsing support.
+  * Warning balloon if there is no connection with GrokConnect.
+* Fixed [#2454](https://github.com/datagrok-ai/public/issues/2454): Categories contain duplicate values using datadriven queries.
+
+### Improvements for developers
+
+* [#2273](https://github.com/datagrok-ai/public/issues/2273): Implemented global permissions for some entities.
+* Improved exporting of logs to CloudWatch: send logs to Amazon CloudWatch according to the Log Export Blocks you can create.
+* Support of other than CSV formats to TableInput.
+* The scrollbar for the variables window.
+* Python scripts harmonization:
+  * Fixed DateTime parameter.
+  * Fixed column_list parameter.
+* Julia scripts harmonization: fixed boolean parameter support.
+* Ability to set choice items and values separately.
+* Option to allow `DG.Accordion` panes dragging.
+
+#### [JS API](../../../develop/packages/js-api.md)
+
+* [#2118](https://github.com/datagrok-ai/public/issues/2118): API configuration to define layout import settings 
+ * Capability to set grid cell value with `onCellValueEdited` event.
+* Capability to get stats from values array.
+
+### Enhancements in packages
+
+* [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/CHANGELOG.md): ToAtomicLevel is available for non-linear HELM structures, enhancements for VdRegionsViewer and WebLogo, other improvements and bug fixes.
+* [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): Highlighting multiple substructures with different colors inside one molecule structure; filtering by superstructure, exact structure, and similarity score; scaffold tree integration with color-coded fragments and other enhancements.
+* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): hierarchical clustering for molecules, the ability to select all leaves from a certain node, a separate loader view to the dendrogram, the ability to switch distance calculation method for macromolecules (Hamming or Levenstein) in case of MSA, and other enhancements.
+* [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md): new [smart forms](https://community.datagrok.ai/t/powergrid-smartform/774/1) - a special cell type that renders values from multiple columns in one cell; image rendering on double click on the image URL.
+* [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): aggregations for series statistics, **Context Pane** changes, improved curves demo application, and bug fixes.
+* [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md): Select All and Deselect All functionality to all viewers, mean activity column for the Most Potent Residues viewer,  WebLogo to Selection table.
+* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improvements for sunburst and surface plot.
+* [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): new chem tutorials on activity cliffs, R-group analysis, similarity and diversity search, substructure search and filtering.
 
 ## 2023-10-04 1.16.7
-
-### Addressed Issues
 
 * (Improvement): Connectors: Added gzip compression of socket message
 * (Improvement): Connectors: Added offset, fixed caching 
@@ -416,15 +217,11 @@ See also:
 
 ## 2023-09-14 1.16.6
 
-### Addressed Issues
-
 * (Bug) GROK-13904: Redocking viewer leads to multiple entries in .viewers list 
 * (Bug) [#2350](https://github.com/datagrok-ai/public/issues/2350): 'Error loading line chart' on applying layout, if line chart has categorical X axis and row source = Selected 
 
 
 ## 2023-09-06 1.16.5
-
-### Addressed Issues
 
 * (Bug) GROK-13874: Box plot: incorrectly displays values on the X axis 
 * (Bug) [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalize to filter' option: Y axis values are not updated on zooming 
@@ -432,8 +229,6 @@ See also:
 * (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
 
 ## 2023-08-30 1.16.4
-
-### Addressed Issues
 
 * (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
 * (Improvement) [#2057](https://github.com/datagrok-ai/public/issues/2057): Box plot has to render structures on the X axis 
@@ -449,13 +244,9 @@ See also:
 
 ## 2023-08-17 1.16.3
 
-### Addressed Issues
-
 * (Improvement) GROK-13737: Cleanup package if it's not in NPM and is not installed 
 
 ## 2023-08-15 1.16.2
-
-### Addressed Issues
 
 * Improvement:
 * (Improvement) [#2166](https://github.com/datagrok-ai/public/issues/2166): Pivot table: improvements 
@@ -473,8 +264,6 @@ See also:
 
 
 ## 2023-07-27 1.16.1
-
-### Addressed Issues
 
 * Improvements:
   * Columns pane: column preview in the grid on mouse-over 
@@ -590,8 +379,6 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 ## 2023-06-29 1.15.4
 
-### Addressed Issues
-
 * Improvements: 
   * [#1730](https://github.com/datagrok-ai/public/issues/1730) Scaffold Tree: Filters panel integration.
 * Fixed:
@@ -599,8 +386,6 @@ Datagrok 1.16 release focuses on performance and usability improvements:
   * [#2061](https://github.com/datagrok-ai/public/issues/2061): DataFrame in viewer property is null on "viewer added" event.
 
 ## 2023-06-19 1.15.3
-
-### Addressed Issues
 
 * Improvements:  
   * [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements:
@@ -633,16 +418,12 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 ## 2023-06-02 1.15.2
 
-### Addressed Issues
-
 * (Bug) GROK-13157: Can't load table without initial permissions 
 * GROK-13075: Delete old and inactive containers 
 * (Improvement) GROK-13188: Datlas: Improve migration process 
 
 
 ## 2023-05-25 1.15.1
-
-### Addressed Issues
 
 * (Bug) GROK-13109: Databases | Mysql, MariaDB: Get top 100 on some tables throws an error.
 * (Bug) GROK-13157: Can't load table without initial permissions.
@@ -840,8 +621,6 @@ Added structure editing support for pinned columns.
 
 ## 2023-05-09 1.14.4
 
-### Addressed Issues
-
 * (Bug) GROK-12918: Viewers: Grid: An exception when dragging columns to the first position 
 * (Bug) [#1855](https://github.com/datagrok-ai/public/issues/1855): "Pack and zoom by filter": some data is missing 
 * (Bug) [#1852](https://github.com/datagrok-ai/public/issues/1852): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
@@ -854,21 +633,15 @@ Added structure editing support for pinned columns.
 
 ## 2023-05-03 1.14.3
 
-### Addressed Issues
-
 * (Improvement) GROK-12427: Move Chem descriptors and fingerprints to top-menu -> Calculations (WIP)
 
 
 ## 2023-04-28 1.14.2
 
-### Addressed Issues
-
 * (Improvement) GROK-12922: Cache and streaming compatibility 
 
 
 ## 2023-04-20 1.14.1
-
-### Addressed Issues
 
 * (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop 
 * (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last 
@@ -1158,8 +931,6 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-05-16 1.13.15
 
-### Addressed Issues
-
 * GROK-12596: Core: Viewers: support for NaN and +/\- Infinity (WIP)
 * [#1616](https://github.com/datagrok-ai/public/issues/1616): Scatter plot: zoom slider behavior is inconsistent for inverted axes
 * [#1671](https://github.com/datagrok-ai/public/issues/1671): Line chart: connects the first and last values when resizing the window
@@ -1167,13 +938,9 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-04-18 1.13.13
 
-### Addressed Issues
-
 * (Bug) [#1808](https://github.com/datagrok-ai/public/issues/1808) Line chart with logarithmic Y axis is rendering data points incorrectly
 
 ## 2023-04-12 1.13.12
-
-### Addressed Issues
 
 * (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1583): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
 * (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1761): Out of memory on adding viewer with specific data
@@ -1186,20 +953,14 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-03-29 1.13.10
 
-### Addressed Issues
-
 * (Bug) GROK-12646: for_entity method is very slow
 
 ## 2023-03-28 1.13.9
-
-### Addressed Issues
 
 * (Bug) GROK-12646: for_entity method is very slow (WIP)
 
 
 ## 2023-03-22 1.13.8
-
-### Addressed Issues
 
 * (Enhancement) [#1552](https://github.com/datagrok-ai/public/issues/1552): Scatter Plot: line labels enhancements
 * (Bug) [#1613](https://github.com/datagrok-ai/public/issues/1613): 'Error loading scatter plot' for specific data on applying layout
@@ -1273,19 +1034,13 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-03-14 1.13.7
 
-### Addressed Issues
-
 * fixes #1609 FilterGroup.add issue
 
 ## 2023-02-22 1.13.3
 
-### Addressed Issues
-
 * (Bug) Connecting to local file storage results in error (WIP)
 
 ## 2023-02-21 1.13.2
-
-### Addressed Issues
 
 * 1583 manual sketcher resizing (#1598)
 * closes #1599 Coloring and format changes are reset unexpectedly on interacting with filters if group tooltip was set
@@ -1293,16 +1048,12 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-02-15 1.13.1
 
-### Addressed Issues
-
 * Standard color schemes : update "Traffic Lights" palette
 * Grid: Enable getCellEditor for meta.columnTags
 * Grid: Fix for getGridCell
 * fix grid demo dir in its package.json
 
 ## 2023-02-13 1.13.0
-
-### Addressed Issues
 
 * update GrokConnect to version 1.1.0
 * Charts: syntax fixes in tree-viewer.ts
@@ -1729,8 +1480,6 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ## 2023-01-27 Dev build 1.12.1
 
-### Addressed Issues
-
 * (Bug) File Shares: Mount Windows shares (WIP)
 * (Bug) FuncCall.options can't be saved to DB
 * (Bug) Package can't be installed with npm proxy specified
@@ -1984,8 +1733,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2023-01-06 Dev build 1.11.2
 
-### Addressed Issues
-
 * Save table linking to project
 * #1412 column selector dialog position in prop panel
 * closes #1344 Legend for continuous colorColumn
@@ -1999,11 +1746,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-12-23 Dev build 1.11.1
 
-### Addressed Issues
-
 ## 2022-12-22 Dev build 1.11.0
-
-### Addressed Issues
 
 * #1236 Color coding: ability to invert colors for linear color coding
 * Elemental analysis: minor fixes (columns hadn't been added if dataset already had the columns with such names)
@@ -2186,8 +1929,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed readBinaryDataFrame method
 
 ## 2022-11-22 Dev build 1.9.0
-
-### Addressed Issues
 
 * bio lib: Fix properly naming for packages/GUIDE.MD
 * Bio: Add VdRegionsViewer.positionHeight with default 'Entropy', fix args of exported package functions, fix
@@ -2652,8 +2393,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: CI: KyotoCabinet version based on python 3.8
 
 ## 2022-11-08 Dev build 1.8.3
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -3150,8 +2889,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-11-02 Dev build 1.8.2
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -3601,8 +3338,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-10-19 Dev build 1.8.0
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -4020,13 +3755,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-10-06 Dev build 1.6.12
 
-### Addressed Issues
-
 * closes #953 Filters turned off status is not saved in layout
 
 ## 2022-09-15 Dev build 1.6.11
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -4340,8 +4071,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-09-08 Dev build 1.6.9
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -4591,8 +4320,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Test: Skip Grok Compute tests because of compatility
 
 ## 2022-09-07 Dev build 1.6.8
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -4855,8 +4582,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-09-06 Dev build 1.6.7
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -5112,8 +4837,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-09-01 Dev build 1.6.6
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -5340,8 +5063,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio: Fix typing for grok.functions and RDKit interfaces, fix WebLogo-positions tests
 
 ## 2022-08-30 Dev build 1.6.5
-
-### Addressed Issues
 
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
@@ -5571,8 +5292,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-08-29 Dev build 1.6.4
 
-### Addressed Issues
-
 * com
 * Fix default value for select (choice) (remove '' and "" from string when chosen default value)
 * Implement setRawData for bool columns
@@ -5787,8 +5506,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-18 Dev build 1.5.1
 
-### Addressed Issues
-
 * resizing on right side
 * Fixed admin session
 * Ability to save favorites for groups
@@ -5831,8 +5548,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-15 Dev build 1.5.0
 
-### Addressed Issues
-
 * resizing on right side
 * Fixed admin session
 * Ability to save favorites for groups
@@ -5867,8 +5582,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-07 Dev build 1.4.14
 
-### Addressed Issues
-
 * Ability to save favorites for groups
 * Packages: improve package sources check
 * JS UI Test: Density Plot
@@ -5879,8 +5592,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * #740: Peptide Space tooltip
 
 ## 2022-07-07 Dev build 1.4.13
-
-### Addressed Issues
 
 * (Bug) Integration tests: ChemMapIdentifiers test fails
 * CardView: Ribbon shortcuts (WIP)
@@ -5904,8 +5615,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-05 Dev build 1.4.12
 
-### Addressed Issues
-
 * Document viewer properties (WIP)
 * Status Bar
 * Popup: ability to show context menu next to the element
@@ -5920,8 +5629,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * CSS fix
 
 ## 2022-07-04 Dev build 1.4.11
-
-### Addressed Issues
 
 * Document viewer properties (WIP)
 * string fields
@@ -5938,21 +5645,15 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-07-01 Dev build 1.4.10
 
-### Addressed Issues
-
 * JS UI Test: Pie Chart
 * Better units CSS
 * fix $ sign
 
 ## 2022-07-01 Dev build 1.4.9
 
-### Addressed Issues
-
 * dont explicitly set description with several lines
 
 ## 2022-07-01 Dev build 1.4.8
-
-### Addressed Issues
 
 * Properties: an option to reorder rows in column grid for multi-column property editor
 * Document viewer properties (WIP)
@@ -5971,8 +5672,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-29 Dev build 1.4.7
 
-### Addressed Issues
-
 * #741: Peptides Space fix
 * Peptide space tests fix and performance benchmark
 * Helm: Updating the sizes of the HelmWebEditor
@@ -5982,14 +5681,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-29 Dev build 1.4.6
 
-### Addressed Issues
-
 * OligoBatchCalculator: fix of using new modification
 * Compute: Model Catalog Groups editor #658
 
 ## 2022-06-29 Dev build 1.4.5
-
-### Addressed Issues
 
 * Test manager: ability to run tests using url (WIP)
 * Exercises: fixes
@@ -6005,8 +5700,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed routes order
 
 ## 2022-06-28 Dev build 1.4.4
-
-### Addressed Issues
 
 * [Calculated columns] \- Min() and Max() are not compatible with date and datetime columns #689
 * JS API: add initial sync option to grok.data.linkTables
@@ -6045,8 +5738,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-23 Dev build 1.4.3
 
-### Addressed Issues
-
 * Simplified JsConvertible
 * Closes #709: Filter panel is not synchronised across different views
 * (Bug) Correlation plot: histogram cells are not shown
@@ -6059,8 +5750,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio pckg: Fix VdRegions viewer registering
 
 ## 2022-06-21 Dev build 1.4.2
-
-### Addressed Issues
 
 * Grok Spawner: create endpoint for docker build from Dockerfile
 * Packages Manager (WIP)
@@ -6084,13 +5773,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-17 Dev build 1.4.1
 
-### Addressed Issues
-
 * Packages Manager (WIP)
 
 ## 2022-06-17 Dev build 1.4.0
-
-### Addressed Issues
 
 * KeyPair::encryptString/decryptString methods fixed for UTF8 symbols
 * Grid: add cell context action
@@ -6106,26 +5791,18 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-15 Dev build 1.3.5
 
-### Addressed Issues
-
 * MLB: Fix camelCase in DataLoader and setup.cmd
 
 ## 2022-06-15 Dev build 1.3.4
-
-### Addressed Issues
 
 * Row number is not clickable after applying saved layout #679
 * JS API: convert datetime to dayjs object in DG.toJs
 
 ## 2022-06-15 Dev build 1.3.3
 
-### Addressed Issues
-
 * Fixed missing taskbar
 
 ## 2022-06-15 Dev build 1.3.2
-
-### Addressed Issues
 
 * Packages: Debug packages permissions fix (WIP)
 * Closes #701: ositioning of Hamburger menus with inserted pinned columns
@@ -6144,8 +5821,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-13 Dev build 1.3.1
 
-### Addressed Issues
-
 * Formatting: add a missing format alias for floats
 * Packages: change package card view for debug versions
 * Compute: UX harmonization #180 URL fix
@@ -6157,8 +5832,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Packages: add categories
 
 ## 2022-06-12 Dev build 1.3.0
-
-### Addressed Issues
 
 * Packages manager WIP
 * Packages manager WIP Some styling
@@ -6193,8 +5866,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-08 Dev build 1.2.1
 
-### Addressed Issues
-
 * (Bug) Dev: Beta users and test track (WIP)
 * SequenceTranslator: update JS API version
 * Fixed Datlas tests
@@ -6207,8 +5878,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #87 Charts: migrate to TypeScript
 
 ## 2022-06-08 Dev build 1.2.0
-
-### Addressed Issues
 
 * Closes #405: Switching table for a viewer: column selection dropdown/dialog in properties panel is not updated
 * Row number is not clickable after applying saved layout #679
@@ -6224,8 +5893,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-07 Dev build 1.1.9
 
-### Addressed Issues
-
 * Chem: changed logic of empty molecule check
 * OligoBatchCalculator: fix of not valid data in additional modifications table
 * SequenceTranslator: fix of conversion
@@ -6233,15 +5900,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-07 Dev build 1.1.8
 
-### Addressed Issues
-
 * Removed debug printout.
 * Closes #576: Changing the order of values of categorical columns is not reflected in the filter panel
 * Remove COMPOSE_PROFILES
 
 ## 2022-06-06 Dev build 1.1.7
-
-### Addressed Issues
 
 * Closes #654: Chem: ability to import mol files V3000
 * Closes #640: How to switch Structure Search to categorical filter
@@ -6277,8 +5940,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-05-27 Dev build 1.1.5
 
-### Addressed Issues
-
 * New Datagrok Image with caching layers
 * Create release notes for every release
 * Js-Api: fixed bug with function name in chem sketcher
@@ -6286,13 +5947,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-05-27 Dev build 1.1.4
 
-### Addressed Issues
-
 * JS API: add Property options
 
 ## 2022-05-26 Dev build 1.1.3
-
-### Addressed Issues
 
 * Closes #648: Viewers: Column selectors: Interactivity: previous column is not set back on mouse leave
 * Closes #535: Chem: Structure filter (MarvinJS) cannot be removed from filter panel once added
@@ -6320,8 +5977,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-05-24 Dev build 1.1.2
 
-### Addressed Issues
-
 * Closes #641: Grid.autoSize(maxWidth, maxHeight)
 * Grok Scaler
 * Unable to set value to datetime column from JS (WIP)
@@ -6333,8 +5988,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * ApiTests: linting
 
 ## 2022-05-23 Dev build 1.1.1
-
-### Addressed Issues
 
 * Sidebar integration improvements
 * PowerGrid: code cleanup, added a description to the "Global Scale", gave friendly names to renderers.
@@ -6354,8 +6007,6 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas split to libraries (WIP)
 
 ## 2022-05-20 Stable version 1.0.0
-
-### Addressed Issues
 
 * Packages: get compatible npm package versions
 * (Bug) connection.close in JdbcDataProvider.execute didn't account for exceptions other than SQLException

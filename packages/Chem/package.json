@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.8.4",
+  "version": "1.8.6",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -72,7 +72,7 @@
     "style-loader": "latest",
     "css-loader": "latest",
     "ts-loader": "latest",
-    "@datagrok/chembl": "latest"
+    "@datagrok/chembl": "^1.0.34"
   },
   "browser": {
     "fs": false,
@@ -85,7 +85,7 @@
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-ml": "npm link @datagrok-libraries/ml",
     "link-chem-meta": "npm link @datagrok-libraries/chem-meta",
-    "link-all": "npm install && npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/chem-meta",
+    "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/tutorials",
     "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "build": "webpack",
     "debug-local": "tsc && webpack && grok publish local",
@@ -94,7 +94,8 @@
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "grok test",
     "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "test-local": "grok test --host localhost",
+    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Developers"
@@ -105,6 +106,8 @@
   "category": "Cheminformatics",
   "meta": {
     "dartium": false,
-    "browserFeatures": ["wasm"]
+    "browserFeatures": [
+      "wasm"
+    ]
   }
 }

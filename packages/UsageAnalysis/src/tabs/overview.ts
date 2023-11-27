@@ -204,9 +204,9 @@ export class OverviewView extends UaView {
       cardsView.textContent = '';
       for (const k of Object.keys(counters)) {
         cardsView.append(ui.div([ui.divText(k), ui.wait(async () => {
-          const fc = await grok.data.callQuery(counters[k], filter);
-          const valuePrev = fc.outputs.count1;
-          const valueNow = fc.outputs.count2;
+          const fc: DG.DataFrame = await grok.functions.call(counters[k], filter);
+          const valuePrev = fc.get('count1', 0);
+          const valueNow = fc.get('count2', 0);
           const d = valueNow - valuePrev;
           return ui.div([ui.divText(`${valueNow}`),
             ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : d < 0 ? 'ua-card-minus' : ''})]);

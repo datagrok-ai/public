@@ -1,10 +1,11 @@
-import {DataFrame, Column} from "./dataframe";
+import {Column, DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
-import {TYPE, DemoDatasetName, JoinType, SyncType, CsvImportOptions, StringPredicate, JOIN_TYPE} from "./const";
+import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
 import {DataConnection} from "./entities";
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /** Provides convenient file shares access **/
 export class Files {
@@ -13,14 +14,14 @@ export class Files {
    * @param {string} path
    * @returns {Promise<DataFrame>}*/
   openTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Files_OpenTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
+    return api.grok_Files_OpenTable(path);
   }
 
   /** Reads all tables from file
    * @param {string} path
    * @returns {Promise<Array<DataFrame>>}*/
   openTables(path: string): Promise<Array<DataFrame>> {
-    return new Promise((resolve, reject) => api.grok_Files_OpenTables(path, (t: any) => resolve(t.map(toJs)), (e: any) => reject(e)));
+    return api.grok_Files_OpenTables(path);
   }
 }
 
@@ -87,7 +88,7 @@ export class DemoDatasets {
    * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
    * @returns {Promise<DataFrame>}*/
   loadDemoTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
+    return api.grok_GetDemoTable(path);
   }
 }
 
@@ -100,8 +101,7 @@ export class Db {
   async query(connectionId: string, sql: string): Promise<DataFrame> {
     let connection: DataConnection = await new Functions().eval(connectionId);
     let q = connection.query('adhoc', sql);
-    let result = await q.apply();
-    return result;
+    return await q.apply();
   }
 }
 
@@ -149,7 +149,7 @@ export class Data {
    * @returns {Promise<DataFrame>}
    * */
   loadTable(csvUrl: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_LoadDataFrame(csvUrl, (t: any) => resolve(toJs(t, false)), (e: any) => reject(e)));
+    return api.grok_LoadDataFrame(csvUrl);
   }
 
   /**
@@ -218,7 +218,7 @@ export class Data {
   }
 
   detectSemanticTypes(t: DataFrame): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.dart, (_: any) => resolve(), (e: any) => reject(e)));
+    return api.grok_DetectSemanticTypes(t.dart);
   }
 }
 

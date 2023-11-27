@@ -53,7 +53,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Naming conventions](../../develop/develop.md#naming-conventions)
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
-   [these instructions](../../develop/set-up-environment.md)
+   [these instructions](../../develop/dev-process/set-up-environment.md)
 2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your
    credentials as a name of the branch
 3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by running `grok

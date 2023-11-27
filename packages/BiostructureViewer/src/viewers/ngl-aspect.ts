@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as NGL from 'NGL';
+import * as ngl from 'NGL';
 
 const getCircularReplacer = (): (this: any, key: string, value: any) => any => {
   const seen = new WeakSet();
@@ -40,7 +40,7 @@ export class NglAspect {
     this.repChoice = repChoice;
     this.selection = twinSelections;
 
-    this.stage = new NGL.Stage(nglHost);
+    this.stage = new ngl.Stage(nglHost);
     // let originalRender = this.stage.viewer.renderer.render;
     // this.stage.viewer.renderer.render = function(scene: any, camera: any) {
     //     //@ts-ignore
@@ -117,7 +117,7 @@ export class NglAspect {
     schemeBuffer.push(['green', `* and :R`]);
     schemeBuffer.push(['green', `* and :M`]);
     //@ts-ignore
-    const schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+    const schemeId = ngl.ColormakerRegistry.addSelectionScheme(scheme_buffer);
 
     if (reload) {
       this.stage.removeAllComponents();

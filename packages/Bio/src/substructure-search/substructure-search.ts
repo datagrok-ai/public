@@ -148,11 +148,14 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
 
 export async function invalidateMols(col: DG.Column<string>, pattern: boolean) {
   const progressBar = DG.TaskBarProgressIndicator.create(`Invalidating molfiles for ${col.name}`);
-  await delay(10);
-  const monomersDict = new Map();
-  const monomericMolsCol = await getMonomericMols(col, pattern, monomersDict);
-  col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
-  col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
-  col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;
-  progressBar.close();
+  try {
+    await delay(10);
+    const monomersDict = new Map();
+    const monomericMolsCol = await getMonomericMols(col, pattern, monomersDict);
+    col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
+    col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
+    col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;
+  } finally {
+    progressBar.close();
+  }
 }

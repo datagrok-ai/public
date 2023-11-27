@@ -1,8 +1,9 @@
 import {LOG_LEVEL} from './const';
 import {toDart} from './wrappers';
 import {Package} from './entities';
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 export type LogMessage = {level: LOG_LEVEL, message: string, params?: object, type?: string, stackTrace?: string};
 

@@ -1,227 +1,87 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
 import {getAggregatedColumnValues, getStats, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
-import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-
-const allConst = 'All';
-const otherConst = 'Other';
+import {getDistributionPanel, getDistributionTable} from '../utils/misc';
 
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   if (!table.selection.anyTrue)
     return new DG.Widget(ui.divText('No distribution'));
 
-  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-  const activityColData = activityCol.getRawData();
+  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const rowCount = activityCol.length;
-  const selectionObject = model.invariantMapSelection;
-  const clustersColName = model.settings.clustersColumnName;
-  let clustersProcessedObject: string[] = [];
-  if (clustersColName)
-    clustersProcessedObject = Object.values(model.clusterSelection).flat();
 
-  const positions = Object.keys(selectionObject);
-  let monomerStr = allConst;
-  let otherStr = '';
+  // const setDefaultProperties = (input: DG.InputBase): void => {
+  //   input.enabled = !model.isMutationCliffsSelectionEmpty;
+  //   $(input.root).find('.ui-input-editor').css('margin', '0px');
+  //   $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
+  //   $(input.captionLabel).addClass('ui-label-right');
+  // };
+  //
+  // let defaultValuePos = model.splitByPos;
+  // let defaultValueMonomer = model.splitByMonomer;
+  // if (!model.isClusterSelectionEmpty && model.isMutationCliffsSelectionEmpty) {
+  //   defaultValuePos = false;
+  //   defaultValueMonomer = false;
+  // }
+
+  const distributionHost = ui.div([], 'd4-flex-wrap');
 
   const updateDistributionHost = (): void => {
-    model.splitByPos = splitByPosition.value!;
-    model.splitByMonomer = splitByMonomer.value!;
     const res: HTMLDivElement[] = [];
-    if (splitByPosition.value && splitByMonomer.value) {
-      otherStr = otherConst;
-      for (const position of positions) {
-        const monomerList = selectionObject[position];
-        if (monomerList.length === 0)
-          continue;
+    if (!table.selection.anyTrue)
+      res.push(ui.divText('No distribution'));
+    else {
+      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection, model.getCombinedSelection()));
+      const bitArray = BitArray.fromString(table.selection.toBinaryString());
+      const mask = DG.BitSet.create(rowCount,
+        bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
+      const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
+      const stats = bitArray.allFalse || bitArray.allTrue ?
+        {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: activityCol.stats.avg} :
+        getStats(activityCol.getRawData(), bitArray);
+      const tableMap = getStatsTableMap(stats);
+      const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};
+      const distributionRoot = getDistributionPanel(hist, resultMap);
+      $(distributionRoot).addClass('d4-flex-col');
 
-        const posCol = table.getCol(position);
-        const posColCategories = posCol.categories;
-        const posColData = posCol.getRawData();
-
-        for (const monomer of monomerList) {
-          const labels = getDistributionLegend(`${position} : ${monomer}`, otherStr);
-
-          const monomerCategoryIndex = posColCategories.indexOf(monomer);
-          const mask = DG.BitSet.create(rowCount, (i) => posColData[i] === monomerCategoryIndex);
-          const distributionTable = DG.DataFrame.fromColumns(
-            [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
-          const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
-
-          const stats = model.monomerPositionStats[position]![monomer]!;
-          const tableMap = getStatsTableMap(stats);
-
-          const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
-
-          const resultMap = {...tableMap, ...aggregatedColMap};
-          const distributionRoot = getStatsSummary(labels, hist, resultMap);
-          $(distributionRoot).addClass('d4-flex-col');
-
-          res.push(distributionRoot);
-        }
-      }
-    } else if (splitByPosition.value) {
-      otherStr = otherConst;
-      for (const position of positions) {
-        const monomerList = selectionObject[position];
-        if (monomerList.length === 0)
-          continue;
-
-        monomerStr = `${position}: {${monomerList.join(', ')}}`;
-        const labels = getDistributionLegend(monomerStr, otherStr);
-
-        const posCol = table.getCol(position);
-        const posColCategories = posCol.categories;
-        const posColData = posCol.getRawData();
-        const monomerIndexesList = monomerList.map((monomer) => posColCategories.indexOf(monomer));
-        const mask = DG.BitSet.create(rowCount, (i) => monomerIndexesList.includes(posColData[i]));
-        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
-
-        const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
-
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
-
-        const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
-        const stats = getStats(activityColData, bitArray);
-        const tableMap = getStatsTableMap(stats);
-
-        const resultMap = {...tableMap, ...aggregatedColMap};
-        const distributionRoot = getStatsSummary(labels, hist, resultMap);
-        $(distributionRoot).addClass('d4-flex-col');
-
-        res.push(distributionRoot);
-      }
-    } else if (splitByMonomer.value) {
-      const reversedSelectionObject: {[monomer: string]: string[]} = {};
-      const monomers = [];
-      for (const position of positions) {
-        for (const monomer of selectionObject[position]) {
-          if (!reversedSelectionObject.hasOwnProperty(monomer)) {
-            reversedSelectionObject[monomer] = [position];
-            monomers.push(monomer);
-            continue;
-          }
-          if (!reversedSelectionObject[monomer].includes(position))
-            reversedSelectionObject[monomer].push(position);
-        }
-      }
-
-      otherStr = otherConst;
-      for (const monomer of monomers) {
-        const posList = reversedSelectionObject[monomer];
-        const posColList = posList.map((pos) => table.getCol(pos));
-        const posColCategoriesList = posColList.map((posCol) => posCol.categories);
-        const posColDataList = posColList.map((posCol) => posCol.getRawData());
-        const monomerCategoryIndexList = posColCategoriesList.map((posColCategories) => posColCategories.indexOf(monomer));
-
-        monomerStr = `${monomer}: {${posList.join(', ')}}`;
-        const labels = getDistributionLegend(monomerStr, otherStr);
-
-        const mask = DG.BitSet.create(rowCount,
-          (i) => posColDataList.some((posColData, j) => posColData[i] === monomerCategoryIndexList[j]));
-        const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
-
-        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
-
-        const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
-        const stats = getStats(activityColData, bitArray);
-        const tableMap = getStatsTableMap(stats);
-
-        const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
-        const distributionRoot = getStatsSummary(labels, hist, resultMap);
-        $(distributionRoot).addClass('d4-flex-col');
-
-        res.push(distributionRoot);
-      }
-    } else {
-      if (!table.selection.anyTrue)
-        res.push(ui.divText('No distribution'));
-      else {
-        otherStr = '';
-        if (Object.values(selectionObject).some((selectedAar) => selectedAar.length !== 0) ||
-          clustersProcessedObject.length !== 0) {
-          monomerStr = '';
-          for (const position of positions) {
-            const monomerList = selectionObject[position];
-            if (monomerList.length !== 0)
-              monomerStr += `${position}: {${monomerList.join(', ')}}; `;
-          }
-          if (clustersProcessedObject.length !== 0)
-            monomerStr += `Clusters: ${clustersProcessedObject.join(', ')}`;
-          otherStr = otherConst;
-        }
-        const labels = getDistributionLegend(monomerStr, otherStr);
-
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, table.selection)]);
-        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
-        const bitArray = BitArray.fromString(table.selection.toBinaryString());
-        const mask = DG.BitSet.create(rowCount,
-          bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
-        const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
-        const stats = bitArray.allFalse || bitArray.allTrue ?
-          {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray,
-            mean: activityCol.stats.avg} :
-          getStats(activityColData, bitArray);
-        const tableMap = getStatsTableMap(stats);
-        const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
-        const distributionRoot = getStatsSummary(labels, hist, resultMap);
-        $(distributionRoot).addClass('d4-flex-col');
-
-        res.push(distributionRoot);
-      }
+      res.push(distributionRoot);
     }
+
     $(distributionHost).empty().append(res);
   };
 
-  const setDefaultProperties = (input: DG.InputBase): void => {
-    input.enabled = !model.isMutationCliffsSelectionEmpty;
-    $(input.root).find('.ui-input-editor').css('margin', '0px');
-    $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
-    $(input.captionLabel).addClass('ui-label-right');
-  };
+  // const splitByPosition = ui.boolInput('Split by position', defaultValuePos, updateDistributionHost);
+  // splitByPosition.setTooltip('Constructs distribution for each position separately');
+  // setDefaultProperties(splitByPosition);
+  // $(splitByPosition.root).css('margin-right', '10px');
+  // const splitByMonomer = ui.boolInput('Split by monomer', defaultValueMonomer, updateDistributionHost);
+  // splitByMonomer.setTooltip('Constructs distribution for each monomer separately');
+  // setDefaultProperties(splitByMonomer);
 
-  let defaultValuePos = model.splitByPos;
-  let defaultValueMonomer = model.splitByMonomer;
-  if (!model.isClusterSelectionEmpty && model.isMutationCliffsSelectionEmpty) {
-    defaultValuePos = false;
-    defaultValueMonomer = false;
-  }
-
-  const splitByPosition = ui.boolInput('Split by position', defaultValuePos, updateDistributionHost);
-  splitByPosition.setTooltip('Constructs distribution for each position separately');
-  setDefaultProperties(splitByPosition);
-  $(splitByPosition.root).css('margin-right', '10px');
-  const splitByMonomer = ui.boolInput('Split by monomer', defaultValueMonomer, updateDistributionHost);
-  splitByMonomer.setTooltip('Constructs distribution for each monomer separately');
-  setDefaultProperties(splitByMonomer);
-
-  const controlsHost = ui.divH([splitByPosition.root, splitByMonomer.root]);
-  const distributionHost = ui.div([], 'd4-flex-wrap');
-  splitByMonomer.fireChanged();
-
-  return new DG.Widget(ui.divV([controlsHost, distributionHost]));
+  // const controlsHost = ui.divH([splitByPosition.root, splitByMonomer.root]);
+  // splitByMonomer.fireChanged();
+  updateDistributionHost();
+  return new DG.Widget(ui.divV([/*controlsHost,*/ distributionHost]));
 }
 
-export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
-): DG.Viewer<DG.IHistogramLookSettings> {
+export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false): DG.Viewer<DG.IHistogramLookSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
-    valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+    valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
     splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
     legendVisibility: 'Never',
     showXAxis: true,
     showColumnSelector: false,
     showRangeSlider: false,
-    showBinSelector: !isTooltip,
+    showBinSelector: false,
     backColor: isTooltip ? '#fdffe5' : '#fffff',
   }) as DG.Viewer<DG.IHistogramLookSettings>;
   hist.root.style.width = 'auto';
@@ -238,10 +98,4 @@ export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number
   if (stats.pValue !== null)
     tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);
   return tableMap;
-}
-
-export function getDistributionLegend(thisLabel: string, otherLabel: string = ''): HTMLDivElement {
-  return ui.divV([
-    ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel.length === 0 ? DG.Color.blue : DG.Color.orange)}}),
-    ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
 }

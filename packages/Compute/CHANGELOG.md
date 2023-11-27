@@ -1,5 +1,18 @@
 # Compute changelog
 
+## 1.17.3 (2023-11-22)
+
+### Features:
+
+- RFV: New styles for huge viewers
+- PLV: Added input resetting from locked state
+
+### Fixed bugs
+
+- RFV: Fixed error on getting pacakge of newly created script
+- RFV: Disabled scripts caching for newly created scripts
+- RFV: Added workaround for viewers of type Filters
+
 ## 1.17.1 (2023-11-07)
 
 ### Features

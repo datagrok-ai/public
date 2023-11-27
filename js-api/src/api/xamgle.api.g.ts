@@ -3,9 +3,6 @@ import { toDart } from "../wrappers";
 let api = <any>window;
 
 export interface SettingsInterface {
-  /// Login at startup
-  autoLogin: boolean;
-
   /// Automatically save workspace locally
   autoSaveWorkspace: boolean;
 
@@ -26,9 +23,6 @@ export interface SettingsInterface {
 
   allowAsyncFileImport: boolean;
 
-  /// Auto-show toolbox when the first table view is open
-  autoShowToolbox: boolean;
-
   /// Controls whether tables pane automatically shows when more
   /// than one table is open
   autoShowTablesPane: boolean;
@@ -41,9 +35,6 @@ export interface SettingsInterface {
 
   /// Show viewer settings in the property dialog when a viewer is added.
   showViewerSettingsOnAddition: boolean;
-
-  /// Show 'project status' pane (including the upload button) on top.
-  showProjectStatus: boolean;
 
   /// Show user icon on top.
   showUserIcon: boolean;
@@ -98,8 +89,6 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
-  clientSideCache: boolean;
-
   dateFormat: string;
 
   integerNumberFormat: string;
@@ -113,14 +102,11 @@ export interface SettingsInterface {
   /// Will load default settings from server on platform start
   loadDefaultsOnStart: boolean;
 
-  /// If not empty, will be used to load package.js instead Datagrok backend
+  /// If not empty, will be used to load package.js instead of the Datagrok backend
   webpackDevUrl: string;
 
   /// CVM URL.
   cvmUrl: string;
-
-  /// CVM Split mode.
-  cvmSplit: boolean;
 
   /// Datlas API URL.
   apiUrl: string;
@@ -133,6 +119,8 @@ export interface SettingsInterface {
 
   /// Help base URL.
   helpBaseUrl: string;
+
+  clientFuncCacheEnabled: boolean;
 
 
 }

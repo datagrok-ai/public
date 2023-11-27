@@ -1,3 +1,3 @@
 # CVMTests changelog
 
-## 1.0.2 (WIP)
+## 1.0.6 (WIP)

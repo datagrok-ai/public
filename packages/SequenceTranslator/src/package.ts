@@ -8,13 +8,13 @@ import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getJsonData} from './model/data-loading-utils/json-loader';
-import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
-import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
+import {SequenceToMolfileConverter} from './model/structure-app/sequence-to-molfile';
+import {linkStrandsV3000} from './model/structure-app/mol-transformations';
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
-import {FormatConverter} from './model/format-translation/format-converter';
+import {FormatConverter} from './model/translator-app/format-converter';
 import {APP} from './view/const/ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 
@@ -51,6 +51,7 @@ async function buildLayout(appName: string): Promise<void> {
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoToolkitApp(): Promise<void> {
   await initSequenceTranslatorLibData();
@@ -63,6 +64,7 @@ export async function oligoToolkitApp(): Promise<void> {
 
 //name: Oligo Translator
 //meta.icon: img/icons/translator.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoTranslatorApp(): Promise<void> {
   await buildLayout(APP.TRANSLATOR);
@@ -70,6 +72,7 @@ export async function oligoTranslatorApp(): Promise<void> {
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoPatternApp(): Promise<void> {
   await buildLayout(APP.PATTERN);
@@ -77,6 +80,7 @@ export async function oligoPatternApp(): Promise<void> {
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoStructureApp(): Promise<void> {
   await buildLayout(APP.STRUCTRE);

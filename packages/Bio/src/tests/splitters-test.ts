@@ -21,9 +21,6 @@ import {
   NOTATION
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {splitToMonomersUI} from '../utils/split-to-monomers';
-import {SEMTYPE} from 'datagrok-api/dg';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {TAGS} from '../utils/constants';
 
 
 category('splitters', async () => {

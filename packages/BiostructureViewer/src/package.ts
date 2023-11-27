@@ -2,32 +2,37 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 
-import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
+import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
+
+import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
-import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
+import {PdbGridCellRenderer, PdbGridCellRendererBack} from './utils/pdb-grid-cell-renderer';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
-import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
-import {PdbApp} from './apps/pdb-app';
+import {PdbResDataFrame} from './utils/pdb-helper';
 import {nglWidgetUI} from './viewers/ngl-ui';
-import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
-import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
 import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, previewNgl, viewBiostructure, viewNgl} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
+import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
-import {NglGlDocService} from './utils/ngl-gl-doc-service';
-import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with';
 
-import {Package, _getNglGlService, _getPdbHelper} from './package-utils';
+import {_getNglGlService, _getPdbHelper, Package} from './package-utils';
+import {addContextMenuUI} from './utils/context-menu';
+import {importPdbqtUI} from './utils/pdbqt/import-pdbqt';
+import {IPdbGridCellRenderer} from './utils/types';
 
 export const _package: Package = new Package();
 
@@ -82,7 +87,7 @@ export function getNglGlService(): NglGlServiceBase {
 //name: importPdb
 //description: Opens PDB file
 //tags: file-handler
-//meta.ext: mmcif, cifCore, pdb, pdbqt, gro
+//meta.ext: mmcif, cifCore, pdb, gro
 //input: string fileContent
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
@@ -117,6 +122,17 @@ export async function importXYZ(fileContent: string): Promise<DG.DataFrame[]> {
 export async function importWithNgl(fileContent: string): Promise<DG.DataFrame[]> {
   await viewNgl(fileContent);
   return [];
+}
+
+//name: importPdbqt
+//description: Opens .pdbqt file with docking result ligand poses
+//tags: file-handler
+//meta.ext: pdbqt
+//input: string fileContent
+//input: bool test =false {optional: true}
+//output: list tables
+export async function importPdbqt(fileContent: string, test: boolean): Promise<DG.DataFrame[]> {
+  return importPdbqtUI(fileContent, test);
 }
 
 // -- File (pre)viewers --
@@ -154,7 +170,7 @@ export function previewNglDensity(file: any) {
 
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-sd, fileViewer-pdbqt, fileViewer-xyz
+//tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-sd, fileViewer-xyz
 //input: file file
 //output: view v
 export function previewBiostructureStructure(file: DG.FileInfo): DG.View {
@@ -291,7 +307,7 @@ export async function ligandsWithBiostructureApp(): Promise<void> {
 //meta.icon: files/icons/ngl-viewer.svg
 //tags: viewer, panel
 //output: viewer result
-export function nglViewer(): DG.JsViewer {
+export function nglViewer(): DG.JsViewer & INglViewer {
   return new NglViewer();
 }
 
@@ -302,7 +318,7 @@ export function nglViewer(): DG.JsViewer {
 //meta.icon: files/icons/biostructure-viewer.svg
 //tags: viewer, panel
 //output: viewer result
-export function molstarViewer(): DG.JsViewer {
+export function molstarViewer(): DG.JsViewer & IBiostructureViewer {
   return new MolstarViewer();
 }
 
@@ -311,7 +327,7 @@ export function molstarViewer(): DG.JsViewer {
 //meta.keywords: PDB, track
 //tags: viewer, panel
 //output: viewer result
-export function saguaroViewer(): DG.Viewer {
+export function saguaroViewer(): DG.JsViewer & IBiotrackViewer {
   return new SaguaroViewer();
 }
 
@@ -330,6 +346,13 @@ export async function getPdbHelper(): Promise<IPdbHelper> {
 
 export async function nglViewerGen(): Promise<void> {
   _nglViewerGen();
+}
+
+//name: getPdbGridCellRenderer
+//input: object gridCol
+//output: object result
+export function getPdbGridCellRenderer(gridCol: DG.GridColumn): IPdbGridCellRenderer {
+  return PdbGridCellRendererBack.getOrCreate(gridCol);
 }
 
 //name: dockingDemo
@@ -356,6 +379,14 @@ export async function inGridDemo() {
   }
 }
 
+// -- Handle context menu --
+
+//name: addContextMenu
+//input: object event
+export function addContextMenu(event: DG.EventData): void {
+  addContextMenuUI(event);
+}
+
 // -- Demo --
 
 // demoBio06
@@ -363,7 +394,7 @@ export async function inGridDemo() {
 //meta.demoPath: Bioinformatics | Docking Conformations
 //description: Docking ligands along the structure
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
-//test: demoBioDockingConformations() //wait: 2000, skip: skip
+//test: demoBioDockingConformations() //wait: 3000
 export async function demoBioDockingConformations(): Promise<void> {
   // Do not use any script for this demo (askalkin, 2023-05-17)
   //await demoBio06UI();

@@ -130,6 +130,7 @@ function datagrok_stop() {
     fi
     message "Stopping Datagrok containers"
     docker compose -f "${compose_config_path}" --project-name datagrok --profile all stop
+    docker rm -f $(docker ps --format {{.Names}} | grep datagrok)
 }
 
 function datagrok_reset() {

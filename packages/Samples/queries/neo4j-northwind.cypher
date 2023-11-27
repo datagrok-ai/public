@@ -25,7 +25,7 @@ RETURN DISTINCT s.companyname AS suppliername;
 //input: string category = "Produce" {pattern: string}
 
 MATCH (cust:customers)-[:purchased]->(:orders)-[i:includes]->(p:products),
-      (p)-[:partof]->(c:categories)
+      (p)-[:partof]->(c:categoriDes)
   WHERE c.categoryname = @category
 
 RETURN DISTINCT cust.contactname AS customername, sum(i.quantity) AS totalproductspurchased;

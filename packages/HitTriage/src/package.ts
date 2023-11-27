@@ -67,28 +67,28 @@ export async function demoFileSubmit1(df: DG.DataFrame, molecules: string): Prom
   grok.shell.info('Another function');
 }
 
-//name: Gasteiger Partial Charges
-//top-menu: Chem | Gasteiger
-//tags: HitTriageFunction
-//input: dataframe table [Input data table] {caption: Table}
-//input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
-//input: int contours = 4 {caption: Contours;}
-//output: dataframe result
-export async function gasteigerPartialCharges(
-  table: DG.DataFrame, molecules: DG.Column, contours: number = 4): Promise<DG.DataFrame> {
-  const newColName = table.columns.getUnusedName('Gasteiger Partial Charges');
-  const newCol = table.columns.addNew(newColName, 'string');
-  newCol.semType = 'customGasteigerPNG';
-  for (let i = 0; i < molecules.length; i++) {
-    const mol = molecules.get(i);
-    if (mol === null)
-      continue;
-    const p = {mol, contours: contours};
-    const res = await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', p);
-    newCol.set(i, res);
-  }
-  return table;
-}
+// //name: Gasteiger Partial Charges
+// //top-menu: Chem | Gasteiger
+// //tags: HitTriageFunction
+// //input: dataframe table [Input data table] {caption: Table}
+// //input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
+// //input: int contours = 4 {caption: Contours;}
+// //output: dataframe result
+// export async function gasteigerPartialCharges(
+//   table: DG.DataFrame, molecules: DG.Column, contours: number = 4): Promise<DG.DataFrame> {
+//   const newColName = table.columns.getUnusedName('Gasteiger Partial Charges');
+//   const newCol = table.columns.addNew(newColName, 'string');
+//   newCol.semType = 'customGasteigerPNG';
+//   for (let i = 0; i < molecules.length; i++) {
+//     const mol = molecules.get(i);
+//     if (mol === null)
+//       continue;
+//     const p = {mol, contours: contours};
+//     const res = await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', p);
+//     newCol.set(i, res);
+//   }
+//   return table;
+// }
 
 //name: gasteigerRenderer
 //tags: cellRenderer

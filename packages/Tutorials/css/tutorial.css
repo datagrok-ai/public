@@ -303,7 +303,13 @@ progress[value]::-webkit-progress-value::after {
 }
 
 .tutorials-chevron {
-  margin-right: 10px;
+  padding: 0 4px;
+  transition: all 0.1s;
+  transform: rotate(0deg);
+}
+
+.tutorials-chevron-expanded {
+  transform: rotate(-90deg);
 }
 
 .tutorials-done-section > *:not(:first-child) {
@@ -321,6 +327,10 @@ progress[value]::-webkit-progress-value::after {
 .tutorials-section-header h3 {
   margin-block: 0;
   padding: 10px 10px 10px 0;
+}
+
+.tutorials-done-section .tutorials-section-header h3, .tutorials-done-section-expanded .tutorials-section-header h3 {
+  color: var(--grey-4);
 }
 
 #naphthalene {

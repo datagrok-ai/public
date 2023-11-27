@@ -63,9 +63,8 @@ category('GUI: Grid', () => {
   test('grid.deleteCols', async () => {
     const demog = grok.data.demo.demog(10);
     demog.currentCell = demog.cell(0, 'disease');
-    const v = grok.shell.addTableView(demog);
-    await awaitCheck(() => grok.shell.v == v);
-    await delay(1000);
+    grok.shell.addTableView(demog);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 2000);
     grok.shell.o = demog.getCol('disease');
 
     await awaitCheck(() => Array.from(document.querySelectorAll('.d4-accordion-title'))

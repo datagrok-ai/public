@@ -1,6 +1,7 @@
 import { CardView } from './card_view';
 import { toJs } from '../wrappers';
-let api = <any>window;
+import {IDartApi} from "../api/grok_api.g";
+const api: IDartApi = <any>window;
 
 
 /** File browser view. Contains the file tree, search panel and preview components. */

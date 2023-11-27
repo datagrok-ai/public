@@ -5,7 +5,7 @@ export function showHelpPanel() {
   grok.shell.windows.help.visible = true;
 
   const info = `# Try
-  Interactive results when changing inputs.
+  Interactive results when changing inputs
   # No-code
   Complex phenomena simulators are provided by Datagrok WebAutosolver tool.
   # Model
@@ -13,7 +13,7 @@ export function showHelpPanel() {
   # Essence
   One- and two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
   # Performance
-  Nonlinear system of differential equations within a few milliseconds.
+  Nonlinear system of differential equations within a few milliseconds
   # Learn more
   * [Compute](https://datagrok.ai/help/compute/)
   * [PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046/)`;

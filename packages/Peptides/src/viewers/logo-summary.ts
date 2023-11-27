@@ -9,8 +9,8 @@ import * as CR from '../utils/cell-renderer';
 import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {getAggregatedColumnValues, getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
-import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
+import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
+import {getDistributionPanel, getDistributionTable} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SelectionItem} from '../utils/types';
 import {_package} from '../package';
@@ -20,7 +20,7 @@ const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}
 export enum LST_PROPERTIES {
   WEB_LOGO_MODE = 'webLogoMode',
   MEMBERS_RATIO_THRESHOLD = 'membersRatioThreshold',
-};
+}
 
 export class LogoSummaryTable extends DG.JsViewer {
   _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
@@ -91,7 +91,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
     const filteredDfCols = filteredDf.columns;
     const filteredDfRowCount = filteredDf.rowCount;
-    const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY);
     const activityColData = activityCol.getRawData();
 
     const filteredDfClustCol = filteredDf.getCol(clustersColName);
@@ -280,7 +280,7 @@ export class LogoSummaryTable extends DG.JsViewer {
             const distributionDf = this.createDistributionDf(activityCol, clusterBitSet);
             viewer = distributionDf.plot.histogram({
               filteringEnabled: false,
-              valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+              valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
               splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
               legendVisibility: 'Never',
               showXAxis: false,
@@ -387,12 +387,12 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   clusterFromSelection(): void {
-    const currentSelection = this.model.getCompoundBitset();
+    const currentSelection = this.model.getVisibleSelection();
     const viewerDf = this.viewerGrid.dataFrame;
     const viewerDfCols = viewerDf.columns;
     const viewerDfColsLength = viewerDfCols.length;
     const newClusterVals = new Array(viewerDfCols.length);
-    const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY);
     const bitArray = BitArray.fromString(currentSelection.toBinaryString());
     const stats = getStats(activityScaledCol.getRawData(), bitArray);
 
@@ -417,7 +417,9 @@ export class LogoSummaryTable extends DG.JsViewer {
                 col.name === C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
                   col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
                     col.name in aggregatedValues ? aggregatedValues[col.name] :
-        console.warn(`PeptidesLSTWarn: value for column ${col.name} is undefined`)! || null;
+                      undefined;
+      if (typeof newClusterVals[i] === 'undefined')
+        _package.logger.warning(`PeptidesLSTWarn: value for column ${col.name} is undefined`);
     }
     viewerDf.rows.addNew(newClusterVals);
 
@@ -459,7 +461,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const filteredDf = bs.anyFalse ? this.dataFrame.clone(bs) : this.dataFrame;
     const rowCount = filteredDf.rowCount;
     const bitArray = new BitArray(rowCount, false);
-    const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY);
     const activityColData = activityCol.getRawData();
 
     if (cluster.positionOrClusterType === CLUSTER_TYPE.ORIGINAL) {
@@ -486,12 +488,11 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer, rowCount);
     const distributionTable = this.createDistributionDf(activityCol, mask);
-    const labels = getDistributionLegend(`Cluster: ${cluster.monomerOrCluster}`, 'Other');
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
     const aggregatedColMap = getAggregatedColumnValues(this.model.df, this.model.settings.columns!, {filterDf: true, mask: mask});
     const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
-    const tooltip = getStatsSummary(labels, hist, resultMap);
+    const tooltip = getDistributionPanel(hist, resultMap);
 
     ui.tooltip.show(tooltip, x, y);
 
@@ -505,7 +506,7 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   createDistributionDf(activityCol: DG.Column<number>, splitMask: DG.BitSet): DG.DataFrame {
-    const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
-    return prepareTableForHistogram(table);
+    // const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
+    return getDistributionTable(activityCol, splitMask);
   }
 }

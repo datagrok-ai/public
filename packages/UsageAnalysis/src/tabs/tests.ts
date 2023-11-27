@@ -9,7 +9,6 @@ import {UaView} from './ua';
 const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 export const filters = ui.box();
 filters.id = 'ua-tests-filters';
-filters.style.display = 'none';
 
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
@@ -19,6 +18,7 @@ export class TestsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Tests';
+    filters.style.display = 'none';
   }
 
   async initViewers(): Promise<void> {
@@ -133,7 +133,7 @@ export class TestsView extends UaView {
       cardsView.append(card);
     }
     this.root.append(ui.splitV([
-      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {maxHeight: '150px'}}),
+      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {height: '150px'}}),
       grid], null, true));
   }
 }

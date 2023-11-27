@@ -93,6 +93,8 @@ export class PdbHelper implements IPdbHelper {
   async pdbToDf(pdbStr: string, _name: string): Promise<PdbResDataFrameType> {
     //https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html
     // using molstar parser
+    if (!pdbStr) throw new Error('Empty PDB data');
+
     const pdbData: StateObjectSelector = await this.plugin.builders.data.rawData({data: pdbStr});
     const trState = await this.plugin.builders.structure.parseTrajectory(pdbData, 'pdb');
 

@@ -145,6 +145,7 @@ goto :%action%
   )
   call :message "Stopping Datagrok containers"
   docker compose -f %compose_config_path% --project-name datagrok --profile all stop
+  FOR /F "tokens=*" %%i IN ('docker ps --format "{{.Names}}" ^| find "datagrok"') DO docker rm -f %%i
   exit /b
 
 :datagrok_reset

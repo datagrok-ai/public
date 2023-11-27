@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {CellRenderViewer} from './cell-render-viewer';
 import {FitChartCellRenderer} from './fit-renderer';
@@ -42,6 +43,8 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   }
 
   createChartData(): void {
+    if (!this.curvesColumnName)
+      return;
     this.rows.length = 0;
     if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
       this.rows.push(this.dataFrame.currentRowIdx);
@@ -75,7 +78,16 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       });
   }
 
+  _showErrorMessage(msg: string) {
+    this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));
+  }
+
   render(): void {
+    if (!this.curvesColumnName) {
+      this._showErrorMessage('The MultiCurveViewer viewer requires a minimum of 1 curves column.');
+      return;
+    }
+
     const g = this.canvas.getContext('2d')!
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderer.renderCurves(g, 0, 0, this.canvas.width, this.canvas.height, this.data);

@@ -21,11 +21,14 @@ export enum MONOMER_POSITION_PROPERTIES {
   COLOR_COLUMN_NAME = 'color',
   AGGREGATION = 'aggregation',
   TARGET = 'target',
-};
+}
+
+const MUTATION_CLIFFS_CELL_WIDTH = 40;
+const AAR_CELL_WIDTH = 30;
 
 /** Structure-activity relationship viewer */
 export class MonomerPosition extends DG.JsViewer {
-  _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
+  // _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
   color: string;
@@ -38,13 +41,11 @@ export class MonomerPosition extends DG.JsViewer {
     super();
     this.target = this.string(MONOMER_POSITION_PROPERTIES.TARGET, null,
       {category: SELECTION_MODE.MUTATION_CLIFFS, choices: []});
-    this.color = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
-      {category: SELECTION_MODE.INVARIANT_MAP,
-        choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
+    this.color = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY,
+      {category: SELECTION_MODE.INVARIANT_MAP, choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
     this.aggregation = this.string(MONOMER_POSITION_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: SELECTION_MODE.INVARIANT_MAP,
-        choices: Object.values(DG.AGG)
-          .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg))});
+        choices: Object.values(DG.AGG).filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg))});
   }
 
   get name(): string {return VIEWER_TYPE.MONOMER_POSITION;}
@@ -113,7 +114,8 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerPositionDf = this.createMonomerPositionDf();
     this.viewerGrid = monomerPositionDf.plot.grid();
     this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
-    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.positionColumns.toArray().map((col) => col.name)]);
+    const positionColumns = this.model.positionColumns.toArray().map((col) => col.name);
+    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...positionColumns]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
@@ -197,7 +199,21 @@ export class MonomerPosition extends DG.JsViewer {
       this.showHelp();
     });
 
-    setViewerGridProps(this.viewerGrid, false);
+    setViewerGridProps(this.viewerGrid);
+
+    // Monomer cell renderer overrides width settings. This way I ensure is "initially" set.
+    const afterDraw = this.viewerGrid.onAfterDrawContent.subscribe(() => {
+      const monomerGCol = this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!;
+      if (monomerGCol.width === AAR_CELL_WIDTH) {
+        afterDraw.unsubscribe();
+        return;
+      }
+      monomerGCol.width = AAR_CELL_WIDTH;
+      for (const posCol of positionColumns) {
+        const gcCol = this.viewerGrid.col(posCol)!;
+        gcCol.width = MUTATION_CLIFFS_CELL_WIDTH;
+      }
+    });
   }
 
   showHelp(): void {
@@ -212,6 +228,14 @@ export class MonomerPosition extends DG.JsViewer {
   }
 
   render(refreshOnly = false): void {
+    // Backward compatability with 1.16.0
+    const columnProperty = this.getProperty(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME);
+    if (columnProperty) {
+      columnProperty.choices = wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name);
+      if (columnProperty.get(this) === C.COLUMNS_NAMES.ACTIVITY_SCALED)
+        columnProperty.set(this, C.COLUMNS_NAMES.ACTIVITY);
+    }
+
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
@@ -254,7 +278,7 @@ export class MonomerPosition extends DG.JsViewer {
 
 /** Vertical structure activity relationship viewer */
 export class MostPotentResidues extends DG.JsViewer {
-  _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
+  // _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
   keyPressed: boolean = false;
@@ -440,9 +464,19 @@ export class MostPotentResidues extends DG.JsViewer {
         grok.shell.windows.help.showHelp(ui.markdown(text));
       }).catch((e) => grok.log.error(e));
     });
+    setViewerGridProps(this.viewerGrid);
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
-    setViewerGridProps(this.viewerGrid, true);
+    // Monomer cell renderer overrides width settings. This way I ensure is "initially" set.
+    const afterDraw = this.viewerGrid.onAfterDrawContent.subscribe(() => {
+      const monomerGCol = this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!;
+      if (monomerGCol.width === AAR_CELL_WIDTH) {
+        afterDraw.unsubscribe();
+        return;
+      }
+      monomerGCol.width = AAR_CELL_WIDTH;
+      mdCol.width = MUTATION_CLIFFS_CELL_WIDTH;
+    });
   }
 
   getMonomerPosition(gridCell: DG.GridCell): SelectionItem {
@@ -464,7 +498,7 @@ export class MostPotentResidues extends DG.JsViewer {
 }
 
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
-  colorCol?: DG.Column<number>, colorAgg?: DG.AGG, renderNums?: boolean): void {
+                    colorCol?: DG.Column<number>, colorAgg?: DG.AGG): void {
   const renderColNames = [...model.positionColumns.toArray().map((col) => col.name), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const canvasContext = args.g;
   const bound = args.bounds;
@@ -519,17 +553,16 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
     const colorColStats = colorCol!.stats;
 
     const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
-    CR.renderInvaraintMapCell(
-      canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
+    CR.renderInvariantMapCell(canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.mutationCliffsSelection, model.mutationCliffs, renderNums);
+      model.mutationCliffsSelection, model.mutationCliffs);
   }
   args.preventDefault();
   canvasContext.restore();
 }
 
-function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): void {
+function setViewerGridProps(grid: DG.Grid): void {
   const gridProps = grid.props;
   gridProps.allowEdit = false;
   gridProps.allowRowSelection = false;
@@ -539,12 +572,5 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
   gridProps.showCurrentRowIndicator = false;
 
   gridProps.rowHeight = 20;
-  const girdCols = grid.columns;
-  const colNum = girdCols.length;
-  for (let i = 0; i < colNum; ++i) {
-    const col = girdCols.byIndex(i)!;
-    const colName = col.name;
-    col.width = isMostPotentResiduesGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.MONOMER ? 50 :
-      gridProps.rowHeight + 10;
-  }
+
 }

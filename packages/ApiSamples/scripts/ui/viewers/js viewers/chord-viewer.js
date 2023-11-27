@@ -1,3 +1,3 @@
-const df = await grok.data.files.openTable("Demo:Files/energy_uk.csv");
+const df = await grok.data.files.openTable('Samples:Files/energy_uk.csv');
 let view = grok.shell.addTableView(df);
 view.addViewer('chord');

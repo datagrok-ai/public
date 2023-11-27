@@ -57,9 +57,9 @@ export class PolyToolMonomerLibHandler {
 
 class SmilesHandler {
   constructor(rawSmiles: string) {
-    const regex = new RegExp('\\[r\\]', 'g');
+    const regex = /\[R(\d+)\]/g;
     let i = 0;
-    this.smilesWithRGroups = rawSmiles.replace(regex, (match) => { ++i; return `[${i}*]`; });
+    this.smilesWithRGroups = rawSmiles.replace(regex, (_, capturedDigit) => { ++i; return `[${capturedDigit}*]`; });
     this.numberOfRGroups = i;
   }
 

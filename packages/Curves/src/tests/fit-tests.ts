@@ -48,10 +48,10 @@ category('fit', () => {
 		const polynomialFitSeries = fitSeries(polynomialSeries, polynomialFitFunc);
 		const stop = Date.now();
 
-		expect(sigmoidFitSeries.fittedCurve(2.5), 1.6908990263493584);
-		expect(polynomialFitSeries.fittedCurve(3.99876), 6.306103656922533);
-		expectArray(sigmoidFitSeries.parameters, [1.6915930199522453, 1.1420615719998677, 5.4181972283003, 0.19770452774609057]);
-		expectArray(polynomialFitSeries.parameters, [0.05844454303535648, -1.0810191408551957, 3.964405091374009, 4.002010146398808]);
+		expect(sigmoidFitSeries.fittedCurve(2.5), 1.690742266220136);
+		expect(polynomialFitSeries.fittedCurve(3.99876), 6.09328601677405);
+		expectArray(sigmoidFitSeries.parameters, [1.691390784119389, 1.1540819399621425, 5.4104428146970704, 0.20886765646057662]);
+		expectArray(polynomialFitSeries.parameters, [0.07070206940832963, -1.138666933634074, 3.947509109407932, 3.9947960440506685]);
 		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 

@@ -2,6 +2,21 @@ declare module 'NGL' {
   import {Signal} from 'signals';
   import {Box3, Scene, WebGLRenderer} from 'three';
 
+  export interface Structure {
+    get atomCount(): number;
+    get bondCount(): number;
+    get modelStore(): any;
+    getView(selection: Selection): Structure;
+  }
+
+  export type Volume = any;
+  export type Surface = any;
+
+  export interface ColorData {
+    atomData?: number[],
+    bondData?: number[]
+  }
+
   export type LoaderParameters = {
     ext: string,
     compressed: boolean,
@@ -10,12 +25,28 @@ declare module 'NGL' {
     defaultRepresentation: boolean
   };
 
+  export type ColorMode = 'rgb' | 'hsv' | 'hsl' | 'hsi' | 'lab' | 'hcl'
+  export type ColorSpace = 'sRGB' | 'linear'
+
+  export type ScaleParameters = any;
+
+  export interface ColormakerParameters extends ScaleParameters {
+    structure?: Structure;
+    volume?: Volume;
+    surface?: Surface;
+    data?: ColorData;
+  }
+
+  export type SelectionSchemeData = [string, string, ColormakerParameters | undefined]
+
+  export type Colormaker = {};
+
   export class ColormakerRegistryClass {
     add(id: String, scheme: Colormaker): undefined
 
     addScheme(scheme: Function | Colormaker, label: String): String
 
-    addSelectionScheme(dataList: [string, string][], label?: String): String
+    addSelectionScheme(dataList: SelectionSchemeData[], label?: String): String
   }
 
   export const ColormakerRegistry: ColormakerRegistryClass;
@@ -81,6 +112,7 @@ declare module 'NGL' {
     renderPending: boolean;
 
     render(picking: boolean): void;
+    requestRender(): void;
 
     setSize(width: number, height: number): void;
   }
@@ -108,5 +140,34 @@ declare module 'NGL' {
   export interface ViewerSignals {
     ticked: Signal,
     rendered: Signal
+  }
+
+  export type LoaderInput = File | Blob | string
+
+  export type InferBondsOptions = 'all' | 'none' | 'auto'
+
+  export interface ParserParams {
+    voxelSize?: number;
+    firstModelOnly?: boolean;
+    asTrajectory?: boolean;
+    cAlphaOnly?: boolean;
+    name?: string;
+    path?: string;
+    delimiter?: string;
+    comment?: string;
+    columnNames?: string;
+    inferBonds?: InferBondsOptions;
+  }
+
+  export function autoLoad(file: LoaderInput, params?: Partial<LoaderParameters & ParserParams>): Promise<Structure>;
+
+  export class Selection {
+    constructor(query: string);
+  }
+
+  export class PdbWriter {
+    constructor(src: Structure, params?: any);
+
+    getString(): string;
   }
 }

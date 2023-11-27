@@ -2,15 +2,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as NGL from 'NGL';
+import * as ngl from 'NGL';
+import {Unsubscribable} from 'rxjs';
+import {awaitNgl} from './ngl-viewer-utils';
 
 export async function viewNglUI(fileContent: string): Promise<void> {
   const view = grok.shell.newView('NGL');
   const host = ui.div([], 'd4-ngl-viewer');
-  const stage = new NGL.Stage(host);
+  const stage = new ngl.Stage(host);
+  await awaitNgl(stage, `viewNglUI()`);
   const blob = new Blob([fileContent], {type: 'application/octet-binary'});
   await stage.loadFile(blob, {defaultRepresentation: true});
   handleResize(host, stage);
+  const subs: Unsubscribable[] = [];
+  subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
+    if (evtView.id === view.id) {
+      stage.dispose();
+      for (const sub of subs) sub.unsubscribe();
+    }
+  }));
 }
 
 /**
@@ -20,7 +30,8 @@ export async function viewNglUI(fileContent: string): Promise<void> {
 export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
   const view = DG.View.create();
   const host = ui.div([], 'd4-ngl-viewer');
-  const stage = new NGL.Stage(host);
+  const stage = new ngl.Stage(host);
+  // await awaitNgl(stage); // previewNglUI is not async
 
   const loadingPromise = new Promise<void>(async (resolve, reject) => {
     try {
@@ -34,14 +45,22 @@ export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise
 
   handleResize(host, stage);
   view.append(host);
+  const subs: Unsubscribable[] = [];
+  subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
+    if (evtView.id === view.id) {
+      stage.dispose();
+      for (const sub of subs) sub.unsubscribe();
+    }
+  }));
   return {view, loadingPromise};
 }
 
 export function nglWidgetUI(pdbId: string): DG.Widget {
   const host = ui.div([], {classes: 'd4-ngl-viewer', style: {width: '100%'}});
-  const stage = new NGL.Stage(host);
+  const stage = new ngl.Stage(host);
+  // await awaitNgl(stage); // nglWidgetUI is not async
 
-  //const pdbIdPath: strint = `rcsb://${pdbId}`;
+  //const pdbIdPath: string = `rcsb://${pdbId}`;
   // Link `rcsb://${pdbId}` causes CORS error
   const pdbIdPath: string = `https://files.rcsb.org/download/${pdbId}.cif`;
 
@@ -56,7 +75,7 @@ export function nglWidgetUI(pdbId: string): DG.Widget {
   return DG.Widget.fromRoot(host);
 }
 
-function handleResize(host: HTMLDivElement, stage: NGL.Stage) {
+function handleResize(host: HTMLDivElement, stage: ngl.Stage) {
   const canvas = stage.viewer.renderer.domElement;
 
   function resize() {

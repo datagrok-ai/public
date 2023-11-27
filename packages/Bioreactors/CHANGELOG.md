@@ -1,5 +1,9 @@
 # Bioreactors changelog
 
+## 1.1.5 (2023-11-13)
+
+Descriptions are updated.
+
 ## 1.1.4 (2023-10-16)
 
 Bioreactor demo is moved to the Compute section.

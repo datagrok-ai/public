@@ -1,0 +1,43 @@
+.d4-multi-form {
+	overflow: scroll!important;
+}
+
+.d4-multi-form-header {
+	width: 100px;
+	margin-right: 10px;
+	padding-top: 10px;
+}
+
+.d4-multi-form-column-name {
+	font-weight: bold;
+	position: absolute;
+	left: 10px;
+	width: 100px;
+	white-space: nowrap;
+	overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.d4-multi-form-form {
+	min-width: 170px;
+}
+
+.d4-multi-form-form.temp {
+	position: absolute;
+	visibility: hidden;
+}
+
+.d4-multi-form #vlist {
+	height: initial;
+	overflow-x: visible!important;
+}
+
+.d4-multi-form .ui-input-editor {
+	padding: initial;
+	pointer-events: none;
+}
+
+.d4-multi-form-form > input[type="checkbox"] {
+	height: 13px;
+	margin-top: 15px;
+}

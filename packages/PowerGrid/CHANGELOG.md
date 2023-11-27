@@ -1,5 +1,25 @@
 # PowerGrid changelog
 
+## 1.2.3 (2023-11-24)
+
+### Features
+
+* Added image to context panel on current row
+
+### Bug Fixes
+
+* Fixed double-click popup window
+
+## 1.2.2 (2023-11-20)
+
+### Features
+
+* Added Forms viewer
+
+### Bug Fixes
+
+* Fixed molecules rendering in smartforms
+
 ## 1.2.1 (2023-11-07)
 
 ### Bug Fixes

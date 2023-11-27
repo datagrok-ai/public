@@ -1,5 +1,29 @@
 # Curves changelog
 
+## 1.2.15 (2023-11-17)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added capability to substitute zeroes in curve fitting for logarithmic data
+
+### Bug Fixes
+
+* Fixed MultiCurveViewer throws an error when adding to an arbitrary dataset
+
+## 1.2.14 (2023-11-10)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed droplines min size for rendering
+
+## 1.2.13 (2023-11-09)
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed curves not rendering because of undefined x if branch.
+  * Fixed linear fit not rendering.
+
 ## 1.2.12 (2023-11-02)
 
 ### Bug Fixes

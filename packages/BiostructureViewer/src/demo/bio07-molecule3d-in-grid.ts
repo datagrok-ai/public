@@ -7,6 +7,8 @@ import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_package} from '../package';
+import {MolstarViewer} from '../viewers/molstar-viewer';
+import {awaitGrid} from '../tests/utils';
 
 const pdbCsvFn: string = 'pdb_data.csv';
 const pdbColName: string = 'pdb';
@@ -25,7 +27,7 @@ export async function demoBio07NoScript(): Promise<void> {
     const pdbStr: string = df.currentCell.value;
     const viewer = (await df.plot.fromType('Biostructure', {
       pdb: pdbStr,
-    }));
+    })) as unknown as MolstarViewer;
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.5);
 
     grok.shell.windows.showHelp = true;
@@ -35,6 +37,8 @@ export async function demoBio07NoScript(): Promise<void> {
       // @ts-ignore
       grok.shell.windows.help.showHelp(viewer.helpUrl);
     }
+
+    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
   } finally {
     pi.close();
   }

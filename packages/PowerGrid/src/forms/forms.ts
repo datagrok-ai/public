@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {getSettingsBase, isSummarySettingsBase, names, SparklineType, SummarySettingsBase} from '../sparklines/shared';
-import {GridCell, GridColumn} from 'datagrok-api/src/grid';
 import {GridCellElement, LabelElement, Scene} from './scene';
 
 type ColumnNamesVisibility = 'Auto' | 'Always' | 'Never';
@@ -56,7 +55,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return SparklineType.Form; }
 
-  getDefaultSize(gridColumn: GridColumn): { width?: number | null; height?: number | null; } {
+  getDefaultSize(gridColumn: DG.GridColumn): { width?: number | null; height?: number | null; } {
     return {
       width: 200,
       height: getSettings(gridColumn).columnNames.length * 20
@@ -73,14 +72,16 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const scene = new Scene(b);
 
     // molecules first
-    const molCol = cols.find((c) => c.semType == DG.SEMTYPE.MOLECULE);
-    if (molCol != null && b.width > 30 && b.height > 20) {
-      const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
-      b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
-      cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
-      const cell = gridCell.grid.cell(molCol.name, gridCell.gridRow);
-      scene.elements.push(new GridCellElement(r, cell));
+    const molCols = cols.filter((c) => c.semType == DG.SEMTYPE.MOLECULE);
+    for (let i = 0; i < molCols.length; i++) {
+      if (molCols[i] != null && b.width > 30 && b.height > 20) {
+        const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
+        b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+        const cell = gridCell.grid.cell(molCols[i].name, gridCell.gridRow);
+        scene.elements.push(new GridCellElement(r, cell));
+      }
     }
+    cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
 
     const maxNameWidth = Math.min(200, Math.max(...cols.map((c) => g.measureText(c.name).width)));
     const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * 8)));
@@ -153,7 +154,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  onMouseMove(gridCell: GridCell, e: MouseEvent) {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
     const el = scene.hitTest(e.x, e.y);
     if (el?.style?.tooltip)
       setTimeout(() => ui.tooltip.show(el.style!.tooltip!, el.bounds.right + 10, el.bounds.top));
@@ -161,7 +162,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     //super.onMouseMove(gridCell, e);
   }
 
-  onMouseDown(gridCell: GridCell, e: MouseEvent): void {
+  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
     grok.shell.o = this.makeBestScene(gridCell).toCanvas();
   }
 

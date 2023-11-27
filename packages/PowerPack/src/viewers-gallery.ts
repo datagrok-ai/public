@@ -2,10 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
-import {DataFrame, InputBase} from 'datagrok-api/dg';
 
 let view: DG.TableView;
-let table: DataFrame;
+let table: DG.DataFrame;
 
 const groupСomparisons = [
   'Bar chart',
@@ -50,10 +49,10 @@ const viewers: any = {};
 const jsViewers: any = {};
 const rootViewers = ui.divH([], 'viewer-gallery');
 let dlg: DG.Dialog;
-let search: InputBase;
+let search: DG.InputBase;
 const viewersCount = ui.div([], 'vg-counter-label');
 
-export function viewersDialog(currentView: DG.TableView, currentTable: DataFrame) {
+export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFrame) {
   getViewers(viewers);
   getJsViewers(jsViewers);
 

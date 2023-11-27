@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
@@ -5,11 +7,12 @@ import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
-import * as Module from "module";
 import dayjs from "dayjs";
+import {IDartApi} from "./api/grok_api.g";
 
 declare var grok: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
@@ -69,12 +72,12 @@ export class Entity {
 
   /** Gets entity properties */
   getProperties(): Promise<{[index: string]: any}> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart, (p: any) => resolve(p), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart);
   }
 
   /** Sets entity properties */
   setProperties(props: {[index: string]: any}): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props, (_: any) => resolve(_), (e: any) => reject(e)));
+    return api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props);
   }
 
   /** Returns a string representing the object */
@@ -232,7 +235,7 @@ export class Func extends Entity {
       parameters = params;
     }
 
-    return (await this.prepare(parameters).call()).getOutputParamValue();
+    return (await (this.prepare(parameters)).call()).getOutputParamValue();
   }
 
   /** Returns functions with the specified attributes. */
@@ -433,29 +436,29 @@ export class TableQueryBuilder {
   /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name
    * @returns {TableQueryBuilder} */
-  static from(table: string): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_From(table)); }
+  static from(table: string): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table)); }
 
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object
    * @returns {TableQueryBuilder} */
   static fromTable(table: TableInfo): TableQueryBuilder {
-    return toJs(api.grok_TableQueryBuilder_FromTable(table.dart));
+    return toJs(api.grok_DbTableQueryBuilder_FromTable(table.dart));
   }
 
   /** Selects all fields of the table
    * @returns {TableQueryBuilder} */
-  selectAll(): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_SelectAll(this.dart)); }
+  selectAll(): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_SelectAll(this.dart)); }
 
   /** Selects specified fields of the table
    * @param {string[]} fields - Array of fields to select
    * @returns {TableQueryBuilder} */
-  select(fields: string[]): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_Select(this.dart, fields)); }
+  select(fields: string[]): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Select(this.dart, fields)); }
 
   /** Groups rows that have the same values into summary values
    * @param {string[]} fields - Array of fields to group by
    * @returns {TableQueryBuilder} */
   groupBy(fields: string[]): TableQueryBuilder {
-    return toJs(api.grok_TableQueryBuilder_GroupBy(this.dart, fields));
+    return toJs(api.grok_DbTableQueryBuilder_GroupBy(this.dart, fields));
   }
 
   /** Rotates a table-valued expression by turning the unique values from one column in the expression into multiple
@@ -463,7 +466,7 @@ export class TableQueryBuilder {
    * @param {string[]} fields - Array of fields to pivot on
    * @returns {TableQueryBuilder} */
   pivotOn(fields: string[]): TableQueryBuilder {
-    return toJs(api.grok_TableQueryBuilder_PivotOn(this.dart, fields));
+    return toJs(api.grok_DbTableQueryBuilder_PivotOn(this.dart, fields));
   }
 
   /** Adds a where clause to the query
@@ -471,7 +474,7 @@ export class TableQueryBuilder {
    * @param {string} pattern - Pattern to test field values against
    * @returns {TableQueryBuilder} */
   where(field: string, pattern: string): TableQueryBuilder {
-    return toJs(api.grok_TableQueryBuilder_Where(this.dart, field, pattern));
+    return toJs(api.grok_DbTableQueryBuilder_Where(this.dart, field, pattern));
   }
 
   /** Sorts results in ascending or descending order
@@ -479,17 +482,17 @@ export class TableQueryBuilder {
    * @param {boolean} asc - Sort in ascending order
    * @returns {TableQueryBuilder} */
   sortBy(field: string, asc: boolean = true): TableQueryBuilder {
-    return toJs(api.grok_TableQueryBuilder_SortBy(this.dart, field, asc));
+    return toJs(api.grok_DbTableQueryBuilder_SortBy(this.dart, field, asc));
   }
 
   /** Selects limited number of records
    * @param {TableQueryBuilder} n - Number of records to select
    * @returns {TableQueryBuilder} */
-  limit(n: number): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_Limit(this.dart, n)); }
+  limit(n: number): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Limit(this.dart, n)); }
 
   /** Builds a query
    * @returns {TableQuery} */
-  build(): TableQuery { return toJs(api.grok_TableQueryBuilder_Build(this.dart)); }
+  build(): TableQuery { return toJs(api.grok_DbTableQueryBuilder_Build(this.dart)); }
 }
 
 /** Represents a data job
@@ -521,7 +524,7 @@ export class DataConnection extends Entity {
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
   test(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_DataConnection_Test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
+    return api.grok_DataConnection_Test(this.dart);
   }
 
   query(name: string, sql: string): DataQuery {
@@ -562,7 +565,7 @@ export class Notebook extends Entity {
   /** Create Notebook on server for edit.
    * @returns {Promise<string>} Current notebook's name */
   edit(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Notebook_Edit(this.dart, (f: any) => resolve(f), (e: any) => reject(e)));
+    return api.grok_Notebook_Edit(this.dart);
   }
 
   /** Environment name */
@@ -576,7 +579,7 @@ export class Notebook extends Entity {
   /** Converts Notebook to HTML code
    * @returns {Promise<string>} */
   toHtml(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Notebook_ToHtml(this.dart, (html: any) => resolve(html), (e: any) => reject(e)));
+    return api.grok_Notebook_ToHtml(this.dart);
   }
 }
 
@@ -598,8 +601,7 @@ export class TableInfo extends Entity {
 
 
 /** @extends Entity
- * Represents a Column metadata
- * */
+ * Represents Column metadata */
 export class ColumnInfo extends Entity {
 
   /** @constructs ColumnInfo */
@@ -654,7 +656,7 @@ export class FileInfo extends Entity {
 
   /** @returns {Promise<Uint8Array>} */
   readAsBytes(): Promise<Uint8Array> {
-    return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsBytes(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
+    return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
 }
 
@@ -799,7 +801,7 @@ export class ScriptEnvironment extends Entity {
 
   /** Setup environment */
   setup(): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_ScriptEnvironment_Setup(this.dart, () => resolve(), (e: any) => reject(e)));
+    return api.grok_ScriptEnvironment_Setup(this.dart);
   }
 }
 
@@ -982,7 +984,7 @@ export class Package extends Entity {
 
   /** Loads package. */
   async load(options?: {file: string}): Promise<Package> {
-    return new api.grok_Dapi_Packages_Load(this.dart, options?.file);
+    return api.grok_Dapi_Packages_Load(this.dart, options?.file);
   }
 
   private _logger?: PackageLogger;
@@ -995,17 +997,12 @@ export class Package extends Entity {
 
   /** Returns credentials for package. */
   getCredentials(): Promise<Credentials> {
-    return new Promise((resolve, reject) => api.grok_Package_Get_Credentials(this.name, (c: any) => {
-      let cred = toJs(c);
-      resolve(cred);
-    }, (e: any) => reject(e)));
+    return api.grok_Package_Get_Credentials(this.name);
   }
 
   /** Returns properties for a package. */
   getProperties(): Promise<Map<string, any>> {
-    return new Promise((resolve, reject) => api.grok_Package_Get_Properties(this.name, (props: any) => {
-      resolve(toJs(props));
-    }, (e: any) => reject(e)));
+    return api.grok_Package_Get_Properties(this.name);
   }
 
   private _files: FileSource | null = null;
@@ -1160,12 +1157,12 @@ export class Property {
   set editor(s: string) { api.grok_Property_Set(this.dart, 'editor', s); }
 
   /** Whether a slider appears next to the number input. Applies to numerical columns only. */
-  get showSlider(): string { return api.grok_Property_GetShowSlider(this.dart); }
-  set showSlider(s: string) { api.grok_Property_SetShowSlider(this.dart, s); }
+  get showSlider(): string { return api.grok_Property_Get_ShowSlider(this.dart); }
+  set showSlider(s: string) { api.grok_Property_Set_ShowSlider(this.dart, s); }
 
   /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
-  get showPlusMinus(): string { return api.grok_Property_GetShowPlusMinus(this.dart); }
-  set showPlusMinus(s: string) { api.grok_Property_SetShowPlusMinus(this.dart, s); }
+  get showPlusMinus(): string { return api.grok_Property_Get_ShowPlusMinus(this.dart); }
+  set showPlusMinus(s: string) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
@@ -1238,7 +1235,10 @@ export class Property {
    * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
-    api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+    throw 'Not implemented';
+    // Andrew: looks like my commit got lost somewhere :(
+    // Will need to bring it back, it was a nice feature
+    // api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 }
 

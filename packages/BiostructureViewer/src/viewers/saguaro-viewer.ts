@@ -9,6 +9,7 @@ import {v4 as uuidv4} from 'uuid';
 import {RcsbFv, RcsbFvDisplayTypes, RcsbFvRowConfigInterface} from '@rcsb/rcsb-saguaro';
 import {RcsbFvBoardConfigInterface} from '@rcsb/rcsb-saguaro/build/RcsbFv/RcsbFvConfig/RcsbFvConfigInterface';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
 import {_package} from '../package';
 
@@ -132,8 +133,7 @@ export class SaguaroViewer extends DG.JsViewer {
 
   override detach(): void {
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => {
-      await this.viewPromise;
+    this.viewPromise = this.viewPromise.then(async () => {
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach'); // detach
@@ -156,8 +156,6 @@ export class SaguaroViewer extends DG.JsViewer {
           await this.destroyView('setData'); // setData
           this.viewed = false;
         }
-
-        await this.detachPromise;
         // TODO: Data
 
         if (!this.viewed) {
@@ -174,7 +172,6 @@ export class SaguaroViewer extends DG.JsViewer {
 
   // -- View --
   private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
   private setDataInProgress: boolean = false;
 
   private viewerDivId: string;

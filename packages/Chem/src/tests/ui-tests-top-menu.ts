@@ -190,7 +190,7 @@ category('UI top menu', () => {
         await delay(2000);
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() => smiles.columns.length === 6, 'rgroup columns haven\'t been added', 15000);
+        await awaitCheck(() => smiles.columns.length === 5, 'rgroup columns haven\'t been added', 15000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.TRELLIS_PLOT)
@@ -217,9 +217,13 @@ category('UI top menu', () => {
         const dialog = DG.Dialog.getOpenDialogs()[0].root;
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() =>
-            smiles.columns.names().includes('Embed_X_1') && smiles.columns.names().includes('Embed_Y_1'),
-            'embedding columns haven\'t been added', 5000);
+        await awaitCheck(() => {
+            if (smiles.columns.names().includes('Embed_X_1') && smiles.columns.names().includes('Embed_Y_1')) {
+                const xCol = smiles.col('Embed_X_1');
+                return new Array(xCol!.length).fill(0).every((it, idx) => !xCol?.isNone(idx));
+            }
+            return false;
+        }, 'embedding columns haven\'t been added', 5000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.SCATTER_PLOT)
@@ -279,11 +283,11 @@ category('UI top menu', () => {
             'cannot create viewer', 3000);
         const stviewer = Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
         await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-            'scaffold tree has not been generated', 180000);
+            'scaffold tree has not been generated', 150000);
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();
-    }, {timeout: 60000}); 
+    }, {timeout: 180000}); 
 
     after(async () => {
         grok.shell.closeAll();

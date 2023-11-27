@@ -9,10 +9,11 @@ import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
 import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
+import {IDartApi} from "./api/grok_api.g";
 
 declare let ui: any;
 declare let grok: { shell: Shell };
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * Grok visual shell, use it to get access to top-level views, tables, methods, etc.
@@ -198,13 +199,13 @@ export class Shell {
     api.grok_CloseAll();
   }
 
-  /** Registers a view.
-   * @param {string} viewTypeName
-   * @param {Function} createView - a function that returns {@link ViewBase}
-   * @param {string} viewUrlPath */
-  registerView(viewTypeName: string, createView: (...params: any[]) => ViewBase, viewUrlPath: string = ''): void {
-    api.grok_RegisterView(viewTypeName, createView, viewUrlPath);
-  }
+  // /** Registers a view.
+  //  * @param {string} viewTypeName
+  //  * @param {Function} createView - a function that returns {@link ViewBase}
+  //  * @param {string} viewUrlPath */
+  // registerView(viewTypeName: string, createView: (...params: any[]) => ViewBase, viewUrlPath: string = ''): void {
+  //   api.grok_RegisterView(viewTypeName, createView, viewUrlPath);
+  // }
 
   /** Registers a viewer.
    * Sample: {@link https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers}
@@ -387,10 +388,10 @@ export class Settings {
 
   constructor() {
     return new Proxy({}, {
-      get: function (target: any, prop) {
+      get: function (target: any, prop: string) {
         return toJs(api.grok_PropMixin_GetPropertyValue(api.grok_Get_Settings(), prop));
       },
-      set: function (target, prop, value) {
+      set: function (target, prop: string, value) {
         if (target.hasOwnProperty(prop))
           return target[prop];
         if (target.hasOwnProperty(prop)) {

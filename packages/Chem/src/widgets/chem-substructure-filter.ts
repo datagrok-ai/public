@@ -93,15 +93,13 @@ export class SubstructureFilter extends DG.Filter {
   searchTypeChanged = new Subject();
   searchOptionsDiv = ui.div('', 'filter-search-options');
   showOptions = false;
+  searchNotCompleted = false;
   
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
-    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
-      getRdKitModule());
-    return this.searchType === SubstructureSearchType.IS_SIMILAR ?
-      `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` : `${smarts}_${this.searchType}`;
+    return this.getFilterSummary(this.currentMolfile);
   }
 
   get isFiltering(): boolean {
@@ -229,8 +227,8 @@ export class SubstructureFilter extends DG.Filter {
           this.syncEvent = true;
         this.currentMolfile = state.molblock!;
         this.bitset = state.bitset!;
-        this.searchTypeInput.value = state.searchType;
         this.searchTypeSync = true;
+        this.searchTypeInput.value = state.searchType;
         this.similarityCutOffInput.value = state.simCutOff;
         this.similarityCutOffSync = true;
         this.fpInput.value = state.fp;
@@ -247,6 +245,19 @@ export class SubstructureFilter extends DG.Filter {
             this.sketcherType = DG.chem.currentSketcherType;
             this.sketcher.sketcherType = DG.chem.currentSketcherType;
           }
+        }
+      }
+    }));
+
+    this.subs.push(this.dataFrame!.onEvent('d4-filter-control-active-changed').subscribe(() => {
+      //in case filter is swithed off via checkbox on filter panel, we finish current search
+      if (!this.isFiltering && this.bitset) {
+        if (!this.batchResultObservable?.closed) {
+          this.searchNotCompleted = true;
+          this.sketcher.getSmarts().then((smarts) => {
+            this.terminatePreviousSearch();
+            this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
+          });
         }
       }
     }));
@@ -297,6 +308,8 @@ export class SubstructureFilter extends DG.Filter {
           isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
         }]);
         this.active = true;
+        if (this.searchNotCompleted)
+          this._onSketchChanged();
     }
   }
 
@@ -374,12 +387,12 @@ export class SubstructureFilter extends DG.Filter {
         tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
-        getRdKitModule())}_${this.searchType}_${this.similarityCutOff}_${this.fp}`)) {
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) && !this.searchNotCompleted) {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property 
       return;
     } else {
+      this.searchNotCompleted = false;
       this.terminatePreviousSearch();
       this.currentMolfile = newMolFile;
       this.currentSearches.add(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
@@ -518,5 +531,12 @@ export class SubstructureFilter extends DG.Filter {
         this.currentSearches.delete(v);
       finish();
     }
+  }
+
+  getFilterSummary(molfile: string): string {
+    const smarts = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
+      getRdKitModule());
+    return this.searchType === SubstructureSearchType.IS_SIMILAR ?
+      `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` : `${smarts}_${this.searchType}`;
   }
 }

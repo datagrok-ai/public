@@ -104,6 +104,19 @@ category('UI: Inputs', () => {
     }
   });
 
+  test('floatInput', async () => {
+    const t = ui.floatInput('Label', 0.003567);
+    t.format = '0.0000';
+    const v = grok.shell.newView('Test', [t]);
+    const input = t.input as HTMLInputElement;
+    expect(input.value, '0.0036');
+    t.input.dispatchEvent(new Event('focus'));
+    expect(input.value, '0.0036');
+    t.value = 0.3;
+    expect(input.value, '0.3000');
+    v.close();
+  });
+
   after(async () => {
     grok.shell.closeAll();
   });

@@ -1,6 +1,7 @@
 import {DockView, View, ViewBase} from "./view";
 import {TabControl, TabPane} from "../widgets";
-let api = <any>window;
+import {IDartApi} from "../api/grok_api.g";
+const api: IDartApi = <any>window;
 
 class EmptyView extends View {
   constructor() {

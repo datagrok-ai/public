@@ -92,6 +92,10 @@
   padding: 1px;
 }
 
+.scaffold-tree-viewer .d4-tree-view-group-host .d4-tree-view-group-label {
+  align-items: normal;
+}
+
 .d4-scaffold-tree .d4-tree-view-node {
   padding: 0;
   margin-bottom: -1px;
@@ -239,7 +243,8 @@
   margin-left: 8px;
 }
 
-.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label {
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label,
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label > .chem-mol-box {
   flex-grow: 1;
 }
 
@@ -250,8 +255,6 @@
   align-items: end;
   flex: 1;
   position: absolute;
-  top: 45%;
-  transform: translateY(-50%);
   height: 90%;
   /* box-sizing: content-box; */
 }

@@ -1053,6 +1053,9 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
   grid.sort([], []);
   grid.setRowOrder(idxCol.toList());
   grid.props.pinnedRows = [tableRowIdx];
+  //next two rows can be added after Chem is updated to version 1.7 API
+  //grid.props.pinnedRowColumnNames = [molCol.name];
+  //grid.props.pinnedRowValues = [value.value];
   grid.scrollToPixels(0, 0); //to address the bug in the core
 }
 
