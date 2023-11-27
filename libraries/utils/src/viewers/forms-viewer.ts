@@ -78,14 +78,17 @@ export class FormsViewer extends DG.JsViewer {
         min-height: ${height}px;
         margin-bottom: 10px;
       `;
+
       let columnsHeaders = this.columnHeadersDiv.parentElement as HTMLElement;
       columnsHeaders.style.cssText = `
-        overflow-y: hidden!important;
-        overflow-x: scroll!important;
+        overflow-y: auto!important;
+        overflow-x: hidden!important;
         max-width: 200px;
-        min-width: 50px;
       `;
-
+      columnsHeaders.addEventListener('scroll', (e:Event)=>{
+        this.virtualView.root.scrollTop = columnsHeaders.scrollTop;
+      });
+      
       this.virtualView.root.addEventListener('scroll', (e:Event)=>{
         columnsHeaders.scrollTop = this.virtualView.root.scrollTop;
       });
