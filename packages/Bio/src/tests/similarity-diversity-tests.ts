@@ -1,9 +1,11 @@
-import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
-import {createTableView} from './utils';
 import * as grok from 'datagrok-api/grok';
+
+import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
+
+import {_package} from '../package-test';
 
 category('similarity/diversity', async () => {
   test('similaritySearchViewer', async () => {
@@ -16,7 +18,11 @@ category('similarity/diversity', async () => {
 });
 
 async function _testSimilaritySearchViewer() {
-  const moleculesView = await createTableView('tests/sample_MSA_data.csv');
+  const csv = await _package.files.readAsText('tests/sample_MSA_data.csv');
+  const df = DG.DataFrame.fromCsv(csv);
+  const moleculesView = grok.shell.addTableView(df);
+  const seqCol = moleculesView.dataFrame.getCol('MSA');
+  expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
   const viewer: SequenceSimilarityViewer = (await moleculesView.dataFrame.plot
     .fromType('Sequence Similarity Search')) as SequenceSimilarityViewer;
@@ -61,7 +67,11 @@ async function _testSimilaritySearchViewer() {
 }
 
 async function _testDiversitySearchViewer() {
-  const moleculesView = await createTableView('tests/sample_MSA_data.csv');
+  const csv = await _package.files.readAsText('tests/sample_MSA_data.csv');
+  const df = DG.DataFrame.fromCsv(csv);
+  const moleculesView = grok.shell.addTableView(df);
+  const seqCol = moleculesView.dataFrame.getCol('MSA');
+  expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
   const viewer: SequenceDiversityViewer = (await moleculesView.dataFrame.plot
     .fromType('Sequence Diversity Search')) as SequenceDiversityViewer;
