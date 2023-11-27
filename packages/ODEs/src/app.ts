@@ -238,7 +238,7 @@ export async function runSolverApp() {
       .item('Chem reactions...', () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
       .item("Robertson's model...", () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
       .item('Fermentation...', () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
-      .separator()
+      //.separator()
       .item('PK-PD...', () => setState(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
       .endGroup()
       .show();    
