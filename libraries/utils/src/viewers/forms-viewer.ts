@@ -44,6 +44,8 @@ export class FormsViewer extends DG.JsViewer {
   constructor() {
     super();
 
+    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/forms';
+
     // properties
     this.fieldsColumnNames = this.addProperty('fieldsColumnNames', DG.TYPE.COLUMN_LIST);
     this.colorCode = this.bool('colorCode', true);
