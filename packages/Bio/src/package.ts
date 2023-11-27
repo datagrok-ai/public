@@ -81,7 +81,6 @@ import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEdit
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { DockerContainer, DockerContainersDataSource } from 'datagrok-api/dg';
 
 export const _package = new BioPackage();
 
