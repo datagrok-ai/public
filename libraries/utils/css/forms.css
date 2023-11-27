@@ -11,14 +11,19 @@
 .d4-multi-form-column-name {
 	position: absolute;
 	left: 10px;
-	width: calc(100% - 10px);
 	white-space: nowrap;
+	/*width: calc(100% - 10px);
+	
 	overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: ellipsis;*/
 }
 
 .d4-multi-form-form {
 	min-width: 170px;
+}
+
+.d4-multi-form > .ui-split-h > .ui-box:first-child:hover::-webkit-scrollbar {
+	display: block;
 }
 
 .d4-multi-form > .ui-split-h > .ui-box:first-child::-webkit-scrollbar {

@@ -59,14 +59,14 @@ export class FormsViewer extends DG.JsViewer {
     this.root.classList.add('d4-multi-form');
     this.columnHeadersDiv = ui.div([], 'd4-multi-form-header');
     this.virtualView = ui.virtualView(0, (i: number) => this.renderForm(i), false, 1);
-
-    const formWithHeaderDiv = ui.splitH([this.columnHeadersDiv, this.virtualView.root], null, true);
+    let columnHeadersBox = ui.div(this.columnHeadersDiv);
+    const formWithHeaderDiv = ui.splitH([columnHeadersBox, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
     
     ui.tools.waitForElementInDom(this.virtualView.root).then((_)=>{
       let height = 0;
       let virtualViewElements = this.virtualView.root.children[0].children;
-      
+
       for (let i=0; i<virtualViewElements.length; i++){
         let vheight = virtualViewElements[i].getBoundingClientRect().height;
         if (vheight>height)
@@ -76,21 +76,31 @@ export class FormsViewer extends DG.JsViewer {
       this.columnHeadersDiv.style.cssText = `
         oveflow:hidden!important;
         min-height: ${height}px;
-        margin-bottom: 10px;
+        min-width: 150px;
+        flex-shrink: 0;
       `;
 
-      let columnsHeaders = this.columnHeadersDiv.parentElement as HTMLElement;
+      let columnsHeaders = columnHeadersBox.parentElement as HTMLElement;
       columnsHeaders.style.cssText = `
-        overflow-y: auto!important;
-        overflow-x: hidden!important;
+        overflow: hidden!important;
         max-width: 200px;
       `;
-      columnsHeaders.addEventListener('scroll', (e:Event)=>{
-        this.virtualView.root.scrollTop = columnsHeaders.scrollTop;
+
+      columnHeadersBox.style.cssText = `
+        box-sizing: content-box;
+        width:100%;
+        position:relative;
+        display:flex;
+        padding-right:17px;
+        overflow: scroll!important;
+      `;
+
+      columnHeadersBox.addEventListener('scroll', (e:Event)=>{
+        this.virtualView.root.scrollTop = columnHeadersBox.scrollTop;
       });
       
       this.virtualView.root.addEventListener('scroll', (e:Event)=>{
-        columnsHeaders.scrollTop = this.virtualView.root.scrollTop;
+        columnHeadersBox.scrollTop = this.virtualView.root.scrollTop;
       });
 
     });
