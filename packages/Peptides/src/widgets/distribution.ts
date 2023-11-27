@@ -39,7 +39,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     if (!table.selection.anyTrue)
       res.push(ui.divText('No distribution'));
     else {
-      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection, model.getCombinedSelection()));
+      const hist = getActivityDistribution(getDistributionTable(activityCol, model.df.selection, model.getCombinedSelection()));
       const bitArray = BitArray.fromString(table.selection.toBinaryString());
       const mask = DG.BitSet.create(rowCount,
         bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));

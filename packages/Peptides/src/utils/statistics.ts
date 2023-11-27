@@ -16,6 +16,7 @@ export type Stats = {
 
 export type PositionStats = {[monomer: string]: Stats | undefined} & {general: SummaryStats};
 export type MonomerPositionStats = {[position: string]: PositionStats | undefined} & {general: SummaryStats};
+export type MonomerPositionStatsCache = {[colName: string]: {filter: Int32Array, stats: MonomerPositionStats, selection: Int32Array}};
 export type ClusterStats = {[cluster: string]: Stats};
 export type ClusterTypeStats = {[clusterType in ClusterType]: ClusterStats};
 
