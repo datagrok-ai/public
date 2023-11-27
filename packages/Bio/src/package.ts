@@ -1135,28 +1135,18 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
 }
 
-async function getAutodockContainer(): Promise<DockerContainer | undefined> {
-  try {
-    const dockerContainers: DockerContainersDataSource = await grok.dapi.docker.dockerContainers;
-    return dockerContainers.filter('bio-autodock').first();
-  } catch (error) {
-    console.error('Failed to get the Autodock container:', error);
-    return undefined;
-  }
-}
-
-//name: testAutodockContainer
+//name: runAutodock
 //input: file receptor
 //input: file ligand
 //input: int x
 //input: int y
 //input: int z
-export async function accessServer(receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number): Promise<string | null | undefined> {
-  const autodockDockerfile = await getAutodockContainer();
-
-  if (!autodockDockerfile) {
-    console.error('Autodock container is not available.');
-    return;
+//output: string dockingResults
+export async function runAutodock(receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number): Promise<string | null> {
+  const autodockContainer = await grok.dapi.docker.dockerContainers.filter('bio-autodock').first();
+  if (autodockContainer.status !== 'started' && autodockContainer.status !== 'checking') {
+    grok.log.warning('Autodock container not started yet.');
+    return null;
   }
 
   const json: { [key: string]: any } = {};
@@ -1171,10 +1161,10 @@ export async function accessServer(receptor: DG.FileInfo, ligand: DG.FileInfo, x
 
   const path = `/dock?x=${x}&y=${y}&z=${z}`;
   try {
-    const response = await grok.dapi.docker.dockerContainers.request(autodockDockerfile.id, path, params);
-    return response;
+    const dockingResults = await grok.dapi.docker.dockerContainers.request(autodockContainer.id, path, params);
+    return dockingResults;
   } catch (error) {
-    console.error('Failed to access the server:', error);
-    return;
+    grok.log.error(`Failed to access the server: ${error}`);
+    return null;
   }
 }

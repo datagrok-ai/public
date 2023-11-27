@@ -47,7 +47,6 @@ RUN curl -LJO https://raw.githubusercontent.com/MolecularFlipbook/FlipbookApp/ma
     && mv prepare_dpf4.py /usr/local/bin/ \
     && chmod +x /usr/local/bin/prepare_dpf4.py
 
-
 RUN pip install Flask
 
 COPY autodock.py /app/autodock.py

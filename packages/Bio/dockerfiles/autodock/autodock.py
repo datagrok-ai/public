@@ -63,15 +63,18 @@ def dock():
 
     subprocess.call(['/usr/local/x86_64Linux2/autogrid4', '-p', autogrid_config, '-l', "%s.autogrid.log" % receptor_basename])
 
-    subprocess.call(['/usr/local/bin/prepare_dpf4.py', '-l', ligand_path_prep, '-r', receptor_path_prep, '-p', 'ga_num_evals=20000000', '-p', 'ga_pop_size=150', '-p', 'ga_run=17', '-o', '%s.dpf' % ligand_basename])
+    command = [
+        '/opt/autodock-gpu',
+        '--ffile', '{}.maps.fld'.format(receptor_basename),
+        '--lfile', '{}.pdbqt'.format(ligand_basename),
+        '--nrun', '30',
+        '--resnam', '{}-{}'.format(receptor_basename, ligand_basename)
+    ]
 
-    subprocess.call(['/usr/local/x86_64Linux2/autodock4', '-p', '%s.dpf' % ligand_basename, '-l', '%s.dlg' % ligand_basename])
-
-    #use when the GPU will be available
-    #subprocess.call(['/opt/autodock-gpu', '--ffile {}.maps.fld --lfile {}.pdbqt --nrun 30 --resnam {}-{}.dlg'.format(receptor_basename, ligand_basename, receptor_basename, ligand_basename)])
-    with open('{}.dlg'.format(ligand_basename), 'r') as dlg_file:
+    process = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+    output, _ = process.communicate()
+    with open('{}-{}.dlg'.format(receptor_basename, ligand_basename), 'r') as dlg_file:
         dlg_content = dlg_file.read()
-    
     return dlg_content
 
 if __name__ == '__main__':
