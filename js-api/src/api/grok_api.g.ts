@@ -960,6 +960,7 @@ export interface IDartApi {
   grok_InputBase_Get_Property(input: any): any;
   grok_InputBase_Get_Root(input: any): any;
   grok_InputBase_Get_Caption(input: any): any;
+  grok_InputBase_Set_Caption(input: any, s: String): any;
   grok_InputBase_Get_InputType(input: any): any;
   grok_InputBase_Get_Format(input: any): any;
   grok_InputBase_Set_Format(input: any, s: String): any;

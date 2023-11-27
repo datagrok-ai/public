@@ -1011,6 +1011,7 @@ export class InputBase<T = any> {
   get caption(): string {
     return api.grok_InputBase_Get_Caption(this.dart);
   }
+  set caption(s: string) { api.grok_InputBase_Set_Caption(this.dart, s); }
 
   /** Property if associated with */
   get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
