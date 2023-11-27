@@ -20,6 +20,7 @@ category('similarity/diversity', async () => {
 async function _testSimilaritySearchViewer() {
   const csv = await _package.files.readAsText('tests/sample_MSA_data.csv');
   const df = DG.DataFrame.fromCsv(csv);
+  await grok.data.detectSemanticTypes(df);
   const moleculesView = grok.shell.addTableView(df);
   const seqCol = moleculesView.dataFrame.getCol('MSA');
   expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
@@ -70,6 +71,7 @@ async function _testDiversitySearchViewer() {
   const csv = await _package.files.readAsText('tests/sample_MSA_data.csv');
   const df = DG.DataFrame.fromCsv(csv);
   const moleculesView = grok.shell.addTableView(df);
+  await grok.data.detectSemanticTypes(df);
   const seqCol = moleculesView.dataFrame.getCol('MSA');
   expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
