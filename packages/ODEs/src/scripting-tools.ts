@@ -16,6 +16,11 @@ const ODES_PACKAGE = 'ODEs';
 /** Numerical solver function */
 const SOLVER_FUNC = 'solve';
 
+/** Elementary math tools */
+const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh',];
+const POW_IDX = MATH_FUNCS.indexOf('pow');
+const MATH_CONSTS = ['PI', 'E', ];
+
 /** Numerical input specification */
 type Input = {
   value: number,
@@ -67,6 +72,8 @@ enum ERROR_MSG {
   ARG = 'incorrect argument specification',
   INITS = 'incorrect initial values specification',
   DOSING = 'incorrect dosing specification',
+  DOSE = 'incorrect dose',
+  DOSES_COUNT = 'incorrect doses count',
 }
 
 /** Datagrok annatations */
@@ -112,6 +119,12 @@ enum SCRIPT {
   ONE_STAGE_END = ') => {',
   ASYNC_OUTPUT = `let ${DF_NAME} = await _oneStage(`,
   RETURN_OUTPUT = `return call.getParamValue('${DF_NAME}');`,
+  EMPTY_OUTPUT = `let ${DF_NAME} = DG.DataFrame.create();`,
+  APPEND_ASYNC = `${DF_NAME}.append(await _oneStage(`,
+  SOLUTION_DF_COM = '// solution dataframe',
+  DOSE_INTERVAL_COM = '// dosing interval',
+  DOSE_INTERVAL = `${SERVICE}interval`,
+  LAST_IDX = `${SERVICE}lastIdx`,
 }
 
 /** Limits of the problem specification */
@@ -119,11 +132,6 @@ type Block = {
   begin: number,
   end: number
 }
-
-/** Elementary math tools */
-const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh',];
-const POW_IDX = MATH_FUNCS.indexOf('pow');
-const MATH_CONSTS = ['PI', 'E', ];
 
 /** Get strat of the problem skipping note-lines */
 function getStartOfProblemDef(lines: string[]): number {
@@ -285,13 +293,17 @@ function getDosing(lines: string[], begin: number, end: number): Dosing {
   const size = source.length;
 
   if (size < DOSING.MIN_LINES_COUNT)
-    throw new Error(ERROR_MSG.DOSING);  
+    throw new Error(ERROR_MSG.DOSING);
 
-  return {
-    dose: getInput(source[DOSING.DOSE_IDX]),
-    count: getInput(source[DOSING.COUNT_IDX]),
-    updates: source.slice(DOSING.COUNT_IDX + 1),
-  }
+  const dose = getInput(source[DOSING.DOSE_IDX]);
+  if (dose.value < DOSING.MIN_DOSE)
+    throw new Error(ERROR_MSG.DOSE);
+  
+  const count = getInput(source[DOSING.COUNT_IDX]);
+  if (count.value <  DOSING.MIN_DOSES_COUNT)
+    throw new Error(ERROR_MSG.DOSES_COUNT);
+
+  return {dose: dose, count: count, updates: source.slice(DOSING.COUNT_IDX + 1)};
 }
 
 /** Get initial value problem specification given in the text */
@@ -524,12 +536,12 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
 } // getScriptMainBodyBasic
 
 /** Return function for JS-script */
-function getScriptFunc(ivp: IVP): string[] {  
+function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {  
   const res = [] as string[];
 
   // 0. Function declaration
   res.push(SCRIPT.ONE_STAGE_COM);
-  res.push(`${SCRIPT.ONE_STAGE_BEGIN} ${SCRIPT.ONE_STAGE_END}`);
+  res.push(`${SCRIPT.ONE_STAGE_BEGIN}${funcParamsNames}${SCRIPT.ONE_STAGE_END}`);
 
   // 1. Constants lines
   if (ivp.consts !== null) {
@@ -605,10 +617,41 @@ function getScriptFunc(ivp: IVP): string[] {
 } // getScriptFunc
 
 /** Return main body of JS-script: dosing case */
-function getScriptMainBodyDosingCase(ivp: IVP): string[] {  
-  const res = getScriptFunc(ivp);
+function getScriptMainBodyDosingCase(ivp: IVP): string[] {
+  const funcParamsNames = getFuncParamsNames(ivp);
+  const res = getScriptFunc(ivp, funcParamsNames);
   res.push('');
-  res.push(`${SCRIPT.ASYNC_OUTPUT});`);
+  //res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`);
+
+  res.push(SCRIPT.SOLUTION_DF_COM);
+  const dfNames = getSolutionDfColsNames(ivp);
+
+  res.push(`let ${DF_NAME} = DG.DataFrame.fromColumns([`);
+  dfNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${name}', []),`));
+  res.push(`]);`);
+  res.push(`${DF_NAME}.name = '${ivp.name}';`);
+  res.push('');
+
+  res.push(SCRIPT.DOSE_INTERVAL_COM);
+  res.push(`const ${SCRIPT.DOSE_INTERVAL} = ${SERVICE}${ivp.arg.name}1 - ${SERVICE}${ivp.arg.name}0;`);
+  res.push('');
+  res.push(`let ${SCRIPT.LAST_IDX} = 0`);
+
+  res.push(SCRIPT.SOLVER_COM);
+  res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${DOSING.COUNT}; ++${SERVICE}idx) {`);
+  ivp.dosing!.updates.forEach((upd) => res.push(`${SCRIPT.SPACE2}${upd};`));
+  res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND_ASYNC}${funcParamsNames}), true);`);
+  res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
+  res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}1 += ${SCRIPT.DOSE_INTERVAL};`);
+  res.push(`${SCRIPT.SPACE2}${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
+
+  dfNames.forEach((name, idx) => { 
+    if (idx !== 0)
+      res.push(`${SCRIPT.SPACE2}${name} = ${DF_NAME}.get('${name}', ${SCRIPT.LAST_IDX});`);
+  });
+
+  res.push('};');
+
   return res;
 } // getScriptMainBodyDosingCase
 
@@ -647,6 +690,36 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
 
   return res;
 }
+
+/** Return func parameters names string */
+function getFuncParamsNames(ivp: IVP): string {
+  const names = [] as string [];
+
+  const arg = ivp.arg.name;
+
+  names.push(`${SERVICE}${arg}0`);
+  names.push(`${SERVICE}${arg}1`);
+  names.push(`${SERVICE}h`);  
+
+  ivp.inits.forEach((val, key) => names.push(key));
+
+  if (ivp.params)
+    ivp.params.forEach((val, key) => names.push(key));
+
+  return names.join(', ');
+}
+
+/** Return solution dataframe columns names*/
+function getSolutionDfColsNames(ivp: IVP): string[] {
+  const res = [] as string[];
+
+  res.push(ivp.arg.name);
+
+  ivp.inits.forEach((val, key) => res.push(key));
+
+  return res;
+}
+
 
 // TODO: to remove the following debugging lines:
 /*const TEMPLATE_BASIC = `${CONTROL_EXPR.NAME}: Template 

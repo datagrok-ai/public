@@ -22,8 +22,10 @@ export enum DOSING {
   MIN_LINES_COUNT = 3,
   DOSE_IDX = 0,
   COUNT_IDX = 1,
-  DOSE = '_dose',
-  COUNT = '_count',
+  DOSE = 'dose',
+  COUNT = 'count',
+  MIN_DOSE = 0,
+  MIN_DOSES_COUNT = 1,
 };
 
 /** Basic template illustrating the simplest features */
