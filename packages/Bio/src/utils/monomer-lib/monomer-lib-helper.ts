@@ -23,7 +23,8 @@ import {_package} from '../../package';
 type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibHelper };
 declare const window: MonomerLibWindowType;
 
-export class MonomerLib implements IMonomerLib {
+/** Wrapper for monomers obtained from different sources  */
+class MonomerLib implements IMonomerLib {
   public readonly error: string | undefined;
 
   private _monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
@@ -124,8 +125,9 @@ export class MonomerLib implements IMonomerLib {
   }
 }
 
+/** Singleton wrapper for MonomerLib  */
 export class MonomerLibHelper implements IMonomerLibHelper {
-  private readonly _monomerLib: MonomerLib = new MonomerLib({});
+  private readonly _monomerLib = new MonomerLib({});
 
   /** Protect constructor to prevent multiple instantiation. */
   protected constructor() {}

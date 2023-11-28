@@ -8,31 +8,64 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLibHelper} from './monomer-lib-helper';
 
-import {manageFiles, getLibFileNameList} from './helpers';
+import {getLibFileNameList} from './helpers';
 
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
-  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  const inputsForm: HTMLDivElement = ui.inputs([]);
-  const libFileNameList: string[] = await getLibFileNameList();
+  return new Widget().getWidget();
+}
 
-  const settings = await getUserLibSettings();
-
-  for (const libFileName of libFileNameList) {
-    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
-      () => {
-        if (libInput.value == true) {
-          // Checked library remove from excluded list
-          settings.exclude = settings.exclude.filter((l) => l != libFileName);
-        } else {
-          // Unchecked library add to excluded list
-          if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
-        }
-        setUserLibSettings(settings).then(async () => {
-          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
-          grok.shell.info('Monomer library user settings saved.');
-        });
-      });
-    inputsForm.append(libInput.root);
+class Widget {
+  async getWidget() {
+    const libChoiceInputsForm = await this.getInputs();
+    const addLibrariesBtn: HTMLButtonElement = ui.button('Add', this.addFiles);
+    return new DG.Widget(ui.divV([libChoiceInputsForm, ui.div([addLibrariesBtn])]));
   }
-  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
+
+  private async getInputs(): Promise<HTMLDivElement> {
+    const inputsForm = ui.form([]);
+    const settings = await getUserLibSettings();
+    const libFileNameList: string[] = await getLibFileNameList();
+
+    for (const libFileName of libFileNameList) {
+      const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
+        () => {
+          if (libInput.value == true) {
+            // Checked library remove from excluded list
+            settings.exclude = settings.exclude.filter((l) => l != libFileName);
+          } else {
+            // Unchecked library add to excluded list
+            if (!settings.exclude.includes(libFileName))
+              settings.exclude.push(libFileName);
+          }
+          setUserLibSettings(settings).then(async () => {
+            await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+            grok.shell.info('Monomer library user settings saved.');
+          });
+        });
+      const deleteIcon = ui.iconFA('trash-alt');
+      ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
+      libInput.addOptions(deleteIcon);
+      inputsForm.append(libInput.root);
+    }
+    return inputsForm;
+  }
+
+  private async addFiles(): Promise<void> {
+    // add open file control
+    const popup = DG.Menu.popup();
+    popup.item('Add standard', () => {
+      const libFile = DG.Utils.openFile({
+        accept: '.json',
+        open: async (file) => { },
+      });
+    });
+    popup.separator();
+    popup.item('Add custom', () => {
+      const libFile = DG.Utils.openFile({
+        accept: '.csv',
+        open: async (file) => { },
+      });
+    });
+    popup.show();
+  }
 }

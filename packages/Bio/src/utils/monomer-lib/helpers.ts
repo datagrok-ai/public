@@ -15,11 +15,3 @@ export async function getLibFileNameList(): Promise<string[]> {
     }));
   return res;
 }
-
-export async function manageFiles() {
-  const a = ui.dialog({title: 'Manage files'})
-    .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
-    .addButton('OK', () => a.close())
-    .show();
-}
-
