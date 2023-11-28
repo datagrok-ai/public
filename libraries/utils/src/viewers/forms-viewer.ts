@@ -174,6 +174,9 @@ export class FormsViewer extends DG.JsViewer {
         const offsetTop = (formField as any).type === 'checkbox' ? (formField as HTMLElement).offsetTop - BOOLEAN_INPUT_TOP_MARGIN : (formField as HTMLElement).offsetTop;
         columnLabel.style.top = `${offsetTop + 10}px`;
         this.columnHeadersDiv.appendChild(columnLabel);
+        columnLabel.onclick = (e: MouseEvent) => {
+          this.dataFrame.currentCol = this.dataFrame.col(name)!;
+        };
       }
     }
 
@@ -205,6 +208,7 @@ export class FormsViewer extends DG.JsViewer {
         if (input) {
           input.input.setAttribute('column', name);
           input.value = this.dataFrame.get(name, row);
+          input.readOnly = true;
 
           if (this.colorCode) {
             const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
@@ -216,7 +220,7 @@ export class FormsViewer extends DG.JsViewer {
               input.input.style.backgroundColor = DG.Color.toHtml(color);
             }
           }
-          input.root.onclick = (e: MouseEvent) => {
+          input.input.onclick = (e: MouseEvent) => {
             this.dataFrame.currentCell = this.dataFrame.cell(row, name);
           };
 
