@@ -6,33 +6,61 @@ import * as DG from 'datagrok-api/dg';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 
-/** Class for adding, validation and (todo) reading of monomer library files  */
+/** Singleton for adding, validation and reading of monomer library files.
+ * All files stored under LIB_PATH directory must be in .json format and satisfy HELM standard.
+ * All libraries  that are not in .json format or do not satisfy HELM standard are considered as custom libraries.
+ * They must be brought to the standard format before adding to LIB_PATH. */
 export class MonomerLibFileManager {
-  constructor() { }
+  private constructor() { }
+
+  static async getInstance(): Promise<MonomerLibFileManager> {
+    const instance = new MonomerLibFileManager();
+    await instance.init();
+    return instance;
+  }
+
+  private async init(): Promise<void> {
+    this.validateAllFiles();
+  }
 
   /** Add standard .json monomer library  */
   async addStandardLibFile(fileContent: string, fileName: string): Promise<void> {
-    this.validate(fileContent, fileName);
+    await this.validate(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    grok.shell.info(`Library ${fileName} added`);
+    grok.shell.info(`Added ${fileName} library`);
   }
 
   /** Transform non-standad monomer librarieies to standard format */
   async addCustomLibFile(fileContent: string, fileName: string): Promise<void> {
-    this.validate(fileContent, fileName);
+    await this.validate(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    grok.shell.info(`Library ${fileName} added`);
+    grok.shell.info(`Added ${fileName} library`);
   }
 
   async deleteLibFile(fileName: string): Promise<void> {
     grok.dapi.files.delete(LIB_PATH + `${fileName}`);
-    grok.shell.warning(`Library ${fileName} deleted`);
+    grok.shell.warning(`Deleted ${fileName} library`);
+    await this.validateAllFiles();
   }
 
-  private validate(fileContent: string, fileName: string): void {
+  private async validate(fileContent: string, fileName: string): Promise<void> {
+    await this.validateAllFiles();
     const isValid = this.isValid(fileContent);
     if (!isValid)
       throw new Error(`File ${fileName} does not satisfy HELM standard`);
+  }
+
+  private async validateAllFiles(): Promise<void> {
+    const list = await grok.dapi.files.list(LIB_PATH);
+    const invalidFiles: string[] = [];
+    for (const file of list) {
+      const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${file.name}`);
+      if (!this.isValid(fileContent))
+        invalidFiles.push(file.name);
+    }
+
+    if (invalidFiles.length > 0)
+      grok.shell.warning(`Following files in under ${LIB_PATH} do not satisfy HELM standard for monomer libraries: ${invalidFiles}`);
   }
 
   private isValid(fileContent: string): boolean {

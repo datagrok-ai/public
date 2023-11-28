@@ -16,8 +16,9 @@ export async function getLibraryPanelUI(): Promise<DG.Widget> {
 }
 
 class Widget {
-  private monomerLibFileManager = new MonomerLibFileManager();
+  private monomerLibFileManager: MonomerLibFileManager;
   async getWidget() {
+    this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
     const libChoiceInputsForm = await this.getInputs();
     const addLibrariesBtn: HTMLButtonElement = ui.button('Add', async () => await this.addFiles());
     return new DG.Widget(ui.divV([libChoiceInputsForm, ui.div([addLibrariesBtn])]));
