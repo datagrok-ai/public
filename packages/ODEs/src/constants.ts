@@ -15,14 +15,23 @@ export enum CONTROL_EXPR {
     PARAMS = `${CONTROL_TAG}parameters`,
     TOL = `${CONTROL_TAG}tolerance`,
     LOOP = `${CONTROL_TAG}loop`,
+    UPDATE = `${CONTROL_TAG}update`,
 };
 
 /** Loop consts */
 export enum LOOP {
-  MIN_LINES_COUNT = 2,
+  MIN_LINES_COUNT = 1,
   COUNT_IDX = 0,
-  COUNT = 'count',  
+  COUNT_NAME = '_count',  
   MIN_COUNT = 1,
+};
+
+/** UPDATE consts */
+export enum UPDATE {
+  MIN_LINES_COUNT = 1,
+  DURATION_IDX = 0,
+  DURATION = '_duration',  
+  MIN_DURATION = 0,
 };
 
 /** Basic template illustrating the simplest features */
@@ -210,7 +219,7 @@ ${CONTROL_EXPR.EXPR}:
   C3 = peri / V3
 
 ${CONTROL_EXPR.LOOP}:
-  ${LOOP.COUNT} = 10 {category: Dosing} [Number of doses]
+  ${LOOP.COUNT_NAME} = 10 {category: Dosing} [Number of doses]
   depot += dose
 
 ${CONTROL_EXPR.ARG}: t

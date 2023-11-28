@@ -89,7 +89,9 @@ const completions = [
   {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: "keyword", info: "parameters of the problem"},
   {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: "keyword", info: "constants definition"},
   {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: "tolerance of numerical solution"},
-  {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "dosing features"},];
+  {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "loop feature"},
+  {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: "update model feature"},
+];
 
 /** Control expressions completion utilite */
 function contrCompletions(context: any) {

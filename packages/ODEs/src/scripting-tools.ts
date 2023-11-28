@@ -1,6 +1,6 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
-import {CONTROL_TAG, DF_NAME, CONTROL_EXPR, LOOP} from './constants';
+import {CONTROL_TAG, DF_NAME, CONTROL_EXPR, LOOP, UPDATE} from './constants';
 
 // Scripting specific constants
 const CONTROL_SEP = ':';
@@ -47,6 +47,12 @@ type Loop = {
   updates: string[],
 };
 
+/** Update specification */
+type Update = {
+  duration: Input,
+  updates: string[],
+};
+
 /** Initial Value Problem (IVP) specification type */
 type IVP = {
   name: string,
@@ -61,7 +67,8 @@ type IVP = {
   tolerance: string,
   usedMathFuncs: number[],
   usedMathConsts: number[],
-  dosing: Loop | null,
+  loop: Loop | null,
+  updates: Update[] | null,
 };
 
 /** Specific error messeges */
@@ -70,8 +77,11 @@ enum ERROR_MSG {
   CONTROL_EXPR = `unsupported control expression with the tag '${CONTROL_TAG}'`,
   ARG = 'incorrect argument specification',
   INITS = 'incorrect initial values specification',
-  DOSING = 'incorrect dosing specification',
-  COUNT = 'incorrect doses count',
+  LOOP = 'incorrect loop specification',
+  COUNT = 'incorrect loop count',
+  LOOP_VS_UPDATE = 'loop- & update-blocks cannot be used together',
+  UPDATE = 'incorrect update specification',
+  DURATION = 'incorrect update duration',
 }
 
 /** Datagrok annatations */
@@ -120,9 +130,10 @@ enum SCRIPT {
   EMPTY_OUTPUT = `let ${DF_NAME} = DG.DataFrame.create();`,
   APPEND_ASYNC = `${DF_NAME}.append(await _oneStage(`,
   SOLUTION_DF_COM = '// solution dataframe',
-  DOSE_INTERVAL_COM = '// dosing interval',
-  DOSE_INTERVAL = `${SERVICE}interval`,
+  LOOP_INTERVAL_COM = '// loop interval',
+  LOOP_INTERVAL = `${SERVICE}interval`,
   LAST_IDX = `${SERVICE}lastIdx`,
+  UPDATE_COM = '// update ',
 }
 
 /** Limits of the problem specification */
@@ -285,19 +296,34 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
   return eqs;
 }
 
-/** Get dosing specification */
-function getDosing(lines: string[], begin: number, end: number): Loop {
+/** Get loop specification */
+function getLoop(lines: string[], begin: number, end: number): Loop {
   const source = concatMultilineFormulas(lines.slice(begin, end));
   const size = source.length;
 
   if (size < LOOP.MIN_LINES_COUNT)
-    throw new Error(ERROR_MSG.DOSING);
+    throw new Error(ERROR_MSG.LOOP);
   
   const count = getInput(source[LOOP.COUNT_IDX]);
   if (count.value <  LOOP.MIN_COUNT)
     throw new Error(ERROR_MSG.COUNT);
 
   return {count: count, updates: source.slice(LOOP.COUNT_IDX + 1)};
+}
+
+/** Get update specification */
+function getUpdate(lines: string[], begin: number, end: number): Update {
+  const source = concatMultilineFormulas(lines.slice(begin, end));
+  const size = source.length;
+
+  if (size < UPDATE.MIN_LINES_COUNT)
+    throw new Error(ERROR_MSG.UPDATE);
+  
+  const duration = getInput(source[UPDATE.DURATION_IDX]);
+  if (duration.value < UPDATE.MIN_DURATION)
+    throw new Error(ERROR_MSG.DURATION);
+
+  return {duration: duration, updates: source.slice(UPDATE.DURATION_IDX + 1)};
 }
 
 /** Get initial value problem specification given in the text */
@@ -313,7 +339,8 @@ export function getIVP(text: string): IVP {
   let consts: Map<string, Input> | null = null;
   let params: Map<string, Input> | null = null;
   let tolerance = DEFAULT_TOL;
-  let dosing: Loop | null = null;
+  let loop: Loop | null = null;
+  let updates = [] as Update[];
 
   // 0. Split text into lines
   const lines = text.split('\n').filter((s) => s !== '').map((s) => s.trimStart());
@@ -358,18 +385,26 @@ export function getIVP(text: string): IVP {
     else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
     }
-    else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'dosing' block
-      dosing = getDosing(lines, block.begin + 1, block.end);
+    else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'loop' block
+      loop = getLoop(lines, block.begin + 1, block.end);
+    }
+    else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
+      updates.push(getUpdate(lines, block.begin + 1, block.end));
     }
     else // error: unsupported control expression 
     {
       //console.log(firstLine);
       throw new Error(ERROR_MSG.CONTROL_EXPR);
     }
-  }
+  } // for
 
+  // check initial
   if (inits!.size !== deqs!.solutionNames.length)
     throw new Error(ERROR_MSG.INITS);
+
+  // check loop- & update-features: just one is supported
+  if( (loop !== null) && (updates.length > 0))
+    throw new Error(ERROR_MSG.LOOP_VS_UPDATE);   
 
   return {
     name: name!,
@@ -384,7 +419,8 @@ export function getIVP(text: string): IVP {
     tolerance: tolerance,
     usedMathFuncs: getUsedMathIds(text, MATH_FUNCS),
     usedMathConsts: getUsedMathIds(text, MATH_CONSTS),
-    dosing: dosing
+    loop: loop,
+    updates: (updates.length === 0) ? null : updates,
   };
 } // getIVP
 
@@ -414,9 +450,9 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   // the 'language' line
   res.push(ANNOT.LANG);
 
-  // the 'dosing' lines
-  if (ivp.dosing)
-    res.push(`${ANNOT.INT_INPUT} ${LOOP.COUNT} = ${getInputSpec(ivp.dosing.count)}`);
+  // the 'loop' lines
+  if (ivp.loop)
+    res.push(`${ANNOT.INT_INPUT} ${LOOP.COUNT_NAME} = ${getInputSpec(ivp.loop.count)}`); 
 
   // argument lines
   const arg = ivp.arg;
@@ -426,6 +462,10 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   res.push(`${ANNOT.DOUBLE_INPUT} ${t0} = ${getInputSpec(arg.start)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${t1} = ${getInputSpec(arg.finish)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${h} = ${getInputSpec(arg.step)}`);
+
+  // the 'update' lines
+  if (ivp.updates)
+    ivp.updates.forEach((updt, idx) => { res.push(`${ANNOT.DOUBLE_INPUT} ${UPDATE.DURATION}${idx + 1} = ${getInputSpec(updt.duration)}`) });
 
   // initial values lines
   ivp.inits.forEach((val, key) => res.push(`${ANNOT.DOUBLE_INPUT} ${key} = ${getInputSpec(val)}`));
@@ -608,8 +648,8 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
   return res;
 } // getScriptFunc
 
-/** Return main body of JS-script: dosing case */
-function getScriptMainBodyDosingCase(ivp: IVP): string[] {
+/** Return main body of JS-script: loop case */
+function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   const funcParamsNames = getFuncParamsNames(ivp);
   const res = getScriptFunc(ivp, funcParamsNames);
   res.push('');
@@ -624,17 +664,17 @@ function getScriptMainBodyDosingCase(ivp: IVP): string[] {
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
   res.push('');
 
-  res.push(SCRIPT.DOSE_INTERVAL_COM);
-  res.push(`const ${SCRIPT.DOSE_INTERVAL} = ${SERVICE}${ivp.arg.name}1 - ${SERVICE}${ivp.arg.name}0;`);
+  res.push(SCRIPT.LOOP_INTERVAL_COM);
+  res.push(`const ${SCRIPT.LOOP_INTERVAL} = ${SERVICE}${ivp.arg.name}1 - ${SERVICE}${ivp.arg.name}0;`);
   res.push('');
-  res.push(`let ${SCRIPT.LAST_IDX} = 0`);
+  res.push(`let ${SCRIPT.LAST_IDX} = 0;\n`);
 
   res.push(SCRIPT.SOLVER_COM);
-  res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${LOOP.COUNT}; ++${SERVICE}idx) {`);
-  ivp.dosing!.updates.forEach((upd) => res.push(`${SCRIPT.SPACE2}${upd};`));
+  res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${LOOP.COUNT_NAME}; ++${SERVICE}idx) {`);
+  ivp.loop!.updates.forEach((upd) => res.push(`${SCRIPT.SPACE2}${upd};`));
   res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND_ASYNC}${funcParamsNames}), true);`);
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
-  res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}1 += ${SCRIPT.DOSE_INTERVAL};`);
+  res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}1 += ${SCRIPT.LOOP_INTERVAL};`);
   res.push(`${SCRIPT.SPACE2}${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
 
   dfNames.forEach((name, idx) => { 
@@ -645,12 +685,52 @@ function getScriptMainBodyDosingCase(ivp: IVP): string[] {
   res.push('};');
 
   return res;
-} // getScriptMainBodyDosingCase
+} // getScriptMainBodyLoopCase
+
+/** Return main body of JS-script: update case */
+function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
+  const funcParamsNames = getFuncParamsNames(ivp);
+  const res = getScriptFunc(ivp, funcParamsNames);
+
+  res.push('');
+  //res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`);
+
+  res.push(SCRIPT.SOLUTION_DF_COM);
+  const dfNames = getSolutionDfColsNames(ivp);
+
+  res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`);  
+  
+  res.push('');
+  res.push(`let ${SCRIPT.LAST_IDX} = 0;`);
+
+  ivp.updates!.forEach((upd, idx) => {
+    res.push('');
+    res.push(`${SCRIPT.UPDATE_COM} ${idx + 1}`);
+    res.push(`${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
+    
+    dfNames.forEach((name, idx) => { 
+      if (idx !== 0)
+        res.push(`${name} = ${DF_NAME}.get('${name}', ${SCRIPT.LAST_IDX});`);
+    });
+
+    upd.updates.forEach((upd) => res.push(`${upd};`));
+
+    res.push(`${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
+    res.push(`${SERVICE}${ivp.arg.name}1 += ${UPDATE.DURATION}${idx + 1};`);
+
+    res.push(`${SCRIPT.APPEND_ASYNC}${funcParamsNames}), true);`);
+  });
+
+  return res;
+} // getScriptMainBodyUpdateCase
 
 /** Return main body of JS-script */
 function getScriptMainBody(ivp: IVP): string[] {
-  if (ivp.dosing)
-    return  getScriptMainBodyDosingCase(ivp);
+  if (ivp.loop)
+    return getScriptMainBodyLoopCase(ivp);
+
+  if (ivp.updates)
+    return  getScriptMainBodyUpdateCase(ivp);
   
   return getScriptMainBodyBasic(ivp);
 }
@@ -664,14 +744,17 @@ export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true
 export function getScriptParams(ivp: IVP): Record<string, number> {
   const res = {} as Record<string, number>;
 
-  if (ivp.dosing)
-    res[LOOP.COUNT] = ivp.dosing.count.value;
+  if (ivp.loop)
+    res[LOOP.COUNT_NAME] = ivp.loop.count.value;  
 
   const arg = ivp.arg;
 
   res[`${SERVICE}${arg.name}0`] = arg.start.value;
   res[`${SERVICE}${arg.name}1`] = arg.finish.value;
   res[`${SERVICE}h`] = arg.step.value;
+
+  if (ivp.updates)
+    ivp.updates.forEach((upd, idx) => res[`${UPDATE.DURATION}${idx + 1}`] = upd.duration.value);
 
   ivp.inits.forEach((val, key) => res[key] = val.value);
 
