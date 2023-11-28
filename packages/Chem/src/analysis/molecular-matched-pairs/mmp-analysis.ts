@@ -1,0 +1,374 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
+import {getRdKitModule}
+  from '../../utils/chem-common-rdkit';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ILineSeries, ScatterPlotLinesRenderer}
+  from '@datagrok-libraries/utils/src/render-lines-on-sp';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {debounceTime} from 'rxjs/operators';
+import {getSigFigs} from '../../utils/chem-common';
+import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
+import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
+import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
+import {lastSelectedPair, moleculesPairInfo, getMmpScatterPlot,
+  drawMoleculeLabels, runMmpChemSpace} from './mmp-cliffs';
+import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
+import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
+  MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
+  MMP_TAB_CLIFFS, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+
+let currentTab = '';
+
+export class MmpAnalysis {
+  parentTable: DG.DataFrame;
+  parentCol: DG.Column;
+  mmpRules: MmpRules;
+  mmpView: DG.View;
+  enableFilters: boolean = true;
+  //transformations tab objects
+  allPairsGrid: DG.Grid;
+  transformationsMask: DG.BitSet;
+  casesGrid: DG.Grid;
+  pairsMask: DG.BitSet;
+  //cliffs tab objects
+  diffs: Array<Float32Array>;
+  linesIdxs: Uint32Array;
+  cutoffMasks: Array<DG.BitSet>;
+  linesMasks: Array<BitArray>;
+  totalCutoffMask: DG.BitSet;
+  totalLinesMask: BitArray;
+  linesRenderer: ScatterPlotLinesRenderer | null = null;
+  lines: ILineSeries;
+  linesActivityCorrespondance: Uint32Array;
+  //rdkit
+  rdkitModule: RDModule;
+
+  constructor(table: DG.DataFrame, molecules: DG.Column, rules: MmpRules, diffs: Array<Float32Array>,
+    linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, tp: DG.Viewer, sp: DG.Viewer,
+    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
+    linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
+    rdkitModule: RDModule) {
+    this.rdkitModule = rdkitModule;
+
+    this.parentTable = table;
+    this.parentCol = molecules;
+    this.mmpRules = rules;
+
+    this.diffs = diffs;
+    this.allPairsGrid = allPairsGrid;
+    this.casesGrid = casesGrid;
+    this.lines = lines;
+    this.linesActivityCorrespondance = linesActivityCorrespondance;
+    this.linesIdxs = linesIdxs;
+
+    //transformations tab
+    this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
+    this.transformationsMask.setAll(true);
+    this.parentTable.onCurrentRowChanged.pipe(debounceTime(1000)).subscribe(() => {
+      if (this.parentTable.currentRowIdx !== -1) {
+        this.refilterAllPairs(true);
+        this.refreshPair(this.rdkitModule);
+      }
+    });
+
+    this.refilterAllPairs(true);
+
+    this.allPairsGrid.table.onCurrentRowChanged.subscribe(() => {
+      if (this.allPairsGrid.table.currentRowIdx !== -1)
+        this.refreshPair(this.rdkitModule);
+    });
+
+    this.mmpView = DG.View.create();
+    this.mmpView.name = MMP_VIEW_NAME;
+    this.mmpView.box = true;
+
+    this.pairsMask = DG.BitSet.create(this.casesGrid.dataFrame.rowCount);
+    this.pairsMask.setAll(false);
+    this.refreshPair(this.rdkitModule);
+
+    //Cliffs tab
+    const roots: any[] = new Array<any>(sliderInputs.length);
+    for (let i = 0; i < sliderInputs.length; i ++) {
+      sliderInputs[i].onChanged(() => {
+        sliderInputValueDivs[i].innerText = sliderInputs[i].value === 0 ? '0' :
+          getSigFigs(sliderInputs[i].value, 4).toString();
+        this.refilterCliffs(sliderInputs.map((si) => si.value), true);
+      });
+
+      ui.tooltip.bind(sliderInputs[i].captionLabel, 'Select the cutoff by activity difference');
+      ui.tooltip.bind(sliderInputs[i].input, 'Activity value cutoff');
+
+      roots[i] = sliderInputs[i].root;
+    }
+
+    const sliders = ui.divH(roots);
+    sp.root.style.width = '100%';
+
+    const cliffs = ui.divV([sliders, ui.box(sp.root, {style: {maxHeight: '100px', paddingRight: '6px'}})]);
+
+    this.cutoffMasks = new Array<DG.BitSet>(sliderInputs.length);
+    this.linesMasks = new Array<BitArray>(sliderInputs.length);
+    this.totalCutoffMask = DG.BitSet.create(this.parentTable.rowCount);
+    this.totalCutoffMask.setAll(true);
+    this.totalLinesMask = new BitArray(this.casesGrid.dataFrame.rowCount);
+    this.totalLinesMask.setAll(true, false);
+
+    for (let i = 0; i < sliderInputs.length; i++) {
+      this.cutoffMasks[i] = DG.BitSet.create(this.parentTable.rowCount);
+      this.cutoffMasks[i].setAll(true);
+
+      this.linesMasks[i] = new BitArray(this.casesGrid.dataFrame.rowCount);
+      this.linesMasks[i].setAll(true, false);
+    }
+
+    this.linesRenderer = linesEditor;
+
+    //tabs
+    const tabs = ui.tabControl(null, false);
+
+    tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
+      const fragmentsHeader = ui.h1('Fragments');
+      $(fragmentsHeader).css('padding', '4px');
+      $(fragmentsHeader).css('margin', '0px');
+      this.allPairsGrid.root.prepend(fragmentsHeader);
+      const fragments = ui.splitV([ui.box(fragmentsHeader, {style: {maxHeight: '30px'}}), this.allPairsGrid.root]);
+
+      const casesHeader = ui.h1('Pairs');
+      $(casesHeader).css('padding', '4px');
+      $(casesHeader).css('margin', '0px');
+
+      this.casesGrid.root.prepend(casesHeader);
+      const cases = ui.splitV([ui.box(casesHeader, {style: {maxHeight: '30px'}}), ui.box(this.casesGrid.root)]);
+
+      return ui.splitV([fragments, cases], {}, true);
+    });
+    tabs.addPane(MMP_TAB_FRAGMENTS, () => {
+      return tp.root;
+    });
+    tabs.addPane(MMP_TAB_CLIFFS, () => {
+      return cliffs;
+    });
+
+    tabs.onTabChanged.subscribe(() => {
+      currentTab = tabs.currentPane.name;
+      if (tabs.currentPane.name == MMP_TAB_TRANSFORMATIONS) {
+        this.enableFilters = true;
+        this.refilterAllPairs(false);
+      } else if (tabs.currentPane.name == MMP_TAB_FRAGMENTS) {
+        this.refreshFilterAllPairs();
+        this.enableFilters = false;
+      } else if (tabs.currentPane.name == MMP_TAB_CLIFFS) {
+        this.refilterCliffs(sliderInputs.map((si) => si.value), false);
+        if (lastSelectedPair) {
+          grok.shell.o = moleculesPairInfo(lastSelectedPair, this.linesIdxs,
+            this.linesActivityCorrespondance[lastSelectedPair],
+            this.casesGrid.dataFrame, this.diffs, this.parentTable, molecules.name, this.rdkitModule);
+        }
+      }
+    });
+
+    const decript1 = 'Shows all fragmental substitutions for a given molecule';
+    const decript2 = 'Analysis of fragments versus explored value';
+    const decript3 = 'Cliffs analysis';
+
+    tabs.getPane(MMP_TAB_TRANSFORMATIONS).header.onmouseover =
+      (ev): void => ui.tooltip.show(decript1, ev.clientX, ev.clientY + 5);
+    tabs.getPane(MMP_TAB_FRAGMENTS).header.onmouseover =
+      (ev): void => ui.tooltip.show(decript2, ev.clientX, ev.clientY + 5);
+    tabs.getPane(MMP_TAB_CLIFFS).header.onmouseover =
+      (ev): void => ui.tooltip.show(decript3, ev.clientX, ev.clientY + 5);
+
+    this.mmpView.append(tabs);
+  }
+
+  static async init(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList) {
+    //rdkit module
+    const module = getRdKitModule();
+
+    //initial calculations
+    const frags = await getMmpFrags(molecules);
+    const [mmpRules, allCasesNumber] = getMmpRules(frags);
+
+    //Transformations tab
+    const {maxActs, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
+      await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber);
+
+    //Fragments tab
+    const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames);
+
+    //Cliffs tab
+    const [sp, sliderInputs, sliderInputValueDivs] = getMmpScatterPlot(table, activities, maxActs);
+    drawMoleculeLabels(sp as DG.ScatterPlotViewer, table, molecules);
+
+    //running internal chemspace
+    const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, linesActivityCorrespondance,
+      casesGrid.dataFrame, diffs, module);
+
+    DG.debounce((table.onMetadataChanged), 50)
+      .subscribe(async (_: any) => {
+        if (lastSelectedPair && currentTab === MMP_TAB_CLIFFS) {
+          grok.shell.o = moleculesPairInfo(lastSelectedPair, linesIdxs, linesActivityCorrespondance[lastSelectedPair],
+            casesGrid.dataFrame, diffs, table, molecules.name, module);
+        }
+      });
+
+    return new MmpAnalysis(table, molecules, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,
+      tp, sp, sliderInputs, sliderInputValueDivs, linesEditor, lines, linesActivityCorrespondance, module);
+  }
+
+  async refreshPair(rdkitModule: RDModule) {
+    const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
+    const idxParent = this.parentTable.currentRowIdx;
+    let idxPairs = -1;
+
+    const idx = this.allPairsGrid.table.currentRowIdx;
+
+    const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
+    const ruleSmi2 = this.allPairsGrid.table.getCol('To').get(idx);
+
+    //search for numbers in smiles rules
+    const ruleSmiNum1 = this.mmpRules.smilesFrags.indexOf(ruleSmi1);
+    const ruleSmiNum2 = this.mmpRules.smilesFrags.indexOf(ruleSmi2);
+
+    this.pairsMask.setAll(false);
+    let counter = 0;
+    const cases: number[] = [];
+    const diffFromSubstrCol = this.casesGrid.dataFrame.getCol(MMP_STRUCT_DIFF_FROM_NAME);
+    const diffToSubstrCol = this.casesGrid.dataFrame.getCol(MMP_STRUCT_DIFF_TO_NAME);
+    const diffFrom = this.casesGrid.dataFrame.getCol(MMP_COLNAME_FROM);
+    const diffTo = this.casesGrid.dataFrame.getCol(MMP_COLNAME_TO);
+
+    //search specific rule
+
+    for (let i = 0; i < this.mmpRules.rules.length; i++) {
+      const first = this.mmpRules.rules[i].smilesRule1; //.pairs[j].firstStructure;
+      const second = this.mmpRules.rules[i].smilesRule2; //.pairs[j].secondStructure;
+      for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
+        if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
+          this.pairsMask.set(counter, true, false);
+          if (diffFromSubstrCol.get(counter) === null)
+            cases.push(counter);
+          if (this.mmpRules.rules[i].pairs[j].firstStructure == idxParent)
+            idxPairs = counter;
+        }
+        counter++;
+      }
+    }
+
+    //recover uncalculated highlights
+    const pairsFrom = Array<string>(cases.length);
+    const pairsTo = Array<string>(cases.length);
+    for (let i = 0; i < cases.length; i++) {
+      pairsFrom[i] = diffFrom.get(cases[i]);
+      pairsTo[i] = diffTo.get(cases[i]);
+    }
+    const {inverse1, inverse2, fromAligned, toAligned} =
+      await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
+    for (let i = 0; i < cases.length; i++) {
+      diffFrom.set(cases[i], fromAligned[i]);
+      diffTo.set(cases[i], toAligned[i]);
+      diffFromSubstrCol.set(cases[i], inverse1[i]);
+      diffToSubstrCol.set(cases[i], inverse2[i]);
+    }
+
+    this.casesGrid.dataFrame.filter.copyFrom(this.pairsMask);
+
+    this.casesGrid.setOptions({
+      pinnedRowColumnNames: [],
+      pinnedRowValues: [],
+    });
+    if (idxPairs >= 0) {
+      this.casesGrid.setOptions({
+        pinnedRowValues: [idxPairs.toString()],
+        pinnedRowColumnNames: [MMP_COL_PAIRNUM],
+      });
+    }
+
+    progressBarPairs.close();
+  }
+
+  refreshFilterAllPairs() {
+    const consistsBitSet: DG.BitSet = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
+    consistsBitSet.setAll(true);
+    this.allPairsGrid.dataFrame.filter.copyFrom(consistsBitSet);
+  }
+
+  refilterAllPairs(rowChanged: boolean) {
+    let idxTrue = -1;
+    if (rowChanged) {
+      const idx = this.parentTable.currentRowIdx;
+      this.transformationsMask.setAll(false);
+
+      for (let i = 0; i < this.mmpRules.rules.length; i++) {
+        for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
+          const fs = this.mmpRules.rules[i].pairs[j].firstStructure;
+          if (idx == fs) {
+            if (idxTrue == -1)
+              idxTrue = i;
+            this.transformationsMask.set(i, true, false);
+            break;
+          }
+        }
+      }
+    }
+
+    if (this.enableFilters) {
+      this.allPairsGrid.dataFrame.filter.copyFrom(this.transformationsMask);
+      this.allPairsGrid.invalidate();
+      if (rowChanged)
+        this.allPairsGrid.table.currentRowIdx = idxTrue;
+    }
+  }
+
+  refilterCliffs(cutoffs: number[], refilter: boolean) {
+    if (refilter) {
+      //setting all false
+      for (let i = 0; i < this.linesMasks.length; i ++) {
+        this.linesMasks[i].setAll(false, false);
+        this.cutoffMasks[i].setAll(false);
+      }
+      this.totalLinesMask.setAll(false);
+      this.totalCutoffMask.setAll(false);
+
+      //setting activity associated masks
+      let activityNumber = 0;
+      let lineNum = 0;
+
+      for (let i = 0; i < this.lines.from.length; i++) {
+        const line = this.linesIdxs[i];
+        //TODO: assure that indexes are ordered for each activity
+        if (line < lineNum)
+          activityNumber++;
+
+        lineNum = line;
+
+        if (this.diffs[activityNumber][line] >= cutoffs[activityNumber]) {
+          this.cutoffMasks[activityNumber].set(this.lines.from[i], true, false);
+          this.cutoffMasks[activityNumber].set(this.lines.to[i], true, false);
+          this.linesMasks[activityNumber].setBit(i, true, false);
+        }
+      }
+
+      //setting resulting masks
+      //TODO: refine
+      for (let j = 0; j < this.totalCutoffMask.length; j++) {
+        let res = false;
+        for (let i = 0; i < this.cutoffMasks.length; i++)
+          res = res || this.cutoffMasks[i].get(j);
+        this.totalCutoffMask.set(j, res, false);
+      }
+      for (let j = 0; j < this.totalLinesMask.length; j++) {
+        let res = false;
+        for (let i = 0; i < this.linesMasks.length; i++)
+          res = res || this.linesMasks[i].getBit(j);
+        this.totalLinesMask.setBit(j, res, false);
+      }
+    }
+
+    this.parentTable.filter.copyFrom(this.totalCutoffMask);
+    this.linesRenderer!.linesVisibility = this.totalLinesMask;
+  }
+}
