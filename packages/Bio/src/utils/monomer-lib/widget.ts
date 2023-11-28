@@ -42,7 +42,7 @@ class Widget {
             grok.shell.info('Monomer library user settings saved.');
           });
         });
-      const deleteIcon = ui.iconFA('trash-alt');
+      const deleteIcon = ui.iconFA('trash-alt', () => this.getDeleteDialog(libFileName));
       ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
       libInput.addOptions(deleteIcon);
       inputsForm.append(libInput.root);
@@ -51,21 +51,27 @@ class Widget {
   }
 
   private async addFiles(): Promise<void> {
-    // add open file control
     const popup = DG.Menu.popup();
     popup.item('Add standard', () => {
       const libFile = DG.Utils.openFile({
         accept: '.json',
-        open: async (file) => { },
+        open: async (libFile) => { },
       });
     });
     popup.separator();
     popup.item('Add custom', () => {
       const libFile = DG.Utils.openFile({
         accept: '.csv',
-        open: async (file) => { },
+        open: async (libFile) => { },
       });
     });
     popup.show();
+  }
+
+  private getDeleteDialog(fileName: string): void {
+    const dialog = ui.dialog('Warning');
+    dialog.add(ui.divText(`Are you sure you want to delete ${fileName}`))
+      .onOK(() => {})
+      .showModal(false);
   }
 }
