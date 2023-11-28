@@ -5,7 +5,7 @@ import {FunctionView, PipelineView, RichFunctionView} from '../function-views';
 import {ExpectDeepEqualOptions, expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {delay, last, takeUntil, takeWhile} from 'rxjs/operators';
 import {of} from 'rxjs';
-import { fcInputFromSerializable } from './utils';
+import {fcInputFromSerializable} from './utils';
 
 export interface FunctionViewTestOptions extends ExpectDeepEqualOptions {
   initWaitTimeout?: number;

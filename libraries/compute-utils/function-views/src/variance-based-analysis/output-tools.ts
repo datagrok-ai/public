@@ -26,7 +26,7 @@ function getDataFrameItemsInfo(funcCall: DG.FuncCall, outputName: string): Outpu
   const df = funcCall.outputs[outputName] as DG.DataFrame;
 
   /* Column-by-column scan is implemented.
-     Name of each element is construced as follows: 
+     Name of each element is construced as follows:
         - [column name] ([dataframe name]) in the case of one row;
         - [column name] ([dataframe name], [no. of row]) in the case of one row. */
   if (df.rowCount === 1) {
@@ -44,7 +44,6 @@ function getDataFrameItemsInfo(funcCall: DG.FuncCall, outputName: string): Outpu
 
 // Returns outputs specifications (dataframe elements are presented separately)
 export function getEachOutputItemInfo(funcCall: DG.FuncCall): OutputInfo[] {
-
   // get array of outputs specifications
   const outputInfoBasic = getOutputsInfo(funcCall.func);
 
