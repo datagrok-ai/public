@@ -67,11 +67,11 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static async openHelp(func: DG.Func) {
     if (func.options['readme'] != null) {
+      grok.shell.windows.showHelp = true;
+      grok.shell.windows.help.showHelp('');
       const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
       const readmeText = await grok.dapi.files.readAsText(path);
-
       grok.shell.windows.help.showHelp(ui.markdown(readmeText));
-      grok.shell.windows.showHelp = true;
     }
   }
 
@@ -127,17 +127,6 @@ export class ModelHandler extends DG.ObjectHandler {
       ])),
     ], {style: {gap: '10px'}})) as HTMLElement;
 
-    if (hasMissingMandatoryGroups) {
-      addPopover(mandatoryGroupsInfo);
-
-      mandatoryGroupsIcon.addEventListener('click', () => {
-        displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo);
-      });
-      mandatoryGroupsIcon.addEventListener('mouseover', (e) => {
-        e.stopPropagation();
-      });
-    }
-
     const label = ui.span([
       this.renderIcon(x),
       ui.label(x.friendlyName),
@@ -153,6 +142,13 @@ export class ModelHandler extends DG.ObjectHandler {
     } else
       label.classList.add('d4-disabled');
 
+    if (hasMissingMandatoryGroups) {
+      addPopover(mandatoryGroupsInfo);
+
+      markup.addEventListener('click', () => {
+        displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo);
+      });
+    }
 
     return markup;
   }
