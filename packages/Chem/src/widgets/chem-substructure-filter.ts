@@ -14,7 +14,7 @@ import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {getRdKitModule} from '../package';
+import {_package, getRdKitModule} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
   SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -269,6 +269,7 @@ export class SubstructureFilter extends DG.Filter {
     let onChangedEvent: any = this.sketcher.onChanged;
     //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
+      _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent}`);
       this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
     }));
     let searchTypeChanged = this.searchTypeChanged.pipe(debounceTime(this._debounceTime));
@@ -340,6 +341,7 @@ export class SubstructureFilter extends DG.Filter {
       this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
 
       this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
+        _package.logger.debug(`in ${this.terminateEventName} handler, querymol: ${queryMol}`);
         this.finishSearch(queryMol);
       }));
     }
@@ -369,12 +371,15 @@ export class SubstructureFilter extends DG.Filter {
    */
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
+    _package.logger.debug(`newMolfile ${newMolFile}`);
     const newSmarts = await this.getSmartsToFilter();
+    _package.logger.debug(`newSmarts ${newSmarts}`);
     if (this.currentMolfile !== newMolFile)
       this.updateFilterUiOnSketcherChanged(newMolFile);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
+      _package.logger.debug(`not filtering ${newSmarts}`);
       this.currentMolfile = newMolFile;
       this.bitset = !this.active ?
         DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null; //TODO
@@ -389,7 +394,8 @@ export class SubstructureFilter extends DG.Filter {
     } else if (wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) && !this.searchNotCompleted) {
       // some other filter is already filtering for the exact same thing
-      // value to pass into has() is created similarly to filterSummary property 
+      // value to pass into has() is created similarly to filterSummary property
+      _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolFile)}`);
       return;
     } else {
       this.searchNotCompleted = false;
@@ -398,6 +404,7 @@ export class SubstructureFilter extends DG.Filter {
       this.currentSearches.add(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
       this.calculating = true;
       this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
+      _package.logger.debug(`starting filter by ${this.currentMolfile}`);
       try {
         grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
           molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
@@ -406,6 +413,7 @@ export class SubstructureFilter extends DG.Filter {
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
         this.batchResultObservable?.unsubscribe();
         this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
+          _package.logger.debug(`progress: ${progress}, molfile: ${this.currentMolfile}}`);
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
           this.updateApplyFilterSyncTag();
           this.dataFrame?.rows.requestFilter();
@@ -512,7 +520,9 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   finishSearch(queryMolAndType: string) {
+    _package.logger.debug(`in finishSearch ${this.currentSearches}`);
     const finish = () => {
+      _package.logger.debug(`in finish function ${queryMolAndType}`);
       if (this.currentSearches.size === 0) {
         this.calculating = false;
         this.progressBar?.close();
@@ -522,10 +532,12 @@ export class SubstructureFilter extends DG.Filter {
       }
     };
     if (this.currentSearches.has(queryMolAndType)) {
+      _package.logger.debug(`in finishSearch first if ${queryMolAndType}`);
       this.currentSearches.delete(queryMolAndType);
       finish();
     }
     if (queryMolAndType == null && this.currentSearches.size === 1) {
+      _package.logger.debug(`in finishSearch second if ${queryMolAndType}`);
       const v = this.currentSearches.values().next().value;
       if (v != null)
         this.currentSearches.delete(v);

@@ -261,13 +261,18 @@ export async function chemSubstructureSearchLibrary(
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
+  _package.logger.debug(`in chemSubstructureSearchLibrary, filterType: ${filterType}, searchkey: ${searchKey}, currentSearch: ${currentSearch}`);
   await chemBeginCriticalSection();
+  _package.logger.debug(`in chemSubstructureSearchLibrary, began critical section currentSearch: ${currentSearch}`);
   if (currentSearchSmiles[filterType][searchKey] !== currentSearch && filterType !== FILTER_TYPES.scaffold) {
+    _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section without search: ${currentSearch}`);
     chemEndCriticalSection();
+    _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
     return new BitArray(molStringsColumn.length);
   }
 
   try {
+    _package.logger.debug(`in chemSubstructureSearchLibrary, search start: ${currentSearch}`);
     let invalidateCacheFlag = false;
     const rdKitService = await getRdKitService();
     await rdKitService.setTerminateFlag(false);
@@ -311,21 +316,24 @@ export async function chemSubstructureSearchLibrary(
     };
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp);
-
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp);     
     const saveProcessedColumns = () => {
       try {
         !columnIsCanonicalSmiles ?
           saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
             [fpType, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
           saveColumns(molStringsColumn, [result.fpsRes!.fps], [fpType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+          _package.logger.debug(`in chemSubstructureSearchLibrary, saveProcessedColumns: ${currentSearch}`);
       } catch {
 
       } finally {
+        _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section: ${currentSearch}`);
         chemEndCriticalSection();
+        _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
       }
     };
     const fireFinishEvents = () => {
+      _package.logger.debug(`in chemSubstructureSearchLibrary, fireFinishEvents: ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)}`);
       grok.events.fireCustomEvent(searchProgressEventName, 100);
       grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff));
       saveProcessedColumns();
@@ -335,6 +343,7 @@ export async function chemSubstructureSearchLibrary(
       fireFinishEvents();
     } else {
       const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (molAndSearchType: string) => {
+        _package.logger.debug(`in chemSubstructureSearchLibrary, terminate event handler, ${molAndSearchType} ****** ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)}`);
         if (molAndSearchType === getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)) {
           await rdKitService.setTerminateFlag(true);
           subFuncs!.setTerminateFlag();
@@ -346,8 +355,10 @@ export async function chemSubstructureSearchLibrary(
       });
 
       subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
+        _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled, ${currentSearch}`);
         if (!subFuncs!.getTerminateFlag()) {
           sub.unsubscribe();
+          _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled firing finish events, ${currentSearch}`);
           fireFinishEvents();
         }
       }));
@@ -355,7 +366,9 @@ export async function chemSubstructureSearchLibrary(
     return result.bitArray;
   } catch (e: any) {
     grok.shell.error(e.message);
+    _package.logger.debug(`in chemSubstructureSearchLibrary, ending chemEndCriticalSection in catch, ${currentSearch}`);
     chemEndCriticalSection();
+    _package.logger.debug(`in chemSubstructureSearchLibrary, ended chemEndCriticalSection in catch, ${currentSearch}`);
     throw e;
   }
 }
