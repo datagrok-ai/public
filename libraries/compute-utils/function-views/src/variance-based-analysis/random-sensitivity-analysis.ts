@@ -1,7 +1,7 @@
 // random-sensitivity-analysis.ts
 
-/* Random or Monte Carlo sensitivity analysis: 
-   the function is evaluated with respect to random variation 
+/* Random or Monte Carlo sensitivity analysis:
+   the function is evaluated with respect to random variation
    of the selected inputs within the specified ranges.
 */
 
@@ -11,7 +11,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForRandomAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine'
+import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -26,7 +26,7 @@ type OutputDataFromUI = {
 const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
 
 export class RandomAnalysis {
-  private dimension: number;  
+  private dimension: number;
 
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
@@ -52,7 +52,7 @@ export class RandomAnalysis {
         min: variedInputs[i].min,
         max: variedInputs[i].max,
         column: numericalColumns[i]}),
-    );   
+    );
 
     this.funcCalls = [];
 
@@ -72,8 +72,8 @@ export class RandomAnalysis {
     this.outputInfo = outputsOfInterest.map((output) => ({
       prop: output.prop,
       elements: [],
-      row: output.value.row
-      }
+      row: output.value.row,
+    }
     ));
   }
 
@@ -100,8 +100,8 @@ export class RandomAnalysis {
 
     // add columns with outputs
     for (const col of outputColumns)
-      funcEvalResults.columns.add(col);      
-   
+      funcEvalResults.columns.add(col);
+
     return {funcEvalResults: funcEvalResults, funcCalls: this.funcCalls};
   }
 };

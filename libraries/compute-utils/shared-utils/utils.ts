@@ -196,7 +196,7 @@ export const plotToSheet =
 
 // additional JSON converions, view is need for files
 export async function fcToSerializable(fc: DG.FuncCall, view: FunctionView | RichFunctionView) {
-  const inputs: Record<string,any> = {};
+  const inputs: Record<string, any> = {};
   for (const [name, value] of Object.entries(fc.inputs)) {
     const {property} = view.funcCall.inputParams[name];
     inputs[name] = await fcInputToSerializable(property, value, view);
@@ -216,8 +216,8 @@ async function fcInputToSerializable(property: DG.Property, value: any, view: Fu
 }
 
 export async function fcInputFromSerializable(propertyType: string, value: any) {
-  if (propertyType === 'file') {
+  if (propertyType === 'file')
     return new File([value], '');
-  }
+
   return value;
 }

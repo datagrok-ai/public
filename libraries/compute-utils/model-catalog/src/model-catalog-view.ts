@@ -1,13 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as rxjs from 'rxjs';
 import {ModelHandler} from './model-handler';
 import wu from 'wu';
 
-/* eslint-disable */
-
-let propsSub: rxjs.Subscription;
 
 export class ModelCatalogView extends DG.CustomCardView {
   static findOrCreateCatalogView(
@@ -17,11 +13,11 @@ export class ModelCatalogView extends DG.CustomCardView {
   ): ModelCatalogView {
     let modelsView = this.findModelCatalogView(funcName);
     if (modelsView == null) {
-      modelsView = this.createModelCatalogView(viewName, funcName, currentPackage)
+      modelsView = this.createModelCatalogView(viewName, funcName, currentPackage);
       grok.shell.addView(modelsView);
-    } else {
+    } else
       grok.shell.v = modelsView;
-    }
+
     return modelsView as ModelCatalogView;
   }
 
@@ -41,7 +37,7 @@ export class ModelCatalogView extends DG.CustomCardView {
 
   public bindModel(fc: DG.FuncCall) {
     fc.aux['showOnTaskBar'] = false;
-    
+
     const parentCall = this.parentCall;
     if (parentCall != null) {
       parentCall.aux['view'] = this;
@@ -67,39 +63,31 @@ export class ModelCatalogView extends DG.CustomCardView {
       'options.department': 'Department',
       'options.HL_process': 'HL_process',
       'options.process': 'Process',
-      'tag': 'Tags'
+      'tag': 'Tags',
     };
 
     this.filters = {
       'All': '',
       'Favorites': 'starredBy = @current',
-      'Used by me': 'usedBy = @current'
+      'Used by me': 'usedBy = @current',
     };
 
     this.hierarchy = [
       'options.department',
       'options.HL_process',
-      'options.process'
+      'options.process',
     ];
 
     this.hierarchyProperties = {
       'options.department': 'Department',
       'options.HL_process': 'HL_process',
-      'options.process': 'Process'
+      'options.process': 'Process',
     };
 
     this.showTree = true;
     this.initRibbon();
     this.initMenu();
-    if (propsSub == null && window.localStorage.getItem('ModelCatalogShowProperties') == null) {
-        propsSub = grok.events.onCurrentObjectChanged.subscribe((o) => {
-          if (this.meta.isApplicable(o.sender)) {
-            grok.shell.windows.showProperties = true;
-            window.localStorage.setItem('ModelCatalogShowProperties', 'false');
-            propsSub.unsubscribe();
-          }
-        })
-      }
+    grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = false;
 
     setTimeout(async () => {
@@ -117,8 +105,8 @@ export class ModelCatalogView extends DG.CustomCardView {
   initMenu() {
     this.ribbonMenu
       .group('Help')
-        .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
-        .item('Developing Models', () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
+      .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
+      .item('Developing Models', () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
       .endGroup();
   }
 }

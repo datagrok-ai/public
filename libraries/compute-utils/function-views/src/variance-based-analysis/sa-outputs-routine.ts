@@ -26,7 +26,7 @@ export type SensitivityAnalysisResult ={
   funcCalls: DG.FuncCall[],
 };
 
-function getCellCoordinatesFromRow(df: DG.DataFrame, row: number): CellCoordinates[] {  
+function getCellCoordinatesFromRow(df: DG.DataFrame, row: number): CellCoordinates[] {
   const rowCount = df.rowCount;
   let idx: number = 0;
 
@@ -35,7 +35,7 @@ function getCellCoordinatesFromRow(df: DG.DataFrame, row: number): CellCoordinat
   else if (row == -1)
     idx = rowCount - 1;
   else
-    throw new Error(INCORRECT_ROW_MSG);  
+    throw new Error(INCORRECT_ROW_MSG);
 
   return df.columns.names().map((colName) => ({idx: idx, columnName: colName}));
 }
@@ -43,47 +43,50 @@ function getCellCoordinatesFromRow(df: DG.DataFrame, row: number): CellCoordinat
 function getExtendedOutputsSpecification(funcCall: DG.FuncCall, outputsSpecification: OutputInfo[]): OutputInfo[] {
   const extendedOutputsSpecification = [] as OutputInfo[];
 
-  for (const item of outputsSpecification) 
-    if (item.prop.propertyType == DG.TYPE.DATA_FRAME)       
+  for (const item of outputsSpecification) {
+    if (item.prop.propertyType == DG.TYPE.DATA_FRAME) {
       extendedOutputsSpecification.push({
         prop: item.prop,
         elements: getCellCoordinatesFromRow(funcCall.outputs[item.prop.name], item.row),
         row: item.row,
-      })
-    else
-      extendedOutputsSpecification.push(item);  
+      });
+    } else
+      extendedOutputsSpecification.push(item);
+  }
 
   return extendedOutputsSpecification;
-}  
+}
 
 function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: OutputInfo[], rowCount: number): DG.DataFrame {
-  const columns = [] as DG.Column[]; 
+  const columns = [] as DG.Column[];
 
   for (const item of outputsSpecification) {
     const prop = item.prop;
     const name = prop.name;
 
-    switch(prop.propertyType) {
-      case DG.TYPE.BIG_INT:
-      case DG.TYPE.INT:
-      case DG.TYPE.FLOAT:
-        columns.push(DG.Column.fromType(prop.propertyType, name, rowCount));
-        break;
-      case DG.TYPE.DATA_FRAME:
-        const df = funcCall.outputs[name] as DG.DataFrame;        
+    switch (prop.propertyType) {
+    case DG.TYPE.BIG_INT:
+    case DG.TYPE.INT:
+    case DG.TYPE.FLOAT:
+      columns.push(DG.Column.fromType(prop.propertyType, name, rowCount));
+      break;
+    case DG.TYPE.DATA_FRAME:
+      const df = funcCall.outputs[name] as DG.DataFrame;
 
-        if (item.elements)
-          for (const elem of item.elements) 
-            columns.push(DG.Column.fromType(
+      if (item.elements) {
+        for (const elem of item.elements) {
+          columns.push(DG.Column.fromType(
               df.col(elem.columnName)?.type as DG.COLUMN_TYPE,
               elem.columnName,
               //`${elem.columnName} `, // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13415
               //`${name}(${elem.columnName}, ${elem.idx})`,
-              rowCount
-            ));          
-        break;
-      default:
-        throw new Error(UNSUPPORTED_TYPE_ERROR_MSG);
+              rowCount,
+          ));
+        }
+      }
+      break;
+    default:
+      throw new Error(UNSUPPORTED_TYPE_ERROR_MSG);
     }
   }
   return DG.DataFrame.fromColumns(columns);
@@ -92,11 +95,11 @@ function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: Output
 export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: OutputInfo[]): DG.DataFrame {
   if (funcCalls.length < 1)
     throw new Error(FUNCCALL_ARRAY_IS_EMPTY_MSG);
-    
+
   const rowCount = funcCalls.length;
 
   const extendedOutputsSpecification = getExtendedOutputsSpecification(funcCalls[0], outputsSpecification);
-  
+
   const table = getEmptyOutputTable(funcCalls[0], extendedOutputsSpecification, rowCount);
 
   for (let row = 0; row < rowCount; ++row) {
@@ -104,27 +107,29 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
       const prop = item.prop;
       const name = prop.name;
       const funcCall = funcCalls[row];
-  
-      switch(prop.propertyType) {
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.INT:
-        case DG.TYPE.FLOAT:
-          table.col(name)?.set(row, funcCall.outputs[name]);          
-          break;
 
-        case DG.TYPE.DATA_FRAME:
-          const df = funcCall.outputs[name] as DG.DataFrame;
-  
-          if (item.elements)
-            for (const elem of item.elements)             
-              table.col(elem.columnName)?.set(
-                row,
-                df.col(elem.columnName)?.get(elem.idx)
-              ); 
-            
-          break;
-        default:
-          throw new Error(UNSUPPORTED_TYPE_ERROR_MSG);
+      switch (prop.propertyType) {
+      case DG.TYPE.BIG_INT:
+      case DG.TYPE.INT:
+      case DG.TYPE.FLOAT:
+        table.col(name)?.set(row, funcCall.outputs[name]);
+        break;
+
+      case DG.TYPE.DATA_FRAME:
+        const df = funcCall.outputs[name] as DG.DataFrame;
+
+        if (item.elements) {
+          for (const elem of item.elements) {
+            table.col(elem.columnName)?.set(
+              row,
+              df.col(elem.columnName)?.get(elem.idx),
+            );
+          }
+        }
+
+        break;
+      default:
+        throw new Error(UNSUPPORTED_TYPE_ERROR_MSG);
       }
     }
   }

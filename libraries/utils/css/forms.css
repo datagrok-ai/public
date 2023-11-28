@@ -12,6 +12,7 @@
 	position: absolute;
 	left: 10px;
 	white-space: nowrap;
+	font-weight: bold;
 	/*width: calc(100% - 10px);
 	
 	overflow: hidden;
@@ -21,7 +22,9 @@
 .d4-multi-form-form {
 	min-width: 170px;
 }
-
+.d4-multi-form-form input {
+	color:var(--grey-6)!important;
+}
 .d4-multi-form > .ui-split-h > .ui-box:first-child:hover::-webkit-scrollbar {
 	display: block;
 }
