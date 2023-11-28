@@ -216,6 +216,9 @@ export class FormsViewer extends DG.JsViewer {
               input.input.style.backgroundColor = DG.Color.toHtml(color);
             }
           }
+          input.root.onclick = (e: MouseEvent) => {
+            this.dataFrame.currentCell = this.dataFrame.cell(row, name);
+          };
 
           return input.input;
         }
