@@ -19,7 +19,7 @@ class Widget {
   private monomerLibFileManager = new MonomerLibFileManager();
   async getWidget() {
     const libChoiceInputsForm = await this.getInputs();
-    const addLibrariesBtn: HTMLButtonElement = ui.button('Add', this.addFiles);
+    const addLibrariesBtn: HTMLButtonElement = ui.button('Add', async () => await this.addFiles());
     return new DG.Widget(ui.divV([libChoiceInputsForm, ui.div([addLibrariesBtn])]));
   }
 
@@ -58,7 +58,9 @@ class Widget {
       const libFile = DG.Utils.openFile({
         accept: '.json',
         open: async (libFile) => {
-          await this.monomerLibFileManager.addStandardLibFile(libFile);
+          const content = await libFile.text();
+          const name = libFile.name;
+          await this.monomerLibFileManager.addStandardLibFile(content, name);
         },
       });
     });
@@ -67,7 +69,9 @@ class Widget {
       const libFile = DG.Utils.openFile({
         accept: '.csv',
         open: async (libFile) => {
-          await this.monomerLibFileManager.addCustomLibFile(libFile);
+          const content = await libFile.text();
+          const name = libFile.name;
+          await this.monomerLibFileManager.addCustomLibFile(content, name);
         },
       });
     });

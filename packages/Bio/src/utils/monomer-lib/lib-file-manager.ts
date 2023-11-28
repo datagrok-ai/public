@@ -11,19 +11,17 @@ export class MonomerLibFileManager {
   constructor() { }
 
   /** Add standard .json monomer library  */
-  async addStandardLibFile(file: File): Promise<void> {
-    const content = await file.text();
-    const name = file.name;
-    this.validate(content, name);
-    await grok.dapi.files.writeAsText(LIB_PATH + `${name}`, content);
+  async addStandardLibFile(fileContent: string, fileName: string): Promise<void> {
+    this.validate(fileContent, fileName);
+    await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
+    grok.shell.info(`Library ${fileName} added`);
   }
 
   /** Transform non-standad monomer librarieies to standard format */
-  async addCustomLibFile(file: File): Promise<void> {
-    const content = await file.text();
-    const name = file.name;
-    this.validate(content, name);
-    await grok.dapi.files.writeAsText(LIB_PATH + `${name}`, content);
+  async addCustomLibFile(fileContent: string, fileName: string): Promise<void> {
+    this.validate(fileContent, fileName);
+    await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
+    grok.shell.info(`Library ${fileName} added`);
   }
 
   async deleteLibFile(fileName: string): Promise<void> {
