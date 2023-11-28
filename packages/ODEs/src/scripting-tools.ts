@@ -1,6 +1,6 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
-import {CONTROL_TAG, DF_NAME, CONTROL_EXPR, DOSING} from './constants';
+import {CONTROL_TAG, DF_NAME, CONTROL_EXPR, LOOP} from './constants';
 
 // Scripting specific constants
 const CONTROL_SEP = ':';
@@ -41,9 +41,8 @@ type DifEqs = {
   solutionNames: string[]
 };
 
-/** Dosing specification */
-type Dosing = {
-  dose: Input,
+/** Loop specification */
+type Loop = {
   count: Input,
   updates: string[],
 };
@@ -62,7 +61,7 @@ type IVP = {
   tolerance: string,
   usedMathFuncs: number[],
   usedMathConsts: number[],
-  dosing: Dosing | null,
+  dosing: Loop | null,
 };
 
 /** Specific error messeges */
@@ -72,8 +71,7 @@ enum ERROR_MSG {
   ARG = 'incorrect argument specification',
   INITS = 'incorrect initial values specification',
   DOSING = 'incorrect dosing specification',
-  DOSE = 'incorrect dose',
-  DOSES_COUNT = 'incorrect doses count',
+  COUNT = 'incorrect doses count',
 }
 
 /** Datagrok annatations */
@@ -288,22 +286,18 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
 }
 
 /** Get dosing specification */
-function getDosing(lines: string[], begin: number, end: number): Dosing {
+function getDosing(lines: string[], begin: number, end: number): Loop {
   const source = concatMultilineFormulas(lines.slice(begin, end));
   const size = source.length;
 
-  if (size < DOSING.MIN_LINES_COUNT)
+  if (size < LOOP.MIN_LINES_COUNT)
     throw new Error(ERROR_MSG.DOSING);
-
-  const dose = getInput(source[DOSING.DOSE_IDX]);
-  if (dose.value < DOSING.MIN_DOSE)
-    throw new Error(ERROR_MSG.DOSE);
   
-  const count = getInput(source[DOSING.COUNT_IDX]);
-  if (count.value <  DOSING.MIN_DOSES_COUNT)
-    throw new Error(ERROR_MSG.DOSES_COUNT);
+  const count = getInput(source[LOOP.COUNT_IDX]);
+  if (count.value <  LOOP.MIN_COUNT)
+    throw new Error(ERROR_MSG.COUNT);
 
-  return {dose: dose, count: count, updates: source.slice(DOSING.COUNT_IDX + 1)};
+  return {count: count, updates: source.slice(LOOP.COUNT_IDX + 1)};
 }
 
 /** Get initial value problem specification given in the text */
@@ -319,7 +313,7 @@ export function getIVP(text: string): IVP {
   let consts: Map<string, Input> | null = null;
   let params: Map<string, Input> | null = null;
   let tolerance = DEFAULT_TOL;
-  let dosing: Dosing | null = null;
+  let dosing: Loop | null = null;
 
   // 0. Split text into lines
   const lines = text.split('\n').filter((s) => s !== '').map((s) => s.trimStart());
@@ -364,7 +358,7 @@ export function getIVP(text: string): IVP {
     else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
     }
-    else if (firstLine.startsWith(CONTROL_EXPR.DOSING)) { // the 'dosing' block
+    else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'dosing' block
       dosing = getDosing(lines, block.begin + 1, block.end);
     }
     else // error: unsupported control expression 
@@ -421,10 +415,8 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   res.push(ANNOT.LANG);
 
   // the 'dosing' lines
-  if (ivp.dosing) {
-    res.push(`${ANNOT.DOUBLE_INPUT} ${DOSING.DOSE} = ${getInputSpec(ivp.dosing.dose)}`);
-    res.push(`${ANNOT.INT_INPUT} ${DOSING.COUNT} = ${getInputSpec(ivp.dosing.count)}`);
-  }
+  if (ivp.dosing)
+    res.push(`${ANNOT.INT_INPUT} ${LOOP.COUNT} = ${getInputSpec(ivp.dosing.count)}`);
 
   // argument lines
   const arg = ivp.arg;
@@ -638,7 +630,7 @@ function getScriptMainBodyDosingCase(ivp: IVP): string[] {
   res.push(`let ${SCRIPT.LAST_IDX} = 0`);
 
   res.push(SCRIPT.SOLVER_COM);
-  res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${DOSING.COUNT}; ++${SERVICE}idx) {`);
+  res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${LOOP.COUNT}; ++${SERVICE}idx) {`);
   ivp.dosing!.updates.forEach((upd) => res.push(`${SCRIPT.SPACE2}${upd};`));
   res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND_ASYNC}${funcParamsNames}), true);`);
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
@@ -672,10 +664,8 @@ export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true
 export function getScriptParams(ivp: IVP): Record<string, number> {
   const res = {} as Record<string, number>;
 
-  if (ivp.dosing) {
-    res[DOSING.DOSE] = ivp.dosing.dose.value;
-    res[DOSING.COUNT] = ivp.dosing.count.value;
-  }
+  if (ivp.dosing)
+    res[LOOP.COUNT] = ivp.dosing.count.value;
 
   const arg = ivp.arg;
 

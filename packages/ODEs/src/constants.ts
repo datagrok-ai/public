@@ -14,18 +14,15 @@ export enum CONTROL_EXPR {
     CONSTS = `${CONTROL_TAG}constants`,
     PARAMS = `${CONTROL_TAG}parameters`,
     TOL = `${CONTROL_TAG}tolerance`,
-    DOSING = `${CONTROL_TAG}dosing`,
+    LOOP = `${CONTROL_TAG}loop`,
 };
 
-/** Dosing consts */
-export enum DOSING {
-  MIN_LINES_COUNT = 3,
-  DOSE_IDX = 0,
-  COUNT_IDX = 1,
-  DOSE = 'dose',
-  COUNT = 'count',
-  MIN_DOSE = 0,
-  MIN_DOSES_COUNT = 1,
+/** Loop consts */
+export enum LOOP {
+  MIN_LINES_COUNT = 2,
+  COUNT_IDX = 0,
+  COUNT = 'count',  
+  MIN_COUNT = 1,
 };
 
 /** Basic template illustrating the simplest features */
@@ -212,10 +209,9 @@ ${CONTROL_EXPR.EXPR}:
   C2 = centr / V2
   C3 = peri / V3
 
-${CONTROL_EXPR.DOSING}:
-  ${DOSING.DOSE} = 10000 {category: Dosing} [Dosage]
-  ${DOSING.COUNT} = 10 {category: Dosing} [Number of doses]
-  depot += ${DOSING.DOSE}
+${CONTROL_EXPR.LOOP}:
+  ${LOOP.COUNT} = 10 {category: Dosing} [Number of doses]
+  depot += dose
 
 ${CONTROL_EXPR.ARG}: t
   start = 0 {units: h; caption: begin; category: Dosing} [Begin of dosing interval]
@@ -228,7 +224,8 @@ ${CONTROL_EXPR.INITS}:
   peri = 0 {category: Initial values} [Peripheral]
   eff = 0.2 {category: Initial values} [Effective compartment rate]
 
-${CONTROL_EXPR.PARAMS}:
+${CONTROL_EXPR.PARAMS}:  
+  dose = 10000 {category: Dosing} [Dosage]
   KA = 0.3 {caption: rate constant; category: Paramters}
   CL = 2 {caption: clearance; category: Paramters}
   V2 = 4 {caption: central volume; category: Paramters} [Central compartment volume]
