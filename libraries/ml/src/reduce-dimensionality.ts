@@ -269,30 +269,44 @@ class UMAPReducer extends Reducer {
         
     } else if (this.usingSparseMatrix) {
           console.time('sparse matrix');
-          let res: {[K in keyof SparseMatrixTransferType]: SparseMatrixTransferType[K] | null} | null
-            = this.transferedSparseMatrix ??
-              await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold, this.distanceFnArgs);
+          // let res: {[K in keyof SparseMatrixTransferType]: SparseMatrixTransferType[K] | null} | null
+          //   = this.transferedSparseMatrix ??
+          //     await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold, this.distanceFnArgs);
+          // console.timeEnd('sparse matrix');
+          //if (!isBitArrayMetric(this.distanceFname)) {
+          //const knnRes = getKnnGraph(res.i!, res.j!, res.distance!, this.reducer.neighbors, this.data.length);
+          const knnRes = await new SparseMatrixService().getKNN(this.data, this.distanceFname, this.reducer.neighbors, this.distanceFnArgs);
           console.timeEnd('sparse matrix');
-          if (!isBitArrayMetric(this.distanceFname)) {
-            const knnRes = getKnnGraph(res.i!, res.j!, res.distance!, this.reducer.neighbors, this.data.length);
-
-            this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
-          }
+          this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
+          //}
           console.time('sparse matrix to map')
           this.sparseMatrix = new Map<number, Map<number, number>>();
-          for (let i = 0; i < res.i!.length; ++i) {
-            const first = res.i![i];
-            const second = res.j![i];
-            const distance = res.distance![i];
+          // for (let i = 0; i < res.i!.length; ++i) {
+          //   const first = res.i![i];
+          //   const second = res.j![i];
+          //   const distance = res.distance![i];
+          //   if (!this.sparseMatrix.has(first))
+          //     this.sparseMatrix.set(first, new Map<number, number>());
+          //   this.sparseMatrix.get(first)!.set(second, distance);
+          // }
+          for (let i = 0; i < knnRes.knnIndexes.length; ++i) {
+            const first = i;
             if (!this.sparseMatrix.has(first))
               this.sparseMatrix.set(first, new Map<number, number>());
-            this.sparseMatrix.get(first)!.set(second, distance);
+            for (let j = 0; j < knnRes.knnIndexes[i].length; ++j) {
+              const second = knnRes.knnIndexes[i][j];
+              if (!this.sparseMatrix.has(second))
+                this.sparseMatrix.set(second, new Map<number, number>());
+              const distance = knnRes.knnDistances[i][j];
+              this.sparseMatrix.get(first)!.set(second, distance);
+              this.sparseMatrix.get(second)!.set(first, distance);
+            }
           }
           console.timeEnd('sparse matrix to map');
-          res.distance = null;
-          res.i = null;
-          res.j = null;
-          res = null;
+          // res.distance = null;
+          // res.i = null;
+          // res.j = null;
+          // res = null;
           // needed so that garbage collector can free memory from distance matrix
           await new Promise<void>((resolve) => {
             setTimeout(() => {

@@ -19,11 +19,9 @@ export class SequenceSpaceBaseFuncEditor {
     molColInput: DG.InputBase;
     molColInputRoot: HTMLElement;
     methodInput: DG.InputBase;
-    similarityThresholdInput!: HTMLElement;
     methodSettingsIcon: HTMLElement;
     similarityMetricInputRoot!: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
-    similarityThresholdObj: {'Similarity threshold': number} = {'Similarity threshold': 0};
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
       [DimReductionMethods.UMAP]: new UMAPOptions(),
       [DimReductionMethods.T_SNE]: new TSNEOptions()
@@ -53,14 +51,9 @@ export class SequenceSpaceBaseFuncEditor {
       this.molColInputRoot = this.molColInput.root;
       this.molColInput.onChanged(() => this.onColumnInputChanged(semtype));
       this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
-        if(settingsOpened) {
-            this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
-        }
-        this.displaySimilarityThresholdInput(semtype);
+        if(settingsOpened)
+          this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
       });
-      this.regenerateThresholdInput(0, 1);
-      //this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0);
-      ui.input.forProperty(DG.Property.fromOptions({type: DG.TYPE.FLOAT, name: 'Similarity threshold', min: 0, max: 1}));
       this.initSimilarityMetricInput(semtype);
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
@@ -76,32 +69,8 @@ export class SequenceSpaceBaseFuncEditor {
       let settingsOpened = false;
 
       setTimeout(() => {
-        this.displaySimilarityThresholdInput(semtype);
         this.onColumnInputChanged(semtype);
       });
-    }
-  
-    regenerateThresholdInput(min: number, max: number): HTMLElement {
-      const prop = DG.Property.fromOptions({
-        "name": "Similarity threshold",
-        "type": DG.TYPE.FLOAT,
-        //@ts-ignore
-        "showSlider": true,
-        "min": min,
-        "max": max,
-        "nullable": false,
-      });
-      this.similarityThresholdObj['Similarity threshold'] = min;
-      const newInputForm = ui.input.form(this.similarityThresholdObj, [prop]);
-      const newInput = newInputForm.getElementsByClassName('ui-input-root')[0] as HTMLElement;
-      let root = this.similarityThresholdInput ?? null;
-      if (root) {
-        ui.empty(root);
-        root.append(newInput);
-      }
-      this.similarityThresholdInput = newInputForm;
-      ui.tooltip.bind(this.similarityThresholdInput, 'Similarity threshold for sparse matrix creation.');
-      return this.similarityThresholdInput;
     }
 
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {
@@ -122,7 +91,6 @@ export class SequenceSpaceBaseFuncEditor {
         this.molColInput.onChanged(() => this.onColumnInputChanged(semtype));
         ui.empty(this.molColInputRoot);
         Array.from(this.molColInput.root.children).forEach((it) => this.molColInputRoot.append(it));
-        this.displaySimilarityThresholdInput(semtype);
         this.onColumnInputChanged(semtype);
     }
 
@@ -159,17 +127,5 @@ export class SequenceSpaceBaseFuncEditor {
       else
         this.similarityMetricInput.value = MmDistanceFunctionsNames.LEVENSHTEIN;
     
-    }
-
-    displaySimilarityThresholdInput(semtype: DG.SemType) {
-      if(semtype === DG.SEMTYPE.MOLECULE) {
-        this.similarityThresholdInput.style.display = 'none';
-        return;
-      }
-      if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000 && this.methodInput.value === DimReductionMethods.UMAP) {
-        this.similarityThresholdInput.style.display = 'block';
-      } else {
-        this.similarityThresholdInput.style.display = 'none';
-      }
     }
   }
