@@ -12,6 +12,7 @@
 	position: absolute;
 	left: 10px;
 	white-space: nowrap;
+	font-weight: bold;
 	/*width: calc(100% - 10px);
 	
 	overflow: hidden;
