@@ -54,14 +54,14 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
             seenIndexes.set(subIdx, []);
           const subSeq = alignedSeqColCategories[alignedSeqColData[subIdx]];
 
-          seenIndexes.get(subIdx)!.push(referenceIdx);
-          substitutionsArray.push(`${baseSequence}#${subSeq}`);
-          deltaArray.push(baseActivity - activityScaledColData[subIdx]);
-          substitutedToArray.push(posColCategories[posColData[subIdx]]);
-          fromIdxArray.push(referenceIdx);
-          toIdxArray.push(subIdx);
-          uniqueSequencesBitSet.set(referenceIdx, true);
-          uniqueSequencesBitSet.set(subIdx, true);
+                    seenIndexes.get(subIdx)!.push(referenceIdx);
+                    substitutionsArray.push(`${baseSequence}#${subSeq}`);
+                    deltaArray.push(baseActivity - activityScaledColData[subIdx]);
+                    substitutedToArray.push(posColCategories[posColData[subIdx]]);
+                    fromIdxArray.push(referenceIdx);
+                    toIdxArray.push(subIdx);
+                    uniqueSequencesBitSet.set(referenceIdx, true);
+                    uniqueSequencesBitSet.set(subIdx, true);
         }
       }
     }
@@ -146,7 +146,10 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
 
   const gridCols = model.analysisView.grid.columns;
   const originalGridColCount = gridCols.length;
-  const positionColumns = model.positionColumns.toArray().map((col) => col.name);
+  const positionColumns = model.positionColumns?.map((col) => col.name) ?? null;
+  if (positionColumns == null)
+    throw new Error('PeptidesError: Could not create mutation cliffs table: Position columns are not initialized');
+
   const columnNames: string[] = [];
   for (let colIdx = 1; colIdx < originalGridColCount; colIdx++) {
     const gridCol = gridCols.byIndex(colIdx);

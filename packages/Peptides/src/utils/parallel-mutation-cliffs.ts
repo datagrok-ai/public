@@ -1,4 +1,5 @@
 import * as type from './types';
+import {MutationCliffsOptions} from './algorithms';
 
 export type ParallelMutationReturnType = {
     // monomers1: string[],
@@ -7,6 +8,7 @@ export type ParallelMutationReturnType = {
     seq1Idxs: Uint32Array,
     seq2Idxs: Uint32Array,
 }
+
 export class ParallelMutationCliffs {
   private _workers: Worker[];
   private _workerCount: number;
@@ -19,12 +21,10 @@ export class ParallelMutationCliffs {
   }
 
   public async calc(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-                    settings: type.PartialPeptidesSettings = {},
-    targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {},
-  ): Promise<type.MutationCliffs> {
+    options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
     const substitutionsInfo: type.MutationCliffs = new Map();
     try {
-      const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
+      const currentTargetIdx = options.targetCol?.cat!.indexOf(options.currentTarget!) ?? -1;
 
       const len = activityArray.length;
       const promises = new Array<Promise<ParallelMutationReturnType>>(this._workerCount);
@@ -36,13 +36,13 @@ export class ParallelMutationCliffs {
       monomerInfoArray.forEach((monomerInfo) => {
         monomerInfo.cat = monomerInfo.cat?.slice();
       });
-      targetOptions.targetCol?.cat && (targetOptions.targetCol.cat = targetOptions.targetCol.cat.slice());
+      options.targetCol?.cat && (options.targetCol.cat = options.targetCol.cat.slice());
       for (let idx = 0; idx < this._workerCount; idx++) {
         promises[idx] = new Promise((resolveWorker, rejectWorker) => {
           const startIdx = Math.floor(idx * chunkSize);
           const endIdx = idx === this._workerCount - 1 ? matSize : Math.floor((idx + 1) * chunkSize);
           this._workers[idx].postMessage(
-            {startIdx, endIdx, activityArray, monomerInfoArray, settings, currentTargetIdx, targetOptions});
+            {startIdx, endIdx, activityArray, monomerInfoArray, settings: options, currentTargetIdx});
           this._workers[idx].onmessage = ({data: {pos, seq1Idxs, seq2Idxs, error}}): void => {
             if (error) {
               this._workers[idx]?.terminate();
@@ -61,8 +61,8 @@ export class ParallelMutationCliffs {
         monomerPositionsMap.set(monomerInfo.name, i);
       });
       results.filter(Boolean).forEach((result) => {
-        for (let i = 0; i< result.pos.length; i++) {
-        //getting monomers from monomerInfoArray by position
+        for (let i = 0; i < result.pos.length; i++) {
+          //getting monomers from monomerInfoArray by position
           const monomerPos = monomerPositionsMap.get(result.pos[i])!;
           const monomer1Cat = monomerInfoArray[monomerPos].rawData[result.seq1Idxs[i]];
           const monomer1 = monomerInfoArray[monomerPos].cat![monomer1Cat];

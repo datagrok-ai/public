@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {SCALING_METHODS} from './constants';
 import {ClusterType} from '../viewers/logo-summary';
+import {SCALING_METHODS} from './constants';
 
 export type DataFrameDict = { [key: string]: DG.DataFrame };
 
@@ -13,39 +13,39 @@ export type SelectionItem = { positionOrClusterType: string | ClusterType, monom
 export type SelectionStats = { [positionOrClusterType: string | ClusterType]: { [monomerOrCluster: string]: number } };
 
 export type PeptidesSettings = {
-  sequenceColumnName: string,
-  activityColumnName: string,
-  targetColumnName?: string,
-  scaling: SCALING_METHODS,
-  showMonomerPosition?: boolean,
-  showMostPotentResidues?: boolean,
-  showLogoSummaryTable?: boolean,
-  showDendrogram?: boolean,
-  maxMutations?: number,
-  minActivityDelta?: number,
-  columns?: { [col: string]: DG.AggregationType },
+    sequenceColumnName: string,
+    activityColumnName: string,
+    // targetColumnName?: string,
+    activityScaling: SCALING_METHODS,
+    showMonomerPosition?: boolean,
+    showMostPotentResidues?: boolean,
+    showLogoSummaryTable?: boolean,
+    showDendrogram?: boolean,
+    // maxMutations?: number,
+    // minActivityDelta?: number,
+    // columns?: { [col: string]: DG.AggregationType },
 };
 
 export type PartialPeptidesSettings = Partial<PeptidesSettings>;
 
 export type DrawOptions = {
-  symbolStyle?: string,
-  upperLetterHeight?: number,
-  upperLetterAscent?: number,
-  bounds?: DG.Rect,
-  textAlign?: CanvasTextAlign,
-  textBaseline?: CanvasTextBaseline,
-  marginVertical?: number,
-  marginHorizontal?: number,
-  headerStyle?: string,
-  textHeight?: number,
-  selectionWidth?: number,
+    symbolStyle?: string,
+    upperLetterHeight?: number,
+    upperLetterAscent?: number,
+    bounds?: DG.Rect,
+    textAlign?: CanvasTextAlign,
+    textBaseline?: CanvasTextBaseline,
+    marginVertical?: number,
+    marginHorizontal?: number,
+    headerStyle?: string,
+    textHeight?: number,
+    selectionWidth?: number,
 };
 
 export type StatsInfo = {
-  monomerCol: DG.Column<string>,
-  countCol: DG.Column<number>,
-  orderedIndexes: Int32Array,
+    monomerCol: DG.Column<string>,
+    countCol: DG.Column<number>,
+    orderedIndexes: Int32Array,
 }
 
 export type RawColumn = { name: string, rawData: RawData, cat?: string[] };

@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
-import {aligned1} from './test-data';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -149,18 +148,18 @@ category('Viewers: Logo Summary Table', () => {
   test('Properties', async () => {
     // Change Logo Summary Table Web Logo Mode property to full
     const webLogoMode = lstViewer.getProperty(LST_PROPERTIES.WEB_LOGO_MODE);
-    webLogoMode!.set(lstViewer, PositionHeight.full);
-    expect(lstViewer.webLogoMode, PositionHeight.full,
-      `Web Logo Mode property is not changed to ${PositionHeight.full}, got ${lstViewer.webLogoMode} instead`);
+        webLogoMode!.set(lstViewer, PositionHeight.full);
+        expect(lstViewer.webLogoMode, PositionHeight.full,
+          `Web Logo Mode property is not changed to ${PositionHeight.full}, got ${lstViewer.webLogoMode} instead`);
 
-    // Change Logo Summary Table Members Ratio Threshold proprty to 0
-    const threshold = 0;
-    const membersRatioThreshold = lstViewer.getProperty(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD);
-    membersRatioThreshold!.set(lstViewer, threshold);
-    expect(lstViewer.membersRatioThreshold, threshold,
-      `Members Ratio Threshold property is not changed to 0, got ${lstViewer.membersRatioThreshold} instead`);
-    expect(lstViewer.viewerGrid.table.filter.anyTrue, true, `Expected to filter out all rows, but ` +
-      `${lstViewer.viewerGrid.table.filter.trueCount} rows are left unfiltered`);
+        // Change Logo Summary Table Members Ratio Threshold proprty to 0
+        const threshold = 0;
+        const membersRatioThreshold = lstViewer.getProperty(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD);
+        membersRatioThreshold!.set(lstViewer, threshold);
+        expect(lstViewer.membersRatioThreshold, threshold,
+          `Members Ratio Threshold property is not changed to 0, got ${lstViewer.membersRatioThreshold} instead`);
+        expect(lstViewer.viewerGrid.table.filter.anyTrue, true, `Expected to filter out all rows, but ` +
+            `${lstViewer.viewerGrid.table.filter.trueCount} rows are left unfiltered`);
   });
 
   test('Tooltip', async () => {

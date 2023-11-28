@@ -1,6 +1,5 @@
-
 onmessage = async (event): Promise<void> => {
-  const {startIdx, endIdx, activityArray, monomerInfoArray, settings, currentTargetIdx, targetOptions} = event.data;
+  const {startIdx, endIdx, activityArray, monomerInfoArray, settings, currentTargetIdx} = event.data;
   // const monomers1: string[] = [];
   // const monomers2: string[] = [];
   const pos: string[] = [];
@@ -17,8 +16,8 @@ onmessage = async (event): Promise<void> => {
   let seq2Idx = startCol;
   const tempData = new Array(monomerInfoArray.length);
   while (cnt < chunkSize) {
-    if (!(currentTargetIdx !== -1 && (targetOptions.targetCol?.rawData[seq1Idx] !== currentTargetIdx ||
-        targetOptions.targetCol?.rawData[seq2Idx] !== currentTargetIdx))) {
+    if (!(currentTargetIdx !== -1 && (settings.targetCol?.rawData[seq1Idx] !== currentTargetIdx ||
+            settings.targetCol?.rawData[seq2Idx] !== currentTargetIdx))) {
       let substCounter = 0;
       const activityValSeq1 = activityArray[seq1Idx];
       const activityValSeq2 = activityArray[seq2Idx];

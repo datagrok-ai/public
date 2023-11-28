@@ -4,11 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {analyzePeptidesUI} from './widgets/peptides';
-import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
@@ -57,12 +55,12 @@ export function Peptides(): void {
     iconPath: _package.getIconUrl(),
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
     description:
-      '- Automatically recognizes peptides in your data\n' +
-      '- Invariant map and mutation cliffs\n' +
-      '- Logo plots to explore sequence composition\n' +
-      '- Hierarchical clustering\n' +
-      '- Sequence space to analyze clustering and activity cliffs\n' +
-      '- Finds statistically significant changes in activity for monomer/positions\n',
+            '- Automatically recognizes peptides in your data\n' +
+            '- Invariant map and mutation cliffs\n' +
+            '- Logo plots to explore sequence composition\n' +
+            '- Hierarchical clustering\n' +
+            '- Sequence space to analyze clustering and activity cliffs\n' +
+            '- Finds statistically significant changes in activity for monomer/positions\n',
   });
 
   const windows = grok.shell.windows;
@@ -127,15 +125,6 @@ export function logoSummaryTable(): LogoSummaryTable {
   return new LogoSummaryTable();
 }
 
-//name: peptide-space-viewer
-//description: Peptide Space Viewer
-//tags: viewer
-//meta.icon: files/icons/peptide-space-viewer.svg
-//output: viewer result
-export function peptideSpace(): PeptideSpaceViewer {
-  return new PeptideSpaceViewer();
-}
-
 //name: Manual Alignment
 //tags: panel, widgets
 //input: string _monomer {semType: Monomer}
@@ -149,15 +138,6 @@ export function manualAlignment(_monomer: string): DG.Widget {
 
   const col = df.getCol(model.settings.sequenceColumnName!);
   return manualAlignmentWidget(col, df);
-}
-
-//name: Peptide Space
-//tags: panel, widgets
-//input: column col {semType: Macromolecule}
-//output: widget result
-export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
-  const widget = new PeptideSimilaritySpaceWidget(col, grok.shell.v as DG.TableView);
-  return widget.draw();
 }
 
 // --- Demo ---

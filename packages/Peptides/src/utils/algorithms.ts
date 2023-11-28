@@ -11,39 +11,42 @@ import {
   MonomerPositionStats,
   PositionStats,
   Stats,
-  SummaryStats
+  SummaryStats,
 } from './statistics';
 
-export type TargetOptions = {targetCol?: type.RawColumn | null, currentTarget?: string | null};
+export type MutationCliffsOptions = { maxMutations?: number, minActivityDelta?: number, targetCol?: type.RawColumn | null, currentTarget?: string | null };
 
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-                                    settings: type.PartialPeptidesSettings = {}, targetOptions: TargetOptions = {}): Promise<type.MutationCliffs> {
+  options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
   if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
-  settings.minActivityDelta ??= 0;
-  settings.maxMutations ??= 1;
-  const substitutionsInfo = await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, settings, targetOptions);
+  options.minActivityDelta ??= 0;
+  options.maxMutations ??= 1;
+  const substitutionsInfo = await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, options);
   return substitutionsInfo;
 }
 
-export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionColumns: DG.Column<string>[],
-  options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
+export function calculateMonomerPositionStatistics(activityCol: DG.Column<number>, filter: DG.BitSet,
+  positionColumns: DG.Column<string>[], options: {
+        isFiltered?: boolean,
+        columns?: string[]
+    } = {}): MonomerPositionStats {
   options.isFiltered ??= false;
-  const monomerPositionObject = {general: {}} as MonomerPositionStats & {general: SummaryStats};
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
+  const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
+  // const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
-  let sourceDfLen = df.rowCount;
+  let sourceDfLen = activityCol.length;
 
   if (options.isFiltered) {
-    sourceDfLen = df.filter.trueCount;
+    sourceDfLen = filter.trueCount;
     const tempActivityData = new Float64Array(sourceDfLen);
-    const selectedIndexes = df.filter.getSelectedIndexes();
+    const selectedIndexes = filter.getSelectedIndexes();
     for (let i = 0; i < sourceDfLen; ++i)
       tempActivityData[i] = activityColData[selectedIndexes[i]];
     activityColData = tempActivityData;
-    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(df.filter).columns.toList();
+    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter).columns.toList();
   }
   options.columns ??= positionColumns.map((col) => col.name);
 
@@ -52,7 +55,7 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
       continue;
     const posColData = posCol.getRawData();
     const posColCateogries = posCol.categories;
-    const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
+    const currentPositionObject = {general: {}} as PositionStats & { general: SummaryStats };
 
     for (let categoryIndex = 0; categoryIndex < posColCateogries.length; ++categoryIndex) {
       const monomer = posColCateogries[categoryIndex];
