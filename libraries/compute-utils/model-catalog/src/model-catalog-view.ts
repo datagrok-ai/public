@@ -1,13 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as rxjs from 'rxjs';
 import {ModelHandler} from './model-handler';
 import wu from 'wu';
 
-/* eslint-disable */
-
-let propsSub: rxjs.Subscription;
 
 export class ModelCatalogView extends DG.CustomCardView {
   static findOrCreateCatalogView(
@@ -41,7 +37,7 @@ export class ModelCatalogView extends DG.CustomCardView {
 
   public bindModel(fc: DG.FuncCall) {
     fc.aux['showOnTaskBar'] = false;
-    
+
     const parentCall = this.parentCall;
     if (parentCall != null) {
       parentCall.aux['view'] = this;
@@ -91,15 +87,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.showTree = true;
     this.initRibbon();
     this.initMenu();
-    if (propsSub == null && window.localStorage.getItem('ModelCatalogShowProperties') == null) {
-        propsSub = grok.events.onCurrentObjectChanged.subscribe((o) => {
-          if (this.meta.isApplicable(o.sender)) {
-            grok.shell.windows.showProperties = true;
-            window.localStorage.setItem('ModelCatalogShowProperties', 'false');
-            propsSub.unsubscribe();
-          }
-        })
-      }
+    grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = false;
 
     setTimeout(async () => {
