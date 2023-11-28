@@ -20,6 +20,7 @@ export class FormsViewer extends DG.JsViewer {
   indexes: number[];
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
+  columnLabelWidth: number = 0;
 
   set dataframe(df: DG.DataFrame) {
     this.dataFrame = df;
@@ -83,7 +84,7 @@ export class FormsViewer extends DG.JsViewer {
       const columnsHeaders = columnHeadersBox.parentElement as HTMLElement;
       columnsHeaders.style.cssText = `
         overflow: hidden!important;
-        max-width: 200px;
+        max-width: ${this.columnLabelWidth+25}px;
       `;
 
       columnHeadersBox.style.cssText = `
@@ -178,6 +179,8 @@ export class FormsViewer extends DG.JsViewer {
         columnLabel.onclick = (e: MouseEvent) => {
           this.dataFrame.currentCol = this.dataFrame.col(name)!;
         };
+        if (columnLabel.offsetWidth > this.columnLabelWidth)
+          this.columnLabelWidth = columnLabel.offsetWidth;
       }
     }
 
