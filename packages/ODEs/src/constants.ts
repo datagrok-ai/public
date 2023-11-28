@@ -246,6 +246,50 @@ ${CONTROL_EXPR.PARAMS}:
   
 ${CONTROL_EXPR.TOL}: 0.000000001`;
 
+/** Gluconic acid production */
+const ACID_PROD_MODEL = `${CONTROL_EXPR.NAME}: GA-production
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Gluconic acid (GA) production by Aspergillus niger modeling
+${CONTROL_EXPR.DIF_EQ}:
+  dX/dt = rX
+  dS/dt = -gamma * rX - lambda * X
+  dO/dt = Kla * (Cod - O) - delta * rX - phi * X
+  dP/dt = alpha * rX + beta * X
+
+${CONTROL_EXPR.EXPR}:
+  mu = muM * S / (Ks + S) * O / (Ko + O)
+  rX = mu * X
+
+${CONTROL_EXPR.ARG}: t
+  start = 0 {units: h; caption: initial; category: Time} [Start of the process]
+  stage1 = 60 {units: h; caption: 1-st stage; category: Time} [Duration of the 1-st stage]
+  step = 0.1 {units: h; caption: step; category: Time} [Time step of simlulation]
+
+${CONTROL_EXPR.UPDATE}:
+  stage2 = 60 {units: h; caption: 2-nd stage; category: Time} [Duration of the 2-nd stage]
+  S += 70
+
+${CONTROL_EXPR.INITS}:  
+  X = 5 {units: kg/m^3; caption: biomass; category: Initial concentrations} [Aspergillus niger biomass]
+  S = 150 {units: kg/m^3; caption: glucose; category: Initial concentrations} [Glucose]
+  O = 7 {units: kg/m^3; caption: oxygen; category: Initial concentrations} [Dissolved oxygen]
+  P = 0 {units: kg/m^3; caption: acid; category: Initial concentrations} [Gluconic acid]
+
+${CONTROL_EXPR.PARAMS}:  
+  muM = 0.668 {units: 1/h; category: Parameters} [Monod type model parameter]
+  alpha = 2.92 {category: Parameters} [Monod type model parameter]
+  beta = 0.131 {units: 1/h; category: Parameters} [Monod type model parameter]
+  gamma = 2.12 {category: Parameters} [Monod type model parameter]
+  lambda = 0.232 {units: 1/h; category: Parameters} [Monod type model parameter]
+  delta = 0.278 {category: Parameters} [Monod type model parameter]
+  phi = 0.00487 {units: 1/h; category: Parameters} [Monod type model parameter]
+  Ks = 130.9 {units: g/L; category: Parameters} [Monod type model parameter]
+  Ko = 0.000363 {units: g/L; category: Parameters} [Monod type model parameter]
+  Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
+  Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
+  
+${CONTROL_EXPR.TOL}: 0.000000001`;
+
 /** Initial value problem templates */
 export enum TEMPLATES {
   EMPTY = '',
@@ -256,4 +300,5 @@ export enum TEMPLATES {
   ROBERTSON = ROBERTSON_MODEL,
   FERMENTATION = FERMENTATION_MODEL,
   PK_PD = PK_PD_MODEL,
+  ACID_PROD = ACID_PROD_MODEL
 };

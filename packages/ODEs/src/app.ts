@@ -23,6 +23,7 @@ enum EDITOR_STATE {
   ROBERT = 6,
   FERM = 7,
   PKPD = 8,
+  ACID_PROD = 9,
 };
 
 /** Context help links */
@@ -71,6 +72,9 @@ function getProblem(state: EDITOR_STATE): string {
 
     case EDITOR_STATE.PKPD:
       return TEMPLATES.PK_PD;
+
+    case EDITOR_STATE.ACID_PROD:
+      return TEMPLATES.ACID_PROD;
 
     default:
       return TEMPLATES.EMPTY;
@@ -242,6 +246,7 @@ export async function runSolverApp() {
       .item('Fermentation...', () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
       //.separator()
       .item('PK-PD...', () => setState(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
+      .item('Acid production...', () => setState(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
       .endGroup()
       .show();    
   });
