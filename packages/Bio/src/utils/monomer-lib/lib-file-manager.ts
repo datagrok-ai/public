@@ -13,10 +13,14 @@ import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 export class MonomerLibFileManager {
   private constructor() { }
 
+  private static instance: MonomerLibFileManager | undefined;
+
   static async getInstance(): Promise<MonomerLibFileManager> {
-    const instance = new MonomerLibFileManager();
-    await instance.init();
-    return instance;
+    if (MonomerLibFileManager.instance === undefined) {
+      MonomerLibFileManager.instance = new MonomerLibFileManager();
+      await MonomerLibFileManager.instance.init();
+    }
+    return MonomerLibFileManager.instance;
   }
 
   private async init(): Promise<void> {
@@ -27,14 +31,14 @@ export class MonomerLibFileManager {
   async addStandardLibFile(fileContent: string, fileName: string): Promise<void> {
     await this.validate(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    grok.shell.info(`Added ${fileName} library`);
+    grok.shell.info(`Added ${fileName} HELM library`);
   }
 
   /** Transform non-standad monomer librarieies to standard format */
   async addCustomLibFile(fileContent: string, fileName: string): Promise<void> {
     await this.validate(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    grok.shell.info(`Added ${fileName} library`);
+    grok.shell.info(`Added ${fileName} HELM library`);
   }
 
   async deleteLibFile(fileName: string): Promise<void> {
@@ -60,7 +64,7 @@ export class MonomerLibFileManager {
     }
 
     if (invalidFiles.length > 0)
-      grok.shell.warning(`Following files in under ${LIB_PATH} do not satisfy HELM standard for monomer libraries: ${invalidFiles}`);
+      grok.shell.warning(`${invalidFiles.join(', ')} do not satisfy HELM standard}, consider deleting/fixing them`);
   }
 
   private isValid(fileContent: string): boolean {
