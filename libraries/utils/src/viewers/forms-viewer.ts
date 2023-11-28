@@ -171,16 +171,23 @@ export class FormsViewer extends DG.JsViewer {
     for (const name of this.fieldsColumnNames) {
       const formField = form.querySelector('[column="' + name + '"]') as HTMLInputElement;
       if (formField) {
-        const columnLabel = ui.bind(this.dataFrame.col(name), ui.divText(name, 'd4-multi-form-column-name'));
+        const columnLabel = ui.bind(this.dataFrame.col(name), ui.divText(name));
+        const closeIcon = ui.iconFA('times', () => {
+          this.fieldsColumnNames = this.fieldsColumnNames.filter((value) => value !== name);
+          this.render();
+        });
+        const columnLabelContainer = ui.div([columnLabel, closeIcon], 'd4-multi-form-column-name d4-flex-row');
         const offsetTop = formField.type === 'checkbox' ?
           formField.offsetTop - BOOLEAN_INPUT_TOP_MARGIN : formField.offsetTop;
-        columnLabel.style.top = `${offsetTop + 10}px`;
-        this.columnHeadersDiv.appendChild(columnLabel);
+        columnLabelContainer.style.top = `${offsetTop + 10}px`;
+        this.columnHeadersDiv.appendChild(columnLabelContainer);
         columnLabel.onclick = (e: MouseEvent) => {
           this.dataFrame.currentCol = this.dataFrame.col(name)!;
         };
         if (columnLabel.getBoundingClientRect().width > this.columnLabelWidth)
           this.columnLabelWidth = columnLabel.getBoundingClientRect().width;
+        columnLabelContainer.onmouseenter = (e: MouseEvent) => closeIcon.style.visibility = 'visible';
+        columnLabelContainer.onmouseleave = (e: MouseEvent) => closeIcon.style.visibility = 'hidden';
       }
     }
 

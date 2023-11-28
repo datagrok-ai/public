@@ -52,6 +52,12 @@
 	margin-top: 15px;
 }
 
+.d4-multi-form-column-name .grok-icon.fal.fa-times {
+	margin-top: 2px;
+	margin-left: 3px;
+	visibility: hidden;
+}
+
 /* TODO: Release these changes with the new core version with changes in the molecular input */
 /* .d4-multi-form-form > .d4-input-molecule-canvas {
 	width: 170px;
