@@ -63,11 +63,11 @@ export class FormsViewer extends DG.JsViewer {
     const formWithHeaderDiv = ui.splitH([columnHeadersBox, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
 
-    ui.tools.waitForElementInDom(this.virtualView.root).then((_)=>{
+    ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
       let height = 0;
       const virtualViewElements = this.virtualView.root.children[0].children;
 
-      for (let i=0; i<virtualViewElements.length; i++) {
+      for (let i = 0; i < virtualViewElements.length; i++) {
         const vheight = virtualViewElements[i].getBoundingClientRect().height;
         if (vheight > height)
           height = vheight;
@@ -224,6 +224,7 @@ export class FormsViewer extends DG.JsViewer {
           input.input.onclick = (e: MouseEvent) => {
             this.dataFrame.currentCell = this.dataFrame.cell(row, name);
           };
+          ui.tooltip.bind(input.input, name);
 
           return input.input;
         }
