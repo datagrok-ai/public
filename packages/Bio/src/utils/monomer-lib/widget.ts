@@ -9,12 +9,14 @@ import {
 import {MonomerLibHelper} from './monomer-lib-helper';
 
 import {getLibFileNameList} from './helpers';
+import {MonomerLibFileManager} from './lib-file-manager';
 
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
   return new Widget().getWidget();
 }
 
 class Widget {
+  private monomerLibFileManager = new MonomerLibFileManager();
   async getWidget() {
     const libChoiceInputsForm = await this.getInputs();
     const addLibrariesBtn: HTMLButtonElement = ui.button('Add', this.addFiles);
@@ -42,7 +44,7 @@ class Widget {
             grok.shell.info('Monomer library user settings saved.');
           });
         });
-      const deleteIcon = ui.iconFA('trash-alt', () => this.getDeleteDialog(libFileName));
+      const deleteIcon = ui.iconFA('trash-alt', async () => this.getDeleteDialog(libFileName));
       ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
       libInput.addOptions(deleteIcon);
       inputsForm.append(libInput.root);
@@ -55,14 +57,18 @@ class Widget {
     popup.item('Add standard', () => {
       const libFile = DG.Utils.openFile({
         accept: '.json',
-        open: async (libFile) => { },
+        open: async (libFile) => {
+          await this.monomerLibFileManager.addStandardLibFile(libFile);
+        },
       });
     });
     popup.separator();
     popup.item('Add custom', () => {
       const libFile = DG.Utils.openFile({
         accept: '.csv',
-        open: async (libFile) => { },
+        open: async (libFile) => {
+          await this.monomerLibFileManager.addCustomLibFile(libFile);
+        },
       });
     });
     popup.show();
@@ -71,7 +77,7 @@ class Widget {
   private getDeleteDialog(fileName: string): void {
     const dialog = ui.dialog('Warning');
     dialog.add(ui.divText(`Are you sure you want to delete ${fileName}`))
-      .onOK(() => {})
+      .onOK(async () => await this.monomerLibFileManager.deleteLibFile(fileName))
       .showModal(false);
   }
 }
