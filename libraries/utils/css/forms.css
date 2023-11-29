@@ -65,11 +65,11 @@
 }
 
 .d4-multi-form-form-indicator-mouse-over-row {
-	background-color: var(--grey-2);
+	background-color: #aaaaaa;
 }
 
 .d4-multi-form-form-indicator-current-row {
-	background-color: var(--green-2);
+	background-color: #38b738;
 }
 
 /* TODO: Release these changes with the new core version with changes in the molecular input */
