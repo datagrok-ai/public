@@ -10,9 +10,7 @@ import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/con
 
 
 /** Singleton for adding, validation and reading of monomer library files.
- * All files stored under LIB_PATH directory must be in .json format and satisfy HELM standard.
- * All libraries  that are not in .json format or do not satisfy HELM standard are considered as custom libraries,
- * they must be aligned to the standard before being added to LIB_PATH. */
+ * All files **must** be aligned to HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor() { }
 
@@ -32,13 +30,6 @@ export class MonomerLibFileManager {
 
   /** Add standard .json monomer library  */
   async addStandardLibFile(fileContent: string, fileName: string): Promise<void> {
-    await this.validate(fileContent, fileName);
-    await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    grok.shell.info(`Added ${fileName} HELM library`);
-  }
-
-  /** Transform non-standad monomer librarieies to standard format */
-  async addCustomLibFile(fileContent: string, fileName: string): Promise<void> {
     await this.validate(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
     grok.shell.info(`Added ${fileName} HELM library`);
@@ -92,9 +83,21 @@ export class MonomerLibFileManager {
       grok.shell.warning(`The following files in ${LIB_PATH} do not satisfy HELM standard}, delete or fix them: ${invalidFiles.join(', ')}`);
   }
 
+  /** The file **must** strictly satisfy HELM standard */
   private isValid(fileContent: string): boolean {
-    if (fileContent.length > 0)
-      return true;
-    return false;
+    const jsonContent = JSON.parse(fileContent);
+    // check if jsonContent is an array
+    if (!Array.isArray(jsonContent))
+      return false;
+    const requiredFields = [
+      REQ.AUTHOR, REQ.CREATE_DATE, REQ.ID, REQ.MOLFILE,
+      REQ.MONOMER_TYPE, REQ.NAME, REQ.POLYMER_TYPE, REQ.RGROUPS, REQ.SMILES, REQ.SYMBOL
+    ];
+    const result = jsonContent.every((monomer: any) => {
+      return requiredFields.every((field) => {
+        return Object.keys(monomer).includes(field);
+      });
+    });
+    return result;
   }
 }

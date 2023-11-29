@@ -70,9 +70,9 @@ class Widget {
       const libFile = DG.Utils.openFile({
         accept: '.csv',
         open: async (libFile) => {
-          const content = await libFile.text();
-          const name = libFile.name;
-          await this.monomerLibFileManager.addCustomLibFile(content, name);
+          // const content = await libFile.text();
+          // const name = libFile.name;
+          // await this.monomerLibFileManager.addCustomLibFile(content, name);
         },
       });
     });
