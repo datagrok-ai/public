@@ -4,19 +4,15 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
-import {MonomerLib} from './monomer-lib';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {PolyToolMonomerLibHandler} from '../poly-tool/monomer-lib-handler';
-import {
-  createJsonMonomerLibFromSdf,
-} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {MonomerLib} from './monomer-lib';
 import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/const';
 
 
 /** Singleton for adding, validation and reading of monomer library files.
  * All files stored under LIB_PATH directory must be in .json format and satisfy HELM standard.
- * All libraries  that are not in .json format or do not satisfy HELM standard are considered as custom libraries.
- * They must be brought to the standard format before adding to LIB_PATH. */
+ * All libraries  that are not in .json format or do not satisfy HELM standard are considered as custom libraries,
+ * they must be aligned to the standard before being added to LIB_PATH. */
 export class MonomerLibFileManager {
   private constructor() { }
 
@@ -56,43 +52,9 @@ export class MonomerLibFileManager {
 
   async readLibraryFile(path: string, fileName: string): Promise<IMonomerLib> {
     let rawLibData: any[] = [];
-    let file;
-    let dfSdf;
     const fileSource = new DG.FileSource(path);
-    if (fileName.endsWith('.sdf')) {
-      const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'importSdf'});
-      if (funcList.length === 1) {
-        file = await fileSource.readAsBytes(fileName);
-        dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
-        rawLibData = createJsonMonomerLibFromSdf(dfSdf[0]);
-      } else {
-        grok.shell.warning('Chem package is not installed');
-      }
-    } else if (fileName.endsWith('.json')) {
-      const file = await fileSource.readAsText(fileName);
-      rawLibData = JSON.parse(file);
-    } else if (fileName.endsWith('.csv')) {
-      // todo: replace by DataFrame's method after update of js-api
-      function toJson(df: DG.DataFrame): any[] {
-        return Array.from({length: df.rowCount}, (_, idx) =>
-          df.columns.names().reduce((entry: { [key: string]: any }, colName) => {
-            entry[colName] = df.get(colName, idx);
-            return entry;
-          }, {})
-        );
-      }
-
-      const df = await fileSource.readCsv(fileName);
-      const json = toJson(df);
-      const polyToolMonomerLib = new PolyToolMonomerLibHandler(json);
-      if (polyToolMonomerLib.isValid())
-        rawLibData = polyToolMonomerLib.getJsonMonomerLib();
-      else
-        throw new Error('Invalid format of CSV monomer lib');
-    } else {
-      throw new Error('Monomer library of unknown file format, supported formats: SDF, JSON, CSV');
-    }
-
+    const file = await fileSource.readAsText(fileName);
+    rawLibData = JSON.parse(file);
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
     const polymerTypes: string[] = [];
     rawLibData.forEach((monomer) => {
@@ -117,6 +79,10 @@ export class MonomerLibFileManager {
     const list = await grok.dapi.files.list(LIB_PATH);
     const invalidFiles: string[] = [];
     for (const file of list) {
+      if (!file.name.endsWith('.json')) {
+        invalidFiles.push(file.name);
+        continue;
+      }
       const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${file.name}`);
       if (!this.isValid(fileContent))
         invalidFiles.push(file.name);
