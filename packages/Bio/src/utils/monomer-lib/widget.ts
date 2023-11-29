@@ -61,7 +61,11 @@ class Widget {
         open: async (libFile) => {
           const content = await libFile.text();
           const name = libFile.name;
-          await this.monomerLibFileManager.addStandardLibFile(content, name);
+          try {
+            await this.monomerLibFileManager.addLibFile(content, name);
+          } catch (e) {
+            grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM standard`);
+          }
         },
       });
     });
