@@ -6,9 +6,10 @@ import {SUBSTRUCT_COL} from '../../constants';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COLNAME_PAIRS, MMP_COL_PAIRNUM, MMP_COL_PAIRNUM_FROM,
   MMP_COL_PAIRNUM_TO, MMP_COLNAME_MEANDIFF, MMP_COLNAME_DIFF, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME,
   MMP_COLOR} from './mmp-constants';
+import {PaletteCodes} from './mmp-mol-rendering';
 
 export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.ColumnList, mmpRules: MmpRules,
-  allCasesNumber: number, palette: Array<string>): {
+  allCasesNumber: number, palette: PaletteCodes): {
   maxActs: number[],
   diffs: Array<Float32Array>,
   activityMeanNames: Array<string>,
@@ -169,7 +170,7 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
       pointsFrom[pairsCounter] = molNumFrom[i];
       pointsTo[pairsCounter] = molNumTo[i];
       linesIdxs[pairsCounter] = i;
-      colors[pairsCounter] = palette[j].replace('rgb(', '').replace(')', '');//j == 0 ? '60,177,115' : '255,0,0';
+      colors[pairsCounter] = palette.rgbCut[j];
       linesActivityCorrespondance[pairsCounter] = j;
       pairsCounter++;
     }

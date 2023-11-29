@@ -21,7 +21,7 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_
 export let lastSelectedPair: number | null = null;
 
 export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[]) :
-[sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[]] {
+[sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[]] {
   const colX = DG.Column.float('~X', table.rowCount);
   const colY = DG.Column.float('~Y', table.rowCount);
   table.columns.add(colX);
@@ -38,6 +38,8 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
 
   const sliderInputs = new Array<DG.InputBase>(maxActs.length);
   const sliderInputValueDivs = new Array<HTMLDivElement>(maxActs.length);
+  const colorInputs = new Array<DG.InputBase>(maxActs.length);
+
   for (let i = 0; i < maxActs.length; i ++) {
     const sliderInput = ui.sliderInput(activities.byIndex(i).name, 0, 0, maxActs[i]);
     sliderInput.root.style.marginLeft = '6px';
@@ -45,9 +47,11 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
     sliderInput.addOptions(sliderInputValueDiv);
     sliderInputs[i] = sliderInput;
     sliderInputValueDivs[i] = sliderInputValueDiv;
+    colorInputs[i] = ui.colorInput('', '#FF0000');
+    // DG.Property.fromOptions({name: 'color', inputType: 'Color', type: DG.TYPE.STRING});
   }
 
-  return [sp, sliderInputs, sliderInputValueDivs];
+  return [sp, sliderInputs, sliderInputValueDivs, colorInputs];
 }
 
 function drawMolPair(molecules: string[], substr: (ISubstruct | null)[], div: HTMLDivElement, tooltip?: boolean) {

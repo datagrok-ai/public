@@ -15,21 +15,12 @@ import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {lastSelectedPair, moleculesPairInfo, getMmpScatterPlot,
   drawMoleculeLabels, runMmpChemSpace} from './mmp-cliffs';
-import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
+import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
   MMP_TAB_CLIFFS, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
 
 let currentTab = '';
-
-function getPalette(activityNum: number): Array<string> {
-  const palette = new Array<string>(activityNum);
-  const standradPal = DG.Color.categoricalPalette.map(DG.Color.toRgb);
-  for (let i = 0; i < activityNum; i++)
-    palette[i] = standradPal[i%standradPal.length];
-
-  return palette;
-}
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -37,7 +28,7 @@ export class MmpAnalysis {
   mmpRules: MmpRules;
   mmpView: DG.View;
   enableFilters: boolean = true;
-  colorPalette: Array<string>;
+  colorPalette: PaletteCodes;
   //transformations tab objects
   allPairsGrid: DG.Grid;
   transformationsMask: DG.BitSet;
@@ -55,10 +46,10 @@ export class MmpAnalysis {
   //rdkit
   rdkitModule: RDModule;
 
-  constructor(table: DG.DataFrame, molecules: DG.Column, palette: Array<string>,
+  constructor(table: DG.DataFrame, molecules: DG.Column, palette: PaletteCodes,
     rules: MmpRules, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, tp: DG.Viewer, sp: DG.Viewer,
-    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
+    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule) {
     this.rdkitModule = rdkitModule;
@@ -112,7 +103,8 @@ export class MmpAnalysis {
       ui.tooltip.bind(sliderInputs[i].captionLabel, 'Select the cutoff by activity difference');
       ui.tooltip.bind(sliderInputs[i].input, 'Activity value cutoff');
 
-      roots[i] = sliderInputs[i].root;
+      colorInputs[i].value = this.colorPalette.hex[i];
+      roots[i] = ui.divV([sliderInputs[i].root, colorInputs[i]]);
     }
 
     const sliders = ui.divH(roots);
@@ -206,10 +198,10 @@ export class MmpAnalysis {
       await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
-    const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames);
+    const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames, palette);
 
     //Cliffs tab
-    const [sp, sliderInputs, sliderInputValueDivs] = getMmpScatterPlot(table, activities, maxActs);
+    const [sp, sliderInputs, sliderInputValueDivs, colorInputs] = getMmpScatterPlot(table, activities, maxActs);
     drawMoleculeLabels(sp as DG.ScatterPlotViewer, table, molecules);
 
     //running internal chemspace
@@ -225,7 +217,7 @@ export class MmpAnalysis {
       });
 
     return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,
-      tp, sp, sliderInputs, sliderInputValueDivs, linesEditor, lines, linesActivityCorrespondance, module);
+      tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
   async refreshPair(rdkitModule: RDModule) {
