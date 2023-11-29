@@ -1,8 +1,105 @@
 # utils changelog
 
+## 4.1.31 (WIP)
+
+### Features
+
+* Forms viewer:
+  * Updated viewer layout.
+  * Added styles for updated molecular input.
+  * Click on input makes row current.
+  * Made column label clickable.
+  * Added tooltip on value.
+  * Added close button for column labels.
+  * Added indicators for current and mouse over row.
+
+## 4.1.30 (2023-11-27)
+
+### Bug Fixes
+
+* Fixed tests running.
+
+### Features
+
+## 4.1.29 (2023-11-27)
+
+### Features
+
+* Forms viewer:
+  * Handled color coding changing, columns removing, input values changing.
+  * Made inputs read-only.
+  * Set default limit for columns number.
+  * Added reaction to Ctrl, Shift, and Ctrl+Shift-click.
+  * Added help link.
+  * Updated viewer layout.
+* Test engine improvements:
+  * Before/after isnow skipped if category is skipped.
+  * Results now have a stacktrace.
+
+### Bug Fixes
+
+* Forms viewer:
+  * Fixed styles.
+  * Fixed removing several columns at once.
+  * Fixed freezing when mouse enters form.
+  * Fixed rendering when showCurrentRow is unset.
+  * Fixed rendering in case showCurrentRow and showMouseOverRow are both switched off.
+  * Fixed text color coding.
+  * Fixed showSelectedRows and checkboxes height.
+
+## 4.1.28 (2023-11-16)
+
+### Features
+
+* Added Forms viewer.
+
+## 4.1.27 (2023-11-16)
+
+### Features
+
+* Added ArrayBuffer to JSON serialization.
+
+## 4.1.26 (2023-11-14)
+
+### Features
+
+* Added capability to set line arrow size on scatterplot.
+
+## 4.1.25 (2023-11-14)
+
+## 4.1.24 (2023-11-11)
+
+### Features
+
+* Improved `appHeader` function.
+
+## 4.1.23 (2023-11-11)
+
+### Features
+
+* Added `appHeader` function.
+
+### Bug Fixes
+
+* Fixed Dart tests in Test Manager.
+
+## 4.1.22 (2023-11-09)
+
+### Features
+
+* Added `demoSkip` option in tests.
+
+## 4.1.21 (2023-11-08)
+
+### Features
+
+* Improved lines rendering on scatterplot.
+
 ## 4.1.20 (2023-11-03)
 
-This release focuses on improving performance.
+### Features
+
+* Improved vector operations.
 
 ## 4.1.19 (2023-10-30)
 
