@@ -8,7 +8,7 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 
-import {MonomerLibHelper} from './monomer-lib/monomer-lib-helper';
+import {MonomerLibManager} from './monomer-lib/lib-manager';
 import {errInfo} from './err-info';
 
 import {_package} from '../package';
@@ -173,7 +173,7 @@ class MonomerWrapper {
     monomerSymbol: string,
     polymerType: HELM_POLYMER_TYPE,
   ) {
-    const monomerLib = MonomerLibHelper.instance.getBioLib();
+    const monomerLib = MonomerLibManager.instance.getBioLib();
     const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);

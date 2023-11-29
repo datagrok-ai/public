@@ -48,7 +48,7 @@ import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
-import {MonomerLibHelper} from './utils/monomer-lib/monomer-lib-helper';
+import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {getLibraryPanelUI} from './utils/monomer-lib/widget';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
@@ -90,7 +90,7 @@ export const BYPASS_LARGE_DATA_WARNING = 'bypassLargeDataWarning';
 //description:
 //output: object result
 export function getMonomerLibHelper(): IMonomerLibHelper {
-  return MonomerLibHelper.instance;
+  return MonomerLibManager.instance;
 }
 
 export let hydrophobPalette: SeqPaletteCustom | null = null;
@@ -112,7 +112,7 @@ export async function initBio() {
   _package.logger.debug('Bio: initBio(), started');
   const module = await grok.functions.call('Chem:getRdKitModule');
   await Promise.all([
-    (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
+    (async () => { await MonomerLibManager.instance.loadLibraries(); })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);
@@ -122,7 +122,7 @@ export async function initBio() {
     _package.completeInit();
   });
 
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  const monomerLib = MonomerLibManager.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
 
@@ -165,7 +165,7 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
 //name: getBioLib
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
-  return MonomerLibHelper.instance.getBioLib();
+  return MonomerLibManager.instance.getBioLib();
 }
 
 // -- Panels --

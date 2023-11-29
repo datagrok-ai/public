@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
-import {MonomerLibHelper} from '../monomer-lib/monomer-lib-helper';
+import {MonomerLibManager} from '../monomer-lib/lib-manager';
 import {ALL_MONOMERS, CYCLIZATION_TYPE, TRANSFORMATION_TYPE} from './const';
 import {addTransformedColumn} from './transformation';
 import * as rxjs from 'rxjs';
@@ -73,7 +73,7 @@ export function getPolyToolDialog(): DG.Dialog {
     'Type', cyclizationTypes[2], cyclizationTypes, () => { onCyclizationChoice.next(); }
   );
 
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  const monomerLib = MonomerLibManager.instance.getBioLib();
   let monomerList1: string[] = [];
   let monomerList2: string[] = [];
   let leftTerminalChoice = ui.choiceInput(

@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLibHelper} from './monomer-lib-helper';
+import {MonomerLibManager} from './lib-manager';
 
 import {getLibFileNameList} from './helpers';
 import {MonomerLibFileManager} from './lib-file-manager';
@@ -41,7 +41,7 @@ class Widget {
               settings.exclude.push(libFileName);
           }
           setUserLibSettings(settings).then(async () => {
-            await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+            await MonomerLibManager.instance.loadLibraries(true); // from libraryPanel()
             grok.shell.info('Monomer library user settings saved.');
           });
         });
