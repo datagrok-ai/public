@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getLibFileNameList} from './helpers';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {
@@ -17,6 +16,11 @@ import {_package} from '../../package';
 
 type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibManager };
 declare const window: MonomerLibWindowType;
+
+export async function getLibFileNameList(): Promise<string[]> {
+  const fileManager = await MonomerLibFileManager.getInstance();
+  return fileManager.getValidFiles();
+}
 
 /** Singleton wrapper for MonomerLib, provides API for managing libraries on
  * the platform  */

@@ -8,15 +8,21 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLibManager} from './lib-manager';
 
-import {getLibFileNameList} from './helpers';
 import {MonomerLibFileManager} from './lib-file-manager';
+
+import * as rxjs from 'rxjs';
 
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
   return new Widget().getWidget();
 }
 
 class Widget {
+  constructor() { }
+
+  private onFileListChange = new rxjs.Subject<void>();
+
   private monomerLibFileManager: MonomerLibFileManager;
+
   async getWidget() {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
     const libChoiceInputsForm = await this.getInputs();
@@ -27,7 +33,8 @@ class Widget {
   private async getInputs(): Promise<HTMLDivElement> {
     const inputsForm = ui.form([]);
     const settings = await getUserLibSettings();
-    const libFileNameList: string[] = await getLibFileNameList();
+    const fileManager = await MonomerLibFileManager.getInstance();
+    const libFileNameList: string[] = fileManager.getValidFiles();
 
     for (const libFileName of libFileNameList) {
       const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
@@ -85,6 +92,7 @@ class Widget {
 
   private getDeleteDialog(fileName: string): void {
     const dialog = ui.dialog('Warning');
+    dialog.root.style.zIndex = '9999';
     dialog.add(ui.divText(`Are you sure you want to delete ${fileName}`))
       .onOK(async () => await this.monomerLibFileManager.deleteLibFile(fileName))
       .showModal(false);

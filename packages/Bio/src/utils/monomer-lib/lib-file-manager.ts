@@ -14,7 +14,7 @@ import * as rxjs from 'rxjs';
  * All files **must** be aligned to HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor() {
-    this.onFileListChange.subscribe(async () => {
+    this._onFileListChange.subscribe(async () => {
       await this.validateAllFiles();
     });
   }
@@ -24,7 +24,7 @@ export class MonomerLibFileManager {
   /** Tracks invalid files accidentally added to the library folder manually */
   private invalidFiles: string[] = [];
 
-  private onFileListChange = new rxjs.Subject<void>();
+  private _onFileListChange = new rxjs.Subject<void>();
 
   private static instance: MonomerLibFileManager | undefined;
 
@@ -36,23 +36,27 @@ export class MonomerLibFileManager {
     return MonomerLibFileManager.instance;
   }
 
+  get onFileListChange(): rxjs.Subject<void> {
+    return this.onFileListChange;
+  }
+
   private init(): void {
-    this.onFileListChange.next();
+    this._onFileListChange.next();
   }
 
   /** Add standard .json monomer library  */
   async addLibFile(fileContent: string, fileName: string): Promise<void> {
-    this.onFileListChange.next();
+    this._onFileListChange.next();
     await this.validateFile(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    this.onFileListChange.next();
+    this._onFileListChange.next();
     grok.shell.info(`Added ${fileName} HELM library`);
   }
 
   async deleteLibFile(fileName: string): Promise<void> {
     grok.dapi.files.delete(LIB_PATH + `${fileName}`);
     grok.shell.warning(`Deleted ${fileName} library`);
-    this.onFileListChange.next();
+    this._onFileListChange.next();
   }
 
   async readLibraryFile(path: string, fileName: string): Promise<IMonomerLib> {
