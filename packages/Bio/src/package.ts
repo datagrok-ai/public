@@ -1141,37 +1141,3 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
 }
-
-//name: runAutodock
-//input: file receptor
-//input: file ligand
-//input: int x
-//input: int y
-//input: int z
-//output: string dockingResults
-export async function runAutodock(receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number): Promise<string | null> {
-  const autodockContainer = await grok.dapi.docker.dockerContainers.filter('bio-autodock').first();
-  if (autodockContainer.status !== 'started' && autodockContainer.status !== 'checking') {
-    grok.log.warning('Autodock container not started yet.');
-    return null;
-  }
-
-  const json: { [key: string]: any } = {};
-  json['receptor'] = await receptor.readAsString();
-  json['ligand'] = await ligand.readAsString();
-
-  const params: RequestInit = {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(json),
-  };
-
-  const path = `/dock?x=${x}&y=${y}&z=${z}`;
-  try {
-    const dockingResults = await grok.dapi.docker.dockerContainers.request(autodockContainer.id, path, params);
-    return dockingResults;
-  } catch (error) {
-    grok.log.error(`Failed to access the server: ${error}`);
-    return null;
-  }
-}
