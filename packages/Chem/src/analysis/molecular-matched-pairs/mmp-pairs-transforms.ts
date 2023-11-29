@@ -8,7 +8,7 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COLNAME_PAIRS, MMP_COL_PAIRNUM, MM
   MMP_COLOR} from './mmp-constants';
 
 export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.ColumnList, mmpRules: MmpRules,
-  allCasesNumber: number): {
+  allCasesNumber: number, palette: Array<string>): {
   maxActs: number[],
   diffs: Array<Float32Array>,
   activityMeanNames: Array<string>,
@@ -108,6 +108,7 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
     allPairsCols.push(DG.Column.fromFloat32Array(name, meanDiff[i]));
   }
 
+  //TODO: make compatible with trellis
   const colorsPal = new Int32Array(fromCol.length);
   for (let i = 0; i < fromCol.length; i++)
     colorsPal[i] = i < fromCol.length ? 0 : 1;
@@ -168,7 +169,7 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
       pointsFrom[pairsCounter] = molNumFrom[i];
       pointsTo[pairsCounter] = molNumTo[i];
       linesIdxs[pairsCounter] = i;
-      colors[pairsCounter] = j == 0 ? '60,177,115' : '255,0,0';
+      colors[pairsCounter] = palette[j].replace('rgb(', '').replace(')', '');//j == 0 ? '60,177,115' : '255,0,0';
       linesActivityCorrespondance[pairsCounter] = j;
       pairsCounter++;
     }

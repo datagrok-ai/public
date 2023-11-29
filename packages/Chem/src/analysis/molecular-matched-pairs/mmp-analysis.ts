@@ -22,12 +22,22 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
 
 let currentTab = '';
 
+function getPalette(activityNum: number): Array<string> {
+  const palette = new Array<string>(activityNum);
+  const standradPal = DG.Color.categoricalPalette.map(DG.Color.toRgb);
+  for (let i = 0; i < activityNum; i++)
+    palette[i] = standradPal[i%standradPal.length];
+
+  return palette;
+}
+
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
   parentCol: DG.Column;
   mmpRules: MmpRules;
   mmpView: DG.View;
   enableFilters: boolean = true;
+  colorPalette: Array<string>;
   //transformations tab objects
   allPairsGrid: DG.Grid;
   transformationsMask: DG.BitSet;
@@ -37,16 +47,16 @@ export class MmpAnalysis {
   diffs: Array<Float32Array>;
   linesIdxs: Uint32Array;
   cutoffMasks: Array<DG.BitSet>;
-  linesMasks: Array<BitArray>;
   totalCutoffMask: DG.BitSet;
-  totalLinesMask: BitArray;
+  linesMask: BitArray;
   linesRenderer: ScatterPlotLinesRenderer | null = null;
   lines: ILineSeries;
   linesActivityCorrespondance: Uint32Array;
   //rdkit
   rdkitModule: RDModule;
 
-  constructor(table: DG.DataFrame, molecules: DG.Column, rules: MmpRules, diffs: Array<Float32Array>,
+  constructor(table: DG.DataFrame, molecules: DG.Column, palette: Array<string>,
+    rules: MmpRules, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, tp: DG.Viewer, sp: DG.Viewer,
     sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
@@ -55,6 +65,7 @@ export class MmpAnalysis {
 
     this.parentTable = table;
     this.parentCol = molecules;
+    this.colorPalette = palette;
     this.mmpRules = rules;
 
     this.diffs = diffs;
@@ -110,22 +121,19 @@ export class MmpAnalysis {
     const cliffs = ui.divV([sliders, ui.box(sp.root, {style: {maxHeight: '100px', paddingRight: '6px'}})]);
 
     this.cutoffMasks = new Array<DG.BitSet>(sliderInputs.length);
-    this.linesMasks = new Array<BitArray>(sliderInputs.length);
     this.totalCutoffMask = DG.BitSet.create(this.parentTable.rowCount);
     this.totalCutoffMask.setAll(true);
-    this.totalLinesMask = new BitArray(this.casesGrid.dataFrame.rowCount);
-    this.totalLinesMask.setAll(true, false);
+    this.linesMask = new BitArray(linesIdxs.length);
+    this.linesMask.setAll(true);
 
     for (let i = 0; i < sliderInputs.length; i++) {
       this.cutoffMasks[i] = DG.BitSet.create(this.parentTable.rowCount);
       this.cutoffMasks[i].setAll(true);
-
-      this.linesMasks[i] = new BitArray(this.casesGrid.dataFrame.rowCount);
-      this.linesMasks[i].setAll(true, false);
     }
 
     this.linesRenderer = linesEditor;
 
+    this.refilterCliffs(sliderInputs.map((si) => si.value), true);
     //tabs
     const tabs = ui.tabControl(null, false);
 
@@ -191,10 +199,11 @@ export class MmpAnalysis {
     //initial calculations
     const frags = await getMmpFrags(molecules);
     const [mmpRules, allCasesNumber] = getMmpRules(frags);
+    const palette = getPalette(activities.length);
 
     //Transformations tab
     const {maxActs, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
-      await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber);
+      await getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames);
@@ -215,7 +224,7 @@ export class MmpAnalysis {
         }
       });
 
-    return new MmpAnalysis(table, molecules, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,
+    return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,
       tp, sp, sliderInputs, sliderInputValueDivs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
@@ -325,30 +334,20 @@ export class MmpAnalysis {
 
   refilterCliffs(cutoffs: number[], refilter: boolean) {
     if (refilter) {
-      //setting all false
-      for (let i = 0; i < this.linesMasks.length; i ++) {
-        this.linesMasks[i].setAll(false, false);
+      for (let i = 0; i < this.cutoffMasks.length; i ++)
         this.cutoffMasks[i].setAll(false);
-      }
-      this.totalLinesMask.setAll(false);
+
       this.totalCutoffMask.setAll(false);
+      this.linesMask.setAll(false);
 
       //setting activity associated masks
-      let activityNumber = 0;
-      let lineNum = 0;
-
       for (let i = 0; i < this.lines.from.length; i++) {
+        const activityNumber = this.linesActivityCorrespondance[i];
         const line = this.linesIdxs[i];
-        //TODO: assure that indexes are ordered for each activity
-        if (line < lineNum)
-          activityNumber++;
-
-        lineNum = line;
-
         if (this.diffs[activityNumber][line] >= cutoffs[activityNumber]) {
           this.cutoffMasks[activityNumber].set(this.lines.from[i], true, false);
           this.cutoffMasks[activityNumber].set(this.lines.to[i], true, false);
-          this.linesMasks[activityNumber].setBit(i, true, false);
+          this.linesMask.setBit(i, true, false);
         }
       }
 
@@ -360,15 +359,9 @@ export class MmpAnalysis {
           res = res || this.cutoffMasks[i].get(j);
         this.totalCutoffMask.set(j, res, false);
       }
-      for (let j = 0; j < this.totalLinesMask.length; j++) {
-        let res = false;
-        for (let i = 0; i < this.linesMasks.length; i++)
-          res = res || this.linesMasks[i].getBit(j);
-        this.totalLinesMask.setBit(j, res, false);
-      }
     }
 
     this.parentTable.filter.copyFrom(this.totalCutoffMask);
-    this.linesRenderer!.linesVisibility = this.totalLinesMask;
+    this.linesRenderer!.linesVisibility = this.linesMask;
   }
 }
