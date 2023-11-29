@@ -73,9 +73,17 @@ def dock():
 
     process = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
     output, _ = process.communicate()
-    with open('{}-{}.dlg'.format(receptor_basename, ligand_basename), 'r') as dlg_file:
-        dlg_content = dlg_file.read()
-    return dlg_content
+
+    convert_process = subprocess.Popen('cat {}-{}.dlg | grep "^DOCKED: " | cut -b 9- > {}-{}.pdbqt'.format(receptor_basename, ligand_basename, receptor_basename, ligand_basename), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = convert_process.communicate()
+    with open('{}-{}.pdbqt'.format(receptor_basename, ligand_basename), 'r') as result_file:
+        result_content = result_file.read()
+    
+    response = {
+        'poses': result_content
+    }
+
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, threaded=True)

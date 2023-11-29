@@ -1,6 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import { SubstructureSearchType } from '../constants';
@@ -138,29 +138,64 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
-  convertMolNotation(targetNotation: string): string[] {
+  async convertMolNotation(molecules: string[], targetNotation: string): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
+      return [];
+    let addedToCache = false;
     let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
       (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+    const results = new Array<string>(molecules.length).fill(result);
 
-    const results = new Array(this._rdKitMols!.length);
-    let mol: RDMol | null = null;
-    for (let i = 0; i < this._rdKitMols!.length; ++i) {
-      mol = this._rdKitMols![i];
-      if (mol) {
-        if (targetNotation === MolNotation.MolBlock) {
-          if (!mol.has_coords())
-            mol.set_new_coords();
-          result = mol.get_molblock();
-        } else if (targetNotation === MolNotation.Smiles)
-          result = mol.get_smiles();
-        else if (targetNotation === MolNotation.V3KMolBlock)
-          result = mol.get_v3Kmolblock();
-        else if (targetNotation === MolNotation.Smarts)
-          result = mol.get_smarts();
+    for (let i = 0; i < molecules!.length; ++i) {
+      //every N molecules check for termination flag
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item && item === '') {
+        results[i] = '';
+        continue;
       }
-      results[i] = result;
+      let rdMol = this._molsCache?.get(molecules[i]);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      }
+      if (rdMol) {
+        try {
+          switch (targetNotation) {
+            case MolNotation.MolBlock:
+              if (!rdMol.has_coords())
+                rdMol.set_new_coords();
+              results[i] = rdMol.get_molblock();
+              break;
+            case MolNotation.Smiles:
+              if (!rdMol.is_qmol)
+                results[i] = rdMol.get_smiles();
+              break;
+            case MolNotation.V3KMolBlock:
+              results[i] = rdMol.get_v3Kmolblock();
+              break;
+            case MolNotation.Smarts:
+              results[i] = rdMol.get_smarts();
+              break;
+            default:
+              rdMol?.delete();
+              throw Error('Unknown notation: ' + targetNotation);
+          }
+          addedToCache = this.addToCache(rdMol);
+        } catch {
+          // nothing to do, fp is already null
+        } finally {
+          if (!addedToCache) { //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
     }
-
     console.log('Finished Worker ' + results.length);
     return results;
   }

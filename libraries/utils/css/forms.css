@@ -45,10 +45,34 @@
 
 .d4-multi-form .ui-input-editor {
 	padding: initial;
-	pointer-events: none;
 }
 
 .d4-multi-form-form > input[type="checkbox"] {
 	height: 13px;
 	margin-top: 15px;
 }
+
+.d4-multi-form-column-name .grok-icon.fal.fa-times {
+	margin-top: 2px;
+	margin-left: 3px;
+	visibility: hidden;
+}
+
+.d4-multi-form-form-indicator {
+	position: absolute;
+    width: 30px;
+    height: 5px;
+}
+
+.d4-multi-form-form-indicator-mouse-over-row {
+	background-color: #aaaaaa;
+}
+
+.d4-multi-form-form-indicator-current-row {
+	background-color: #38b738;
+}
+
+/* TODO: Release these changes with the new core version with changes in the molecular input */
+/* .d4-multi-form-form > .d4-input-molecule-canvas {
+	width: 170px;
+} */

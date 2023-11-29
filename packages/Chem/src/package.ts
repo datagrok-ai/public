@@ -34,8 +34,8 @@ import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
-import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
-import {_convertMolNotation} from './utils/convert-notation-utils';
+import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule, getRdKitService} from './utils/chem-common-rdkit';
+import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
@@ -64,6 +64,7 @@ import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { MolNotation } from './rdkit-service/rdkit-service-worker-substructure';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1371,5 +1372,41 @@ export async function demoDatabases(): Promise<void> {
 export async function demoScaffold(): Promise<void> {
   _demoScaffoldTree();
 }
+
+
+//top-menu: Chem | Calculate | Names To Smiles...
+//name: namesToSmiles
+//input: dataframe data
+//input: column names
+export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>): Promise<void> {
+  const namesList = names.toList();
+  const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
+  const col = res.col('canonical_smiles');
+  col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+  col.semType = DG.SEMTYPE.MOLECULE;
+  data.columns.add(col);
+}
+
+//top-menu: Chem | Calculate | Convert Notation...
+//name: convertNotation
+//input: dataframe data
+//input: column smiles  {semType: Molecule}
+//input: string targetNotation {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
+//input: bool overwrite = false
+export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
+  targetNotation: DG.chem.Notation, overwrite = false ): Promise<void> {
+  const res = await convertNotationForColumn(molecules, targetNotation);
+  if (overwrite) {
+    for (let i = 0; i < molecules.length; i++)
+      molecules.set(i, res[i], false);
+  } else {
+    const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
+    col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    data.columns.add(col);
+  }
+}
+
+
 
 export {getMCS};

@@ -12,10 +12,18 @@
 * Selected cell now have orange thick border.
 * Distribution panel now shows distribution for (1) all activity values, (2) selected rows, (3) peptides selection from
   viewers if mismatched with total selection.
+* Sequence space viewer now uses needleman-wunsch algorytm to compute distances.
+* Linearization of helm format macromolecules before sequence space computation.
+* Improved rendering speed of invariant map (no lags).
+* Improved rendering speed upon selection/filtering.
 
 ### Bug Fixes
 
 * Fixed accordion wouldn't update after selection in table view.
+* Filtering dataframe causing most potent residues viewer and context panel to crash.
+* Filtering dataframe causing major lags.
+* Most potent residues viewer crashing on some data.
+* Weblogo viewer crashing or causing major lag on selection/filtering.
 
 ## 1.16.0 (2023-11-05)
 
