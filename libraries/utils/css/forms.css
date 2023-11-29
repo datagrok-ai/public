@@ -58,6 +58,20 @@
 	visibility: hidden;
 }
 
+.d4-multi-form-form-indicator {
+	position: absolute;
+    width: 30px;
+    height: 5px;
+}
+
+.d4-multi-form-form-indicator-mouse-over-row {
+	background-color: var(--grey-2);
+}
+
+.d4-multi-form-form-indicator-current-row {
+	background-color: var(--green-2);
+}
+
 /* TODO: Release these changes with the new core version with changes in the molecular input */
 /* .d4-multi-form-form > .d4-input-molecule-canvas {
 	width: 170px;

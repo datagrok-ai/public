@@ -21,6 +21,8 @@ export class FormsViewer extends DG.JsViewer {
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
   columnLabelWidth: number = 0;
+  currentRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-current-row');
+  mouseOverRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-mouse-over-row');
 
   set dataframe(df: DG.DataFrame) {
     this.dataFrame = df;
@@ -63,6 +65,9 @@ export class FormsViewer extends DG.JsViewer {
     const columnHeadersBox = ui.div(this.columnHeadersDiv);
     const formWithHeaderDiv = ui.splitH([columnHeadersBox, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
+
+    ui.tooltip.bind(this.currentRowIndicator, 'Current row');
+    ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
     ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
       let height = 0;
@@ -241,6 +246,11 @@ export class FormsViewer extends DG.JsViewer {
         return ui.div();
       }
       ), 'd4-multi-form-form');
+
+    if (this.showMouseOverRow && savedIdx == this.mouseOverPos)
+      form.append(this.mouseOverRowIndicator);
+    if (this.showCurrentRow && savedIdx === this.currentRowPos)
+      form.append(this.currentRowIndicator);
 
     form.onclick = (event: MouseEvent) => {
       if (event.ctrlKey && event.shiftKey) {
