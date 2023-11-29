@@ -12,6 +12,8 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 
 import {awaitGrid} from './utils';
 
+import {_package} from '../package-test';
+
 category('getMolfiles', () => {
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: LibSettings;
@@ -38,7 +40,9 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$,9,8`;
     const helmCol = df.getCol('Helm');
     const view = grok.shell.addTableView(df);
 
-    await awaitGrid(view.grid);
+    _package.logger.debug('Helm/getMolfiles/linear1, grid awaiting 1');
+    await awaitGrid(view.grid, 5000);
+    _package.logger.debug('Helm/getMolfiles/linear1, grid awaited 1');
 
     const resCol: DG.Column<string> = await grok.functions.call('Helm:getMolfiles', {col: helmCol});
     expect(resCol.length, helmCol.length);
@@ -46,6 +50,8 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$,9,8`;
     expectArray(resMolfileList.map((mf) => mf.atomCount), df.getCol('atoms').toList());
     expectArray(resMolfileList.map((mf) => mf.bondCount), df.getCol('bonds').toList());
 
-    await awaitGrid(view.grid);
+    _package.logger.debug('Helm/getMolfiles/linear1, grid awaiting 2');
+    await awaitGrid(view.grid, 5000);
+    _package.logger.debug('Helm/getMolfiles/linear1, grid awaited 2');
   });
 });
