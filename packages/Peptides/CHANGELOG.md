@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.17.0 (WIP)
+## 1.17.0 (2023-11-29)
 
 ### Features
 
@@ -9,10 +9,10 @@
 * Autosize grids in the Mutation Cliffs pairs panel.
 * Hid sequence space embedding columns and axes selectors.
 * Saving context panels state.
-* Selected cell now have orange thick border.
+* Selected cells now have an orange thick border.
 * Distribution panel now shows distribution for (1) all activity values, (2) selected rows, (3) peptides selection from
-  viewers if mismatched with total selection.
-* Sequence space viewer now uses needleman-wunsch algorytm to compute distances.
+  viewers if mismatched with the total selection.
+* Sequence space viewer now uses the Needleman-Wunsch algorithm to compute distances.
 * Linearization of helm format macromolecules before sequence space computation.
 * Improved rendering speed of invariant map (no lags).
 * Improved rendering speed upon selection/filtering.
