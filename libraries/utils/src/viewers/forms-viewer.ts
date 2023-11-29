@@ -81,7 +81,6 @@ export class FormsViewer extends DG.JsViewer {
 
       this.columnHeadersDiv.style.cssText = `
         oveflow:hidden!important;
-        min-height: ${height}px;
         min-width: 150px;
         flex-shrink: 0;
       `;
