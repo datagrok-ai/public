@@ -14,7 +14,7 @@ import * as testUtils from '../utils/test-utils';
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
   const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled',
-    'report', 'skip-build', 'skip-publish', 'category', 'record', 'verbose'];
+    'report', 'skip-build', 'skip-publish', 'category', 'record', 'verbose', 'benchmark'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -120,7 +120,7 @@ export function test(args: TestArgs): boolean {
     }
 
     function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
-      report?: boolean, record?: boolean, verbose?: boolean} = {}): Promise<resultObject> {
+      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         let consoleLog: string = '';
         if (options.record) {
@@ -137,6 +137,8 @@ export function test(args: TestArgs): boolean {
         console.log(`Testing ${targetPackage} package...\n`);
 
         let r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
+          if (options.benchmark)
+            (<any>window).DG.Test.isInBenchmark = true;
           return new Promise<resultObject>((resolve, reject) => {        
             (<any>window).grok.functions.call(`${targetPackage}:test`, {
               'category': options.category,
@@ -175,8 +177,8 @@ export function test(args: TestArgs): boolean {
                   failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
                 }
               }
-              // if (!options.verbose)
-              //   df.rows.removeWhere((r: any) => r.get('success'));
+              if (!options.verbose)
+                df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
               resolve({failReport, skipReport, passReport, failed, csv, countReport});
             }).catch((e: any) => {
@@ -203,8 +205,8 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, { category: args.category, verbose: args.verbose,
-        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record });
+      const r = await runTest(7200000, {category: args.category, verbose: args.verbose,
+        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark});
 
       if (r.csv && args.csv) {
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
@@ -251,4 +253,5 @@ interface TestArgs {
   'skip-build'?: boolean,
   'skip-publish'?: boolean,
   verbose?: boolean,
+  benchmark?: boolean
 }
