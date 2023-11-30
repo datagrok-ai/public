@@ -25,7 +25,7 @@ Datagrok provides the creation of an ODEs project in a few clicks:
 
 ![add-to-workspace](solver.gif)
 
-Apply built-in templates as a backbone of your project. Rigth click, select **Templates** and choose one the following:
+Apply built-in templates as a backbone of your project. Rigth click, select **Templates** and choose one of the following:
 
 | Template   | Features                                                                                             |
 |------------|------------------------------------------------------------------------------------------------------|
@@ -151,7 +151,7 @@ Datagrok provides an export of each solver project to JavaScript script:
 
 Find the created script in the platform `Scripts`.
 
-Improves usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
+Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
 
 ```python
 #name: Bioreaction
@@ -206,8 +206,6 @@ The export feature provides an extension of your project with [scripting](script
 * results visualization
 * non-elementary and special functions use
 * Datagrok packages functions call
-
-and a lot more.
 
 ## Use cases
 
