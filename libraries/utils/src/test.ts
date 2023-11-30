@@ -309,7 +309,7 @@ export async function runTests(options?:
       if (value.before && !skipped)
         await value.before();
     } catch (x: any) {
-      value.beforeStatus = x.stack ?? x.toString();
+      value.beforeStatus = getResult(x);
     }
     const t = value.tests ?? [];
     const res = [];
@@ -328,7 +328,7 @@ export async function runTests(options?:
       if (value.after && !skipped)
         await value.after();
     } catch (x: any) {
-      value.afterStatus = x.stack ?? x.toString();
+      value.afterStatus = getResult(x);
     }
     // Clear after category
     // grok.shell.closeAll();
@@ -386,6 +386,10 @@ export async function runTests(options?:
   return results;
 }
 
+function getResult(x: any) {
+  return `${x.toString()}\n${x.stack ? DG.Logger.translateStackTrace(x.stack) : ''}`;
+}
+
 async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
   let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean };
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
@@ -404,7 +408,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
       r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
-    r = {success: false, result: x.stack ?? x.toString(), ms: 0, skipped: false};
+    r = {success: false, result: getResult(x), ms: 0, skipped: false};
   }
   r.ms = Date.now() - start;
   if (!skip)
