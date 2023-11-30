@@ -14,11 +14,12 @@ import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {lastSelectedPair, moleculesPairInfo, getMmpScatterPlot,
-  drawMoleculeLabels, runMmpChemSpace} from './mmp-cliffs';
+   runMmpChemSpace} from './mmp-cliffs';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
   MMP_TAB_CLIFFS, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import { drawMoleculeLabels } from '../../rendering/molecule-label';
 
 let currentTab = '';
 
@@ -242,7 +243,7 @@ export class MmpAnalysis {
 
     //Cliffs tab
     const [sp, sliderInputs, sliderInputValueDivs, colorInputs] = getMmpScatterPlot(table, activities, maxActs);
-    drawMoleculeLabels(sp as DG.ScatterPlotViewer, table, molecules);
+    drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
     const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, linesActivityCorrespondance,
