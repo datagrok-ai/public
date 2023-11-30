@@ -194,6 +194,13 @@ Provide hints in brackets `[ ]`:
 
 ![add-to-workspace](model-by-solver.gif)
 
+Use the following `meta`-s:
+
+|<div style={{ width:400 }}></div>|Annotation|Feature|
+|----------|---------|----------------------------------|
+|![add-to-workspace](run-on-start.gif)|`#meta.runOnOpen: true`|Provides computations immediately upon model launch.|
+|![add-to-workspace](run-on-input.gif)|`#meta.runOnInput: true`|Updates results immediately upon input changes.|
+
 The export feature provides an extension of your project with [scripting](scripting.md) tools. You can add the desired functionality:
 
 * results visualization
@@ -206,10 +213,17 @@ and a lot more.
 
 The solver has built-in use cases. Get access to them via the context menu and use as a template.
 
-|<div style={{ width:400 }}></div> | Use case            | Features                                                                                             |
-|----------------------------------|---------------------|------------------------------------------------------------------------------------------------------|
-|![add-to-workspace](chem-react-network.png)|`Chem reactions`| the minimum required project                                                                         |
-|![add-to-workspace](robertson-network.png)|`Robertson's model`| extra math features, including *expressions*, *constants*, *parameters* and *tolerance* specification|
-|                                  |`Fermentation`| the *annotating* feature for extended UI generation                                                  |
-|                                  |`PK-PD`| the *annotating* feature for extended UI generation                                                  |
-|                                  |`Acid production`| the *annotating* feature for extended UI generation                                                  |
+|<div style={{ width:400 }}></div> |Use case|Features|
+|----------------------------------|--------|--------|
+|![add-to-workspace](chem-react-network.png)|`Chem reactions`|- simulates [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action)<br/> <br/>- illustrates annotation of inputs|
+|![add-to-workspace](robertson-network.png)|`Robertson's model`|- Robertson’s chemical reaction model<br/> <br/>- [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation) example<br/> <br/>- shows how Datagrok solves complicated ODEs|
+|![add-to-workspace](fermentation.gif)|`Fermentation`|- models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)<br/> <br/>- shows the usage of the `runOnOpen` and  `runOnInput` meta-features|
+|![add-to-workspace](pk-pd.gif)|`PK-PD`|- simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)<br/> <br/>- illustrates the usage of the `loop` feature for dosing specification|
+|![add-to-workspace](acid-production.png)|`Acid production`|- models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger<br/> <br/>- shows the usage of the `update` feature for multi-stage simulation|
+
+Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the solver with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
+
+See also
+
+* [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
+* [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
