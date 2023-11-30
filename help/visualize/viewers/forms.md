@@ -8,7 +8,7 @@ mouse-over, and selected rows.
 
 To change which fields are shown, use the **Fields** property in the options. 
 Drag-and-drop columns to reorder. Choose which rows to show by setting the
-following properties: `Show Curernt Row`, `Show Mouse Over Row`, and `Show Selected Rows`.
+following properties: `Show Current Row`, `Show Mouse Over Row`, and `Show Selected Rows`.
 Green color stripe on top of the form indicates current row, grey one indicates mouse-over row. 
 
 The viewer also works together with the grid:
