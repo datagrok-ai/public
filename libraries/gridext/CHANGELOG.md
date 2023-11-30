@@ -1,10 +1,17 @@
 # gridext changelog
 
+## 1.3.68 (2023-11-29)
+
+### Bug Fixes
+
+* [#2509](https://github.com/datagrok-ai/public/issues/2509): Fixed pinned columns in multiple views for the same table cause performance issues in some cases
+* [#2528](https://github.com/datagrok-ai/public/issues/2528): Fixed row headers are lost after pinning and un-pinning columns in some cases
+
 ## 1.3.67 (2023-10-25)
 
 ### Bug Fixes
 
-* [#2367](https://github.com/datagrok-ai/public/issues/2367): Moved 'Pin column' functionality to the 'Pin' menu group
+* [#2367](https://github.com/datagrok-ai/public/issues/2367): Moved 'Pin column' functionality to the 'Pin' menu group.
 
 ## 1.3.66 (2023-08-04)
 

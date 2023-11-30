@@ -1,6 +1,6 @@
 # utils changelog
 
-## 4.1.31 (WIP)
+## 4.1.31 (2023-11-29)
 
 ### Features
 
@@ -12,6 +12,10 @@
   * Added tooltip on value.
   * Added close button for column labels.
   * Added indicators for current and mouse over row.
+
+### Bug Fixes
+
+* Forms viewer: Fixed setting input text color.
 
 ## 4.1.30 (2023-11-27)
 

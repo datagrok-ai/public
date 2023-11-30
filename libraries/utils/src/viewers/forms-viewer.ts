@@ -228,10 +228,11 @@ export class FormsViewer extends DG.JsViewer {
           if (this.colorCode) {
             const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
             const color = grid.cell(name, row).color;
-            if (grid.col(name)?.isTextColorCoded)
-              input.input.style.color = DG.Color.toHtml(color);
+            if (grid.col(name)?.isTextColorCoded) {
+              input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+            }
             else {
-              input.input.style.color = DG.Color.toHtml(DG.Color.getContrastColor(color));
+              input.input.setAttribute('style', `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
               input.input.style.backgroundColor = DG.Color.toHtml(color);
             }
           }

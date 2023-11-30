@@ -1,16 +1,48 @@
 # PowerGrid changelog
 
-## 1.2.5 (WIP)
+## 1.2.5 (2023-11-29)
 
 ### Features
 
-* Added default bottom position for Forms viewer.
+* Forms viewer:
+  * Updated viewer layout.
+  * Added styles for updated molecular input.
+  * Click on input makes row current.
+  * Made column label clickable.
+  * Added tooltip on value.
+  * Added close button for column labels.
+  * Added indicators for current and mouse over row.
+  * Added default bottom position for Forms viewer.
+
+### Bug Fixes
+
+* [#2509](https://github.com/datagrok-ai/public/issues/2509): Fixed pinned columns in multiple views for the same table cause performance issues in some cases
+* [#2528](https://github.com/datagrok-ai/public/issues/2528): Fixed row headers are lost after pinning and un-pinning columns in some cases
+* Forms viewer: Fixed setting input text color.
 
 ## 1.2.4 (2023-11-27)
 
 ### Features
 
-* Added Forms viewer icon.
+* Forms viewer:
+  * Handled color coding changing, columns removing, input values changing.
+  * Made inputs read-only.
+  * Set default limit for columns number.
+  * Added reaction to Ctrl, Shift, and Ctrl+Shift-click.
+  * Added help link.
+  * Updated viewer layout.
+  * Added Forms viewer icon.
+
+### Bug Fixes
+
+* Forms viewer:
+  * Fixed styles.
+  * Fixed removing several columns at once.
+  * Fixed freezing when mouse enters form.
+  * Fixed rendering when showCurrentRow is unset.
+  * Fixed rendering in case showCurrentRow and showMouseOverRow are both switched off.
+  * Fixed text color coding.
+  * Fixed showSelectedRows and checkboxes height.
 
 ## 1.2.3 (2023-11-24)
 
