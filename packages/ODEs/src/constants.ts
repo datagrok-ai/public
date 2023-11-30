@@ -54,7 +54,6 @@ ${CONTROL_EXPR.INITS}:
 /** Advanced template illustrating extanded features */
 const TEMPLATE_ADVANCED = `NOTES. This is an advanced template. Modify it. Use multi-line formulas if needed.
 Add new equations, expressions, constants & parameters. Edit these notes if required.
-
 ${CONTROL_EXPR.NAME}: Advanced
 ${CONTROL_EXPR.DIF_EQ}:
   dx/dt = E1 * y + sin(t)
@@ -87,7 +86,6 @@ ${CONTROL_EXPR.TOL}: 0.00005`;
 /** Extended template illustrating extanded features */
 const TEMPLATE_EXTENDED = `NOTES. This is an extended template. It has additional scripting annotations.
 Use it as a backbone for models & apps creating.
-
 ${CONTROL_EXPR.NAME}: Extended
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: 2D ordinary differential equations system sample
@@ -119,8 +117,7 @@ ${CONTROL_EXPR.ARG}: t
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
 /** Chemical reactions, mass-action kinetics */
-const CHEM_REACT_MODEL = `The following example is taken from https://doi.org/10.1002/ijch.201800003.
-
+const CHEM_REACT_MODEL = `The following model is taken from https://doi.org/10.1002/ijch.201800003.
 ${CONTROL_EXPR.NAME}: Chem react
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Mass-action kinetics illustration
@@ -158,7 +155,6 @@ ${CONTROL_EXPR.TOL}: 0.00005`;
 
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `NOTES. The classic example of stiff ODEs: the Robertson problem.
-
 ${CONTROL_EXPR.NAME}: Robertson
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
@@ -181,7 +177,6 @@ ${CONTROL_EXPR.TOL}: 0.0000001`;
 
 /** Fermentation process simulation */
 const FERMENTATION_MODEL = `NOTES. The following problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
-
 ${CONTROL_EXPR.NAME}: Fermentation
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Simulation of fermentation process in the ethanol production
@@ -226,7 +221,7 @@ ${CONTROL_EXPR.EXPR}:
   C3 = peri / V3
 
 ${CONTROL_EXPR.LOOP}:
-  ${LOOP.COUNT_NAME} = 10 {category: Dosing} [Number of doses]
+  count = 10 {category: Dosing} [Number of doses]
   depot += dose
 
 ${CONTROL_EXPR.ARG}: t

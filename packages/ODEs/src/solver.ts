@@ -1,6 +1,4 @@
-/* Adaptive step solvers for the initial problems for ODEs:
-     - explicit Runge-Kutta Cash-Karp method - TODO;
-     - implcit modified Rosnbrock triple method.
+/** Adaptive step solver for the initial problems for ODEs: the implcit modified Rosnbrock triple method.
 
    The formulas applied are taken from
 

@@ -27,26 +27,11 @@ enum EDITOR_STATE {
 };
 
 /** Context help links */
-enum HELP_LINKS { // TODO: provide correct URL-s
-  SOLVER = '/help/compute/dif-equations/solver.md',
+enum HELP_LINKS {
+  SOLVER = '/help/compute/solver.md',
   QUICK_START = '/help/explore/dim-reduction.md', // link to "Quick start" page
   FROM_SCRATCH = '/help/explore/anova.md', // link to "From scratch" page
   EXTENSIONS = '/help/visualize/viewers/3d-scatter-plot.md', // link to "Extensions" page
-};
-
-// TODO: Discuss or erase this
-/** Get help url with respect to the editor state */
-function getHelpUrl(state: EDITOR_STATE): string {    
-  switch (state) {
-    case EDITOR_STATE.BASIC_TEMPLATE:      
-      return HELP_LINKS.QUICK_START;
-
-    case EDITOR_STATE.CLEAR: 
-      return HELP_LINKS.FROM_SCRATCH; 
-  
-    default:
-      return HELP_LINKS.EXTENSIONS;  
-  }
 };
 
 /** Get problem with respect to IVP editor state. */
@@ -84,8 +69,8 @@ function getProblem(state: EDITOR_STATE): string {
 /** Completions of control expressions */
 const completions = [
   {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the problem"},  
-  {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},// <-- TODO: discuss this completment!
-  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the problem"},// <-- TODO: discuss this completment!
+  {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},
+  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the problem"},
   {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: "keyword", info: "block of differential equation(s) specification"},
   {label: `${CONTROL_EXPR.EXPR}:\n  `, type: "keyword", info: "block of auxiliary expressions & computations"},
   {label: `${CONTROL_EXPR.ARG}: `, type: "keyword", info: "independent variable specification"},
@@ -255,7 +240,7 @@ export async function runSolverApp() {
   editorView.dom.style.height = '100%';
 
   solverView.dockManager.dock(div, 'left');
-  solverView.helpUrl = HELP_LINKS.SOLVER; // getHelpUrl(editorState);
+  solverView.helpUrl = HELP_LINKS.SOLVER;
 
   const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
   exportIcon.classList.add("fal");

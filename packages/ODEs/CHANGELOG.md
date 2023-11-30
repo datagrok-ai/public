@@ -10,3 +10,4 @@ In-browser tools for solving ordinary differential equations (ODE) systems.
 * Declarative ODEs specification parser
 * JavaScript code generator
 * Application for in-browser solving ODEs
+* Templates and use cases
