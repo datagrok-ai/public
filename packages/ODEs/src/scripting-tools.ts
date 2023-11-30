@@ -1,6 +1,6 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
-import {CONTROL_TAG, DF_NAME, CONTROL_EXPR, LOOP, UPDATE} from './constants';
+import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE} from './constants';
 
 // Scripting specific constants
 const CONTROL_SEP = ':';
@@ -69,6 +69,7 @@ type IVP = {
   usedMathConsts: number[],
   loop: Loop | null,
   updates: Update[] | null,
+  metas: string[],
 };
 
 /** Specific error messeges */
@@ -341,6 +342,7 @@ export function getIVP(text: string): IVP {
   let tolerance = DEFAULT_TOL;
   let loop: Loop | null = null;
   let updates = [] as Update[];
+  const metas = [] as string[];
 
   // 0. Split text into lines
   const lines = text.split('\n').filter((s) => s !== '').map((s) => s.trimStart());
@@ -391,11 +393,8 @@ export function getIVP(text: string): IVP {
     else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
       updates.push(getUpdate(lines, block.begin + 1, block.end));
     }
-    else // error: unsupported control expression 
-    {
-      //console.log(firstLine);
-      throw new Error(ERROR_MSG.CONTROL_EXPR);
-    }
+    else
+      metas.push(firstLine.slice(CONTROL_TAG_LEN));
   } // for
 
   // check initial
@@ -421,6 +420,7 @@ export function getIVP(text: string): IVP {
     usedMathConsts: getUsedMathIds(text, MATH_CONSTS),
     loop: loop,
     updates: (updates.length === 0) ? null : updates,
+    metas: metas,
   };
 } // getIVP
 
@@ -483,6 +483,8 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   // the 'editor' line
   if (toAddEditor)
     res.push(ANNOT.EDITOR);
+
+  ivp.metas.forEach((line) => res.push(`//${line}`));
 
   return res;
 } // getAnnot

@@ -1,6 +1,8 @@
 // Control constants
 export const CONTROL_TAG = '#';
+export const CONTROL_TAG_LEN = CONTROL_TAG.length;
 export const DF_NAME = 'df';
+const META = `${CONTROL_TAG}meta`;
 
 /** Control expressions for the problem specifying */
 export enum CONTROL_EXPR {
@@ -16,6 +18,8 @@ export enum CONTROL_EXPR {
     TOL = `${CONTROL_TAG}tolerance`,
     LOOP = `${CONTROL_TAG}loop`,
     UPDATE = `${CONTROL_TAG}update`,
+    RUN_ON_OPEN = `${META}.runOnOpen`,
+    RUN_ON_INPUT = `${META}.runOnInput`,
 };
 
 /** Loop consts */
@@ -202,7 +206,10 @@ ${CONTROL_EXPR.PARAMS}:
   V = 0.087 {units: mg/ml; category: Parameters} [The maximal growth rate of Saccharomyces]
   K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
   
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 0.0000001
+
+${CONTROL_EXPR.RUN_ON_OPEN}: true
+${CONTROL_EXPR.RUN_ON_INPUT}: true`;
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
