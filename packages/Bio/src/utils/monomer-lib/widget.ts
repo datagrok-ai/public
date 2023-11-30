@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  getUserLibSettings, setUserLibSettings
+  getUserLibSettings, LIB_PATH, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLibManager} from './lib-manager';
 
@@ -19,22 +19,31 @@ export async function getLibraryPanelUI(): Promise<DG.Widget> {
 class Widget {
   constructor() { }
 
-  private onFileListChange = new rxjs.Subject<void>();
-
   private monomerLibFileManager: MonomerLibFileManager;
 
   async getWidget() {
+    let content: HTMLElement;
+    const onFileListChange = new rxjs.Subject<void>();
+    onFileListChange.subscribe(async () => {
+      content = await this.getWidgetContent();
+    });
+    content = await this.getWidgetContent();
+    return new DG.Widget(content);
+  }
+
+  private async getWidgetContent(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
     const libChoiceInputsForm = await this.getInputs();
     const addLibrariesBtn: HTMLButtonElement = ui.button('Add', async () => await this.addFiles());
-    return new DG.Widget(ui.divV([libChoiceInputsForm, ui.div([addLibrariesBtn])]));
+    const result = ui.divV([libChoiceInputsForm, ui.div([addLibrariesBtn])]);
+    return result;
   }
 
   private async getInputs(): Promise<HTMLDivElement> {
     const inputsForm = ui.form([]);
     const settings = await getUserLibSettings();
     const fileManager = await MonomerLibFileManager.getInstance();
-    const libFileNameList: string[] = fileManager.getValidFiles();
+    const libFileNameList: string[] = fileManager.getRelativePathsOfValidFiles();
 
     for (const libFileName of libFileNameList) {
       const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
@@ -92,8 +101,7 @@ class Widget {
 
   private getDeleteDialog(fileName: string): void {
     const dialog = ui.dialog('Warning');
-    dialog.root.style.zIndex = '9999';
-    dialog.add(ui.divText(`Are you sure you want to delete ${fileName}`))
+    dialog.add(ui.divText(`Are you sure you want to delete ${fileName}?\nThis will delete the file from ${LIB_PATH}`))
       .onOK(async () => await this.monomerLibFileManager.deleteLibFile(fileName))
       .showModal(false);
   }

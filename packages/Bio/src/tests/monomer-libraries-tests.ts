@@ -51,7 +51,7 @@ category('monomerLibraries', () => {
     // exclude all monomer libraries for empty set
     const libSettings = await getUserLibSettings();
     const libFileManager = await MonomerLibFileManager.getInstance();
-    const libFnList = libFileManager.getValidFiles();
+    const libFnList = libFileManager.getRelativePathsOfValidFiles();
     libSettings.exclude = libFnList;
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);

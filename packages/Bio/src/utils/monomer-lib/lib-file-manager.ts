@@ -77,7 +77,7 @@ export class MonomerLibFileManager {
     return new MonomerLib(monomers);
   }
 
-  getValidFiles(): string[] {
+  getRelativePathsOfValidFiles(): string[] {
     return this.validFiles;
   }
 
