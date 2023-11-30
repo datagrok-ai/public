@@ -104,13 +104,53 @@ export class MmpAnalysis {
       ui.tooltip.bind(sliderInputs[i].input, 'Activity value cutoff');
 
       colorInputs[i].value = this.colorPalette.hex[i];
+      colorInputs[i].onChanged(() => {
+        const progressRendering = DG.TaskBarProgressIndicator.create(`Changing colors...`);
+
+        //refresh lines
+        for (let i =0; i < colorInputs.length; i++) {
+          this.colorPalette.hex[i] = colorInputs[i].value;
+          this.colorPalette.numerical[i] = DG.Color.fromHtml(colorInputs[i].value);
+          this.colorPalette.rgb[i] = DG.Color.toRgb(this.colorPalette.numerical[i]);
+          this.colorPalette.rgbCut[i] = this.colorPalette.rgb[i].replace('rgb(', '').replace(')', '');
+        }
+
+        const colors = this.lines.colors;
+        for (let i = 0; i < colors!.length; i++)
+          colors![i] = this.colorPalette.rgbCut[linesActivityCorrespondance[i]];
+
+        const lines: ILineSeries = {
+          from: this.lines.from,
+          to: this.lines.to,
+          drawArrows: true,
+          opacity: 0.5,
+          colors: colors,
+          arrowSize: 10,
+        };
+
+        this.lines = lines;
+        this.linesRenderer!.updateLines(lines);
+
+        //refresh trellis plot
+        const schemes = new Array<any>(colorInputs.length);
+        for (let i = 0; i < colorInputs.length; i++)
+          schemes[i] = [this.colorPalette.numerical[i]];
+
+        tp.setOptions({'colorShemes': schemes});
+       // tp. ;
+        progressRendering.close();
+      });
+
       roots[i] = ui.divV([sliderInputs[i].root, colorInputs[i]]);
     }
 
-    const sliders = ui.divH(roots);
+    const sliders = ui.divH(roots, 'css-flex-wrap');
     sp.root.style.width = '100%';
 
-    const cliffs = ui.divV([sliders, ui.box(sp.root, {style: {maxHeight: '100px', paddingRight: '6px'}})]);
+    const cliffs1 = ui.divV([sliders, ui.box(sp.root, {style: {maxHeight: '100px', paddingRight: '6px'}})],
+      'css-flex-wrap');
+
+    const cliffs = ui.box(cliffs1);
 
     this.cutoffMasks = new Array<DG.BitSet>(sliderInputs.length);
     this.totalCutoffMask = DG.BitSet.create(this.parentTable.rowCount);

@@ -18,8 +18,7 @@ export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Arra
       visualizationType: 'bars',
       colorColumnName: MMP_COLOR,
       colorAggrType: DG.STATS.MED,
-      colorSchemes: schemes, //[[DG.Color.red], [DG.Color.green], [DG.Color.blue]],
-      //invertColorScheme: true,
+      colorSchemes: schemes,
     },
   });
 

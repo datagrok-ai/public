@@ -47,8 +47,9 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
     sliderInput.addOptions(sliderInputValueDiv);
     sliderInputs[i] = sliderInput;
     sliderInputValueDivs[i] = sliderInputValueDiv;
-    colorInputs[i] = ui.colorInput('', '#FF0000');
-    // DG.Property.fromOptions({name: 'color', inputType: 'Color', type: DG.TYPE.STRING});
+    const colorInput = ui.colorInput('', '#FF0000');
+    colorInput.root.style.marginLeft = '6px';
+    colorInputs[i] = colorInput;
   }
 
   return [sp, sliderInputs, sliderInputValueDivs, colorInputs];
