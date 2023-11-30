@@ -19,7 +19,7 @@ import $ from 'cash-dom';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateSelected, highlightMonomerPosition, initSelection, modifySelection, scaleActivity} from './utils/misc';
-import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
+import {ISARViewer, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionWidget} from './widgets/distribution';
@@ -37,10 +37,10 @@ import {MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 export enum VIEWER_TYPE {
-    MONOMER_POSITION = 'Monomer-Position',
-    MOST_POTENT_RESIDUES = 'Most Potent Residues',
-    LOGO_SUMMARY_TABLE = 'Logo Summary Table',
-    DENDROGRAM = 'Dendrogram',
+  MONOMER_POSITION = 'Monomer-Position',
+  MOST_POTENT_RESIDUES = 'Most Potent Residues',
+  LOGO_SUMMARY_TABLE = 'Logo Summary Table',
+  DENDROGRAM = 'Dendrogram',
 }
 
 export class PeptidesModel {
@@ -56,9 +56,9 @@ export class PeptidesModel {
   webLogoSelectedMonomers: type.SelectionStats = {};
   webLogoBounds: CR.WebLogoBounds = {};
   cachedWebLogoTooltip: {
-        bar: string,
-        tooltip: HTMLDivElement | null
-    } = {bar: '', tooltip: null};
+    bar: string,
+    tooltip: HTMLDivElement | null
+  } = {bar: '', tooltip: null};
   _layoutEventInitialized = false;
   subs: rxjs.Subscription[] = [];
   isHighlighting: boolean = false;
@@ -87,21 +87,19 @@ export class PeptidesModel {
   get analysisView(): DG.TableView {
     if (this._analysisView === undefined) {
       this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id);
-      if (this._analysisView === undefined && this.positionColumns !== null) {
+      if (this._analysisView === undefined)
         this._analysisView = grok.shell.addTableView(this.df);
-        const posCols = this.positionColumns.map((col) => col.name);
-
-        for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
-          const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
-          if (gridCol === null)
-            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
-          else if (gridCol.column === null)
-            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null column`);
-
-          gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
-        }
-      } else
-        this._analysisView = grok.shell.tv;
+      // const posCols = this.positionColumns.map((col) => col.name);
+      //
+      // for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
+      //   const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
+      //   if (gridCol === null)
+      //     throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
+      //   else if (gridCol.column === null)
+      //     throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null column`);
+      //
+      //   gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
+      // }
     }
 
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
@@ -503,6 +501,7 @@ export class PeptidesModel {
     const filter = this.df.filter;
 
     const showAccordion = (): void => {
+      // return; //TODO: REMOVE THIS LATER
       const acc = this.createAccordion();
       if (acc === null)
         return;
@@ -631,10 +630,10 @@ export class PeptidesModel {
   }
 
   /** Class initializer */
-  init(settings: type.PeptidesSettings): void {
+  init(settings?: type.PeptidesSettings): void {
     if (this.isInitialized)
       return;
-    this.settings = settings;
+    // this.settings = settings;
     this.isInitialized = true;
 
     if (!this.isRibbonSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
@@ -719,7 +718,11 @@ export class PeptidesModel {
   }
 
   async addMonomerPosition(): Promise<void> {
-    const monomerPosition = await this.df.plot.fromType(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    const options: ISARViewer = {
+      maxMutations: 1, minActivityDelta: 0, activityColumnName: this.settings.activityColumnName,
+      sequenceColumnName: this.settings.sequenceColumnName, activityScaling: this.settings.activityScaling,
+    };
+    const monomerPosition = await this.df.plot.fromType(VIEWER_TYPE.MONOMER_POSITION, options) as MonomerPosition;
     const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -736,8 +739,12 @@ export class PeptidesModel {
   }
 
   async addMostPotentResidues(): Promise<void> {
+    const options: ISARViewer = {
+      maxMutations: 1, minActivityDelta: 0, activityColumnName: this.settings.activityColumnName,
+      sequenceColumnName: this.settings.sequenceColumnName, activityScaling: this.settings.activityScaling,
+    };
     const mostPotentResidues =
-            await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
+      await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, options) as MostPotentResidues;
     const monomerPosition = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -772,19 +779,19 @@ export class PeptidesModel {
 
   async addSequenceSpace(): Promise<void> {
     const seqSpaceParams: {
-            table: DG.DataFrame,
-            molecules: DG.Column,
-            methodName: DimReductionMethods,
-            similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
-            plotEmbeddings: boolean,
-            sparseMatrixThreshold?: number,
-            options?: (IUMAPOptions | ITSNEOptions) & Options
-        } =
-            {
-              table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName),
-              methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
-              plotEmbeddings: true, sparseMatrixThreshold: 0.3, options: {'bypassLargeDataWarning': true},
-            };
+      table: DG.DataFrame,
+      molecules: DG.Column,
+      methodName: DimReductionMethods,
+      similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
+      plotEmbeddings: boolean,
+      sparseMatrixThreshold?: number,
+      options?: (IUMAPOptions | ITSNEOptions) & Options
+    } =
+      {
+        table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName),
+        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+        plotEmbeddings: true, sparseMatrixThreshold: 0.3, options: {'bypassLargeDataWarning': true},
+      };
 
     // Use counter to unsubscribe when 2 columns are hidden
     let counter = 0;
@@ -803,7 +810,7 @@ export class PeptidesModel {
     });
 
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined =
-            await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
+      await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
     seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY;

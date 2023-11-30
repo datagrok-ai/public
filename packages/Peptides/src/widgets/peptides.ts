@@ -18,7 +18,10 @@ import {LST_PROPERTIES} from '../viewers/logo-summary';
  * @param {DG.DataFrame} df Working table
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): { host: HTMLElement, callback: () => Promise<boolean> } {
+export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
+  host: HTMLElement,
+  callback: () => Promise<boolean>
+} {
   const logoHost = ui.div();
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
@@ -33,7 +36,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): { 
       const seqCol = seqColInput!.value;
       if (!(seqCol.getTag(DG.TAGS.SEMTYPE) === DG.SEMTYPE.MACROMOLECULE)) {
         grok.shell.warning('Peptides analysis only works with macromolecules');
-                seqColInput!.value = potentialCol;
+        seqColInput!.value = potentialCol;
       }
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: seqCol.name});
@@ -45,7 +48,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): { 
     }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
-        col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
+    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
       host: ui.label('Peptides analysis only works with aligned sequences'),
       callback: async (): Promise<boolean> => false,
@@ -70,7 +73,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): { 
 
   let scaledCol: DG.Column<number>;
   const defaultActivityColumn: DG.Column<number> | null = df.col('activity') || df.col('IC50') ||
-        DG.Utils.firstOrNull(df.columns.numerical);
+    DG.Utils.firstOrNull(df.columns.numerical);
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
@@ -98,7 +101,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): { 
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-    //TODO: add when new version of datagrok-api is available
+  //TODO: add when new version of datagrok-api is available
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
   activityColumnChoice.setTooltip('Numerical activity column');
@@ -110,7 +113,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): { 
 
   const targetColumnChoice = ui.columnInput('Target', df, null, null, {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
   targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in the data. ' +
-        'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
+    'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
   targetColumnChoice.nullable = true;
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
@@ -216,6 +219,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     // Cloning dataframe with applied filter. If filter is not applied, cloning is
     // needed anyway to allow filtering on the original dataframe
     model = PeptidesModel.getInstance(newDf.clone(bitset));
+    model.init(settings);
     if (clustersColumn) {
       const lstProps = {
         [LST_PROPERTIES.CLUSTERS_COLUMN_NAME]: clustersColumn.name,

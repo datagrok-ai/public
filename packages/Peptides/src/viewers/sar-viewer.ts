@@ -24,38 +24,46 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import {LogoSummaryTable} from './logo-summary';
 
 export enum SELECTION_MODE {
-    MUTATION_CLIFFS = 'Mutation Cliffs',
-    INVARIANT_MAP = 'Invariant Map',
+  MUTATION_CLIFFS = 'Mutation Cliffs',
+  INVARIANT_MAP = 'Invariant Map',
 }
 
 export enum SAR_PROPERTIES {
-    SEQUENCE = 'sequence',
-    ACTIVITY = 'activity',
-    ACTIVITY_SCALING = 'activityScaling',
-    TARGET = 'target',
-    TARGET_CATEGORY = 'targetCategory',
-    MIN_ACTIVITY_DELTA = 'minActivityDelta',
-    MAX_MUTATIONS = 'maxMutations',
-    COLUMNS = 'columns',
-    AGGREGATION = 'aggregation',
+  SEQUENCE = 'sequence',
+  ACTIVITY = 'activity',
+  ACTIVITY_SCALING = 'activityScaling',
+  TARGET = 'target',
+  TARGET_CATEGORY = 'targetCategory',
+  MIN_ACTIVITY_DELTA = 'minActivityDelta',
+  MAX_MUTATIONS = 'maxMutations',
+  COLUMNS = 'columns',
+  AGGREGATION = 'aggregation',
 }
 
 export enum MONOMER_POSITION_PROPERTIES {
-    COLOR = 'color',
-    COLOR_AGGREGATION = 'colorAggregation',
+  COLOR = 'color',
+  COLOR_AGGREGATION = 'colorAggregation',
 }
 
 export enum PROPERTY_CATEGORIES {
-    GENERAL = 'General',
-    INVARIANT_MAP = 'Invariant Map',
-    MUTATION_CLIFFS = 'Mutation Cliffs',
-    TOOLTIPS = 'Tooltips',
+  GENERAL = 'General',
+  INVARIANT_MAP = 'Invariant Map',
+  MUTATION_CLIFFS = 'Mutation Cliffs',
+  TOOLTIPS = 'Tooltips',
 }
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
 const AAR_CELL_WIDTH = 30;
 
-export class SARViewer extends DG.JsViewer {
+export interface ISARViewer {
+  sequenceColumnName: string;
+  activityColumnName: string;
+  activityScaling: string;
+  minActivityDelta: number;
+  maxMutations: number;
+}
+
+export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   keyPressed: boolean = false;
   sequenceColumnName: string;
   activityColumnName: string;
@@ -72,8 +80,7 @@ export class SARViewer extends DG.JsViewer {
     // General properties
     this.sequenceColumnName = this.column(SAR_PROPERTIES.SEQUENCE,
       {category: PROPERTY_CATEGORIES.GENERAL, semType: DG.SEMTYPE.MACROMOLECULE});
-    this.activityColumnName = this.column(SAR_PROPERTIES.ACTIVITY,
-      {category: PROPERTY_CATEGORIES.GENERAL, type: DG.TYPE.NUMERICAL});
+    this.activityColumnName = this.column(SAR_PROPERTIES.ACTIVITY, {category: PROPERTY_CATEGORIES.GENERAL});
     this.activityScaling = this.string(SAR_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
       {category: PROPERTY_CATEGORIES.GENERAL, choices: Object.values(C.SCALING_METHODS), nullable: false});
 
@@ -132,7 +139,7 @@ export class SARViewer extends DG.JsViewer {
       this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION);
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ??
-            splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
+      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
     return this._positionColumns!;
   }
 
@@ -144,8 +151,8 @@ export class SARViewer extends DG.JsViewer {
 
     const isMonomerPositionStatsEqual = (other: SARViewer | PeptidesSettings | null): boolean =>
       this.sequenceColumnName === other?.sequenceColumnName &&
-            this.activityColumnName === other?.activityColumnName &&
-            this.activityScaling === other?.activityScaling;
+      this.activityColumnName === other?.activityColumnName &&
+      this.activityScaling === other?.activityScaling;
 
     const getSharedStats = (viewerType: VIEWER_TYPE): MonomerPositionStats | null => {
       const viewer = this.model.findViewer(viewerType) as SARViewer | null;
@@ -178,12 +185,12 @@ export class SARViewer extends DG.JsViewer {
 
     const isMutationCliffsEqual = (v1: SARViewer, v2: SARViewer | null): boolean =>
       v1.sequenceColumnName === v2?.sequenceColumnName &&
-            v1.activityColumnName === v2.activityColumnName &&
-            v1.activityScaling === v2.activityScaling &&
-            v1.target === v2?.target &&
-            v1.targetCategory === v2?.targetCategory &&
-            v1.minActivityDelta === v2?.minActivityDelta &&
-            v1.maxMutations === v2?.maxMutations;
+      v1.activityColumnName === v2.activityColumnName &&
+      v1.activityScaling === v2.activityScaling &&
+      v1.target === v2?.target &&
+      v1.targetCategory === v2?.targetCategory &&
+      v1.minActivityDelta === v2?.minActivityDelta &&
+      v1.maxMutations === v2?.maxMutations;
 
     const getSharedMutationCliffs = (viewerType: VIEWER_TYPE): type.MutationCliffs | null => {
       const viewer = this.model.findViewer(viewerType) as SARViewer | null;
@@ -263,9 +270,8 @@ export class SARViewer extends DG.JsViewer {
       this._mutationCliffsSelection = null;
       break;
     }
-    if (this.mutationCliffs === null)
+    if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
       this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
-    // this.updateMutationCliffs().then(() => this.render(true));
   }
 
   createViewerGrid(): DG.Grid {
@@ -279,7 +285,9 @@ export class SARViewer extends DG.JsViewer {
   onTableAttached(): void {
     super.onTableAttached();
     this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
-    if (this.mutationCliffs === null)
+    this.getProperty('sequenceColumnName')?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
+    this.getProperty('activityColumnName')?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+    if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
       this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
   }
 
@@ -321,7 +329,7 @@ export class MonomerPosition extends SARViewer {
 
   get mode(): SELECTION_MODE {
     return this.dataFrame.getTag(C.TAGS.MONOMER_POSITION_MODE) as SELECTION_MODE ??
-            SELECTION_MODE.MUTATION_CLIFFS;
+      SELECTION_MODE.MUTATION_CLIFFS;
   }
 
   set mode(mode: SELECTION_MODE) {
@@ -367,7 +375,7 @@ export class MonomerPosition extends SARViewer {
       break;
     }
 
-    this.render(true);
+    this.render();
   }
 
   createMonomerPositionDf(): DG.DataFrame {
@@ -544,6 +552,11 @@ export class MonomerPosition extends SARViewer {
   }
 
   render(refreshOnly = false): void {
+    $(this.root).empty();
+    if (!this.activityColumnName || !this.sequenceColumnName) {
+      this.root.appendChild(ui.divText('Sequence and activity columns are not set'));
+      return;
+    }
     // Backward compatability with 1.16.0
     const columnProperty = this.getProperty(MONOMER_POSITION_PROPERTIES.COLOR);
     if (columnProperty) {
@@ -803,8 +816,12 @@ export class MostPotentResidues extends SARViewer {
   }
 
   render(refreshOnly = false): void {
+    $(this.root).empty();
+    if (!this.activityColumnName || !this.sequenceColumnName) {
+      this.root.appendChild(ui.divText('Sequence and activity columns are not set'));
+      return;
+    }
     if (!refreshOnly) {
-      $(this.root).empty();
       const switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
