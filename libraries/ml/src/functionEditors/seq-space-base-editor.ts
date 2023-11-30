@@ -43,8 +43,6 @@ export class SequenceSpaceBaseFuncEditor {
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
-      // TODO: Remove when table input is fixed
-      this.tableInput.value = grok.shell.tv.dataFrame;
       //TODO: remove when the new version of datagrok-api is available
       //@ts-ignore
       this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === semtype} as ColumnInputOptions);
