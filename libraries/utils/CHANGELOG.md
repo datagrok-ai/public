@@ -1,5 +1,17 @@
 # utils changelog
 
+## 4.1.33 (2023-11-30)
+
+### Bug Fixes
+
+* Forms viewer: Fixed indicator margins.
+
+## 4.1.32 (2023-11-30)
+
+### Bug Fixes
+
+* Lines renderer: Fixed incorrect arrows direction in case of multilines.
+
 ## 4.1.31 (2023-11-29)
 
 ### Features
