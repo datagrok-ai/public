@@ -2,26 +2,23 @@
 title: "Forms"
 ---
 
-Forms viewer visualizes a set of specific rows in a pivoted form. The data for each row appears as a column with the list of column headers on the left. By default first 20 columns are shown. To change which fields are shown, use the **Fields** property in the option. Drag-and-drop columns in the dialog to order them.
+**Forms viewer** shows rows in forms positioned side-by-side.
+It is useful for quick exploration of the selection, as well as for comparison between current, 
+mouse-over, and selected rows.
 
-You can choose to show:
+* To add **Forms**, click the "Add viewer" icon on top, and then select "Forms".
+* To select columns on a form, use the **Fields** property in the options. Drag-and-drop columns to reorder. 
+* To choose a subset of rows to show, use these properties: `Show Current Row`, `Show Mouse Over Row`, and 
+  `Show Selected Rows`. You can mix and match these options. 
 
-- current row
-- mouse over row
-- selected rows
+Green color stripe on top of the form indicates current row, grey one indicates mouse-over row. 
+The viewer also works together with the grid:
 
-To go to particular grid cell, click any field. To go to respective grid column, click column label.
-To select/deselect row, Ctrl+click corresponding form.
-To remove column hover over its name in a columns list and click X icon.
-
-Current and mouse over rows have colored indicators on top of each form:
-
-- green for current
-- grey for mouse over
-
-Grid color coding is saved in Forms viewer.
-
-The viewer is a part of PowerGrid package.
+* To select or deselect rows, Ctrl+click the form.
+* To go to a particular cell in a grid, click on a field
+* To make a column current, click on the column name.
 
 
-![Forms viewer](forms_viewer_overview.gif "Forms viewer")
+The viewer is a part of the [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid) package.
+
+![Forms viewer](forms.gif)

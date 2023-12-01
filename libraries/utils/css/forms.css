@@ -62,6 +62,7 @@
 	position: absolute;
     width: 30px;
     height: 5px;
+	top: -4px;
 }
 
 .d4-multi-form-form-indicator-mouse-over-row {

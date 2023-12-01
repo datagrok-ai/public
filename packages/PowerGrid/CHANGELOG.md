@@ -1,5 +1,11 @@
 # PowerGrid changelog
 
+## 1.2.6 (2023-11-30)
+
+### Bug Fixes
+
+* Forms viewer: Fixed indicator margins.
+
 ## 1.2.5 (2023-11-29)
 
 ### Features
