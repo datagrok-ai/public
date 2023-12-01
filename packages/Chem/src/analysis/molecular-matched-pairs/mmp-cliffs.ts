@@ -34,6 +34,7 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
     showXSelector: false,
     showYSelector: false,
     markerDefaultSize: 7,
+    markerType: 'circle border',
   });
 
   const sliderInputs = new Array<DG.InputBase>(maxActs.length);
