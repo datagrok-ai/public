@@ -153,7 +153,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (this._requestTerminated)
         return results;
       const item = molecules[i];
-      if (!item && item === '') {
+      if (!item || item === '') {
         results[i] = '';
         continue;
       }
