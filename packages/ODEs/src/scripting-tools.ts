@@ -10,6 +10,7 @@ const SERVICE = '_';
 const BRACE_OPEN = '{';
 const BRACE_CLOSE = '}';
 const DEFAULT_TOL = '0.00005';
+const COLUMNS = `${SERVICE}columns`;
 
 /** Solver package name */
 const ODES_PACKAGE = 'ODEs';
@@ -145,6 +146,8 @@ enum SCRIPT {
   LOOP_INTERVAL = `${SERVICE}interval`,
   LAST_IDX = `${SERVICE}lastIdx`,
   UPDATE_COM = '// update ',
+  CUSTOM_OUTPUT_COM = '// create custom output',
+  CUSTOM_COLUMNS = `let ${COLUMNS} = [`,
 }
 
 /** Limits of the problem specification */
@@ -570,6 +573,24 @@ function getMathArg(funcIdx: number): string {
   return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
 }
 
+/** Return custom output lines */
+function getCustomOutoutLines(name: string, outputs: Map<string, Output>): string[] {
+  const res = [''];    
+  
+  res.push(SCRIPT.CUSTOM_OUTPUT_COM);
+  res.push(SCRIPT.CUSTOM_COLUMNS);
+
+  outputs.forEach((val, key) => {
+    if (!val.formula)
+      res.push(`${SCRIPT.SPACE2} DG.Column.fromFloat32Array('${val.caption}', ${DF_NAME}.col('${key}').getRawData()),`);
+  });
+
+  res.push('];');    
+  res.push(`${DF_NAME} = DG.DataFrame.fromColumns(${COLUMNS});`);
+  res.push(`${DF_NAME}.name = '${name}';`);
+  return res;
+}
+
 /** Return main body of JS-script: basic variant */
 function getScriptMainBodyBasic(ivp: IVP): string[] {  
   const res = [] as string[];
@@ -814,8 +835,13 @@ function getScriptMainBody(ivp: IVP): string[] {
 }
 
 /** Return JS-script lines */
-export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
-  return getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
+export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {  
+  const res = getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
+  
+  if (ivp.outputs)
+    return res.concat(getCustomOutoutLines(ivp.name, ivp.outputs));
+
+  return res;
 }
 
 /** Return parameters of JS-script */
