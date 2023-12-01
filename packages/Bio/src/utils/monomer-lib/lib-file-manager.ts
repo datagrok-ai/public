@@ -169,16 +169,16 @@ export class MonomerLibFileManager {
       return fileInfo.fullPath;
     });
 
-    // WARNING: an extra sanity check, caused by strange behavior of grok.dapi.files.list()
-    const nonExistentPaths = [] as string[];
+    // WARNING: an extra sanity check,
+    // caused by unexpected behavior of grok.dapi.files.list() when it returns non-existent paths
+    const existingPaths = [] as string[];
     for (const path of paths) {
       const exists = await grok.dapi.files.exists(path);
-      if (!exists)
-        nonExistentPaths.push(path);
+      if (exists)
+        existingPaths.push(path);
     }
-    const filteredPaths = paths.filter((path) => !nonExistentPaths.includes(path));
 
-    return filteredPaths.map((path) => {
+    return existingPaths.map((path) => {
       // Get relative path (to LIB_PATH)
       return path.substring(LIB_PATH.length);
     });
