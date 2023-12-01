@@ -84,16 +84,20 @@ class ControlsFormHandler {
     const inputsForm = ui.form(controlList);
 
     const onFileListChange = this.monomerLibFileManager.onFileListChange;
-    onFileListChange.subscribe(async () => await this.refreshInputsForm());
+    DG.debounce<void>(onFileListChange, 1000).subscribe(
+      async () => await this.refreshInputsForm()
+    );
     return inputsForm;
   }
 
   async refreshInputsForm(): Promise<void> {
+    const pi = DG.TaskBarProgressIndicator.create('Updating monomer library list');
     // WARNING: this is necessary to prevent sync issues with the file system
     await this.monomerLibFileManager.refreshValidFilePaths();
     const updatedForm = await this.getInputsForm();
     $(this.inputsForm).replaceWith(updatedForm);
-    grok.shell.info('Monomer library list refreshed');
+    grok.shell.info('Updated of monomer libraries');
+    pi.close();
   }
 
   private async getControlList(): Promise<DG.InputBase<boolean | null>[]> {

@@ -14,7 +14,7 @@ import * as rxjs from 'rxjs';
  * All files **must** be aligned to HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor() {
-    this._onFileListChange.subscribe(async () => {
+    DG.debounce<void>(this._onFileListChange, 1000).subscribe(async () => {
       await this.updateFilePaths();
     });
   }
@@ -173,8 +173,11 @@ export class MonomerLibFileManager {
       if (!exists)
         nonExistentPaths.push(path);
     }
-    if (nonExistentPaths.length > 0)
-      throw new Error(`Some files in ${LIB_PATH} do not exist: ${nonExistentPaths}`);
+    if (nonExistentPaths.length > 0) {
+      throw new Error(
+        `Some files in ${LIB_PATH} do not exist: ${nonExistentPaths.map((path) => path.substring(LIB_PATH.length))}`
+      );
+    }
 
     return paths.map((path) => {
       // Get relative path (to LIB_PATH)
