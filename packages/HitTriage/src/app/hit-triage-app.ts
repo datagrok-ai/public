@@ -40,7 +40,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    grok.shell.addView(this.multiView);
+    //grok.shell.addView(this.multiView);
 
     grok.events.onCurrentViewChanged.subscribe(() => {
       try {

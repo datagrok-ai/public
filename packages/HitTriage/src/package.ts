@@ -10,18 +10,21 @@ export const _package = new DG.Package();
 
 //tags: app
 //name: Hit Triage
-export async function hitTriageApp() {
+//output: view
+export async function hitTriageApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
-  new HitTriageApp(c);
+  return new HitTriageApp(c).multiView;
 }
 
 //tags: app
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
-export async function hitDesignApp() {
+//output: view
+export async function hitDesignApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
-  new HitDesignApp(c);
+  return new HitDesignApp(c).multiView;
 }
+
 //name: Demo Molecules 100
 //tags: HitTriageDataSource
 //output: dataframe result
