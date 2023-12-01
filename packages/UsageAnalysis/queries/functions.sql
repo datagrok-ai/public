@@ -91,3 +91,27 @@ select res.package, res.run, res.function, res.time, res.rid, res.pid
 from res
 where res.pid = any(@packages)
 --end
+
+--name: FunctionsExecTime
+--input: string function
+--meta.cache1: all
+--meta.invalidateOn1: 0 0 0 * *
+--connection: System:Datagrok
+select e.id, EXTRACT(EPOCH FROM (e.event_time_finished - e.event_time)) AS "time, s", ep.name as "Input name",
+ep.type as type, COALESCE(epv.value, epv.value_array::text, epv.data_frame_value_name, epv.value_string, epv.value_uuid::text) as value
+from events e
+inner join event_types et on e.event_type_id = et.id
+left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id
+and ep.is_input = true on epv.event_id = e.id
+where et.name = @function
+--end
+
+--name: FunctionsExecTime1
+--connection: System:Datagrok
+select e.event_time, e.source, et.name
+from events e
+inner join event_types et on e.event_type_id = et.id
+where e.event_time is not null and et.name is not null
+order by e.event_time desc
+limit 100
+--end
