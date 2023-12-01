@@ -1374,7 +1374,7 @@ export async function demoScaffold(): Promise<void> {
 }
 
 
-//top-menu: Chem | Calculate | Names To Smiles...
+//top-menu: Chem | Transform | Names To Smiles...
 //name: namesToSmiles
 //input: dataframe data
 //input: column names
@@ -1387,7 +1387,7 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
   data.columns.add(col);
 }
 
-//top-menu: Chem | Calculate | Convert Notation...
+//top-menu: Chem | Transform | Convert Notation...
 //name: convertNotation
 //input: dataframe data
 //input: column smiles  {semType: Molecule}
