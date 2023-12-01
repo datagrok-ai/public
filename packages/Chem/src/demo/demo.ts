@@ -141,7 +141,7 @@ export async function _demoChemOverview(): Promise<void> {
             table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
             grok.shell.windows.showHelp = true;
             //@ts-ignore
-            grok.shell.windows.help.showHelp('/help/domains/chem/cheminformatics');
+            grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem');
             DG.chem.currentSketcherType = sketcherType;
     })
     .start();
@@ -183,7 +183,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
   tv.loadLayout(layout);
   grok.shell.windows.showHelp = true;
   //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/domains/chem/cheminformatics');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem');
 }
 
 
@@ -721,7 +721,7 @@ export async function _demoScaffoldTree(): Promise<void> {
   const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
   grok.shell.windows.showHelp = true;
   //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/domains/chem/scaffold-tree');
+  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/#scaffold-tree-analysis');
   const table: DG.DataFrame = tv.dataFrame;
   const tree = await _package.files.readAsText('scaffold_tree.json');
   const viewer = new ScaffoldTreeViewer();

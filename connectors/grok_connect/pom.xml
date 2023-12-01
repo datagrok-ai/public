@@ -290,7 +290,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20230227</version>
+            <version>20231013</version>
         </dependency>
 
 
@@ -656,7 +656,7 @@
         <dependency>
             <groupId>com.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.4.2</version>
+            <version>0.4.6</version>
             <classifier>http</classifier>
             <exclusions>
                 <exclusion>

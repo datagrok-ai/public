@@ -5,12 +5,12 @@
   "parameters": {
     "server": "db.datagrok.ai",
     "db": "northwind",
-    "port": 3306
+    "port": 33061
   },
   "credentials": {
     "parameters": {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "plVOtOmIoidbCKSk3ynk41S1685r17ESrdJN"
     }
   },
   "dataSource": "MariaDB",

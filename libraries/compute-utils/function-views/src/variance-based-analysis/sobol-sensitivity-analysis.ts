@@ -2,7 +2,7 @@
 
 /* Tools that perform variance-based sensitivity analysis (VSA).
 
-   WARNING. When computing Sobol' indices, negative values may occur. 
+   WARNING. When computing Sobol' indices, negative values may occur.
             The reason is given in the discussion [3].
 
    References
@@ -10,11 +10,11 @@
          for the total sensitivity index", DOI: https://doi.org/10.1016/j.cpc.2009.09.018
 
      [2] Variance-based sensitivity analysis,
-         LINK: https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis 
+         LINK: https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis
 
      [3] Negative Sobol indices, https://github.com/SALib/SALib/issues/102
 
-     [4] Unexpected Sobol indices, 
+     [4] Unexpected Sobol indices,
          https://www.researchgate.net/post/Is-it-ever-possible-to-have-the-sum-of-first-order-Sobol-indices-greater-than-one
 */
 
@@ -24,7 +24,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForSobolAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine'
+import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -49,7 +49,7 @@ const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
   totalOrderSobolIndices: DG.DataFrame
 };*/
 
-export type ResultOfSobolAnalysis = {  
+export type ResultOfSobolAnalysis = {
   firstOrderSobolIndices: DG.DataFrame,
   totalOrderSobolIndices: DG.DataFrame
 } & SensitivityAnalysisResult;
@@ -82,9 +82,9 @@ export class SobolAnalysis {
     this.func = func;
 
     /* Get values for the varied inputs:
-         1) random data with the uniform on [0, 1] distribution is generated 
+         1) random data with the uniform on [0, 1] distribution is generated
             - the approach given in [1] is implemented;
-         2) scale [0, 1]-to-[min, max] is applied. 
+         2) scale [0, 1]-to-[min, max] is applied.
 
        Further, these values are put to the function analyzed. */
     const numericalColumns = getVariedNumericalInputColumnsForSobolAnalysis(samplesCount, variedInputs);
@@ -119,8 +119,8 @@ export class SobolAnalysis {
     this.outputInfo = outputsOfInterest.map((output) => ({
       prop: output.prop,
       elements: [],
-      row: output.value.row
-      }
+      row: output.value.row,
+    }
     ));
   }
 
@@ -131,18 +131,17 @@ export class SobolAnalysis {
 
   // Returns 1-st and totoal order Sobol' indices.
   private getSobolIndeces(outputColumn: DG.Column): SobolIndeces {
-
     /* 1-st order and total order Sobol' indices are defined by
        the formulas (2) and (4) respectively [1]. Computations requires:
          - the variance V(Y);
          - the quantities V_i and E_i.
-       The formulas (b),(f) (see Table 2 of [1]) are implemented in order 
-       to obtain V_i & E_i. 
+       The formulas (b),(f) (see Table 2 of [1]) are implemented in order
+       to obtain V_i & E_i.
 
        Further, we use notations from the paper [1]. */
-    
-    const d = this.dimension; 
-    const N = this.samplesCount; 
+
+    const d = this.dimension;
+    const N = this.samplesCount;
 
     const firstOrderIndeces = new Float32Array(d);
     const totalOrderIndeces = new Float32Array(d);
@@ -157,38 +156,38 @@ export class SobolAnalysis {
     for (let i = 0; i < len; ++i) {
       sum += arr[i];
       sumOfSquares += arr[i] * arr[i];
-    }    
+    }
 
     const mean = sum / len;
-    const variance = sumOfSquares / len - mean * mean; 
+    const variance = sumOfSquares / len - mean * mean;
 
-    // Compute Sobol' indices 
+    // Compute Sobol' indices
 
-    // check variance: default values are used if variance is zero 
+    // check variance: default values are used if variance is zero
     if (variance === 0) {
       firstOrderIndeces.fill(DEFAULT_VALUE_OF_SOBOL_INDEX);
       totalOrderIndeces.fill(DEFAULT_VALUE_OF_SOBOL_INDEX);
-    }
-    else
+    } else {
       for (let i = 0; i < d; ++i) {
         let sumForFisrtOrderIndex = 0;
         let sumForTotalOrderIndex = 0;
 
         let buf = 0;
 
-        for (let j = 0; j < N; ++j) {        
+        for (let j = 0; j < N; ++j) {
           buf = arr[(2 + i) * N + j] - arr[j];
           sumForFisrtOrderIndex += arr[N + j] * buf;
-          sumForTotalOrderIndex += buf * buf;          
+          sumForTotalOrderIndex += buf * buf;
         }
 
         firstOrderIndeces[i] = sumForFisrtOrderIndex / (N * variance);
-        totalOrderIndeces[i] = sumForTotalOrderIndex / (2 * N * variance);        
-      }    
+        totalOrderIndeces[i] = sumForTotalOrderIndex / (2 * N * variance);
+      }
+    }
 
     return {
-      firstOrder: DG.Column.fromFloat32Array(outputColumn.name, firstOrderIndeces), 
-      totalOrder: DG.Column.fromFloat32Array(outputColumn.name, totalOrderIndeces)
+      firstOrder: DG.Column.fromFloat32Array(outputColumn.name, firstOrderIndeces),
+      totalOrder: DG.Column.fromFloat32Array(outputColumn.name, totalOrderIndeces),
     };
   }
 
@@ -227,16 +226,16 @@ export class SobolAnalysis {
     }
 
     const firstOrderSobolIndicesDF = DG.DataFrame.fromColumns(firstOrderSobolIndecesCols);
-    firstOrderSobolIndicesDF.name = "First order Sobol' indices";    
+    firstOrderSobolIndicesDF.name = 'First order Sobol\' indices';
 
     const totalOrderSobolIndicesDF = DG.DataFrame.fromColumns(totalOrderSobolIndecesCols);
-    totalOrderSobolIndicesDF.name = "Total order Sobol' indices";    
+    totalOrderSobolIndicesDF.name = 'Total order Sobol\' indices';
 
     return {
       funcEvalResults: funcEvalResults,
       funcCalls: this.funcCalls,
       firstOrderSobolIndices: firstOrderSobolIndicesDF,
-      totalOrderSobolIndices: totalOrderSobolIndicesDF
+      totalOrderSobolIndices: totalOrderSobolIndicesDF,
     };
   }
 };

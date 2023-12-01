@@ -7,13 +7,16 @@ import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-m
 
 import $ from 'cash-dom';
 import wu from 'wu';
-import {Unsubscribable} from 'rxjs';
+import {Subject, Unsubscribable} from 'rxjs';
+import {Base64} from 'js-base64';
 
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
 
+import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {
+  BiostructureProps,
   IBiostructureViewer, MolstarDataType,
   PluginLayoutControlsDisplayType,
   RegionStateOptionsType,
@@ -22,14 +25,18 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {defaults, molecule3dFileExtensions} from './consts';
+import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
+import {DockingLigandData, IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
+import {defaults, molecule3dFileExtensions} from './consts';
 import {_getPdbHelper} from '../../package-utils';
 import {parseAndVisualsData} from './molstar-viewer-open';
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
+import {errInfo} from '../../utils/err-info';
 
 import {_package} from '../../package';
-import {errInfo} from '../../utils/err-info';
+import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -46,6 +53,9 @@ import {errInfo} from '../../utils/err-info';
     'ma-quality-assessment': PluginSpec.Behavior(MAQualityAssessment),
 };*/
 
+/** For molstar entities */
+const LIGAND_LABEL: string = 'ligand';
+
 const enum PROPS_CATS {
   DATA = 'Data',
   STYLE = 'Style',
@@ -56,7 +66,7 @@ const enum PROPS_CATS {
 
 export enum PROPS {
   // -- Data --
-  data = 'data',
+  dataJson = 'dataJson',
   pdb = 'pdb',
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
@@ -95,14 +105,24 @@ export enum PROPS {
 
 const pdbDefault: string = '';
 
-export type LigandMapItem = { rowIdx: number, structureRefs: Array<string> | null };
-export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | null, hovered: LigandMapItem | null };
+export type LigandMapItem = {
+  rowIdx: number,
+  structureRefs: Array<string> | null
+};
+export type LigandMap = {
+  selected: LigandMapItem[],
+  current: LigandMapItem | null,
+  hovered: LigandMapItem | null,
+};
 
-export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
+export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, IMolecule3DBrowser {
+  private static viewerCounter: number = -1;
+
+  private readonly viewerId: number = ++MolstarViewer.viewerCounter;
   private viewed: boolean = false;
 
   // -- Data --
-  [PROPS.data]: MolstarDataType | null;
+  [PROPS.dataJson]: string | null;
   [PROPS.pdb]: string;
   [PROPS.pdbTag]: string;
   [PROPS.ligandColumnName]: string;
@@ -144,11 +164,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
   constructor() {
     super();
+
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
-    this.data = this.addProperty(PROPS.data, DG.TYPE.OBJECT, undefined,
-      {category: PROPS_CATS.DATA, userEditable: false});
+    this.dataJson = this.addProperty(PROPS.dataJson, DG.TYPE.OBJECT, undefined, {
+      category: PROPS_CATS.DATA, userEditable: false,
+      description: 'JSON encoded object of MolstarDataType with data value Base64 encoded data',
+    });
     this.pdb = this.string(PROPS.pdb, pdbDefault,
       {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
@@ -220,11 +243,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
   }
 
+  private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
+
   override onPropertyChanged(property: DG.Property | null): void {
+    _package.logger.debug(`${this.viewerToLog()}.onPropertyChanged(), start, property.name = '${property?.name}',`);
     super.onPropertyChanged(property);
 
     if (!property) {
-      console.warn('BiostructureViewer: MolstarViewer.onPropertyChanged() property is null');
+      _package.logger.warning(`${this.viewerToLog()}.onPropertyChanged() property is null`);
       return;
     }
 
@@ -309,15 +335,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     }
 
     switch (property.name) {
-      case PROPS.data:
-        // @ts-ignore
-        if ('_original' in this.data) this.data = this.data['_original'];
-        this.setData();
-        break;
+      case PROPS.dataJson:
       case PROPS.pdb:
-      case PROPS.pdbTag:
-        this.setData();
+      case PROPS.pdbTag: {
+        this.setData(`onPropertyChanged( '${property.name}' )`);
         break;
+      }
     }
   }
 
@@ -325,7 +348,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private dataEff: MolstarDataType | null = null;
 
   override onTableAttached(): void {
-    _package.logger.debug('MolstarViewer.onTableAttached(), ');
+    _package.logger.debug(`${this.viewerToLog()}.onTableAttached(), `);
     const superOnTableAttached = super.onTableAttached.bind(this);
 
     // -- Props editors --
@@ -334,14 +357,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.props.getProperty(PROPS.pdbTag).choices = ['', ...dfTagNameList];
 
     superOnTableAttached();
-    this.setData();
+    this.setData('onTableAttached');
   }
 
   override detach(): void {
-    _package.logger.debug('MolstarViewer.detach(), ');
+    _package.logger.debug(`${this.viewerToLog()}.detach(), `);
 
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => { // detach
+    this.viewPromise = this.viewPromise.then(async () => { // detach
       await this.viewPromise;
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
@@ -354,39 +377,45 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
   // -- Data --
 
-  setData(): void {
-    _package.logger.debug(`MolstarViewer.setData(), in `);
+  private _setDataCallCounter = -1;
+
+  setData(reason: string): void {
+    const callId = ++this._setDataCallCounter;
+    const callLog = `setData( reason = '${reason}', callId = ${callId} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    _package.logger.debug(`${callLogPrefix}, in `);
     this.viewPromise = this.viewPromise.then(async () => { // setData
+      _package.logger.debug(`${callLogPrefix}.viewPromise, start`);
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
         if (this.viewed) {
-          await this.destroyView('setData');
+          await this.destroyView(callLog);
           this.viewed = false;
         }
-
-        await this.detachPromise;
-        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
         // -- PDB data --
         this.dataEff = null;
         let pdbTag: string = pdbTAGS.PDB;
         let pdb: string | null = null;
         if (this.pdbTag) pdbTag = this.pdbTag;
-        if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
+        if (this.dataFrame && this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
-        if (this.data)
-          this.dataEff = this.data;
+        if (this.dataJson) {
+          const data = JSON.parse(this.dataJson);
+          data.data = Base64.decode(data.data);
+          this.dataEff = data;
+        }
 
         // -- Ligand --
-        if (!this.ligandColumnName) {
+        if (this.dataFrame && !this.ligandColumnName) {
           const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
           if (molCol)
             this.ligandColumnName = molCol.name;
         }
 
         if (!this.viewed) {
-          await this.buildView('setData');
+          await this.buildView(callLog);
           this.viewed = true;
         }
       } catch (err: any) {
@@ -396,13 +425,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       } finally {
         this.setDataInProgress = false;
       }
+      _package.logger.debug(`${callLogPrefix}.viewPromise, end `);
     });
   }
 
   // -- View --
 
-  private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
+  public viewPromise: Promise<void> = Promise.resolve();
   private setDataInProgress: boolean = false;
 
   private viewerDiv?: HTMLDivElement;
@@ -419,7 +448,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
 
   private async destroyView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarViewer.destroyView( purpose='${purpose}' ) `);
+    _package.logger.debug(`${this.viewerToLog()}.destroyView( purpose = '${purpose}' ), start `);
     for (const sub of this.viewSubs) sub.unsubscribe();
     this.viewSubs = [];
 
@@ -429,22 +458,30 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       delete this.splashDiv;
     }
 
-    if (this.viewer) {
+    if (this.viewerDiv) {
       // Clear viewer
-      await this.viewer.clear();
+      // await this.viewer.clear();
+      await disposeRcsbViewer(this.viewer!, this.viewerDiv);
+      delete this.viewer;
+      this.viewerDiv.remove();
+      delete this.viewerDiv;
     }
+    _package.logger.debug(`${this.viewerToLog()}.destroyView( purpose = '${purpose}' ), end `);
   }
 
   private async buildView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarViewer.buildView( purpose='${purpose}' ) `);
+    _package.logger.debug(`${this.viewerToLog()}.buildView( purpose = '${purpose}' ), start `);
     if (this.dataEff)
-      await this.buildViewWithData();
+      await this.buildViewWithData(`buildView( purpose = '${purpose}' )`);
     else
       await this.buildViewWithoutData();
+    _package.logger.debug(`${this.viewerToLog()}.buildView( purpose = '${purpose}' ), end `);
   }
 
-  private async buildViewWithData() {
-    if (!this.dataEff) throw new Error('MolstarViewer.buildViewWithPdb() dataEff is empty');
+  private async buildViewWithData(purpose: string): Promise<void> {
+    const callLogPrefix = `${this.viewerToLog()}.buildViewWithData( purpose = '${purpose}' )`;
+    _package.logger.debug(`${callLogPrefix}, start`);
+    if (!this.dataEff) throw new Error(`${callLogPrefix} dataEff is empty`);
 
     // Fill in viewer
     if (!this.viewerDiv) {
@@ -458,7 +495,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       const props: Partial<RcsbViewerProps> = {};
 
       Object.assign(props, this.viewerProps);
-      this.viewer = new RcsbViewer(this.viewerDiv, props);
+      // this.viewer = new RcsbViewer(this.viewerDiv, props);
+      this.viewer = await createRcsbViewer(this.viewerDiv, props);
     }
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
     const df: DG.DataFrame = this.dataFrame;
@@ -480,44 +518,32 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.viewSubs.push(df.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
 
     await this.buildViewLigands();
+    _package.logger.debug(`${callLogPrefix}, end`);
   }
 
   private async buildViewWithoutData() {
     if (this.viewerDiv) {
-      await this.viewer!.clear();
+      await disposeRcsbViewer(this.viewer!, this.viewerDiv);
       delete this.viewer;
-
-      $(this.viewerDiv).empty();
       this.viewerDiv.remove();
       delete this.viewerDiv;
     }
 
-    const fileEl: HTMLInputElement = ui.element('input');
-    fileEl.type = 'file';
-    fileEl.style.display = 'none';
-    fileEl.addEventListener('change', async (_event) => {
-      const _k = 11;
-      if (fileEl.files != null && fileEl.files.length == 1) {
-        const [[fileExt, dataStr], pdbHelper]: [[string, string], IPdbHelper] = await Promise.all([
-          (async () => {
-            const file = fileEl.files![0];
-            const fileExt: string = file.name.split('.').slice(-1)[0];
-            return [fileExt, await file.text()];
-          })(),
-          _getPdbHelper()
-        ]);
-        this.setOptions({data: {ext: fileExt, data: dataStr}});
-      }
-    });
-    const fileLink = ui.link('Open...', '', '', {
-      // @ts-ignore // ui.link argument options.onClick: (node: HTMLElement) => void
-      onClick: (event: PointerEvent) => {
-        event.preventDefault();
-        $(fileEl).trigger('click');
-      },
-    });
-    this.splashDiv = ui.div([fileLink, fileEl],
-      {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
+    const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
+    const dataFileInput = DG.InputBase.forProperty(dataFileProp);
+    dataFileInput.captionLabel.innerText = 'Data file';
+    this.viewSubs.push(dataFileInput.onChanged(async () => {
+      await delay(100); /* to fill DG.FileInfo.data */
+      const dataFi: DG.FileInfo = dataFileInput.value;
+      const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
+      this.setOptions({
+        [PROPS.dataJson]: buildDataJson(dataA, dataFi.extension),
+      });
+      // openBtn.disabled = !(dataFi && (dataFi.data || dataFi.url));
+    }));
+    this.splashDiv = ui.div(
+      ui.divV([ui.inputs([dataFileInput])/*, openBtn*/]),
+      {classes: 'bsv-viewer-splash'} /* splash */);
     this.root.appendChild(this.splashDiv);
   }
 
@@ -528,7 +554,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private calcSize(): void {
     const cw: number = this.root.clientWidth;
     const ch: number = this.root.clientHeight;
-    _package.logger.debug(`MolstarViewer.calcSize( ${cw.toString()} x ${ch.toString()} )`);
+    _package.logger.debug(`${this.viewerToLog()}.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
     if (this.viewerDiv && this.viewer) {
       this.viewerDiv.style.width = `${cw}px`;
@@ -546,29 +572,28 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   // -- Handle events --
 
   private rootOnSizeChanged(_value: any): void {
-    _package.logger.debug('MolstarViewer.rootOnSizeChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.rootOnSizeChanged() `);
     this.calcSize();
   }
 
   private dataFrameOnSelectionChanged(_value: any): void {
-    _package.logger.debug('BiostructureViewer.dataFrameOnSelectionChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnSelectionChanged() `);
     this.rebuildViewLigands();
   }
 
   private dataFrameOnCurrentRowChanged(_value: any): void {
-    _package.logger.debug('MolstarViewer.dataFrameOnCurrentRowChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
     this.rebuildViewLigands();
   }
 
   private dataFrameOnMouseOverRowChanged(_value: any): void {
-    _package.logger.debug('BiostructureViewer.dataFrameOnMouseOverRowChanged() ');
+    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnMouseOverRowChanged() `);
     this.rebuildViewLigands();
   }
 
   // -- Ligands routines --
 
-  private ligands: LigandMap = {selected: [], current: null, hovered: null};
-  private ligandsPromise: Promise<void> = Promise.resolve();
+  public ligands: LigandMap = {selected: [], current: null, hovered: null};
 
   /** Unify get mol* component key/ref, not static for performance
    * @param {StructureComponentRef} comp
@@ -577,12 +602,52 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     return comp.cell.sourceRef ?? null; // comp.version
   }
 
-  private getLigandStrOfRow(rowIdx: number): string {
-    const ligandMol: string = this.dataFrame.get(this.ligandColumnName, rowIdx);
-    const ligandStr: string = ligandMol + '$$$$';
+  private getLigandStrOfRow(
+    rowIdx: number,
+  ): {
+    data: string,
+    format: BuiltInTrajectoryFormat | TrajectoryFormatProvider
+  } {
+    const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
+    const ligandUnits: string = ligandCol.getTag(DG.TAGS.UNITS);
+    const ligandCellValue: string = ligandCol.get(rowIdx);
+    let ligandValue: string;
+    let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;
+    switch (ligandCol.semType) {
+      case DG.SEMTYPE.MOLECULE: {
+        switch (ligandUnits) {
+          default: {
+            ligandFormat = 'sdf';
+            ligandValue = ligandCellValue + '$$$$';
+          }
+        }
+        break;
+      }
+
+      case DG.SEMTYPE.MOLECULE3D: {
+        switch (ligandUnits) {
+          case Molecule3DUnits.pdb: {
+            ligandFormat = 'pdb';
+            ligandValue = ligandCellValue;
+            break;
+          }
+          case Molecule3DUnits.pdbqt: {
+            ligandFormat = 'pdbqt';
+            ligandValue = ligandCellValue;
+            break;
+          }
+          default:
+            throw new Error(`Unsupported units '${ligandUnits}' of '${DG.SEMTYPE.MOLECULE3D}' ligand.`);
+        }
+        break;
+      }
+
+      default:
+        throw new Error(`Unsupported ligand semantic type '${ligandCol.semType}'.`);
+    }
     // const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
     // return ligandBlob;
-    return ligandStr;
+    return {data: ligandValue, format: ligandFormat};
   }
 
   private rebuildViewLigands(): void {
@@ -609,7 +674,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
         refRemovingPromises.push(this.viewer!.plugin.commands.dispatch(PluginCommands.State.RemoveObject,
           {
             state: this.viewer!.plugin.state.data,
-            ref: lingandRef
+            ref: lingandRef,
           }));
       }
     }
@@ -636,10 +701,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     const addLigandOnStage = async (rowIdx: number, _color: DG.Color | null): Promise<Array<string> | null> => {
       const plugin = this.viewer!.plugin;
       const ligandLabel: string = `<Ligand at row ${rowIdx}>`;
-      const ligandStr = this.getLigandStrOfRow(rowIdx);
-      const _moldata = await plugin.builders.data.rawData({data: ligandStr, label: 'moldata'});
+      const {data: ligandStr, format: ligandFormat} = this.getLigandStrOfRow(rowIdx);
+      const _moldata = await plugin.builders.data.rawData({data: ligandStr, label: LIGAND_LABEL});
       const _moltraj = await plugin.builders.structure.parseTrajectory(
-        _moldata, 'sdf');
+        _moldata, ligandFormat);
       const _model = await plugin.builders.structure.createModel(_moltraj);
       const _structure = await plugin.builders.structure.createStructure(_model);
       const _component = await plugin.builders.structure.tryCreateComponentStatic(
@@ -677,4 +742,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       this.ligands.hovered.structureRefs = await addLigandOnStage(this.ligands.hovered.rowIdx, color);
     }
   }
+
+  // -- IMolecule3DBrowser --
+
+  showStructure(data: Molecule3DData) {
+    throw new Error('Not implemented');
+  }
+}
+
+export function buildDataJson(data: Uint8Array, ext: string): string {
+  return JSON.stringify({data: Base64.fromUint8Array(data), ext: ext});
 }

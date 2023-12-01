@@ -3,24 +3,28 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, after, category, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import wu from 'wu';
 
-import {toAtomicLevel} from '../package';
+import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/utils/src/test';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
   getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
+import {toAtomicLevel} from '../package';
+import {_package} from '../package-test';
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
 
 const testNames: { [k: string]: string } = {
-  PT: 'peptides fasta',
-  DNA: 'dna fasta',
-  MSA: 'msa separator',
+  PT: 'peptides-fasta',
+  DNA: 'dna-fasta',
+  MSA: 'msa-separator',
 };
 
 const inputPath: { [k: string]: string } = {
@@ -30,9 +34,9 @@ const inputPath: { [k: string]: string } = {
 };
 
 const outputPath: { [k: string]: string } = {
-  PT: 'tests/to-atomic-level-peptides-output.csv',
-  DNA: 'tests/to-atomic-level-dna-output.csv',
-  MSA: 'tests/to-atomic-level-msa-output.csv',
+  PT: 'tests/to-atomic-level-peptides-fasta-output.csv',
+  DNA: 'tests/to-atomic-level-dna-fasta-output.csv',
+  MSA: 'tests/to-atomic-level-msa-separator-output.csv',
 };
 
 const inputColName = 'sequence';
@@ -54,9 +58,9 @@ category('toAtomicLevel', async () => {
     await monomerLibHelper.loadLibraries(true);
 
     for (const key in testNames) {
-      sourceDf[key] = await fileSource.readCsv(inputPath[key]);
+      sourceDf[key] = DG.DataFrame.fromCsv((await fileSource.readAsText(inputPath[key])).replace(/\n$/, ''));
       await grok.data.detectSemanticTypes(sourceDf[key]);
-      targetDf[key] = await fileSource.readCsv(outputPath[key]);
+      targetDf[key] = DG.DataFrame.fromCsv((await fileSource.readAsText(outputPath[key])).replace(/\n$/, ''));
     }
   });
 
@@ -70,8 +74,8 @@ category('toAtomicLevel', async () => {
     await toAtomicLevel(source, inputCol, false);
     const obtainedCol = source.getCol(outputColName);
     const expectedCol = target.getCol(outputColName);
-    const obtainedArray = [...obtainedCol.values()];
-    const expectedArray = [...expectedCol.values()];
+    const obtainedArray: string[] = wu(obtainedCol.values()).map((mol) => polishMolfile(mol)).toArray();
+    const expectedArray: string[] = wu(expectedCol.values()).map((mol) => polishMolfile(mol)).toArray();
     expectArray(obtainedArray, expectedArray);
   }
 
@@ -137,7 +141,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
   async function readCsv(key: csvTests): Promise<DG.DataFrame> {
     // Always recreate test data frame from CSV for reproducible detector behavior in tests.
     const csv: string = csvData[key];
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv.replace(/\n$/, ''));
     await grok.data.detectSemanticTypes(df);
     return df;
   }
@@ -173,10 +177,35 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
   test('helm', async () => {
     await _testToAtomicLevel(await readCsv(csvTests.helm), 'seq', monomerLibHelper);
   });
+
+  test('ptFasta2', async () => {
+    const srcCsv: string = `seq\nAR`;
+    const tgtMol: string = await _package.files.readAsText('tests/to-atomic-level-pt-fasta-2.mol');
+
+    const srcDf = DG.DataFrame.fromCsv(srcCsv);
+    const seqCol = srcDf.getCol('seq');
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
+    const uh = UnitsHandler.getOrCreate(seqCol);
+    const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
+    expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
+  });
 });
 
-async function _testToAtomicLevel(df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper) {
+async function _testToAtomicLevel(
+  df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
+): Promise<DG.Column | null> {
   const seqCol: DG.Column<string> = df.getCol(seqColName);
   const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
-  const _resCol = await _toAtomicLevel(df, seqCol, monomerLib);
+  const res = await _toAtomicLevel(df, seqCol, monomerLib);
+  if (res.warnings.length > 0)
+    _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
+  return res.col;
+}
+
+function polishMolfile(mol: string): string {
+  return mol.replaceAll('\r\n', '\n')
+    .replace(/\n$/, '')
+    .split('\n').map((l) => l.trimEnd()).join('\n');
 }

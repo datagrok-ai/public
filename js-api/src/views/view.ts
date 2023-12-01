@@ -12,8 +12,9 @@ import {StreamSubscription} from '../events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
 import {FuncCall} from "../functions";
+import {IDartApi} from "../api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.

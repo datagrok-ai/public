@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, REGENERATE_COORDS, SCAFFOLD_TREE_HIGHLIGHT, HIGHLIGHT_BY_SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
+import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, SCAFFOLD_COL, PARENT_MOL_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, REGENERATE_COORDS, SCAFFOLD_TREE_HIGHLIGHT, HIGHLIGHT_BY_SCAFFOLD_COL } from '../constants';
 import { hexToPercentRgb } from '../utils/chem-common';
 
 export interface ISubstruct {
@@ -26,6 +26,7 @@ interface IMolRenderingInfo {
 export interface IColoredScaffold {
   molecule: string,
   color?: string,
+  priority?: number,
   isSuperstructure?: string
 }
 
@@ -37,17 +38,19 @@ export interface IHighlightTagInfo {
 export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
   const colorArr = color ? hexToPercentRgb(color) : [1.0, 0.7, 0.7, 1.0];
   const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-  if (substrToTakeAtomsFrom.atoms) {
-    for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-      mainSubstr.highlightAtomColors ??= {};
-      mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-    };
-  }
-  if (substrToTakeAtomsFrom.bonds) {
-    for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-      mainSubstr.highlightBondColors ??= {};
-      mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-    };
+  if (substrToTakeAtomsFrom) {
+    if (substrToTakeAtomsFrom.atoms) {
+      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+        mainSubstr.highlightAtomColors ??= {};
+        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+      };
+    }
+    if (substrToTakeAtomsFrom.bonds) {
+      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+        mainSubstr.highlightBondColors ??= {};
+        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+      };
+    }
   }
 }
 
@@ -89,6 +92,7 @@ M  END
   canvasCounter: number;
   molCache: DG.LruCache<String, IMolRenderingInfo> = new DG.LruCache<String, IMolRenderingInfo>();
   rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
+  sortedScaffoldsCache: DG.LruCache<String, IColoredScaffold[]> = new DG.LruCache<String, IColoredScaffold[]>();
   canvasReused: OffscreenCanvas;
 
   constructor(rdKitModule: RDModule) {
@@ -117,13 +121,14 @@ M  END
   }
 
   _fetchMolGetOrCreate(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
-    details: object = {}, alignByFirstSubstr: boolean, substructureObj?: ISubstruct): IMolRenderingInfo {
+    details: object = {}, alignByFirstSubstr: boolean): IMolRenderingInfo {
     let molCtx: IMolContext;
     let mol = null;
     let substruct: ISubstruct = {};
     if ((details as any).isSubstructure) {
+      const mappedDummiesAreRGroups = (details as any).mappedDummiesAreRGroups || false;
       if (molString.includes(' H ') || molString.includes('V3000')) {
-        molCtx = getMolSafe(molString, { mergeQueryHs: true }, _rdKitModule);
+        molCtx = getMolSafe(molString, { mergeQueryHs: true, mappedDummiesAreRGroups }, _rdKitModule);
         mol = molCtx.mol;
       } else {
         try {
@@ -145,96 +150,89 @@ M  END
     if (mol !== null) {
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
-        let doNotUseMolblockWedging = false;
-        const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
+        let molHasRebuiltCoords = false;
+        const scaffoldIsMolBlock = scaffolds.length && alignByFirstSubstr ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
+        const { haveReferenceSmarts, parentMolScaffoldMolString } = (details as any);
         if (alignedByFirstSubstr) {
-          const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule, [], molRegenerateCoords, false,
-            { mergeQueryHs: true, isSubstructure: true }, false).molCtx;
+          const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule,
+            parentMolScaffoldMolString ? [{ molecule: parentMolScaffoldMolString }] : [],
+            molRegenerateCoords, false, { mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString }, false).molCtx;
           const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
           if (rdKitScaffoldMol) {
             rdKitScaffoldMol.normalize_depiction(0);
             if (molHasOwnCoords)
               mol.normalize_depiction(0);
-            else { 
+            else if (!haveReferenceSmarts) {
               //need the following 4 rows for smiles with highlights to be rendered in adequate coordinates
               mol.set_new_coords();
               mol.normalize_depiction(1);
               mol.straighten_depiction(false);
-              molHasOwnCoords = true;
-              doNotUseMolblockWedging = true;
+              molHasRebuiltCoords = true;
             }
             let substructString = '';
+            let useCoordGen = (details as any).useCoordGen;
+            useCoordGen = (typeof useCoordGen === 'boolean' ? useCoordGen : true);
+            const alignOpts = {
+              useCoordGen,
+              allowRGroups: true,
+              acceptFailure: false,
+              alignOnly: molHasOwnCoords || molHasRebuiltCoords,
+            };
+            let referenceSmarts;
+            if (haveReferenceSmarts) {
+              try {
+                referenceSmarts = mol.get_smiles();
+              } catch {
+                // do nothing
+              }
+            }
+            if (referenceSmarts) {
+              (alignOpts as any).referenceSmarts = referenceSmarts;
+            }
             try {
-              substructString = !scaffolds[0].isSuperstructure ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
-                useCoordGen: true,
-                allowRGroups: true,
-                acceptFailure: false,
-                alignOnly: molHasOwnCoords,
-              })) : mol.get_substruct_match(mol!);
+              substructString = !scaffolds[0].isSuperstructure
+                ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify(alignOpts))
+                : mol.get_substruct_match(mol!);
             } catch {
               // exceptions should not be thrown anymore by RDKit, but let's play safe
             }
             if (substructString === '') {
               substruct = {};
               if (molHasOwnCoords)
-                mol.normalize_depiction(0);
-              else { 
-                //need the following 4 rows for smiles with highlights to be rendered in adequate coordinates
-                mol.set_new_coords();
-                mol.normalize_depiction(1);
-                mol.straighten_depiction(false);
-                molHasOwnCoords = true;
-              }
-              let substructString = '';
-              try {
-                substructString = !scaffolds[0].isSuperstructure ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
-                  useCoordGen: true,
-                  allowRGroups: true,
-                  acceptFailure: false,
-                  alignOnly: molHasOwnCoords,
-                })) : mol.get_substruct_match(mol!);
-              } catch {
-                // exceptions should not be thrown anymore by RDKit, but let's play safe
-              }
-              if (substructString === '') {
-                substruct = {};
-                if (molHasOwnCoords)
-                  mol.straighten_depiction(true);
-              } else
-                substruct = JSON.parse(substructString);
-                  if (!substruct.atoms)
-                    substruct.atoms = [];
-                  if (!substruct.bonds)
-                    substruct.bonds = [];
-                  _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
-            }
+                mol.straighten_depiction(true);
+            } else
+              substruct = JSON.parse(substructString);
+            if (!substruct.atoms)
+              substruct.atoms = [];
+            if (!substruct.bonds)
+              substruct.bonds = [];
+            _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
           }
-          for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
-            const substructMol = this._fetchMol(scaffolds[i].molecule, [], molRegenerateCoords, false,
-              { mergeQueryHs: true, isSubstructure: true }, false, substructureObj).molCtx.mol;
-            if (substructMol) {
-              const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
-              if (matchedAtomsAndBonds.length) {
-                for (let j = 0; j < matchedAtomsAndBonds.length; j++) {
-                  if (!substruct.atoms)
-                    substruct.atoms = [];
-                  if (!substruct.bonds)
-                    substruct.bonds = [];
-                  this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
-                  this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
-                  _addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
-                };
-              }
-            }
-          }
-        } else {
-          if (substructureObj)
-            substruct = substructureObj;
         }
-        molCtx.useMolBlockWedging = (mol.has_coords() === 2) && !doNotUseMolblockWedging;
+        for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
+          const substructMol = this._fetchMol(scaffolds[i].molecule, [], molRegenerateCoords, false,
+            { mergeQueryHs: true, isSubstructure: true }, false).molCtx.mol;
+          if (substructMol) {
+            const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
+            if (matchedAtomsAndBonds.length) {
+              for (let j = 0; j < matchedAtomsAndBonds.length; j++) {
+                if (!substruct.atoms)
+                  substruct.atoms = [];
+                if (!substruct.bonds)
+                  substruct.bonds = [];
+                this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
+                this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
+                _addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
+              };
+            }
+          }
+        }
+        molCtx.useMolBlockWedging = molHasOwnCoords;
         if (mol.has_coords() === 0 || molRegenerateCoords) {
           mol.set_new_coords(molRegenerateCoords);
+          mol.normalize_depiction(1);
+          mol.straighten_depiction();
           molHasOwnCoords = false;
         }
         if (!scaffoldIsMolBlock) {
@@ -267,21 +265,22 @@ M  END
   }
 
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
-    scaffoldRegenerateCoords: boolean, details: object = {}, alignByFirstSubstructure: boolean,
-    substructureObj?: ISubstruct): IMolRenderingInfo {    
+    scaffoldRegenerateCoords: boolean, details: object = {}, alignByFirstSubstructure: boolean): IMolRenderingInfo {
     const name = molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
-      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords +
-       ' || ' + JSON.stringify(details) + '||' + JSON.stringify(substructureObj);
+      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
+      ((details as any).isSubstructure || false).toString() +
+      ((details as any).haveReferenceSmarts || false).toString();
     return this.molCache.getOrCreate(name, (_: any) =>
-      this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details, alignByFirstSubstructure, substructureObj));
+      this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details, alignByFirstSubstructure));
   }
 
   _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffolds: IColoredScaffold[],
     highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean,
-    alignByFirstSubstructure: boolean, substructureObj?: ISubstruct): ImageData {
+    alignByFirstSubstructure: boolean, details: object = {}): ImageData {
     const fetchMolObj : IMolRenderingInfo =
-      this._fetchMol(molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords, {}, alignByFirstSubstructure, substructureObj);
+      this._fetchMol(molString, scaffolds, molRegenerateCoords,
+        scaffoldRegenerateCoords, details, alignByFirstSubstructure);
     const rdKitMolCtx = fetchMolObj.molCtx;
     const rdKitMol = rdKitMolCtx.mol;//fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
@@ -303,20 +302,21 @@ M  END
   _fetchRender(
     width: number, height: number, molString: string, scaffolds: IColoredScaffold[],
     highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean,
-    alignByFirstSubstructure: boolean, substructureObj?: ISubstruct): ImageData {
+    alignByFirstSubstructure: boolean, details: object = {}): ImageData {
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' + highlightScaffold + ' || ' +
-      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + '||' + JSON.stringify(substructureObj);
+      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
+      ((details as any).haveReferenceSmarts || false).toString();
 
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffolds, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords,
-      alignByFirstSubstructure, substructureObj));
+      alignByFirstSubstructure, details));
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffolds: IColoredScaffold[], highlightScaffold: boolean,
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, cellStyle: DG.GridCellStyle,
-    alignByFirstSubstructure: boolean, substructureObj?: ISubstruct): void {
+    alignByFirstSubstructure: boolean, details: object = {}): void {
     const vertical = cellStyle !== undefined && cellStyle !== null ? cellStyle.textVertical : false;
 
     if (vertical) {
@@ -325,7 +325,8 @@ M  END
       h -= w;
     }
     const imageData = this._fetchRender(w, h, molString, scaffolds,
-      highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, alignByFirstSubstructure, substructureObj);
+      highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords,
+      alignByFirstSubstructure, details);
 
     if (vertical) {
       const ctx = onscreenCanvas.getContext('2d', {willReadFrequently: true})!;
@@ -358,16 +359,33 @@ M  END
 
   _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
     const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
-    if (scaffoldArrStr) {
-      const scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);    
-      const scaffoldArrFinal: IColoredScaffold[] = [];
-      scaffoldArr.forEach((it) => {
-        if (!it.molecule.endsWith(this.WHITE_MOLBLOCK_SUFFIX))
-          scaffoldArrFinal.push(it);
+    const getSortedScaffolds = (): IColoredScaffold[] => {
+      const scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
+      const scaffoldArrSorted = scaffoldArr.sort((a, b) => {
+        const getNumAtoms = (molecule: string) => {
+          if (molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule)) {
+            const mol = this._fetchMol(molecule, [], false, false, {}, false).molCtx.mol;
+            if (mol)
+              return mol.get_num_atoms();
+            return 0;
+          }
+          return 0;
+        }
+        a.priority = a.priority ?? 1;
+        b.priority = b.priority ?? 1;
+
+        if (a.priority !== b.priority) {
+          return b.priority - a.priority;
+        }
+
+        return getNumAtoms(a.molecule) - getNumAtoms(b.molecule);
       });
-      if(!scaffoldArrFinal.length)
-        col.setTag(tagName, '');
-      return scaffoldArrFinal;
+      return scaffoldArrSorted;
+    }
+    if (scaffoldArrStr) {
+      const sortedScaffolds = this.sortedScaffoldsCache
+        .getOrCreate(scaffoldArrStr, () => getSortedScaffolds());
+      return sortedScaffolds;
     }
     return [];
   }
@@ -390,7 +408,7 @@ M  END
 
     const colTemp = gridCell.cell.column.temp;
     const highlightInfo = this.getHighlightTagInfo(colTemp, gridCell);
-    
+
     // TODO: make both filtering scaffold and single highlight scaffold appear
 
     if (highlightInfo.scaffolds) {
@@ -405,7 +423,7 @@ M  END
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
-    const alignByStructure = !!(filter.length || align.length || scaffoldTreeHighlight.length);
+    const alignByStructure = !!(filter.length || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }
@@ -416,37 +434,52 @@ M  END
     let scaffoldRegenerateCoords = false;
     const df = gridCell.cell.dataFrame;
     let rowScaffoldCol = null;
+    let haveParentMol = false;
+    let parentMolScaffoldMolString;
 
     // if given, take the 'scaffold-col' col
     if (colTemp) {
-      if (colTemp[SCAFFOLD_COL]) {
-        const rowScaffoldColName = colTemp[SCAFFOLD_COL];
+      let rowScaffoldColName = colTemp[SCAFFOLD_COL];
+      if (!rowScaffoldColName) {
+        rowScaffoldColName = colTemp[PARENT_MOL_COL];
+        haveParentMol = !!rowScaffoldColName;
+      }
+      if (rowScaffoldColName) {
         const rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
         if (rowScaffoldColProbe !== null) {
           const scaffoldColTemp = rowScaffoldColProbe.temp;
+          if (haveParentMol) {
+            const parentMolScaffoldColName = scaffoldColTemp[SCAFFOLD_COL];
+            if (parentMolScaffoldColName) {
+              const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
+              parentMolScaffoldMolString = df.get(parentMolScaffoldColName, idx!);
+            }
+          }
           scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp[REGENERATE_COORDS] === 'true';
           molRegenerateCoords = scaffoldRegenerateCoords;
           rowScaffoldCol = rowScaffoldColProbe;
         }
-      } else if (colTemp[SUBSTRUCT_COL])
-        rowScaffoldCol = df.columns.byName(colTemp[SUBSTRUCT_COL]);
+      }
     }
+
     if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
       // regular drawing
-      this._drawMolecule(x, y, w, h, g.canvas, molString, [], false, molRegenerateCoords, false, cellStyle, true);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, [], false,
+        molRegenerateCoords, false, cellStyle, true);
     } else {
+      // drawing with a per-row scaffold
       const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
-      if (colTemp[SCAFFOLD_COL]) {
-        // drawing with a per-row scaffold
-        const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
-        const highlightScaffold = colTemp && colTemp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true';
-        this._drawMolecule(x, y, w, h, g.canvas,
-          molString, [{ molecule: scaffoldMolString }], highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true);
-      } else if (colTemp[SUBSTRUCT_COL]) {
-        const substruct = df.get(rowScaffoldCol.name, idx!);
-        this._drawMolecule(x, y, w, h, g.canvas,
-          molString, [], true, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true, substruct);
-      }
+      const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
+      const highlightScaffold = colTemp && colTemp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true';
+      const details = (haveParentMol ? {
+        mappedDummiesAreRGroups: true,
+        useCoordGen: false,
+        haveReferenceSmarts: true,
+        parentMolScaffoldMolString,
+      } : {});
+      this._drawMolecule(x, y, w, h, g.canvas,
+        molString, [{molecule: scaffoldMolString}], highlightScaffold,
+        molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true, details);
     }
   }
 }

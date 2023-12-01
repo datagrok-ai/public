@@ -11,17 +11,21 @@ import {MapProxy} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
+import * as d4 from './../src/api/d4.api.g';
+
 
 import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 import '../css/tags-input.css';
 import {FuncCall} from "./functions";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let grok: any;
 declare let DG: any;
 declare let ui: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
@@ -992,8 +996,8 @@ export class InputBase<T = any> {
   }
 
   /** Creates input for the specified input type */
-  static forInputType(inputType: string): InputBase {
-    return toJs(api.grok_InputBase_ForInputType(inputType));
+  static forInputType(inputType: string | d4.InputType): InputBase {
+    return toJs(api.grok_InputBase_ForInputType(inputType as string));
   }
 
   /** Creates input for the specified column */
@@ -1007,6 +1011,7 @@ export class InputBase<T = any> {
   get caption(): string {
     return api.grok_InputBase_Get_Caption(this.dart);
   }
+  set caption(s: string) { api.grok_InputBase_Set_Caption(this.dart, s); }
 
   /** Property if associated with */
   get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
@@ -1558,9 +1563,16 @@ export class TreeViewNode<T = any> {
     return api.grok_TreeViewNode_Root(this.dart);
   }
 
+  get rootNode(): TreeViewGroup {
+    let x: TreeViewNode = this;
+    while (x.parent)
+      x = x.parent;
+    return x as TreeViewGroup;
+  }
+
   /* Node's parent */
   get parent(): TreeViewNode {
-    return api.grok_TreeViewNode_Parent(this.dart);
+    return toJs(api.grok_TreeViewNode_Parent(this.dart));
   }
 
   /** Caption label */
@@ -1579,6 +1591,9 @@ export class TreeViewNode<T = any> {
 
   /** Node text */
   get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
+
+  get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
+  set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
@@ -1823,9 +1838,9 @@ export class Legend extends DartWidget {
   get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
   set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column.dart); }
 
-  /** Whether or not to show empty categories */
-  get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
-  set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
+  /** Whether to show empty categories */
+  get showNulls(): boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
+  set showNulls(show: boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
 
   /** Position (left / right / top / bottom) */
   get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }

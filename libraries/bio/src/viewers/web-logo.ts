@@ -79,7 +79,7 @@ export const WebLogoPropsDefault = new class {
   filterSource: FilterSources = FilterSources.Filtered;
 }();
 
-export type WebLogoProps = Required<typeof WebLogoPropsDefault>;
+export type WebLogoProps = typeof WebLogoPropsDefault;
 
 export interface IWebLogoViewer extends WebLogoProps, IViewer {
   get onSizeChanged(): Observable<void>;
@@ -93,6 +93,6 @@ export const positionRe: RegExp = /(\d+)([A-Z]?)/;
 
 declare module 'datagrok-api/dg' {
   export interface DataFramePlotHelper {
-    fromType(viewerType: 'WebLogo', options: Partial<WebLogoProps>): Promise<DG.Viewer & IWebLogoViewer>;
+    fromType(viewerType: 'WebLogo', options: Partial<WebLogoProps>): Promise<DG.Viewer<WebLogoProps> & IWebLogoViewer>;
   }
 }

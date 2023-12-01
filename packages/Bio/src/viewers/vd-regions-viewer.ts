@@ -328,7 +328,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
             positionWidth: this.positionWidth,
             positionHeight: this.positionHeight,
             filterSource: this.filterSource,
-          }) as WebLogoViewer;
+          }) as unknown as WebLogoViewer;
           wl.onSizeChanged.subscribe(() => { this.calcSize(); });
           return [orderI, chain, wl];
         })());

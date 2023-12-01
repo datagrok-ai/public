@@ -3,7 +3,7 @@ title: "Datagrok: Swiss Army Knife for Data"
 ---
 
 
-Datagrok is a platform for turning data into actionable insights. It helps you unlock the value of your organization’s
+Datagrok is a platform for turning data into actionable insights. It helps you unlock the value of your organization's
 complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and
 share these results.
 

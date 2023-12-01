@@ -61,6 +61,19 @@ interface ValidationRequestPayload {
   context?: any,
 }
 
+/**
+ * Class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
+ *
+ * It provides the following functionality out-of-the-box, where each section could be customized:
+ * - a structured way to represent input and output parameters: {@link parameters}
+ * - generic way to generate UI for inputs, outputs, and interactivity (running the model, etc)
+ *   - persisting historical results to the db (via {@link parameters})
+ * - export (to Excel and PDF): {@link export}
+ * - easy loading of historical runs
+ * - routing
+ * - entering the real, measured (as opposed to predicted) values manually
+ * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
+ * */
 export class RichFunctionView extends FunctionView {
   private validationRequests = new Subject<ValidationRequestPayload>();
   private validationUpdates = new Subject<null>();
@@ -78,6 +91,11 @@ export class RichFunctionView extends FunctionView {
   // validators
   private validators: Record<string, Validator> = {};
   private validationState: Record<string, ValidationResult | undefined> = {};
+
+  public pendingValidations = this.validationUpdates.pipe(
+    startWith(null),
+    map(() => this.validationState),
+  );
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -492,7 +510,8 @@ export class RichFunctionView extends FunctionView {
 
             this.showOutputTabsElem();
 
-            if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
+            // Filters: workaround for https://reddata.atlassian.net/browse/GROK-14270
+            if (Object.values(viewerTypesMapping).includes(loadedViewer.type) && loadedViewer.type !== DG.VIEWER.FILTERS) {
               loadedViewer.dataFrame = currentParam.value;
               loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
             } else {
@@ -550,6 +569,7 @@ export class RichFunctionView extends FunctionView {
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
             'max-width': `${blockWidth}%`,
+            'max-height': '100%',
           } : {
             'flex-grow': '1',
           }}});
@@ -558,7 +578,7 @@ export class RichFunctionView extends FunctionView {
         acc.append(...wrappedViewers);
 
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1'}}));
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
@@ -735,6 +755,9 @@ export class RichFunctionView extends FunctionView {
 
     if (state === 'inconsistent')
       input.setInconsistent();
+
+    if (state === 'user input')
+      input.setUserInput();
   }
 
   private getRestrictedValue(paramName: string) {
@@ -828,7 +851,7 @@ export class RichFunctionView extends FunctionView {
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices)
+    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
       return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {

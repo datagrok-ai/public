@@ -1,8 +1,6 @@
 /* eslint-disable max-len */
 /* eslint-disable no-multi-spaces */
 import * as DG from 'datagrok-api/dg';
-import {Property} from 'datagrok-api/src/entities';
-import {TYPE} from 'datagrok-api/src/const';
 
 import {limitedMemoryBFGS} from '../../lbfgs/lbfgs';
 //@ts-ignore: no types
@@ -151,6 +149,8 @@ export interface IFitChartOptions {
   logX?: boolean;            // defines whether the x data should be logarithmic or not
   logY?: boolean;            // defines whether the y data should be logarithmic or not
 
+  allowXZeroes?: boolean;    // defines whether x zeroes allowed for logarithmic data or not
+
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
 }
@@ -192,59 +192,60 @@ export interface IFitSeriesOptions {
 
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
-export const statisticsProperties: Property[] = [
-  Property.js('rSquared', TYPE.FLOAT, {userEditable: false}),
-  Property.js('auc', TYPE.FLOAT, {userEditable: false}),
-  Property.js('interceptY', TYPE.FLOAT, {userEditable: false}),
-  Property.js('interceptX', TYPE.FLOAT, {userEditable: false}),
-  Property.js('slope', TYPE.FLOAT, {userEditable: false}),
-  Property.js('top', TYPE.FLOAT, {userEditable: false}),
-  Property.js('bottom', TYPE.FLOAT, {userEditable: false}),
+export const statisticsProperties: DG.Property[] = [
+  DG.Property.js('rSquared', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('auc', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('interceptY', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('interceptX', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('slope', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false}),
 ];
 
 /** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
-export const fitChartDataProperties: Property[] = [
+export const fitChartDataProperties: DG.Property[] = [
   // Style and zoom
-  Property.js('minX', TYPE.FLOAT, {description: 'Minimum value of the X axis', nullable: true}),
-  Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
-  Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
-  Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
-  Property.js('title', TYPE.STRING, {nullable: true}),
-  Property.js('xAxisName', TYPE.STRING, {description:
+  DG.Property.js('minX', DG.TYPE.FLOAT, {description: 'Minimum value of the X axis', nullable: true}),
+  DG.Property.js('minY', DG.TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
+  DG.Property.js('maxX', DG.TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
+  DG.Property.js('maxY', DG.TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
+  DG.Property.js('title', DG.TYPE.STRING, {nullable: true}),
+  DG.Property.js('xAxisName', DG.TYPE.STRING, {description:
     'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('yAxisName', TYPE.STRING, {description:
+  DG.Property.js('yAxisName', DG.TYPE.STRING, {description:
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('logX', TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
-  Property.js('logY', TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
+  DG.Property.js('logX', DG.TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
+  DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
+  DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
+  DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
     choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
-export const fitSeriesProperties: Property[] = [
-  Property.js('fitFunction', TYPE.STRING,
+export const fitSeriesProperties: DG.Property[] = [
+  DG.Property.js('fitFunction', DG.TYPE.STRING,
     {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
-  Property.js('pointColor', TYPE.STRING,
+  DG.Property.js('pointColor', DG.TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
-  Property.js('fitLineColor', TYPE.STRING,
+  DG.Property.js('fitLineColor', DG.TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
-  Property.js('errorModel', TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
+  DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
-  Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
+  DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
     'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
-  Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
-  Property.js('showPoints', TYPE.STRING, // rewrite description
+  DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
+  DG.Property.js('showPoints', DG.TYPE.STRING, // rewrite description
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
-  Property.js('showCurveConfidenceInterval', TYPE.BOOL,
+  DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
       caption: 'Confidence interval'}),
-  Property.js('markerType', TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
+  DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
-  Property.js('lineStyle', TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
+  DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
     choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
-  Property.js('droplines', TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
+  DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
     choices: DROPLINES, inputType: 'MultiChoice'}),
 ];
 

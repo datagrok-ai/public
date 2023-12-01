@@ -233,6 +233,7 @@ export async function _pieChartDemo() {
 //name: trellisPlotDemo
 //description: Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.
 //meta.demoPath: Visualization | Data separation | Trellis Plot
+//meta.demoSkip: skip
 export async function _trellisPlotDemo() {
   await viewerDemo(DG.VIEWER.TRELLIS_PLOT);
 }

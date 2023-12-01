@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 
 import {_getPdbHelper} from '../package-utils';
@@ -18,6 +19,7 @@ export class BiotrackViewerApp {
 
   async init(data?: { df: DG.DataFrame }): Promise<void> {
     if (data) {
+      //
       await this.setData(data.df);
     } else {
       const [df] = await BiotrackViewerApp.loadData();
@@ -48,7 +50,7 @@ export class BiotrackViewerApp {
     this.view = grok.shell.addTableView(this.df);
     this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biotrack', {})) as DG.JsViewer;
+    const viewer: DG.Viewer<BiotrackProps> = (await this.view.dataFrame.plot.fromType('Biotrack', {}));
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biotrack', 0.4);
   }
 }

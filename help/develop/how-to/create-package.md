@@ -7,7 +7,7 @@ This documents explains how to create a simple package that contains an
 
 ## 1. Create a package
 
-Before we start, [set up development environment](../set-up-environment.md) if you haven't done it already.
+Before we start, [set up development environment](../dev-process/set-up-environment.md) if you haven't done it already.
 
 Now, let's create a package:
 

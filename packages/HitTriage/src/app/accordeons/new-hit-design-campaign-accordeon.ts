@@ -23,17 +23,22 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
   molCol.semType = DG.SEMTYPE.MOLECULE;
   molCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.SMILES);
   molCol.set(0, null);
-  const tileCategoryCol = df.columns.addNew(TileCategoriesColName, DG.TYPE.STRING);
-
-  tileCategoryCol.set(0, template.stages[0]);
-
+  if (template?.stages?.length > 0) {
+    const tileCategoryCol = df.columns.addNew(TileCategoriesColName, DG.TYPE.STRING);
+    tileCategoryCol.set(0, template.stages[0]);
+  }
   const vIdCol = df.columns.addNew(ViDColName, DG.TYPE.STRING);
   vIdCol.set(0, getNewVid(vIdCol));
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
-  const campaignProps = template.campaignFields.map((field) =>
-    DG.Property.fromOptions({name: field.name, type: CampaignFieldTypes[field.type], nullable: !field.required}));
+  const campaignProps = template.campaignFields
+    .map((field) => field.type === DG.SEMTYPE.MOLECULE ?
+      ({...field, type: 'String', semtype: DG.SEMTYPE.MOLECULE}) : field)
+    .map((field) =>
+      DG.Property.fromOptions(
+        {name: field.name, type: CampaignFieldTypes[field.type as keyof typeof CampaignFieldTypes],
+          nullable: !field.required, ...(field.semtype ? {semType: field.semtype} : {})}));
   const campaignPropsObject: {[key: string]: any} = {};
   const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
   campaignPropsForm.classList.remove('ui-form');
@@ -45,7 +50,17 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
   form.appendChild(buttonsDiv);
   const okPromise = new Promise<NewHitDesignCampaignRes>((resolve) => {
     const startCampaignButton = ui.bigButton(i18n.StartCampaign,
-      () => resolve({df, campaignProps: campaignPropsObject}));
+      () => {
+        for (const field of template.campaignFields) {
+          if (field.required) {
+            if (!campaignPropsObject[field.name] || campaignPropsObject[field.name] === '') {
+              grok.shell.error(`Field '${field.name}' is required`);
+              return;
+            }
+          }
+        }
+        resolve({df, campaignProps: campaignPropsObject});
+      });
     buttonsDiv.appendChild(startCampaignButton);
   });
   const cancelPromise = new Promise<void>((resolve) => {

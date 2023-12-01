@@ -1,6 +1,6 @@
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {DataQuery, toDart} from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {getCallTime} from '../benchmarks/benchmark';
 
@@ -77,7 +77,7 @@ category('Server cache', () => {
   });
 });
 
-async function invalidationCacheTest(dataQuery: DataQuery, days: number): Promise<void> {
+async function invalidationCacheTest(dataQuery: DG.DataQuery, days: number): Promise<void> {
   const start = Date.now();
   const funcCall1 = await dataQuery.prepare().call();
   const firstExecutionTime = Date.now() - start;
@@ -132,7 +132,7 @@ async function runHeavy(cache: boolean) {
     }
 
     const sum = results.reduce((p, c) => p + c, 0);
-    return toDart({'Average time': sum / results.length,
+    return DG.toDart({'Average time': sum / results.length,
       'Min time': Math.min(...results), 'Max time': Math.max(...results)});
   } catch (e) {
     grok.log.error(e);

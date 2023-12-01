@@ -39,6 +39,7 @@ export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
 export const SCAFFOLD_COL = 'scaffold-col';
+export const PARENT_MOL_COL = 'parent-mol-col';
 export const HIGHLIGHT_BY_SCAFFOLD_COL = 'highlight-scaffold-col';
 export const REGENERATE_COORDS = 'regenerate-coords';
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';

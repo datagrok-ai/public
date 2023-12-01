@@ -37,13 +37,16 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 };
 
 export namespace historyUtils {
-  const scriptsCache = {} as Record<string, DG.Script>;
+  const scriptsCache = {} as Record<string, DG.Func>;
   // TODO: add users and groups cache
 
-  export async function augmentCallWithFunc(call: DG.FuncCall) {
+  export async function augmentCallWithFunc(call: DG.FuncCall, useCache: boolean = true) {
     const id = call.func.id;
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-    const func = scriptsCache[id] ?? await grok.dapi.functions.include('package').allPackageVersions().find(id);
+    const fetchFunc = grok.dapi.functions.include('package').allPackageVersions().find(id);
+    const func = useCache ?
+      (scriptsCache[id] ?? await fetchFunc):
+      await fetchFunc;
 
     if (!scriptsCache[id]) scriptsCache[id] = func;
 

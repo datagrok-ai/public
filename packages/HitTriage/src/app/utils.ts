@@ -76,3 +76,19 @@ export function checkRibbonsHaveSubmit(ribbons: HTMLElement[][]): boolean {
         Array.from(c.children).some((child) =>child.classList.contains('hit-design-submit-button')), false);
   }, false);
 }
+
+/** Executes {@link func} while showing the "running" indicator on {@link root}.
+     * Handles and logs exceptions.
+     * @param {HTMLElement} root
+     * @param {Function} func
+     *  */
+export async function runAsync<T>(root: HTMLElement, func: () => Promise<T>) {
+  ui.setUpdateIndicator(root, true);
+  try {
+    return await func();
+  } catch (e: any) {
+    grok.log.error(e);
+  } finally {
+    ui.setUpdateIndicator(root, false);
+  }
+}

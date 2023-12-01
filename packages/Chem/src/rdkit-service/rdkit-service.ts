@@ -418,18 +418,15 @@ export class RdKitService {
   }
 
 
-  async convertMolNotation(targetNotation: string): Promise<string[]> {
+  async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation): Promise<string[]> {
     const t = this;
-    return this._doParallel(
-      (i: number) => {
-        return t.parallelWorkers[i].convertMolNotation(targetNotation);
-      },
-      (data: any) => {
-        for (let k = 0; k < data.length; ++k)
-          data[k] = data[k].map((a: number) => a + t.segmentLength * k);
-
-        return [].concat(...data);
+    const res =
+      await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+        t.parallelWorkers[i].convertMolNotation(segment, targetNotation),
+      (data: string[][]) => {
+        return ([] as string[]).concat(...data);
       });
+    return res;
   }
 
   async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]):

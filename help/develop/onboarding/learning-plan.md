@@ -99,7 +99,7 @@ The goal for today is to set up the environment and learn how to create simple p
 
    Developers use these resources on a regular basis, so consider adding them to your bookmarks.
 1. Read our [Contributor’s guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git
-   policy](../../develop/advanced/git-policy.mdx)
+   policy](../dev-process/git-policy.mdx)
 1. Clone our [public repository](https://github.com/datagrok-ai/public):
 
    ```sh
@@ -113,7 +113,7 @@ The goal for today is to set up the environment and learn how to create simple p
    ```
 
    Example: `jdoe/exercises`
-1. Follow instructions from [Setting up development environment](../set-up-environment.md)
+1. Follow instructions from [Setting up development environment](../dev-process/set-up-environment.md)
 1. Create your first project following instructions given in [Exercises](exercises.md#setting-up-the-environment)
 1. Add package unit tests:
    1. Read about [package tests](../how-to/test-packages.md)

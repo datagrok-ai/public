@@ -19,6 +19,7 @@ const properties = [
   { "name": "radio",       "inputType": "Radio", choices: ["Apple", "Banana"]},
   { "name": "choice",      "inputType": "Choice", choices: ["Apple", "Banana"]},
   { "name": "multiChoice", "inputType": "MultiChoice", choices: ["Apple", "Banana"]},
+  { "name": "users",       "inputType": "UserGroups"},
 ];
 
 let props = properties.map((p) => DG.Property.fromOptions(p))
@@ -39,6 +40,7 @@ let object = {
   column: df.columns.byName('race'),
   choice: 'Apple',
   radio: 'Apple',
+  users: [DG.User.current()]
 };
 
 ui.divV([

@@ -168,6 +168,9 @@ export class MonomerLib implements IMonomerLib {
   }
 }
 
+type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibHelper };
+declare const window: MonomerLibWindowType;
+
 export class MonomerLibHelper implements IMonomerLibHelper {
   private readonly _monomerLib: MonomerLib = new MonomerLib({});
 
@@ -285,7 +288,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       throw new Error(`Cannot select libraries ${invalidNames}: no such library in the list`);
     const settings = await getUserLibSettings();
     settings.exclude = (await getLibFileNameList()).filter((fileName) => !libFileNameList.includes(fileName));
-    await setUserLibSetting(settings);
+    await setUserLibSettings(settings);
   }
 
   private async getInvalidFileNames(libFileNameList: string[]): Promise<string[]> {
@@ -295,10 +298,8 @@ export class MonomerLibHelper implements IMonomerLibHelper {
   }
 
   // -- Instance singleton --
-  private static _instance: MonomerLibHelper | null = null;
-
   public static get instance(): MonomerLibHelper {
-    if (!MonomerLibHelper._instance) MonomerLibHelper._instance = new MonomerLibHelper();
-    return MonomerLibHelper._instance;
+    if (!window.$monomerLibHelper) window.$monomerLibHelper = new MonomerLibHelper();
+    return window.$monomerLibHelper;
   }
 }

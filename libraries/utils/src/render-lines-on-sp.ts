@@ -30,7 +30,8 @@ export type ILineSeries = {
     opacities?: Float32Array;   // line opacities. If they are the same for the series, use [opacity] instead
     drawArrows?: boolean;       // common parameter to draw arrows. Use [drawArrowsArr] if you need to draw arrows not for each line
     drawArrowsArr?: BitArray;   // individual parameter for each line. If they are the same for the series, use [drawArrows] instead
-    visibility?: BitArray;      // individual parameter for each line. Set bit to false to hide the line.
+    visibility?: BitArray;      // individual parameter for each line. Set bit to false to hide the line
+    arrowSize?: number;         // common for all arrows
 }
 
 export class ScatterPlotLinesRenderer {
@@ -82,9 +83,12 @@ export class ScatterPlotLinesRenderer {
         this.visibility = lines.visibility ?? new BitArray(this.lines.from.length);
         if (!lines.visibility)
             this.visibility.setAll(true, false);
+        if (lines.arrowSize)
+            this.arrowWidth = lines.arrowSize;
 
         this.canvas.onmousedown = (event: MouseEvent) => {
-            this.lineClicked.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId});
+            if (this.mouseOverLineId !== -1)
+                this.lineClicked.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId});
         }
 
         this.canvas.onmousemove = (event: MouseEvent) => {
@@ -160,7 +164,7 @@ export class ScatterPlotLinesRenderer {
                             const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen) : null;
                             const arrowCPX = multiLines ? controlPoint!.x : aX;
                             const arrowCPY = multiLines ? controlPoint!.y : aY;
-                            this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                            this.canvasArrow(this.ctx, arrowPoint?.x ?? aX, arrowPoint?.y ?? aY, arrowCPX, arrowCPY);
                         }
                     }
                     this.ctx.stroke();

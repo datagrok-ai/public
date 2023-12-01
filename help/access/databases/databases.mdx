@@ -374,7 +374,10 @@ To save the query output as a dynamic dashboard, do the following:
 1. In the **Upload project** dialog, enter a name and description (optional) in the fields provided.
 1. Select how to store data:
     * Save the data as a static snapshot.
-    * Store the data as a generation script by toggling the **Data sync** control. The query re-executes each time the project is opened. To learn more about dynamic data updates in projects, see [Dynamic data](../../collaborate/project.md#dynamic-data).
+    * Store the data as a generation script by toggling the **Data sync**
+      control. The query re-executes each time the project is opened. To learn
+      more about dynamic data updates in projects, see [Dynamic
+      data](../../collaborate/project.md#dynamic-data).
 1. Click **OK** to upload the project.
 1. [Share](#sharing-query-results) the project with others.
 
@@ -387,7 +390,14 @@ You have two options to share query results in Datagrok:
 * Share its URL
 * Share it as a project.
 
-Each query output has a unique URL, which has all the information needed to recreate the query, including its parameters. This is especially useful for parameterized queries, where you can embed the query output on external websites with specific parameters applied. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so the query output always displays the latest data. When the users open the report, they can still change the query parameters in the **Toolbox** on the left.
+Each query output has a unique URL, which has all the information needed to
+recreate the query, including its parameters. This is especially useful for
+parameterized queries, where you can embed the query output on external websites
+with specific parameters applied. After you have executed a query, copy the URL
+from the address bar and share it with others. When this URL is accessed, a
+query gets re-executed, so the query output always displays the latest data.
+When the users open the report, they can still change the query parameters in
+the **Toolbox** on the left.
 
 :::note
 
@@ -432,29 +442,66 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 :::
 
-## Debugging query
+<!--
 
-Query debugging helps you fix and improve query performance.
+## Debugging queries
 
-To start debugging:
+Debugging queries helps you fix and improve query performance.
 
-1. Right-click on the saved query and select **Debug**. The form appears.
-2. Fill in **Fetch size** input. This parameter sets the number of rows the JDBC driver fetches from the database and sends to the server in one WebSocket message. It also affects how many rows are shown on the screen in one workaround. You can also specify this parameter in megabytes to limit the message size.
-3. Optionally fill in **Init fetch size** input. This parameter is the same as **Fetch size**, but it applies to [Statement](https://docs.oracle.com/javase/8/docs/api/java/sql/Statement.html) and affects how fast the Statement executes and the first rows of the DataFrame appear on the screen.
-4. Check **Optimize fetch size** to run the query with several predefined **Fetch sizes** and get execution times.
-5. Press **OK**. Debugging starts.
+For exisitng queries:
+
+1. Right-click your query and select **Debug**. A dialog opens.
+1. In the dialog, set parameters:
+   * **Fetch size**: This parameter tells the JDBC driver how many rows to fetch from the
+     database at one time. If set to zero, the driver chooses the optimal fetch
+      size. The default limit for WebSocket messages is set to 10 MB.
+             
+      To obtain consistent debugging results, always specify the fetch size.
+      To persist the fetch size, include a meta parameter in your query:
+        
+        ```
+        --meta.connectFetchSize: 10000
+        SELECT * FROM very_big_table
+        ```
+        Or, to specify in megabytes:
+
+        ```
+        --meta.connectFetchSize: 10 MB
+        ```
+      
+   * **Init fetch size** (optional): This parameter is the same as **Fetch
+   size** but it applies to a [statement
+   object](https://docs.oracle.com/javase/8/docs/api/java/sql/Statement.html).
+   To persist this parameter, include a meta parameter in your query:
+
+      ```
+     --meta.initConnectFetchSize: 1000
+     SELECT * FROM very_big_table
+    ```
+
+   * **Optimize fetch size**: Selecting this checkbox disables manual fetch size inputs
+     and automatically tests different fetch sizes to determine the most
+     efficient one for your query.
+1. Press **OK**. A table with the fetch results opens.
 
 :::note
 
-You can debug queries in [Query Editor](#query-editor) by clicking on the "bug" icon on top of the editor. Also, you can start debugging from the **Context Panel** using the **Debug** section.
+You can debug queries in [Query Editor](#query-editor) by clicking on the "bug"
+icon on top of the editor. Also, you can start debugging from the **Context
+Panel** using the **Debug** section.
 
 :::
 
-When you finish debugging with **Optimize fetch size** off, you will see the execution results, **Summary**, and detailed logs. **Summary** shows the times of different stages of query execution. These metrics help you evaluate how factors like network speed, data complexity, etc. affect performance. **Summary** also explains what each metric means.
+When you finish debugging with **Optimize fetch size** off, you will see the
+execution results, **Summary**, and detailed logs. **Summary** shows the times
+of different stages of query execution. These metrics help you evaluate how
+factors like network speed, data complexity, etc. affect performance.
+**Summary** also explains what each metric means.
 
 :::note
 
-The network connection or the local disk load can affect the result a lot. For better evaluation, run **Debug** several times in a row.
+The network connection or the local disk load can affect the result a lot. For
+better evaluation, run **Debug** several times in a row.
 
 :::
 
@@ -470,11 +517,13 @@ You can always return to **Summary** and detailed logs to analyze them later. In
 
 :::
 
-To set a constant value for **Fetch size** and **Init fetch size** after analyzing **Summary** or **Optimize fetch size** results, follow these steps:
+To set a constant value for **Fetch size** and **Init fetch size** after
+analyzing **Summary** or **Optimize fetch size** results, follow these steps:
 
 1. Open the saved query in [Query Editor](#query-editor).
-2. Add the meta parameters *initConnectFetchSize* or *connectFetchSize* with the desired value to the query declaration.
-3. Save query.
+1. Add the meta parameters *initConnectFetchSize* or *connectFetchSize* with the
+   desired value to the query declaration.
+1. Save query.
 
 For example:
 
@@ -483,6 +532,7 @@ For example:
 --meta.initConnectFetchSize: 1000
 SELECT * FROM data;
 ```
+-->
 
 ## Resources
 

@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 import {
-  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, EXAMPLE_MIN_WIDTH, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
-} from '../../model/axolabs/const';
-import {isOverhang} from '../../model/axolabs/helpers';
-import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/axolabs/axolabs-tab';
-import {drawAxolabsPattern} from '../../model/axolabs/draw-svg';
+  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
+} from '../../model/pattern-app/const';
+import {isOverhang} from '../../model/pattern-app/helpers';
+import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model//pattern-app/oligo-pattern';
+import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 // todo: remove ts-ignore
 //@ts-ignore
 import * as svg from 'save-svg-as-png';
@@ -530,7 +530,6 @@ export class PatternLayoutHandler {
     const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
-    const appAxolabsDescription = ui.div([]);
     const loadPatternDiv = ui.div([]);
     const asModificationDiv = ui.form([]);
     const isEnumerateModificationsDiv = ui.divH([
@@ -678,7 +677,7 @@ export class PatternLayoutHandler {
       {backgroundColor: 'white'}), 'Download pattern as PNG image', '');
      
     const editPattern = ui.link('Edit pattern', ()=>{
-      ui.dialog('Edit patter')
+      ui.dialog('Edit pattern')
       .add(ui.divV([
         ui.h1('PTO'),
         ui.divH([
@@ -695,56 +694,6 @@ export class PatternLayoutHandler {
       .show()
     }, 'Edit pattern', '');  
 
-    const mainSection = ui.panel([
-      ui.block([
-        svgDiv,
-      ], {style: {overflowX: 'scroll'}}),
-      downloadButton,
-      isEnumerateModificationsDiv,
-      ui.div([
-        ui.div([
-          ui.divH([
-            ui.h1('Pattern options'),
-          ]),
-          ui.divH([
-            ui.block([
-              strandLengthInput[SS].root,
-              asLengthDiv,
-              sequenceBase.root,
-              comment.root,
-              loadPatternDiv,
-              saveAs.root,
-              ui.buttonsInput([
-                //savePatternButton,
-              ]),
-            ], 'ui-form'),
-            ui.block([
-              createAsStrand.root,
-              fullyPto.root,
-              firstPto[SS].root,
-              firstPto[AS].root,
-              terminalModification[SS][FIVE_PRIME].root,
-              terminalModification[SS][THREE_PRIME].root,
-              asModificationDiv,
-            ], 'ui-form'),
-          ]),
-        ], 'ui-form'),
-        inputsSection,
-        exampleSection,
-      ], {style: {flexWrap: 'wrap'}}),
-    ]);
-
-    const info = ui.info(
-      [
-        ui.divText('\n How to define new pattern:', {style: {'font-weight': 'bolder'}}),
-        ui.divText('1. Choose table and columns with sense and antisense strands'),
-        ui.divText('2. Choose lengths of both strands by editing checkboxes below'),
-        ui.divText('3. Choose basis and PTO status for each nucleotide'),
-        ui.divText('4. Set additional modifications for sequence edges'),
-        ui.divText('5. Press \'Convert Sequences\' button'),
-        ui.divText('This will add the result column(s) to the right of the table'),
-      ], 'Create and apply Axolabs translation patterns.',
-    );
     strandLengthInput[SS].addCaption('Length');
 
     return ui.splitH([

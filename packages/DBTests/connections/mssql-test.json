@@ -4,13 +4,13 @@
   "friendlyName": "NorthwindTest",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 1433,
+    "port": 14331,
     "db": "northwind"
   },
   "credentials" : {
     "parameters" : {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "7fekQBc4UFRTzHxx3ufOOmlw2L4pbKAfIHQy"
     }
   },
   "dataSource": "MS SQL",

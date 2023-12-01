@@ -31,7 +31,7 @@ function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
 
   const columnSource = column.getRawData();
 
-  /* REMARK. 
+  /* REMARK.
      Elements of the array randomData (uniform distribution on [0, 1]) are scaled
      to the range [min, max], where min & max are defined by numInputInfo. */
 
@@ -58,13 +58,12 @@ export function getVariedNumericalInputColumnsForSobolAnalysis(samplesCount: num
 // Returns columns of varied numerical inputs that are used in RSA
 export function getVariedNumericalInputColumnsForRandomAnalysis(samplesCount: number,
   inputsInfo: VariedNumericalInputInfo[]): DG.Column[] {
-
   const columns = [] as DG.Column[];
 
   for (const item of inputsInfo) {
     const column = DG.Column.fromType(item.prop.propertyType as unknown as DG.COLUMN_TYPE,
       item.prop.caption ?? item.prop.name, samplesCount);
-    
+
     const columnSource = column.getRawData();
     const step = item.max - item.min;
 

@@ -25,11 +25,11 @@ integrate with dependencies and interactions they bring.
 ## Continuous integration and deployment system
 
 To ensure quick and reliable code delivery, we apply the
-[CI/CD flow](../../../deploy/releases/ci-flow.mdx)
+[CI/CD flow](../../../develop/dev-process/ci-flow.mdx)
 using the following tools:
 
 * We use Git as a VCS, and we follow the
-[versioning policy](../../../deploy/releases/versioning-policy.md) for Datagrok
+[versioning policy](../../../develop/dev-process/versioning-policy.md) for Datagrok
 [JS APIs](https://github.com/datagrok-ai/public/tree/master/js-api),
 [packages](https://github.com/datagrok-ai/public/tree/master/packages),
 [libraries](https://github.com/datagrok-ai/public/tree/master/libraries), and

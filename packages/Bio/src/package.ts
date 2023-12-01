@@ -409,7 +409,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   let cliffsEncodeFunction: (seqCol: DG.Column, similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics) => any =
-     getEncodedSeqSpaceCol;
+    getEncodedSeqSpaceCol;
   const ncUH = UnitsHandler.getOrCreate(macroMolecule);
   const columnDistanceMetric: MmDistanceFunctionsNames | BitArrayMetrics = similarityMetric;
   const seqCol = macroMolecule;
@@ -671,8 +671,11 @@ export async function sequenceSpaceTopMenu(
 //input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
 export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
-  sequenceToMolfile(df, macroMolecule, nonlinear);
-  pi.close();
+  try {
+    await sequenceToMolfile(df, macroMolecule, nonlinear);
+  } finally {
+    pi.close();
+  }
 }
 
 //top-menu: Bio | Analyze | MSA...
@@ -1063,6 +1066,7 @@ export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
 //description: Sequence similarity tracking and evaluation dataset diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioSimilarityDiversity(): Promise<void> {
   await demoBio01UI();
 }
@@ -1073,6 +1077,7 @@ export async function demoBioSimilarityDiversity(): Promise<void> {
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioSequenceSpace(): Promise<void> {
   await demoBio01aUI();
 }
@@ -1083,6 +1088,7 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI();
 }
@@ -1093,6 +1099,7 @@ export async function demoBioActivityCliffs(): Promise<void> {
 //description: Atomic level structure of Macromolecules
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioAtomicLevel(): Promise<void> {
   await demoBio03UI();
 }
@@ -1103,6 +1110,7 @@ export async function demoBioAtomicLevel(): Promise<void> {
 //description: MSA and composition analysis on Helm data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Helm,%20MSA,%20Sequence%20Space
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }

@@ -81,8 +81,13 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
-  const campaignProps = template.campaignFields.map((field) =>
-    DG.Property.fromOptions({name: field.name, type: CampaignFieldTypes[field.type], nullable: !field.required}));
+  const campaignProps = template.campaignFields
+    .map((field) => field.type === DG.SEMTYPE.MOLECULE ?
+      ({...field, type: 'String', semtype: DG.SEMTYPE.MOLECULE}) : field)
+    .map((field) =>
+      DG.Property.fromOptions(
+        {name: field.name, type: CampaignFieldTypes[field.type as keyof typeof CampaignFieldTypes],
+          nullable: !field.required, ...(field.semtype ? {semType: field.semtype} : {})}));
   const campaignPropsObject: {[key: string]: any} = {};
   const campaignPropsForm = campaignProps.length ? ui.input.form(campaignPropsObject, campaignProps) : ui.div();
   campaignPropsForm.classList.remove('ui-form');

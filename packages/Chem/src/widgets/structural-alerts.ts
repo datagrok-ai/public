@@ -143,6 +143,7 @@ function filterByAlert(molCol: DG.Column, alert: string): void {
   const filterState = tv.getFiltersGroup({createDefaultFilters: false}).getStates(molCol.name, 'Chem:scaffoldTreeFilter');
   let newScaffoldTree = [{scaffold: alert}];
   if (filterState.length) {
+    // @ts-ignore
     newScaffoldTree = JSON.parse(filterState[0].savedTree);
     if (newScaffoldTree.findIndex((it: any) => it.scaffold === alert) !== -1)
       grok.shell.warning(`Structure already added to filter`);

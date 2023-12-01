@@ -1,6 +1,7 @@
 import {toJs} from './wrappers';
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * FormulaLine available parameters.

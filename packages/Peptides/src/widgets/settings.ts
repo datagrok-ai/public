@@ -62,7 +62,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const activityCol = ui.columnInput(GENERAL_INPUTS.ACTIVITY, model.df,
     model.df.getCol(model.settings.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
     {filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
-      col.name !== C.COLUMNS_NAMES.ACTIVITY_SCALED && col.stats.missingValueCount === 0});
+      col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0});
   activityCol.setTooltip('Numeric activity column');
   const activityScaling =
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
@@ -120,7 +120,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const includedColumnsInputs: DG.InputBase[] = [];
   for (const col of model.df.columns.numerical) {
     const colName = col.name;
-    if (colName === settings.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY_SCALED)
+    if (colName === settings.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY)
       continue;
 
     const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',

@@ -1,17 +1,42 @@
 # Peptides changelog
 
+## 1.17.0 (2023-11-29)
+
+### Features
+
+* Renamed activity column to _Activity_ (previously: _Scaled activity_).
+* Improved input tooltip in the Mutation Cliffs pairs panel.
+* Autosize grids in the Mutation Cliffs pairs panel.
+* Hid sequence space embedding columns and axes selectors.
+* Saving context panels state.
+* Selected cells now have an orange thick border.
+* Distribution panel now shows distribution for (1) all activity values, (2) selected rows, (3) peptides selection from
+  viewers if mismatched with the total selection.
+* Sequence space viewer now uses the Needleman-Wunsch algorithm to compute distances.
+* Linearization of helm format macromolecules before sequence space computation.
+* Improved rendering speed of invariant map (no lags).
+* Improved rendering speed upon selection/filtering.
+
+### Bug Fixes
+
+* Fixed accordion wouldn't update after selection in table view.
+* Filtering dataframe causing most potent residues viewer and context panel to crash.
+* Filtering dataframe causing major lags.
+* Most potent residues viewer crashing on some data.
+* Weblogo viewer crashing or causing major lag on selection/filtering.
+
 ## 1.16.0 (2023-11-05)
 
 ### Features
 
-* Added Select All and Desect All functionality to all viewers.
+* Added Select All and Deselect All functionality to all viewers.
 * Added Mean activity column for the Most Potent Residues viewer.
 * Added Mean activity to tooltips.
-* Added WebLogo to Selection table.
+* Added WebLogo to the Selection table.
 
 ### Bug Fixes
 
-* Fixed Logo Summary Table tooltip wouldn't show if analysis table doesn't contain column names 'Cluster'.
+* Fixed Logo Summary Table tooltip wouldn't show if the analysis table doesn't contain column name 'Cluster'.
 * Fixed tooltips would show irrelevant info.
 
 ## 1.15.3 (2023-10-26)
@@ -36,23 +61,23 @@
 
 ### Bug Fixes
 
-* Fixed Invariant Map color coding wouldn't change when changing color column.
+* Fixed Invariant Map color coding wouldn't change when changing the color column.
 
 ## 1.15.0 (2023-10-12)
 
 ### Features
 
 * Added Sequence Space viewer.
-* Selection panel columns now inherti width from main table.
-* Invarian Map cell values now rendered with contrast color relative to background.
+* Selection panel columns now inherit width from the main table.
+* Invariant Map cell values are now rendered with contrast color relative to the background.
 
 ### Bug Fixes
 
 * Fixed WebLogo in header margin width.
 * Widgets in Context panel will now fill all the available width.
-* Fixed LST rows not resizable.
+* Fixed LST rows are not resizable.
 * Fixed selection inconsistency.
-* Fixed Most Potent Residues keyboar navigation.
+* Fixed Most Potent Residues keyboard navigation.
 * Fixed analysis not starting when there are columns of the same name.
 
 ## 1.14.1 (2023-09-28)

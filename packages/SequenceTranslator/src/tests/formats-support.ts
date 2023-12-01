@@ -8,7 +8,7 @@ import {DEFAULT_FORMATS} from '../model/const';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
 import {formatsToHelm} from './const';
 import {SequenceValidator} from '../model/parsing-validation/sequence-validator';
-import {getTranslatedSequences} from '../model/format-translation/conversion-utils';
+import {getTranslatedSequences} from '../model/translator-app/conversion-utils';
 import {_package} from '../package';
 
 function getTranslationObject(sequence: string, format: string): {[format: string]: string} {

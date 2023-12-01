@@ -39,16 +39,25 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   autostart() {
     this.logger.debug('BsV: detectors.js: autostart()');
 
+    this.autostartContextMenu();
+  }
+
+  autostartContextMenu() {
     grok.events.onContextMenu.subscribe((event) => {
-      if (event.args.item && event.args.item instanceof DG.FileInfo) {
-        const fi = event.args.item;
-        if (fi.extension.toLowerCase() == 'pdb') {
-          const contextMenu = event.args.menu;
-          contextMenu.item('Open table residues', async () => {
-            await grok.functions.call('BiostructureViewer:openPdbResidues', {fi: fi});
-          });
-          event.preventDefault();
-          return;
+      if (event.args.item) {
+        const item = event.args.item;
+        // TODO: TreeViewNode.value is not real DG.FileInfo (no extension property)
+        // if (item instanceof DG.TreeViewNode)
+        //   item = item.value;
+
+        if (item && (
+          (item instanceof DG.GridCell || item.constructor.name === 'GridCell') ||
+          (item instanceof DG.FileInfo || item.constructor.name === 'FileInfo'))
+        ) {
+          grok.functions.call('BiostructureViewer:addContextMenu', {event: event})
+            .catch((err) => {
+              grok.shell.error(err.message);
+            });
         }
       }
     });

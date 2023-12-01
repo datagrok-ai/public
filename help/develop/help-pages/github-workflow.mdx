@@ -1,6 +1,14 @@
 ---
-title: "GitHub workflow"
+title: Building help locally
+sidebar label: Building help locally
 sidebar_position: 1
+keywords:
+  - docs
+  - docusaurus
+  - github workflow
+  - wiki
+  - build help
+  - contribute docs
 ---
 
 ```mdx-code-block
@@ -146,7 +154,7 @@ The source code and READMEs are located in our
 [public repository on GitHub](https://github.com/datagrok-ai/public/tree/master).
 This section helps you to set up this repository and install all required packages.
 
-1. Install commit linting tools as described in the [Git policy](../advanced/git-policy#commit-linting)
+1. Install commit linting tools as described in the [Git policy](../dev-process/git-policy#commit-linting)
 
 1. Open the Docusaurus folder in the _Datagrok public_ repository:
 
@@ -192,7 +200,7 @@ npm install
 
 ### 1. Create the branch
 
-Create the branch for your changes following the [General flow](../advanced/git-policy#general-flow) 
+Create the branch for your changes following the [General flow](../dev-process/git-policy#general-flow) 
 from the Git policy.
 
 ### 2. Run Docusaurus locally
@@ -280,7 +288,7 @@ If the command `npm run build` does not work, use `docusaurus build`.
 
 ### 5. Commit and push your changes
 
-Make and push a commit, following the [Commit message policy](../advanced/git-policy#commit-message-policy)
+Make and push a commit, following the [Commit message policy](../dev-process/git-policy#commit-message-policy)
 to choose the correct commit naming.
 
 Finally, create a pull request to merge your changes to the master branch.
@@ -300,7 +308,7 @@ Finally, create a pull request to merge your changes to the master branch.
 
 If any error occurs during checks, the deployment to the server will be canceled. Check for errors in the GitHub Actions log or in GitHub Actions run summary.
 
-More information about flow can be found on the Docusaurus Help tab in [public repository CI/CD flows](../../deploy/releases/ci-flow.mdx#public-repository-cicd-flows).
+More information about flow can be found on the Docusaurus Help tab in [public repository CI/CD flows](../dev-process/ci-flow.mdx#public-repository-cicd-flows).
 
 ### Trigger GitHub Actions manually
 

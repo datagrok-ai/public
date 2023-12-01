@@ -5,12 +5,12 @@
   "parameters": {
     "server": "db.datagrok.ai",
     "db": "northwind",
-    "port": 7687
+    "port": 17687
   },
   "credentials": {
     "parameters": {
       "login": "neo4j",
-      "password": "datagrok"
+      "password": "40tfjWDHJWEPEt0lc3DbBivPGNuJtA6L6tlZ"
     }
   },
   "dataSource": "Neo4j",

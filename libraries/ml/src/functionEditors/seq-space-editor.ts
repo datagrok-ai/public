@@ -23,7 +23,7 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       molecules: this.molColInput.value!,
       methodName: this.methodInput.value!,
       similarityMetric: this.similarityMetricInput.value!,
-      sparseMatrixThreshold: this.similarityThresholdObj['Similarity threshold'] ?? 0,
+      sparseMatrixThreshold: 0,
       plotEmbeddings: this.plotEmbeddingsInput.value!,
       options: this.algorithmOptions
     };
@@ -45,7 +45,6 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       this.methodInput,
       this.methodSettingsDiv,
       this.similarityMetricInputRoot,
-      this.similarityThresholdInput,
       this.plotEmbeddingsInput
     ], {style: {minWidth: '320px'}});
   }

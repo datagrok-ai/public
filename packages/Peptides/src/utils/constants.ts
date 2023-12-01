@@ -1,5 +1,7 @@
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
+  ACTIVITY = 'Activity',
+  // Deprecated, used for backward compatibility with 1.16.0
   ACTIVITY_SCALED = 'Scaled activity',
   MONOMER = 'AAR',
   POSITION = 'Pos',
@@ -46,6 +48,8 @@ export enum TAGS {
   SIMILARITY_TEMPLATE = 'Similarity template',
   ANALYSIS_COL = 'isAnalysisCol',
   POSITION_COL = 'isPositionCol',
+  M_P_STATS_CACHE = '.MPStatsCache',
+  INVARIANT_MAP_COLOR_CACHE = '.InvariantMapColorCache',
 }
 
 export enum SEM_TYPES {

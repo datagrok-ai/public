@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitTriageTemplateFunction} from '../types';
+import {HitTriageTemplateFunction, HitTriageTemplateScript} from '../types';
 import {HitDesignMolColName, ViDColFormat} from '../consts';
 
 export async function calculateSingleCellValues(
-  value: string, descriptors: string[], functions: HitTriageTemplateFunction[],
+  value: string, descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
 ): Promise<DG.DataFrame> {
   const col = DG.Column.fromStrings(HitDesignMolColName, [value]);
   const table = DG.DataFrame.fromColumns([col]);
@@ -16,9 +16,18 @@ export async function calculateSingleCellValues(
 
   for (const func of functions) {
     const props = func.args;
-    props['table'] = table;
-    props['molecules'] = col.name;
-    await grok.functions.call(`${func.package}:${func.name}`, props);
+    await grok.functions.call(`${func.package}:${func.name}`, {...props, table: table, molecules: col.name});
+  }
+
+  for (const script of scripts) {
+    const props = script.args;
+    try {
+      const scriptFunc = await grok.dapi.scripts.find(script.id);
+      if (scriptFunc)
+        await scriptFunc.apply({...props, table: table, molecules: col.name});
+    } catch (e) {
+      console.error(e);
+    }
   }
   return table;
 };

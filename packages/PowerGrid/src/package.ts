@@ -17,6 +17,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
+import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 
 export const _package = new DG.Package();
@@ -245,4 +246,26 @@ export function demoTestUnitsCellRenderer() {
 export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+}
+
+//name: Forms
+//description: Forms viewer
+//tags: viewer
+//meta.icon: files/icons/formviewer.svg
+//meta.viewerPosition: bottom
+//output: viewer result
+export function formsViewer() {
+  return new FormsViewer();
+}
+
+
+//name: Content
+//description: Image content
+//tags: panel, powergrid, widgets
+//input: string imageUrl { semType: ImageUrl }
+//output: widget result
+export function imgContent(imageUrl: string): DG.Widget {
+  const image = new Image();
+  image.src = imageUrl;
+  return imageUrl !== null ? new DG.Widget(image) : new DG.Widget(ui.divText('No image available'));
 }

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {getNucleotidesSequence} from '../model/format-translation/conversion-utils';
+import {getNucleotidesSequence} from '../model/translator-app/conversion-utils';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
 import {helmToNucleotides} from './const';
 import {_package} from '../package';

@@ -4,7 +4,7 @@ export function showHelpPanel() {
   const info = `# Try
   Vary inputs and press "RUN"
   # No-code
-  Construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool
+  Construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.
   # Model
   Only declarative equations description is required.
   # Essence

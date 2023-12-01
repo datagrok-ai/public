@@ -7,9 +7,11 @@ import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
+import {IDartApi} from "./api/grok_api.g";
 declare let grok: any;
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 
 const FuncCallParamMapProxy = new Proxy(class {
@@ -62,7 +64,7 @@ const FuncCallParamMapProxy = new Proxy(class {
     construct(target, args) {
       // @ts-ignore
       return new Proxy(new target(...args), {
-        get: function (target: any, prop) {
+        get: function (target: any, prop: string) {
           const val = target[prop];
           if (typeof val === 'function') {
             return function (...args :string[]) {
@@ -72,16 +74,16 @@ const FuncCallParamMapProxy = new Proxy(class {
             return DG.toJs(target.input ? api.grok_Func_InputParamMap_Get(target.dart, prop) : api.grok_Func_OutputParamMap_Get(target.dart, prop));
           }
         },
-        set: function (target, prop, value) {
+        set: function (target, prop: string, value) {
           target.input ? api.grok_Func_InputParamMap_Set(target.dart, prop, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(target.dart, prop, DG.toDart(value));
           return true;
         },
-        deleteProperty: function (target, prop) {
+        deleteProperty: function (target, prop: string) {
           target.input ? api.grok_Func_InputParamMap_Delete(target.dart, DG.toDart(prop)) : api.grok_Func_OutputParamMap_Delete(target.dart, DG.toDart(prop));
           return true;
         },
-        has: function (target, prop) {
-          return target.input ? api.grok_InputParamMap_Has(target.dart, DG.toDart(prop)) : api.grok_OutputParamMap_Has(target.dart, DG.toDart(prop));
+        has: function (target, prop: string) {
+          return target.input ? api.grok_Func_InputParamMap_Has(target.dart, DG.toDart(prop)) : api.grok_Func_OutputParamMap_Has(target.dart, DG.toDart(prop));
         },
         getOwnPropertyDescriptor(target, prop) {
           return {
@@ -319,6 +321,8 @@ export class FuncCall extends Entity {
 
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
+  get status(): string { return api.grok_FuncCall_Get_Status(this.dart); }
+
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
   set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
@@ -352,16 +356,17 @@ export class FuncCall extends Entity {
   }
 
   /** Executes the function call */
-  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  async call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
+    await api.grok_FuncCall_Call(this.dart, showProgress, toDart(progress), options?.processed, options?.report);
+    return this;
   }
 
   cancel(): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
+    return api.grok_FuncCall_Cancel(this.dart);
   }
 
   /** Executes the function call synchronously*/
-  callSync(options?: {processed?: boolean, report?: boolean}):FuncCall {
+  callSync(options?: {processed?: boolean, report?: boolean}): FuncCall {
      return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
   }
 
@@ -394,14 +399,17 @@ export class StepEditor extends DartWidget {
   }
 
   static create(): StepEditor {
+    // @ts-ignore
     return toJs(api.grok_StepEditor_Create());
   }
 
   loadScript(script: String): Promise<void> {
+    // @ts-ignore
     return new Promise((resolve, reject) => api.grok_StepEditor_LoadScript(this.dart, script, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
   }
 
   toScript(): string {
+    // @ts-ignore
     return api.grok_StepEditor_ToScript(this.dart);
   }
 
