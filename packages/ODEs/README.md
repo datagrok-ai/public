@@ -12,21 +12,21 @@ The solver requires ODEs specification in the declarative form.
 
 Datagrok ensures intuitive tools for the rapid solving ODEs.
 
-1. Run the solver: 
-* Go to **Apps** and run **EquaSleek X**
-* Press <i class="fas fa-play"></i> **Run** button on the top panel
-2. Modify a template:
-* Edit formulas or add new ones
-* Click **F5** or <i class="fas fa-play"></i> **Run** button
-3. Use an advanced template:
-* Rigth click and select **Templates > Advanced...**
-* Modify formulas and click **F5**
-4. Save formulas in a local file:
-* Rigth click and select **Save...**
-* Find the file in Downloads
-5. Load equations from a local file:
-* Rigth click and select **Load...**
-* Select a file with formulas
+* Run the solver: 
+  * Go to **Apps** and run **EquaSleek X**
+  * Press <i class="fas fa-play"></i> **Run** button on the top panel
+* Modify a template:
+  * Edit formulas or add new ones
+  * Click **F5** or <i class="fas fa-play"></i> **Run** button
+* Use an advanced template:
+  * Rigth click and select **Templates > Advanced...**
+  * Modify formulas and click **F5**
+* Save formulas in a local file:
+  * Rigth click and select **Save...**
+  * Find the file in Downloads
+* Load equations from a local file:
+  * Rigth click and select **Load...**
+  * Select a file with formulas
 
 ## Creating project
 
@@ -46,13 +46,22 @@ Apply built-in templates as a backbone of your project. Rigth click, select **Te
 
 The solver has built-in use cases. Get access to them via the context menu. You can use them as a template.
 
-|Use case|Features|
-|--------|--------|
-|`Chem reactions`|- simulates [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action)<br/> <br/>- illustrates annotation of inputs|
-|`Robertson's model`|- Robertson’s chemical reaction model<br/> <br/>- [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation) example<br/> <br/>- shows how Datagrok solves complicated ODEs|
-|`Fermentation`|- models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)<br/> <br/>- shows the usage of the `runOnOpen` and  `runOnInput` meta-features|
-|`PK-PD`|- simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)<br/> <br/>- illustrates the usage of the `loop` feature for dosing specification|
-|`Acid production`|- models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger<br/> <br/>- shows the usage of the `update` feature for multi-stage simulation|
+* `Chem reactions`
+  * simulates [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action)
+  * illustrates annotation of inputs
+* `Robertson's model`
+  * Robertson’s chemical reaction model
+  * [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation) example
+  * shows how Datagrok solves complicated ODEs
+* `Fermentation`
+  * models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)
+  * shows the usage of the `runOnOpen` and  `runOnInput` meta-features
+* `PK-PD`
+  * simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)
+  * illustrates the usage of the `loop` feature for dosing specification
+* `Acid production`
+  * models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger
+  * shows the usage of the `update` feature for multi-stage simulation
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
@@ -96,7 +105,7 @@ Find useful the following:
 
 Datagrok provides an export of each solver project to JavaScript script:
 
-* Press <i class="fa-file-import"></i> **Export** button on the top panel
+* Press **Export** button on the top panel
 * Press **SAVE** button
 
 Find the created script in the platform `Scripts`.

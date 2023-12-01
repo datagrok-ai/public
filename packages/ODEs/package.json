@@ -1,6 +1,6 @@
 {
 	"name": "@datagrok/odes",
-	"friendlyName": "Deqs",
+	"friendlyName": "ODEs",
 	"version": "0.0.1",
 	"description": "WebAutoSolver tools for solving ODEs in a browser.",
 	"author": {
