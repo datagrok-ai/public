@@ -14,7 +14,7 @@ import * as rxjs from 'rxjs';
  * All files **must** be aligned to HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor() {
-    DG.debounce<void>(this._onFileListChange, 1000).subscribe(async () => {
+    DG.debounce<void>(this._onFileListChange, 3000).subscribe(async () => {
       await this.updateFilePaths();
     });
   }
@@ -36,7 +36,6 @@ export class MonomerLibFileManager {
     return MonomerLibFileManager.instance;
   }
 
-  // expose subject as observable
   get onFileListChange(): rxjs.Observable<void> {
     return this._onFileListChange.asObservable();
   }
@@ -47,7 +46,11 @@ export class MonomerLibFileManager {
 
   /** Add standard .json monomer library  */
   async addLibFile(fileContent: string, fileName: string): Promise<void> {
-    const pi = DG.TaskBarProgressIndicator.create(`Adding ${fileName} as a monomer library`);
+    if (await this.fileExists(fileName)) {
+      grok.shell.error(`File ${fileName} already exists`);
+      return;
+    }
+
     await this.validateFile(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
     await this.validateAllFiles();
@@ -57,11 +60,13 @@ export class MonomerLibFileManager {
       grok.shell.error(`Failed to add ${fileName} library`);
     else
       grok.shell.info(`Added ${fileName} HELM library`);
-    pi.close();
+  }
+
+  private async fileExists(fileName: string): Promise<boolean> {
+    return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
 
   async deleteLibFile(fileName: string): Promise<void> {
-    const pi = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
     try {
       await grok.dapi.files.delete(LIB_PATH + `${fileName}`);
       await this.validateAllFiles();
@@ -74,8 +79,6 @@ export class MonomerLibFileManager {
         grok.shell.error(`Failed to delete ${fileName} library`);
       else
         grok.shell.warning(`File ${fileName} already deleted, refresh the list`);
-    } finally {
-      pi.close();
     }
   }
 

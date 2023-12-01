@@ -35,7 +35,10 @@ class Widget {
     const addLibrariesBtn: HTMLButtonElement = ui.button('Add', async () => await this.addFiles());
     ui.tooltip.bind(addLibrariesBtn, 'Load new monomer libraries');
     const refreshIcon = ui.iconFA('sync-alt', async () => {
+      const pi = DG.TaskBarProgressIndicator.create('Updating monomer library list');
       await formHandler.refreshInputsForm();
+      grok.shell.info('List of monomer libraries updated');
+      pi.close();
     });
     const refreshBtn = ui.button(refreshIcon, () => {} );
     ui.tooltip.bind(refreshIcon, 'Refresh libraries list');
@@ -51,10 +54,13 @@ class Widget {
         open: async (libFile) => {
           const content = await libFile.text();
           const name = libFile.name;
+          const pi = DG.TaskBarProgressIndicator.create(`Adding ${name} as a monomer library`);
           try {
             await this.monomerLibFileManager.addLibFile(content, name);
           } catch (e) {
             grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM standard`);
+          } finally {
+            pi.close();
           }
         },
       });
@@ -91,13 +97,10 @@ class ControlsFormHandler {
   }
 
   async refreshInputsForm(): Promise<void> {
-    const pi = DG.TaskBarProgressIndicator.create('Updating monomer library list');
     // WARNING: this is necessary to prevent sync issues with the file system
     await this.monomerLibFileManager.refreshValidFilePaths();
     const updatedForm = await this.getInputsForm();
     $(this.inputsForm).replaceWith(updatedForm);
-    grok.shell.info('Updated of monomer libraries');
-    pi.close();
   }
 
   private async getControlList(): Promise<DG.InputBase<boolean | null>[]> {
@@ -134,7 +137,11 @@ class ControlsFormHandler {
   private getDeleteDialog(fileName: string): void {
     const dialog = ui.dialog('Warning');
     dialog.add(ui.divText(`Are you sure you want to delete ${fileName}?\nThis will delete the file from ${LIB_PATH}`))
-      .onOK(async () => await this.monomerLibFileManager.deleteLibFile(fileName))
+      .onOK(async () => {
+        const pi = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
+        await this.monomerLibFileManager.deleteLibFile(fileName);
+        pi.close();
+      })
       .showModal(false);
   }
 }
