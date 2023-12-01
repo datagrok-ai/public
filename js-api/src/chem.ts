@@ -336,7 +336,7 @@ export namespace chem {
         this._mode = mode;
       this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
-      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link sketch-link');
+      this.emptySketcherLink = ui.divText('Sketch', 'chem-sketch-link sketch-link');
       this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       ui.tooltip.bind(this.errorDiv, () => this.error);
