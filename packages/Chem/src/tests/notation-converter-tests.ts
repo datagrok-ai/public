@@ -3,7 +3,7 @@ import {_package} from '../package-test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {convertNotation, getRdKitModule} from '../package';
+import {convertNotation, getRdKitModule, namesToSmiles} from '../package';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 // import {_package} from '../package-test';
@@ -66,6 +66,13 @@ category('converters', async () => {
   });
   test('Molfile V3000 to SMILES', async () => {
     _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
+  });
+  test('Names to SMILES', async () => {
+    const df = await readDataframe('tests/names_to_smiles.csv');
+    await namesToSmiles(df, df.col('Name')!);
+    await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
+        `Column with names has not been converted to smiles`, 5000);
+    expect(df.get('canonical_smiles', 3) === 'O=C(CCCN1CCC(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1');
   });
   test('Convert notations for column', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
