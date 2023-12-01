@@ -1205,6 +1205,12 @@ export interface ISummaryLookSettings {
   /// List of aggregations for the columns
   aggregations: Array<string>;
 
+  /// Mode to visualize aggregation by filling the cell
+  cellFillMode: boolean;
+
+  /// Cell filling direction (left to right or bottom to top)
+  cellFillDirection: string;
+
   visualizationType: string;
 
   /// Numerical column to be used for color-coding.
