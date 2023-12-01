@@ -481,7 +481,7 @@ M  END
           substructObj = rawSubstructCol.get(idx!);
       }
       this._drawMolecule(x, y, w, h, g.canvas, molString, highlightScaffolds ?? [],
-        molRegenerateCoords, false, cellStyle, false, substructObj);
+        molRegenerateCoords, false, cellStyle, false, {}, substructObj);
     } else {
       // drawing with a per-row scaffold
       const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
