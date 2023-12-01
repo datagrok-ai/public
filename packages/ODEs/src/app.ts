@@ -10,7 +10,7 @@ import {python} from "@codemirror/lang-python";
 import {autocompletion} from "@codemirror/autocomplete";
 
 import {DF_NAME, CONTROL_EXPR, TEMPLATES} from './constants';
-import {getIVP, getScriptLines, getScriptParams} from './scripting-tools';
+import {getIVP, getScriptLines, getScriptParams, IVP} from './scripting-tools';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -80,6 +80,7 @@ const completions = [
   {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: "tolerance of numerical solution"},
   {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "loop feature"},
   {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: "update model feature"},
+  {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: "keyword", info: "output specification"},
 ];
 
 /** Control expressions completion utilite */
@@ -91,6 +92,17 @@ function contrCompletions(context: any) {
     options: completions,
     validFor: /^\w*$/
   }
+}
+
+/** */
+function lineChartOptions(ivp: IVP): Object {
+  return {    
+    showTitle: true,
+    autoLayout: false,
+    sharex: true, 
+    multiAxis: true,
+    multiAxisLegendPosition: "RightTop",
+  };
 }
 
 /** Run solver application */
@@ -126,16 +138,8 @@ export async function runSolverApp() {
       solverView.dataFrame = call.outputs[DF_NAME];
       solverView.name = solutionTable.name;
 
-      if (solutionViewer)
-        solutionViewer.close();  
-      
-      solutionViewer = DG.Viewer.lineChart(solutionTable, {
-        showTitle: true,
-        autoLayout: false,
-        sharex: true, 
-        multiAxis: true,
-        multiAxisLegendPosition: "RightTop",
-      });
+      if (!solutionViewer)
+        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
       
       solverView.dockManager.dock(solutionViewer, 'right');
       

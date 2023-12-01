@@ -7,7 +7,8 @@ const CONTROL_SEP = ':';
 const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
 const SERVICE = '_';
-const BRACE = '{';
+const BRACE_OPEN = '{';
+const BRACE_CLOSE = '}';
 const DEFAULT_TOL = '0.00005';
 
 /** Solver package name */
@@ -53,8 +54,14 @@ type Update = {
   updates: string[],
 };
 
+/** Output specification */
+type Output = {
+  caption: string,
+  formula: string | null,
+};
+
 /** Initial Value Problem (IVP) specification type */
-type IVP = {
+export type IVP = {
   name: string,
   tags: string | null,
   descr: string | null,
@@ -70,19 +77,22 @@ type IVP = {
   loop: Loop | null,
   updates: Update[] | null,
   metas: string[],
+  outputs: Map<string, Output> | null,
 };
 
 /** Specific error messeges */
 enum ERROR_MSG {
-  ODES = 'incorrect definition of the system of ordinary differential equations',
-  CONTROL_EXPR = `unsupported control expression with the tag '${CONTROL_TAG}'`,
-  ARG = 'incorrect argument specification',
-  INITS = 'incorrect initial values specification',
-  LOOP = 'incorrect loop specification',
-  COUNT = 'incorrect loop count',
-  LOOP_VS_UPDATE = 'loop- & update-blocks cannot be used together',
-  UPDATE = 'incorrect update specification',
-  DURATION = 'incorrect update duration',
+  ODES = 'Incorrect definition of the system of ordinary differential equations',
+  CONTROL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
+  ARG = 'Incorrect argument specification',
+  INITS = 'Incorrect initial values specification',
+  LOOP = 'Incorrect loop specification',
+  COUNT = 'Incorrect loop count',
+  LOOP_VS_UPDATE = 'Loop- & update-blocks cannot be used together',
+  UPDATE = 'Incorrect update specification',
+  DURATION = 'Incorrect update duration',
+  BRACES = 'One of the braces ({, }) is missing',
+  COLON = 'Incorrect use of ":"',
 }
 
 /** Datagrok annatations */
@@ -256,7 +266,7 @@ function getExpressions(lines: string[]): Map<string, string> {
 /** Get input specification */
 function getInput(line: string) : Input {
   const str = line.slice(line.indexOf(EQUAL_SIGN) + 1).trim();
-  const braceIdx = str.indexOf(BRACE);
+  const braceIdx = str.indexOf(BRACE_OPEN);
 
   if (braceIdx === -1)
     return {
@@ -327,6 +337,67 @@ function getUpdate(lines: string[], begin: number, end: number): Update {
   return {duration: duration, updates: source.slice(UPDATE.DURATION_IDX + 1)};
 }
 
+/** Get output specification */
+function getOutput(lines: string[], begin: number, end: number): Map<string, Output> {
+  const res = new Map<string, Output>();
+  
+  let line: string;
+  let token: string;
+  let eqIdx: number;
+  let openIdx: number;
+  let closeIdx: number;
+  let colonIdx: number;
+
+  for (let i = begin; i < end; ++i) {
+    line = lines[i];
+    eqIdx = line.indexOf(EQUAL_SIGN);
+    openIdx = line.indexOf(BRACE_OPEN);
+    closeIdx = line.indexOf(BRACE_CLOSE);
+    colonIdx = line.indexOf(CONTROL_SEP);
+
+    // check braces
+    if (openIdx * closeIdx <= 0)
+      throw new Error(`${ERROR_MSG.BRACES}. Check the line '${line}' in the output-block.`);
+
+    // check ":"
+    if (openIdx * colonIdx <= 0)
+      throw new Error(`${ERROR_MSG.COLON}. Check the line '${line}' in the output-block.`);
+
+    if (eqIdx === -1) // no formula
+      if (openIdx === -1) { // no annotation
+        token = line.trim();
+        res.set(token, {
+          caption: token, 
+          formula: null
+        });
+      }
+      else { // there is an annotation
+        token = line.slice(0, openIdx).trim();
+        res.set(token, {
+          caption: line.slice(colonIdx + 1, closeIdx), 
+          formula: null
+        });
+      }
+    else // there is a formula
+      if (openIdx === -1) { // no annotation
+        token = line.slice(0, eqIdx).trim();
+        res.set(token, {
+          caption: token, 
+          formula: line.slice(eqIdx + 1)
+        });
+      }
+      else { // there is an annotation
+        token = line.slice(0, eqIdx).trim();
+        res.set(token, {
+          caption: line.slice(colonIdx + 1, closeIdx), 
+          formula: line.slice(eqIdx + 1, openIdx)
+        });
+      }
+  } // for i
+
+  return res;
+} // getOutput
+
 /** Get initial value problem specification given in the text */
 export function getIVP(text: string): IVP {
   // The current Initial Value Problem (IVP) specification
@@ -343,6 +414,7 @@ export function getIVP(text: string): IVP {
   let loop: Loop | null = null;
   let updates = [] as Update[];
   const metas = [] as string[];
+  let outputs: Map<string, Output> | null = null;
 
   // 0. Split text into lines
   const lines = text.split('\n').filter((s) => s !== '').map((s) => s.trimStart());
@@ -393,6 +465,9 @@ export function getIVP(text: string): IVP {
     else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
       updates.push(getUpdate(lines, block.begin + 1, block.end));
     }
+    else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
+      outputs = getOutput(lines, block.begin + 1, block.end);
+    }
     else
       metas.push(firstLine.slice(CONTROL_TAG_LEN));
   } // for
@@ -421,6 +496,7 @@ export function getIVP(text: string): IVP {
     loop: loop,
     updates: (updates.length === 0) ? null : updates,
     metas: metas,
+    outputs: outputs,
   };
 } // getIVP
 

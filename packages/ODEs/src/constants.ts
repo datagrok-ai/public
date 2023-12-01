@@ -20,6 +20,7 @@ export enum CONTROL_EXPR {
     UPDATE = `${CONTROL_TAG}update`,
     RUN_ON_OPEN = `${META}.runOnOpen`,
     RUN_ON_INPUT = `${META}.runOnInput`,
+    OUTPUT = `${CONTROL_TAG}output`,
 };
 
 /** Loop consts */

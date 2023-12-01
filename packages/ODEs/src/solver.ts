@@ -35,7 +35,7 @@ const E32 = 6.0 + Math.sqrt(2.0);
 
 /** Error messeges */
 enum ERROR_MSG {
-  ROSENBROCK_METHOD_FAILS = 'the modified Rosenbrock triple method fails',
+  ROSENBROCK_METHOD_FAILS = 'The modified Rosenbrock triple method fails',
 };
 
 /** The abs function */
