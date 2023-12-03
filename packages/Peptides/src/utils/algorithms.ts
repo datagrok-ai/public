@@ -10,11 +10,16 @@ import {
   getStats,
   MonomerPositionStats,
   PositionStats,
-  Stats,
+  StatsItem,
   SummaryStats,
 } from './statistics';
 
-export type MutationCliffsOptions = { maxMutations?: number, minActivityDelta?: number, targetCol?: type.RawColumn | null, currentTarget?: string | null };
+export type MutationCliffsOptions = {
+  maxMutations?: number,
+  minActivityDelta?: number,
+  targetCol?: type.RawColumn | null,
+  currentTarget?: string | null
+};
 
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
@@ -30,9 +35,9 @@ export async function findMutations(activityArray: type.RawData, monomerInfoArra
 
 export function calculateMonomerPositionStatistics(activityCol: DG.Column<number>, filter: DG.BitSet,
   positionColumns: DG.Column<string>[], options: {
-        isFiltered?: boolean,
-        columns?: string[]
-    } = {}): MonomerPositionStats {
+    isFiltered?: boolean,
+    columns?: string[]
+  } = {}): MonomerPositionStats {
   options.isFiltered ??= false;
   const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
   // const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
@@ -80,7 +85,8 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   return monomerPositionObject;
 }
 
-export function getSummaryStats(genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
+export function getSummaryStats(genObj: SummaryStats, stats: StatsItem | null = null,
+  summaryStats: SummaryStats | null = null): void {
   if (stats === null && summaryStats === null)
     throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
 
@@ -128,7 +134,7 @@ export function getSummaryStats(genObj: SummaryStats, stats: Stats | null = null
 }
 
 export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName: string,
-  customClusters: DG.Column<boolean>[]): ClusterTypeStats {
+  customClusters: DG.Column<boolean>[], activityCol: DG.Column<number>): ClusterTypeStats {
   const rowCount = df.rowCount;
   const origClustCol = df.getCol(clustersColumnName);
   const origClustColData = origClustCol.getRawData();
@@ -142,7 +148,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
   const customClustColNamesList = customClusters.map((v) => v.name);
 
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
+  // const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityColData = activityCol.getRawData() as Float64Array;
 
   const origClustStats: ClusterStats = {};

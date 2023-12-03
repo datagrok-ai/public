@@ -5,7 +5,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {ClusterType} from '../viewers/logo-summary';
 
-export type Stats = {
+export type StatsItem = {
   count: number,
   pValue: number | null,
   meanDifference: number,
@@ -14,10 +14,13 @@ export type Stats = {
   mean: number,
 };
 
-export type PositionStats = {[monomer: string]: Stats | undefined} & {general: SummaryStats};
-export type MonomerPositionStats = {[position: string]: PositionStats | undefined} & {general: SummaryStats};
-export type ClusterStats = {[cluster: string]: Stats};
-export type ClusterTypeStats = {[clusterType in ClusterType]: ClusterStats};
+export type PositionStats = { [monomer: string]: StatsItem } & { general: SummaryStats };
+export type MonomerPositionStats = { [position: string]: PositionStats } & { general: SummaryStats };
+export type ClusterStats = { [cluster: string]: StatsItem };
+export type ClusterTypeStats = { [clusterType in ClusterType]: ClusterStats };
+export type MasksInfo = {
+  [positionOrClusterType: string | ClusterType]: { [monomerOrCluster: string]: { mask: BitArray } }
+};
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -28,9 +31,9 @@ export type SummaryStats = {
 };
 
 export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
-export type AggregationColumns = {[col: string]: DG.AggregationType};
+export type AggregationColumns = { [col: string]: DG.AggregationType };
 
-export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
+export function getStats(data: RawData | number[], bitArray: BitArray): StatsItem {
   if (data.length !== bitArray.length && data.some((v, i) => i >= bitArray.length ? v !== 0 : false))
     throw new Error('PeptidesError: Data and bit array have different lengths');
   if (bitArray.falseCount() === 0 || bitArray.trueCount() === 0)
@@ -82,7 +85,11 @@ export function getAggregatedValue(col: DG.Column<number>, agg: DG.AggregationTy
 }
 
 export function getAggregatedColumnValues(df: DG.DataFrame, columns: AggregationColumns,
-  options: {filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number} = {}): StringDictionary {
+  options: {
+                                            filterDf?: boolean,
+                                            mask?: DG.BitSet,
+                                            fractionDigits?: number
+                                          } = {}): StringDictionary {
   options.filterDf ??= false;
   options.fractionDigits ??= 3;
 

@@ -7,13 +7,17 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getAggregatedColumnValues, getStats, Stats} from '../utils/statistics';
-import {PeptidesModel} from '../model';
+import {getStats, StatsItem} from '../utils/statistics';
 import {getDistributionPanel, getDistributionTable} from '../utils/misc';
+import {SARViewer} from '../viewers/sar-viewer';
+import {LogoSummaryTable} from '../viewers/logo-summary';
 
-export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
+export type DistributionTableOptions = { peptideSelection: DG.BitSet };
+export type PeptideViewer = SARViewer | LogoSummaryTable;
+
+export function getDistributionWidget(table: DG.DataFrame, options: DistributionTableOptions): HTMLDivElement {
   if (!table.selection.anyTrue)
-    return new DG.Widget(ui.divText('No distribution'));
+    return ui.divText('No distribution');
 
   const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const rowCount = activityCol.length;
@@ -39,11 +43,11 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     if (!table.selection.anyTrue)
       res.push(ui.divText('No distribution'));
     else {
-      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection, model.getCombinedSelection()));
+      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection, options.peptideSelection));
       const bitArray = BitArray.fromString(table.selection.toBinaryString());
-      const mask = DG.BitSet.create(rowCount,
-        bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
-      const aggregatedColMap = getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
+      // const mask = DG.BitSet.create(rowCount,
+      //   bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
+      const aggregatedColMap = {}; // getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
       const stats = bitArray.allFalse || bitArray.allTrue ?
         {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: activityCol.stats.avg} :
         getStats(activityCol.getRawData(), bitArray);
@@ -69,7 +73,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   // const controlsHost = ui.divH([splitByPosition.root, splitByMonomer.root]);
   // splitByMonomer.fireChanged();
   updateDistributionHost();
-  return new DG.Widget(ui.divV([/*controlsHost,*/ distributionHost]));
+  return ui.divV([distributionHost]);
 }
 
 export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false): DG.Viewer<DG.IHistogramLookSettings> {
@@ -88,7 +92,7 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
   return hist;
 }
 
-export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number} = {}): StringDictionary {
+export function getStatsTableMap(stats: StatsItem, options: { fractionDigits?: number } = {}): StringDictionary {
   options.fractionDigits ??= 3;
   const tableMap: StringDictionary = {
     'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,

@@ -110,12 +110,15 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection[CLUSTER_TYPE.CUSTOM].includes(cellValue) || clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue))
+  if (clusterSelection[CLUSTER_TYPE.CUSTOM].includes(cellValue) ||
+    clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue))
     renderCellSelection(canvasContext, bound);
 }
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats, position: string,
-  sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
+  sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: {
+    [monomer: string]: number
+  } = {},
   drawOptions: type.DrawOptions = {}): { [monomer: string]: DG.Rect } {
   const pr = window.devicePixelRatio;
   drawOptions.symbolStyle ??= '16px Roboto, Roboto Local, sans-serif';
@@ -176,15 +179,16 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
 }
 
 export type CellRendererOptions = {
-    isSelectionTable?: boolean, headerSelectedMonomers?: type.SelectionStats, webLogoBounds: WebLogoBounds,
-    cachedWebLogoTooltip: type.CachedWebLogoTooltip, colorPalette: SeqPalette, unhighlightCallback?: () => void,
-    highlightCallback?: (mp: type.SelectionItem, dataFrame: DG.DataFrame, stats: MonomerPositionStats) => void,
-    selectionCallback?: (monomerPosition: type.SelectionItem, options: type.SelectionOptions) => void,
+  isSelectionTable?: boolean, headerSelectedMonomers?: type.SelectionStats, webLogoBounds: WebLogoBounds,
+  cachedWebLogoTooltip: type.CachedWebLogoTooltip, colorPalette: SeqPalette, unhighlightCallback?: () => void,
+  highlightCallback?: (mp: type.SelectionItem, dataFrame: DG.DataFrame, stats: MonomerPositionStats) => void,
+  selectionCallback?: (monomerPosition: type.SelectionItem, options: type.SelectionOptions) => void,
 };
 export type WebLogoBounds = { [position: string]: { [monomer: string]: DG.Rect } };
 
-export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerPositionStats, positionColumns: DG.Column<string>[],
-  activityCol: DG.Column<number>, options: CellRendererOptions, tooltipOptions: TooltipOptions = {
+export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerPositionStats,
+  positionColumns: DG.Column<string>[], activityCol: DG.Column<number>, options: CellRendererOptions,
+  tooltipOptions: TooltipOptions = {
     x: 0, y: 0, mpStats: {} as MonomerPositionStats,
     monomerPosition: {} as type.SelectionItem,
   }): void {
@@ -193,7 +197,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
     tooltipOptions.mpStats = monomerPositionStats;
   if (options.isSelectionTable && (!options.webLogoBounds || !options.cachedWebLogoTooltip)) {
     throw new Error('Peptides: Cannot set WebLogo renderer for selection table without `headerSelectedMonomers`, ' +
-            '`webLogoBounds` and `cachedWebLogoTooltip` options.');
+      '`webLogoBounds` and `cachedWebLogoTooltip` options.');
   }
 
   const df = grid.dataFrame;
@@ -212,8 +216,11 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
       //TODO: optimize
       if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
         const isDfFiltered = df.filter.anyFalse;
-        const stats = (isDfFiltered || options.isSelectionTable ?
-          calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {isFiltered: true, columns: [col.name]}) :
+        const stats = (isDfFiltered ?
+          calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {
+            isFiltered: true,
+            columns: [col.name],
+          }) :
           monomerPositionStats)[col.name];
         if (!stats)
           return;
@@ -226,13 +233,14 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
           return 0;
         }).filter((v) => v !== 'general');
 
-                options.webLogoBounds![col.name] = drawLogoInBounds(ctx, bounds, stats, col.name,
-                  sortedStatsOrder, df.filter.trueCount, options.colorPalette, options.headerSelectedMonomers ? options.headerSelectedMonomers[col.name] : {});
-                gcArgs.preventDefault();
+        options.webLogoBounds![col.name] = drawLogoInBounds(ctx, bounds, stats, col.name,
+          sortedStatsOrder, df.filter.trueCount, options.colorPalette,
+          options.headerSelectedMonomers ? options.headerSelectedMonomers[col.name] : {});
+        gcArgs.preventDefault();
       }
     } catch (e) {
       console.warn(`PeptidesHeaderLogoError: couldn't render WebLogo for column \`${col!.name}\`. ` +
-                `See original error below.`);
+        `See original error below.`);
       console.warn(e);
     } finally {
       ctx.restore();
@@ -250,7 +258,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
-      requestBarchartAction(ev, monomerPosition, df, options, tooltipOptions);
+      requestBarchartAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
       if (!options.isSelectionTable && options.highlightCallback != null)
         options.highlightCallback(monomerPosition, df, monomerPositionStats);
     }
@@ -262,7 +270,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
 }
 
 function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionItem, df: DG.DataFrame,
-  options: CellRendererOptions, tooltipOptions: TooltipOptions): void {
+  activityCol: DG.Column<number>, options: CellRendererOptions, tooltipOptions: TooltipOptions): void {
   if (ev.type === 'click' && !options.isSelectionTable && options.selectionCallback != null)
     options.selectionCallback(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
   else {
@@ -270,16 +278,17 @@ function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionIt
     if (options.cachedWebLogoTooltip!.bar === bar)
       ui.tooltip.show(options.cachedWebLogoTooltip!.tooltip!, ev.clientX, ev.clientY);
     else {
-            options.cachedWebLogoTooltip!.bar = bar;
-            tooltipOptions.x = ev.clientX;
-            tooltipOptions.y = ev.clientY;
-            tooltipOptions.monomerPosition = monomerPosition;
-            options.cachedWebLogoTooltip!.tooltip = showTooltipAt(df, {}, tooltipOptions);
+      options.cachedWebLogoTooltip!.bar = bar;
+      tooltipOptions.x = ev.clientX;
+      tooltipOptions.y = ev.clientY;
+      tooltipOptions.monomerPosition = monomerPosition;
+      options.cachedWebLogoTooltip!.tooltip = showTooltipAt(df, activityCol, {}, tooltipOptions);
     }
   }
 }
 
-function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBounds: WebLogoBounds): type.SelectionItem | null {
+function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBounds: WebLogoBounds,
+): type.SelectionItem | null {
   const barCoords = webLogoBounds[cell.tableColumn!.name];
   for (const [monomer, coords] of Object.entries(barCoords)) {
     const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;

@@ -55,12 +55,12 @@ export function Peptides(): void {
     iconPath: _package.getIconUrl(),
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
     description:
-            '- Automatically recognizes peptides in your data\n' +
-            '- Invariant map and mutation cliffs\n' +
-            '- Logo plots to explore sequence composition\n' +
-            '- Hierarchical clustering\n' +
-            '- Sequence space to analyze clustering and activity cliffs\n' +
-            '- Finds statistically significant changes in activity for monomer/positions\n',
+      '- Automatically recognizes peptides in your data\n' +
+      '- Invariant map and mutation cliffs\n' +
+      '- Logo plots to explore sequence composition\n' +
+      '- Hierarchical clustering\n' +
+      '- Sequence space to analyze clustering and activity cliffs\n' +
+      '- Finds statistically significant changes in activity for monomer/positions\n',
   });
 
   const windows = grok.shell.windows;
@@ -136,7 +136,7 @@ export function manualAlignment(_monomer: string): DG.Widget {
   if (!model)
     return new DG.Widget(ui.divText('Manual alignment works with peptides analysis'));
 
-  const col = df.getCol(model.settings.sequenceColumnName!);
+  const col = df.getCol(model.settings!.sequenceColumnName!);
   return manualAlignmentWidget(col, df);
 }
 

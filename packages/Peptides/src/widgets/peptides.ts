@@ -11,7 +11,7 @@ import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {LST_PROPERTIES} from '../viewers/logo-summary';
+import {ILogoSummaryTable} from '../viewers/logo-summary';
 
 
 /** Peptide analysis widget.
@@ -111,12 +111,13 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const targetColumnChoice = ui.columnInput('Target', df, null, null, {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
-  targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in the data. ' +
-    'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
-  targetColumnChoice.nullable = true;
+  // const targetColumnChoice = ui.columnInput('Target', df, null, null,
+  //   {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
+  // targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in ' +
+  //   'the data. Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
+  // targetColumnChoice.nullable = true;
 
-  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
   if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
 
@@ -127,7 +128,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value, {addSequenceSpace: true});
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, //targetColumnChoice.value,
+        {addSequenceSpace: true});
       return model !== null;
     }
     return false;
@@ -164,7 +166,7 @@ type AnalysisOptions = { addSequenceSpace?: boolean };
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-  targetColumn: DG.Column<string> | null = null, options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
+  /*targetColumn: DG.Column<string> | null = null,*/ options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
@@ -185,10 +187,13 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       sequenceColumnName: peptidesCol.name,
       activityColumnName: activityColumn.name,
       activityScaling: scaling,
-      // columns: {},
+      columns: {},
       // maxMutations: 1,
       // minActivityDelta: 0,
       showDendrogram: false,
+      // showLogoSummaryTable: !!clustersColumn,
+      // showMonomerPosition: true,
+      // showMostPotentResidues: true,
     };
     // if (targetColumn !== null)
     //   settings.targetColumnName = targetColumn.name;
@@ -221,9 +226,11 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     model = PeptidesModel.getInstance(newDf.clone(bitset));
     model.init(settings);
     if (clustersColumn) {
-      const lstProps = {
-        [LST_PROPERTIES.CLUSTERS_COLUMN_NAME]: clustersColumn.name,
-        [LST_PROPERTIES.SEQUENCE_COLUMN_NAME]: peptidesCol.name,
+      const lstProps: ILogoSummaryTable = {
+        clustersColumnName: clustersColumn.name,
+        sequenceColumnName: peptidesCol.name,
+        activityScaling: scaling,
+        activityColumnName: activityColumn.name,
       };
       await model.addLogoSummaryTable(lstProps);
     }

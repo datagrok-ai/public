@@ -2,9 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
+import {PeptidesSettings} from './types';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MonomerPositionStats, PositionStats} from './statistics';
+import {MasksInfo, MonomerPositionStats, PositionStats} from './statistics';
+import {PeptideViewer} from '../widgets/distribution';
 
 export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
@@ -65,12 +67,13 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
 }
 
 enum SPLIT_CATEGORY {
-    SELECTION = 'Selection',
-    ALL = 'All',
-    PEPTIDES_SELECTION = 'Peptides selection',
+  SELECTION = 'Selection',
+  ALL = 'All',
+  PEPTIDES_SELECTION = 'Peptides selection',
 }
 
-export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>, statsMap: StringDictionary, labelMap: { [key in SPLIT_CATEGORY]?: string } = {}): HTMLDivElement {
+export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>, statsMap: StringDictionary,
+  labelMap: { [key in SPLIT_CATEGORY]?: string } = {}): HTMLDivElement {
   const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
   const labels = [];
   const categories = splitCol.categories as SPLIT_CATEGORY[];
@@ -89,11 +92,13 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>,
 }
 
 /* Creates a table to plot activity distribution. */
-export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet): DG.DataFrame {
+export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet,
+): DG.DataFrame {
   const selectionMismatch = peptideSelection?.clone().xor(selection).anyTrue ?? false;
   const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
-  const activityData = new Float32Array(rowCount + selection.trueCount + (selectionMismatch ? (peptideSelection?.trueCount ?? 0) : 0));
+  const activityData = new Float32Array(rowCount + selection.trueCount +
+    (selectionMismatch ? (peptideSelection?.trueCount ?? 0) : 0));
   const categories: string[] = new Array(activityData.length);
 
   for (let i = 0, j = 0, k = 0; i < rowCount; ++i) {
@@ -192,7 +197,8 @@ export function modifySelection(selection: type.Selection, clusterOrMonomerPosit
   return selection;
 }
 
-export function highlightMonomerPosition(monomerPosition: type.SelectionItem, dataFrame: DG.DataFrame, monomerPositionStats: MonomerPositionStats): void {
+export function highlightMonomerPosition(monomerPosition: type.SelectionItem, dataFrame: DG.DataFrame,
+  monomerPositionStats: MonomerPositionStats): void {
   const bitArray = new BitArray(dataFrame.rowCount);
   if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
     const positionStats = Object.values(monomerPositionStats);
@@ -219,4 +225,42 @@ export function initSelection(positionColumns: DG.Column<string>[]): type.Select
     tempSelection[posCol.name] = [];
 
   return tempSelection;
+}
+
+export function getSelectionBitset(selection: type.Selection, stats: MasksInfo): DG.BitSet | null {
+  let combinedBitset: BitArray | null = null;
+  const selectionEntries = Object.entries(selection);
+  for (const [positionOrClusterType, selected] of selectionEntries) {
+    const statsType = stats[positionOrClusterType];
+    for (const monomerOrCluster of selected) {
+      const statsItem = statsType[monomerOrCluster];
+      combinedBitset ??= new BitArray(statsItem.mask.length, false);
+      combinedBitset!.or(statsType[monomerOrCluster].mask);
+    }
+  }
+
+  return combinedBitset !== null ? DG.BitSet.fromBytes(combinedBitset.buffer.buffer, combinedBitset.length) : null;
+}
+
+export function areParametersEqual(o1: PeptideViewer | PeptidesSettings, o2: PeptideViewer | PeptidesSettings,
+): boolean {
+  return o1.sequenceColumnName === o2.sequenceColumnName && o1.activityColumnName === o2.activityColumnName &&
+    o1.activityScaling === o2.activityScaling;
+}
+
+export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, rowCount: number): MasksInfo {
+  const result: MasksInfo = {};
+  for (const [position, monomerMap] of mutationCliffs) {
+    result[position] = {};
+    for (const [monomer, indexMap] of monomerMap) {
+      const bitArray = new BitArray(rowCount, false);
+      for (const [index, indexList] of indexMap) {
+        bitArray.setTrue(index);
+        for (const i of indexList)
+          bitArray.setTrue(i);
+      }
+      result[position][monomer] = {mask: bitArray};
+    }
+  }
+  return result;
 }

@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import * as type from '../utils/types';
@@ -9,13 +10,13 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
 
-type PaneInputs = {[paneName: string]: DG.InputBase[]};
-type SettingsElements = {dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs};
+type PaneInputs = { [paneName: string]: DG.InputBase[] };
+type SettingsElements = { dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs };
 
 export enum SETTINGS_PANES {
   GENERAL = 'General',
   VIEWERS = 'Viewers',
-  MUTATION_CLIFFS = 'Mutation Cliffs',
+  // MUTATION_CLIFFS = 'Mutation Cliffs',
   COLUMNS = 'Columns',
 }
 
@@ -28,10 +29,10 @@ export enum VIEWERS_INPUTS {
   DENDROGRAM = VIEWER_TYPE.DENDROGRAM,
 }
 
-export enum MUTATION_CLIFFS_INPUTS {
-  MAX_MUTATIONS = 'Max mutations',
-  MIN_ACTIVITY_DELTA = 'Min activity delta',
-}
+// export enum MUTATION_CLIFFS_INPUTS {
+//   MAX_MUTATIONS = 'Max mutations',
+//   MIN_ACTIVITY_DELTA = 'Min activity delta',
+// }
 
 export enum COLUMNS_INPUTS {
   IS_INCLUDED = '',
@@ -41,32 +42,36 @@ export enum COLUMNS_INPUTS {
 export const PANES_INPUTS = {
   [SETTINGS_PANES.GENERAL]: GENERAL_INPUTS,
   [SETTINGS_PANES.VIEWERS]: VIEWERS_INPUTS,
-  [SETTINGS_PANES.MUTATION_CLIFFS]: MUTATION_CLIFFS_INPUTS,
+  // [SETTINGS_PANES.MUTATION_CLIFFS]: MUTATION_CLIFFS_INPUTS,
   [SETTINGS_PANES.COLUMNS]: COLUMNS_INPUTS,
 };
 
 //TODO: show sliderInput values
 export function getSettingsDialog(model: PeptidesModel): SettingsElements {
+  if (model.settings == null)
+    grok.log.error('PeptidesError: Settings are not initialized');
   const accordion = ui.accordion();
   const settings = model.settings;
-  const currentScaling = settings.scaling ?? C.SCALING_METHODS.NONE;
+  const currentScaling = settings?.activityScaling ?? C.SCALING_METHODS.NONE;
   // const currentBidirectional = settings.isBidirectional ?? false;
-  const currentMaxMutations = settings.maxMutations ?? 1;
-  const currentMinActivityDelta = settings.minActivityDelta ?? 0;
-  const currentColumns = settings.columns ?? {};
+  // const currentMaxMutations = settings.maxMutations ?? 1;
+  // const currentMinActivityDelta = settings.minActivityDelta ?? 0;
+  const currentColumns = settings?.columns ?? {};
 
   const result: type.PartialPeptidesSettings = {};
   const inputs: PaneInputs = {};
 
   // General pane options
   const activityCol = ui.columnInput(GENERAL_INPUTS.ACTIVITY, model.df,
-    model.df.getCol(model.settings.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
-    {filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
-      col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0});
+    model.df.getCol(model.settings!.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
+    {
+      filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
+        col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0,
+    });
   activityCol.setTooltip('Numeric activity column');
   const activityScaling =
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
-      () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
+      () => result.activityScaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
   activityScaling.setTooltip('Activity column transformation method');
 
   accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling]), true);
@@ -94,33 +99,33 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram]), true);
   inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];
 
-  // Mutation Cliffs pane options
-  const maxMutations = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MAX_MUTATIONS, currentMaxMutations, 1, 50, () => {
-    const val = Math.round(maxMutations.value);
-    $(maxMutations.root).find('label.ui-input-description').remove();
-    result.maxMutations = val;
-    maxMutations.addPostfix(val.toString());
-  }) as DG.InputBase<number>;
-  maxMutations.setTooltip('Maximum number of mutations between reference and mutated sequences');
-  maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
-  const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, currentMinActivityDelta, 0,
-    100, () => {
-      const val = minActivityDelta.value.toFixed(3);
-      result.minActivityDelta = parseFloat(val);
-      $(minActivityDelta.root).find('label.ui-input-description').remove();
-      minActivityDelta.addPostfix(val);
-    }) as DG.InputBase<number>;
-  minActivityDelta.setTooltip('Minimum activity difference between reference and mutated sequences');
-  minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
-  accordion.addPane(SETTINGS_PANES.MUTATION_CLIFFS, () => ui.inputs([maxMutations, minActivityDelta]), true);
-  inputs[SETTINGS_PANES.MUTATION_CLIFFS] = [maxMutations, minActivityDelta];
+  // // Mutation Cliffs pane options
+  // const maxMutations = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MAX_MUTATIONS, currentMaxMutations, 1, 50, () => {
+  //   const val = Math.round(maxMutations.value);
+  //   $(maxMutations.root).find('label.ui-input-description').remove();
+  //   result.maxMutations = val;
+  //   maxMutations.addPostfix(val.toString());
+  // }) as DG.InputBase<number>;
+  // maxMutations.setTooltip('Maximum number of mutations between reference and mutated sequences');
+  // maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
+  // const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, currentMinActivityDelta, 0,
+  //   100, () => {
+  //     const val = minActivityDelta.value.toFixed(3);
+  //     result.minActivityDelta = parseFloat(val);
+  //     $(minActivityDelta.root).find('label.ui-input-description').remove();
+  //     minActivityDelta.addPostfix(val);
+  //   }) as DG.InputBase<number>;
+  // minActivityDelta.setTooltip('Minimum activity difference between reference and mutated sequences');
+  // minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
+  // accordion.addPane(SETTINGS_PANES.MUTATION_CLIFFS, () => ui.inputs([maxMutations, minActivityDelta]), true);
+  // inputs[SETTINGS_PANES.MUTATION_CLIFFS] = [maxMutations, minActivityDelta];
 
   // Columns to include pane options
   const inputsRows: HTMLElement[] = [];
   const includedColumnsInputs: DG.InputBase[] = [];
   for (const col of model.df.columns.numerical) {
     const colName = col.name;
-    if (colName === settings.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY)
+    if (colName === settings!.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY)
       continue;
 
     const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',
@@ -134,7 +139,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
             delete result.columns;
         }
       }) as DG.InputBase<boolean>;
-    isIncludedInput.setTooltip('Include aggregated column value in tooltips, Logo Summary Table and Distribution panel');
+    isIncludedInput.setTooltip('Include aggregated column value in tooltips, Logo Summary Table and ' +
+      'Distribution panel');
 
     const aggregationInput = ui.choiceInput(COLUMNS_INPUTS.AGGREGATION, (currentColumns)[colName] ?? DG.AGG.AVG,
       Object.values(DG.STATS), () => {
