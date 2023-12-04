@@ -991,7 +991,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateOnFiltering() {
-    const molColumn = this.dataFrame.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
+    const molColumn = this.dataFrame?.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
     updateLabelWithLoaderOrBitset(this, molColumn); 
   }
 
