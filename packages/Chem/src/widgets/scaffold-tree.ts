@@ -219,53 +219,51 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
 
 function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer, column: DG.Column) {
   const items = thisViewer.tree.items;
-  let showTooltip = true;
-  const getLabel = (group: DG.TreeViewGroup) => {
-    if (isOrphans(group)) {
-      return;
-    }
-    const labelDiv = value(group).labelDiv;
-    labelDiv.style.display = 'flex'
-    const smiles = value(group).smiles;
+
+  const updateLabel = (group: DG.TreeViewGroup) => {
+    const { labelDiv, smiles } = value(group);
     const loaderNode = labelDiv.querySelector('.grok-loader');
-    console.log(loaderNode);
-    if (!loaderNode && !labelDiv.childNodes[1]) {
-      const loaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
-      labelDiv.insertBefore(loaderDiv, labelDiv.firstChild);
-    } else if (labelDiv.firstChild && labelDiv.childNodes[1]) {
-      const newLoaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
-      labelDiv.replaceChild(newLoaderDiv, labelDiv.firstChild!);
-    }
+    const newLoaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
+
+    labelDiv.style.display = 'flex'
+    
+    if (!loaderNode && !labelDiv.childNodes[1])
+      labelDiv.insertBefore(newLoaderDiv, labelDiv.firstChild);
+    else if (labelDiv.firstChild && labelDiv.childNodes[1])
+      labelDiv.replaceChild(newLoaderDiv, labelDiv.firstChild);
+
     handleMalformedStructures(column, smiles).then((bitset: DG.BitSet) => {
-      if (bitset.trueCount.toString() === labelDiv.childNodes[1]!.textContent) {
-        labelDiv.removeChild(labelDiv.firstChild!);
-        showTooltip = false;
-      } else {
-        labelDiv.replaceChild(ui.divText(`(${bitset.trueCount.toString()})`), labelDiv.firstChild!); 
-        showTooltip = true;
+      if (labelDiv.childNodes[1]) {
+        const textContent = labelDiv.childNodes[1].textContent;
+        const bitsetCount = bitset.trueCount.toString();
+        const countMatch = bitsetCount === textContent;
+
+        if (countMatch)
+          labelDiv.removeChild(labelDiv.firstChild!);
+        else
+          labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild!); 
+
+        labelDiv.onmouseenter = (e) => {
+          if (!countMatch) {
+            ui.tooltip.show(ui.divV([
+              ui.divText(textContent + ' matches total'),
+              ui.divText(bitsetCount + ' matches filtered')
+            ]), e.clientX + 15, e.clientY) ;
+          }
+        };
+
+        labelDiv.onmouseleave = (e) => ui.tooltip.hide();
       }
-      labelDiv.onmouseenter = (e) => {
-        if (showTooltip) {
-          ui.tooltip.show(ui.divV([
-            ui.divText(labelDiv.childNodes[1].textContent! + ' matches total'),
-            ui.divText(bitset.trueCount.toString() + ' matches filtered')
-          ]), e.clientX, e.clientY) ;
-        }
-      }
-      labelDiv.onmouseleave = (e) => ui.tooltip.hide();
     });
-  }
+  };
+
   items.map((group) => {
     const castedGroup = group as DG.TreeViewGroup;
-    getLabel(castedGroup);
-    if (castedGroup.children) {
-      for (let i = 0; i < castedGroup.children.length; ++i) {
-        getLabel(castedGroup.children[i] as DG.TreeViewGroup);
-      }
-    }
-  })
+    if (isOrphans(group))
+      return;
+    updateLabel(castedGroup);
+  });
 }
-
 
 function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
   const labelDiv = value(group).labelDiv;
@@ -813,6 +811,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.updateFilters();
     this.updateTag();
+    if (this.dataFrame) {
+      this.updateOnFiltering();
+    }
   }
 
   get molColumn(): DG.Column | null {
@@ -990,6 +991,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }, async (strMolSketch: string) => {
       });
     this.wrapper.show();
+  }
+
+  updateOnFiltering() {
+    const molColumn = this.dataFrame.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
+    updateLabelWithLoaderOrBitset(this, molColumn); 
   }
 
   removeColorCoding(node: TreeViewGroup) {
@@ -1434,7 +1440,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     colorIcon.onmouseenter = (e) => {
       let text;
       const parentColor = value(group).parentColor;
-      const chosenColor = value(group).chosenColor;
     
       if (value(group).colorOn)
         text = 'Color picked by user';
@@ -1504,19 +1509,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).labelDiv = newLabelDiv;
         this.updateFilters();
         this.filterTree(this.threshold);
-        if (this.dataFrame.filter.trueCount !== this.dataFrame.filter.length) {
-          const col = this.dataFrame.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
-          updateLabelWithLoaderOrBitset(thisViewer, col);
-        }
+        this.updateOnFiltering();
       });
     }
     
     value(group).labelDiv = labelDiv;
-    if (this.dataFrame.filter.trueCount !== this.dataFrame.filter.length) {
-      const col = this.dataFrame.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
-      updateLabelWithLoaderOrBitset(thisViewer, col);
-    }
-
 
     const c = molHost.getElementsByTagName('CANVAS');
     if (c.length > 0)
@@ -1835,15 +1832,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (this.applyFilter) {
       this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
-        console.log('in on rows filtering');
         if (thisViewer.bitset != null)
           dataFrame.filter.and(thisViewer.bitset);
       }));
     }
 
-    this.subs.push(dataFrame.onRowsFiltering.subscribe((_) => {
-      const col = dataFrame.groupBy([this.molColumn!.name]).whereRowMask(dataFrame.filter).aggregate().getCol(this.molColumn!.name);
-      updateLabelWithLoaderOrBitset(thisViewer, col);
+    this.subs.push(dataFrame.onFilterChanged.subscribe((_) => {
+      this.updateOnFiltering();
     }));
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
@@ -1861,6 +1856,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.subs.push(this.dataFrame.onRowsRemoved.subscribe(async (_) => {
       await updateAllNodesHits(thisViewer);
+      this.updateOnFiltering();
     }));
 
     this.render();
