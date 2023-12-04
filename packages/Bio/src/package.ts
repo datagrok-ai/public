@@ -494,6 +494,12 @@ export async function sequenceSpaceTopMenu(
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN,
   plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: (IUMAPOptions | ITSNEOptions) & Options,
 ): Promise<DG.Viewer | undefined> {
+  const scatterPlotProps = {
+    showXAxis: false,
+    showYAxis: false,
+    showXSelector: false,
+    showYSelector: false,
+  };
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
@@ -511,7 +517,7 @@ export async function sequenceSpaceTopMenu(
         if (plotEmbeddings) {
           scatterPlot = grok.shell
             .tableView(table.name)
-            .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+            .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
         }
       } else {
         embedXCol = table.columns.byName(embedColsNames[0]);
@@ -554,7 +560,7 @@ export async function sequenceSpaceTopMenu(
       if (plotEmbeddings) {
         scatterPlot = grok.shell
           .tableView(table.name)
-          .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+          .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
         ui.setUpdateIndicator(scatterPlot.root, true);
       }
       let resolveF: Function | null = null;
