@@ -36,7 +36,7 @@ export enum TAGS {
   VISIBLE = 'visible',
   SETTINGS = 'settings',
   CUSTOM_CLUSTER = 'customCluster',
-  UUID = 'pep-uuid',
+  // UUID = 'pep-uuid',
   MONOMER_POSITION_MODE = 'monomerPositionMode',
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'Identity template',

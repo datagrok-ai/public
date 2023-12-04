@@ -133,21 +133,21 @@ category('Table view', () => {
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after initialization`);
 
     // Select by second monomer-position pair
-    model.modifyInvariantMapSelection(secondPair);
+    model.modifyWebLogoSelection(secondPair);
     expect(model.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
       `Monomer ${secondPair.monomerOrCluster} is not filtered at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
       `for monomer ${secondPair.monomerOrCluster} at position ${secondPair.positionOrClusterType}`);
 
     // Select by first monomer-position pair
-    model.modifyInvariantMapSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
+    model.modifyWebLogoSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
     expect(model.invariantMapSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not filtered at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Deselect filter for second monomer-position pair
-    model.modifyInvariantMapSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    model.modifyWebLogoSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
     expect(model.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
       `Monomer ${secondPair.monomerOrCluster} is still filtered at position ${secondPair.positionOrClusterType} after ` +
       `deselection`);

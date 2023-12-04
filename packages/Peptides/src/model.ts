@@ -12,7 +12,6 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 import wu from 'wu';
 import * as rxjs from 'rxjs';
-import * as uuid from 'uuid';
 import $ from 'cash-dom';
 
 import * as C from './utils/constants';
@@ -98,11 +97,11 @@ export class PeptidesModel {
 
   get analysisView(): DG.TableView {
     if (this._analysisView === undefined) {
-      this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id);
-      if (typeof this._analysisView === 'undefined') {
+      this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id);
+      if (typeof this._analysisView === 'undefined')
         this._analysisView = grok.shell.addTableView(this.df);
-        this.df.setTag(C.TAGS.UUID, uuid.v4());
-      }
+      // this.df.setTag(C.TAGS.UUID, uuid.v4());
+
 
       const posCols = this.positionColumns?.map((col) => col.name);
 
@@ -111,8 +110,10 @@ export class PeptidesModel {
           const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
           if (gridCol === null)
             throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
-          else if (gridCol.column === null)
-            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null column`);
+          else if (gridCol.column === null) {
+            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null ` +
+              `column`);
+          }
 
           gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
         }
@@ -216,12 +217,8 @@ export class PeptidesModel {
     return positionColumns;
   }
 
-  get id(): string | null {
-    const id = this.df.getTag(C.TAGS.UUID);
-    if (id === null || id === '')
-      return null;
-
-    return id;
+  get id(): string {
+    return this.df.getTag(DG.TAGS.ID)!;
   }
 
   get alphabet(): string {
@@ -238,7 +235,7 @@ export class PeptidesModel {
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
-  modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {
+  modifyWebLogoSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {
     shiftPressed: false,
     ctrlPressed: false,
   }, notify: boolean = true): void {
@@ -370,7 +367,7 @@ export class PeptidesModel {
       viewers.push(trueModel.settings);
 
     const notEmpty = (v: PeptideViewer | PeptidesSettings | null): v is PeptideViewer | PeptidesSettings =>
-      v !== null && areParametersEqual(requestSource!, v);
+      v !== null && areParametersEqual(requestSource!, v) && (v !== trueModel.settings || trueModel.isInitialized);
     const panelDataSources = viewers.filter(notEmpty);
     panelDataSources.push(requestSource);
     const combinedBitset: DG.BitSet | null = DG.BitSet.create(table.rowCount);
@@ -844,7 +841,7 @@ export class PeptidesModel {
 
   createNewView(): string {
     const rowMask = this.getVisibleSelection();
-    const newDfId = uuid.v4();
+    // const newDfId = uuid.v4();
 
     const newDf = this.df.clone(rowMask);
     for (const [tag, value] of newDf.tags)
@@ -852,7 +849,7 @@ export class PeptidesModel {
 
     newDf.name = 'Peptides Multiple Views';
     newDf.setTag(C.TAGS.MULTIPLE_VIEWS, '1');
-    newDf.setTag(C.TAGS.UUID, newDfId);
+    // newDf.setTag(C.TAGS.UUID, newDfId);
 
     const view = grok.shell.addTableView(newDf);
 
@@ -864,7 +861,7 @@ export class PeptidesModel {
       });
     }
 
-    return newDfId;
+    return newDf.getTag(DG.TAGS.ID)!;
   }
 
   async addSequenceSpace(): Promise<void> {
