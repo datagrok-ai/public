@@ -41,7 +41,7 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.16.0",
+    "datagrok-api": "^1.17.0",
     "@datagrok-libraries/chem-meta": "^1.2.1",
     "@datagrok-libraries/ml": "^6.3.59",
     "@datagrok-libraries/utils": "^4.1.28",
