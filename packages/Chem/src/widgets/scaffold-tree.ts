@@ -1770,7 +1770,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;
-    //this.tree.root.onscroll = async (e) => await updateVisibleNodesHits(thisViewer);
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
       const node: TreeViewGroup = args.args.item;
