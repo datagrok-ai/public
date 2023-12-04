@@ -92,7 +92,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.initRibbon();
     this.initMenu();
     grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showHelp = true;
 
     setTimeout(async () => {
       grok.functions.onBeforeRunAction.subscribe((fc) => {
