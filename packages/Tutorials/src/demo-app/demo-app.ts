@@ -46,7 +46,7 @@ export class DemoView extends DG.ViewBase {
     this._closeAll();
 
     // TODO: change to getElementById('elementContent') when it is fixed
-    const updateIndicatorRoot = document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content > .d4-dock-container')! as HTMLElement;
+    const updateIndicatorRoot = document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
