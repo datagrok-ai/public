@@ -297,9 +297,6 @@ async function updateVisibleNodesHits(thisViewer: ScaffoldTreeViewer) {
 async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes : Array<TreeViewNode>,
   start: number, end: number) {
   for (let n = start; n <= end; ++n) {
-    if (thisViewer.cancelled)
-      return;
-
     const group = visibleNodes[n];
     if (isOrphans(group))
       return;
@@ -1853,9 +1850,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.clearNotIcon(this.tree.children);
     }));
 
-    this.subs.push(this.dataFrame.onRowsRemoved.subscribe(async (_) => {
-      await updateAllNodesHits(thisViewer);
-      this.updateOnFiltering();
+    this.subs.push(this.dataFrame.onRowsRemoved.subscribe((_) => {
+      updateAllNodesHits(thisViewer).then(() => {
+        this.updateOnFiltering();
+      })
     }));
 
     this.render();
