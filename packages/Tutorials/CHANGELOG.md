@@ -1,5 +1,11 @@
 # Tutorials changelog
 
+## 1.3.19 (2023-12-04)
+
+### Bug Fixes
+
+* Fixed demo app not working.
+
 ## 1.3.18 (2023-12-04)
 
 ### Features
