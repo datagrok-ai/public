@@ -1,13 +1,28 @@
 # Chem changelog
 
+## 1.8.7 (2023-12-04)
+
+### Features
+
+* [#2550](https://github.com/datagrok-ai/public/issues/2550): Chem: Scaffold Tree: Counter is not updated when applying the filters
+* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem: Scaffold Tree: Highlighting improvements:
+  * More specific fragments should be drawn on top
+  * New icons for different coloring states
+
+### Bug Fixes
+
+* [#2536](https://github.com/datagrok-ai/public/issues/2536): Chem: Substructure Filter: Not terminated on fiter reset
+* [#2553](https://github.com/datagrok-ai/public/issues/2553): Chem | Scaffold tree: Realignment issue when the scaffold color is set
+* GROK-14305: Chem | Scaffold Tree: Error when deleting rows in grid
+
 ## 1.8.6 (2023-11-17)
 
 ### Bug Fixes
 
-* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem : Scaffold tree: Highlighting improvements:
+* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem: Scaffold tree: Highlighting improvements:
   * Add a tooltip for the checkbox
   * Add a tooltip for NOT
-* [#2526](https://github.com/datagrok-ai/public/issues/2526): Chem : Molecules realignment improvements:
+* [#2526](https://github.com/datagrok-ai/public/issues/2526): Chem: Molecules realignment improvements:
   * Scaffold tree shouldn't reorient molecules in the grid
 * [#2533](https://github.com/datagrok-ai/public/issues/2533): RdKitService stays unresponsive as terminateFlag is not reset after substructure search has completed
 
