@@ -167,6 +167,31 @@ export async function runSolverApp() {
   });
 
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
+  let toShowWarning = true;
+
+  /** Load IVP from file */
+  const loadFn = async () => {
+    let text = '';
+    const dlg = ui.dialog('Open a file');
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file';
+    fileInp.onchange = () => {
+      //@ts-ignore
+      const [file] = document.querySelector("input[type=file]").files;
+      const reader = new FileReader();
+      reader.addEventListener("load", () => { 
+        text = reader.result as string; 
+        setState(EDITOR_STATE.FROM_FILE, text);
+        dlg.close();
+      }, false);
+          
+      if (file) 
+        reader.readAsText(file);
+    }     
+
+    dlg.add(fileInp);        
+    fileInp.click();
+  };
 
   /** Save the current IVP to file */
   const saveFn = async () => {
@@ -195,50 +220,53 @@ export async function runSolverApp() {
     });
 
     editorView.setState(newState);
+  };
 
-    //solverView.helpUrl = getHelpUrl(state);
+  /** Overwrite the editor content */
+  const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
+    if (toShowWarning) {      
+      const boolInput = ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning);      
+      const dlg = ui.dialog({title: 'Overwrite?', helpUrl: HELP_LINKS.SOLVER});
+      solverView.append(dlg);
+
+      dlg
+        .add(ui.label('This will overwrite the current project.'))
+        .add(ui.label('Do you want to go on?'))
+        .add(ui.divH([boolInput.root]))
+        .onCancel(() => dlg.close())
+        .onOK(async () => {
+          if (fn)
+            await fn();
+          else
+            setState(state ?? EDITOR_STATE.CLEAR);          
+        })
+        .show();
+    }
+    else if (fn)
+      await fn();
+    else
+      setState(state ?? EDITOR_STATE.CLEAR);
   };
 
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
     DG.Menu.popup()
-      .item('Load...', async () => {
-        let text = '';
-        const dlg = ui.dialog('Open a file');
-        const fileInp = document.createElement('input');
-        fileInp.type = 'file';
-        fileInp.onchange = () => {
-          //@ts-ignore
-          const [file] = document.querySelector("input[type=file]").files;
-          const reader = new FileReader();
-          reader.addEventListener("load", () => { 
-            text = reader.result as string; 
-            setState(EDITOR_STATE.FROM_FILE, text);
-          }, false);
-          
-          if (file) 
-            reader.readAsText(file);
-        }     
-
-        dlg.add(fileInp);
-        
-        fileInp.click();
-       }, undefined, {description: 'Load problem from local file'})
+      .item('Load...', async () => await overwrite(undefined, loadFn), undefined, {description: 'Load problem from local file'})
       .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-      .item('Clear...', () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
+      .item('Clear...', async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
       .separator()
       .group('Templates')
-      .item('Basic...', () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-      .item('Advanced...', () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
-      .item('Extended...', () => setState(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
+      .item('Basic...', async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
+      .item('Advanced...', async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
+      .item('Extended...', async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
       .endGroup()
       .group('Use cases')
-      .item('Chem reactions...', () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-      .item("Robertson's model...", () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
-      .item('Fermentation...', () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
+      .item('Chem reactions...', async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
+      .item("Robertson's model...", async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
+      .item('Fermentation...', async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
       //.separator()
-      .item('PK-PD...', () => setState(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
-      .item('Acid production...', () => setState(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
+      .item('PK-PD...', async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
+      .item('Acid production...', async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
       .endGroup()
       .show();    
   });
