@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// import * as uuid from 'uuid';
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
@@ -198,8 +197,6 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
       monomerType = alphabet === 'DNA' || alphabet === 'RNA' ? 'HELM_BASE' : 'HELM_AA';
     }
-    // const dfUuid = uuid.v4();
-    // newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
 
     const bitset = DG.BitSet.create(currentDf.rowCount,

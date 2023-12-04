@@ -19,7 +19,7 @@ export type MonomerPositionStats = { [position: string]: PositionStats } & { gen
 export type ClusterStats = { [cluster: string]: StatsItem };
 export type ClusterTypeStats = { [clusterType in ClusterType]: ClusterStats };
 export type MasksInfo = {
-  [positionOrClusterType: string | ClusterType]: { [monomerOrCluster: string]: { mask: BitArray } }
+  [monomerOrCluster: string]: { [positionOrClusterType: string | ClusterType]: { mask: BitArray } }
 };
 
 export type SummaryStats = {

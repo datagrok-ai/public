@@ -251,15 +251,15 @@ export function areParametersEqual(o1: PeptideViewer | PeptidesSettings, o2: Pep
 export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, rowCount: number): MasksInfo {
   const result: MasksInfo = {};
   for (const [position, monomerMap] of mutationCliffs) {
-    result[position] = {};
     for (const [monomer, indexMap] of monomerMap) {
+      result[monomer] ??= {};
       const bitArray = new BitArray(rowCount, false);
       for (const [index, indexList] of indexMap) {
         bitArray.setTrue(index);
         for (const i of indexList)
           bitArray.setTrue(i);
       }
-      result[position][monomer] = {mask: bitArray};
+      result[monomer][position] = {mask: bitArray};
     }
   }
   return result;

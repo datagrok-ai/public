@@ -7,7 +7,7 @@ import {renderCellSelection} from '../utils/cell-renderer';
 
 export type MutationCliffsOptions = {
   mutationCliffs: type.MutationCliffs, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
-  positionColumns: DG.Column<string>[], gridColumns: DG.GridColumnList,
+  positionColumns: DG.Column<string>[], gridColumns: DG.GridColumnList, activityCol: DG.Column<number>,
 };
 
 export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliffsOptions): DG.Widget {
@@ -25,13 +25,15 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   const alignedSeqCol = table.getCol(options.sequenceColumnName!);
   const alignedSeqColCategories = alignedSeqCol.categories;
   const alignedSeqColData = alignedSeqCol.getRawData();
-  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
-  const activityScaledColData = activityScaledCol.getRawData();
+  // const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
+  const activityScaledColData = options.activityCol.getRawData();
   const seenIndexes = new Map<number, number[]>();
   const uniqueSequencesBitSet = DG.BitSet.create(table.rowCount);
 
+  const positionColumns: { [colName: string]: DG.Column<string> } =
+    Object.fromEntries(options.positionColumns.map((col) => [col.name, col]));
   for (const pos of positions) {
-    const posCol = table.getCol(pos);
+    const posCol = positionColumns[pos];
     const posColCategories = posCol.categories;
     const posColData = posCol.getRawData();
 
@@ -148,14 +150,15 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   });
 
   const originalGridColCount = options.gridColumns.length;
-  const positionColumns = options.positionColumns?.map((col) => col.name) ?? null;
-  if (positionColumns == null)
-    throw new Error('PeptidesError: Could not create mutation cliffs table: Position columns are not initialized');
+  // const positionColumns = options.positionColumns?.map((col) => col.name) ?? null;
+  // if (positionColumns == null)
+  //   throw new Error('PeptidesError: Could not create mutation cliffs table: Position columns are not initialized');
 
   const columnNames: string[] = [];
   for (let colIdx = 1; colIdx < originalGridColCount; colIdx++) {
     const gridCol = options.gridColumns.byIndex(colIdx);
-    if (gridCol?.name === options.sequenceColumnName || (gridCol?.visible === true && !positionColumns.includes(gridCol.name)))
+    if (gridCol?.name === options.sequenceColumnName ||
+      (gridCol?.visible === true && !Object.hasOwn(positionColumns, gridCol.name)))
       columnNames.push(gridCol!.name);
   }
 

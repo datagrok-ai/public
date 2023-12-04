@@ -100,11 +100,8 @@ export class PeptidesModel {
       this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id);
       if (typeof this._analysisView === 'undefined')
         this._analysisView = grok.shell.addTableView(this.df);
-      // this.df.setTag(C.TAGS.UUID, uuid.v4());
-
 
       const posCols = this.positionColumns?.map((col) => col.name);
-
       if (posCols != null) {
         for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
           const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
@@ -397,7 +394,7 @@ export class PeptidesModel {
       acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, {
         mutationCliffs: sarViewer.mutationCliffs!, mutationCliffsSelection: sarViewer.mutationCliffsSelection,
         gridColumns: trueModel.analysisView.grid.columns, sequenceColumnName: sarViewer.sequenceColumnName,
-        positionColumns: sarViewer.positionColumns,
+        positionColumns: sarViewer.positionColumns, activityCol: sarViewer.getScaledActivityColumn(),
       }).root, true);
     }
     const isModelSource = requestSource === trueModel.settings;
@@ -405,6 +402,8 @@ export class PeptidesModel {
       peptideSelection: combinedBitset,
       columns: isModelSource ? trueModel.settings!.columns ?? {} :
         (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
+      activityCol: isModelSource ? this.getScaledActivityColumn()! :
+        (requestSource as PeptideViewer).getScaledActivityColumn(),
     }), true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
@@ -841,18 +840,14 @@ export class PeptidesModel {
 
   createNewView(): string {
     const rowMask = this.getVisibleSelection();
-    // const newDfId = uuid.v4();
-
     const newDf = this.df.clone(rowMask);
     for (const [tag, value] of newDf.tags)
       newDf.setTag(tag, tag === C.TAGS.SETTINGS ? value : '');
 
     newDf.name = 'Peptides Multiple Views';
     newDf.setTag(C.TAGS.MULTIPLE_VIEWS, '1');
-    // newDf.setTag(C.TAGS.UUID, newDfId);
 
     const view = grok.shell.addTableView(newDf);
-
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     if (lstViewer != null) {
       view.addViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {

@@ -12,16 +12,17 @@ import {getDistributionPanel, getDistributionTable} from '../utils/misc';
 import {SARViewer} from '../viewers/sar-viewer';
 import {LogoSummaryTable} from '../viewers/logo-summary';
 
-export type DistributionTableOptions = { peptideSelection: DG.BitSet, columns: AggregationColumns };
+export type DistributionTableOptions = {
+  peptideSelection: DG.BitSet, columns: AggregationColumns,
+  activityCol: DG.Column<number>
+};
 export type PeptideViewer = SARViewer | LogoSummaryTable;
 
 export function getDistributionWidget(table: DG.DataFrame, options: DistributionTableOptions): HTMLDivElement {
   if (!table.selection.anyTrue)
     return ui.divText('No distribution');
 
-  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
-  const rowCount = activityCol.length;
-
+  const rowCount = options.activityCol.length;
   const distributionHost = ui.div([], 'd4-flex-wrap');
 
   const updateDistributionHost = (): void => {
@@ -29,15 +30,15 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
     if (!table.selection.anyTrue)
       res.push(ui.divText('No distribution'));
     else {
-      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection,
+      const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection,
         options.peptideSelection));
       const bitArray = BitArray.fromString(table.selection.toBinaryString());
       const mask = DG.BitSet.create(rowCount,
         bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
       const aggregatedColMap = getAggregatedColumnValues(table, options.columns, {filterDf: true, mask});
       const stats = bitArray.allFalse || bitArray.allTrue ?
-        {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: activityCol.stats.avg} :
-        getStats(activityCol.getRawData(), bitArray);
+        {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: options.activityCol.stats.avg} :
+        getStats(options.activityCol.getRawData(), bitArray);
       const tableMap = getStatsTableMap(stats);
       const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};
       const distributionRoot = getDistributionPanel(hist, resultMap);
