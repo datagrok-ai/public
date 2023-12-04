@@ -1,71 +1,66 @@
 export enum COLUMNS_NAMES {
-    SPLIT_COL = '~split',
-    ACTIVITY = 'Activity',
-    // Deprecated, used for backward compatibility with 1.16.0
-    ACTIVITY_SCALED = 'Scaled activity',
-    MONOMER = 'AAR',
-    POSITION = 'Pos',
-    P_VALUE = 'pValue',
-    MEAN_DIFFERENCE = 'Mean difference',
-    COUNT = 'Count',
-    RATIO = 'Ratio',
-    MEAN = 'Mean',
+  SPLIT_COL = '~split',
+  ACTIVITY = 'Activity',
+  // Deprecated, used for backward compatibility with 1.16.0
+  ACTIVITY_SCALED = 'Scaled activity',
+  MONOMER = 'AAR',
+  POSITION = 'Pos',
+  P_VALUE = 'pValue',
+  MEAN_DIFFERENCE = 'Mean difference',
+  COUNT = 'Count',
+  RATIO = 'Ratio',
+  MEAN = 'Mean',
 }
 
 export enum LST_COLUMN_NAMES {
-    MEMBERS = 'Members',
-    WEB_LOGO = 'WebLogo',
-    DISTRIBUTION = 'Distribution',
-    MEAN_DIFFERENCE = 'Mean difference',
-    P_VALUE = 'P-Value',
-    RATIO = 'Ratio',
-    CLUSTER = 'Cluster',
-}
-
-export enum CATEGORIES {
-    OTHER = 'Other',
-    ALL = 'All',
+  MEMBERS = 'Members',
+  WEB_LOGO = 'WebLogo',
+  DISTRIBUTION = 'Distribution',
+  MEAN_DIFFERENCE = 'Mean difference',
+  P_VALUE = 'P-Value',
+  RATIO = 'Ratio',
+  CLUSTER = 'Cluster',
 }
 
 export enum TAGS {
-    MONOMER = 'monomer',
-    POSITION = 'pos',
-    SEPARATOR = 'separator',
-    SELECTION = 'selection',
-    MUTATION_CLIFFS_SELECTION = 'mutationCliffsSelection',
-    ALPHABET = 'alphabet',
-    FILTER = 'filter',
-    INVARIANT_MAP_SELECTION = 'invariantMapSelection',
-    SAR_MODE = 'sarMode',
-    CLUSTER_SELECTION = 'clusterSelection',
-    VISIBLE = 'visible',
-    SETTINGS = 'settings',
-    CUSTOM_CLUSTER = 'customCluster',
-    UUID = 'pep-uuid',
-    MONOMER_POSITION_MODE = 'monomerPositionMode',
-    MULTIPLE_VIEWS = 'isMultipleViews',
-    IDENTITY_TEMPLATE = 'Identity template',
-    SIMILARITY_TEMPLATE = 'Similarity template',
-    ANALYSIS_COL = 'isAnalysisCol',
-    POSITION_COL = 'isPositionCol',
+  MONOMER = 'monomer',
+  POSITION = 'pos',
+  SEPARATOR = 'separator',
+  SELECTION = 'selection',
+  MUTATION_CLIFFS_SELECTION = 'mutationCliffsSelection',
+  ALPHABET = 'alphabet',
+  FILTER = 'filter',
+  INVARIANT_MAP_SELECTION = 'invariantMapSelection',
+  SAR_MODE = 'sarMode',
+  CLUSTER_SELECTION = 'clusterSelection',
+  VISIBLE = 'visible',
+  SETTINGS = 'settings',
+  CUSTOM_CLUSTER = 'customCluster',
+  UUID = 'pep-uuid',
+  MONOMER_POSITION_MODE = 'monomerPositionMode',
+  MULTIPLE_VIEWS = 'isMultipleViews',
+  IDENTITY_TEMPLATE = 'Identity template',
+  SIMILARITY_TEMPLATE = 'Similarity template',
+  ANALYSIS_COL = 'isAnalysisCol',
+  POSITION_COL = 'isPositionCol',
 }
 
 export enum SEM_TYPES {
-    MONOMER = 'Monomer',
-    MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
+  MONOMER = 'Monomer',
+  MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
 }
 
 export const EMBEDDING_STATUS = 'embeddingStatus';
 
 export enum SCALING_METHODS {
-    NONE = 'none',
-    LG = 'lg',
-    MINUS_LG = '-lg',
+  NONE = 'none',
+  LG = 'lg',
+  MINUS_LG = '-lg',
 }
 
 export enum SUFFIXES {
-    LST = 'lst-', // Logo Summary Table
-    MP = 'mp-', // Monomer Position
-    MPR = 'mpr-', // Most Potent Residues
-    WL = 'wl-', // Web Logo
+  LST = 'lst-', // Logo Summary Table
+  MP = 'mp-', // Monomer Position
+  MPR = 'mpr-', // Most Potent Residues
+  WL = 'wl-', // Web Logo
 }

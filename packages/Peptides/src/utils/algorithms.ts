@@ -29,8 +29,7 @@ export async function findMutations(activityArray: type.RawData, monomerInfoArra
 
   options.minActivityDelta ??= 0;
   options.maxMutations ??= 1;
-  const substitutionsInfo = await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, options);
-  return substitutionsInfo;
+  return await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, options);
 }
 
 export function calculateMonomerPositionStatistics(activityCol: DG.Column<number>, filter: DG.BitSet,
@@ -40,7 +39,6 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   } = {}): MonomerPositionStats {
   options.isFiltered ??= false;
   const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
-  // const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
   let sourceDfLen = activityCol.length;
 
@@ -148,7 +146,6 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
   const customClustColNamesList = customClusters.map((v) => v.name);
 
-  // const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityColData = activityCol.getRawData() as Float64Array;
 
   const origClustStats: ClusterStats = {};
@@ -160,10 +157,9 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     const resultStats = clustType === CLUSTER_TYPE.ORIGINAL ? origClustStats : customClustStats;
     for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
       const mask = masks[maskIdx];
-      const stats = mask.allTrue || mask.allFalse ?
+      resultStats[clustNames[maskIdx]] = mask.allTrue || mask.allFalse ?
         {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask, mean: activityCol.stats.avg} :
         getStats(activityColData, mask);
-      resultStats[clustNames[maskIdx]] = stats;
     }
   }
 

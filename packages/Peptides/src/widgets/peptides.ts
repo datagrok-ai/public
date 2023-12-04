@@ -101,7 +101,6 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  //TODO: add when new version of datagrok-api is available
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
   activityColumnChoice.setTooltip('Numerical activity column');
@@ -110,12 +109,6 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
-
-  // const targetColumnChoice = ui.columnInput('Target', df, null, null,
-  //   {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
-  // targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in ' +
-  //   'the data. Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
-  // targetColumnChoice.nullable = true;
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
   if (seqColInput !== null)
@@ -128,8 +121,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, //targetColumnChoice.value,
-        {addSequenceSpace: true});
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true});
       return model !== null;
     }
     return false;
@@ -166,7 +158,7 @@ type AnalysisOptions = { addSequenceSpace?: boolean };
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-  /*targetColumn: DG.Column<string> | null = null,*/ options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
+  options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
@@ -188,21 +180,14 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       activityColumnName: activityColumn.name,
       activityScaling: scaling,
       columns: {},
-      // maxMutations: 1,
-      // minActivityDelta: 0,
       showDendrogram: false,
-      // showLogoSummaryTable: !!clustersColumn,
-      // showMonomerPosition: true,
-      // showMostPotentResidues: true,
+
     };
-    // if (targetColumn !== null)
-    //   settings.targetColumnName = targetColumn.name;
 
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);
       if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
         newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-      // settings.clustersColumnName = clustersColumn.name;
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 

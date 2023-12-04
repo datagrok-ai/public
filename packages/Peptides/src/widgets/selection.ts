@@ -12,17 +12,15 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 
 export type SelectionWidgetOptions = {
   tableSelection: DG.BitSet, gridColumns: DG.GridColumnList, positionColumns: DG.Column<string>[],
-  activityColumn: DG.Column<number>, columns: AggregationColumns, colorPalette: SeqPalette,
+  activityColumn: DG.Column<number>, columns: AggregationColumns, colorPalette: SeqPalette, isAnalysis: boolean,
 };
 
 export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidgetOptions): HTMLElement {
-  // const compBitset = model.getVisibleSelection();
   if (options.tableSelection.trueCount === 0)
     return ui.divText('No compounds selected');
   const newTable = DG.DataFrame.create(table.rowCount);
   newTable.name = 'Selected compounds';
   newTable.filter.copyFrom(options.tableSelection);
-  // const sourceGrid = model.analysisView.grid;
   const numericalCols = wu(table.columns.numerical);
   for (let gridColIdx = 1; gridColIdx < options.gridColumns.length; gridColIdx++) {
     const gridCol = options.gridColumns.byIndex(gridColIdx)!;
@@ -63,16 +61,15 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   gridHost.style.marginLeft = '0px';
   setTimeout(() => {
     for (let gridColIdx = 1; gridColIdx < options.gridColumns.length; gridColIdx++) {
-      const gridCol = options.gridColumns.byIndex(gridColIdx)!;
-      if (!gridCol.visible)
+      const originalGridCol = options.gridColumns.byIndex(gridColIdx)!;
+      if (!originalGridCol.visible)
         continue;
-      grid.col(gridCol.name)!.width = gridCol.width;
+      grid.col(originalGridCol.name)!.width = originalGridCol.width;
     }
   }, 500);
 
-  const activityCol = newTable.getCol(options.activityColumn.name);
-  const mpStats = calculateMonomerPositionStatistics(activityCol, newTable.filter, options.positionColumns,
-    {isFiltered: newTable.filter.anyTrue || newTable.filter.anyFalse});
+  const mpStats = calculateMonomerPositionStatistics(options.activityColumn, newTable.filter,
+    options.positionColumns, {isFiltered: newTable.filter.anyTrue || newTable.filter.anyFalse});
 
   const cachedWebLogoTooltip: CachedWebLogoTooltip = {bar: '', tooltip: null};
   const webLogoBounds: WebLogoBounds = {};
@@ -82,7 +79,10 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   };
   const tooltipOptions: TooltipOptions = {x: 0, y: 0, monomerPosition: {} as SelectionItem, mpStats};
 
-  setWebLogoRenderer(grid, mpStats, options.positionColumns, activityCol, cellRendererOptions, tooltipOptions);
+  if (options.isAnalysis) {
+    setWebLogoRenderer(grid, mpStats, options.positionColumns, options.activityColumn, cellRendererOptions,
+      tooltipOptions);
+  }
 
   return gridHost;
 }

@@ -12,8 +12,6 @@ export type MutationCliffsOptions = {
 
 export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliffsOptions): DG.Widget {
   const filteredIndexes = table.filter.getSelectedIndexes();
-  // const substInfo = model.mutationCliffs;
-  // const currentCell = model.mutationCliffsSelection;
   const positions = Object.keys(options.mutationCliffsSelection);
 
   if (!positions.length || options.mutationCliffs === null)
@@ -149,7 +147,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
     renderCellSelection(gcArgs.g, gcArgs.bounds);
   });
 
-  // const gridCols = options.analysisView.grid.columns;
   const originalGridColCount = options.gridColumns.length;
   const positionColumns = options.positionColumns?.map((col) => col.name) ?? null;
   if (positionColumns == null)
@@ -184,5 +181,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   addExpandIcon(pairsGrid);
   addExpandIcon(uniqueSequencesGrid);
 
-  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root], {style: {width: '100%'}}));
+  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root],
+    {style: {width: '100%'}}));
 }

@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort, pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
@@ -44,7 +43,7 @@ import {getSelectionWidget} from './widgets/selection';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {showMonomerTooltip} from './utils/tooltips';
-import {MonomerPositionStats} from './utils/statistics';
+import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 export enum VIEWER_TYPE {
@@ -100,19 +99,24 @@ export class PeptidesModel {
   get analysisView(): DG.TableView {
     if (this._analysisView === undefined) {
       this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id);
-      if (this._analysisView === undefined)
+      if (typeof this._analysisView === 'undefined') {
         this._analysisView = grok.shell.addTableView(this.df);
-      // const posCols = this.positionColumns.map((col) => col.name);
-      //
-      // for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
-      //   const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
-      //   if (gridCol === null)
-      //     throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
-      //   else if (gridCol.column === null)
-      //     throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null column`);
-      //
-      //   gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
-      // }
+        this.df.setTag(C.TAGS.UUID, uuid.v4());
+      }
+
+      const posCols = this.positionColumns?.map((col) => col.name);
+
+      if (posCols != null) {
+        for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
+          const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
+          if (gridCol === null)
+            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
+          else if (gridCol.column === null)
+            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null column`);
+
+          gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
+        }
+      }
     }
 
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
@@ -120,17 +124,6 @@ export class PeptidesModel {
 
     this._analysisView.grid.invalidate();
     return this._analysisView;
-  }
-
-  _cp?: SeqPalette;
-
-  get cp(): SeqPalette {
-    this._cp ??= pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName));
-    return this._cp;
-  }
-
-  set cp(_cp: SeqPalette) {
-    this._cp = _cp;
   }
 
   _settings: type.PeptidesSettings | null = null;
@@ -146,7 +139,6 @@ export class PeptidesModel {
   set settings(s: type.PartialPeptidesSettings) {
     const newSettingsEntries = Object.entries(s) as ([keyof type.PeptidesSettings, never])[];
     const updateVars: Set<string> = new Set();
-    // const settings = this.settings;
     for (const [key, value] of newSettingsEntries) {
       this.settings![key] = value;
       switch (key) {
@@ -185,10 +177,10 @@ export class PeptidesModel {
       case 'dendrogram':
           this.settings!.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
         break;
-        // case 'logoSummaryTable':
-        //   this.settings.showLogoSummaryTable ? this.addLogoSummaryTable() :
-        //     this.closeViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
-        //   break;
+      case 'logoSummaryTable':
+          this.settings!.showLogoSummaryTable ? this.addLogoSummaryTable() :
+            this.closeViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+        break;
       case 'monomerPosition':
           this.settings!.showMonomerPosition ? this.addMonomerPosition() :
             this.closeViewer(VIEWER_TYPE.MONOMER_POSITION);
@@ -224,10 +216,10 @@ export class PeptidesModel {
     return positionColumns;
   }
 
-  get id(): string {
+  get id(): string | null {
     const id = this.df.getTag(C.TAGS.UUID);
     if (id === null || id === '')
-      throw new Error('PeptidesError: Could not get UUID: UUID is not defined');
+      return null;
 
     return id;
   }
@@ -335,7 +327,6 @@ export class PeptidesModel {
         const newCluster = ui.label('New cluster');
         $(newCluster).addClass('d4-link-action');
         newCluster.onclick = (): void => {
-          // const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (trueLSTViewer === null)
             throw new Error('Logo summary table viewer is not found');
           trueLSTViewer.clusterFromSelection();
@@ -412,8 +403,21 @@ export class PeptidesModel {
         positionColumns: sarViewer.positionColumns,
       }).root, true);
     }
-    acc.addPane('Distribution', () => getDistributionWidget(table, {peptideSelection: combinedBitset}), true);
     const isModelSource = requestSource === trueModel.settings;
+    acc.addPane('Distribution', () => getDistributionWidget(table, {
+      peptideSelection: combinedBitset,
+      columns: isModelSource ? trueModel.settings!.columns ?? {} :
+        (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
+    }), true);
+    const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
+      if (o1 == null || o2 == null)
+        return false;
+      for (const [key, value] of Object.entries(o1)) {
+        if (value !== o2[key])
+          return false;
+      }
+      return true;
+    };
     acc.addPane('Selection', () => getSelectionWidget(trueModel.df, {
       positionColumns: isModelSource ? this.positionColumns! :
         (requestSource as SARViewer | LogoSummaryTable).positionColumns,
@@ -422,8 +426,11 @@ export class PeptidesModel {
       activityColumn: isModelSource ? this.getScaledActivityColumn()! :
         (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
       gridColumns: trueModel.analysisView.grid.columns,
-      colorPalette: trueModel.cp,
+      colorPalette: pickUpPalette(this.df.getCol(isModelSource ? this.settings!.sequenceColumnName :
+        (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
       tableSelection: trueModel.getCombinedSelection(),
+      isAnalysis: this.settings !== null &&
+        areObjectsEqual(this.settings.columns, (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns()),
     }), true);
 
     return acc;
@@ -441,14 +448,13 @@ export class PeptidesModel {
   updateGrid(): void {
     this.joinDataFrames();
     this.createScaledCol();
-    // this.setWebLogoInteraction();
     this.webLogoBounds = {};
 
     const cellRendererOptions: CR.CellRendererOptions = {
       selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): type.Selection =>
         modifySelection(this.webLogoSelection, monomerPosition, options),
       unhighlightCallback: (): void => this.unhighlight(),
-      colorPalette: this.cp,
+      colorPalette: pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName)),
       webLogoBounds: this.webLogoBounds,
       cachedWebLogoTooltip: this.cachedWebLogoTooltip,
       highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void =>
@@ -586,7 +592,6 @@ export class PeptidesModel {
     const filter = this.df.filter;
 
     const showAccordion = (): void => {
-      // return; //TODO: REMOVE THIS LATER
       const acc = this.createAccordion();
       if (acc === null)
         return;
@@ -633,6 +638,8 @@ export class PeptidesModel {
 
   fireBitsetChanged(source: VIEWER_TYPE | null, fireFilterChanged: boolean = false): void {
     this.accordionSource = source;
+    if (!this.isBitsetChangedInitialized)
+      this.setBitsetCallback();
     this.isUserChangedSelection = false;
     this.df.selection.fireChanged();
     if (fireFilterChanged)

@@ -16,7 +16,6 @@ type SettingsElements = { dialog: DG.Dialog, accordion: DG.Accordion, inputs: Pa
 export enum SETTINGS_PANES {
   GENERAL = 'General',
   VIEWERS = 'Viewers',
-  // MUTATION_CLIFFS = 'Mutation Cliffs',
   COLUMNS = 'Columns',
 }
 
@@ -29,11 +28,6 @@ export enum VIEWERS_INPUTS {
   DENDROGRAM = VIEWER_TYPE.DENDROGRAM,
 }
 
-// export enum MUTATION_CLIFFS_INPUTS {
-//   MAX_MUTATIONS = 'Max mutations',
-//   MIN_ACTIVITY_DELTA = 'Min activity delta',
-// }
-
 export enum COLUMNS_INPUTS {
   IS_INCLUDED = '',
   AGGREGATION = 'Aggregation',
@@ -42,7 +36,6 @@ export enum COLUMNS_INPUTS {
 export const PANES_INPUTS = {
   [SETTINGS_PANES.GENERAL]: GENERAL_INPUTS,
   [SETTINGS_PANES.VIEWERS]: VIEWERS_INPUTS,
-  // [SETTINGS_PANES.MUTATION_CLIFFS]: MUTATION_CLIFFS_INPUTS,
   [SETTINGS_PANES.COLUMNS]: COLUMNS_INPUTS,
 };
 
@@ -53,9 +46,6 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const accordion = ui.accordion();
   const settings = model.settings;
   const currentScaling = settings?.activityScaling ?? C.SCALING_METHODS.NONE;
-  // const currentBidirectional = settings.isBidirectional ?? false;
-  // const currentMaxMutations = settings.maxMutations ?? 1;
-  // const currentMinActivityDelta = settings.minActivityDelta ?? 0;
   const currentColumns = settings?.columns ?? {};
 
   const result: type.PartialPeptidesSettings = {};
@@ -98,27 +88,6 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
 
   accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram]), true);
   inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];
-
-  // // Mutation Cliffs pane options
-  // const maxMutations = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MAX_MUTATIONS, currentMaxMutations, 1, 50, () => {
-  //   const val = Math.round(maxMutations.value);
-  //   $(maxMutations.root).find('label.ui-input-description').remove();
-  //   result.maxMutations = val;
-  //   maxMutations.addPostfix(val.toString());
-  // }) as DG.InputBase<number>;
-  // maxMutations.setTooltip('Maximum number of mutations between reference and mutated sequences');
-  // maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
-  // const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, currentMinActivityDelta, 0,
-  //   100, () => {
-  //     const val = minActivityDelta.value.toFixed(3);
-  //     result.minActivityDelta = parseFloat(val);
-  //     $(minActivityDelta.root).find('label.ui-input-description').remove();
-  //     minActivityDelta.addPostfix(val);
-  //   }) as DG.InputBase<number>;
-  // minActivityDelta.setTooltip('Minimum activity difference between reference and mutated sequences');
-  // minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
-  // accordion.addPane(SETTINGS_PANES.MUTATION_CLIFFS, () => ui.inputs([maxMutations, minActivityDelta]), true);
-  // inputs[SETTINGS_PANES.MUTATION_CLIFFS] = [maxMutations, minActivityDelta];
 
   // Columns to include pane options
   const inputsRows: HTMLElement[] = [];

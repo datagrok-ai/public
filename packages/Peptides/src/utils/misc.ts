@@ -239,7 +239,7 @@ export function getSelectionBitset(selection: type.Selection, stats: MasksInfo):
     }
   }
 
-  return combinedBitset !== null ? DG.BitSet.fromBytes(combinedBitset.buffer.buffer, combinedBitset.length) : null;
+  return (combinedBitset != null) ? DG.BitSet.fromBytes(combinedBitset!.buffer.buffer, combinedBitset!.length) : null;
 }
 
 export function areParametersEqual(o1: PeptideViewer | PeptidesSettings, o2: PeptideViewer | PeptidesSettings,

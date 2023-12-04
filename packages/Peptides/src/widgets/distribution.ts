@@ -7,12 +7,12 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getStats, StatsItem} from '../utils/statistics';
+import {AggregationColumns, getAggregatedColumnValues, getStats, StatsItem} from '../utils/statistics';
 import {getDistributionPanel, getDistributionTable} from '../utils/misc';
 import {SARViewer} from '../viewers/sar-viewer';
 import {LogoSummaryTable} from '../viewers/logo-summary';
 
-export type DistributionTableOptions = { peptideSelection: DG.BitSet };
+export type DistributionTableOptions = { peptideSelection: DG.BitSet, columns: AggregationColumns };
 export type PeptideViewer = SARViewer | LogoSummaryTable;
 
 export function getDistributionWidget(table: DG.DataFrame, options: DistributionTableOptions): HTMLDivElement {
@@ -22,20 +22,6 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
   const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const rowCount = activityCol.length;
 
-  // const setDefaultProperties = (input: DG.InputBase): void => {
-  //   input.enabled = !model.isMutationCliffsSelectionEmpty;
-  //   $(input.root).find('.ui-input-editor').css('margin', '0px');
-  //   $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
-  //   $(input.captionLabel).addClass('ui-label-right');
-  // };
-  //
-  // let defaultValuePos = model.splitByPos;
-  // let defaultValueMonomer = model.splitByMonomer;
-  // if (!model.isClusterSelectionEmpty && model.isMutationCliffsSelectionEmpty) {
-  //   defaultValuePos = false;
-  //   defaultValueMonomer = false;
-  // }
-
   const distributionHost = ui.div([], 'd4-flex-wrap');
 
   const updateDistributionHost = (): void => {
@@ -43,11 +29,12 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
     if (!table.selection.anyTrue)
       res.push(ui.divText('No distribution'));
     else {
-      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection, options.peptideSelection));
+      const hist = getActivityDistribution(getDistributionTable(activityCol, table.selection,
+        options.peptideSelection));
       const bitArray = BitArray.fromString(table.selection.toBinaryString());
-      // const mask = DG.BitSet.create(rowCount,
-      //   bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
-      const aggregatedColMap = {}; // getAggregatedColumnValues(model.df, model.settings.columns!, {filterDf: true, mask});
+      const mask = DG.BitSet.create(rowCount,
+        bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
+      const aggregatedColMap = getAggregatedColumnValues(table, options.columns, {filterDf: true, mask});
       const stats = bitArray.allFalse || bitArray.allTrue ?
         {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: activityCol.stats.avg} :
         getStats(activityCol.getRawData(), bitArray);
@@ -62,21 +49,12 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
     $(distributionHost).empty().append(res);
   };
 
-  // const splitByPosition = ui.boolInput('Split by position', defaultValuePos, updateDistributionHost);
-  // splitByPosition.setTooltip('Constructs distribution for each position separately');
-  // setDefaultProperties(splitByPosition);
-  // $(splitByPosition.root).css('margin-right', '10px');
-  // const splitByMonomer = ui.boolInput('Split by monomer', defaultValueMonomer, updateDistributionHost);
-  // splitByMonomer.setTooltip('Constructs distribution for each monomer separately');
-  // setDefaultProperties(splitByMonomer);
-
-  // const controlsHost = ui.divH([splitByPosition.root, splitByMonomer.root]);
-  // splitByMonomer.fireChanged();
   updateDistributionHost();
   return ui.divV([distributionHost]);
 }
 
-export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false): DG.Viewer<DG.IHistogramLookSettings> {
+export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
+): DG.Viewer<DG.IHistogramLookSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
     valueColumnName: C.COLUMNS_NAMES.ACTIVITY,

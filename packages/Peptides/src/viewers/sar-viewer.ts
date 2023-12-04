@@ -23,6 +23,8 @@ import {
 } from '../utils/misc';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {LogoSummaryTable} from './logo-summary';
+import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -77,6 +79,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   minActivityDelta: number;
   maxMutations: number;
   _scaledActivityColumn: DG.Column | null = null;
+  doRender: boolean = true;
 
   constructor() {
     super();
@@ -116,6 +119,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
   set viewerGrid(grid: DG.Grid) {
     this._viewerGrid = grid;
+  }
+
+  get alphabet(): string {
+    const col = this.dataFrame.getCol(this.sequenceColumnName);
+    return col.getTag(bioTAGS.alphabet) ?? ALPHABET.UN;
   }
 
   _model?: PeptidesModel;
@@ -270,26 +278,30 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
+    this.doRender = true;
     switch (property.name) {
-    case SAR_PROPERTIES.SEQUENCE:
+    case `${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`:
       this._positionColumns = null;
       this._monomerPositionStats = null;
       this._mutationCliffs = null;
       this._mutationCliffsSelection = null;
       this._viewerGrid = null;
       break;
-    case SAR_PROPERTIES.ACTIVITY:
+    case `${SAR_PROPERTIES.ACTIVITY}${COLUMN_NAME}`:
     case SAR_PROPERTIES.ACTIVITY_SCALING:
       this._monomerPositionStats = null;
       this._mutationCliffs = null;
       this._mutationCliffsSelection = null;
+      this._viewerGrid = null;
+      this._scaledActivityColumn = null;
       break;
-    case SAR_PROPERTIES.TARGET:
+    case `${SAR_PROPERTIES.TARGET}${COLUMN_NAME}`:
     case SAR_PROPERTIES.TARGET_CATEGORY:
     case SAR_PROPERTIES.MIN_ACTIVITY_DELTA:
     case SAR_PROPERTIES.MAX_MUTATIONS:
       this._mutationCliffs = null;
       this._mutationCliffsSelection = null;
+      this.doRender = false;
       break;
     }
     if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
@@ -410,7 +422,8 @@ export class MonomerPosition extends SARViewer {
       break;
     }
 
-    this.render();
+    if (this.doRender)
+      this.render();
   }
 
   createMonomerPositionDf(): DG.DataFrame {
@@ -440,7 +453,7 @@ export class MonomerPosition extends SARViewer {
     const positionColumns = this.positionColumns.map((col) => col.name);
     grid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...positionColumns]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    CR.setMonomerRenderer(monomerCol, this.model.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.alphabet);
     grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this,
       this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorColumnName),
       this.colorAggregation as DG.AGG));
@@ -665,7 +678,8 @@ export class MostPotentResidues extends SARViewer {
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-    this.render();
+    if (this.doRender)
+      this.render();
   }
 
   createMostPotentResiduesDf(): DG.DataFrame {
@@ -726,7 +740,7 @@ export class MostPotentResidues extends SARViewer {
     countData.length = i;
     ratioData.length = i;
 
-    const mprDf = DG.DataFrame.create(i); // Subtract 'general' entry from mp-stats
+    const mprDf = DG.DataFrame.create(i);
     const mprDfCols = mprDf.columns;
     mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.POSITION, posData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.STRING, C.COLUMNS_NAMES.MONOMER, monomerData));
@@ -749,7 +763,7 @@ export class MostPotentResidues extends SARViewer {
     const monomerCol = mprDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     // Setting Monomer column renderer
-    CR.setMonomerRenderer(monomerCol, this.model.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.alphabet);
     grid.onCellRender.subscribe(
       (args: DG.GridCellRenderArgs) => renderCell(args, this, false, undefined, undefined));
 

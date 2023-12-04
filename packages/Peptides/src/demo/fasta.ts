@@ -27,5 +27,5 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   });
   const model: PeptidesModel = await startAnalysis(simpleActivityCol, alignedCol, null, simpleTable, simpleScaledCol,
     C.SCALING_METHODS.MINUS_LG) as PeptidesModel;
-  // model.modifyMutationCliffsSelection({monomerOrCluster: 'D', positionOrClusterType: '13'});
+  model.modifyInvariantMapSelection({monomerOrCluster: 'D', positionOrClusterType: '13'});
 }

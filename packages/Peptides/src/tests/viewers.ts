@@ -14,7 +14,6 @@ import {TEST_COLUMN_NAMES} from './utils';
 import {showTooltip} from '../utils/tooltips';
 
 category('Viewers: Basic', () => {
-  // const df = DG.DataFrame.fromCsv(aligned1);
   const viewers = DG.Func.find({package: 'Peptides', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {

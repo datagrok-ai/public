@@ -2,11 +2,9 @@ import * as type from './types';
 import {MutationCliffsOptions} from './algorithms';
 
 export type ParallelMutationReturnType = {
-    // monomers1: string[],
-    // monomers2: string[],
-    pos: string[],
-    seq1Idxs: Uint32Array,
-    seq2Idxs: Uint32Array,
+  pos: string[],
+  seq1Idxs: Uint32Array,
+  seq2Idxs: Uint32Array,
 }
 
 export class ParallelMutationCliffs {

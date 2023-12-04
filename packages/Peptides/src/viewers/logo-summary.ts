@@ -263,17 +263,28 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-    if (property.name === LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD)
+    let doRender = false;
+    let createGrid = false;
+    switch (property.name) {
+    case LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD:
       this.updateFilter();
-    else if (property.name === `${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}` ||
-      property.name === `${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}` ||
-      property.name === `${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}` ||
-      property.name === LST_PROPERTIES.ACTIVITY_SCALING) {
-      // this.model.settings = {sequenceColumnName: this.sequenceColName, clustersColumnName: this.clustersColumnName};
-      if (this.sequenceColumnName !== null && this.clustersColumnName !== null && this.activityColumnName !== null)
-        this.viewerGrid = this.createLogoSummaryTableGrid();
+      break;
+    case `${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`:
+      createGrid = true;
+      break;
+    case `${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`:
+      createGrid = true;
+      break;
+    case `${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`:
+    case LST_PROPERTIES.ACTIVITY_SCALING:
+      createGrid = true;
+      this._scaledActivityColumn = null;
+      doRender = true;
     }
-    // this.render();
+    if (this.sequenceColumnName !== null && this.clustersColumnName !== null && this.activityColumnName !== null && createGrid)
+      this.viewerGrid = this.createLogoSummaryTableGrid();
+    if (doRender)
+      this.render();
   }
 
   initClusterSelection(options: {
@@ -298,7 +309,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
     const filteredDfCols = filteredDf.columns;
     const filteredDfRowCount = filteredDf.rowCount;
-    // const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY);
     const activityColData = this.getScaledActivityColumn(isDfFiltered).getRawData();
 
     const filteredDfClustCol = filteredDf.getCol(clustersColName);
@@ -421,7 +431,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   }
 
   createLogoSummaryTableGrid(): DG.Grid {
-    // const summaryTable = this.createLogoSummaryTable();
     const isDfFiltered = this.dataFrame.filter.anyFalse;
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
     const aggColsEntries = Object.entries(this.getAggregationColumns());

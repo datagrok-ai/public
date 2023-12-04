@@ -58,7 +58,6 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
   if (!stats?.count)
     return null;
 
-  // const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
   const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
 

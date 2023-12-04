@@ -3,8 +3,6 @@ import {ClusterType} from '../viewers/logo-summary';
 import {SCALING_METHODS} from './constants';
 import {AggregationColumns} from './statistics';
 
-export type DataFrameDict = { [key: string]: DG.DataFrame };
-
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 //Monomer: (Position: (index: indexList))
@@ -16,14 +14,11 @@ export type SelectionStats = { [positionOrClusterType: string | ClusterType]: { 
 export interface PeptidesSettings {
   sequenceColumnName: string,
   activityColumnName: string,
-  // targetColumnName?: string,
   activityScaling: SCALING_METHODS,
   showMonomerPosition?: boolean,
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
   showDendrogram?: boolean,
-  // maxMutations?: number,
-  // minActivityDelta?: number,
   columns?: AggregationColumns,
 }
 
@@ -42,12 +37,6 @@ export type DrawOptions = {
   textHeight?: number,
   selectionWidth?: number,
 };
-
-export type StatsInfo = {
-  monomerCol: DG.Column<string>,
-  countCol: DG.Column<number>,
-  orderedIndexes: Int32Array,
-}
 
 export type RawColumn = { name: string, rawData: RawData, cat?: string[] };
 
