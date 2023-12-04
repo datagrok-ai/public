@@ -115,7 +115,7 @@ let startUriLoaded = false;
 //tags: app
 //sidebar: @compute
 export function modelCatalog() {
-  ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package)
+  const view = ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package);
   
   const optionalPart = grok.shell.startUri.indexOf('?');
   const pathSegments = grok.shell.startUri
@@ -128,6 +128,8 @@ export function modelCatalog() {
         startUriLoaded = true;
     });
   }
+
+  return view;
 }
 
 

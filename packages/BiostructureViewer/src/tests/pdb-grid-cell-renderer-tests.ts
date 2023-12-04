@@ -3,12 +3,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {before, after, category/*, expect*/, test, testEvent, delay} from '@datagrok-libraries/utils/src/test';
+import {NglGlServiceBase, getNglGlService} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+
 import {awaitGrid} from './utils';
 import {IPdbGridCellRenderer} from '../utils/types';
 
 import {_package} from '../package-test';
 
 category('pdbGridCellRenderer', () => {
+  let nglSvc: NglGlServiceBase;
+
+  before(async () => {
+    // warm up NglGlDocService
+    nglSvc = await getNglGlService();
+    await nglSvc.reset();
+  });
+
+  after(async () => {
+    await nglSvc.reset();
+  });
+
   test('pdbDataCsv', async () => {
     const pdbDataDf: DG.DataFrame =
       await grok.dapi.files.readCsv('System:AppData/BiostructureViewer/pdb_data.csv');

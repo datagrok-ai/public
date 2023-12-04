@@ -634,7 +634,7 @@ export class PipelineView extends FunctionView {
     }
   }
 
-  public override async executeTest(spec: any) {
-    await testPipeline(spec, this);
+  public override async executeTest(spec: any, updateMode = false) {
+    await testPipeline(spec, this, {updateMode});
   }
 }

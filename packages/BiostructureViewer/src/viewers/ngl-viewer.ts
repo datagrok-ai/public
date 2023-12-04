@@ -4,13 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import wu from 'wu';
-import {Observable, Subject} from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
+import * as ngl from 'NGL';
 
-import {TwinPviewer} from './twin-p-viewer';
-import {Unsubscribable} from 'rxjs';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
-import {LoaderParameters, RepresentationParameters} from 'NGL';
-import * as NGL from 'NGL';
 import {intToHtml} from '@datagrok-libraries/utils/src/color';
 import {
   INglViewer,
@@ -19,9 +16,11 @@ import {
   RepresentationType,
 } from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
-import {_package} from '../package';
 import {errInfo} from '../utils/err-info';
 import {awaitNgl} from './ngl-viewer-utils';
+import {TwinPviewer} from './twin-p-viewer';
+
+import {_package} from '../package';
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -70,7 +69,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   [PROPS.ligandColumnName]: string;
 
   // -- Style --
-  [PROPS.representation]: NGL.StructureRepresentationType;
+  [PROPS.representation]: ngl.StructureRepresentationType;
 
   // -- Behavior --
   [PROPS.showSelectedRowsLigands]: boolean;
@@ -94,7 +93,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
     // -- Style --
     this.representation = this.string(PROPS.representation, defaults.representation,
-      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)}) as NGL.StructureRepresentationType;
+      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)}) as ngl.StructureRepresentationType;
 
     // -- Behaviour --
     this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, defaults.showSelectedRowsLigands,
@@ -229,7 +228,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   private setDataInProgress: boolean = false;
 
   private nglDiv?: HTMLDivElement;
-  public stage?: NGL.Stage;
+  public stage?: ngl.Stage;
 
   private splashDiv?: HTMLDivElement;
 
@@ -291,13 +290,13 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       this.root.appendChild(this.nglDiv);
 
       _package.logger.debug(`${callLogPrefix}, stage creating`);
-      this.stage = new NGL.Stage(this.nglDiv);
+      this.stage = new ngl.Stage(this.nglDiv);
       await awaitNgl(this.stage, callLogPrefix);
       _package.logger.debug(`${callLogPrefix}, stage created`);
     }
 
-    const stage: NGL.Stage = this.stage!;
-    const representation: NGL.StructureRepresentationType = this.representation;
+    const stage: ngl.Stage = this.stage!;
+    const representation: ngl.StructureRepresentationType = this.representation;
     const pdbStr: string = this.pdbStr;
     const df: DG.DataFrame = this.dataFrame;
 
@@ -306,16 +305,16 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
     //highlights in NGL
     /* eslint-disable camelcase, prefer-const */
-    let scheme_buffer: [string, string][] = [];
+    let scheme_buffer: ngl.SelectionSchemeData[] = [];
 
     //TODO: remove - demo purpose only
-    scheme_buffer.push(['#0069a7', `* and :A`]);
-    scheme_buffer.push(['#f1532b', `* and :B`]);
-    scheme_buffer.push(['green', `* and :R`]);
-    scheme_buffer.push(['green', `* and :M`]);
+    scheme_buffer.push(['#0069a7', `* and :A`, undefined]);
+    scheme_buffer.push(['#f1532b', `* and :B`, undefined]);
+    scheme_buffer.push(['green', `* and :R`, undefined]);
+    scheme_buffer.push(['green', `* and :M`, undefined]);
     /* eslint-enable camelcase, prefer-const */
 
-    const schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+    const schemeId = ngl.ColormakerRegistry.addSelectionScheme(scheme_buffer);
     const _schemeObj = {color: schemeId};
 
     const _repComp = stage.compList[0].addRepresentation(representation, {});
@@ -471,12 +470,12 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
       const addLigandOnStage = async (rowIdx: number, color: DG.Color | null): Promise<number> => {
         const ligandBlob = this.getLigandBlobOfRow(rowIdx);
-        const ligandParams: Partial<LoaderParameters> =
+        const ligandParams: Partial<ngl.LoaderParameters> =
           {ext: 'sdf', compressed: false, binary: false, name: `<Ligand at row ${rowIdx}`};
         await this.stage!.loadFile(ligandBlob, ligandParams); // assume this all adds last compList
         const compIdx: number = this.stage!.compList.length - 1;
 
-        const params: RepresentationParameters = {
+        const params: Partial<ngl.RepresentationParameters> = {
           ...(color ? {color: intToHtml(color as number)} : {}),
         };
 

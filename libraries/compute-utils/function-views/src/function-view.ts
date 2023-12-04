@@ -12,7 +12,7 @@ import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
-import {distinctUntilChanged} from 'rxjs/operators';
+import { delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
@@ -505,7 +505,10 @@ export abstract class FunctionView extends DG.ViewBase {
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
 
-    ribbonMenu.item('Import Test JSON', () => this.importRunJsonDialog());
+    const testingGroup = ribbonMenu.group('Test runner');
+    testingGroup.item('Execute Test JSON', () => this.importRunJsonDialog());
+    testingGroup.item('Update Test JSON', () => this.importRunJsonDialog(true));
+    ribbonMenu.endGroup();
 
     if (this.getAbout) {
       ribbonMenu.item('About', async () => {
@@ -674,7 +677,7 @@ export abstract class FunctionView extends DG.ViewBase {
     }
   }
 
-  public async importRunJsonDialog() {
+  public async importRunJsonDialog(isUpdate = false) {
     const fileInput = new FileInput('JSON file', null, null, 'application/json');
     const showParams = {modal: true, fullScreen: true, width: 500, height: 200, center: true};
     const confirmed = await new Promise((resolve, _reject) => {
@@ -692,11 +695,18 @@ export abstract class FunctionView extends DG.ViewBase {
       return;
 
     const spec = deserialize(await fileInput.value.text());
-    await this.executeTest(spec);
+    if (!isUpdate)
+      await this.executeTest(spec);
+    else {
+      await this.executeTest(spec, true);
+      // TODO: fix isHistorical in pipeline, not to emit before setting lastCall
+      await this.isHistorical.pipe(filter((x) => x), take(1), delay(0)).toPromise();
+      await this.exportRun(RunDataJSON);
+    }
   }
 
-  protected async executeTest(spec: any) {
-    await testFunctionView(spec, this);
+  protected async executeTest(spec: any, updateMode = false) {
+    await testFunctionView(spec, this, {updateMode});
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);

@@ -1,6 +1,34 @@
 # Tutorials changelog
 
-## 1.3.15 (WIP)
+## 1.3.19 (2023-12-04)
+
+### Bug Fixes
+
+* Fixed demo app not working.
+
+## 1.3.18 (2023-12-04)
+
+### Features
+
+* Improved Chem tutorials: Similarity and Diversity Search.
+
+### Bug Fixes
+
+* Fixed demo app not working.
+
+## 1.3.17 (2023-11-09)
+
+### Features
+
+* Improved Chem tutorials: R-Group Analysis.
+
+## 1.3.16 (2023-11-07)
+
+### Features
+
+* Improved Chem tutorials: Activity Cliffs, R-Group Analysis, Similarity and Diversity Search, Substructure Search and Filtering.
+
+## 1.3.15 (2023-11-02)
 
 ### Bug Fixes
 

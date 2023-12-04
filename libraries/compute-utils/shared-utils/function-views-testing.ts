@@ -5,25 +5,32 @@ import {FunctionView, PipelineView, RichFunctionView} from '../function-views';
 import {ExpectDeepEqualOptions, expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {delay, last, takeUntil, takeWhile} from 'rxjs/operators';
 import {of} from 'rxjs';
-import { fcInputFromSerializable } from './utils';
+import {fcInputFromSerializable} from './utils';
 
 export interface FunctionViewTestOptions extends ExpectDeepEqualOptions {
   initWaitTimeout?: number;
   validatorsWaitTimeout?: number;
   nextStepTimeout?: number;
+  updateMode?: boolean;
 }
-export type PipelineTestOptions = Record<string, FunctionViewTestOptions>
+export interface PipelineTestOptions {
+  initWaitTimeout?: number;
+  updateMode?: boolean;
+  stepOptions?: Record<string, FunctionViewTestOptions>
+}
 
 export async function testPipeline(
-  spec: any, view: PipelineView, options: PipelineTestOptions = {}, initWaitTimeout = 5000) {
-  await waitForReady(view, initWaitTimeout);
+  spec: any, view: PipelineView, options: PipelineTestOptions = {}) {
+  await waitForReady(view, options.initWaitTimeout ?? 5000);
   for (const [name, step] of Object.entries(view.steps)) {
     const stepSpec = spec[name];
     if (!stepSpec)
       continue;
-    const prefix = options.prefix ? `${options.prefix}: ${name}` : name;
-    const defaultSettings = {validatorsWaitTimeout: 1000, nextStepTimeout: 100, initWaitTimeout: 100};
-    await testFunctionView(stepSpec, step.view, {...defaultSettings, ...options, prefix});
+    const stepOptions = options.stepOptions?.[name] ?? {};
+    const prefix = stepOptions.prefix ? `${stepOptions.prefix}: ${name}` : name;
+    const {updateMode} = options;
+    const defaultSettings = {validatorsWaitTimeout: 1000, nextStepTimeout: 100, initWaitTimeout: 100, updateMode};
+    await testFunctionView(stepSpec, step.view, {...defaultSettings, ...stepOptions, prefix});
   }
 }
 
@@ -32,7 +39,13 @@ export async function testFunctionView(
   await waitForReady(view, options.initWaitTimeout ?? 1000);
   for (const [name, data] of Object.entries(spec.inputs)) {
     const propertyType = view.funcCall.inputParams[name].property.propertyType;
-    view.funcCall.inputs[name] = await fcInputFromSerializable(propertyType, data);
+    if (!options.updateMode)
+      view.funcCall.inputs[name] = await fcInputFromSerializable(propertyType, data);
+    else {
+      const currentValue = view.funcCall.inputs[name];
+      if (currentValue == null)
+        view.funcCall.inputs[name] = await fcInputFromSerializable(propertyType, data);
+    }
   }
   if (view instanceof RichFunctionView) {
     const validatorsWaitTimeout = options.validatorsWaitTimeout ?? 1000;
@@ -48,9 +61,11 @@ export async function testFunctionView(
   }
   console.log(`running ${view.func.nqName}`);
   await view.run();
-  console.log(`checking ${view.func.nqName} results`);
-  expectDeepEqual(view.funcCall.outputs, spec.outputs, options);
-  console.log(`${view.func.nqName} ok`);
+  if (!options.updateMode) {
+    console.log(`checking ${view.func.nqName} results`);
+    expectDeepEqual(view.funcCall.outputs, spec.outputs, options);
+    console.log(`${view.func.nqName} ok`);
+  }
 }
 
 async function waitForReady(view: FunctionView, timeout: number) {

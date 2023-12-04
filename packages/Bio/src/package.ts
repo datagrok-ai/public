@@ -494,6 +494,12 @@ export async function sequenceSpaceTopMenu(
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN,
   plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: (IUMAPOptions | ITSNEOptions) & Options,
 ): Promise<DG.Viewer | undefined> {
+  const scatterPlotProps = {
+    showXAxis: false,
+    showYAxis: false,
+    showXSelector: false,
+    showYSelector: false,
+  };
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
@@ -511,7 +517,7 @@ export async function sequenceSpaceTopMenu(
         if (plotEmbeddings) {
           scatterPlot = grok.shell
             .tableView(table.name)
-            .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+            .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
         }
       } else {
         embedXCol = table.columns.byName(embedColsNames[0]);
@@ -554,7 +560,7 @@ export async function sequenceSpaceTopMenu(
       if (plotEmbeddings) {
         scatterPlot = grok.shell
           .tableView(table.name)
-          .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+          .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
         ui.setUpdateIndicator(scatterPlot.root, true);
       }
       let resolveF: Function | null = null;
@@ -1066,6 +1072,7 @@ export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
 //description: Sequence similarity tracking and evaluation dataset diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioSimilarityDiversity(): Promise<void> {
   await demoBio01UI();
 }
@@ -1076,6 +1083,7 @@ export async function demoBioSimilarityDiversity(): Promise<void> {
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioSequenceSpace(): Promise<void> {
   await demoBio01aUI();
 }
@@ -1086,6 +1094,7 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI();
 }
@@ -1096,6 +1105,7 @@ export async function demoBioActivityCliffs(): Promise<void> {
 //description: Atomic level structure of Macromolecules
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioAtomicLevel(): Promise<void> {
   await demoBio03UI();
 }
@@ -1106,6 +1116,7 @@ export async function demoBioAtomicLevel(): Promise<void> {
 //description: MSA and composition analysis on Helm data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Helm,%20MSA,%20Sequence%20Space
 //meta.isDemoScript: True
+//meta.demoSkip: GROK-14320
 export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }

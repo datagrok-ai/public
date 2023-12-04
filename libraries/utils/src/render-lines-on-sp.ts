@@ -164,7 +164,7 @@ export class ScatterPlotLinesRenderer {
                             const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen) : null;
                             const arrowCPX = multiLines ? controlPoint!.x : aX;
                             const arrowCPY = multiLines ? controlPoint!.y : aY;
-                            this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                            this.canvasArrow(this.ctx, arrowPoint?.x ?? aX, arrowPoint?.y ?? aY, arrowCPX, arrowCPY);
                         }
                     }
                     this.ctx.stroke();

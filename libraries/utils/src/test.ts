@@ -287,7 +287,8 @@ export async function initAutoTests(packageId: string, module?: any) {
     moduleTests[detectorsCatName] = {tests: moduleDetectors, clear: false};
 }
 
-export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
+export async function runTests(options?:
+  {category?: string, test?: string, testContext?: TestContext}, exclude?: string[]) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   await initAutoTests(package_.id);
   const results: { category?: string, name?: string, success: boolean,
@@ -296,17 +297,19 @@ export async function runTests(options?: {category?: string, test?: string, test
   options ??= {};
   options!.testContext ??= new TestContext();
   grok.shell.lastError = '';
+  const categories = [];
   for (const [key, value] of Object.entries(tests)) {
-    if (options?.category != undefined) {
-      if (!key.toLowerCase().startsWith(options?.category.toLowerCase()))
-        continue;
-    }
+    if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
+      exclude?.some((c) => key.startsWith(c)))
+      continue;
     console.log(`Started ${key} category`);
+    categories.push(key);
+    const skipped = value.tests?.every((t) => t.options?.skipReason);
     try {
-      if (value.before)
+      if (value.before && !skipped)
         await value.before();
     } catch (x: any) {
-      value.beforeStatus = x.toString();
+      value.beforeStatus = getResult(x);
     }
     const t = value.tests ?? [];
     const res = [];
@@ -322,10 +325,10 @@ export async function runTests(options?: {category?: string, test?: string, test
     }
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
-      if (value.after)
+      if (value.after && !skipped)
         await value.after();
     } catch (x: any) {
-      value.afterStatus = x.toString();
+      value.afterStatus = getResult(x);
     }
     // Clear after category
     // grok.shell.closeAll();
@@ -346,22 +349,45 @@ export async function runTests(options?: {category?: string, test?: string, test
       });
     }
   }
-  if (options.testContext.report) {
-    const logger = new DG.Logger();
+  if (!options.test && results.length) {
     const successful = results.filter((r) => r.success).length;
     const skipped = results.filter((r) => r.skipped).length;
     const failed = results.filter((r) => !r.success);
-    const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
-    const params = {
-      successful: successful,
-      skipped: skipped,
-      failed: failed.length,
-      package: package_
-    };
-    for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
-    logger.log(description, params, 'package-tested');
+    const packageName = package_.name;
+    for (const cat of categories) {
+      const res = results.filter((r) => r.category === cat);
+      const failed_ = res.filter((r) => !r.success).length;
+      const params = {success: failed_ === 0,
+        passed: res.filter((r) => r.success).length,
+        skipped: res.filter((r) => r.skipped).length,
+        failed: failed_,
+        type: 'package', packageName, category: cat};
+      grok.log.usage(`${packageName}: ${cat}`,
+        params, `category-package ${packageName}: ${cat}`);
+    }
+    if (!options.category) {
+      const params = {success: failed.length === 0, passed: successful, skipped, failed: failed.length,
+        type: 'package', packageName};
+      grok.log.usage(packageName, params, `package-package ${packageName}`);
+    }
+    if (options.testContext.report) {
+      const logger = new DG.Logger();
+      const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
+      const params = {
+        successful: successful,
+        skipped: skipped,
+        failed: failed.length,
+        package: package_
+      };
+      for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
+      logger.log(description, params, 'package-tested');
+    }
   }
   return results;
+}
+
+function getResult(x: any) {
+  return `${x.toString()}\n${x.stack ? DG.Logger.translateStackTrace(x.stack) : ''}`;
 }
 
 async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
@@ -382,7 +408,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
       r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
-    r = {success: false, result: x.toString(), ms: 0, skipped: false};
+    r = {success: false, result: getResult(x), ms: 0, skipped: false};
   }
   r.ms = Date.now() - start;
   if (!skip)

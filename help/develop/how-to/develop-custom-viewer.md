@@ -499,18 +499,20 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //meta.toolbox: true
 //meta.trellisable: true
 //meta.viewerPath: Subcategory Name | Friendly Viewer Name
+//meta.viewerPosition: bottom
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
 }
 ```
 
-The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, `meta.trellisable`, and
-`meta.viewerPath`, can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and
-replaces the default icon with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox
-in a table view. The `meta.trellisable` parameter indicates whether this viewer can be an inner viewer of
-[DG.VIEWER.TRELLIS_PLOT]. The `meta.viewerPath` parameter defines a path under which the viewer is shown in the top
-menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
+The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, `meta.trellisable`,
+`meta.viewerPath` and `meta.viewerPosition` can be used. The `meta.icon` parameter accepts a path to a viewer icon file
+in the package and replaces the default icon with it in the UI. The `meta.toolbox` parameter, when enabled, adds your
+viewer to the toolbox in a table view. The `meta.trellisable` parameter indicates whether this viewer can be an inner
+viewer of [DG.VIEWER.TRELLIS_PLOT]. The `meta.viewerPath` parameter defines a path under which the viewer is shown in
+the top menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`. The `meta.viewerPosition`
+parameter specifies the position of the viewer. It can be either top, bottom, left, right, fill or auto.
 
 :::tip
 

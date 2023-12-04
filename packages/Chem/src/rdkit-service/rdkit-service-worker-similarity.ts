@@ -44,7 +44,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
         return { fps: fps, smiles: canonicalSmilesArr };
 
       const item = molecules[i];
-      if (!item && item === '')
+      if (!item || item === '')
         continue;
       let rdMol = this._molsCache?.get(molecules[i]);
       if (!rdMol) {

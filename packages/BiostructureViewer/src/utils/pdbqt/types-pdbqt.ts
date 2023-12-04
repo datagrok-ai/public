@@ -26,26 +26,38 @@ export class PdbqtAtomTer extends AtomTerBase implements IPdbqtAtomTer {
   }
 }
 
-/** https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html */
+/** https://autodock.scripps.edu/wp-content/uploads/sites/56/2021/10/AutoDock4.2.6_UserGuide.pdf */
 export class PdbqtAtomCoords extends AtomCoordsBase implements IPdbqtAtomCoords {
   /**
    * cols: 67-70, SPACE
    * @param partCharge cols: 71-76 f:+1.3
-   * @param element    cols: 78-79, right
+   * @param atomType    cols: 78-79, right
    */
   constructor(a: AtomCoordsBase,
     public readonly partCharge: number,
-    public readonly element: string,
+    public readonly atomType: string,
   ) {
     super(a, a.x, a.y, a.z, a.occupancy, a.bFactor);
   }
 
   static fromStr(line: string): PdbqtAtomCoords {
-    return new PdbqtAtomCoords(
+    const res = new PdbqtAtomCoords(
       AtomCoordsBase.fromStr(line),
       /* partCharge */ parseFloat(line.slice(71 - 1, 76)),
       `${line.slice(78 - 1, 79).trim()}`,
     );
+    // if (!res.atomName && res.atomType.startsWith(res.atomElement) && res.atomType.length > res.atomElement.length) {
+    //   const atomName = res.atomType.replace(new RegExp(`^${res.atomElement}`), '');
+    //   res = new PdbqtAtomCoords(
+    //     new AtomCoordsBase(
+    //       new AtomBase(res, res.number, res.atomElement,
+    //         atomName /* replacing res.atomName*/,
+    //         res.altLoc, res.resName, res.chain, res.resNumber, res.insCode),
+    //       res.x, res.y, res.z, res.occupancy, res.bFactor),
+    //     res.partCharge, res.atomType);
+    // }
+
+    return res;
   }
 
   /** cols: 71-76 f:+5.3 */ get partChargeStr(): string {
@@ -56,18 +68,18 @@ export class PdbqtAtomCoords extends AtomCoordsBase implements IPdbqtAtomCoords 
   isValid(): boolean {
     return super.isValid() &&
       this.partChargeStr.length <= 6 &&
-      this.element.length <= 2;
+      this.atomType.length <= 2;
   }
 
   toPdb(): PdbAtomCoords {
-    const res = new PdbAtomCoords(this, '', this.element, '');
+    const res = new PdbAtomCoords(this, '', this.atomElement /* from base */, '');
     return res;
   }
 
   toStr(): string {
     const res = [super.toStr() /* 1-66 */, '    ' /* 67-70 */,
       this.partChargeStr.padStart(6) /* 71-76*/, ' ' /* 77 */,
-      this.element.padEnd(2) /* 78-79 */,
+      this.atomType.padEnd(2) /* 78-79 */,
     ].join('');
     if (res.length !== 79)
       throw new Error(`ATOM Pdbqt line of invalid length ${res.length} != 79.`);

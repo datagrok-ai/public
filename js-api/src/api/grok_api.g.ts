@@ -931,6 +931,7 @@ export interface IDartApi {
   grok_ColumnsInput(name: any, table: any, availableColumns: any, checkedColumns: any): any;
   grok_TableInput(name: String, t: any, items: any): any;
   grok_ColorInput(name: any, value: any): any;
+  grok_ColorPicker(color: any, onChanged: any, colorDiv: any): any;
   grok_RadioInput(name: any, value: any, items: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
   grok_ProgressIndicator_Get_Percent(pi: any): any;
@@ -959,6 +960,7 @@ export interface IDartApi {
   grok_InputBase_Get_Property(input: any): any;
   grok_InputBase_Get_Root(input: any): any;
   grok_InputBase_Get_Caption(input: any): any;
+  grok_InputBase_Set_Caption(input: any, s: String): any;
   grok_InputBase_Get_InputType(input: any): any;
   grok_InputBase_Get_Format(input: any): any;
   grok_InputBase_Set_Format(input: any, s: String): any;
@@ -1013,6 +1015,8 @@ export interface IDartApi {
   grok_TreeViewNode_CheckBox(node: any): any;
   grok_TreeViewNode_Get_Checked(node: any): any;
   grok_TreeViewNode_Set_Checked(node: any, checked: Bool): any;
+  grok_TreeViewNode_Get_Tag(node: any): any;
+  grok_TreeViewNode_Set_Tag(node: any, tag: any): any;
   grok_TreeViewNode_Text(node: any): any;
   grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool): any;
   grok_TreeViewNode_GetOrCreateGroup(node: any, text: String, value: any, expanded: Bool): any;
@@ -1064,6 +1068,7 @@ export interface IDartApi {
   grok_FuncCall_Get_Started(call: any): any;
   grok_FuncCall_Set_Started(call: any, millisecondSinceEpoch: Num): any;
   grok_FuncCall_Get_Finished(call: any): any;
+  grok_FuncCall_Get_Status(call: any): any;
   grok_FuncCall_Get_ErrorMessage(call: any): any;
   grok_FuncCall_Get_ErrorStackTrace(call: any): any;
   grok_FuncCall_Get_Author(call: any): any;
@@ -1318,6 +1323,7 @@ export interface IDartApi {
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
   grok_DockerImage_Get_dockerfile(x: any): any;
+  grok_DockerImage_Set_dockerfile(x: any, v: String): any;
   grok_DockerImage_Get_status(x: any): any;
   grok_DockerImage_Set_status(x: any, v: String): any;
   grok_DockerImage_Get_dockerName(x: any): any;
@@ -1336,6 +1342,7 @@ export interface IDartApi {
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
   grok_DockerImage_Get_dockerfile(x: any): any;
+  grok_DockerImage_Set_dockerfile(x: any, v: String): any;
   grok_DockerImage_Get_status(x: any): any;
   grok_DockerImage_Set_status(x: any, v: String): any;
   grok_DockerImage_Get_dockerName(x: any): any;
@@ -1358,6 +1365,7 @@ export interface IDartApi {
   grok_ViewerEvent_Get_eventFlag(x: any): any;
   grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
   grok_ViewerEvent_Get_filters(x: any): any;
+  grok_ViewerEvent_Set_filters(x: any, v: any): any;
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
@@ -1366,25 +1374,40 @@ export interface IDartApi {
   grok_GridCellStyle_Get_font(x: any): any;
   grok_GridCellStyle_Set_font(x: any, v: String): any;
   grok_GridCellStyle_Get_horzAlign(x: any): any;
+  grok_GridCellStyle_Set_horzAlign(x: any, v: String): any;
   grok_GridCellStyle_Get_vertAlign(x: any): any;
+  grok_GridCellStyle_Set_vertAlign(x: any, v: String): any;
   grok_GridCellStyle_Get_tooltip(x: any): any;
+  grok_GridCellStyle_Set_tooltip(x: any, v: String): any;
   grok_GridCellStyle_Get_cursor(x: any): any;
   grok_GridCellStyle_Set_cursor(x: any, v: String): any;
   grok_GridCellStyle_Get_textWrap(x: any): any;
+  grok_GridCellStyle_Set_textWrap(x: any, v: String): any;
   grok_GridCellStyle_Get_marker(x: any): any;
   grok_GridCellStyle_Set_marker(x: any, v: String): any;
   grok_GridCellStyle_Get_textColor(x: any): any;
+  grok_GridCellStyle_Set_textColor(x: any, v: Num): any;
   grok_GridCellStyle_Get_backColor(x: any): any;
+  grok_GridCellStyle_Set_backColor(x: any, v: Num): any;
   grok_GridCellStyle_Get_marginLeft(x: any): any;
+  grok_GridCellStyle_Set_marginLeft(x: any, v: Num): any;
   grok_GridCellStyle_Get_marginRight(x: any): any;
+  grok_GridCellStyle_Set_marginRight(x: any, v: Num): any;
   grok_GridCellStyle_Get_marginTop(x: any): any;
+  grok_GridCellStyle_Set_marginTop(x: any, v: Num): any;
   grok_GridCellStyle_Get_marginBottom(x: any): any;
+  grok_GridCellStyle_Set_marginBottom(x: any, v: Num): any;
   grok_GridCellStyle_Get_textVertical(x: any): any;
+  grok_GridCellStyle_Set_textVertical(x: any, v: Bool): any;
   grok_GridCellStyle_Get_imageScale(x: any): any;
+  grok_GridCellStyle_Set_imageScale(x: any, v: Num): any;
   grok_GridCellStyle_Get_opacity(x: any): any;
   grok_GridCellStyle_Set_opacity(x: any, v: Num): any;
   grok_GridCellStyle_Get_element(x: any): any;
+  grok_GridCellStyle_Set_element(x: any, v: any): any;
   grok_GridCellStyle_Get_choices(x: any): any;
+  grok_GridCellStyle_Set_choices(x: any, v: any): any;
+  grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool): any;
 
   // Generated from ../ddt/lib/ddt.api.g.dart
   grok_Tags_Create(): any;

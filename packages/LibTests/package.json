@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "Lib Tests",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "servicePackage": true,
   "description": "Automated tests for libraries",
   "dependencies": {

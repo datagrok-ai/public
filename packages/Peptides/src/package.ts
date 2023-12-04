@@ -12,6 +12,7 @@ import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-wo
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
+import {View} from "datagrok-api/dg";
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -50,7 +51,8 @@ async function openDemoData(chosenFile: string): Promise<void> {
 
 //name: Peptides
 //tags: app
-export function Peptides(): void {
+//output: view
+export function Peptides(): DG.View {
   const appHeader = u2.appHeader({
     iconPath: _package.getIconUrl(),
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
@@ -68,7 +70,9 @@ export function Peptides(): void {
   windows.showHelp = false;
   windows.showProperties = false;
 
-  grok.shell.newView('Peptides', [
+  const view = View.create();
+  view.name = 'Peptides';
+  ui.appendAll(view.root, [
     appHeader,
     ui.divH([
       ui.button('Simple demo', () => openDemoData('aligned.csv'), ''),
@@ -76,6 +80,7 @@ export function Peptides(): void {
       ui.button('HELM demo', () => openDemoData('aligned_3.csv'), ''),
     ]),
   ]);
+  return view;
 }
 
 //top-menu: Bio | Analyze | SAR...

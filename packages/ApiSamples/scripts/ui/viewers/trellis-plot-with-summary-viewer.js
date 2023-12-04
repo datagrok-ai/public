@@ -9,6 +9,8 @@ tv.addViewer(DG.VIEWER.TRELLIS_PLOT, {
     visualizationType: 'bars',
     colorColumnName: 'age',
     colorAggrType: 'stdev',
-    invertColorScheme: true
+    invertColorScheme: true,
+    colorSchemes: [DG.Color.categoricalPalette, [DG.Color.darkGray, DG.Color.blue, DG.Color.green, DG.Color.darkGreen,
+      DG.Color.yellow, DG.Color.olive, DG.Color.orange]],
   }
 });

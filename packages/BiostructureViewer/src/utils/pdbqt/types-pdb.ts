@@ -11,6 +11,7 @@ export class PdbAtomTer extends AtomTerBase implements IPdbAtomTer {
   }
 }
 
+/** https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html */
 export class PdbAtomCoords extends AtomCoordsBase implements IPdbAtomCoords {
   /**
    * cols: 67-72, SPACE

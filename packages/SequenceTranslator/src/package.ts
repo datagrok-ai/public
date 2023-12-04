@@ -51,6 +51,7 @@ async function buildLayout(appName: string): Promise<void> {
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoToolkitApp(): Promise<void> {
   await initSequenceTranslatorLibData();
@@ -63,6 +64,7 @@ export async function oligoToolkitApp(): Promise<void> {
 
 //name: Oligo Translator
 //meta.icon: img/icons/translator.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoTranslatorApp(): Promise<void> {
   await buildLayout(APP.TRANSLATOR);
@@ -70,6 +72,7 @@ export async function oligoTranslatorApp(): Promise<void> {
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoPatternApp(): Promise<void> {
   await buildLayout(APP.PATTERN);
@@ -77,6 +80,7 @@ export async function oligoPatternApp(): Promise<void> {
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
+//meta.browsePath: Oligo
 //tags: app
 export async function oligoStructureApp(): Promise<void> {
   await buildLayout(APP.STRUCTRE);

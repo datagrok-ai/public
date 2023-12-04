@@ -67,8 +67,10 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
 
   search.input.onkeyup = (event) => {
-    if (event.key === 'Escape')
+    if (event.key === 'Escape'){
       search.fireChanged();
+      dlg.close();
+    }
   };
 
   const searchIcon = ui.iconFA('search');

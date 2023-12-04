@@ -52,21 +52,28 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export {tests};
 
-
 //name: test
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
 //output: dataframe result
-//top-menu: Tools | Dev | JS API Tests
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }
 
+//name: testPlatform
+//output: dataframe result
+//top-menu: Tools | Dev | Test | Platform
+export async function testPlatform(): Promise<DG.DataFrame> {
+  const skip = ['Benchmarks', 'Packages: Docker', 'Functions: Client-side cache'];
+  const data = await runTests({}, skip);
+  return DG.DataFrame.fromObjects(data)!;
+}
+
 //name: testPackages
 //output: dataframe result
-//top-menu: Tools | Dev | Test Packages
+//top-menu: Tools | Dev | Test | Packages
 export async function testPackages(): Promise<DG.DataFrame> {
   const funcs = DG.Func.find({name: 'test'});
   const dfs: DG.DataFrame[] = [];

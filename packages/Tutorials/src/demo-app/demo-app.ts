@@ -45,8 +45,11 @@ export class DemoView extends DG.ViewBase {
 
     this._closeAll();
 
+    // TODO: change to getElementById('elementContent') when it is fixed
+    const updateIndicatorRoot = document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
+
     if (func.options['isDemoScript'] == 'True') {
-      ui.setUpdateIndicator(grok.shell.tv.root, true);
+      ui.setUpdateIndicator(updateIndicatorRoot, true);
       const pathElements = viewPath.split('|').map((s) => s.trim());  
       grok.shell.newView(pathElements[pathElements.length - 1], [ ui.panel([
           ui.h1(pathElements[pathElements.length - 1]),
@@ -54,11 +57,11 @@ export class DemoView extends DG.ViewBase {
           ui.bigButton('Start', async () => { await func.apply() })
         ], 'demo-app-script-view')
         ])
-      ui.setUpdateIndicator(grok.shell.tv.root, false);
+      ui.setUpdateIndicator(updateIndicatorRoot, false);
     } else {
-      ui.setUpdateIndicator(grok.shell.tv.root, true);
+      ui.setUpdateIndicator(updateIndicatorRoot, true);
       await func.apply();
-      ui.setUpdateIndicator(grok.shell.tv.root, false);
+      ui.setUpdateIndicator(updateIndicatorRoot, false);
     }
     grok.shell.v.path = grok.shell.v.basePath = '';
     if (grok.shell.v.basePath.includes('/apps/Tutorials/Demo')) {
