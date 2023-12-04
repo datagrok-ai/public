@@ -425,8 +425,8 @@ export class PeptidesModel {
       colorPalette: pickUpPalette(this.df.getCol(isModelSource ? this.settings!.sequenceColumnName :
         (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
       tableSelection: trueModel.getCombinedSelection(),
-      isAnalysis: this.settings !== null &&
-        areObjectsEqual(this.settings.columns, (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns()),
+      isAnalysis: this.settings !== null && (isModelSource ||
+        areObjectsEqual(this.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
     }), true);
 
     return acc;
