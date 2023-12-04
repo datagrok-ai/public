@@ -660,7 +660,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     //this.root.style.visibility = 'hidden';
     ui.setUpdateIndicator(this.root, true);
     this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
-    this.progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
+    this.progressBar?.update(0, 'Installing ScaffoldGraph..: 0% completed');
 
     const c = this.root.getElementsByClassName('d4-update-shadow');
     if (c.length > 0) {
@@ -674,8 +674,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         eCancel.style.opacity = '90%';
 
         ui.setUpdateIndicator(this.root, false);
-        this.progressBar!.update(100, 'Build Cancelled');
-        this.progressBar!.close();
+        this.progressBar?.update(100, 'Build Cancelled');
+        this.progressBar?.close();
         this.progressBar = null;
       }, 'Cancel Tree build', 'chem-scaffold-tree-cancel-hint');
       eProgress.appendChild(eCancel);
@@ -692,7 +692,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (currentCancelled)
       return;
 
-    this.progressBar!.update(30, 'Generating tree..: 30% completed');
+    this.progressBar?.update(30, 'Generating tree..: 30% completed');
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
@@ -750,8 +750,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } catch (e: any) {
       _package.logger.error(e.toString());
       ui.setUpdateIndicator(this.root, false);
-      this.progressBar!.update(50, 'Build failed');
-      this.progressBar!.close();
+      this.progressBar?.update(50, 'Build failed');
+      this.progressBar?.close();
       this.message = 'Tree build failed...Please ensure that python package ScaffoldGraph is installed';
       return;
     }
@@ -765,8 +765,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.cancelled) {
       this.clear();
       ui.setUpdateIndicator(this.root, false);
-      this.progressBar!.update(100, 'Build Cancelled');
-      this.progressBar!.close();
+      this.progressBar?.update(100, 'Build Cancelled');
+      this.progressBar?.close();
       this.progressBar = null;
       return;
     }
@@ -801,7 +801,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     await updateVisibleNodesHits(this); //first visible N nodes
     ui.setUpdateIndicator(this.root, false);
     if (this.progressBar !== null)
-      this.progressBar!.update(100, 'Tree is ready');
+      this.progressBar.update(100, 'Tree is ready');
 
     this.updateSizes();
     this.updateUI();
