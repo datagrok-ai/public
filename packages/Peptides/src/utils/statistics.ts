@@ -16,6 +16,7 @@ export type StatsItem = {
 
 export type PositionStats = { [monomer: string]: StatsItem } & { general: SummaryStats };
 export type MonomerPositionStats = { [position: string]: PositionStats } & { general: SummaryStats };
+export type MonomerPositionStatsCache = {[colName: string]: {filter: Int32Array, stats: MonomerPositionStats, selection: Int32Array}};
 export type ClusterStats = { [cluster: string]: StatsItem };
 export type ClusterTypeStats = { [clusterType in ClusterType]: ClusterStats };
 export type MasksInfo = {

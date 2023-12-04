@@ -422,6 +422,10 @@ export class MonomerPosition extends SARViewer {
       break;
     }
 
+    // this will cause colors to recalculate
+    this.model.df.columns.toList().forEach((col) => {
+      col.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = null;
+    });
     if (this.doRender)
       this.render();
   }
@@ -540,6 +544,8 @@ export class MonomerPosition extends SARViewer {
             }
           }
         }
+      } else {
+        return;
       }
       this.model.fireBitsetChanged(VIEWER_TYPE.MONOMER_POSITION);
       grid.invalidate();
@@ -739,6 +745,7 @@ export class MostPotentResidues extends SARViewer {
     pValData.length = i;
     countData.length = i;
     ratioData.length = i;
+    meanData.length = i;
 
     const mprDf = DG.DataFrame.create(i);
     const mprDfCols = mprDf.columns;
@@ -817,6 +824,8 @@ export class MostPotentResidues extends SARViewer {
           const monomerPosition = this.getMonomerPosition(grid.cell('Diff', rowIdx));
           this.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
         }
+      } else {
+        return;
       }
       this.model.fireBitsetChanged(VIEWER_TYPE.MOST_POTENT_RESIDUES);
       grid.invalidate();
@@ -922,20 +931,28 @@ function renderCell(args: DG.GridCellRenderArgs, viewer: SARViewer, isInvariantM
   if (isInvariantMap) {
     const value = currentPosStats![currentMonomer]!.count;
     const positionCol = viewer.positionColumns.find((col) => col.name === currentPosition)!;
-    const positionColData = positionCol.getRawData();
-    const positionColCategories = positionCol.categories;
+    const colorCache: {[_: string]: number} = positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] ?? {};
+    let color: number | null = null;
+    if (colorCache[currentMonomer])
+      color = colorCache[currentMonomer];
+    else {
+      const positionColData = positionCol.getRawData();
+      const positionColCategories = positionCol.categories;
 
-    const colorColData = colorCol!.getRawData();
-    const colorValuesIndexes: number[] = [];
-    for (let i = 0; i < positionCol.length; ++i) {
-      if (positionColCategories[positionColData[i]] === currentMonomer)
-        colorValuesIndexes.push(i);
+      const colorColData = colorCol!.getRawData();
+      const colorValuesIndexes: number[] = [];
+      for (let i = 0; i < positionCol.length; ++i) {
+        if (positionColCategories[positionColData[i]] === currentMonomer)
+          colorValuesIndexes.push(i);
+      }
+      const cellColorDataCol = DG.Column.float('color', colorValuesIndexes.length)
+        .init((i) => colorColData[colorValuesIndexes[i]]);
+      const colorColStats = colorCol!.stats;
+      color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
+      colorCache[currentMonomer] = color;
+      positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = colorCache;
     }
-    const cellColorDataCol = DG.Column.float('color', colorValuesIndexes.length)
-      .init((i) => colorColData[colorValuesIndexes[i]]);
-    const colorColStats = colorCol!.stats;
-
-    const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
+    
     CR.renderInvariantMapCell(canvasContext, currentMonomer, currentPosition,
       (viewer as MonomerPosition).invariantMapSelection, value, bound, color);
   } else

@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {monomerToShort, pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {monomerToShort, pickUpPalette, TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -9,7 +9,7 @@ import {BitArrayMetrics, StringMetricsNames} from '@datagrok-libraries/ml/src/ty
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
@@ -398,12 +398,17 @@ export class PeptidesModel {
       }).root, true);
     }
     const isModelSource = requestSource === trueModel.settings;
+    let filteredActivityCol = isModelSource ? this.getScaledActivityColumn()! :
+      (requestSource as unknown as PeptideViewer).getScaledActivityColumn();
+    if (trueModel.df.filter.anyFalse) {
+      filteredActivityCol = DG.DataFrame.fromColumns([filteredActivityCol]).clone(trueModel.df.filter)
+        .getCol(filteredActivityCol.name) as DG.Column<number>;
+    }
     acc.addPane('Distribution', () => getDistributionWidget(table, {
       peptideSelection: combinedBitset,
       columns: isModelSource ? trueModel.settings!.columns ?? {} :
         (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
-      activityCol: isModelSource ? this.getScaledActivityColumn()! :
-        (requestSource as PeptideViewer).getScaledActivityColumn(),
+      activityCol: filteredActivityCol,
     }), true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
@@ -860,6 +865,24 @@ export class PeptidesModel {
   }
 
   async addSequenceSpace(): Promise<void> {
+    let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
+    const uh = UnitsHandler.getOrCreate(seqCol);
+    const isHelm = uh.isHelm();
+    if (isHelm) {
+      try {
+        grok.shell.warning('Column is in HELM notation. Sequences space will linearize sequences from position 0 prior to analysis');
+        const linearCol = uh.convert(NOTATION.SEPARATOR, '/');
+        const newName = this.df.columns.getUnusedName(`Separator(${seqCol.name})`);
+        linearCol.name = newName;
+        this.df.columns.add(linearCol, true);
+        this.analysisView.grid.col(newName)!.visible = false;
+        seqCol = linearCol;
+      } catch (e) {
+        grok.shell.error('Error on converting HELM notation to linear notation');
+        grok.shell.error(e as string);
+        return;
+      }
+    }
     const seqSpaceParams: {
       table: DG.DataFrame,
       molecules: DG.Column,
@@ -870,8 +893,8 @@ export class PeptidesModel {
       options?: (IUMAPOptions | ITSNEOptions) & Options
     } =
       {
-        table: this.df, molecules: this.df.getCol(this.settings!.sequenceColumnName),
-        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+        table: this.df, molecules: seqCol,
+        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH,
         plotEmbeddings: true, sparseMatrixThreshold: 0.3, options: {'bypassLargeDataWarning': true},
       };
 
