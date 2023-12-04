@@ -137,19 +137,24 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
     for (const funcName of Object.keys(resultMap.externals)) {
       const props = resultMap.externals[funcName];
-      props['table'] = this.dataFrame!;
-      props['molecules'] = this.molColName!;
+      const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
+      const tablePropName = f.inputs[0].name;
+      const colPropName = f.inputs[1].name;
       if (props)
-        await grok.functions.call(funcName, props);
+        await f.apply({...props, [tablePropName]: this.dataFrame!, [colPropName]: this.molColName});
     };
     for (const scriptName of Object.keys(resultMap.scripts ?? {})) {
       const props = resultMap.scripts![scriptName];
       if (props) {
-        props['table'] = this.dataFrame!;
-        props['molecules'] = this.molColName!;
+        // props['table'] = this.dataFrame!;
+        // props['molecules'] = this.molColName!;
         try {
           const s = await grok.dapi.scripts.find(scriptName);
-          await s.apply(props);
+          if (!s)
+            continue;
+          const tablePropName = s.inputs[0].name;
+          const colPropName = s.inputs[1].name;
+          await s.apply({...props, [tablePropName]: this.dataFrame!, [colPropName]: this.molColName});
         } catch (e) {
           console.error(e);
         }
@@ -179,7 +184,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
     const view = DG.TableView.create(this.dataFrame!, false);
     const ribbons = view.getRibbonPanels();
-    const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
+    const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
     const submitButton = ui.bigButton('Submit', () => {
       const dialogContent = this._submitView?.render();
       if (dialogContent) {
@@ -291,22 +296,5 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`,
       JSON.stringify(campaign));
     notify && grok.shell.info('Campaign saved successfully.');
-
-    // saving layout
-
-    // if (!newLayout) {
-    //   grok.shell.warning('Layout cound not be saved');
-    //   return;
-    // }
-
-    // const oldLayouts = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
-    //   .filter((l) => l && l.getUserDataValue(HTcampaignName) === campaignId);
-    // for (const l of oldLayouts)
-    //   await grok.dapi.layouts.delete(l);
-    // //save new layout
-    // newLayout.setUserDataValue(HTcampaignName, campaignId);
-    // const l = await grok.dapi.layouts.save(newLayout);
-    // const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
-    // await grok.dapi.permissions.grant(l, allGroup, true);
   }
 }

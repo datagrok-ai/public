@@ -71,7 +71,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
         enabled: true,
         args: [],
       },
-      functions: functions.map((f) => ({name: f.name, package: f.package.name, args: []})),
+      functions: [],
     },
   } as unknown as HitTriageTemplate;
   const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,

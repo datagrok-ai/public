@@ -16,15 +16,23 @@ export async function calculateSingleCellValues(
 
   for (const func of functions) {
     const props = func.args;
-    await grok.functions.call(`${func.package}:${func.name}`, {...props, table: table, molecules: col.name});
+    const f = await grok.functions.find(`${func.package}:${func.name}`);
+    if (!f)
+      continue;
+    const tablePropName = f.inputs[0].name;
+    const colPropName = f.inputs[1].name;
+    await f.apply({...props, [tablePropName]: table, [colPropName]: col.name});
   }
 
   for (const script of scripts) {
     const props = script.args;
     try {
       const scriptFunc = await grok.dapi.scripts.find(script.id);
-      if (scriptFunc)
-        await scriptFunc.apply({...props, table: table, molecules: col.name});
+      if (scriptFunc) {
+        const tablePropName = scriptFunc.inputs[0].name;
+        const colPropName = scriptFunc.inputs[1].name;
+        await scriptFunc.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+      }
     } catch (e) {
       console.error(e);
     }
