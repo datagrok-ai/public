@@ -2,20 +2,23 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, after, category, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
-import {getNglGlService} from '../package';
 import {Subject} from 'rxjs';
+
+import {before, after, category, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {NglGlServiceBase, NglGlTask, getNglGlService} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+
 import {_package} from '../package-test';
 
 category('NglGlService', () => {
-  let svc: NglGlServiceBase;
+  let nglSvc: NglGlServiceBase;
 
   before(async () => {
-    svc = await getNglGlService();
+    nglSvc = await getNglGlService();
+    await nglSvc.reset();
   });
 
   after(async () => {
+    await nglSvc.reset();
   });
 
   test('pdb', async () => {
@@ -40,11 +43,11 @@ category('NglGlService', () => {
             event.next();
           },
         };
-        svc.reset();
-        svc.render(task, 0);
+        nglSvc.reset();
+        nglSvc.render(task, 0);
       }, 10000);
 
-    expect(svc.errorCount, 0, 'There was errors in NglGlService.');
+    expect(nglSvc.errorCount, 0, 'There was errors in NglGlService.');
     _package.logger.debug('tests NglGlService/pdb, end');
   }, {timeout: 20000});
 });

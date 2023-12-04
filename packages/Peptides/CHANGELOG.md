@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.17.0 (WIP)
+## 1.17.0 (2023-11-29)
 
 ### Features
 
@@ -9,13 +9,21 @@
 * Autosize grids in the Mutation Cliffs pairs panel.
 * Hid sequence space embedding columns and axes selectors.
 * Saving context panels state.
-* Selected cell now have orange thick border.
+* Selected cells now have an orange thick border.
 * Distribution panel now shows distribution for (1) all activity values, (2) selected rows, (3) peptides selection from
-  viewers if mismatched with total selection.
+  viewers if mismatched with the total selection.
+* Sequence space viewer now uses the Needleman-Wunsch algorithm to compute distances.
+* Linearization of helm format macromolecules before sequence space computation.
+* Improved rendering speed of invariant map (no lags).
+* Improved rendering speed upon selection/filtering.
 
 ### Bug Fixes
 
 * Fixed accordion wouldn't update after selection in table view.
+* Filtering dataframe causing most potent residues viewer and context panel to crash.
+* Filtering dataframe causing major lags.
+* Most potent residues viewer crashing on some data.
+* Weblogo viewer crashing or causing major lag on selection/filtering.
 
 ## 1.16.0 (2023-11-05)
 

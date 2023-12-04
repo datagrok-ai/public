@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {BehaviorSubject} from 'rxjs';
+import {filter, map, take} from 'rxjs/operators';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -67,11 +69,11 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static async openHelp(func: DG.Func) {
     if (func.options['readme'] != null) {
+      grok.shell.windows.showHelp = true;
+      grok.shell.windows.help.showHelp('');
       const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
       const readmeText = await grok.dapi.files.readAsText(path);
-
       grok.shell.windows.help.showHelp(ui.markdown(readmeText));
-      grok.shell.windows.showHelp = true;
     }
   }
 
@@ -89,7 +91,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return x instanceof DG.Func && x.hasTag('model');
   }
 
-  private userGroups!: DG.Group[];
+  private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);
 
   constructor(
     private viewName: string,
@@ -106,52 +108,54 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderMarkup(x: DG.Func): HTMLElement {
-    const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
-    const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !this.userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
-    const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
-    mandatoryGroupsIcon.classList.remove('grok-icon');
+    const markup = ui.divH([], {style: {'justify-content': 'space-between', 'width': '100%'}});
 
-    const getBulletIcon = () => {
-      const bulletIcon = ui.iconFA('times');
-      bulletIcon.style.marginRight = '6px';
-      bulletIcon.classList.remove('grok-icon');
-      return bulletIcon;
-    };
+    setTimeout(async () => {
+      const userGroups = await this.awaitUserGroups();
+      const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
+      const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
+      const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
+      mandatoryGroupsIcon.classList.remove('grok-icon');
 
-    const mandatoryGroupsInfo = ui.div(ui.divV([
-      ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
-      ...mandatoryUserGroups.map((group) => ui.divV([
-        ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
-        ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
-        ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}}),
-      ])),
-    ], {style: {gap: '10px'}})) as HTMLElement;
+      const getBulletIcon = () => {
+        const bulletIcon = ui.iconFA('times');
+        bulletIcon.style.marginRight = '6px';
+        bulletIcon.classList.remove('grok-icon');
+        return bulletIcon;
+      };
 
-    if (hasMissingMandatoryGroups) {
-      addPopover(mandatoryGroupsInfo);
+      const mandatoryGroupsInfo = ui.div(ui.divV([
+        ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
+        ...mandatoryUserGroups.map((group) => ui.divV([
+          ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
+          ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
+          ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}}),
+        ])),
+      ], {style: {gap: '10px'}})) as HTMLElement;
 
-      mandatoryGroupsIcon.addEventListener('click', () => {
-        displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo);
-      });
-      mandatoryGroupsIcon.addEventListener('mouseover', (e) => {
-        e.stopPropagation();
-      });
-    }
+      const label = ui.span([
+        this.renderIcon(x),
+        ui.label(x.friendlyName),
+      ]);
 
-    const label = ui.span([
-      this.renderIcon(x),
-      ui.label(x.friendlyName),
-    ]);
-    const markup = ui.divH([
-      label,
-      ...hasMissingMandatoryGroups ? [ui.span([mandatoryGroupsIcon])]: [],
-    ], {style: {'justify-content': 'space-between', 'width': '100%'}});
+      if (!hasMissingMandatoryGroups) {
+        markup.ondblclick = () => {ModelHandler.openModel(x);};
+        markup.onclick = () => {ModelHandler.openHelp(x);};
+      } else
+        label.classList.add('d4-disabled');
 
-    if (!hasMissingMandatoryGroups) {
-      markup.ondblclick = () => {ModelHandler.openModel(x);};
-      markup.onclick = () => {ModelHandler.openHelp(x);};
-    } else
-      label.classList.add('d4-disabled');
+      if (hasMissingMandatoryGroups) {
+        addPopover(mandatoryGroupsInfo);
+
+        markup.addEventListener('click', () => {
+          displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo);
+        });
+      }
+
+      markup.append(label);
+      if (hasMissingMandatoryGroups)
+        markup.append(ui.span([mandatoryGroupsIcon]));
+    });
 
 
     return markup;
@@ -226,7 +230,16 @@ export class ModelHandler extends DG.ObjectHandler {
   override init(): void {
     setTimeout(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      this.userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+      this.userGroups.next(userGroups);
     });
+  }
+
+  private async awaitUserGroups() {
+    return this.userGroups.pipe(
+      filter((g) => !!g),
+      map((g) => g!),
+      take(1),
+    ).toPromise();
   }
 }

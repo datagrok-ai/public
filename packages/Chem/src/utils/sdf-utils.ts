@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as chemCommonRdKit from './chem-common-rdkit';
-import {_convertMolNotation} from './convert-notation-utils';
-import {geMolNotationConversions} from '../chem-searches';
+import {_convertMolNotation, convertNotationForColumn} from './convert-notation-utils';
 import $ from 'cash-dom';
 
 /**  Dialog for SDF file exporter */
@@ -39,12 +38,12 @@ export function saveAsSdfDialog() {
 
 export async function getSdfStringAsync(structureColumn: DG.Column): Promise<string> {
   const table: DG.DataFrame = structureColumn.dataFrame;
-  const convertedStruct = await geMolNotationConversions(structureColumn, DG.chem.Notation.MolBlock);
+  const convertedStruct = await convertNotationForColumn(structureColumn, DG.chem.Notation.MolBlock);
   const convertedOther = [];
   for (const col of table.columns) {
     if (col !== structureColumn) {
       if (col.semType === DG.SEMTYPE.MOLECULE)
-        convertedOther.push(await geMolNotationConversions(col, DG.chem.Notation.Smiles));
+        convertedOther.push(await convertNotationForColumn(col, DG.chem.Notation.Smiles));
     }
   }
   let result = '';

@@ -37,10 +37,10 @@ export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.F
   // the feature cancelable should be added
   (pi as any).cancelable = true;
 
-  let idx = 0;    
+  let idx = 0;
   const funcCallsCount = funccalls.length;
 
-  for (let i = 0; i < funcCallsCount; ++i)  {
+  for (let i = 0; i < funcCallsCount; ++i) {
     calledFuncCalls.push(await funccalls[i].call());
 
     if (i === 1) {

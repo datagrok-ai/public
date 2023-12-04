@@ -82,6 +82,7 @@ export class TestManager extends DG.ViewBase {
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
   dockLeft?: boolean;
+  detailsTable: HTMLTableElement | undefined;
 
   constructor(name: string, dockLeft?: boolean) {
     super({});
@@ -577,19 +578,42 @@ export class TestManager extends DG.ViewBase {
 
   getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE, unhandled?: string) {
     const acc = ui.accordion();
+    acc.root.style.width = '100%';
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
-    acc.addPane('Results', () => ui.div(grid), true);
-    if (tests.test !== undefined) {
-      acc.addPane('History', () => ui.waitBox(async () => {
-        const history = await grok.data.query('DevTools:TestHistory',
-          {packageName: tests.packageName, category: tests.test.category, test: tests.test.name});
-        return (await history.plot.grid()).root;
-      }), true);
-    }
+    acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
+    acc.addPane('History', () => ui.waitBox(async () => {
+      let query: string;
+      let params: object;
+      let b1: string | boolean = true;
+      let b2: string | boolean = false;
+      let col: string = 'success';
+      switch (nodeType) {
+      case NODE_TYPE.PACKAGE:
+        query = 'PackageHistory';
+        params = {packageName: tests.package.name};
+        break;
+      case NODE_TYPE.CATEGORY:
+        query = 'CategoryHistory';
+        params = {packageName: tests.packageName, category: tests.fullName};
+        break;
+      case NODE_TYPE.TEST:
+        query = 'TestHistory';
+        params = {packageName: tests.packageName, category: tests.test.category, test: tests.test.name};
+        b1 = 'passed';
+        b2 = 'failed';
+        col = 'status';
+        break;
+      }
+      const history = await grok.data.query(`DevTools:${query}`, params);
+      const arr = history.col(col).toList();
+      this.detailsTable.rows[Object.keys(params).length].cells[1].innerHTML = history.get('date', arr.indexOf(b1));
+      this.detailsTable.rows[Object.keys(params).length + 1].cells[1].innerHTML = history.get('date', arr.indexOf(b2));
+      return history.plot.grid().root;
+    }), true);
     return acc.root;
   };
 
@@ -603,10 +627,14 @@ export class TestManager extends DG.ViewBase {
     const detailsMap = nodeType === NODE_TYPE.PACKAGE ? {package: tests.package.name} :
       nodeType === NODE_TYPE.CATEGORY ? {package: tests.packageName, category: tests.fullName} :
         {package: tests.packageName, category: tests.test.category, test: tests.test.name};
+    detailsMap['last success'] = ui.loader();
+    detailsMap['last failure'] = ui.loader();
     const detailsTable = ui.tableFromMap(detailsMap);
+    this.detailsTable = detailsTable;
     const runButton = ui.bigButton('RUN', async () => {
       this.runAllTests(node, tests, nodeType);
     });
+    runButton.style.cssText = 'width: fit-content; padding: 0 20px';
     return ui.divV([
       detailsTable,
       runButton,

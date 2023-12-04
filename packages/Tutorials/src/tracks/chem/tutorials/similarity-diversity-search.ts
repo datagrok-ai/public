@@ -104,7 +104,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     const d = await this.openDialog('On the reference molecule, click the Edit icon', '',
       $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0));
 
-    const MOL = 'RCKUZCZZUOYUBE-DHDCSXOGSA-N';
+    const MOL = 'CNc1nc(Nc2ccc(Br)cc2)nc(N)c1[N+](=O)[O-]';
     const copyButton = ui.button(ui.iconFA('clone'), () => {});
     copyButton.setAttribute('onclick', `navigator.clipboard.writeText('${MOL}')`)
     copyButton.style.height = 'initial';

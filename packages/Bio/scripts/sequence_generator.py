@@ -3,25 +3,28 @@
 # description: Create the model peptides/DNA sequences with peptides data
 # language: python
 # tags: template, demo
-# input: int clusters = 5 [Number of superclusters]
-# input: int num_sequences = 50 [Number of sequences in each supercluster]
-# input: int motif_length = 12 [Average length of motif]
-# input: int max_variants_position = 3 [Maximum number of different letters in conservative position in motif]
-# input: int random_length = 3 [Average length of random sequence parts before and after motif]
-# input: int dispersion = 2 [Variation of total sequence length]
-# input: string alphabet_key = 'PT' [Sequence alphabet: PT/DNA/RNA/custom. Custom alphabet is a list of values separated by comma]
-# input: bool disable_cliffs = False [Disable generation of cliffs]
-# input: double cliff_probability = 0.01 [Probability to make activity cliff of a sequence]
-# input: double cliff_strength = 4.0 [Strength of cliff]
-# input: string fasta_separator = '' {nullable: true}
+# input: int clusters = 5 { caption: Number of clusters; category: Clusters }
+# input: int num_sequences = 50 { caption: Number of sequences in each cluster; category: Clusters }
+# input: int motif_length = 12 { caption: Average length of motif; category: Motif }
+# input: int max_variants_position = 3 { caption: Maximum number of different letters in conservative position in motif; category: Motif }
+# input: int random_length = 3 { caption: Average length of random sequence parts before and after motif; category: Motif }
+# input: int dispersion = 2 { caption: Variation of total sequence length; category: Motif }
+# input: bool enable_cliffs = true { caption: Enable activity cliffs; category: Activity cliffs }
+# input: double cliff_probability = 0.01 { caption: Probability to make activity cliff of a sequence; category: Activity cliffs; format: 0.000}
+# input: double cliff_strength = 4.0 { caption: Strength of cliff; category: Activity cliffs }
+# input: string alphabet_key = "PT" { caption: Sequence alphabet; category: Output format; hint: PT/DNA/RNA/custom. Custom alphabet is a list of values separated by comma}
+# input: string fasta_separator = "" { caption: Fasta format separator; nullable: true; category: Output format}
+# input: file helm_library_file { caption: HELM library to produce HELM output; nullable: true; category: Output format}
+# input: string helm_connection_mode = "linear" { choices: ["linear", "cyclic", "mixed"]; caption: Peptides connection mode (HELM only); category: Output format}
 # output: dataframe sequences
 
-"""
-The most simple options set running from command line
-  python sequence_generator.py -c 4 -s 50 > output_file.tsv
-Basic options:
-  -с number of clusters
-  -s cluster size (number of sequences per cluster)
+
+description="""The utility generates clusters of macromolecule sequences to test SAR fucntionality. 
+Each cluster contains randomly generated sequence motif.
+Each sequence has activity - a Gauss-distributed random value. 
+All sequences in the cluster has activities from the same distibution. 
+The utility can simulate activity cliffs - random changes in the conservative motif letters,
+leading to drastical change in the activity.
 """
 
 import random
@@ -280,8 +283,7 @@ def alphabet_from_helm(helm_library_file: str) -> Alphabet:
 def parse_command_line_args() -> Any:
     parser = argparse.ArgumentParser(
         prog="MotifSequencesGenerator",
-        description="The program generates set of sequences containing sequence motifs "
-        "for SAR functionality testing",
+        description=description,
         epilog="Utility author and support: Gennadii Zakharov <Gennadiy.Zakharov@gmail.com>",
     )
 
@@ -386,14 +388,14 @@ if not grok:
     random_length = args.random_length
     dispersion = args.dispersion
     alphabet_key = args.alphabet
-    disable_cliffs = args.disable_cliffs
+    enable_cliffs = not args.disable_cliffs
     cliff_probability = args.cliff_probability
     cliff_strength = args.cliff_strength
     fasta_separator = args.fasta_separator
     helm_library_file = args.helm_library_file
     helm_connection_mode = args.helm_connection_mode
 
-helm_init = "helm_library_file" in globals() and helm_library_file is not None
+helm_init = "helm_library_file" in globals() and helm_library_file is not None and helm_library_file != ''
 
 if not helm_init:
     alphabet: Alphabet = (
@@ -413,7 +415,7 @@ header, data = generate_sequences(
     random_length,
     dispersion,
     alphabet,
-    not disable_cliffs,
+    enable_cliffs,
     cliff_probability,
     cliff_strength,
 )

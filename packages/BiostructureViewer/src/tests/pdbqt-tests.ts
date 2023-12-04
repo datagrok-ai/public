@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
+import * as ngl from 'NGL';
 
 import {category, expect/*, expect*/, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
@@ -10,11 +11,11 @@ import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
 import {Pdbqt} from '../utils/pdbqt/pdbqt-parser';
 import {errInfo} from '../utils/err-info';
 import {importPdbqt} from '../package';
-import {IMPORT} from '../consts-import';
 import {IPdbAtomBase, IPdbqtAtomBase} from '../utils/pdbqt/types';
 import {AtomBase, AtomCoordsBase, LineBase} from '../utils/pdbqt/types-base';
 import {PdbqtAtomCoords} from '../utils/pdbqt/types-pdbqt';
 import {PdbAtomCoords} from '../utils/pdbqt/types-pdb';
+import {IMPORT} from '../consts-import';
 
 import {_package} from '../package-test';
 
@@ -23,42 +24,69 @@ category('pdbqt', () => {
     [name: string]: { pdbqtStr: string, pdbqtAtom: IPdbqtAtomBase, pdbAtom: IPdbAtomBase, pdbStr: string }
   } = {
     simple: {
-      /* atom lines from ligand_out.pdbqt was fixed according to 23-26 positions for resNum aligned right */
-      pdbqtStr: 'ATOM      1  C   LIG     1      16.882  -0.414  35.505  0.00  0.00    -0.069 C ',
+      /* atom line from ligand_out.pdbqt was fixed according to 23-26 positions for resNum aligned right */
+      pdbqtStr: /**/ 'ATOM      1  C   LIG     1      16.882  -0.414  35.505  0.00  0.00    -0.069 C ',
+      pdbStr: /*  */ 'ATOM      1  C   LIG     1      16.882  -0.414  35.505  0.00  0.00           C  ',
       // @formatter:off
       pdbqtAtom: new PdbqtAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('ATOM'),
         1, 'C', '', '', 'LIG', '', 1, ''),
       16.882, -0.414, 35.505, 0, 0),
       -0.069, 'C'),
-      // @formatter:on
-      pdbStr: 'ATOM      1  C   LIG     1      16.882  -0.414  35.505  0.00  0.00           C  ',
-      // @formatter:off
       pdbAtom: new PdbAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('ATOM'),
         1, 'C', '', '', 'LIG', '', 1, ''),
       16.882, -0.414, 35.505, 0, 0),
       '', 'C', ''),
       // @formatter:on
     },
+    alpha: {
+      /* atom line from ligand_out.pdbqt was fixed according to 23-26 positions for resNum aligned right */
+      pdbqtStr: /**/ 'ATOM     20  O   LIG     1      15.199  -3.634  34.355  0.00  0.00    -0.390 OA',
+      pdbStr: /*  */ 'ATOM     20  O   LIG     1      15.199  -3.634  34.355  0.00  0.00           O  ', // from NGL
+      // @formatter:off
+      pdbqtAtom: new PdbqtAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('ATOM'),
+        20, 'O', '', '', 'LIG', '', 1, ''),
+      15.199, -3.634, 34.355, 0, 0),
+      -0.390, 'OA'),
+      pdbAtom: new PdbAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('ATOM'),
+        20, 'O', '', '', 'LIG', '', 1, ''),
+      15.199, -3.634, 34.355, 0, 0),
+      '', 'O', ''),
+      // @formatter:on
+    },
+    hydrogen: {
+      /* atom line from 3SWZ.pdbqt was fixed for partial_charge to have explicit sign*/
+      pdbqtStr: /**/ 'ATOM      7  HN2 SER A  30      69.016  10.250  16.854  0.00  0.00    +0.139 HD',
+      pdbStr: /*  */ 'ATOM      7  HN2 SER A  30      69.016  10.250  16.854  0.00  0.00           H  ', // from NGL
+      // @formatter:off
+      pdbqtAtom: new PdbqtAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('ATOM'),
+        7, 'H', 'N2', '', 'SER', 'A', 30, ''),
+      69.016, 10.250, 16.854, 0, 0),
+      0.139, 'HD'),
+      pdbAtom: new PdbAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('ATOM'),
+        7, 'H', 'N2', '', 'SER', 'A', 30, ''),
+      69.016, 10.250, 16.854, 0, 0),
+      '', 'H', ''),
+      // @formatter:on
+    },
   };
 
   for (const [testName, testData] of Object.entries(pdbqtAtomTestData)) {
-    test(`pdbqtAtomFromStr-${testName}`, async () => {
+    test(`${testName}-pdbqtAtomFromStr`, async () => {
       const atomRes = PdbqtAtomCoords.fromStr(testData.pdbqtStr);
       expectObject(atomRes, testData.pdbqtAtom);
     });
 
-    test(`pdbqtAtomToStr-${testName}`, async () => {
+    test(`${testName}-pdbqtAtomToStr`, async () => {
       const pdbqtStrRes = testData.pdbqtAtom.toStr();
       expect(pdbqtStrRes, testData.pdbqtStr);
     });
 
-    test(`pdbqtAtomToPdb-${testName}`, async () => {
+    test(`${testName}-pdbqtAtomToPdb`, async () => {
       const pdbAtomRes: IPdbAtomBase = testData.pdbqtAtom.toPdb();
       expectObject(pdbAtomRes, testData.pdbAtom);
     });
 
-
-    test(`pdbAtomToStr-${testName}`, async () => {
+    test(`${testName}-pdbAtomToStr`, async () => {
       const pdbStrRes = testData.pdbAtom.toStr();
       expect(pdbStrRes, testData.pdbStr);
     });
@@ -81,8 +109,16 @@ category('pdbqt', () => {
   test('import-target-only', async () => {
     await _testPdbqtImportTargetOnly();
   });
-})
-;
+
+  // -- NGL PdbqtParser --
+
+  test('ngl-pdbqt-parser-structure', async () => {
+    await _testNglPdbqtParserStructure();
+  });
+  test('ngl-pdbqt-parser-ligands', async () => {
+    await _testNglPdbqtParserLigands();
+  });
+});
 
 async function _testPdbqtParser(): Promise<void> {
   try {
@@ -140,3 +176,29 @@ async function _testPdbqtImportTargetOnly(): Promise<void> {
   const view = grok.shell.v;
   expect(grok.shell.v.name, 'Mol*');
 }
+
+async function _testNglPdbqtParserStructure(): Promise<void> {
+  const cntStr = await _package.files.readAsText('docking/3SWZ.pdbqt');
+  const cntBlob = new Blob([cntStr]);
+
+  // from NGL.autoLoad()
+  const val = await ngl.autoLoad(cntBlob, {ext: 'pdbqt'});
+  const pdbStr = (new ngl.PdbWriter(val)).getString();
+
+  expect(val.atomCount, 4651);
+  expect(val.bondCount, 4913);
+}
+
+async function _testNglPdbqtParserLigands(): Promise<void> {
+  const cntStr = await _package.files.readAsText('docking/ligand_out.pdbqt');
+  const cntBlob = new Blob([cntStr]);
+
+  // from NGL.autoLoad()
+  const val: ngl.Structure = await ngl.autoLoad(cntBlob, {ext: 'pdbqt'});
+
+  expect(val.modelStore.count, 10);
+  const pose0Val = val.getView(new ngl.Selection('/0'));
+  expect(pose0Val.atomCount, 30);
+  expect(pose0Val.bondCount, 34);
+}
+

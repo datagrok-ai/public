@@ -69,6 +69,24 @@ export class ViewHandler {
     const pButtons = ui.divH([puButton, piButton], 'ua-packages-buttons');
     pButtons.style.display = 'none';
     toolbox.filters.root.before(pButtons);
+
+    const fuButton = ui.bigButton('Usage', () => {
+      (ViewHandler.getCurrentView() as FunctionsView).functionsExecTime.style.display = 'none';
+      ViewHandler.getCurrentView().viewers[0].root.style.display = 'flex';
+      fuButton.disabled = true;
+      feButton.disabled = false;
+    });
+    const feButton = ui.bigButton('Execution time', () => {
+      ViewHandler.getCurrentView().viewers[0].root.style.display = 'none';
+      (ViewHandler.getCurrentView() as FunctionsView).functionsExecTime.style.display = 'flex';
+      fuButton.disabled = false;
+      feButton.disabled = true;
+    });
+    fuButton.disabled = true;
+    const fButtons = ui.divH([fuButton, feButton], 'ua-packages-buttons');
+    fButtons.style.display = 'none';
+    toolbox.filters.root.before(fButtons);
+
     ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
       const view = ViewHandler.UA.currentView;
       ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z]+)/, '$1' + view.name);
@@ -103,6 +121,10 @@ export class ViewHandler {
         pButtons.style.display = 'flex';
       else
         pButtons.style.display = 'none';
+      if (view.name === 'Functions')
+        fButtons.style.display = 'flex';
+      else
+        fButtons.style.display = 'none';
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;

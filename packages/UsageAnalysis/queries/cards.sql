@@ -2,8 +2,6 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---output: int count1
---output: int count2
 --meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
@@ -48,8 +46,6 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --name: NewUsersCount
 --input: string date {pattern: datetime}
 --input: list groups
---output: int count1
---output: int count2
 --meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
@@ -81,8 +77,6 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --name: SessionsCount
 --input: string date {pattern: datetime}
 --input: list groups
---output: int count1
---output: int count2
 --meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
@@ -118,8 +112,6 @@ select (select count(distinct res.eid) as count1 from res where period = 1),
 --name: ViewsCount
 --input: string date {pattern: datetime}
 --input: list groups
---output: int count1
---output: int count2
 --meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
@@ -153,8 +145,6 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---output: int count1
---output: int count2
 --meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
@@ -192,8 +182,6 @@ select (select count(distinct res.cid) as count1 from res where period = 1),
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---output: int count1
---output: int count2
 --meta.cache: all
 --meta.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok

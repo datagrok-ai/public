@@ -21,9 +21,18 @@ export type HitTriageTemplateFunction = {
     args: IFunctionArgs,
 }
 
+export type HitTriageTemplateScript = {
+    name: string,
+    args: IFunctionArgs,
+    id: string,
+}
+
 export type IComputeDialogResult = {
     descriptors: string[],
     externals: {
+        [_: string]: IFunctionArgs
+    },
+    scripts?: {
         [_: string]: IFunctionArgs
     }
 }
@@ -65,6 +74,7 @@ export type HitTriageTemplateCompute = {
         args: string[],
     }
     functions: HitTriageTemplateFunction[],
+    scripts?: HitTriageTemplateScript[],
 };
 
 export type HitTriageTemplateSubmit = {

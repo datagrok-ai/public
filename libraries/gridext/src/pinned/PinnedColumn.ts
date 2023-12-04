@@ -102,8 +102,10 @@ export class PinnedColumn {
   private m_handlerColNameChanged : rxjs.Subscription | null;
   private m_handlerVScroll : rxjs.Subscription | null;
   private m_handlerRowsFiltering : rxjs.Subscription | null;
+  private _rowsFilteringTimer: number | null = null;
   private m_handlerCurrRow : rxjs.Subscription | null;
   private m_handlerMouseOverRow : rxjs.Subscription | null;
+  private _mouseOverRowsTimer: number | null = null;
   private m_handlerMouseOverGroup : rxjs.Subscription | null;
   private m_handlerSel : rxjs.Subscription | null;
   private m_handlerData : rxjs.Subscription | null;
@@ -332,11 +334,11 @@ export class PinnedColumn {
     });
 
     this.m_handlerRowsFiltering = dframe.onRowsFiltering.subscribe(() => {
-      setTimeout(() => {
+      clearTimeout(this._rowsFilteringTimer!);
+      this._rowsFilteringTimer = window.setTimeout(() => {
         const g = eCanvasThis.getContext('2d');
         headerThis.paint(g, grid);
       }, 100);
-
     });
 
     this.m_handlerCurrRow = dframe.onCurrentRowChanged.subscribe(() => {
@@ -347,8 +349,9 @@ export class PinnedColumn {
         }
     );
 
-    this.m_handlerMouseOverRow = dframe.onMouseOverRowChanged.subscribe(() => {
-        setTimeout(() => {
+    this.m_handlerMouseOverRow = DG.debounce(dframe.onMouseOverRowChanged, 50).subscribe(() => {
+      clearTimeout(this._mouseOverRowsTimer!);  
+      this._mouseOverRowsTimer = window.setTimeout(() => {
           const g = eCanvasThis.getContext('2d');
           headerThis.paint(g, grid);
         }, 20);
@@ -1256,7 +1259,7 @@ export class PinnedColumn {
   }
 
 
-   paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
+  paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
     //const nWDiv = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
     if(g === null)
       return;

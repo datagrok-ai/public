@@ -71,7 +71,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
         enabled: true,
         args: [],
       },
-      functions: functions.map((f) => ({name: f.name, package: f.package.name, args: []})),
+      functions: [],
     },
   } as unknown as HitTriageTemplate;
   const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
@@ -142,6 +142,16 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
               args: args,
             });
           }),
+          scripts: Object.entries(funcDialogRes?.scripts ?? {})
+            .filter(([name, _]) => name.startsWith(C.HTScriptPrefix) && name.split(':').length === 3)
+            .map(([scriptId, args]) => {
+              const scriptNameParts = scriptId.split(':');
+              return ({
+                name: scriptNameParts[1] ?? '',
+                id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
         queryFunctionName: (ingestTypeInput.value === 'Query') ? dataSourceFunctionInput.value ?? undefined : undefined,

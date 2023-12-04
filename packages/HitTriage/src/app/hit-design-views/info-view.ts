@@ -195,34 +195,39 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   private async createNewTemplate(preset?: HitDesignTemplate) {
-    const newTemplateAccordeon = await newHitDesignTemplateAccordeon(preset);
-    // hideComponents(toRemove);
-    // $(containerDiv).empty();
-    // $(templateInputDiv).empty();
+    ui.setUpdateIndicator(this.root, true);
+    try {
+      const newTemplateAccordeon = await newHitDesignTemplateAccordeon(preset);
+      // hideComponents(toRemove);
+      // $(containerDiv).empty();
+      // $(templateInputDiv).empty();
 
-    const newView = new DG.ViewBase();
-    const curView = grok.shell.v;
-    newView.name = 'New Template';
-    newView.root.appendChild(newTemplateAccordeon.root);
-    newView.parentCall = this.app.parentCall;
-    grok.shell.addView(newView);
-    newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
-    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Design', i18n.createNewTemplate, async () => {
-      grok.shell.v = curView;
-      newView.close();
-    });
-    //containerDiv.appendChild(newTemplateAccordeon.root);
-    newTemplateAccordeon.template.then(async (t) => {
-      await this.init(t);
-      newView.close();
-      popRibbonPannels(newView);
-      grok.shell.v = curView;
-      sub.unsubscribe();
-    });
-    newTemplateAccordeon.cancelPromise.then(async () => {
-      sub.unsubscribe();
-      newView.close();
-      grok.shell.v = curView;
-    });
+      const newView = new DG.ViewBase();
+      const curView = grok.shell.v;
+      newView.name = 'New Template';
+      newView.root.appendChild(newTemplateAccordeon.root);
+      newView.parentCall = this.app.parentCall;
+      grok.shell.addView(newView);
+      newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
+      const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Design', i18n.createNewTemplate, async () => {
+        grok.shell.v = curView;
+        newView.close();
+      });
+      //containerDiv.appendChild(newTemplateAccordeon.root);
+      newTemplateAccordeon.template.then(async (t) => {
+        await this.init(t);
+        newView.close();
+        popRibbonPannels(newView);
+        grok.shell.v = curView;
+        sub.unsubscribe();
+      });
+      newTemplateAccordeon.cancelPromise.then(async () => {
+        sub.unsubscribe();
+        newView.close();
+        grok.shell.v = curView;
+      });
+    } finally {
+      ui.setUpdateIndicator(this.root, false);
+    }
   }
 }

@@ -1109,7 +1109,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.bitset === null)
+    if (this.bitset === null || this.bitset.length !== this.molColumn.length)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
     this.bitset.setAll(this.bitOperation === BitwiseOp.AND, false);

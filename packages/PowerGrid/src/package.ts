@@ -251,7 +251,21 @@ export function _autoPowerGrid(): void {
 //name: Forms
 //description: Forms viewer
 //tags: viewer
+//meta.icon: files/icons/formviewer.svg
+//meta.viewerPosition: bottom
 //output: viewer result
 export function formsViewer() {
   return new FormsViewer();
+}
+
+
+//name: Content
+//description: Image content
+//tags: panel, powergrid, widgets
+//input: string imageUrl { semType: ImageUrl }
+//output: widget result
+export function imgContent(imageUrl: string): DG.Widget {
+  const image = new Image();
+  image.src = imageUrl;
+  return imageUrl !== null ? new DG.Widget(image) : new DG.Widget(ui.divText('No image available'));
 }

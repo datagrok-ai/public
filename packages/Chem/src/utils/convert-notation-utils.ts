@@ -5,6 +5,8 @@ import MolNotation = DG.chem.Notation;
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getMolSafe} from './mol-creation_rdkit';
+import { chemBeginCriticalSection, chemEndCriticalSection } from './chem-common';
+import { getRdKitService } from './chem-common-rdkit';
 
 
 export const MALFORMED_MOL_V2000 = `
@@ -78,4 +80,14 @@ export function molToMolblock(molStr: string, module: RDModule): string {
 
 export function molToSmiles(molStr: string, module: RDModule): string {
   return _convertMolNotation(molStr, MolNotation.Unknown, MolNotation.Smiles, module);
+}
+
+export async function convertNotationForColumn(molecules: DG.Column<string>, targetNotation: MolNotation): Promise<string[]> {
+  await chemBeginCriticalSection();
+  try {
+    const res = await (await getRdKitService()).convertMolNotation(molecules.toList(), targetNotation);
+    return res;
+  } finally {
+    chemEndCriticalSection();
+  }
 }

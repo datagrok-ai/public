@@ -9,7 +9,7 @@ import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateMonomerPositionStatistics} from './algorithms';
 import * as rxjs from 'rxjs';
 import {showTooltipAt, TooltipOptions} from './tooltips';
-import {MonomerPositionStats, PositionStats} from './statistics';
+import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './statistics';
 
 export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = DG.Color.toHtml(DG.Color.selectedRows);
@@ -205,9 +205,26 @@ export function setWebLogoRenderer(grid: DG.Grid, model: PeptidesModel, options:
       //TODO: optimize
       if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
         const isDfFiltered = df.filter.anyFalse;
-        const stats = (isDfFiltered || options.isSelectionTable ?
-          calculateMonomerPositionStatistics(df, model.positionColumns.toArray(), {isFiltered: true, columns: [col.name]}) :
-          model.monomerPositionStats)[col.name];
+        let stats: PositionStats | undefined = undefined;
+        if (isDfFiltered) {
+          const cache: MonomerPositionStatsCache = df.temp[C.TAGS.M_P_STATS_CACHE] ?? {};
+          const colCache = cache?.[col.name];
+          const dfFilterBuffer = df.filter.getBuffer();
+          if (cache && colCache && colCache.filter.length === dfFilterBuffer.length &&
+            colCache.filter.every((v, i) => v === dfFilterBuffer[i])) {
+            stats = colCache.stats[col.name];
+          } else {
+            const fullStats = calculateMonomerPositionStatistics(df, model.positionColumns.toArray(), {isFiltered: true, columns: [col.name]});
+            stats = fullStats[col.name];
+            cache[col.name] = {filter: df.filter.getBuffer(), stats: fullStats, selection: df.selection.getBuffer()};
+          }
+
+          df.temp[C.TAGS.M_P_STATS_CACHE] = cache;
+        } else if (options.isSelectionTable){
+          stats = calculateMonomerPositionStatistics(df, model.positionColumns.toArray(), {isFiltered: true, columns: [col.name]})[col.name];
+        } else {
+          stats = model.monomerPositionStats[col.name];
+        }
         if (!stats)
           return;
         //TODO: precalc on stats creation

@@ -317,6 +317,8 @@ export function registerPinnedColumns() {
       const nPinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
       if (nPinnedColCount > 0)
         layout.setUserDataValue(TABLE_ROW_HEIGHT_KEY, GridUtils.getGridRowHeight(grid).toString());
+      else
+        layout.setUserDataValue(TABLE_ROW_HEIGHT_KEY, null as any);
     }
   });
 
