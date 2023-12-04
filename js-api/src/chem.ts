@@ -134,8 +134,8 @@ export namespace chem {
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
-    onAlignedChanged: Subject<any> = new Subject<boolean>();
-    onHighlightChanged: Subject<any> = new Subject<boolean>();
+    onAlignedChanged: Subject<boolean> = new Subject<boolean>();
+    onHighlightChanged: Subject<boolean> = new Subject<boolean>();
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
 
@@ -165,8 +165,8 @@ export namespace chem {
     _highlight = true;
     error: string | null = null;
     errorDiv = ui.divText('Malformed molecule');
-    alighInput: InputBase | null = null;
-    highlightInput: InputBase | null = null;
+    alighInput: InputBase;
+    highlightInput: InputBase;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
