@@ -9,7 +9,7 @@ import {EditorState} from "@codemirror/state";
 import {python} from "@codemirror/lang-python";
 import {autocompletion} from "@codemirror/autocomplete";
 
-import {DF_NAME, CONTROL_EXPR, TEMPLATES} from './constants';
+import {DF_NAME, CONTROL_EXPR, TEMPLATES, MAX_LINE_CHART} from './constants';
 import {getIVP, getScriptLines, getScriptParams, IVP} from './scripting-tools';
 
 /** State of IVP code editor */
@@ -96,11 +96,12 @@ function contrCompletions(context: any) {
 
 /** */
 function lineChartOptions(ivp: IVP): Object {
+  const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
+
   return {    
     showTitle: true,
-    autoLayout: false,
     sharex: true, 
-    multiAxis: true,
+    multiAxis: outputColsCount > MAX_LINE_CHART, //true,
     multiAxisLegendPosition: "RightTop",
   };
 }
@@ -142,6 +143,8 @@ export async function runSolverApp() {
         solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
       
       solverView.dockManager.dock(solutionViewer, 'right');
+
+      console.log(solutionViewer);
       
     } catch (err) {
         if (err instanceof Error) {

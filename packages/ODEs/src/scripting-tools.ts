@@ -1,6 +1,6 @@
 // Scripting tools for the Initial Value Problem (IVP) solver
 
-import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE} from './constants';
+import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART} from './constants';
 
 // Scripting specific constants
 const CONTROL_SEP = ':';
@@ -111,8 +111,7 @@ enum ANNOT {
   ARG_FIN = '{caption: Final; category: Argument}',
   ARG_STEP = '{caption: Step; category: Argument}',
   INITS = 'category: Initial values',
-  PARAMS = 'category: Parameters',
-  VIEWERS = 'viewer: Line chart(block: 100, sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)'
+  PARAMS = 'category: Parameters',  
 }
 
 /** JS-scripting components */
@@ -352,7 +351,11 @@ function getOutput(lines: string[], begin: number, end: number): Map<string, Out
   let colonIdx: number;
 
   for (let i = begin; i < end; ++i) {
-    line = lines[i];
+    line = lines[i].trim();
+
+    if (line.length < 1)
+      continue;
+
     eqIdx = line.indexOf(EQUAL_SIGN);
     openIdx = line.indexOf(BRACE_OPEN);
     closeIdx = line.indexOf(BRACE_CLOSE);
@@ -511,6 +514,14 @@ function getInputSpec(inp: Input): string {
   return `${inp.value}`;
 }
 
+/** Return line specifying viewers */
+function getViewersLine(ivp: IVP): string {
+  const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
+  const multiAxis = (outputColsCount > MAX_LINE_CHART) ? 'true' : 'false';
+
+  return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)`;
+}
+
 /** Generate annotation lines */
 function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   const res = [] as string[];
@@ -555,7 +566,7 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
 
   // the 'output' line
   if (toAddViewers)
-    res.push(`${ANNOT.OUTPUT} {${ANNOT.CAPTION} ${ivp.name}; ${ANNOT.VIEWERS}}`);
+    res.push(`${ANNOT.OUTPUT} {${ANNOT.CAPTION} ${ivp.name}; ${getViewersLine(ivp)}}`);
   else
     res.push(`${ANNOT.OUTPUT} {${ANNOT.CAPTION} ${ivp.name}`);
 

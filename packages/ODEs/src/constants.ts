@@ -3,6 +3,7 @@ export const CONTROL_TAG = '#';
 export const CONTROL_TAG_LEN = CONTROL_TAG.length;
 export const DF_NAME = 'df';
 const META = `${CONTROL_TAG}meta`;
+export const MAX_LINE_CHART = 6;
 
 /** Control expressions for the problem specifying */
 export enum CONTROL_EXPR {
