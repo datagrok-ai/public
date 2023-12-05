@@ -145,7 +145,7 @@ async function openModelsDialogAsync(column: DG.Column): Promise<any[]> {
 
 async function processColumn(smilesCol: DG.Column, selected: string): Promise<DG.DataFrame> {
   let confirmed;
-  let result;
+  let result: DG.DataFrame;
   if (smilesCol.length > 10000)
     confirmed = showConfirmationDialogAsync();
 
@@ -494,7 +494,7 @@ async function processColumnInBatches(column: DG.Column, batchSize = 100, queryP
 
   const totalBatches = Math.ceil(column.length / batchSize);
   let processedBatches = 0;
-  let resultDf;
+  let resultDf: DG.DataFrame;
   let entered = false;
 
   for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
