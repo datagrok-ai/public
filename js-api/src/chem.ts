@@ -5,7 +5,7 @@
 import {BitSet, Column, DataFrame} from './dataframe';
 import {SEMTYPE, UNITS} from './const';
 import {Subject, Subscription} from 'rxjs';
-import {Menu, Widget} from './widgets';
+import {InputBase, Menu, Widget} from './widgets';
 import {Func} from './entities';
 import * as ui from '../ui';
 import {SemanticValue} from './grid';
@@ -43,6 +43,9 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
+  export const FILTER_KEY = 'chem-filter';
+  export const CHEM_FILTER_ALIGN = 'align';
+  export const CHEM_FILTER_HIGHLIGHT = 'highlight';
 
   export enum Notation {
     Smiles = 'smiles',
@@ -131,6 +134,8 @@ export namespace chem {
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
+    onAlignedChanged: Subject<boolean> = new Subject<boolean>();
+    onHighlightChanged: Subject<boolean> = new Subject<boolean>();
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
 
@@ -147,6 +152,7 @@ export namespace chem {
     loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
     extSketcherCanvas = ui.canvas();
+    filterOptionsDiv = ui.divH([], 'chem-sketcher-filter-options');
     inplaceSketcherDiv: HTMLDivElement | null = null;
     clearSketcherButton: HTMLButtonElement;
     emptySketcherLink: HTMLDivElement;
@@ -154,8 +160,13 @@ export namespace chem {
     _sketcherTypeChanged = false;
     _autoResized = true;
     _validationFunc: ((molecule: string) => string | null) = (s) => null;
+    _isSubstructureFilter = false;
+    _align = true;
+    _highlight = true;
     error: string | null = null;
     errorDiv = ui.divText('Malformed molecule');
+    alighInput: InputBase;
+    highlightInput: InputBase;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -191,6 +202,21 @@ export namespace chem {
         this.loader.classList.remove('chem-sketcher-loader-show');
       }
     }
+
+    get isSubstructureFilter(): boolean {return this._isSubstructureFilter;}
+    set isSubstructureFilter(value: boolean) {
+      this._isSubstructureFilter = value;
+      if (value) {
+        this.filterOptionsDiv.append(this.alighInput!.root);
+        this.filterOptionsDiv.append(this.highlightInput!.root);
+      } else
+        ui.empty(this.filterOptionsDiv);
+    }
+    get align(): boolean {return this.alighInput!.value!;}
+    set align(value: boolean) {this.alighInput!.value = value;}
+    get highlight(): boolean {return this.highlightInput!.value!;}
+    set highlight(value: boolean) {this.highlightInput!.value = value;}
+    get filterOptions(): HTMLElement {return this.filterOptionsDiv;}
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -310,13 +336,29 @@ export namespace chem {
         this._mode = mode;
       this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
-      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link sketch-link');
+      this.emptySketcherLink = ui.divText('Sketch', 'chem-sketch-link sketch-link');
       this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       ui.tooltip.bind(this.errorDiv, () => this.error);
       if (validationFunc)
         this._validationFunc = validationFunc;
+      this.alighInput = this.createAlignHighlightInputs(CHEM_FILTER_ALIGN, 'Align', () => {
+        grok.dapi.userDataStorage.postValue(FILTER_KEY, CHEM_FILTER_ALIGN, this.alighInput!.value ? 'true' : 'false', true);
+        this.onAlignedChanged.next(this.alighInput!.value);
+      });
+      this.highlightInput = this.createAlignHighlightInputs(CHEM_FILTER_HIGHLIGHT, 'Highlight', () => {
+        grok.dapi.userDataStorage.postValue(FILTER_KEY, CHEM_FILTER_HIGHLIGHT, this.highlightInput!.value ? 'true' : 'false', true);
+        this.onHighlightChanged.next(this.highlightInput!.value);
+      });
       setTimeout(() => this.createSketcher(), 100);
+    }
+
+    createAlignHighlightInputs(key: string, inputName: string, callback: () => void) {
+      grok.dapi.userDataStorage.getValue(FILTER_KEY, key, true).then((value: string) => {
+        input.value = !value || value === 'true' ? true : false;
+      });
+      const input = ui.boolInput(inputName, true, callback);
+      return input;
     }
 
     /** In case sketcher is opened in filter panel use EXTERNAL mode*/
@@ -431,6 +473,7 @@ export namespace chem {
               closeDlg();
             })
             .show({ resizable: true }); 
+          hostDlg.root.append(this.filterOptionsDiv);
           ui.onSizeChanged(hostDlg.root).subscribe((_) => {
             if (this.sketcherDialogOpened)
               if (!this.sketcher?.isInitialized)
