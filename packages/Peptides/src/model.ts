@@ -367,7 +367,7 @@ export class PeptidesModel {
       v !== null && areParametersEqual(requestSource!, v) && (v !== trueModel.settings || trueModel.isInitialized);
     const panelDataSources = viewers.filter(notEmpty);
     panelDataSources.push(requestSource);
-    const combinedBitset: DG.BitSet | null = DG.BitSet.create(table.rowCount);
+    const combinedBitset: DG.BitSet | null = DG.BitSet.create(trueModel.df.rowCount);
     for (const panelDataSource of panelDataSources) {
       const bitset =
         (panelDataSource === this.settings) ? getSelectionBitset(this.webLogoSelection, this.monomerPositionStats!) :
@@ -375,15 +375,16 @@ export class PeptidesModel {
             getSelectionBitset(panelDataSource.clusterSelection, panelDataSource.clusterStats) :
             (panelDataSource instanceof SARViewer) ?
               getSelectionBitset(panelDataSource.mutationCliffsSelection,
-                mutationCliffsToMaskInfo(panelDataSource.mutationCliffs ?? new Map(), table.rowCount)) :
+                mutationCliffsToMaskInfo(panelDataSource.mutationCliffs ?? new Map(), trueModel.df.rowCount)) :
               null;
       if (bitset !== null)
         combinedBitset.or(bitset);
       if (panelDataSource instanceof MonomerPosition) {
         const invariantMapSelectionBitset = getSelectionBitset(panelDataSource.invariantMapSelection,
           panelDataSource.monomerPositionStats);
-        if (invariantMapSelectionBitset !== null)
+        if (invariantMapSelectionBitset !== null) {
           combinedBitset.or(invariantMapSelectionBitset);
+        }
       }
     }
 
@@ -398,17 +399,12 @@ export class PeptidesModel {
       }).root, true);
     }
     const isModelSource = requestSource === trueModel.settings;
-    let filteredActivityCol = isModelSource ? this.getScaledActivityColumn()! :
-      (requestSource as unknown as PeptideViewer).getScaledActivityColumn();
-    if (trueModel.df.filter.anyFalse) {
-      filteredActivityCol = DG.DataFrame.fromColumns([filteredActivityCol]).clone(trueModel.df.filter)
-        .getCol(filteredActivityCol.name) as DG.Column<number>;
-    }
-    acc.addPane('Distribution', () => getDistributionWidget(table, {
+    acc.addPane('Distribution', () => getDistributionWidget(trueModel.df, {
       peptideSelection: combinedBitset,
       columns: isModelSource ? trueModel.settings!.columns ?? {} :
         (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
-      activityCol: filteredActivityCol,
+      activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
+      (requestSource as unknown as PeptideViewer).getScaledActivityColumn(),
     }), true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
@@ -420,18 +416,18 @@ export class PeptidesModel {
       return true;
     };
     acc.addPane('Selection', () => getSelectionWidget(trueModel.df, {
-      positionColumns: isModelSource ? this.positionColumns! :
+      positionColumns: isModelSource ? trueModel.positionColumns! :
         (requestSource as SARViewer | LogoSummaryTable).positionColumns,
       columns: isModelSource ? trueModel.settings!.columns ?? {} :
         (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
-      activityColumn: isModelSource ? this.getScaledActivityColumn()! :
+      activityColumn: isModelSource ? trueModel.getScaledActivityColumn()! :
         (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
       gridColumns: trueModel.analysisView.grid.columns,
-      colorPalette: pickUpPalette(this.df.getCol(isModelSource ? this.settings!.sequenceColumnName :
+      colorPalette: pickUpPalette(trueModel.df.getCol(isModelSource ? trueModel.settings!.sequenceColumnName :
         (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
       tableSelection: trueModel.getCombinedSelection(),
-      isAnalysis: this.settings !== null && (isModelSource ||
-        areObjectsEqual(this.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
+      isAnalysis: trueModel.settings !== null && (isModelSource ||
+        areObjectsEqual(trueModel.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
     }), true);
 
     return acc;

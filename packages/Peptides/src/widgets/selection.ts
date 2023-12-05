@@ -64,6 +64,8 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
       const originalGridCol = options.gridColumns.byIndex(gridColIdx)!;
       if (!originalGridCol.visible)
         continue;
+      if (!grid.col(originalGridCol.name))
+        continue;
       grid.col(originalGridCol.name)!.width = originalGridCol.width;
     }
   }, 500);
