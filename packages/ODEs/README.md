@@ -62,6 +62,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 * `Acid production`
   * models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger
   * shows the usage of the `update` feature for multi-stage simulation
+* `Nimotuzumab`
+  * models population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147)
+  * demonstrates the `output` feature
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
@@ -96,6 +99,7 @@ Find useful the following:
 |```#constants```|Constants specification|
 |```#parameters```|Parameters specification|
 |```#expressions```|Defines auxiliary compuations.|
+|```#output```|Defines output columns and their captions|
 |```#tags```|Specifies tags (`model`, `app`, etc.).|
 |```#description```|Defines description of the model.|
 |```#meta.runOnOpen```|Provides computations immediately upon model launch after the project is exported to JavaScript script.|
