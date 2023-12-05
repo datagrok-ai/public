@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3
+FROM mambaorg/micromamba
 
 WORKDIR /app
 
@@ -12,23 +12,21 @@ COPY environment.yml /app/
 COPY requirements.txt /app/
 
 RUN set -ex ; \
-    conda install -n base conda-libmamba-solver -y ; \
-    conda config --set solver libmamba ; \
-    conda env create -f environment.yml ; \
-    conda clean -afy
+    micromamba env create -f environment.yml ; \
+    micromamba clean -afy
 
 COPY . /app
 
-SHELL ["conda","run","-n","myenv", "--no-capture-output", "/bin/bash","-c"]
+SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
 
 EXPOSE 8000
 
-ARG GUNICORN_MAX_REQUESTS=2
-ARG GUNICORN_MAX_REQUESTS_JITTER=3
+#ARG GUNICORN_MAX_REQUESTS=2
+#ARG GUNICORN_MAX_REQUESTS_JITTER=3
 ARG GUNICORN_WORKERS=4
 ARG GUNICORN_THREADS=4
-ENV GUNICORN_MAX_REQUESTS="${GUNICORN_MAX_REQUESTS}"
-ENV GUNICORN_MAX_REQUESTS_JITTER="${GUNICORN_MAX_REQUESTS_JITTER}"
+#ENV GUNICORN_MAX_REQUESTS="${GUNICORN_MAX_REQUESTS}"
+#ENV GUNICORN_MAX_REQUESTS_JITTER="${GUNICORN_MAX_REQUESTS_JITTER}"
 ENV GUNICORN_WORKERS="${GUNICORN_WORKERS}"
 ENV GUNICORN_THREADS="${GUNICORN_THREADS}"
 
@@ -36,5 +34,5 @@ ENV GUNICORN_THREADS="${GUNICORN_THREADS}"
 ENTRYPOINT gunicorn ADMETox:application \
            --timeout 900 -b "0.0.0.0:8000" \
            --access-logfile - --error-logfile - \
-           --workers=${GUNICORN_WORKERS} --threads=${GUNICORN_THREADS} --worker-class=gthread \
-           --max-requests=${GUNICORN_MAX_REQUESTS} --max-requests-jitter=${GUNICORN_MAX_REQUESTS_JITTER}
+           --workers=${GUNICORN_WORKERS} --threads=${GUNICORN_THREADS} --worker-class=gthread
+#           --max-requests=${GUNICORN_MAX_REQUESTS} --max-requests-jitter=${GUNICORN_MAX_REQUESTS_JITTER}
