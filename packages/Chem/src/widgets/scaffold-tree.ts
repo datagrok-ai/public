@@ -239,13 +239,11 @@ function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer) {
       const filteredBitset = copiedBitset?.and(viewerBitset);
       const bitsetCount = filteredBitset?.trueCount.toString();
       const countMatch = bitsetCount === textContent;
-      
-      if (labelDiv.firstChild) {
-        if (countMatch)
-          labelDiv.removeChild(labelDiv.firstChild);
-        else
-          labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild); 
-      }
+
+      if (countMatch)
+        labelDiv.removeChild(labelDiv.firstChild!);
+      else
+        labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild!); 
 
       labelDiv.onmouseenter = (e) => {
         if (!countMatch) {
