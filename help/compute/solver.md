@@ -110,7 +110,18 @@ Define auxiliary compuations in the `#expressions`-block:
   E2 = C2 * cos(2 * t) + P2
 ```
 
-Use expressions to simplify equations. They may depend on constants, parameters and the argument. 
+Use expressions to simplify equations. They may depend on constants, parameters and the argument.
+
+You may customize an output of computations. Select columns and their captions in the `output`-block:
+
+```python
+#output:
+  t {caption: Time, h}
+  A1 {caption: Central}
+  A2 {caption: Periferal}
+```
+
+![add-to-workspace](solver-outputs.gif)
 
 Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method in the `#tolerance`-line:
 
@@ -218,6 +229,7 @@ The solver has built-in use cases. Get access to them via the context menu and u
 |![add-to-workspace](fermentation.gif)|`Fermentation`|- models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)<br/> <br/>- shows the usage of the `runOnOpen` and  `runOnInput` meta-features|
 |![add-to-workspace](pk-pd.gif)|`PK-PD`|- simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)<br/> <br/>- illustrates the usage of the `loop` feature for dosing specification|
 |![add-to-workspace](acid-production.png)|`Acid production`|- models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger<br/> <br/>- shows the usage of the `update` feature for multi-stage simulation|
+|![add-to-workspace](nimotuzumab.png)|`Nimotuzumab`|- models population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147)<br/> <br/>-demonstrates the `output` feature|
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the solver with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
 
