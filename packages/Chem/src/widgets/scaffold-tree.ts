@@ -217,44 +217,44 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
     fillVisibleNodes(rootGroup.children[n] as TreeViewGroup, visibleNodes);
 }
 
-function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer, column: DG.Column) {
+function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer) {
   const items = thisViewer.tree.items;
 
   const updateLabel = (group: DG.TreeViewGroup) => {
-    const { labelDiv, smiles } = value(group);
+    const { labelDiv, bitset } = value(group);
     const loaderNode = labelDiv.querySelector('.grok-loader');
     const newLoaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
 
-    labelDiv.style.display = 'flex'
+    labelDiv.style.display = 'flex';
     
     if (!loaderNode && !labelDiv.childNodes[1])
       labelDiv.insertBefore(newLoaderDiv, labelDiv.firstChild);
     else if (labelDiv.firstChild && labelDiv.childNodes[1])
       labelDiv.replaceChild(newLoaderDiv, labelDiv.firstChild);
 
-    handleMalformedStructures(column, smiles).then((bitset: DG.BitSet) => {
-      if (labelDiv.childNodes[1]) {
-        const textContent = labelDiv.childNodes[1].textContent;
-        const bitsetCount = bitset.trueCount.toString();
-        const countMatch = bitsetCount === textContent;
+    if (labelDiv.childNodes[1]) {
+      const textContent = labelDiv.childNodes[1].textContent;
+      const copiedBitset = bitset?.clone();
+      const filteredBitset = copiedBitset?.and(thisViewer.dataFrame.filter);
+      const bitsetCount = filteredBitset?.trueCount.toString();
+      const countMatch = bitsetCount === textContent;
 
-        if (countMatch)
-          labelDiv.removeChild(labelDiv.firstChild!);
-        else
-          labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild!); 
+      if (countMatch)
+        labelDiv.removeChild(labelDiv.firstChild!);
+      else
+        labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild!); 
 
-        labelDiv.onmouseenter = (e) => {
-          if (!countMatch) {
-            ui.tooltip.show(ui.divV([
-              ui.divText(textContent + ' matches total'),
-              ui.divText(bitsetCount + ' matches filtered')
-            ]), e.clientX + 15, e.clientY) ;
-          }
-        };
+      labelDiv.onmouseenter = (e) => {
+        if (!countMatch) {
+          ui.tooltip.show(ui.divV([
+            ui.divText(textContent + ' matches total'),
+            ui.divText(bitsetCount + ' matches filtered')
+          ]), e.clientX + 15, e.clientY) ;
+        }
+      };
 
-        labelDiv.onmouseleave = (e) => ui.tooltip.hide();
-      }
-    });
+      labelDiv.onmouseleave = (e) => ui.tooltip.hide();
+    };
   };
 
   items.map((group) => {
@@ -809,7 +809,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateFilters();
     this.updateTag();
     if (this.dataFrame) {
-      this.updateOnFiltering();
+      updateLabelWithLoaderOrBitset(this); 
     }
   }
 
@@ -988,11 +988,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }, async (strMolSketch: string) => {
       });
     this.wrapper.show();
-  }
-
-  updateOnFiltering() {
-    const molColumn = this.dataFrame?.groupBy([this.molColumn!.name]).whereRowMask(this.dataFrame.filter).aggregate().getCol(this.molColumn!.name);
-    updateLabelWithLoaderOrBitset(this, molColumn); 
   }
 
   removeColorCoding(node: TreeViewGroup) {
@@ -1506,7 +1501,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).labelDiv = newLabelDiv;
         this.updateFilters();
         this.filterTree(this.threshold);
-        this.updateOnFiltering();
+        updateLabelWithLoaderOrBitset(this); 
       });
     }
     
@@ -1833,8 +1828,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }));
     }
 
-    this.subs.push(dataFrame.onFilterChanged.subscribe((_) => {
-      this.updateOnFiltering();
+    this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
+      const firstChild = thisViewer.tree.items[0];
+      if (dataFrame.rowCount !== value(firstChild).bitset?.length)
+        await updateAllNodesHits(thisViewer);
+      updateLabelWithLoaderOrBitset(thisViewer); 
     }));
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
@@ -1848,12 +1846,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.clearFilters();
       this.clearNotIcon(this.tree.children);
-    }));
-
-    this.subs.push(this.dataFrame.onRowsRemoved.subscribe((_) => {
-      updateAllNodesHits(thisViewer).then(() => {
-        this.updateOnFiltering();
-      })
     }));
 
     this.render();
