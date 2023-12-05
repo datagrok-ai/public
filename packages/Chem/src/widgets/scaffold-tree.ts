@@ -234,8 +234,9 @@ function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer) {
 
     if (labelDiv.childNodes[1]) {
       const textContent = labelDiv.childNodes[1].textContent;
-      const copiedBitset = bitset?.clone();
-      const filteredBitset = copiedBitset?.and(thisViewer.dataFrame?.filter);
+      const copiedBitset = bitset ? bitset.clone() : DG.BitSet.create(thisViewer.molColumn!.length).setAll(false);
+      const viewerBitset = thisViewer.dataFrame ? thisViewer.dataFrame.filter : DG.BitSet.create(copiedBitset!.length).setAll(false);
+      const filteredBitset = copiedBitset?.and(viewerBitset);
       const bitsetCount = filteredBitset?.trueCount.toString();
       const countMatch = bitsetCount === textContent;
 
