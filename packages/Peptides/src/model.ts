@@ -1,23 +1,57 @@
-import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-import {monomerToShort, pickUpPalette, TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
-import {BitArrayMetrics, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import wu from 'wu';
-import * as rxjs from 'rxjs';
-import $ from 'cash-dom';
+import * as ui
+  from 'datagrok-api/ui';
+import * as grok
+  from 'datagrok-api/grok';
+import * as DG
+  from 'datagrok-api/dg';
+import {
+  monomerToShort,
+  NOTATION,
+  pickUpPalette,
+  TAGS as bioTAGS,
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {
+  calculateScores,
+  SCORE,
+} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
+import {
+  Options,
+} from '@datagrok-libraries/utils/src/type-declarations';
+import {
+  DistanceMatrix,
+} from '@datagrok-libraries/ml/src/distance-matrix';
+import {
+  BitArrayMetrics,
+  StringMetricsNames,
+} from '@datagrok-libraries/ml/src/typed-metrics';
+import {
+  ITreeHelper,
+} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {
+  TAGS as treeTAGS,
+} from '@datagrok-libraries/bio/src/trees';
+import BitArray
+  from '@datagrok-libraries/utils/src/bit-array';
+import {
+  UnitsHandler,
+} from '@datagrok-libraries/bio/src/utils/units-handler';
+import wu
+  from 'wu';
+import * as rxjs
+  from 'rxjs';
+import $
+  from 'cash-dom';
 
-import * as C from './utils/constants';
-import {COLUMNS_NAMES} from './utils/constants';
-import * as type from './utils/types';
-import {PeptidesSettings} from './utils/types';
+import * as C
+  from './utils/constants';
+import {
+  COLUMNS_NAMES,
+} from './utils/constants';
+import * as type
+  from './utils/types';
+import {
+  PeptidesSettings,
+} from './utils/types';
 import {
   areParametersEqual,
   calculateSelected,
@@ -28,22 +62,62 @@ import {
   mutationCliffsToMaskInfo,
   scaleActivity,
 } from './utils/misc';
-import {ISARViewer, MonomerPosition, MostPotentResidues, SARViewer} from './viewers/sar-viewer';
-import * as CR from './utils/cell-renderer';
-import {mutationCliffsWidget} from './widgets/mutation-cliffs';
-import {getDistributionWidget, PeptideViewer} from './widgets/distribution';
-import {CLUSTER_TYPE, ILogoSummaryTable, LogoSummaryTable, LST_PROPERTIES} from './viewers/logo-summary';
-import {getSettingsDialog} from './widgets/settings';
-import {_package, getTreeHelperInstance} from './package';
-import {calculateMonomerPositionStatistics} from './utils/algorithms';
-import {createDistanceMatrixWorker} from './utils/worker-creator';
-import {getSelectionWidget} from './widgets/selection';
+import {
+  ISARViewer,
+  MonomerPosition,
+  MostPotentResidues,
+  SARViewer,
+} from './viewers/sar-viewer';
+import * as CR
+  from './utils/cell-renderer';
+import {
+  mutationCliffsWidget,
+} from './widgets/mutation-cliffs';
+import {
+  getDistributionWidget,
+  PeptideViewer,
+} from './widgets/distribution';
+import {
+  CLUSTER_TYPE,
+  ILogoSummaryTable,
+  LogoSummaryTable,
+  LST_PROPERTIES,
+} from './viewers/logo-summary';
+import {
+  getSettingsDialog,
+} from './widgets/settings';
+import {
+  _package,
+  getTreeHelperInstance,
+} from './package';
+import {
+  calculateMonomerPositionStatistics,
+} from './utils/algorithms';
+import {
+  createDistanceMatrixWorker,
+} from './utils/worker-creator';
+import {
+  getSelectionWidget,
+} from './widgets/selection';
 
-import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import {showMonomerTooltip} from './utils/tooltips';
-import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
-import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {
+  MmDistanceFunctionsNames,
+} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {
+  DimReductionMethods,
+  ITSNEOptions,
+  IUMAPOptions,
+} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {
+  showMonomerTooltip,
+} from './utils/tooltips';
+import {
+  AggregationColumns,
+  MonomerPositionStats,
+} from './utils/statistics';
+import {
+  splitAlignedSequences,
+} from '@datagrok-libraries/bio/src/utils/splitter';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
@@ -67,7 +141,10 @@ export class PeptidesModel {
   cachedWebLogoTooltip: {
     bar: string,
     tooltip: HTMLDivElement | null
-  } = {bar: '', tooltip: null};
+  } = {
+      bar: '',
+      tooltip: null,
+    };
   _layoutEventInitialized = false;
   subs: rxjs.Subscription[] = [];
   isHighlighting: boolean = false;
@@ -100,21 +177,6 @@ export class PeptidesModel {
       this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id);
       if (typeof this._analysisView === 'undefined')
         this._analysisView = grok.shell.addTableView(this.df);
-
-      const posCols = this.positionColumns?.map((col) => col.name);
-      if (posCols != null) {
-        for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
-          const gridCol = this._analysisView.grid.columns.byIndex(colIdx);
-          if (gridCol === null)
-            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
-          else if (gridCol.column === null) {
-            throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null ` +
-              `column`);
-          }
-
-          gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
-        }
-      }
     }
 
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
@@ -169,7 +231,10 @@ export class PeptidesModel {
       case 'stats':
         this.webLogoSelection = {};
         this.webLogoBounds = {};
-        this.cachedWebLogoTooltip = {bar: '', tooltip: null};
+        this.cachedWebLogoTooltip = {
+          bar: '',
+          tooltip: null,
+        };
         this._monomerPositionStats = null;
         break;
       case 'dendrogram':
@@ -344,7 +409,6 @@ export class PeptidesModel {
         return ui.divV([newView, newCluster, removeCluster]);
       }, true);
     }
-    const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
 
     // Get the source of the bitset change and find viewers that share the same parameters as source
     let requestSource: SARViewer | LogoSummaryTable | PeptidesSettings | null = trueModel.settings;
@@ -382,9 +446,8 @@ export class PeptidesModel {
       if (panelDataSource instanceof MonomerPosition) {
         const invariantMapSelectionBitset = getSelectionBitset(panelDataSource.invariantMapSelection,
           panelDataSource.monomerPositionStats);
-        if (invariantMapSelectionBitset !== null) {
+        if (invariantMapSelectionBitset !== null)
           combinedBitset.or(invariantMapSelectionBitset);
-        }
       }
     }
 
@@ -393,9 +456,12 @@ export class PeptidesModel {
       sarViewer.mutationCliffs !== null) {
       // MC and Selection are left
       acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, {
-        mutationCliffs: sarViewer.mutationCliffs!, mutationCliffsSelection: sarViewer.mutationCliffsSelection,
-        gridColumns: trueModel.analysisView.grid.columns, sequenceColumnName: sarViewer.sequenceColumnName,
-        positionColumns: sarViewer.positionColumns, activityCol: sarViewer.getScaledActivityColumn(),
+        mutationCliffs: sarViewer.mutationCliffs!,
+        mutationCliffsSelection: sarViewer.mutationCliffsSelection,
+        gridColumns: trueModel.analysisView.grid.columns,
+        sequenceColumnName: sarViewer.sequenceColumnName,
+        positionColumns: sarViewer.positionColumns,
+        activityCol: sarViewer.getScaledActivityColumn(),
       }).root, true);
     }
     const isModelSource = requestSource === trueModel.settings;
@@ -404,7 +470,7 @@ export class PeptidesModel {
       columns: isModelSource ? trueModel.settings!.columns ?? {} :
         (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
       activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
-      (requestSource as unknown as PeptideViewer).getScaledActivityColumn(),
+        (requestSource as unknown as PeptideViewer).getScaledActivityColumn(),
     }), true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
@@ -673,6 +739,19 @@ export class PeptidesModel {
       const width = Math.ceil(canvasContext.measureText(maxCategory).width);
       maxWidth = Math.max(maxWidth, width);
     }
+
+    const posCols = positionCols.map((col) => col.name);
+    for (let colIdx = 1; colIdx < this.analysisView.grid.columns.length; ++colIdx) {
+      const gridCol = this.analysisView.grid.columns.byIndex(colIdx);
+      if (gridCol === null)
+        throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' is null`);
+      else if (gridCol.column === null) {
+        throw new Error(`PeptidesError: Could not get analysis view: grid column with index '${colIdx}' has null ` +
+          `column`);
+      }
+      gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
+    }
+
     setTimeout(() => {
       for (const positionCol of positionCols) {
         const gridCol = sourceGrid.col(positionCol.name);
@@ -796,7 +875,8 @@ export class PeptidesModel {
     viewerProperties ??= {
       sequenceColumnName: this.settings!.sequenceColumnName,
       clustersColumnName: wu(this.df.columns.categorical).next().value,
-      activityColumnName: this.settings!.activityColumnName, activityScaling: this.settings!.activityScaling,
+      activityColumnName: this.settings!.activityColumnName,
+      activityScaling: this.settings!.activityScaling,
     };
     const logoSummaryTable = await this.df.plot
       .fromType(VIEWER_TYPE.LOGO_SUMMARY_TABLE, viewerProperties) as LogoSummaryTable;
@@ -889,9 +969,13 @@ export class PeptidesModel {
       options?: (IUMAPOptions | ITSNEOptions) & Options
     } =
       {
-        table: this.df, molecules: seqCol,
-        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH,
-        plotEmbeddings: true, sparseMatrixThreshold: 0.3, options: {'bypassLargeDataWarning': true},
+        table: this.df,
+        molecules: seqCol,
+        methodName: DimReductionMethods.UMAP,
+        similarityMetric: MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH,
+        plotEmbeddings: true,
+        sparseMatrixThreshold: 0.3,
+        options: {'bypassLargeDataWarning': true},
       };
 
     // Use counter to unsubscribe when 2 columns are hidden
