@@ -1,13 +1,28 @@
-import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import * as ui
+  from 'datagrok-api/ui';
+import * as grok
+  from 'datagrok-api/grok';
+import * as DG
+  from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
-import * as C from '../utils/constants';
-import {SCALING_METHODS} from '../utils/constants';
-import * as CR from '../utils/cell-renderer';
-import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import $
+  from 'cash-dom';
+import {
+  PeptidesModel,
+  VIEWER_TYPE,
+} from '../model';
+import * as C
+  from '../utils/constants';
+import {
+  SCALING_METHODS,
+} from '../utils/constants';
+import * as CR
+  from '../utils/cell-renderer';
+import {
+  HorizontalAlignments,
+  IWebLogoViewer,
+  PositionHeight,
+} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {
   AggregationColumns,
   ClusterTypeStats,
@@ -16,16 +31,37 @@ import {
   getStats,
   StatsItem,
 } from '../utils/statistics';
-import wu from 'wu';
-import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
-import {getDistributionPanel, getDistributionTable, modifySelection, scaleActivity} from '../utils/misc';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import * as type from '../utils/types';
-import {SelectionItem} from '../utils/types';
-import {_package} from '../package';
-import {calculateClusterStatistics} from '../utils/algorithms';
-import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
-import {SARViewer} from './sar-viewer';
+import wu
+  from 'wu';
+import {
+  getActivityDistribution,
+  getStatsTableMap,
+} from '../widgets/distribution';
+import {
+  getDistributionPanel,
+  getDistributionTable,
+  modifySelection,
+  scaleActivity,
+} from '../utils/misc';
+import BitArray
+  from '@datagrok-libraries/utils/src/bit-array';
+import * as type
+  from '../utils/types';
+import {
+  SelectionItem,
+} from '../utils/types';
+import {
+  _package,
+} from '../package';
+import {
+  calculateClusterStatistics,
+} from '../utils/algorithms';
+import {
+  splitAlignedSequences,
+} from '@datagrok-libraries/bio/src/utils/splitter';
+import {
+  SARViewer,
+} from './sar-viewer';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -80,23 +116,42 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     super();
 
     this.sequenceColumnName = this.column(LST_PROPERTIES.SEQUENCE,
-      {category: LST_CATEGORIES.GENERAL, nullable: false});
+      {
+        category: LST_CATEGORIES.GENERAL,
+        nullable: false,
+      });
     this.clustersColumnName = this.column(LST_PROPERTIES.CLUSTERS,
-      {category: LST_CATEGORIES.GENERAL, nullable: false});
+      {
+        category: LST_CATEGORIES.GENERAL,
+        nullable: false,
+      });
     this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {category: LST_CATEGORIES.GENERAL});
     this.activityScaling = this.string(LST_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
-      {category: LST_CATEGORIES.GENERAL, choices: Object.values(C.SCALING_METHODS)}) as SCALING_METHODS;
+      {
+        category: LST_CATEGORIES.GENERAL,
+        choices: Object.values(C.SCALING_METHODS),
+      }) as SCALING_METHODS;
 
     this.webLogoMode = this.string(LST_PROPERTIES.WEB_LOGO_MODE, PositionHeight.Entropy,
-      {choices: [PositionHeight.full, PositionHeight.Entropy], category: LST_CATEGORIES.STYLE});
+      {
+        choices: [PositionHeight.full, PositionHeight.Entropy],
+        category: LST_CATEGORIES.STYLE,
+      });
     this.membersRatioThreshold = this.float(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD, 0.3,
-      {min: 0, max: 1.0, category: LST_CATEGORIES.STYLE});
+      {
+        min: 0,
+        max: 1.0,
+        category: LST_CATEGORIES.STYLE,
+      });
 
     this.columns = this.columnList(LST_PROPERTIES.COLUMNS, [], {category: LST_CATEGORIES.GENERAL});
     const aggregationChoices = Object.values(DG.AGG)
       .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
     this.columnsAggregation = this.string(LST_PROPERTIES.AGGREGATION, DG.AGG.AVG,
-      {category: LST_CATEGORIES.GENERAL, choices: aggregationChoices});
+      {
+        category: LST_CATEGORIES.GENERAL,
+        choices: aggregationChoices,
+      });
   }
 
   _model!: PeptidesModel;
@@ -106,7 +161,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     return this._model;
   }
 
-  _viewerGrid!: DG.Grid;
+  _viewerGrid: DG.Grid | null = null;
 
   get viewerGrid(): DG.Grid {
     this._viewerGrid ??= this.createLogoSummaryTableGrid();
@@ -118,7 +173,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this.render();
   }
 
-  _clusterStats?: ClusterTypeStats;
+  _clusterStats: ClusterTypeStats | null = null;
 
   get clusterStats(): ClusterTypeStats {
     this._clusterStats ??= calculateClusterStatistics(this.dataFrame, this.clustersColumnName,
@@ -131,7 +186,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this.viewerGrid = this.createLogoSummaryTableGrid();
   }
 
-  _clusterSelection?: type.Selection;
+  _clusterSelection: type.Selection | null = null;
 
   get clusterSelection(): type.Selection {
     const tagSelection = this.dataFrame.getTag(C.TAGS.CLUSTER_SELECTION);
@@ -147,7 +202,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this.model.analysisView.grid.invalidate();
   }
 
-  _logoSummaryTable?: DG.DataFrame;
+  _logoSummaryTable: DG.DataFrame | null = null;
 
   get logoSummaryTable(): DG.DataFrame {
     this._logoSummaryTable ??= this.createLogoSummaryTable();
@@ -229,13 +284,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
   render(): void {
     $(this.root).empty();
-    if (this.clustersColumnName == null || this.sequenceColumnName == null) {
-      this.root.appendChild(ui.divText('Please, select a sequence and cluster columns in the viewer properties'));
-      return;
-    }
-    if (this._viewerGrid == null) {
-      this.root.appendChild(ui.divText(
-        `Viewer is not initialized. If it doesn't change in a few seconds, please, contact the developers`));
+    if (this.clustersColumnName == null || this.sequenceColumnName == null || this.activityColumnName == null) {
+      this.root.appendChild(ui.divText('Please, select a sequence, cluster and activity columns in the viewer properties'));
       return;
     }
 
@@ -255,7 +305,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     $(expand).addClass('pep-help-icon');
     this.viewerGrid.root.style.width = 'auto';
     this.root.appendChild(ui.divV([
-      ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}),
+      ui.divH([this._titleHost, expand], {
+        style: {
+          alignSelf: 'center',
+          lineHeight: 'normal',
+        },
+      }),
       this.viewerGrid.root,
     ]));
     this.viewerGrid.invalidate();
@@ -264,25 +319,30 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     let doRender = false;
-    let createGrid = false;
     switch (property.name) {
     case LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD:
       this.updateFilter();
       break;
     case `${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`:
-      createGrid = true;
+      this._viewerGrid = null;
+      this._logoSummaryTable = null;
+      doRender = true;
       break;
     case `${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`:
-      createGrid = true;
+      this._clusterStats = null;
+      this._clusterSelection = null;
+      this._viewerGrid = null;
+      this._logoSummaryTable = null;
+      doRender = true;
       break;
     case `${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`:
     case LST_PROPERTIES.ACTIVITY_SCALING:
-      createGrid = true;
       this._scaledActivityColumn = null;
+      this._viewerGrid = null;
+      this._clusterStats = null;
+      this._logoSummaryTable = null;
       doRender = true;
     }
-    if (this.sequenceColumnName !== null && this.clustersColumnName !== null && this.activityColumnName !== null && createGrid)
-      this.viewerGrid = this.createLogoSummaryTableGrid();
     if (doRender)
       this.render();
   }
@@ -372,10 +432,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         customAggRawCols[aggColIdx][rowIdx] = getAggregatedValue(col, aggFn, bsMask);
       }
     }
-
     customWebLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
     customDistCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
-
     // END
 
     // BEGIN: fill LST part with original clusters
@@ -384,9 +442,10 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const origLSTCols = origLST.columns;
     const origLSTClustCol: DG.Column<string> = origLST.getCol(clustersColName);
     origLSTClustCol.name = C.LST_COLUMN_NAMES.CLUSTER;
+    if (origLSTClustCol.type !== DG.COLUMN_TYPE.STRING)
+      origLST.columns.replace(origLSTClustCol, origLSTClustCol.convertTo(DG.COLUMN_TYPE.STRING));
 
     const origLSTClustColCat = origLSTClustCol.categories;
-
     const origMembersColData = origLSTCols.addNewInt(C.LST_COLUMN_NAMES.MEMBERS).getRawData();
     const origWebLogoCol = origLSTCols.addNewString(C.LST_COLUMN_NAMES.WEB_LOGO);
     const origDistCol = origLSTCols.addNewString(C.LST_COLUMN_NAMES.DISTRIBUTION);
@@ -394,7 +453,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const origPValColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.P_VALUE).getRawData();
     const origRatioColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
     const origBitsets: DG.BitSet[] = new Array(origLSTLen);
-
     const origClustMasks = Array.from({length: origLSTLen},
       () => new BitArray(filteredDfRowCount, false));
 
@@ -409,7 +467,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       if (mask.allFalse || mask.allTrue)
         continue;
       const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
-
       const stats = isDfFiltered ? getStats(activityColData, mask) :
         this.clusterStats[CLUSTER_TYPE.ORIGINAL][origLSTClustColCat[rowIdx]];
 
@@ -419,7 +476,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       origPValColData[rowIdx] = stats.pValue ?? DG.FLOAT_NULL;
       origRatioColData[rowIdx] = stats.ratio;
     }
-
     origWebLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
     origDistCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
     // END
@@ -497,8 +553,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
             const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
             viewer = await webLogoTable.plot
               .fromType('WebLogo', {
-                positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
-                maxHeight: 1000, minHeight: height, positionWidth: positionWidth, showPositionLabels: false,
+                positionHeight: this.webLogoMode,
+                horizontalAlignment: HorizontalAlignments.LEFT,
+                maxHeight: 1000,
+                minHeight: height,
+                positionWidth: positionWidth,
+                showPositionLabels: false,
               });
             webLogoCache.set(currentRowIdx, viewer);
           }
@@ -541,10 +601,16 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
           return;
         if (this.currentRowIndex !== null && this.currentRowIndex !== -1) {
           this.modifyClusterSelection(this.getCluster(grid.cell(C.LST_COLUMN_NAMES.CLUSTER, this.currentRowIndex)),
-            {shiftPressed: true, ctrlPressed: true}, false);
+            {
+              shiftPressed: true,
+              ctrlPressed: true,
+            }, false);
         }
 
-        this.modifyClusterSelection(this.getCluster(gridCell), {shiftPressed: true, ctrlPressed: false});
+        this.modifyClusterSelection(this.getCluster(gridCell), {
+          shiftPressed: true,
+          ctrlPressed: false,
+        });
         grid.invalidate();
       } finally {
         this.keyPress = false;
@@ -560,7 +626,10 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       else if (ev.code === 'KeyA' && ev.ctrlKey) {
         for (let rowIdx = 0; rowIdx < this.logoSummaryTable.rowCount; ++rowIdx) {
           this.modifyClusterSelection(this.getCluster(grid.cell(C.LST_COLUMN_NAMES.CLUSTER, rowIdx)),
-            {shiftPressed: true, ctrlPressed: false}, false);
+            {
+              shiftPressed: true,
+              ctrlPressed: false,
+            }, false);
         }
       }
       this.model.fireBitsetChanged(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
@@ -572,7 +641,10 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         return;
 
       const selection = this.getCluster(gridCell);
-      this.modifyClusterSelection(selection, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+      this.modifyClusterSelection(selection, {
+        shiftPressed: ev.shiftKey,
+        ctrlPressed: ev.ctrlKey,
+      });
       grid.invalidate();
 
       _package.files.readAsText('help/logo-summary-table.md').then((text) => {
@@ -747,7 +819,10 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
     const aggregatedColMap = getAggregatedColumnValues(this.dataFrame,
-      this.getAggregationColumns(), {filterDf: true, mask: mask});
+      this.getAggregationColumns(), {
+        filterDf: true,
+        mask: mask,
+      });
     const resultMap: {
       [key: string]: any
     } = {...tableMap, ...aggregatedColMap};
