@@ -294,6 +294,51 @@ ${CONTROL_EXPR.PARAMS}:
   
 ${CONTROL_EXPR.TOL}: 0.000000001`;
 
+/** Nimotuzumab disposition model */
+const NIMOTUZUMAB_MODEL = `NOTES. Source: https://www.mdpi.com/1999-4923/12/12/1147 
+${CONTROL_EXPR.NAME}: Nimotuzumab
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Nimotuzumab disposition model
+${CONTROL_EXPR.DIF_EQ}:
+  dA1/dt = (-(CL * A3 / V1 + Q / V1) * A1 + Q / V2 * A2 - kint * Rtot * A1 / (Kss + A1 / V1)) 
+           / (1 + Rtot * Kss / (Kss + A1 / V1)**2)
+
+  dA2/dt = (Q / V1 * A1 - Q / V2 * A2) / (1 + Rtotp * Kss / (Kss + A2 / V2)**2)
+
+  dA3/dt = Kin * (1 + Smax * A1**gamma / (S50**gamma + A1**gamma)) - Kout * A3
+
+${CONTROL_EXPR.ARG}: t
+  start = 0
+  finish = 70
+  step = 0.01
+
+${CONTROL_EXPR.INITS}:
+  A1 = 0.43
+  A2 = 0.55
+  A3 = 10.32
+
+${CONTROL_EXPR.OUTPUT}:
+  t {caption: Time, h}
+  A1 {caption: Central}
+  A2 {caption: Periferal}
+
+${CONTROL_EXPR.PARAMS}:
+  CL = 0.00964
+  V1 = 2.63
+  Q = 0.0288
+  V2 = 0.00992
+  Kss = 15.5
+  kint = 0.00494
+  Rtot = 0.0105
+  Rtotp = 956
+  Kin = 0.0133
+  Kout = 0.0133
+  S50 =	8.57
+  Smax = 3.18
+  gamma = 0.5
+
+${CONTROL_EXPR.TOL}: 0.0000001`;
+
 /** Initial value problem templates */
 export enum TEMPLATES {
   EMPTY = '',
@@ -304,5 +349,6 @@ export enum TEMPLATES {
   ROBERTSON = ROBERTSON_MODEL,
   FERMENTATION = FERMENTATION_MODEL,
   PK_PD = PK_PD_MODEL,
-  ACID_PROD = ACID_PROD_MODEL
+  ACID_PROD = ACID_PROD_MODEL,
+  NIMOTUZUMAB = NIMOTUZUMAB_MODEL,
 };

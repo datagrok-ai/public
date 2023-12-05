@@ -24,6 +24,7 @@ enum EDITOR_STATE {
   FERM = 7,
   PKPD = 8,
   ACID_PROD = 9,
+  NIMOTUZUMAB = 10,
 };
 
 /** Context help links */
@@ -60,6 +61,9 @@ function getProblem(state: EDITOR_STATE): string {
 
     case EDITOR_STATE.ACID_PROD:
       return TEMPLATES.ACID_PROD;
+
+    case EDITOR_STATE.NIMOTUZUMAB:
+      return TEMPLATES.NIMOTUZUMAB;
 
     default:
       return TEMPLATES.EMPTY;
@@ -267,6 +271,7 @@ export async function runSolverApp() {
       //.separator()
       .item('PK-PD...', async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
       .item('Acid production...', async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
+      .item('Nimotuzumab...', async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: 'Nimotuzumab disposition model'})
       .endGroup()
       .show();    
   });
