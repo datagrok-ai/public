@@ -1,12 +1,19 @@
 FROM mambaorg/micromamba
 
-WORKDIR /app
-
 SHELL ["/bin/bash","-c"]
 
-RUN pip install --upgrade awscli && \
-    aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive && \
-    pip uninstall -y awscli
+USER root
+
+RUN mkdir /app && chown mambauser:mambauser /app
+
+USER mambauser
+
+WORKDIR /app
+
+RUN micromamba install -n base -c conda-forge awscli -y && \
+    micromamba run -n base aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive && \
+    micromamba remove -n base awscli -y && \
+    micromamba clean -afy
 
 COPY environment.yml /app/
 COPY requirements.txt /app/
