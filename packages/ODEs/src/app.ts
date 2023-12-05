@@ -89,7 +89,7 @@ const completions = [
 
 /** Control expressions completion utilite */
 function contrCompletions(context: any) {
-  let before = context.matchBefore(/[#]/)
+  let before = context.matchBefore(/[#]\w*/)
   if (!context.explicit && !before) return null
   return {
     from: before ? before.from : context.pos,
