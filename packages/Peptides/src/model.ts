@@ -1,57 +1,28 @@
-import * as ui
-  from 'datagrok-api/ui';
-import * as grok
-  from 'datagrok-api/grok';
-import * as DG
-  from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {
   monomerToShort,
   NOTATION,
   pickUpPalette,
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {
-  calculateScores,
-  SCORE,
-} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {
-  Options,
-} from '@datagrok-libraries/utils/src/type-declarations';
-import {
-  DistanceMatrix,
-} from '@datagrok-libraries/ml/src/distance-matrix';
-import {
-  BitArrayMetrics,
-  StringMetricsNames,
-} from '@datagrok-libraries/ml/src/typed-metrics';
-import {
-  ITreeHelper,
-} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {
-  TAGS as treeTAGS,
-} from '@datagrok-libraries/bio/src/trees';
-import BitArray
-  from '@datagrok-libraries/utils/src/bit-array';
-import {
-  UnitsHandler,
-} from '@datagrok-libraries/bio/src/utils/units-handler';
-import wu
-  from 'wu';
-import * as rxjs
-  from 'rxjs';
-import $
-  from 'cash-dom';
+import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
+import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
+import {BitArrayMetrics, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import wu from 'wu';
+import * as rxjs from 'rxjs';
+import $ from 'cash-dom';
 
-import * as C
-  from './utils/constants';
-import {
-  COLUMNS_NAMES,
-} from './utils/constants';
-import * as type
-  from './utils/types';
-import {
-  PeptidesSettings,
-} from './utils/types';
+import * as C from './utils/constants';
+import {COLUMNS_NAMES} from './utils/constants';
+import * as type from './utils/types';
+import {PeptidesSettings} from './utils/types';
 import {
   areParametersEqual,
   calculateSelected,
@@ -62,62 +33,22 @@ import {
   mutationCliffsToMaskInfo,
   scaleActivity,
 } from './utils/misc';
-import {
-  ISARViewer,
-  MonomerPosition,
-  MostPotentResidues,
-  SARViewer,
-} from './viewers/sar-viewer';
-import * as CR
-  from './utils/cell-renderer';
-import {
-  mutationCliffsWidget,
-} from './widgets/mutation-cliffs';
-import {
-  getDistributionWidget,
-  PeptideViewer,
-} from './widgets/distribution';
-import {
-  CLUSTER_TYPE,
-  ILogoSummaryTable,
-  LogoSummaryTable,
-  LST_PROPERTIES,
-} from './viewers/logo-summary';
-import {
-  getSettingsDialog,
-} from './widgets/settings';
-import {
-  _package,
-  getTreeHelperInstance,
-} from './package';
-import {
-  calculateMonomerPositionStatistics,
-} from './utils/algorithms';
-import {
-  createDistanceMatrixWorker,
-} from './utils/worker-creator';
-import {
-  getSelectionWidget,
-} from './widgets/selection';
+import {ISARViewer, MonomerPosition, MostPotentResidues, SARViewer} from './viewers/sar-viewer';
+import * as CR from './utils/cell-renderer';
+import {mutationCliffsWidget} from './widgets/mutation-cliffs';
+import {getDistributionWidget, PeptideViewer} from './widgets/distribution';
+import {CLUSTER_TYPE, ILogoSummaryTable, LogoSummaryTable, LST_PROPERTIES} from './viewers/logo-summary';
+import {getSettingsDialog} from './widgets/settings';
+import {_package, getTreeHelperInstance} from './package';
+import {calculateMonomerPositionStatistics} from './utils/algorithms';
+import {createDistanceMatrixWorker} from './utils/worker-creator';
+import {getSelectionWidget} from './widgets/selection';
 
-import {
-  MmDistanceFunctionsNames,
-} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {
-  DimReductionMethods,
-  ITSNEOptions,
-  IUMAPOptions,
-} from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import {
-  showMonomerTooltip,
-} from './utils/tooltips';
-import {
-  AggregationColumns,
-  MonomerPositionStats,
-} from './utils/statistics';
-import {
-  splitAlignedSequences,
-} from '@datagrok-libraries/bio/src/utils/splitter';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {showMonomerTooltip} from './utils/tooltips';
+import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
@@ -222,6 +153,8 @@ export class PeptidesModel {
       }
     }
     this.df.setTag('settings', JSON.stringify(this._settings));
+    if (!this.isInitialized)
+      return;
 
     for (const variable of updateVars) {
       switch (variable) {
@@ -229,7 +162,7 @@ export class PeptidesModel {
         this.createScaledCol();
         break;
       case 'stats':
-        this.webLogoSelection = {};
+        this.webLogoSelection = initSelection(this.positionColumns!);
         this.webLogoBounds = {};
         this.cachedWebLogoTooltip = {
           bar: '',
