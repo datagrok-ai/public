@@ -20,6 +20,14 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-12-06 1.17.7
+
+### Addressed Issues
+
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click (WIP)
+* (Bug) [#2562](https://github.com/datagrok-ai/public/issues/2562): Bar chart: error when date column is used as category and split function is non-default 
+
+
 ## 2023-11-29 1.17.6
 
 ### Addressed Issues
