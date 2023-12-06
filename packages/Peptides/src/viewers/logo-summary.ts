@@ -1,28 +1,13 @@
-import * as ui
-  from 'datagrok-api/ui';
-import * as grok
-  from 'datagrok-api/grok';
-import * as DG
-  from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
-import $
-  from 'cash-dom';
-import {
-  PeptidesModel,
-  VIEWER_TYPE,
-} from '../model';
-import * as C
-  from '../utils/constants';
-import {
-  SCALING_METHODS,
-} from '../utils/constants';
-import * as CR
-  from '../utils/cell-renderer';
-import {
-  HorizontalAlignments,
-  IWebLogoViewer,
-  PositionHeight,
-} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import $ from 'cash-dom';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
+import * as C from '../utils/constants';
+import {SCALING_METHODS} from '../utils/constants';
+import * as CR from '../utils/cell-renderer';
+import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {
   AggregationColumns,
   ClusterTypeStats,
@@ -31,37 +16,16 @@ import {
   getStats,
   StatsItem,
 } from '../utils/statistics';
-import wu
-  from 'wu';
-import {
-  getActivityDistribution,
-  getStatsTableMap,
-} from '../widgets/distribution';
-import {
-  getDistributionPanel,
-  getDistributionTable,
-  modifySelection,
-  scaleActivity,
-} from '../utils/misc';
-import BitArray
-  from '@datagrok-libraries/utils/src/bit-array';
-import * as type
-  from '../utils/types';
-import {
-  SelectionItem,
-} from '../utils/types';
-import {
-  _package,
-} from '../package';
-import {
-  calculateClusterStatistics,
-} from '../utils/algorithms';
-import {
-  splitAlignedSequences,
-} from '@datagrok-libraries/bio/src/utils/splitter';
-import {
-  SARViewer,
-} from './sar-viewer';
+import wu from 'wu';
+import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
+import {getDistributionPanel, getDistributionTable, modifySelection, scaleActivity} from '../utils/misc';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import * as type from '../utils/types';
+import {SelectionItem} from '../utils/types';
+import {_package} from '../package';
+import {calculateClusterStatistics} from '../utils/algorithms';
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {SARViewer} from './sar-viewer';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -88,6 +52,7 @@ export const enum LST_PROPERTIES {
 enum LST_CATEGORIES {
   GENERAL = 'General',
   STYLE = 'WebLogo',
+  AGGREGATION = 'Aggregation',
 }
 
 export interface ILogoSummaryTable {
@@ -107,7 +72,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   keyPress: boolean = false;
   currentRowIndex: number | null = null;
   columns: string[];
-  columnsAggregation: string;
+  aggregation: string;
   activityColumnName: string;
   activityScaling: SCALING_METHODS;
   _scaledActivityColumn: DG.Column | null = null;
@@ -125,7 +90,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         category: LST_CATEGORIES.GENERAL,
         nullable: false,
       });
-    this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {category: LST_CATEGORIES.GENERAL});
+    this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {category: LST_CATEGORIES.GENERAL, nullable: false});
     this.activityScaling = this.string(LST_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
       {
         category: LST_CATEGORIES.GENERAL,
@@ -144,12 +109,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         category: LST_CATEGORIES.STYLE,
       });
 
-    this.columns = this.columnList(LST_PROPERTIES.COLUMNS, [], {category: LST_CATEGORIES.GENERAL});
+    this.columns = this.columnList(LST_PROPERTIES.COLUMNS, [], {category: LST_CATEGORIES.AGGREGATION});
     const aggregationChoices = Object.values(DG.AGG)
       .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
-    this.columnsAggregation = this.string(LST_PROPERTIES.AGGREGATION, DG.AGG.AVG,
+    this.aggregation = this.string(LST_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {
-        category: LST_CATEGORIES.GENERAL,
+        category: LST_CATEGORIES.AGGREGATION,
         choices: aggregationChoices,
       });
   }
@@ -264,7 +229,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   }
 
   getAggregationColumns(): AggregationColumns {
-    return Object.fromEntries(this.columns.map((colName) => [colName, this.columnsAggregation] as [string, DG.AGG]));
+    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
   }
 
   onTableAttached(): void {
@@ -342,6 +307,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       this._clusterStats = null;
       this._logoSummaryTable = null;
       doRender = true;
+      break;
+    case LST_PROPERTIES.COLUMNS:
+    case LST_PROPERTIES.AGGREGATION:
+      this._viewerGrid = null;
+      this._logoSummaryTable = null;
+      doRender = true;
+      break;
     }
     if (doRender)
       this.render();

@@ -52,7 +52,7 @@ export enum PROPERTY_CATEGORIES {
   GENERAL = 'General',
   INVARIANT_MAP = 'Invariant Map',
   MUTATION_CLIFFS = 'Mutation Cliffs',
-  TOOLTIPS = 'Tooltips',
+  AGGREGATION = 'Aggregation',
 }
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
@@ -73,7 +73,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   activityColumnName: string;
   activityScaling: C.SCALING_METHODS;
   columns: string[];
-  columnsAggregation: string;
+  aggregation: string;
   targetColumnName: string;
   targetCategory: string;
   minActivityDelta: number;
@@ -85,8 +85,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     super();
     // General properties
     this.sequenceColumnName = this.column(SAR_PROPERTIES.SEQUENCE,
-      {category: PROPERTY_CATEGORIES.GENERAL, semType: DG.SEMTYPE.MACROMOLECULE});
-    this.activityColumnName = this.column(SAR_PROPERTIES.ACTIVITY, {category: PROPERTY_CATEGORIES.GENERAL});
+      {category: PROPERTY_CATEGORIES.GENERAL, semType: DG.SEMTYPE.MACROMOLECULE, nullable: false});
+    this.activityColumnName = this.column(SAR_PROPERTIES.ACTIVITY, {
+      category: PROPERTY_CATEGORIES.GENERAL,
+      nullable: false,
+    });
     this.activityScaling = this.string(SAR_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
       {
         category: PROPERTY_CATEGORIES.GENERAL,
@@ -103,11 +106,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this.maxMutations = this.int(SAR_PROPERTIES.MAX_MUTATIONS, 1,
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 50});
 
-    this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.TOOLTIPS});
+    this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.AGGREGATION});
     const aggregationChoices = Object.values(DG.AGG)
       .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
-    this.columnsAggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
-      {category: PROPERTY_CATEGORIES.TOOLTIPS, choices: aggregationChoices});
+    this.aggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
+      {category: PROPERTY_CATEGORIES.AGGREGATION, choices: aggregationChoices});
   }
 
   _viewerGrid: DG.Grid | null = null;
@@ -310,7 +313,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
   getAggregationColumns(): AggregationColumns {
     return Object.fromEntries(
-      this.columns.map((colName) => [colName, this.columnsAggregation] as [string, DG.AGG]));
+      this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
   }
 
   createViewerGrid(): DG.Grid {
@@ -357,7 +360,7 @@ export class MonomerPosition extends SARViewer {
 
     const colorChoices = wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name);
     this.colorColumnName = this.column(MONOMER_POSITION_PROPERTIES.COLOR,
-      {category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: colorChoices});
+      {category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: colorChoices, nullable: false});
     const aggregationChoices = Object.values(DG.AGG)
       .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
     this.colorAggregation = this.string(MONOMER_POSITION_PROPERTIES.COLOR_AGGREGATION, DG.AGG.AVG,
@@ -544,9 +547,9 @@ export class MonomerPosition extends SARViewer {
             }
           }
         }
-      } else {
+      } else
         return;
-      }
+
       this.model.fireBitsetChanged(VIEWER_TYPE.MONOMER_POSITION);
       grid.invalidate();
     });
@@ -824,9 +827,9 @@ export class MostPotentResidues extends SARViewer {
           const monomerPosition = this.getMonomerPosition(grid.cell('Diff', rowIdx));
           this.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
         }
-      } else {
+      } else
         return;
-      }
+
       this.model.fireBitsetChanged(VIEWER_TYPE.MOST_POTENT_RESIDUES);
       grid.invalidate();
     });
@@ -931,7 +934,7 @@ function renderCell(args: DG.GridCellRenderArgs, viewer: SARViewer, isInvariantM
   if (isInvariantMap) {
     const value = currentPosStats![currentMonomer]!.count;
     const positionCol = viewer.positionColumns.find((col) => col.name === currentPosition)!;
-    const colorCache: {[_: string]: number} = positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] ?? {};
+    const colorCache: { [_: string]: number } = positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] ?? {};
     let color: number | null = null;
     if (colorCache[currentMonomer])
       color = colorCache[currentMonomer];
@@ -952,7 +955,7 @@ function renderCell(args: DG.GridCellRenderArgs, viewer: SARViewer, isInvariantM
       colorCache[currentMonomer] = color;
       positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = colorCache;
     }
-    
+
     CR.renderInvariantMapCell(canvasContext, currentMonomer, currentPosition,
       (viewer as MonomerPosition).invariantMapSelection, value, bound, color);
   } else
