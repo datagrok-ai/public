@@ -1336,7 +1336,7 @@ export async function demoChemOverview(): Promise<void> {
 //description: Searching for most similar or diverse molecules in dataset
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search
 export async function demoSimilarityDiversitySearch(): Promise<void> {
-  _demoSimilarityDiversitySearch();
+  await _demoSimilarityDiversitySearch();
 }
 
 
@@ -1363,7 +1363,7 @@ export async function demoActivityCliffs(): Promise<void> {
 //description: Running various queries to chemical databases using convenient input forms
 //meta.demoPath: Cheminformatics | Chemical Databases
 export async function demoDatabases(): Promise<void> {
-  _demoDatabases4();
+  await _demoDatabases4();
 }
 
 //name: Demo Scaffold Tree
