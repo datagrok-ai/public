@@ -1202,16 +1202,17 @@ export interface ISummaryLookSettings {
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
-  /// List of aggregations for the columns
+  /// Aggregation that will be used for the columns
+  aggrType: string;
+
+  /// List of aggregations for the columns (temporarily unavailable from UI)
   aggregations: Array<string>;
 
-  /// Mode to visualize aggregation by filling the cell
-  cellFillMode: boolean;
+  /// Normalization type (row, column or global)
+  normalizeLength: string;
 
-  /// Cell filling direction (left to right or bottom to top)
-  cellFillDirection: string;
-
-  visualizationType: string;
+  /// Visualization type (text, circles or bars)
+  visualization: string;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
