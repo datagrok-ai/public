@@ -843,21 +843,33 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
   }
 }
 
-/** Functionality to work with Dockerfiles
+/** Functionality to work with Docker containers
  * @extends HttpDataSource */
 export class DockerContainersDataSource extends HttpDataSource<DockerContainer> {
   constructor(s: any) {
     super(s);
   }
 
-  /* Runs container */
-  run(id: string): Promise<boolean> {
-    return api.grok_Dapi_DockerContainersDataSource_Run(this.dart, id);
+  /**
+   * Runs container
+   * @param containerId - id of the container to be run
+   * @param awaitStart - if [true] promise will not be resolved until the container is started,
+   * otherwise, it doesn't wait for start and resolves immediately after the container is queued for start
+   * @returns {Promise<void>} or throws Exception if something went wrong
+   */
+  run(containerId: string, awaitStart: boolean = false): Promise<void> {
+    return api.grok_Dapi_DockerContainersDataSource_Run(this.dart, containerId, awaitStart);
   }
 
-  /* Stops container */
-  stop(id: string): Promise<boolean> {
-    return api.grok_Dapi_DockerContainersDataSource_Stop(this.dart, id);
+  /**
+   * Stops container
+   * @param containerId - id of the container to be stopped
+   * @param awaitStop - if [true] promise will not be resolved until the container is stopped,
+   * otherwise, it doesn't wait for a stop and resolves immediately after the container is queued for a stop
+   * @returns {Promise<void>} or throws Exception if something went wrong
+   */
+  stop(containerId: string, awaitStop: boolean = false): Promise<void> {
+    return api.grok_Dapi_DockerContainersDataSource_Stop(this.dart, containerId, awaitStop);
   }
 
   /* Makes a request to container with dockerfileId */
