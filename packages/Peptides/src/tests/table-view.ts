@@ -1,15 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {startAnalysis} from '../widgets/peptides';
-import {scaleActivity} from '../utils/misc';
+import {initSelection, scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {TEST_COLUMN_NAMES} from './utils';
 import {showMonomerTooltip} from '../utils/tooltips';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
+import { MonomerPosition } from '../viewers/sar-viewer';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -50,7 +51,7 @@ category('Table view', () => {
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;
-    const posCols = model.positionColumns.toArray().map((col) => col.name);
+    const posCols = model.positionColumns!.map((col) => col.name);
     for (let colIdx = 1; colIdx < gridCols.length; colIdx++) {
       const col = gridCols.byIndex(colIdx)!;
       const tableColName = col.column!.name;
@@ -62,36 +63,40 @@ category('Table view', () => {
 
   //TODO: split into separate tests for Mutation Cliffs and Logo Summary Table
   test('Mutation Cliffs selection', async () => {
+  
     const selection = model.df.selection;
 
-    for (const [position, selectedMonomers] of Object.entries(model.mutationCliffsSelection))
+    const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    await awaitCheck(() => sarViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
+
+    for (const [position, selectedMonomers] of Object.entries(sarViewer.mutationCliffsSelection))
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after initialization`);
 
     // Select first monomer-position pair
-    model.modifyMutationCliffsSelection(firstPair);
-    expect(model.mutationCliffsSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
+    sarViewer.modifyMutationCliffsSelection(firstPair);
+    expect(sarViewer.mutationCliffsSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not selected at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, firstPair.mcCount, `Selection count is not equal to ${firstPair.mcCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Select second monomer-position pair
-    model.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: false});
-    expect(model.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
+    sarViewer.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: false});
+    expect(sarViewer.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
       `Monomer ${secondPair.monomerOrCluster} is not selected at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.mcCount + firstPair.mcCount, `Selection count is not equal ` +
       `to ${secondPair.mcCount + firstPair.mcCount} for monomer ${secondPair.monomerOrCluster} at ` +
       `position ${secondPair.positionOrClusterType}`);
 
     // Deselect second monomer-position pair
-    model.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
-    expect(model.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
+    sarViewer.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    expect(sarViewer.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
       `Monomer ${secondPair.monomerOrCluster} is still selected at position ${secondPair.positionOrClusterType} after deselection`);
     expect(selection.trueCount, firstPair.mcCount, `Selection count is not equal to ${firstPair.mcCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Clear monomer-position selection
-    model.initMutationCliffsSelection();
-    for (const [position, selectedMonomers] of Object.entries(model.mutationCliffsSelection)) {
+    sarViewer.mutationCliffsSelection = initSelection(sarViewer.positionColumns);
+    for (const [position, selectedMonomers] of Object.entries(sarViewer.mutationCliffsSelection)) {
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after clearing ` +
         `monomer-position selection`);
     }
@@ -129,26 +134,30 @@ category('Table view', () => {
   test('Invariant Map selection', async () => {
     const selection = model.df.selection;
 
-    for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection))
+    const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+
+    await awaitCheck(() => sarViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
+
+    for (const [position, filteredMonomers] of Object.entries(sarViewer.invariantMapSelection))
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after initialization`);
 
     // Select by second monomer-position pair
-    model.modifyWebLogoSelection(secondPair);
-    expect(model.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
+    sarViewer.modifyInvariantMapSelection(secondPair);
+    expect(sarViewer.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
       `Monomer ${secondPair.monomerOrCluster} is not filtered at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
       `for monomer ${secondPair.monomerOrCluster} at position ${secondPair.positionOrClusterType}`);
 
     // Select by first monomer-position pair
-    model.modifyWebLogoSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
-    expect(model.invariantMapSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
+    sarViewer.modifyInvariantMapSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
+    expect(sarViewer.invariantMapSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not filtered at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Deselect filter for second monomer-position pair
-    model.modifyWebLogoSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
-    expect(model.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
+    sarViewer.modifyInvariantMapSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    expect(sarViewer.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
       `Monomer ${secondPair.monomerOrCluster} is still filtered at position ${secondPair.positionOrClusterType} after ` +
       `deselection`);
     expect(selection.trueCount, firstPair.imCount, `Filter count is not equal to ${firstPair.imCount} ` +
@@ -156,10 +165,10 @@ category('Table view', () => {
       `monomer ${secondPair.monomerOrCluster} at position ${secondPair.positionOrClusterType}`);
 
     // Clear selection
-    model.initInvariantMapSelection();
+    sarViewer.invariantMapSelection = initSelection(sarViewer.positionColumns);
     expect(selection.trueCount, 0, `Filter count is not equal to ${0} after clearing monomer-position filter`);
 
-    for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection)) {
+    for (const [position, filteredMonomers] of Object.entries(sarViewer.invariantMapSelection)) {
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after clearing ` +
         `monomer-position filter`);
     }
