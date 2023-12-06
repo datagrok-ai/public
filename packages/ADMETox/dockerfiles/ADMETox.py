@@ -1,97 +1,37 @@
-import sys
-import django
-import gc
+import os
+import io
+import csv
+import subprocess
+import jaqpotpy
+from jaqpotpy import jaqpot
+from jaqpotpy.models import MolecularModel
+import joblib
+import rdkit
+from rdkit import Chem
+import pandas as pd
+from multiprocessing import Pool
 from os import path as osp
+from flask import Flask, request, jsonify
 
-def rel_path(*p): return osp.normpath(osp.join(rel_path.path, *p))
+app = Flask(__name__)
 
-
-rel_path.path = osp.abspath(osp.dirname(__file__))
-this = osp.splitext(osp.basename(__file__))[0]
-
-from django.conf import settings
-
-SETTINGS = dict(
-    SITE_ID = 1,
-    DATABASES = {},
-    DEBUG = True,
-    TEMPLATE_DEBUG = True,
-    ROOT_URLCONF = this
-)
-
-SETTINGS['TEMPLATE_DIRS'] = (rel_path(),),
-SETTINGS['DATABASES'] = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': rel_path('db')
-    }
-}
-
-SETTINGS['INSTALLED_APPS'] = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.admin',
-    'rest_framework',
-    'corsheaders'
-)
-
-SETTINGS['MIDDLEWARE'] = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+smiles_global = []
+models_extensions = [
+    "CYP3A4-Inhibitor.pkl",
+    "CL-Hepa.pt",
+    "Half-Life.pt"
 ]
-
-SETTINGS['CORS_ORIGIN_WHITELIST'] = [
-'http://localhost:8080',
-'https://dev.datagrok.ai',
-'https://public.datagrok.ai'
-]
-
-if not settings.configured:
-    settings.configure(**SETTINGS)
-
-django.setup()
-
-from django.core.wsgi import get_wsgi_application
-application = get_wsgi_application()
-
-from django.db import models
-
-class Smiles(models.Model):
-    smiles = models.TextField()
-    numerical_data = models.TextField()
-    class Meta:
-        app_label = this
-    __module__ = this
-
-from rest_framework import serializers
-
-class SmilesSerializer (serializers.ModelSerializer):
-    class Meta:
-        model = Smiles
-        fields = ('smiles', 'numerical_data')
 
 class ProcessHandler:
     def __init__(self):
         self.pool = None
         self.results = []
-
     def start_process(self, target, args=(), kwargs={}):
         if self.pool is not None:
             raise RuntimeError("A process is already running.")
-
         self.results = []
         self.pool = multiprocessing.Pool(processes=1)
         self.results.append(self.pool.apply_async(target, args=args, kwds=kwargs))
-
     def stop_process(self):
         if self.pool is not None:
             self.pool.close()
@@ -99,327 +39,78 @@ class ProcessHandler:
             self.pool = None
         else:
             raise RuntimeError("No running process to stop.")
-
     def get_results(self):
         results = [result.get() for result in self.results]
         return results
 
-from rest_framework import viewsets, status
-from rest_framework.decorators import list_route
-from rest_framework.response import Response
-from rest_framework.settings import api_settings
-from rest_framework_csv.parsers import CSVParser
-from rest_framework_csv.renderers import CSVRenderer
+def read_csv_and_return_string(file_path):
+    with open(file_path, 'r') as file:
+        csv_reader = csv.reader(file)
+        rows = [row for row in csv_reader]
+        csv_string = '\n'.join([','.join(row) for row in rows])
 
-class SmilesViewSet(viewsets.ModelViewSet):
-    queryset = Smiles.objects.all()
-    parser_classes = (CSVParser,) + tuple(api_settings.DEFAULT_PARSER_CLASSES)
-    renderer_classes = (CSVRenderer,) + tuple(api_settings.DEFAULT_RENDERER_CLASSES)
-    serializer_class = SmilesSerializer
+    return csv_string
 
-    def get_renderer_context(self):
-        context = super(SmilesViewSet, self).get_renderer_context()
-        context['header'] = (
-            self.request.GET['fields'].split(',')
-            if 'fields' in self.request.GET else None)
-        return context
+def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
+    current_path = os.path.split(os.path.realpath(__file__))[0]
+    command = [
+        "chemprop_predict",
+        "--test_path", test_path,
+        "--checkpoint_path", checkpoint_path,
+        "--preds_path", preds_path
+    ]
 
-    @list_route(methods=['POST'])
-    def df_upload(self, request, *args, **kwargs):
-        return Response(handle_uploaded_file(request.data, request.query_params.get('models')))
-        
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=current_path)
+    output, error = process.communicate()
+    with open(preds_path, 'r') as file:
+        content = file.read()
+    return content
 
-import sklearn.externals.joblib
-import numpy as np
-import pandas as pd
-import multiprocessing
-from multiprocessing.dummy import Pool
-import csv
-import os
-import io
-import rdkit
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import MACCSkeys
-import boto3
-import botocore
-from botocore import UNSIGNED
-from botocore.config import Config
+def make_euclia_predictions(test_path, checkpoint_path):
+    current_path = os.path.split(os.path.realpath(__file__))[0]
+    model = joblib.load(checkpoint_path)
+    smiles = pd.read_csv(test_path, header=None).iloc[:, 0].tolist()
+    print('smiles')
+    print(smiles)
+    molecules = [Chem.MolFromSmiles(smile) for smile in smiles if Chem.MolFromSmiles(smile) is not None]
+    model(molecules)
+    print(model.prediction)
+    return model.prediction
 
-from pychem import pychem
-from pychem.pychem import PyChem2d
-
-"""Dictionary that defines number of bits for each model or list of needed descriptors"""
-dict_bits_desc = {
-    "Pgp-Inhibitor/Pgp-Inhibitor": 2048,
-    "Pgp-Substrate/Pgp-Substrate": 2048,
-    "HIA": 167,
-    "F(20%)": 167,
-    "F(30%)": 2048,
-    "Ames": 167,
-    "SkinSen": 167,
-    "BBB/BBB": 2048,
-    "CYP1A2-Inhibitor/CYP1A2-Inhibitor": 2048,
-    "CYP1A2-Substrate": 1024,
-    "CYP3A4-Inhibitor/CYP3A4-Inhibitor": 2048,
-    "CYP3A4-Substrate": 1024,
-    "CYP2C19-Inhibitor/CYP2C19-Inhibitor": 2048,
-    "CYP2C19-Substrate": 1024,
-    "CYP2C9-Inhibitor/CYP2C9-Inhibitor": 2048,
-    "CYP2C9-Substrate": 1024,
-    "CYP2D6-Inhibitor": 1024,
-    "CYP2D6-Substrate": 1024,
-    "Clearance/Clearance": ['nsulph', 'VSAEstate8', 'QNmin', 'IDET', 'ndb', 'slogPVSA2', 'MATSv5', 'S32', 'QCss',
-                 'bcutm4', 'S9', 'bcutp8', 'Tnc', 'nsb', 'Geto', 'bcutp11', 'S7', 'MATSm2', 'GMTIV',
-                 'nhet', 'MATSe5', 'CIC0', 'bcutp3', 'Gravto', 'EstateVSA9', 'MATSe3', 'MATSe5', 'UI',
-                 'S53', 'J', 'bcute1', 'MRVSA9', 'PEOEVSA0', 'MATSv2', 'IDE', 'AWeight', 'IC0', 'S16',
-                 'bcutp1', 'PEOEVSA12'],
-    "T/T": ['MATSv5', 'Gravto', 'Chiv3c', 'PEOEVSA7', 'knotp', 'bcutp3', 'bcutm9', 'EstateVSA3',
-                'MATSp1', 'bcutp11', 'VSAEstate7', 'IC0', 'UI', 'Geto', 'QOmin', 'CIC0', 'dchi3',
-                'MATSp4', 'bcutm4', 'Hatov', 'MATSe4', 'CIC6', 'Chiv4', 'EstateVSA9', 'MATSv2', 'nring',
-                'bcute1', 'VSAEstate8', 'MRVSA9', 'PEOEVSA6', 'SIC1', 'bcutp8', 'MATSp6', 'QCss', 'J',
-                'IDE', 'CIC2', 'Hy', 'MRVSA6', 'naro', 'SPP', 'EstateVSA7', 'bcutv10', 'S12', 'LogP2',
-                'bcutp2', 'CIC3', 'S17', 'LogP', 'bcutp1'],
-    "hERG": ['ndb', 'nsb', 'ncarb', 'nsulph', 'naro', 'ndonr', 'nhev', 'naccr', 'nta', 'nring',
-                   'PC6', 'GMTIV', 'AW', 'Geto', 'BertzCT', 'J', 'MZM2', 'phi', 'kappa2', 'MATSv1',
-                   'MATSv5', 'MATSe4', 'MATSe5', 'MATSe6', 'TPSA', 'Hy', 'LogP', 'LogP2', 'UI', 'QOss',
-                   'SPP', 'LDI', 'Qass', 'QOmin', 'QNmax', 'Qmin', 'Mnc', 'EstateVSA7', 'EstateVSA0',
-                   'EstateVSA3', 'PEOEVSA0', 'PEOEVSA6', 'MRVSA5', 'MRVSA4', 'MRVSA3', 'MRVSA6',
-                   'slogPVSA1'],
-    "H-HT": ['ndb', 'nsb', 'nnitro', 'naro', 'ndonr', 'nhet', 'nhev', 'nring', 'PC6', 'GMTIV',
-                  'Geto', 'IDE', 'Arto', 'Hatov', 'BertzCT', 'Getov', 'J', 'MZM2', 'MZM1', 'phi',
-                  'kappa3', 'kappa2', 'kappam3', 'MATSp4', 'MATSp6', 'MATSv3', 'MATSv2', 'MATSv5',
-                  'MATSv7', 'MATSv6', 'MATSm4', 'MATSm5', 'MATSm6', 'MATSm2', 'MATSm3', 'MATSe4',
-                  'MATSe5', 'MATSe6', 'MATSe1', 'MATSe2', 'MATSe3', 'MATSp3', 'MATSp2', 'TPSA', 'LogP',
-                  'LogP2', 'UI', 'QNmin', 'QOss', 'QHss', 'SPP', 'LDI', 'Qass', 'QCmax', 'QOmax', 'Tpc',
-                  'QOmin', 'QCss', 'QHmax', 'Rnc', 'Rpc', 'Qmin', 'Mnc', 'EstateVSA9', 'EstateVSA4',
-                  'EstateVSA5', 'EstateVSA6', 'EstateVSA7', 'EstateVSA0', 'EstateVSA1', 'EstateVSA2',
-                  'EstateVSA3', 'PEOEVSA11', 'PEOEVSA2', 'PEOEVSA1', 'PEOEVSA7', 'PEOEVSA6', 'PEOEVSA5',
-                  'MRVSA5', 'MRVSA4', 'PEOEVSA9', 'PEOEVSA8', 'MRVSA3', 'MRVSA2', 'MRVSA9', 'MRVSA6',
-                  'slogPVSA2', 'slogPVSA4', 'slogPVSA5'],
-    "LD50": ['ATSm1', 'ATSm2', 'ATSm3', 'ATSm4', 'ATSm6', 'AWeight', 'Chi4c', 'Chiv3', 'Chiv4',
-                 'Chiv4c', 'Chiv4pc', 'DS', 'Gravto', 'IC0', 'IC1', 'MRVSA9', 'QCmax', 'QNss', 'QOmin',
-                 'Qmax', 'S46', 'Smax45', 'Smin', 'Smin45', 'VSAEstate7', 'Weight', 'bcutm1', 'bcutm2',
-                 'bcutp1', 'nhet', 'nphos', 'slogPVSA11'],
-    "PPB": ['ncarb', 'naro', 'GMTIV', 'AW', 'Geto', 'Arto', 'BertzCT', 'J', 'kappam3', 'MATSv1',
-                  'MATSe1', 'Hy', 'LogP', 'LogP2', 'UI', 'QHss', 'LDI', 'QNss', 'Rpc', 'Mnc', 'PEOEVSA10',
-                  'PEOEVSA0', 'PEOEVSA6', 'PEOEVSA5', 'PEOEVSA4', 'slogPVSA10', 'MRVSA6', 'slogPVSA0',
-                  'slogPVSA1', 'slogPVSA5'],
-    "VD/VD": ['GMTIV', 'UI', 'MATSe1', 'MATSp1', 'Chiv4', 'MATSm2', 'S12', 'dchi3', 'IDE', 'PEOEVSA7',
-                 'bcutp1', 'bcutm9', 'SIC1', 'MRVSA6', 'IC1', 'QNmax', 'CIC0', 'PEOEVSA6', 'MATSe4',
-                 'VSAEstate8', 'Geto', 'EstateVSA3', 'MRVSA5', 'LogP2', 'Tnc', 'S7', 'SPP', 'QOmin',
-                 'EstateVSA7', 'LogP', 'QNmin', 'MRVSA9', 'S19', 'MATSv2', 'nsulph', 'S17', 'S9', 'ndb',
-                 'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30'],
-    "logD/logD": ['MATSe5', 'PEOEVSA9', 'EstateVSA7', 'S13', 'EstateVSA0', 'Chiv4', 'S28', 'AW',
-             'QOmax', 'bcutp2', 'EstateVSA4', 'MATSe1', 'PC6', 'Hatov', 'S24', 'CIC0', 'QCmax',
-             'QCss', 'Geto', 'TPSA', 'Getov', 'bcutm11', 'CIC2', 'J', 'S34', 'PEOEVSA5', 'Hy',
-             'SPP', 'S36', 'S9', 'S16', 'MRVSA4', 'LogP2', 'QOmin', 'LogP'],
-    "logS/logS": ['MATSm2', 'TIAC', 'GMTIV', 'IC1', 'naro', 'MATSm1', 'nsulph', 'Tpc', 'slogPVSA7',
-                  'bcutp1', 'AWeight', 'Tnc', 'MRVSA9', 'bcutp3', 'IC0', 'AW', 'Hy', 'bcutv10',
-                  'MRVSA6', 'PC6', 'bcutm1', 'bcutm8', 'slogPVSA1', 'IDET', 'Chi10', 'TPSA', 'Weight',
-                  'Rnc', 'naccr', 'bcutp5', 'Chiv4', 'bcutm2', 'Chiv1', 'bcutm3', 'Chiv9', 'ncarb',
-                  'bcutm4', 'PEOEVSA5', 'LogP2', 'LogP'],
-    "logP": ['LogP']
-}
-
-def calculate_descriptors(smile):
-    """Calculate descriptors for the input smile
-
-    :param smile: input smile
-    :return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
-    """
-    alldes = {}
-    drug = PyChem2d()
-    drug.ReadMolFromSmile(smile)
-    alldes.update(drug.GetAllDescriptor())
-    return alldes
-
-def get_descriptor_vector(smiles, desc_names):
-    """Calculate descriptor vectors for some excretion, toxicity and distribution models
-
-    :param smiles: list of smiles
-    :param desc_names: list of descriptor names that need to be calculated
-    :return: list with calculated descriptors for each smile
-    """
-    desc_vector = []
-    for smile in smiles:
-        desc_dict = calculate_descriptors(smile)
-        desc_vector_smile = [desc_dict[name] for name in desc_names]
-        desc_vector.append(desc_vector_smile)
-    return desc_vector
-
-def getMACCS(smiles):
-    """Calculate MACCS fingerprints for the list of smiles
-
-    :param smiles: list of smiles
-    :return: list with calculated MACCS fingerprints (as a bit vector) for each smile
-    """
-    result = []
-    for smile in smiles:
-        mol = Chem.MolFromSmiles(smile)
-        fpM = MACCSkeys.GenMACCSKeys(mol)
-        bs2 = ','.join(fpM.ToBitString())
-        result.append(bs2.split(','))
-    return result
-
-def getECFP(smiles, radius, nBits):
-    """Calculate ECFP fingerprints depending on the radius and size of the bitset
-
-    :param smiles: list of smiles
-    :param radius: radius
-    :param nBits: number of bits to be returned
-    :return: list with calculated ECFP fingerprints (as a bit vector) for each smile
-    """
-    result = []
-    for smile in smiles:
-        mol = Chem.MolFromSmiles(smile)
-        fpECFP = AllChem.GetMorganFingerprintAsBitVect(mol, radius, nBits=nBits, useChirality=False)
-        result.append(fpECFP)
-    return result
-
-def download_s3_folder(bucket_name, s3_folder, local_dir=None):
-    """
-    Download the contents of a folder directory
-    Args:
-        bucket_name: the name of the s3 bucket
-        s3_folder: the folder path in the s3 bucket
-        local_dir: a relative or absolute directory path in the local file system
-    """
-    s3 = boto3.resource('s3', config=Config(signature_version=UNSIGNED))
-    bucket = s3.Bucket(bucket_name)
-    for obj in bucket.objects.filter(Prefix=s3_folder):
-        target = obj.key if local_dir is None \
-            else os.path.join(local_dir, os.path.relpath(obj.key, s3_folder))
-        if not os.path.exists(os.path.dirname(target)):
-            os.makedirs(os.path.dirname(target))
-        if obj.key[-1] == '/':
-            continue
-        bucket.download_file(obj.key, target)
-
-def flatten(l):
-    return [item for sublist in l for item in sublist]
-
-def download_all_files(bucket_name, s3_folder):
-    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
-    for model in dict_bits_desc.keys():
-        if '/' in model:
-            download_s3_folder(bucket_name, s3_folder + model.split('/')[0], model.split('/')[0])
-        else:
-            s3.download_file(bucket_name, s3_folder + model + '.pkl', model + '.pkl')
-
-Maccs = []
-Ecfp2 = []
-Ecfp4 = []
-smiles_global = []
-
-def model_computation(model):
-    predicts = []
-    if model == 'logP':
-        predicts = flatten(get_descriptor_vector(smiles_global, dict_bits_desc[model]))
-    else:
-        current_path = os.path.split(os.path.realpath(__file__))[0]
-        res = [key for key in dict_bits_desc.keys() if model in key]
-        cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
-        fingerprint_content = lambda bits: Maccs if bits == 167 \
-        else (Ecfp2 if bits == 2048 \
-        else (Ecfp4 if bits == 1024 \
-        else get_descriptor_vector(smiles_global, dict_bits_desc[res[0]])))
-        des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
-        y_predict_label = cf.predict(des_list)
-        try:
-            y_predict_proba = cf.predict_proba(des_list)
-            for i in range(len(smiles_global)):
-                predict = y_predict_proba[i]
-                predicts.append(predict[1])
-        except:
-            for i in range(len(smiles_global)):
-                predicts.append(y_predict_label[i])
-    gc.collect()
-    return predicts
-
-import numpy as np
-import pandas as pd
-import csv
-
-def process_batch(smiles_batch, models):
-    """Process a batch of SMILES strings
-
-    :param smiles_batch: a batch of SMILES strings
-    :param models: list of models to be used for calculation
-    :return: pandas DataFrame with the calculated predictions
-    """
-    global Maccs
-    global Ecfp2
-    global Ecfp4
-    global smiles_global
-
-    smiles = [smile[0] for smile in smiles_batch]
-    encoded_smiles = [smile.encode('utf8') for smile in smiles]
-
-    if len(smiles_global) == 0 or smiles_global != encoded_smiles:
-        smiles_global = encoded_smiles
-        Maccs = np.array(getMACCS(smiles_global))
-        Ecfp2 = np.array(getECFP(smiles_global, 1, 2048))
-        Ecfp4 = np.array(getECFP(smiles_global, 2, 1024))
-
-    models_res = [model.encode('utf8') for model in models.split(",")]
-
-    predicts = []
+def handle_uploaded_file(test_data_path, models):
+    models_res = [model for model in models.split(",")]
+    dfs = []
     for model in models_res:
-        predicts.append(model_computation(model))
+        #test_model_name = '{}.pt'.format(model)
+        test_model_name = next((model_ext for model_ext in models_extensions if model in model_ext), None)
+        print(test_model_name)
+        result_path = 'predictions-{}.csv'.format(model)
+        if 'pt' in test_model_name:
+            make_chemprop_predictions(test_data_path, test_model_name, result_path)
+            current_df = pd.read_csv(result_path)
+            new_columns = {col: f"{col}_{model}" for col in current_df.columns[1:]}
+            current_df = current_df.rename(columns=new_columns)
+            dfs.append(current_df)
+        else:
+            results = make_euclia_predictions(test_data_path, test_model_name)
+            current_df = pd.DataFrame({'Y_{}'.format(model): results})
+            dfs.append(current_df)
+    
+    final_df = pd.concat(dfs, axis=1)
+    final_df = final_df.loc[:, ~final_df.columns.duplicated()]
+    return final_df.to_csv(index=False)
 
-    transposed_predicts = list(zip(*predicts))
-    result = np.zeros((len(smiles_global), 0), float)
-    result = np.concatenate([result, np.array(transposed_predicts).reshape(len(smiles_global), len(models_res))], axis=1)
-    res_df = pd.DataFrame(result, columns=models_res)
+@app.route('/df_upload', methods=['POST'])
+def df_upload():
+    raw_data = request.data
+    test_data_path = 'smiles_data.csv'
+    with open(test_data_path, 'wb') as file:
+        file.write(raw_data)
+    models = request.args.get('models')
+    print('models')
+    print(models)
+    response = handle_uploaded_file(test_data_path, models)
+    return response
 
-    return res_df
-
-def handle_uploaded_file(f, models):
-    """Calculate ADMET properties
-
-    :param f: input file content
-    :param models: list of models to be used for calculation
-    :return: CSV string with the calculated predictions
-    """
-    global Maccs
-    global Ecfp2
-    global Ecfp4
-    global smiles_global
-
-    smiles = [list(row.values()) for row in f]
-    batches = [smiles[i:i+1000] for i in range(0, len(smiles), 1000)]
-
-    process_handlers = []
-    results = []
-    smiles_global = []
-
-    for batch in batches:
-        process_handler = ProcessHandler()
-        process_handler.start_process(process_batch, args=(batch, models))
-        process_handlers.append(process_handler)
-
-    for process_handler in process_handlers:
-        process_handler.stop_process()
-        results.extend(process_handler.get_results())
-
-    final_df = pd.concat(results)
-    res_str = final_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
-    return res_str
-
-from django.conf.urls import url, include 
-from rest_framework import routers
-
-router = routers.DefaultRouter()
-router.register(r'smiles', SmilesViewSet)
-
-urlpatterns = [
-    url(r'^', include(router.urls)),
-]
-
-# CLI
-
-if __name__ == "__main__":
-    # make this script runnable like a normal `manage.py` command line script.
-    from django.core import management
-    management.execute_from_command_line()
+if __name__ == '__main__':
+    app.run(debug=False)
