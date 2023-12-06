@@ -352,3 +352,18 @@ export enum TEMPLATES {
   ACID_PROD = ACID_PROD_MODEL,
   NIMOTUZUMAB = NIMOTUZUMAB_MODEL,
 };
+
+/** Demo template */
+export const DEMO_TEMPLATE = [`${CONTROL_EXPR.NAME}: My model`,
+`${CONTROL_EXPR.DIF_EQ}:`,
+`  dx/dt = y + sin(t)`,
+`  dy/dt = x - exp(t)`,  
+``,
+`${CONTROL_EXPR.ARG}: t`,
+`  initial = 0`,
+`  final = 4`,
+`  step = 0.01`,
+``,
+`${CONTROL_EXPR.INITS}:`,
+`  x = 2`,
+`  y = 1`];
