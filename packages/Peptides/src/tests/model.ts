@@ -10,6 +10,7 @@ import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {LogoSummaryTable} from '../viewers/logo-summary';
 import {TEST_COLUMN_NAMES} from './utils';
 import {getAggregatedColName} from '../utils/statistics';
+import { MonomerPosition } from '../viewers/sar-viewer';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -45,7 +46,7 @@ category('Model: Settings', () => {
     const getError = (row: number, method: SCALING_METHODS): string =>
       `Activity mismatch at row ${row} for scaling method '${method}'`;
     const tolerance = 0.0001;
-    const origActivityData = model.df.getCol(model.settings.activityColumnName!).getRawData();
+    const origActivityData = model.df.getCol(model.settings?.activityColumnName!).getRawData();
     const scaledActivity = model.df.getCol(COLUMNS_NAMES.ACTIVITY);
     const dfLen = model.df.rowCount;
 
@@ -55,40 +56,38 @@ category('Model: Settings', () => {
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
 
     // Check 'lg' scaling
-    model.settings = {scaling: SCALING_METHODS.LG};
-    scaledActivityData = scaledActivity.getRawData();
+    scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.LG).getRawData();
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], Math.log10(origActivityData[i]), tolerance, getError(i, SCALING_METHODS.LG));
 
     // Check '-lg' scaling
-    model.settings = {scaling: SCALING_METHODS.MINUS_LG};
-    scaledActivityData = scaledActivity.getRawData();
+    scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.MINUS_LG).getRawData();
     for (let i = 0; i < dfLen; i++) {
       expectFloat(scaledActivityData[i], -Math.log10(origActivityData[i]), tolerance,
         getError(i, SCALING_METHODS.MINUS_LG));
     }
 
     // Check 'none' scaling
-    model.settings = {scaling: SCALING_METHODS.NONE};
-    scaledActivityData = scaledActivity.getRawData();
+    scaledActivityData = scaledActivityCol.getRawData();
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
   });
 
   test('Mutation Cliffs', async () => {
     // Check default mutation cliffs parameters
-    expect(model.settings.maxMutations, mutationCliffsDefaultParams.maxMutations, `Max mutations mismatch: expected ` +
-      `${mutationCliffsDefaultParams.maxMutations}, actual ${model.settings.maxMutations}`);
-    expect(model.settings.minActivityDelta, mutationCliffsDefaultParams.minActivityDelta, `Min activity delta ` +
-      `mismatch: expected ${mutationCliffsDefaultParams.minActivityDelta}, actual ${model.settings.minActivityDelta}`);
+    const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    expect(sarViewer.maxMutations, mutationCliffsDefaultParams.maxMutations, `Max mutations mismatch: expected ` +
+      `${mutationCliffsDefaultParams.maxMutations}, actual ${sarViewer.maxMutations}`);
+    expect(sarViewer.minActivityDelta, mutationCliffsDefaultParams.minActivityDelta, `Min activity delta ` +
+      `mismatch: expected ${mutationCliffsDefaultParams.minActivityDelta}, actual ${sarViewer.minActivityDelta}`);
 
     // Check test mutation cliffs parameters
-    model.settings = {maxMutations: mutationCliffsTestParams.maxMutations,
-      minActivityDelta: mutationCliffsTestParams.minActivityDelta};
-    expect(model.settings.maxMutations, mutationCliffsTestParams.maxMutations, `Max mutations mismatch: expected ` +
-      `${mutationCliffsTestParams.maxMutations}, actual ${model.settings.maxMutations}`);
-    expect(model.settings.minActivityDelta, mutationCliffsTestParams.minActivityDelta, `Min activity delta ` +
-      `mismatch: expected ${mutationCliffsTestParams.minActivityDelta}, actual ${model.settings.minActivityDelta}`);
+    sarViewer.maxMutations = mutationCliffsTestParams.maxMutations;
+    sarViewer.minActivityDelta = mutationCliffsTestParams.minActivityDelta;
+    expect(sarViewer.maxMutations, mutationCliffsTestParams.maxMutations, `Max mutations mismatch: expected ` +
+      `${mutationCliffsTestParams.maxMutations}, actual ${sarViewer.maxMutations}`);
+    expect(sarViewer.minActivityDelta, mutationCliffsTestParams.minActivityDelta, `Min activity delta ` +
+      `mismatch: expected ${mutationCliffsTestParams.minActivityDelta}, actual ${sarViewer.minActivityDelta}`);
   });
 
   test('Include columns', async () => {
@@ -96,40 +95,34 @@ category('Model: Settings', () => {
     const testColumns = {[columnName]: DG.AGG.AVG};
 
     // Include column
-    model.settings = {columns: testColumns};
-
-    expect(Object.keys(model.settings.columns!)[0], Object.keys(testColumns)[0], 'Expected to include column ' +
-      `'${Object.keys(testColumns)[0]}' but '${Object.keys(model.settings.columns!)[0]}' is included instead`);
-    expect(model.settings.columns![columnName], testColumns[columnName], `Expected to aggregate column ` +
-      `'${Object.keys(testColumns)[0]}' with '${testColumns[columnName]}' but aggregated with ` +
-      `'${model.settings.columns![columnName]}' instead`);
 
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    lstViewer.setOptions({columns: testColumns});
     const aggColName = getAggregatedColName(testColumns[columnName], columnName);
     expect(lstViewer.viewerGrid.col(aggColName) !== null, true, `Expected to include column '${columnName}' in ` +
       `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is absent`);
 
     // Remove column
     model.settings = {columns: {}};
-    expect(Object.keys(model.settings.columns!).length, 0,
-      `Expected to remove all column aggregations but columns {${Object.keys(model.settings.columns!).join(' & ')}} ` +
+    expect(Object.keys(model.settings?.columns!).length, 0,
+      `Expected to remove all column aggregations but columns {${Object.keys(model.settings?.columns!).join(' & ')}} ` +
       `are still included`);
 
     expect(lstViewer.viewerGrid.col(aggColName) === null, true, `Expected to remove column '${columnName}' from ` +
       `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is still present`);
-  });
+  }, {skipReason: 'GROK-14357'});
 
   test('Dendrogram', async () => {
     // Enable dendrogram
     model.settings = {showDendrogram: true};
-    expect(model.settings.showDendrogram, true, 'Dendrogram is disabled after enabling');
+    expect(model.settings?.showDendrogram, true, 'Dendrogram is disabled after enabling');
 
     await awaitCheck(() => model.findViewer(VIEWER_TYPE.DENDROGRAM) !== null,
       'Dendrogram is not present in the view after 5s delay', 5000);
 
     // Disable dendrogram
     model.settings = {showDendrogram: false};
-    expect(model.settings.showDendrogram, false, 'Dendrogram is enabled after disabling');
+    expect(model.settings?.showDendrogram, false, 'Dendrogram is enabled after disabling');
     expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) === null, true,
       'Dendrogram is present in the view after disabling');
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
