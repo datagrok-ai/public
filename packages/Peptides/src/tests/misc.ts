@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
-import {findMutations} from '../utils/algorithms';
+import {MutationCliffsOptions, findMutations} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {extractColInfo} from '../utils/misc';
 
@@ -10,7 +10,7 @@ import {extractColInfo} from '../utils/misc';
 category('Algorithms', () => {
   let activityCol: type.RawData;
   let monomerColumns: type.RawColumn[];
-  let settings: type.PartialPeptidesSettings;
+  let settings: MutationCliffsOptions;
   let targetCol: type.RawColumn;
 
   before(async () => {
@@ -51,7 +51,9 @@ category('Algorithms', () => {
     expect(d32[0], 1, `MutationCliffsInfo['D']['3'][2] should have value 1`);
 
     // Check with target
-    mutationCliffsInfo = await findMutations(activityCol, monomerColumns, settings, {targetCol, currentTarget: '1'});
+    settings.targetCol = targetCol;
+    settings.currentTarget = '1';
+    mutationCliffsInfo = await findMutations(activityCol, monomerColumns, settings);
     expect(mutationCliffsInfo.size, 0, `MutationCliffsInfo should be empty for target '1'`);
   });
 });
