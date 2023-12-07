@@ -1,5 +1,11 @@
 # Tutorials changelog
 
+## 1.3.20 (2023-12-07)
+
+### Features
+
+* Added card for SimPKPD demo app.
+
 ## 1.3.19 (2023-12-04)
 
 ### Bug Fixes
