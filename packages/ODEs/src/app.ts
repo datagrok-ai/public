@@ -1,4 +1,4 @@
-// Application for solving initial value problems (IVP)
+// Application for solving initial value problems (IVP) & demo app
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -29,13 +29,7 @@ enum EDITOR_STATE {
   NIMOTUZUMAB = 10,
 };
 
-/** Context help links */
-enum HELP_LINKS {
-  SOLVER = '/help/compute/solver.md',
-  QUICK_START = '/help/explore/dim-reduction.md', // link to "Quick start" page
-  FROM_SCRATCH = '/help/explore/anova.md', // link to "From scratch" page
-  EXTENSIONS = '/help/visualize/viewers/3d-scatter-plot.md', // link to "Extensions" page
-};
+const SOLVER_HELP_LINK = '/help/compute/solver.md';
 
 /** Get problem with respect to IVP editor state. */
 function getProblem(state: EDITOR_STATE): string {
@@ -70,7 +64,7 @@ function getProblem(state: EDITOR_STATE): string {
     default:
       return TEMPLATES.EMPTY;
   }
-}
+} // getProblem
 
 /** Completions of control expressions */
 const completions = [
@@ -107,7 +101,7 @@ function lineChartOptions(ivp: IVP): Object {
   return {    
     showTitle: true,
     sharex: true, 
-    multiAxis: outputColsCount > MAX_LINE_CHART, //true,
+    multiAxis: outputColsCount > MAX_LINE_CHART,
     multiAxisLegendPosition: "RightTop",
   };
 }
@@ -148,7 +142,7 @@ export async function runSolverApp() {
       if (!solutionViewer)
         solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
       
-      solverView.dockManager.dock(solutionViewer, 'right');
+      solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
 
     } catch (err) {
         if (err instanceof Error) {
@@ -230,7 +224,7 @@ export async function runSolverApp() {
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
     if (toShowWarning) {      
       const boolInput = ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning);      
-      const dlg = ui.dialog({title: 'Overwrite?', helpUrl: HELP_LINKS.SOLVER});
+      const dlg = ui.dialog({title: 'Overwrite?', helpUrl: SOLVER_HELP_LINK});
       solverView.append(dlg);
 
       dlg
@@ -280,7 +274,7 @@ export async function runSolverApp() {
   editorView.dom.style.height = '100%';
 
   solverView.dockManager.dock(div, 'left');
-  solverView.helpUrl = HELP_LINKS.SOLVER;
+  solverView.helpUrl = SOLVER_HELP_LINK;
 
   const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
   exportIcon.classList.add("fal");
@@ -355,9 +349,9 @@ export async function runSolverDemoApp() {
       editorView.dom.style.overflow = 'auto';
       editorView.dom.style.height = '100%';
       solverView.dockManager.dock(div, DG.DOCK_TYPE.LEFT);
-      solverView.helpUrl = HELP_LINKS.SOLVER;
+      solverView.helpUrl = SOLVER_HELP_LINK;
       solverView.setRibbonPanels([]);
-    }, {description: 'Each project starts with the name.', delay: 0})
+    }, {description: 'Each project starts with the name.', delay: 0})    
     .step('Equations', async () => {  
       editorView.setState(newState(DEMO_TEMPLATE.slice(0, 4)));
     }, {description: 'Declarative formulas define differential equations.', delay: 0})

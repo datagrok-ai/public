@@ -1,4 +1,11 @@
-// Scripting tools for the Initial Value Problem (IVP) solver
+/* Scripting tools for the Initial Value Problem (IVP) solver:
+     - parser of formulas defining IVP;
+     - JS-script generator.
+
+   The parser processes IVP formulas given in the special form (see "Project structure" in README.md).
+
+   JS-script generator creates DATAGROK JavaScript script: annotation & code.
+*/
 
 import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART} from './constants';
 
@@ -295,7 +302,7 @@ function getArg(lines: string[]): Arg {
   }
 }
 
-/** Get equlities specification */
+/** Get equalities specification */
 function getEqualities(lines: string[], begin: number, end: number): Map<string, Input> {
   const source = concatMultilineFormulas(lines.slice(begin, end));
   const eqs = new Map<string, Input>();
@@ -514,7 +521,7 @@ function getInputSpec(inp: Input): string {
   return `${inp.value}`;
 }
 
-/** Return line specifying viewers */
+/** Return annotation line specifying viewers */
 function getViewersLine(ivp: IVP): string {
   const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
   const multiAxis = (outputColsCount > MAX_LINE_CHART) ? 'true' : 'false';
@@ -585,7 +592,7 @@ function getMathArg(funcIdx: number): string {
 }
 
 /** Return custom output lines */
-function getCustomOutoutLines(name: string, outputs: Map<string, Output>): string[] {
+function getCustomOutputLines(name: string, outputs: Map<string, Output>): string[] {
   const res = [''];    
   
   res.push(SCRIPT.CUSTOM_OUTPUT_COM);
@@ -850,7 +857,7 @@ export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true
   const res = getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
   
   if (ivp.outputs)
-    return res.concat(getCustomOutoutLines(ivp.name, ivp.outputs));
+    return res.concat(getCustomOutputLines(ivp.name, ivp.outputs));
 
   return res;
 }

@@ -11,3 +11,4 @@ In-browser tools for solving ordinary differential equations (ODE) systems.
 * JavaScript code generator
 * Application for in-browser solving ODEs
 * Templates and use cases
+* Demo application

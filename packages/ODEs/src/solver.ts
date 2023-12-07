@@ -184,14 +184,10 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
 		}
 
     // call of adaptive step modified Rosenbrok triple method
-    // int resultCode = adaptiveMRT(f, T, J, y, dydt, t, h, yScale, hNext, tolerance);
-// ==================================================================================
 		// computation of solution (y), time (t) and next step (hNext)
 		while (true) {
 			// one stage of the modified Rosenbrok triple approach
-			//int resultCode = MRT(f, T, J, y, dydt, t, h, yTemp, yErr);
-// ----------------------------------------------------------------------------------
-      // MatType hdT = h * d * T(t, y, EPS);
+      // hdT = h * d * T(t, y, EPS);
       tDerivative(t, y, f, EPS, f0Buf, f1Buf, hdT);
       hd = h * D;
       for (let i = 0; i < dim; ++i)
@@ -271,8 +267,6 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
       for (let i = 0; i < dim; ++i)
         yErr[i] = (k1[i] - 2.0 * k2[i] + k3[i]) * h_div_num;
 
-// ----------------------------------------------------------------------------------
-
 			// estimating error
 			errmax = 0;
 			for (let i = 0; i < dim; ++i)
@@ -303,7 +297,6 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
 				break;
 			}
 		} // while (true)
-// ==================================================================================
 
     // compute lineraly interpolated results and store them in dataframe
 		while (timeDataframe < t) {
@@ -342,4 +335,4 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   solutionDf.name = odes.name;
 
   return solutionDf;
-}
+} // solveODEs
