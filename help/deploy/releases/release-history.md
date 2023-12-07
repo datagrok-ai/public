@@ -20,6 +20,13 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-12-07 1.17.8
+
+### Addressed Issues
+
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click (WIP)
+
+
 ## 2023-12-06 1.17.7
 
 ### Addressed Issues
