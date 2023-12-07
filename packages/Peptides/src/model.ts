@@ -386,7 +386,7 @@ export class PeptidesModel {
 
     const sarViewer = requestSource as any as SARViewer | LogoSummaryTable;
     if (requestSource !== trueModel.settings && !(sarViewer instanceof LogoSummaryTable) &&
-      sarViewer.mutationCliffs !== null) {
+      sarViewer.mutationCliffs != null) {
       // MC and Selection are left
       acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, {
         mutationCliffs: sarViewer.mutationCliffs!,
