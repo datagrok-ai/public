@@ -1370,7 +1370,7 @@ export async function demoDatabases(): Promise<void> {
 //description: Running scaffold analysis with hierarchical tree
 //meta.demoPath: Cheminformatics | Scaffold Tree
 export async function demoScaffold(): Promise<void> {
-  _demoScaffoldTree();
+  await _demoScaffoldTree();
 }
 
 
