@@ -430,7 +430,7 @@ export class DemoView extends DG.ViewBase {
     
     dockRoot.append(this.searchInput.root);
     dockRoot.append(this.tree.root);
-    this.dockPanel = grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Categories');
+    this.dockPanel = grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Categories', 0.2);
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this.tree.root.classList.add('demo-app-tree-group');
