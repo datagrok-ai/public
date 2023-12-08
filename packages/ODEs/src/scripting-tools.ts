@@ -20,7 +20,7 @@ const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
 
 /** Solver package name */
-const ODES_PACKAGE = 'ODEs';
+const PACKAGE_NAME = 'Deqs';
 
 /** Numerical solver function */
 const SOLVER_FUNC = 'solve';
@@ -127,7 +127,7 @@ enum SCRIPT {
   ODE_COM = '// the problem definition',
   ODE = 'let odes = {',
   SOLVER_COM = '// solve the problem',
-  SOLVER = `const solver = await grok.functions.eval('${ODES_PACKAGE}:${SOLVER_FUNC}');`,
+  SOLVER = `const solver = await grok.functions.eval('${PACKAGE_NAME}:${SOLVER_FUNC}');`,
   PREPARE = 'let call = solver.prepare({problem: odes});',
   CALL = 'await call.call();',
   OUTPUT = `let ${DF_NAME} = call.getParamValue('${DF_NAME}');`,

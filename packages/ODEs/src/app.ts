@@ -11,7 +11,9 @@ import {EditorState} from "@codemirror/state";
 import {python} from "@codemirror/lang-python";
 import {autocompletion} from "@codemirror/autocomplete";
 
-import {DF_NAME, CONTROL_EXPR, TEMPLATES, MAX_LINE_CHART, DEMO_TEMPLATE} from './constants';
+import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
+import {TEMPLATES, DEMO_TEMPLATE} from './templates';
+import { USE_CASES } from './use-cases';
 import {getIVP, getScriptLines, getScriptParams, IVP} from './scripting-tools';
 
 /** State of IVP code editor */
@@ -44,22 +46,22 @@ function getProblem(state: EDITOR_STATE): string {
       return TEMPLATES.EXTENDED;
     
     case EDITOR_STATE.CHEM_REACT:
-      return TEMPLATES.CHEM_REACT;
+      return USE_CASES.CHEM_REACT;
 
     case EDITOR_STATE.ROBERT:
-      return TEMPLATES.ROBERTSON;    
+      return USE_CASES.ROBERTSON;    
 
     case EDITOR_STATE.FERM:
-      return TEMPLATES.FERMENTATION;
+      return USE_CASES.FERMENTATION;
 
     case EDITOR_STATE.PKPD:
-      return TEMPLATES.PK_PD;
+      return USE_CASES.PK_PD;
 
     case EDITOR_STATE.ACID_PROD:
-      return TEMPLATES.ACID_PROD;
+      return USE_CASES.ACID_PROD;
 
     case EDITOR_STATE.NIMOTUZUMAB:
-      return TEMPLATES.NIMOTUZUMAB;
+      return USE_CASES.NIMOTUZUMAB;
 
     default:
       return TEMPLATES.EMPTY;

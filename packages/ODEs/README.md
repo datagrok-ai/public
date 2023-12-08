@@ -1,16 +1,16 @@
-# ODEs
+# Deqs
 
-ODEs is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [intial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE).
+Deqs is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [intial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE).
 
 * Go to **Apps** and run **EquaSleek X**
 * Enter formulas or modify template
 * Press <i class="fas fa-play"></i> **Run** button on the top panel
 
-The solver requires ODEs specification in the declarative form.
+The solver takes a set of the differential equations in a declarative form, and creates a UI that solves the equations, visualizes the results, and lets you change parameters on the fly.
 
 ## Quick start
 
-Datagrok ensures intuitive tools for the rapid solving ODEs.
+Datagrok provides intuitive tools for the rapid solving ODEs.
 
 * Run the solver: 
   * Go to **Apps** and run **EquaSleek X**
@@ -28,21 +28,17 @@ Datagrok ensures intuitive tools for the rapid solving ODEs.
   * Rigth click and select **Load...**
   * Select a file with formulas
 
-## Creating project
+## Create task from template
 
-The platform provides the creation of an ODEs project in a few clicks.
-
-### Templates
-
-Apply built-in templates as a backbone of your project. Rigth click, select **Templates** and choose one the following:
+Start from one of these templates:
 
 | Template | Features|
 |----------|---------|
-| `Basic`    | the minimum required |
+| `Basic`    | the simplest task|
 | `Advanced` | extra math features, including *expressions*, *constants*, *parameters* and *tolerance* specification|
 | `Extended` | the *annotating* feature for extended UI generation                 |
 
-### Use cases
+## Use cases
 
 The solver has built-in use cases. Get access to them via the context menu. You can use them as a template.
 
@@ -68,9 +64,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
-### Project structure
+## Task structure
 
-A project defines [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem). It contains *name*, *differential equations*, *initial values* and *argument* specifications:
+A task defines [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem). It contains *name*, *differential equations*, *initial values* and *argument* specifications:
 
 ```python
 #name: My ODEs
@@ -86,9 +82,7 @@ A project defines [initial value problem](https://en.wikipedia.org/wiki/Initial_
   y = 5
 ```
 
-You can create extensions by defining components in the control blocks.
-
-Find useful the following:
+Use the following sections to specify various problems:
 
 |Control block|Features|
 |-------------|--------|
@@ -102,17 +96,16 @@ Find useful the following:
 |```#output```|Defines output columns and their captions|
 |```#tags```|Specifies tags (`model`, `app`, etc.).|
 |```#description```|Defines description of the model.|
-|```#meta.runOnOpen```|Provides computations immediately upon model launch after the project is exported to JavaScript script.|
-|```#meta.runOnInput```|Updates results immediately upon input changes after the project is exported to JavaScript script.|
+|```#meta.runOnOpen```|Provides computations immediately upon model launch after the task is exported to JavaScript script.|
+|```#meta.runOnInput```|Updates results immediately upon input changes after the task is exported to JavaScript script.|
 
-### Platform applications
+## Platform applications
 
-Datagrok provides an export of each solver project to JavaScript script:
+Once you are satisfied with the result, you can convert your task to a Datagrok application. To do so:
 
-* Press **Export** button on the top panel
-* Press **SAVE** button
-
-Find the created script in the platform `Scripts`.
+1. Press **Export** button on the top panel
+2. Press **SAVE** button
+3. Script is created, and can be found in the "Scripts" section of the platform
 
 Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
 
@@ -122,7 +115,7 @@ Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Prov
 #description: Complex bioreaction simulation
 ```
 
-Apply annotations in your project to get better UI. Append them, when defining *parameters*, *initial values* and *argument*.
+Apply [annotations](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#parameter-types-and-options) to get better UI. Append them, when defining *parameters*, *initial values* and *argument*.
 
 Group inputs by specifying their `category`:
 
@@ -155,14 +148,14 @@ Provide hints in brackets `[ ]`:
   P1 = 1 {category: Parameters} [P1 parameter tooltip]
 ```
 
-The export feature provides an extension of your project with [scripting](https://datagrok.ai/help/compute/scripting) tools. You can add the desired functionality:
+Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 
-* results visualization
-* non-elementary and special functions use
-* Datagrok packages functions call
+* non-elementary and special functions' use
+* Datagrok packages' functions call
 
 See also
 
 * [Compute](https://datagrok.ai/help/compute)
 * [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Function annotations](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#parameter-types-and-options)
 * [Viewers gallery](https://datagrok.ai/help/visualize/gallery)
