@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - anaconda
 dependencies:
-  - python=2.7
+  - python=3.11.5
   - pip
   - rdkit
   - pip:
