@@ -1203,13 +1203,13 @@ export interface ISummaryLookSettings {
   columnNames: Array<string>;
 
   /// Aggregation that will be used for the columns
-  aggrType: string;
+  aggregation: string;
 
   /// List of aggregations for the columns (temporarily unavailable from UI)
   aggregations: Array<string>;
 
   /// Normalization type (row, column or global)
-  normalizeLength: string;
+  normalization: string;
 
   /// Visualization type (text, circles or bars)
   visualization: string;
