@@ -124,20 +124,21 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.symbolStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
-  drawOptions.marginVertical ??= 2;
-  drawOptions.marginHorizontal ??= 2;
-  drawOptions.selectionWidth ??= 1;
+  drawOptions.marginVertical ??= 1;
+  drawOptions.marginHorizontal ??= 1;
+  drawOptions.selectionWidth ??= 2;
   drawOptions.textHeight ??= 13;
   drawOptions.headerStyle ??= `bold ${drawOptions.textHeight * pr}px Roboto, Roboto Local, sans-serif`;
 
   const totalSpace = (sortedOrder.length - 1) * drawOptions.upperLetterAscent; // Total space between letters
+  let currentY = (bounds.y + drawOptions.marginVertical) * pr;
   const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpace - 1.25 * drawOptions.textHeight) * pr;
-  const leftShift = drawOptions.marginHorizontal * 2;
+
+  const xSelection = (bounds.x + drawOptions.marginHorizontal) * pr;
+  const selectionWidth = Math.max(drawOptions.selectionWidth * pr, 0.05 * bounds.width * pr);
+  const leftShift = drawOptions.marginHorizontal * 2 + drawOptions.selectionWidth;
   const barWidth = (bounds.width - (leftShift + drawOptions.marginHorizontal)) * pr;
   const xStart = (bounds.x + leftShift) * pr;
-  const selectionWidth = Math.min(drawOptions.selectionWidth * pr, 1);
-  const xSelection = (bounds.x + 1) * pr;
-  let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
   const monomerBounds: { [monomer: string]: DG.Rect } = {};
   for (const monomer of sortedOrder) {
@@ -150,9 +151,11 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
       const monomerTxt = monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
 
-      // Filling selection
-      ctx.lineWidth = selectionWidth;
-      ctx.line(xSelection, currentY, xSelection, currentY + selectionHeight, DG.Color.rowSelection);
+      if (selectionHeight > 0) {
+        // Filling selection
+        ctx.lineWidth = selectionWidth;
+        ctx.line(xSelection, currentY, xSelection, currentY + selectionHeight, DG.Color.rowSelection);
+      }
 
       ctx.fillStyle = cp.get(monomer) ?? cp.get('other');
       ctx.textAlign = 'left';
@@ -162,7 +165,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
       const widthTransform = barWidth / mTm.width;
       const heightTransform = monomerHeight / drawOptions.upperLetterHeight;
       ctx.setTransform(widthTransform, 0, 0, heightTransform, xStart, currentY);
-      ctx.fillText(monomerTxt, 0, 0);
+      ctx.fillText(monomerTxt, 0, 0, mTm.width);
     }
     currentY += monomerHeight + drawOptions.upperLetterAscent * pr;
   }
@@ -179,8 +182,12 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
 }
 
 export type CellRendererOptions = {
-  isSelectionTable?: boolean, headerSelectedMonomers?: type.SelectionStats, webLogoBounds: WebLogoBounds,
-  cachedWebLogoTooltip: type.CachedWebLogoTooltip, colorPalette: SeqPalette, unhighlightCallback?: () => void,
+  isSelectionTable?: boolean,
+  headerSelectedMonomers?: () => type.SelectionStats,
+  webLogoBounds: () => WebLogoBounds,
+  cachedWebLogoTooltip: () => type.CachedWebLogoTooltip,
+  colorPalette: () => SeqPalette,
+  unhighlightCallback?: () => void,
   highlightCallback?: (mp: type.SelectionItem, dataFrame: DG.DataFrame, stats: MonomerPositionStats) => void,
   selectionCallback?: (monomerPosition: type.SelectionItem, options: type.SelectionOptions) => void,
 };
@@ -222,20 +229,25 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
           const colCache = cache?.[col.name];
           const dfFilterBuffer = df.filter.getBuffer();
           if (cache && colCache && colCache.filter.length === dfFilterBuffer.length &&
-            colCache.filter.every((v, i) => v === dfFilterBuffer[i])) {
+            colCache.filter.every((v, i) => v === dfFilterBuffer[i]))
             stats = colCache.stats[col.name];
-          } else {
-            const fullStats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {isFiltered: true, columns: [col.name]});
+          else {
+            const fullStats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {
+              isFiltered: true,
+              columns: [col.name],
+            });
             stats = fullStats[col.name];
             cache[col.name] = {filter: df.filter.getBuffer(), stats: fullStats, selection: df.selection.getBuffer()};
           }
-
           df.temp[C.TAGS.M_P_STATS_CACHE] = cache;
-        } else if (options.isSelectionTable){
-          stats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {isFiltered: true, columns: [col.name]})[col.name];
-        } else {
+        } else if (options.isSelectionTable) {
+          stats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {
+            isFiltered: true,
+            columns: [col.name],
+          })[col.name];
+        } else
           stats = monomerPositionStats[col.name];
-        }
+
         if (!stats)
           return;
         //TODO: precalc on stats creation
@@ -247,9 +259,9 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
           return 0;
         }).filter((v) => v !== 'general');
 
-        options.webLogoBounds![col.name] = drawLogoInBounds(ctx, bounds, stats, col.name,
-          sortedStatsOrder, df.filter.trueCount, options.colorPalette,
-          options.headerSelectedMonomers ? options.headerSelectedMonomers[col.name] : {});
+        options.webLogoBounds()![col.name] = drawLogoInBounds(ctx, bounds, stats, col.name,
+          sortedStatsOrder, df.filter.trueCount, options.colorPalette(),
+          options.headerSelectedMonomers ? options.headerSelectedMonomers()[col.name] : {});
         gcArgs.preventDefault();
       }
     } catch (e) {
@@ -265,7 +277,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
   const eventAction = (ev: MouseEvent): void => {
     const cell = grid.hitTest(ev.offsetX, ev.offsetY);
     if (cell?.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER) {
-      const monomerPosition = findWebLogoMonomerPosition(cell, ev, (options.webLogoBounds));
+      const monomerPosition = findWebLogoMonomerPosition(cell, ev, (options.webLogoBounds()));
       if (monomerPosition === null) {
         if (!options.isSelectionTable && options.unhighlightCallback != null)
           options.unhighlightCallback();
@@ -289,14 +301,14 @@ function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionIt
     options.selectionCallback(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
   else {
     const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
-    if (options.cachedWebLogoTooltip!.bar === bar)
-      ui.tooltip.show(options.cachedWebLogoTooltip!.tooltip!, ev.clientX, ev.clientY);
+    if (options.cachedWebLogoTooltip()!.bar === bar)
+      ui.tooltip.show(options.cachedWebLogoTooltip()!.tooltip!, ev.clientX, ev.clientY);
     else {
-      options.cachedWebLogoTooltip!.bar = bar;
+      options.cachedWebLogoTooltip()!.bar = bar;
       tooltipOptions.x = ev.clientX;
       tooltipOptions.y = ev.clientY;
       tooltipOptions.monomerPosition = monomerPosition;
-      options.cachedWebLogoTooltip!.tooltip = showTooltipAt(df, activityCol, {}, tooltipOptions);
+      options.cachedWebLogoTooltip()!.tooltip = showTooltipAt(df, activityCol, {}, tooltipOptions);
     }
   }
 }

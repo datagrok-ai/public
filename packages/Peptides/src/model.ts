@@ -447,16 +447,16 @@ export class PeptidesModel {
     this.webLogoBounds = {};
 
     const cellRendererOptions: CR.CellRendererOptions = {
-      selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): type.Selection =>
-        modifySelection(this.webLogoSelection, monomerPosition, options),
+      selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): void =>
+        this.modifyWebLogoSelection(monomerPosition, options),
       unhighlightCallback: (): void => this.unhighlight(),
-      colorPalette: pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName)),
-      webLogoBounds: this.webLogoBounds,
-      cachedWebLogoTooltip: this.cachedWebLogoTooltip,
+      colorPalette: () => pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName)),
+      webLogoBounds: () => this.webLogoBounds,
+      cachedWebLogoTooltip: () => this.cachedWebLogoTooltip,
       highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void =>
         highlightMonomerPosition(mp, df, mpStats),
       isSelectionTable: false,
-      headerSelectedMonomers: this.webLogoSelectedMonomers,
+      headerSelectedMonomers: () => this.webLogoSelectedMonomers,
     };
     if (this.monomerPositionStats === null || this.positionColumns === null)
       throw new Error('PeptidesError: Could not updage grid: monomerPositionStats or positionColumns are null');
