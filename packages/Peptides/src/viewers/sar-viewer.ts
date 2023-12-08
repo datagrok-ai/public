@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
+import {COLUMN_NAME} from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import wu from 'wu';
@@ -58,7 +59,6 @@ export enum PROPERTY_CATEGORIES {
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
 const AAR_CELL_WIDTH = 30;
-const COLUMN_NAME = 'ColumnName';
 
 export interface ISARViewer {
   sequenceColumnName: string;

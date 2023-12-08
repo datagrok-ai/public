@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
-import {SCALING_METHODS} from '../utils/constants';
+import {COLUMN_NAME, SCALING_METHODS} from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {
@@ -41,8 +41,6 @@ export enum CLUSTER_TYPE {
 }
 
 export type ClusterType = `${CLUSTER_TYPE}`;
-
-const COLUMN_NAME = 'ColumnName';
 
 export const enum LST_PROPERTIES {
   WEB_LOGO_MODE = 'webLogoMode',

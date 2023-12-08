@@ -10,7 +10,7 @@ import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {TEST_COLUMN_NAMES} from './utils';
 import {showMonomerTooltip} from '../utils/tooltips';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
-import { MonomerPosition } from '../viewers/sar-viewer';
+import {MonomerPosition} from '../viewers/sar-viewer';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -63,7 +63,6 @@ category('Table view', () => {
 
   //TODO: split into separate tests for Mutation Cliffs and Logo Summary Table
   test('Mutation Cliffs selection', async () => {
-  
     const selection = model.df.selection;
 
     const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
@@ -134,30 +133,26 @@ category('Table view', () => {
   test('Invariant Map selection', async () => {
     const selection = model.df.selection;
 
-    const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
-
-    await awaitCheck(() => sarViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
-
-    for (const [position, filteredMonomers] of Object.entries(sarViewer.invariantMapSelection))
+    for (const [position, filteredMonomers] of Object.entries(model.webLogoSelection))
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after initialization`);
 
     // Select by second monomer-position pair
-    sarViewer.modifyInvariantMapSelection(secondPair);
-    expect(sarViewer.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
+    model.modifyWebLogoSelection(secondPair);
+    expect(model.webLogoSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
       `Monomer ${secondPair.monomerOrCluster} is not filtered at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
       `for monomer ${secondPair.monomerOrCluster} at position ${secondPair.positionOrClusterType}`);
 
     // Select by first monomer-position pair
-    sarViewer.modifyInvariantMapSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
-    expect(sarViewer.invariantMapSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
+    model.modifyWebLogoSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
+    expect(model.webLogoSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not filtered at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Deselect filter for second monomer-position pair
-    sarViewer.modifyInvariantMapSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
-    expect(sarViewer.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
+    model.modifyWebLogoSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    expect(model.webLogoSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
       `Monomer ${secondPair.monomerOrCluster} is still filtered at position ${secondPair.positionOrClusterType} after ` +
       `deselection`);
     expect(selection.trueCount, firstPair.imCount, `Filter count is not equal to ${firstPair.imCount} ` +
@@ -165,10 +160,11 @@ category('Table view', () => {
       `monomer ${secondPair.monomerOrCluster} at position ${secondPair.positionOrClusterType}`);
 
     // Clear selection
-    sarViewer.invariantMapSelection = initSelection(sarViewer.positionColumns);
+    expect(model.positionColumns !== null, true, `Position columns are not initialized`);
+    model.webLogoSelection = initSelection(model.positionColumns!);
     expect(selection.trueCount, 0, `Filter count is not equal to ${0} after clearing monomer-position filter`);
 
-    for (const [position, filteredMonomers] of Object.entries(sarViewer.invariantMapSelection)) {
+    for (const [position, filteredMonomers] of Object.entries(model.webLogoSelection)) {
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after clearing ` +
         `monomer-position filter`);
     }
