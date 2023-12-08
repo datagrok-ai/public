@@ -7,6 +7,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {MasksInfo, MonomerPositionStats, PositionStats} from './statistics';
 import {PeptideViewer} from '../widgets/distribution';
+import wu from 'wu';
 
 export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
@@ -263,4 +264,9 @@ export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, ro
     }
   }
   return result;
+}
+
+export function isApplicableDataframe(table: DG.DataFrame, minRows: number = 2): boolean {
+  return table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE).length > 0 &&
+    wu(table.columns.numerical).toArray().length > 0 && table.rowCount >= minRows;
 }

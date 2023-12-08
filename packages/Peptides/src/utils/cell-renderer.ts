@@ -223,7 +223,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
       //TODO: optimize
       if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
         const isDfFiltered = df.filter.anyFalse;
-        let stats: PositionStats | undefined = undefined;
+        let stats: PositionStats | undefined;
         if (isDfFiltered) {
           const cache: MonomerPositionStatsCache = df.temp[C.TAGS.M_P_STATS_CACHE] ?? {};
           const colCache = cache?.[col.name];

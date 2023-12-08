@@ -17,6 +17,7 @@ import {
   extractColInfo,
   highlightMonomerPosition,
   initSelection,
+  isApplicableDataframe,
   isSelectionEmpty,
   modifySelection,
   scaleActivity,
@@ -327,12 +328,18 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   onTableAttached(): void {
     super.onTableAttached();
     this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
-    this.getProperty(`${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
-      ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
-    this.getProperty(`${SAR_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
-      ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
-    if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
-      this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
+    if (isApplicableDataframe(this.dataFrame)) {
+      this.getProperty(`${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
+        ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
+      this.getProperty(`${SAR_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
+        ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+      if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
+        this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
+    } else {
+      const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
+      grok.log.error(msg);
+      grok.shell.warning(msg);
+    }
   }
 
   async calculateMutationCliffs(): Promise<MutationCliffs> {
@@ -399,8 +406,15 @@ export class MonomerPosition extends SARViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.getProperty(`${MONOMER_POSITION_PROPERTIES.COLOR}${COLUMN_NAME}`)
-      ?.set(this, this.activityColumnName);
+    if (isApplicableDataframe(this.dataFrame)) {
+      this.getProperty(`${MONOMER_POSITION_PROPERTIES.COLOR}${COLUMN_NAME}`)
+        ?.set(this, this.activityColumnName);
+    } else {
+      const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
+      grok.log.error(msg);
+      grok.shell.warning(msg);
+    }
+    this.render();
   }
 
   modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {
@@ -611,7 +625,7 @@ export class MonomerPosition extends SARViewer {
   render(refreshOnly = false): void {
     $(this.root).empty();
     if (!this.activityColumnName || !this.sequenceColumnName) {
-      this.root.appendChild(ui.divText('Sequence and activity columns are not set'));
+      this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }
     // Backward compatability with 1.16.0
@@ -878,7 +892,7 @@ export class MostPotentResidues extends SARViewer {
   render(refreshOnly = false): void {
     $(this.root).empty();
     if (!this.activityColumnName || !this.sequenceColumnName) {
-      this.root.appendChild(ui.divText('Sequence and activity columns are not set'));
+      this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }
     if (!refreshOnly) {
