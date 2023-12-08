@@ -16,7 +16,9 @@ export async function findMutations(activityArray: type.RawData, monomerInfoArra
 
   settings.minActivityDelta ??= 0;
   settings.maxMutations ??= 1;
-  const substitutionsInfo = await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, settings, targetOptions);
+  const mutationCliffsService = new ParallelMutationCliffs();
+  const substitutionsInfo = await mutationCliffsService.calc(activityArray, monomerInfoArray, settings, targetOptions);
+  mutationCliffsService.terminate();
   return substitutionsInfo;
 }
 
