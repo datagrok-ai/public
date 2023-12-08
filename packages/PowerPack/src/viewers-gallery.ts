@@ -69,7 +69,6 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   search.input.onkeyup = (event) => {
     if (event.key === 'Escape'){
       search.fireChanged();
-      dlg.close();
     }
   };
 
