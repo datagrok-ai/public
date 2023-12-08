@@ -1,6 +1,6 @@
 # Deqs changelog
 
-## 1.0.0 (WIP)
+## 1.0.0 (2023-12-08)
 
 In-browser tools for solving ordinary differential equations (ODE) systems.
 

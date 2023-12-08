@@ -28,13 +28,13 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Rigth click and select **Load...**
   * Select a file with formulas
 
-## Create task from template
+## Create model from template
 
 Start from one of these templates:
 
 | Template | Features|
 |----------|---------|
-| `Basic`    | the simplest task|
+| `Basic`    | the simplest model|
 | `Advanced` | extra math features, including *expressions*, *constants*, *parameters* and *tolerance* specification|
 | `Extended` | the *annotating* feature for extended UI generation                 |
 
@@ -64,9 +64,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
-## Task structure
+## Model structure
 
-A task defines [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem). It contains *name*, *differential equations*, *initial values* and *argument* specifications:
+A model defines [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem). It contains *name*, *differential equations*, *initial values* and *argument* specifications:
 
 ```python
 #name: My ODEs
@@ -96,12 +96,12 @@ Use the following sections to specify various problems:
 |```#output```|Defines output columns and their captions|
 |```#tags```|Specifies tags (`model`, `app`, etc.).|
 |```#description```|Defines description of the model.|
-|```#meta.runOnOpen```|Provides computations immediately upon model launch after the task is exported to JavaScript script.|
-|```#meta.runOnInput```|Updates results immediately upon input changes after the task is exported to JavaScript script.|
+|```#meta.runOnOpen```|Provides computations immediately upon application launch after the model is exported to JavaScript script.|
+|```#meta.runOnInput```|Updates results immediately upon input changes after the model is exported to JavaScript script.|
 
 ## Platform applications
 
-Once you are satisfied with the result, you can convert your task to a Datagrok application. To do so:
+Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
 
 1. Press **Export** button on the top panel
 2. Press **SAVE** button
