@@ -62,13 +62,29 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   dlg = ui.dialog('Add Viewer');
   $(dlg.root.lastChild).hide();
 
+  dlg.root.addEventListener('keypress',(event)=>{
+    if (event.key === 'Escape'){
+      dlg.close();
+    }
+  })
   search = ui.searchInput('', '', (v: string) => findViewer(v));
   search.input.setAttribute('tabindex', '-1');
   search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
+  
+  var delta = 500;
+  var lastKeypressTime = 0;
 
   search.input.onkeyup = (event) => {
     if (event.key === 'Escape'){
       search.fireChanged();
+      var thisKeypressTime = Number(new Date());
+      if ( thisKeypressTime - lastKeypressTime <= delta ) {
+        if (search.value === ''){
+          dlg.close();
+        } 
+        thisKeypressTime = 0;
+      }
+      lastKeypressTime = thisKeypressTime;
     }
   };
 
