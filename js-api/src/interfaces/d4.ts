@@ -1199,6 +1199,9 @@ export interface IMatrixPlotLookSettings {
 }
 
 export interface ISummaryLookSettings {
+  /// Column to show aggregation on
+  aggrColumnName: string;
+
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
@@ -1208,7 +1211,10 @@ export interface ISummaryLookSettings {
   /// List of aggregations for the columns (temporarily unavailable from UI)
   aggregations: Array<string>;
 
-  /// Normalization type (row, column or global)
+  /// Controls the source of the data comparison
+  /// * Row: shows vertical bars based on each row category
+  /// * Column: shows horizontal bars based on each column category
+  /// * Global: shows horizontal bars based on all selected categories
   normalization: string;
 
   /// Visualization type (text, circles or bars)
