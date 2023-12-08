@@ -97,7 +97,9 @@ export function getAggregatedColumnValues(df: DG.DataFrame, columns: Aggregation
   const filteredDf = options.filterDf && df.filter.anyFalse ? df.clone(df.filter) : df;
 
   const colResults: StringDictionary = {};
-  for (const [colName, aggFn] of Object.entries(columns)) {
+  const aggrColsEntries = Object.entries(columns);
+  aggrColsEntries.forEach((it) => { it[0] = it[0].substring(0, it[0].indexOf("%"))});
+  for (const [colName, aggFn] of aggrColsEntries) {
     const newColName = getAggregatedColName(aggFn, colName);
     const value = getAggregatedValue(filteredDf.getCol(colName), aggFn, options.mask);
     colResults[newColName] = value.toFixed(options.fractionDigits);

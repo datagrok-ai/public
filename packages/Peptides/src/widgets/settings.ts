@@ -9,6 +9,7 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
+import { LST_PROPERTIES, LogoSummaryTable } from '../viewers/logo-summary';
 
 type PaneInputs = { [paneName: string]: DG.InputBase[] };
 type SettingsElements = { dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs };
@@ -136,8 +137,16 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
 
   const dialog = ui.dialog('Peptides settings').add(accordion);
   dialog.root.style.width = '400px';
-  dialog.onOK(() => model.settings = result);
+  dialog.onOK(() => {
+    model.settings = result;
+    updateViewerSettings(model, VIEWER_TYPE.LOGO_SUMMARY_TABLE, {[LST_PROPERTIES.COLS_FROM_SETTINGS]: result.columns});
+  });
   dialog.show();
 
   return {dialog, accordion, inputs};
+}
+
+export function updateViewerSettings(model: PeptidesModel, viewerType: VIEWER_TYPE, options: {[key: string]: any}) {
+  const viewer = model.findViewer(viewerType);
+  viewer?.setOptions(options);
 }

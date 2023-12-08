@@ -47,6 +47,7 @@ export const enum LST_PROPERTIES {
   AGGREGATION = 'aggregation',
   ACTIVITY_SCALING = 'activityScaling',
   ACTIVITY = 'activity',
+  COLS_FROM_SETTINGS = 'aggrColsFromSettings'
 }
 
 enum LST_CATEGORIES {
@@ -76,6 +77,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   activityColumnName: string;
   activityScaling: SCALING_METHODS;
   _scaledActivityColumn: DG.Column | null = null;
+  aggrColsFromSettings: { [col: string]: DG.AGG } = {};
 
   constructor() {
     super();
@@ -117,6 +119,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         category: LST_CATEGORIES.AGGREGATION,
         choices: aggregationChoices,
       });
+    this.addProperty(LST_PROPERTIES.COLS_FROM_SETTINGS, DG.TYPE.OBJECT, {}, {userEditable: false});
   }
 
   _model!: PeptidesModel;
@@ -229,7 +232,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   }
 
   getAggregationColumns(): AggregationColumns {
-    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
+    const viewerOptionsCols = Object.fromEntries(this.columns.map((colName) => [`${colName}%${this.aggregation}`, this.aggregation] as [string, DG.AGG]));
+    Object.keys(this.aggrColsFromSettings).forEach((colName: string) => {
+      const aggr = this.aggrColsFromSettings[colName];
+      if (aggr !== this.aggregation || !this.columns.includes(colName))
+        viewerOptionsCols[`${colName}%${DG.AGG}`] = this.aggrColsFromSettings[colName];
+    })
+    return viewerOptionsCols;
   }
 
   onTableAttached(): void {
@@ -314,6 +323,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       this._logoSummaryTable = null;
       doRender = true;
       break;
+    case LST_PROPERTIES.COLS_FROM_SETTINGS:
+      this.aggrColsFromSettings = DG.toJs(property.get(this));
+      this._viewerGrid = null;
+      this._logoSummaryTable = null;
+      doRender = true;
+      break;
     }
     if (doRender)
       this.render();
@@ -367,6 +382,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
     let origLSTBuilder = filteredDf.groupBy([clustersColName]);
     const aggColsEntries = Object.entries(this.getAggregationColumns());
+    aggColsEntries.forEach((it) => { it[0] = it[0].substring(0, it[0].indexOf("%"))});
     const aggColNames = aggColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
     const customAggRawCols = new Array(aggColNames.length);
     const colAggEntries = aggColsEntries.map(
@@ -462,6 +478,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const isDfFiltered = this.dataFrame.filter.anyFalse;
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
     const aggColsEntries = Object.entries(this.getAggregationColumns());
+    aggColsEntries.forEach((it) => { it[0] = it[0].substring(0, it[0].indexOf("%"))});
     const aggColNames = aggColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
 
     const grid = this.logoSummaryTable.plot.grid();
@@ -685,6 +702,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       [colName: string]: number
     } = {};
     const aggColsEntries = Object.entries(this.getAggregationColumns());
+    aggColsEntries.forEach((it) => { it[0] = it[0].substring(0, it[0].indexOf("%"))});
     for (const [colName, aggFn] of aggColsEntries) {
       const newColName = getAggregatedColName(aggFn, colName);
       const col = this.dataFrame.getCol(colName);
