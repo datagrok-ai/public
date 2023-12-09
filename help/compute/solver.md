@@ -2,30 +2,56 @@
 title: "Solver"
 ---
 
-Datagrok lets you solve [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for ordinary differential equations (ODEs) in the browser. It provides the modeling and comprehension of complex systems across various fields, including chemical engineering, drug design and discovery.
+**Datagrok Solver** is an innovative tool 
+allowing you to define and solve ordinary differential equations (ODEs) 
+right within your web browser. 
 
-Key features:
+Differential equations play a crucial role in modeling complex systems in diverse fields, 
+from chemical engineering and drug design to environmental studies and financial modeling. 
+Using **Datagrok Solver**, you can easily create mathematical models,
+tune and optimize it, use interactive [visualizations](../visualize/viewers) and other features of the Datagrok platform.
+Moreover, in a single click you can turn your model into the [Datagrok script](scripting.md),
+run it as standalone data processing unit, or include in an [application](../develop/how-to/build-an-app.md).
 
-* **Ease of use:** The solver is designed with an intuitive interface, making it accessible for users with varying levels of expertise in mathematical modeling.
-* **Rapid design:** It has built-in project templates and a collection of use cases that speed up model design.
-* **Advanced mathematical modeling:** It enables the analysis and prediction of complex dynamic systems, which is essential in research and development sectors.
-* **Auto-generated UI with advanced visualizations:** It ensures the automatic export of the formulas to the platform applications, implementing no-code development.
-* **Broad application scope:** Its usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) and [controlled fab-arm exchange](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
+**Key benefits and features**:
+
+* **Enhanced mathematical modeling:** Datagrok Solver can model and analyse complex multi-equation systems.
+* **Ease of use:** The Solver intuitive interface makes it accessible and useful to both beginners and experts in mathematical modeling.
+* **Rapid design:** The collection of built-in project templates and use cases speed up model design.
+* **Streamlined Integration:** In just one click, you can convert formulas to the platform script, implementing no-code development.
+* **Broad application scope:** The Solver usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) and [hybrid antibody formation](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
 
 ## Using Solver
 
-To run Solver:
+### Running Solver
 
-* Go to **Apps** and run **EquaSleek X**
-* Press <i class="fas fa-play"></i> **Run** button on the top panel
+To run **Solver**:
+
+* Go to **Functions > Apps** and run **EquaSleek X**. 
+  You will see the default code template with one simple differential equation.
+* Press <i class="fas fa-play"></i> **Run** button on the top panel. 
+  You will immediately see the table and the graph with the resulting function.
 * Edit formulas or add new ones
-* Click **F5** or <i class="fas fa-play"></i> **Run** button
-
-Datagrok provides the creation of an ODEs project in a few clicks:
+* Click **F5** or <i class="fas fa-play"></i> **Run** button to re-run Solver and see updated data.
 
 ![add-to-workspace](solver.gif)
 
-Apply built-in templates as a backbone of your project. Rigth click, select **Templates** and choose one of the following:
+### Loading and saving data
+
+To save formulas in a local file:
+
+* Right click on the code editor area and select **Save...**
+* Find the file in Downloads
+
+Load equations from a local file:
+
+* Right click on the code editor area and select **Load...**
+* Select a file with formulas
+
+### Loading templates and use-cases
+
+To load a template, right-click on the code editor area, 
+select **Templates** and choose one of the following templates:
 
 | Template   | Features                                                                                             |
 |------------|------------------------------------------------------------------------------------------------------|
@@ -33,29 +59,25 @@ Apply built-in templates as a backbone of your project. Rigth click, select **Te
 | `Advanced` | extra math features, including *expressions*, *constants*, *parameters* and *tolerance* specification|
 | `Extended` | the *annotating* feature for extended UI generation                                                  |
 
-Save formulas in a local file:
+To load a use-case, right-click on the code editor area, 
+select **Use sases** and choose a one.
 
-* Rigth click and select **Save...**
-* Find the file in Downloads
-
-Load equations from a local file:
-
-* Rigth click and select **Load...**
-* Select a file with formulas
-
-## Creating a custom model
+## Creating a custom defferental equation model
 
 ### Basic structure
 
-A project defines [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem). It contains *name*, *differential equations*, *initial values* and *argument* specifications.
+A minimal project defining and solving ordinary differential equations (ODEs) contains
+*name*, *differential equations*, *initial values* and *argument* specifications.
 
-Start with the line defining a name:
+Use the `#name` keyword to define the name of your model:
 
 ```python
 #name: Problem1
 ```
 
-Place differential equations in the `#equations`-block:
+Place differential equations in the `#equations`-block. You can add as many equations as you want. 
+Solver automatically recognizes all identifiers that you use.
+You can use one-letter or multi-letter identifiers
 
 ```python
 #equations:
@@ -63,7 +85,8 @@ Place differential equations in the `#equations`-block:
   dy/dt = x - y - cos(t)
 ```
 
-Set variable, its *initial*, *final* and *step* in the `#argument`-block:
+Define the argument, its *initial* value, *final* value, and grid *step* in the `#argument`-block.
+Datagrok provides a numerical solution within the range *[initial, final]* with the specified grid *step*.
 
 ```python
 #argument: t
@@ -72,9 +95,7 @@ Set variable, its *initial*, *final* and *step* in the `#argument`-block:
   step = 0.01
 ```
 
-Datagrok provides a numerical solution within the range *[initial, final]* with the specified grid *step*.
-
-Define initial values in the `#inits`-block:
+Define initial values of the functions in the `#inits`-block:
 
 ```python
 #inits:
@@ -84,7 +105,7 @@ Define initial values in the `#inits`-block:
 
 ### Advances
 
-The solver supports the use of *constants*, *parameters*, *expressions* and *tolerance* setting.
+Use the advanced features to improve your model:
 
 Specify constants in the `#constants`-block
 
@@ -102,7 +123,9 @@ Set parameters in the `#parameters`-block:
   P2 = -1
 ```
 
-Define auxiliary compuations in the `#expressions`-block:
+Define auxiliary computations in the `#expressions`-block:
+Use expressions to simplify equations.
+They may depend on constants, parameters and the argument.
 
 ```python
 #expressions:
@@ -110,9 +133,7 @@ Define auxiliary compuations in the `#expressions`-block:
   E2 = C2 * cos(2 * t) + P2
 ```
 
-Use expressions to simplify equations. They may depend on constants, parameters and the argument.
-
-You may customize an output of computations. Select columns and their captions in the `output`-block:
+To customize the computation output, select columns and their captions in the `output`-block:
 
 ```python
 #output:
@@ -131,9 +152,13 @@ Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.
 
 ### Multi-stage modeling
 
-Datagrok provides a multi-stage simulation. 
+The multi-stage model is a model where parameters and function values can vary for different 
+ranges of argument values.
 
-Use the `#loop`-feature to get the required number of modeling cycles. Define the number of repetitions and the updates of inputs:
+Datagrok provides a special capabilities for multi-stage simulation. 
+
+Use the `#loop`-feature to specify several modeling cycles. 
+Define the number of repetitions and the updates of inputs:
 
 ```python
 #loop:
@@ -143,7 +168,8 @@ Use the `#loop`-feature to get the required number of modeling cycles. Define th
 
 ![add-to-workspace](loop-feature.gif)
 
-Apply the `#update`-feature to obtain acyclic simulation. Set the length of the modeling stage and the updates of inputs:
+Apply the `#stage` feature to obtain acyclic simulation. 
+Set the length of the modeling stage and the updates of inputs:
 
 ```python
 #update:
@@ -153,16 +179,27 @@ Apply the `#update`-feature to obtain acyclic simulation. Set the length of the 
 
 Use any valid expression, when specifying the updates of inputs.
 
-### Platform applications
+## Platform applications
 
-Datagrok provides an export of each solver project to JavaScript script:
+You can convert any solver project to the Datagrok script:
 
 * Press <i class="fa-file-import"></i> **Export** button on the top panel
 * Press **SAVE** button
 
-Find the created script in the platform `Scripts`.
+Find the created Javascript script in the platform `Scripts`.
 
-Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
+The export feature provides an extension of your project with [scripting](scripting.md) tools. 
+
+### Usability improvements
+
+For all Solver parameters, you can add annotations described in
+[functional annotations](../datagrok/concepts/functions/func-params-annotation.md).
+When you convert your model into the Datagrok script,
+Solver converts it to the script input annotations, 
+allowing Datagrok to automatically create rich and self-explaining UI.
+
+. Use `#tags: model` to add your model to `Model Catalog`. 
+Provide a description in the `#description`-line:
 
 ```python
 #name: Bioreaction
@@ -170,7 +207,14 @@ Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Prov
 #description: Complex bioreaction simulation
 ```
 
-Apply annotations in your project to get better UI. Append them, when defining *parameters*, *initial values* and *argument*.
+Define the desired captions for the input parameters:
+
+```python
+#argument: t
+  start = 0 {caption: Initial}
+  finish = 2 {caption: Final}
+  step = 0.01 {caption: Step}
+```
 
 Group inputs by specifying their `category`:
 
@@ -188,15 +232,6 @@ Add `units`:
   y = 0 {units: C; category: Initial values}
 ```
 
-Define the desired `caption`:
-
-```python
-#argument: t
-  start = 0 {caption: Initial; units: min; category: Time}
-  finish = 2 {caption: Final; units: min; category: Time}
-  step = 0.01 {caption: Initial; units: min; category: Time}
-```
-
 Provide hints in brackets `[ ]`:
 
 ```python
@@ -212,11 +247,6 @@ Use the following `meta`-s:
 |![add-to-workspace](run-on-start.gif)|`#meta.runOnOpen: true`|Provides computations immediately upon model launch.|
 |![add-to-workspace](run-on-input.gif)|`#meta.runOnInput: true`|Updates results immediately upon input changes.|
 
-The export feature provides an extension of your project with [scripting](scripting.md) tools. You can add the desired functionality:
-
-* results visualization
-* non-elementary and special functions use
-* Datagrok packages functions call
 
 ## Use cases
 
@@ -233,7 +263,7 @@ The solver has built-in use cases. Get access to them via the context menu and u
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the solver with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
 
-See also
+## See also:
 
 * [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
 * [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
