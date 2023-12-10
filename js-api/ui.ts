@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput
+  TagsInput, ChoiceInput, InputForm
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -1566,11 +1566,13 @@ export namespace forms {
   
 }
 
-export function form(children: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLDivElement {
-  let d = document.createElement('div');
-  if (children != null) {
-    $(d).append(children.map(x => render(x)));
-  }
+export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
+  // let d = document.createElement('div');
+  // if (children != null) {
+  //   $(d).append(children.map(x => render(x)));
+  // }
+  const form = InputForm.forInputs(inputs);
+  const d = form.root;
   _options(d, options);
   $(d).addClass('ui-form');
   
@@ -1587,13 +1589,13 @@ export function form(children: InputBase[], options: {} | null = null, autosize:
   return d;
 }
 
-export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
-export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;

@@ -995,6 +995,7 @@ export interface IDartApi {
   grok_InputBase_ForInputType(inputType: String): any;
   grok_InputBase_ForColumn(column: any): any;
   grok_InputBase_FromJS(jsInput: any): any;
+  grok_InputForm_ForInputs(inputs: any): any;
   grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;

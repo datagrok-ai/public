@@ -1097,6 +1097,8 @@ export interface PropertyOptions {
 
   /** Name of the corresponding JavaScript field. No need to specify it if it is the same as name. */
   fieldName?: string;
+
+  tags?: any;
 }
 
 
