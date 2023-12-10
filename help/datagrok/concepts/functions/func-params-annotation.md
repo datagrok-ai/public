@@ -86,6 +86,8 @@ Datagrok supports the following types in all scripting languages:
 
 Some of the options apply to all parameters, while other are type-specific. 
 
+<details> <summary> Reference: list of options applicable to different parameters </summary> <div>
+
 For all parameters:
 
 | Option     | Value  | Description                                                               |
@@ -134,6 +136,9 @@ For `list` type`
 
 **Separators** apply only for the TextArea input type. The following example demonstrates how separators work
 for the Postgres-based SQL query:
+
+</div> </details>
+
 
 <details>
 <summary> Example: Using separators in a query </summary>
@@ -205,10 +210,7 @@ In this example, the `freightValue` input parameter is defined as a string with 
 The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to
 `@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
 
-Here's a list of all supported search patterns:
-
-<details>
-<summary> Patterns </summary>
+<details> <summary> Reference: Supported search patterns </summary>
 
 | Type               | Value         | Description or example       |
 |--------------------|---------------|------------------------------|
@@ -484,9 +486,8 @@ within one script. You can get your data with a SQL query, run calculations in P
 visualize it interactively in Datagrok - all of that without writing a single line of UI code.
 To learn more, see [Compute](../../../compute/compute.md#data-access).
 
-<details>
-<summary> Example: JavaScript function that uses SQL query as a function input </summary>
-<div>
+<details> <summary> Example: JavaScript function that uses SQL query as a function input </summary>
+
 
 ```js
 //language: javaScript
@@ -499,7 +500,7 @@ result = orders.rowCount * 2;
 
 ![img.png](function-input.png)
 
-</div></details>
+</details>
 
 ### Input types
 
@@ -508,8 +509,10 @@ the property attributes. You can also explicitly set the `inputType` option. Her
 set it to `Radio` to make the input appear as a radio button instead of the combo box:
 
 ```js
-//input: string fruit { choices: ["Apple", "Banana"], inputType: Radio }`
+//input: string fruit { choices: ["Apple", "Banana"], inputType: Radio }
 ```
+
+<details> <summary> Reference: Supported input types </summary>
 
 Input types have to match the data types (input types in bold are the default ones
 that you do not have to specify):
@@ -530,7 +533,13 @@ that you do not have to specify):
 | Radio           | string      | {inputType: Radio; choices: \["A", "B"]} |
 | Molecule        | string      |                                          |
 
+</details>
+
+
+<details> <summary> Example: Using "Slider", "Color", and "Radio" input types </summary>
 ![](input-types.png)
+</details>
+
 
 Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
 for more input types.  
@@ -543,7 +552,9 @@ Datagrok automatically [detects semantic types](../../../develop/function-roles.
 and you can also specify semantic types of input parameters. In this case, a corresponding input will be
 used, if it is defined. 
 
-For instance, this is how an input field for the "Molecule" semantic type looks like. When you click
+<details> <summary> Example: Automatically using the molecular sketcher for the "Molecule" semantic type </summary>
+
+This is how an input field for the "Molecule" semantic type looks like. When you click
 a molecule, a molecule sketcher pops up.
 
 ```sql
@@ -551,6 +562,8 @@ a molecule, a molecule sketcher pops up.
 ```
 
 ![](molecule-input.png)
+
+</details>
 
 ## Examples
 
