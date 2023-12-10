@@ -22,7 +22,7 @@ import {
   FileInfo, HistoryEntry, ProjectOpenOptions, Func
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
-import {ViewLayout} from "./views/view";
+import {ViewLayout, ViewInfo} from "./views/view";
 import {toJs, toDart} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
@@ -106,6 +106,12 @@ export class Dapi {
    *  @type {LayoutsDataSource} */
   get layouts(): LayoutsDataSource {
     return new LayoutsDataSource(api.grok_Dapi_Layouts());
+  }
+
+  /** View Views API endpoint
+   *  @type {LayoutsDataSource} */
+  get views(): ViewsDataSource {
+    return new ViewsDataSource(api.grok_Dapi_Views());
   }
 
   /** Data Table Infos API endpoint
@@ -633,7 +639,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
  * @extends HttpDataSource
  * */
 export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
-  /** @constructs CredentialsDataSource*/
+  /** @constructs LayoutsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -643,6 +649,18 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
    * @returns {Promise<ViewLayout[]>} */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
     return api.grok_LayoutsDataSource_Applicable(this.dart, t.dart);
+  }
+}
+
+/**
+ * Functionality for handling views information from server
+ * Allows to manage {@link ViewInfo}
+ * @extends HttpDataSource
+ * */
+export class ViewsDataSource extends HttpDataSource<ViewInfo> {
+  /** @constructs ViewInfoDataSource*/
+  constructor(s: any) {
+    super(s);
   }
 }
 

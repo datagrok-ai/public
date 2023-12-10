@@ -723,16 +723,11 @@ export class ViewLayout extends Entity {
   }
 
   static fromJson(json: string): ViewLayout {
-    return new ViewLayout(api.grok_ViewLayout_FromJson(json));
+    return toJs(api.grok_ViewLayout_FromJson(json));
   }
 
   static fromViewState(state: string): ViewLayout {
-    return new ViewLayout(api.grok_ViewLayout_FromViewState(state));
-  }
-
-  /** Only defined within the context of the OnViewLayoutXXX events */
-  get view(): View {
-    return toJs(api.grok_ViewLayout_Get_View(this.dart));
+    return toJs(api.grok_ViewLayout_FromViewState(state));
   }
 
   get viewState(): string {
@@ -761,6 +756,46 @@ export class ViewLayout extends Entity {
 
 }
 
+export class ViewInfo extends Entity {
+
+  /** @constructs ViewInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromJson(json: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromJson(json));
+  }
+
+  static fromViewState(state: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromViewState(state));
+  }
+
+  /** Only defined within the context of the OnViewLayoutXXX events */
+  get view(): View {
+    return toJs(api.grok_ViewInfo_Get_View(this.dart));
+  }
+
+  get viewState(): string {
+    return api.grok_ViewInfo_Get_ViewState(this.dart);
+  }
+
+  set viewState(state: string) {
+    api.grok_ViewInfo_Set_ViewState(this.dart, state);
+  }
+
+  getUserDataValue(key: string): string {
+    return api.grok_ViewInfo_Get_UserDataValue(this.dart, key);
+  }
+
+  setUserDataValue(key: string, value: string) {
+    return api.grok_ViewInfo_Set_UserDataValue(this.dart, key, value);
+  }
+
+  toJson(): string {
+    return api.grok_ViewInfo_ToJson(this.dart);
+  }
+}
 
 /** Represents a virtual view, where visual elements are created only when user
  * scrolls them into view. */

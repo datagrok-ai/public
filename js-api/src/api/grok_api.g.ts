@@ -69,6 +69,7 @@ export interface IDartApi {
   grok_Dapi_Models(): any;
   grok_Dapi_Packages(): any;
   grok_Dapi_Layouts(): any;
+  grok_Dapi_Views(): any;
   grok_Dapi_Tables(): any;
   grok_Dapi_Groups(): any;
   grok_Dapi_Scripts(): any;
@@ -222,11 +223,18 @@ export interface IDartApi {
   grok_ViewLayout_Get_ViewState(layout: any): any;
   grok_ViewLayout_Set_UserDataValue(layout: any, key: String, data: String): any;
   grok_ViewLayout_Get_UserDataValue(layout: any, key: String): any;
-  grok_ViewLayout_Get_View(layout: any): any;
   grok_ViewLayout_FromJson(json: String): any;
   grok_ViewLayout_FromViewState(state: String): any;
   grok_ViewLayout_ToJson(layout: any): any;
   grok_ViewLayout_Get_Columns(layout: any): any;
+  grok_ViewInfo_Set_ViewState(info: any, state: String): any;
+  grok_ViewInfo_Get_ViewState(info: any): any;
+  grok_ViewInfo_Set_UserDataValue(info: any, key: String, data: String): any;
+  grok_ViewInfo_Get_UserDataValue(info: any, key: String): any;
+  grok_ViewInfo_Get_View(info: any): any;
+  grok_ViewInfo_FromJson(json: String): any;
+  grok_ViewInfo_FromViewState(state: String): any;
+  grok_ViewInfo_ToJson(info: any): any;
   grok_TabControlBase_Get_Header(tc: any): any;
   grok_TabControlBase_Get_Panes(tc: any): any;
   grok_TabControlBase_Clear(tc: any): any;
