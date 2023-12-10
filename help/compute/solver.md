@@ -8,12 +8,14 @@ right within your web browser.
 
 Differential equations play a crucial role in modeling complex systems in diverse fields, 
 from chemical engineering and drug design to environmental studies and financial modeling. 
+
 Using **Datagrok Solver**, you can easily create mathematical models,
-tune and optimize it, use interactive [visualizations](../visualize/viewers) and other features of the Datagrok platform.
+develop and optimize it, use interactive [visualizations](../visualize/viewers) 
+and other features of the Datagrok platform.
 Moreover, in a single click you can turn your model into the [Datagrok script](scripting.md),
 run it as standalone data processing unit, or include in an [application](../develop/how-to/build-an-app.md).
 
-**Key benefits and features**:
+**Key benefits and features of the Datagrok Solver**:
 
 * **Enhanced mathematical modeling:** Datagrok Solver can model and analyse complex multi-equation systems.
 * **Ease of use:** The Solver intuitive interface makes it accessible and useful to both beginners and experts in mathematical modeling.
@@ -38,12 +40,12 @@ To run **Solver**:
 
 ### Loading and saving data
 
-To save formulas in a local file:
+**To save formulas in a local file**:
 
 * Right click on the code editor area and select **Save...**
 * Find the file in Downloads
 
-Load equations from a local file:
+**To load formulas from a local file**:
 
 * Right click on the code editor area and select **Load...**
 * Select a file with formulas
@@ -53,16 +55,16 @@ Load equations from a local file:
 To load a template, right-click on the code editor area, 
 select **Templates** and choose one of the following templates:
 
-| Template   | Features                                                                                             |
-|------------|------------------------------------------------------------------------------------------------------|
-| `Basic`    | the minimum required project                                                                         |
-| `Advanced` | extra math features, including *expressions*, *constants*, *parameters* and *tolerance* specification|
-| `Extended` | the *annotating* feature for extended UI generation                                                  |
+| Template   | Features                                                                                    |
+|------------|---------------------------------------------------------------------------------------------|
+| `Basic`    | Minimum project with one differential equation                                              |
+| `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
+| `Extended` | The *annotating* feature for extended UI generation                                         |
 
 To load a use-case, right-click on the code editor area, 
-select **Use sases** and choose a one.
+select **Use cases** and choose a one.
 
-## Creating a custom defferental equation model
+## Creating a custom differential equation model
 
 ### Basic structure
 
@@ -77,7 +79,7 @@ Use the `#name` keyword to define the name of your model:
 
 Place differential equations in the `#equations`-block. You can add as many equations as you want. 
 Solver automatically recognizes all identifiers that you use.
-You can use one-letter or multi-letter identifiers
+You can use one-letter or multi-letter identifiers.
 
 ```python
 #equations:
@@ -123,9 +125,11 @@ Set parameters in the `#parameters`-block:
   P2 = -1
 ```
 
-Define auxiliary computations in the `#expressions`-block:
-Use expressions to simplify equations.
-They may depend on constants, parameters and the argument.
+Define auxiliary computations in the `#expressions`-block.
+The **expression** is any mathematical function containing constants, parameters, argument, and other functions.
+The only difference is that `expressions` functions are defined directly
+and don't require solving of differential equations.
+You can use expressions to separate part of the calculations and simplify your differential equations.
 
 ```python
 #expressions:
@@ -158,21 +162,31 @@ ranges of argument values.
 Datagrok provides a special capabilities for multi-stage simulation. 
 
 Use the `#loop`-feature to specify several modeling cycles. 
-Define the number of repetitions and the updates of inputs:
+Define the number of repetitions and 
+use any mathematical expression to modify functions and parameters.
+You can set new values for parameters and change values for functions.
 
 ```python
+#equations:
+  dy/dt = -y + sin(N*t) / t
+
+#parameters:
+  N = 1
+  
 #loop:
   count = 3
-  y += 0.4
+  N += 2
 ```
 
 ![add-to-workspace](loop-feature.gif)
 
 Apply the `#stage` feature to obtain acyclic simulation. 
-Set the length of the modeling stage and the updates of inputs:
+Set the length of the modeling stage 
+and use any mathematical expression to modify functions and parameters,
+same as for the `#loop` section.
 
 ```python
-#update:
+#stage:
   length = 6
   y = 1
 ```
@@ -207,13 +221,14 @@ Provide a description in the `#description`-line:
 #description: Complex bioreaction simulation
 ```
 
-Define the desired captions for the input parameters:
+Define the desired captions for the input parameters.
+If no caption is provided, Datagrok will use variable name.
 
 ```python
 #argument: t
-  start = 0 {caption: Initial}
-  finish = 2 {caption: Final}
-  step = 0.01 {caption: Step}
+  start = 0 {caption: Initial time }
+  finish = 2 {caption: Final time}
+  step = 0.01 {caption: Calculation step}
 ```
 
 Group inputs by specifying their `category`:
@@ -232,7 +247,7 @@ Add `units`:
   y = 0 {units: C; category: Initial values}
 ```
 
-Provide hints in brackets `[ ]`:
+Provide tooltips in brackets `[ ]`:
 
 ```python
   P1 = 1 {category: Parameters} [P1 parameter tooltip]
@@ -242,10 +257,10 @@ Provide hints in brackets `[ ]`:
 
 Use the following `meta`-s:
 
-|<div style={{ width:400 }}></div>|Annotation|Feature|
-|----------|---------|----------------------------------|
-|![add-to-workspace](run-on-start.gif)|`#meta.runOnOpen: true`|Provides computations immediately upon model launch.|
-|![add-to-workspace](run-on-input.gif)|`#meta.runOnInput: true`|Updates results immediately upon input changes.|
+| Annotation               | Feature                                              | <div style={{ width:400 }}></div>     |    
+|--------------------------|------------------------------------------------------|---------------------------------------|
+| `#meta.runOnOpen: true`  | Start computations immediately upon model launch.    | ![add-to-workspace](run-on-start.gif) |
+| `#meta.runOnInput: true` | Re-calculate results immediately upon input changes. | ![add-to-workspace](run-on-input.gif) |
 
 
 ## Use cases
