@@ -1,8 +1,0 @@
-joblib
-numpy
-pandas
-scikit-learn
-scipy
-boto3
-Flask
-chemprop

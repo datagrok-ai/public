@@ -1,10 +1,14 @@
 name: myenv
 channels:
   - conda-forge
-  - anaconda
 dependencies:
   - python=3.11.5
-  - pip
   - rdkit
-  - pip:
-      - -r requirements.txt  
+  - joblib
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - boto3
+  - Flask
+  - chemprop
