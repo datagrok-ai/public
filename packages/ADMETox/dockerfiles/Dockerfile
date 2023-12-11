@@ -15,6 +15,8 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba remove -n base awscli -y && \
     micromamba clean -afy
 
+RUN micromamba install -n base -c pytorch -c torchvision -c torchaudio -c pytorch-cuda=11.6 -c nvidia -y
+
 COPY environment.yml /app/
 COPY requirements.txt /app/
 
@@ -28,5 +30,4 @@ SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
 
 EXPOSE 8000
 
-#start server inside container
 ENTRYPOINT ["micromamba", "run","-n", "myenv", "python","ADMETox.py",  "--host", "0.0.0.0", "--port", "8000"]

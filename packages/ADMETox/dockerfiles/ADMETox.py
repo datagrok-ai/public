@@ -9,6 +9,7 @@ from jaqpotpy.models import MolecularModel
 import joblib
 from rdkit import Chem
 import pandas as pd
+import torch
 
 app = Flask(__name__)
 
@@ -133,7 +134,7 @@ def df_upload():
         file.write(raw_data)
     models = request.args.get('models')
     response = handle_uploaded_file(test_data_path, models)
-    return response
+    return str(torch.cuda.is_available())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, threaded=True, debug=False)
