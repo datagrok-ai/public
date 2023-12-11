@@ -35,7 +35,7 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
       const bitArray = BitArray.fromString(table.selection.toBinaryString());
       const mask = DG.BitSet.create(rowCount,
         bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
-      const aggregatedColMap = getAggregatedColumnValues(table, options.columns, {filterDf: true, mask});
+      const aggregatedColMap = getAggregatedColumnValues(table, Object.entries(options.columns), {filterDf: true, mask});
       const stats = bitArray.allFalse || bitArray.allTrue ?
         {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray, mean: options.activityCol.stats.avg} :
         getStats(options.activityCol.getRawData(), bitArray);

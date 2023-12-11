@@ -85,7 +85,7 @@ export function getAggregatedValue(col: DG.Column<number>, agg: DG.AggregationTy
   return stat[agg] as number;
 }
 
-export function getAggregatedColumnValues(df: DG.DataFrame, columns: AggregationColumns,
+export function getAggregatedColumnValues(df: DG.DataFrame, columns: [string, DG.AggregationType][],
   options: {
                                             filterDf?: boolean,
                                             mask?: DG.BitSet,
@@ -97,9 +97,7 @@ export function getAggregatedColumnValues(df: DG.DataFrame, columns: Aggregation
   const filteredDf = options.filterDf && df.filter.anyFalse ? df.clone(df.filter) : df;
 
   const colResults: StringDictionary = {};
-  const aggrColsEntries = Object.entries(columns);
-  aggrColsEntries.forEach((it) => { it[0] = it[0].substring(0, it[0].indexOf("%"))});
-  for (const [colName, aggFn] of aggrColsEntries) {
+  for (const [colName, aggFn] of columns) {
     const newColName = getAggregatedColName(aggFn, colName);
     const value = getAggregatedValue(filteredDf.getCol(colName), aggFn, options.mask);
     colResults[newColName] = value.toFixed(options.fractionDigits);

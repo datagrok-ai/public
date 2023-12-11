@@ -149,6 +149,8 @@ export class PeptidesModel {
         break;
       case 'showMostPotentResidues':
         updateVars.add('mostPotentResidues');
+      case 'columns':
+        updateVars.add('columns');
         break;
       }
     }
@@ -184,6 +186,11 @@ export class PeptidesModel {
       case 'mostPotentResidues':
           this.settings!.showMostPotentResidues ? this.addMostPotentResidues() :
             this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
+      case 'columns':
+          const lst = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+          lst._viewerGrid = null;
+          lst._logoSummaryTable = null;
+          lst.render();
         break;
       }
     }

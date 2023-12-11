@@ -67,7 +67,7 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
     if (tableMap['p-value'])
       tableMap['p-value'] = `${tableMap['p-value']}${options.isMutationCliffs ? ' (color)' : ''}`;
   }
-  const aggregatedColMap = getAggregatedColumnValues(df, columns, {mask: mask});
+  const aggregatedColMap = getAggregatedColumnValues(df, Object.entries(columns), {mask: mask});
   const resultMap = {...tableMap, ...aggregatedColMap};
 
   const distroStatsElem = getDistributionPanel(hist, resultMap);
