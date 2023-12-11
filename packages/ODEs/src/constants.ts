@@ -22,6 +22,7 @@ export enum CONTROL_EXPR {
     RUN_ON_OPEN = `${META}.runOnOpen`,
     RUN_ON_INPUT = `${META}.runOnInput`,
     OUTPUT = `${CONTROL_TAG}output`,
+    COMMENT = `${CONTROL_TAG}comment`,
 };
 
 /** Loop consts */

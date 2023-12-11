@@ -83,6 +83,7 @@ const completions = [
   {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "loop feature"},
   {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: "update model feature"},
   {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: "keyword", info: "output specification"},
+  {label: `${CONTROL_EXPR.COMMENT}: `, type: "keyword", info: "block with comments"},
 ];
 
 /** Control expressions completion utilite */

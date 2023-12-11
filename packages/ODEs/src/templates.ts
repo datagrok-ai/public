@@ -14,9 +14,7 @@ ${CONTROL_EXPR.INITS}:
   y = 0`;
 
 /** Advanced template illustrating extanded features */
-const TEMPLATE_ADVANCED = `NOTES. This is an advanced template. Modify it. Use multi-line formulas if needed.
-Add new equations, expressions, constants & parameters. Edit these notes if required.
-${CONTROL_EXPR.NAME}: Advanced
+const TEMPLATE_ADVANCED = `${CONTROL_EXPR.NAME}: Advanced
 ${CONTROL_EXPR.DIF_EQ}:
   dx/dt = E1 * y + sin(t)
 
@@ -43,12 +41,14 @@ ${CONTROL_EXPR.PARAMS}:
   P1 = 1
   P2 = -1
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 0.00005
+
+${CONTROL_EXPR.COMMENT}:
+  This is an advanced template. Modify it. Use multi-line formulas if needed.
+  Add new equations, expressions, constants & parameters. Edit these notes if required.`;
 
 /** Extended template illustrating extanded features */
-const TEMPLATE_EXTENDED = `NOTES. This is an extended template. It has additional scripting annotations.
-Use it as a backbone for models & apps creating.
-${CONTROL_EXPR.NAME}: Extended
+const TEMPLATE_EXTENDED = `${CONTROL_EXPR.NAME}: Extended
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: 2D ordinary differential equations system sample
 ${CONTROL_EXPR.DIF_EQ}:
@@ -76,7 +76,11 @@ ${CONTROL_EXPR.ARG}: t
   finish = 2 {units: min; caption: Final; category: Time} [Final time of simulation]
   step = 0.01 {units: min; caption: Initial; category: Time} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 0.00005
+
+${CONTROL_EXPR.COMMENT}:
+  This is an extended template. It has additional scripting annotations.
+  Use it as a backbone for models & apps creating.`;
 
 /** Initial value problem templates */
 export enum TEMPLATES {

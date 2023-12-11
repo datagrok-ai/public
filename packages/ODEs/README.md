@@ -98,6 +98,7 @@ Use the following sections to specify various problems:
 |```#description```|Defines description of the model.|
 |```#meta.runOnOpen```|Provides computations immediately upon application launch after the model is exported to JavaScript script.|
 |```#meta.runOnInput```|Updates results immediately upon input changes after the model is exported to JavaScript script.|
+|```#comment```|Specifies comments block.|
 
 ## Platform applications
 

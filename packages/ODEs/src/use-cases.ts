@@ -1,8 +1,7 @@
 import {CONTROL_EXPR} from './constants';
 
 /** Chemical reactions, mass-action kinetics */
-const CHEM_REACT_MODEL = `The following model is taken from https://doi.org/10.1002/ijch.201800003.
-${CONTROL_EXPR.NAME}: Chem react
+const CHEM_REACT_MODEL = `${CONTROL_EXPR.NAME}: Chem react
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Mass-action kinetics illustration
 ${CONTROL_EXPR.DIF_EQ}:
@@ -35,13 +34,16 @@ ${CONTROL_EXPR.ARG}: t
   final = 5 {units: min; caption: Final; category: Time} [Final time of simulation]
   step = 0.01 {units: min; caption: Step; category: Time} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 0.00005
+
+${CONTROL_EXPR.COMMENT}:
+  This model is taken from https://doi.org/10.1002/ijch.201800003.`;
 
 /** Robertson's chemical reaction model - stiff ODEs */
-const ROBERTSON_MODEL = `NOTES. The classic example of stiff ODEs: the Robertson problem.
-${CONTROL_EXPR.NAME}: Robertson
+const ROBERTSON_MODEL = `${CONTROL_EXPR.NAME}: Robertson
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
+${CONTROL_EXPR.COMMENT}: This is a classic example of stiff ODEs.
 ${CONTROL_EXPR.DIF_EQ}:
   dA/dt = -0.04 * A + 10000 * B * C
   dB/dt = 0.04 * A - 10000 * B * C - 30000000 * B**2
@@ -60,8 +62,7 @@ ${CONTROL_EXPR.ARG}: t
 ${CONTROL_EXPR.TOL}: 0.0000001`;
 
 /** Fermentation process simulation */
-const FERMENTATION_MODEL = `NOTES. The following problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
-${CONTROL_EXPR.NAME}: Fermentation
+const FERMENTATION_MODEL = `${CONTROL_EXPR.NAME}: Fermentation
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Simulation of fermentation process in the ethanol production
 ${CONTROL_EXPR.DIF_EQ}:
@@ -88,7 +89,10 @@ ${CONTROL_EXPR.PARAMS}:
 ${CONTROL_EXPR.TOL}: 0.0000001
 
 ${CONTROL_EXPR.RUN_ON_OPEN}: true
-${CONTROL_EXPR.RUN_ON_INPUT}: true`;
+${CONTROL_EXPR.RUN_ON_INPUT}: true
+
+${CONTROL_EXPR.COMMENT}: 
+  This problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.`;
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
@@ -177,10 +181,10 @@ ${CONTROL_EXPR.PARAMS}:
 ${CONTROL_EXPR.TOL}: 0.000000001`;
 
 /** Nimotuzumab disposition model */
-const NIMOTUZUMAB_MODEL = `NOTES. Source: https://www.mdpi.com/1999-4923/12/12/1147 
-${CONTROL_EXPR.NAME}: Nimotuzumab
+const NIMOTUZUMAB_MODEL = `${CONTROL_EXPR.NAME}: Nimotuzumab
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Nimotuzumab disposition model
+${CONTROL_EXPR.COMMENT}: Source: https://www.mdpi.com/1999-4923/12/12/1147
 ${CONTROL_EXPR.DIF_EQ}:
   dA1/dt = (-(CL * A3 / V1 + Q / V1) * A1 + Q / V2 * A2 - kint * Rtot * A1 / (Kss + A1 / V1)) 
            / (1 + Rtot * Kss / (Kss + A1 / V1)**2)
