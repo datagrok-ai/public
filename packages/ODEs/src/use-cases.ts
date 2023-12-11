@@ -4,6 +4,7 @@ import {CONTROL_EXPR} from './constants';
 const CHEM_REACT_MODEL = `${CONTROL_EXPR.NAME}: Chem react
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Mass-action kinetics illustration
+${CONTROL_EXPR.COMMENT}: This model is taken from https://doi.org/10.1002/ijch.201800003.
 ${CONTROL_EXPR.DIF_EQ}:
   dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
            - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4
@@ -34,16 +35,13 @@ ${CONTROL_EXPR.ARG}: t
   final = 5 {units: min; caption: Final; category: Time} [Final time of simulation]
   step = 0.01 {units: min; caption: Step; category: Time} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.00005
-
-${CONTROL_EXPR.COMMENT}:
-  This model is taken from https://doi.org/10.1002/ijch.201800003.`;
+${CONTROL_EXPR.TOL}: 0.00005`;
 
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `${CONTROL_EXPR.NAME}: Robertson
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
-${CONTROL_EXPR.COMMENT}: This is a classic example of stiff ODEs.
+${CONTROL_EXPR.COMMENT}: This is classic example of stiff ODEs.
 ${CONTROL_EXPR.DIF_EQ}:
   dA/dt = -0.04 * A + 10000 * B * C
   dB/dt = 0.04 * A - 10000 * B * C - 30000000 * B**2
@@ -65,6 +63,7 @@ ${CONTROL_EXPR.TOL}: 0.0000001`;
 const FERMENTATION_MODEL = `${CONTROL_EXPR.NAME}: Fermentation
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Simulation of fermentation process in the ethanol production
+${CONTROL_EXPR.COMMENT}: This problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
 ${CONTROL_EXPR.DIF_EQ}:
   dP/dt = r * X
   dS/dt = -q * X
@@ -89,10 +88,7 @@ ${CONTROL_EXPR.PARAMS}:
 ${CONTROL_EXPR.TOL}: 0.0000001
 
 ${CONTROL_EXPR.RUN_ON_OPEN}: true
-${CONTROL_EXPR.RUN_ON_INPUT}: true
-
-${CONTROL_EXPR.COMMENT}: 
-  This problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.`;
+${CONTROL_EXPR.RUN_ON_INPUT}: true`;
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
