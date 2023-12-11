@@ -53,8 +53,9 @@ export async function demoBio05UI(): Promise<void> {
         delay: 2000,
       })
       .step('Build sequence space', async () => {
+        const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
         ssViewer = (await sequenceSpaceTopMenu(df, msaHelmCol,
-          dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, true)) as DG.ScatterPlotViewer;
+          dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, true, preprocessingFunc)) as DG.ScatterPlotViewer;
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
