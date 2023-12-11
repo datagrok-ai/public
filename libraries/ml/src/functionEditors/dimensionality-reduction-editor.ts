@@ -126,7 +126,8 @@ export class DimReductionBaseEditor {
         });
         if (!this.preprocessingFunctionInputRoot)
             this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
-        this.similarityMetricInput = ui.choiceInput('Similarity', '', [], null, {nullable: false});
+        this.similarityMetricInput = ui.choiceInput('Similarity', '', [], null);
+        this.similarityMetricInput.nullable = false;
         if (!this.similarityMetricInputRoot)
             this.similarityMetricInputRoot = this.similarityMetricInput.root;
         this.onPreprocessingFunctionChanged();
@@ -205,7 +206,8 @@ export class DimReductionBaseEditor {
         const fName = this.preprocessingFunctionInput.value!;
         const distanceFs = this.supportedFunctions[fName].distanceFunctions;
         this.availableMetrics = [...distanceFs];
-        this.similarityMetricInput = ui.choiceInput('Similarity', this.availableMetrics[0], this.availableMetrics, null, {nullable: false});
+        this.similarityMetricInput = ui.choiceInput('Similarity', this.availableMetrics[0], this.availableMetrics, null);
+        this.similarityMetricInput.nullable = false;
         if (!this.similarityMetricInputRoot) {
             this.similarityMetricInputRoot = this.similarityMetricInput.root;
         }
