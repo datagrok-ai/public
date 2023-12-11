@@ -20,6 +20,13 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-12-11 1.17.9
+
+### Addressed Issues
+
+* GROK-14356: Projects: data-sync option is not shown for .sdf files 
+
+
 ## 2023-12-07 1.17.8
 
 ### Addressed Issues
