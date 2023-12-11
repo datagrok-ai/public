@@ -32,7 +32,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
       this.similarityInput = ui.intInput('Similarity cutoff', 80);
       ui.tooltip.bind(this.similarityInput.root, `Pairs of similar (cutoff is used) molecules with high difference in activity are considered 'cliffs'`)
       //@ts-ignore
-      this.funcParamsDiv = ui.inputs([
+      this.funcParamsDiv = ui.div([
         this.tableInput,
         this.molColInput,
         this.activitiesInput,
@@ -40,7 +40,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
         this.methodInput,
         this.methodSettingsDiv,
         this.similarityMetricInputRoot,
-      ], {style: {minWidth: '320px'}});
+      ], {style: {minWidth: '320px'}, classes: 'ui-form'});
     }
 
     onTableInputChanged(semtype: DG.SemType) {

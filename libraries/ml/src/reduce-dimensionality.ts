@@ -373,10 +373,20 @@ export class DimensionalityReducer {
   constructor(data: any[], method: KnownMethods, metric: KnownMetrics, options?: Options) {
     const measure = new Measure(metric).getMeasure(options?.distanceFnArgs);
     let specOptions = {};
-
+    let bitArrayLength = 2048;
+    for (let i = 0; i < data.length; ++i) {
+      if (data[i] && data[i]._length) {
+        bitArrayLength = data[i]._length;
+        break;
+      }
+    }
     if (isBitArrayMetric(metric)) {
-      for (let i = 0; i < data.length; ++i)
-        data[i] = new BitArray(data[i]._data, data[i]._length);
+      for (let i = 0; i < data.length; ++i) {
+        if (data[i] && data[i]._data)
+          data[i] = new BitArray(data[i]._data, data[i]._length);
+        else
+          data[i] = new BitArray(bitArrayLength);
+      }
     }
 
     if (method == 'UMAP') {
