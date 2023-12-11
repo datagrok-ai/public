@@ -245,7 +245,7 @@ export class IconTool extends DG.ViewBase {
       ]),
       ui.divV([
         browseFile,
-        ui.inputs(<Iterable<DG.InputBase>>[
+        ui.div([
           fileButtons,
           imageMargin,
           setTransperency,
@@ -256,7 +256,7 @@ export class IconTool extends DG.ViewBase {
           fontWeight,
           setColors,
           ui.buttonsInput([dwnl]),
-        ]),
+        ], {classes: 'ui-form'}),
         image,
         image1,
         image2,
