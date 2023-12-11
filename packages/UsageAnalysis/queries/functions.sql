@@ -94,8 +94,6 @@ where res.pid = any(@packages)
 
 --name: FunctionsExecTime
 --input: string function
---meta.cache1: all
---meta.invalidateOn1: 0 0 0 * *
 --connection: System:Datagrok
 select e.id, EXTRACT(EPOCH FROM (e.event_time_finished - e.event_time)) AS "time, s", ep.name as "Input name",
 ep.type as type, COALESCE(epv.value, epv.value_array::text, epv.data_frame_value_name, epv.value_string, epv.value_uuid::text) as value

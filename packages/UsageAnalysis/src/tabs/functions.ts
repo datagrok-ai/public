@@ -15,6 +15,7 @@ export class FunctionsView extends UaView {
     super(uaToolbox);
     this.name = 'Functions';
     this.functionsExecTime.style.display = 'none';
+    this.rout = '/Usage';
   }
 
   async initViewers(): Promise<void> {
@@ -157,5 +158,9 @@ export class FunctionsView extends UaView {
       name.classList.add('ua-markup');
       pane.root.querySelector('.d4-accordion-pane-header')?.prepend(name);
     });
+  }
+
+  switchRout(): void {
+    this.rout = this.rout === '/Usage' ? '/ExecutionTime' : '/Usage';
   }
 }
