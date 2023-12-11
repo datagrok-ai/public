@@ -16,6 +16,7 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba clean -afy
 
 COPY environment.yml /app/
+COPY requirements.txt /app/
 
 RUN set -ex ; \
     micromamba env create -f environment.yml ; \

@@ -3,6 +3,9 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11.5
+  - pip
+  - pip:
+    - -r requirements.txt 
   - rdkit
   - joblib
   - numpy
@@ -12,3 +15,4 @@ dependencies:
   - boto3
   - Flask
   - chemprop
+  - pytorch
