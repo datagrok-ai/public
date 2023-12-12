@@ -15,6 +15,8 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 
 import {oneWayAnova} from './stat-tools';
 
+import {simpleImpute} from './missing-values-imputation/simple-imputer';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -332,4 +334,19 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
   addOneWayAnovaVizualization(table, factor, feature, res);  
+}
+
+//top-menu: ML | Impute missing values | Simple...
+//name: Simple impute
+//desription: Univariate imputation of missing values with simple strategies
+//input: dataframe table
+//input: column column
+//input: string strategy = 'mean' {choices: ['mean', 'median']} [The imputation strategy]
+//input: bool inPlace = true {caption: In place} [Whether to create a new column]
+//input: bool toMark = true {caption: Mark} [Whether to mark imputed values]
+export function simpleImputationOfMissingValues(table: DG.DataFrame, column: DG.Column, strategy: string, inPlace: boolean, toMark: boolean) {
+  if (inPlace)
+    simpleImpute(column, strategy, inPlace, toMark);
+  else
+    table.columns.add(simpleImpute(column, strategy, inPlace, toMark));
 }
