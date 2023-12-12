@@ -62,7 +62,7 @@ category('Viewers: Monomer-Position', () => {
     const cellCoordinates = {col: '9', row: 6};
     const gc = mpViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     const mp = mpViewer.getMonomerPosition(gc);
-    expect(showTooltip(model.df, activityCol, model!.settings!.columns!, {
+    expect(showTooltip(model.df, activityCol, Object.entries(model!.settings!.columns!), {
       monomerPosition: mp,
       x: 0,
       y: 0,
@@ -121,7 +121,7 @@ category('Viewers: Most Potent Residues', () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     const mp = mprViewer.getMonomerPosition(gc);
-    expect(showTooltip(model.df, activityCol, model!.settings!.columns!, {
+    expect(showTooltip(model.df, activityCol, Object.entries(model!.settings!.columns!), {
       monomerPosition: mp,
       x: 0,
       y: 0,

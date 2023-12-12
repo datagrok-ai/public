@@ -115,8 +115,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       });
 
     this.columns = this.columnList(LST_PROPERTIES.COLUMNS, [], {category: LST_CATEGORIES.AGGREGATION});
-    const aggregationChoices = Object.values(DG.AGG)
-      .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
+    const aggregationChoices = C.AGGREGATION_TYPES;
     this.aggregation = this.string(LST_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {
         category: LST_CATEGORIES.AGGREGATION,

@@ -8,11 +8,13 @@ import * as C from '../utils/constants';
 import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
 import {getDistributionPanel, getDistributionTable} from './misc';
 import {getMonomerWorksInstance} from '../package';
-import {AggregationColumns, getAggregatedColumnValues, MonomerPositionStats} from './statistics';
+import {getAggregatedColumnValues, MonomerPositionStats} from './statistics';
+import { StringDictionary } from '@datagrok-libraries/utils/src/type-declarations';
 
 export type TooltipOptions = {
   fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number,
-  monomerPosition: type.SelectionItem, mpStats: MonomerPositionStats
+  monomerPosition: type.SelectionItem, mpStats: MonomerPositionStats,
+  aggrColValues?: StringDictionary
 };
 
 export function showMonomerTooltip(monomer: string, x: number, y: number): boolean {
@@ -37,7 +39,7 @@ export function showMonomerTooltip(monomer: string, x: number, y: number): boole
   return true;
 }
 
-export function showTooltip(df: DG.DataFrame, activityCol: DG.Column<number>, columns: AggregationColumns,
+export function showTooltip(df: DG.DataFrame, activityCol: DG.Column<number>, columns: [string, DG.AggregationType][],
   options: TooltipOptions): boolean {
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
@@ -49,7 +51,7 @@ export function showTooltip(df: DG.DataFrame, activityCol: DG.Column<number>, co
 }
 
 //TODO: move out to viewer code
-export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, columns: AggregationColumns,
+export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, columns: [string, DG.AggregationType][],
   options: TooltipOptions): HTMLDivElement | null {
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
@@ -67,7 +69,7 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
     if (tableMap['p-value'])
       tableMap['p-value'] = `${tableMap['p-value']}${options.isMutationCliffs ? ' (color)' : ''}`;
   }
-  const aggregatedColMap = getAggregatedColumnValues(df, Object.entries(columns), {mask: mask});
+  const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, { mask: mask });
   const resultMap = {...tableMap, ...aggregatedColMap};
 
   const distroStatsElem = getDistributionPanel(hist, resultMap);

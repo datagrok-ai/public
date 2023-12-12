@@ -191,6 +191,9 @@ export class PeptidesModel {
           lst._viewerGrid = null;
           lst._logoSummaryTable = null;
           lst.render();
+          const mpr = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as LogoSummaryTable;
+          mpr._viewerGrid = null;
+          mpr.render();
         break;
       }
     }
