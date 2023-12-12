@@ -4,7 +4,7 @@ channels:
   - pytorch
   - nvidia
 dependencies:
-  - python=3.9
+  - python>=3
   - pip
   - pip:
     - -r requirements.txt 
@@ -18,7 +18,7 @@ dependencies:
   - Flask
   - chemprop
   - mkl
-  - pytorch=1.10.0
-  - torchvision=0.11.1
-  - torchaudio=0.10.0
-  - cudatoolkit=11.4
+  - pytorch=*=*cuda11.3*
+  - torchvision=*=*_cu*
+  - torchaudio=*=*_cu*
+  - cudatoolkit<=11.4
