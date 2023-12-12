@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import {BiostructureDataJson} from '../pdb/types';
 import {IViewer} from './viewer';
 import {PdbResDataFrameType} from '../pdb/pdb-helper';
 import {TAGS as pdbTAGS} from '../pdb/index';
@@ -33,13 +34,9 @@ export enum PluginLayoutControlsDisplayType {
   REACTIVE = 'reactive'
 }
 
-export type MolstarDataType = {
-  ext: string, data: string | Uint8Array, options?: { dataLabel?: string, },
-};
-
 export const BiostructurePropsDefault = new class {
   // -- Data --
-  dataJson: string = 'null';
+  dataJson: BiostructureDataJson = BiostructureDataJson.null;
   pdb: string | null = null;
   pdbTag: string | null = pdbTAGS.PDB;
   ligandColumnName: string | null = null;
