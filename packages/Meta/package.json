@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.97",
+  "version": "3.6.98",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3669,6 +3669,19 @@
         "directory": "packages/FileEditors"
       },
       "category": "Data Access"
+    },
+    "deqs": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.16.0"
+        }
+      },
+      "description": "WebAutoSolver tools for solving ODEs in a browser.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/ODEs"
+      }
     }
   }
 }
