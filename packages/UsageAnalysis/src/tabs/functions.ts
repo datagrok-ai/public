@@ -99,9 +99,28 @@ export class FunctionsView extends UaView {
     minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
     onSubmit: (_, value) => {
       grok.functions.call('UsageAnalysis:FunctionsExecTime', {function: value?.label}).then((df: DG.DataFrame) => {
+        if (df.rowCount === 0) {
+          grid.dataFrame = DG.DataFrame.create(0);
+          return;
+        }
+        const time = df.getCol('time').getRawData();
+        const input = df.getCol('input').toList();
+        const arr = [];
+        let obj: any;
+        for (let i = 0; i < df.rowCount; i++) {
+          obj = JSON.parse(input[i]);
+          obj['time, s'] = time[i];
+          arr.push(obj);
+        }
+        df = DG.DataFrame.fromObjects(arr)!;
         grid.dataFrame = df;
+        const order = Object.keys(JSON.parse(input[0]));
+        order.unshift('time, s');
+        grid.columns.setOrder(order);
       });
     }, debounceRemote: 100});
+    typeAhead.input.style.width = '300px';
+    typeAhead.input.style.marginBottom = '15px';
     this.functionsExecTime.append(ui.divV([typeAhead, grid]));
 
     this.viewers.push(functionsViewer);
