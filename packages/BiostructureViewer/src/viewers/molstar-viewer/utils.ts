@@ -7,8 +7,9 @@ import {Subject, Unsubscribable} from 'rxjs';
 
 import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
 import {BuiltInTrajectoryFormat, BuiltInTrajectoryFormats} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {
-  BiostructureProps, BiostructurePropsDefault,
+  BiostructureProps,
   PluginLayoutControlsDisplayType, SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
@@ -158,8 +159,9 @@ export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPro
     try {
       viewer = await createRcsbViewer(view.root, castProps(defaults), 'previewMolstarUI()');
       const {binary} = molecule3dFileExtensions[file.extension];
-      const data: string | Uint8Array = binary ? await file.readAsBytes() : await file.readAsString();
-      await parseAndVisualsData(viewer.plugin, {ext: file.extension, data: data});
+      const dataValue: string | Uint8Array = binary ? await file.readAsBytes() : await file.readAsString();
+      const data: BiostructureData = {binary: binary, ext: file.extension, data: dataValue};
+      await parseAndVisualsData(viewer.plugin, data);
       resolve();
     } catch (err: any) {
       reject(err);

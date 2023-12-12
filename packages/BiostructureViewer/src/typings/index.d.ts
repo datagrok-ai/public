@@ -112,6 +112,7 @@ declare module 'NGL' {
     renderPending: boolean;
 
     render(picking: boolean): void;
+
     requestRender(): void;
 
     setSize(width: number, height: number): void;
@@ -169,5 +170,11 @@ declare module 'NGL' {
     constructor(src: Structure, params?: any);
 
     getString(): string;
+  }
+
+  export class SdfWriter {
+    constructor(src: Structure, params?: any);
+
+    getData(): string;
   }
 }

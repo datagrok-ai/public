@@ -3,8 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
+import * as ngl from 'NGL';
+
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {IPdbHelper, PdbResDataFrameType} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {DefaultPluginSpec, PluginSpec} from 'molstar/lib/mol-plugin/spec';
@@ -13,6 +16,11 @@ import {StateObjectSelector} from 'molstar/lib/mol-state';
 import {Model} from 'molstar/lib/mol-model/structure';
 import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
 import {Sequence} from 'molstar/lib/mol-model/sequence';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {PdbAtomCoords, PdbAtomTer} from './pdbqt/types-pdb';
+import {AtomBase, AtomCoordsBase, LineBase} from './pdbqt/types-base';
+import {Pdbqt} from './pdbqt/pdbqt-parser';
+import {IMPORT} from '../consts-import';
 
 /** {@link https://molstar.org/docs/plugin/#plugincontext-without-built-in-react-ui} */
 const MolstarPluginSpec: PluginSpec = {
@@ -131,6 +139,49 @@ export class PdbHelper implements IPdbHelper {
     resDf.temp.set(pdbTAGS.PDB, pdbData);
 
     return resDf;
+  }
+
+  parsePdbqt(pdbqtStr: string, molColName?: string): DG.DataFrame {
+    const data: Pdbqt = Pdbqt.parse(pdbqtStr);
+    const molColNameVal: string = molColName ?? IMPORT[Molecule3DUnits.pdbqt].molColName;
+    const resDf = data.toDataFrame(molColNameVal);
+    return resDf;
+  }
+
+  async molToPdb(mol: string): Promise<string> {
+    // const val = await ngl.autoLoad(mol, {ext: 'sdf'});
+    // const resPdb = (new ngl.PdbWriter(val)).getString();
+    // return resPdb;
+    const resName: string = 'UNK';
+    const chain: string = '';
+    const resNum: number = 0;
+
+    const molH = MolfileHandler.getInstance(mol);
+    const lineList: LineBase[] = new Array<LineBase>(molH.atomCount + 1);
+    for (let atomI = 0; atomI < molH.atomCount; ++atomI) {
+      const atomType = molH.atomTypes[atomI];
+      const atomX: number = molH.x[atomI];
+      const atomY: number = molH.y[atomI];
+      const atomZ: number = molH.z[atomI];
+      // @formatter:off
+      lineList[atomI] = new PdbAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('HETATM'),
+        (atomI + 1), atomType, '', '', resName, chain, resNum, ''),
+      atomX, atomY, atomZ, 0, 0), '', atomType, '');
+      // @formatter:on
+    }
+    lineList[molH.atomCount] = new PdbAtomTer(new AtomBase(new LineBase('TER'),
+      -1, '', '', '', '', '', -1, ''));
+
+    const resPdb = lineList.map((l) => l.toStr()).join('\n');
+    return resPdb;
+  }
+
+  async pdbqtToMol(srcPdbqt: string): Promise<string> {
+    const srcBlob = new Blob([srcPdbqt]);
+    const valS: ngl.Structure = await ngl.autoLoad(srcBlob, {ext: 'pdbqt'});
+
+    const res = (new ngl.SdfWriter(valS)).getData();
+    return res;
   }
 
   // -- Instance singleton --

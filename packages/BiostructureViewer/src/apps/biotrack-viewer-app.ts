@@ -11,7 +11,7 @@ import {_package} from '../package';
 
 /** The app for biotrackViewer */
 export class BiotrackViewerApp {
-  private readonly appFuncName: string = '';
+  private readonly appFuncName: string;
 
   constructor(appFuncName: string = 'biotrackViewerApp') {
     this.appFuncName = appFuncName;

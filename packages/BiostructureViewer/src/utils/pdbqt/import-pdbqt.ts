@@ -5,11 +5,11 @@ import * as ui from 'datagrok-api/ui';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {Pdbqt} from './pdbqt-parser';
 import {IMPORT} from '../../consts-import';
-import {buildDataJson, PROPS as bsPROPS} from '../../viewers/molstar-viewer/molstar-viewer';
-import {Base64} from 'js-base64';
+import {PROPS as msvPROPS} from '../../viewers/molstar-viewer/molstar-viewer';
 import {viewBiostructure} from '../../viewers/view-preview';
 
 
@@ -22,7 +22,13 @@ export async function importPdbqtUI(fileContent: string, test: boolean = false):
     if (data.target) {
       const targetPdbStr = data.target.toPdb();
       df.setTag(pdbTAGS.PDB, targetPdbStr);
-      return [df];
+      if (test) return [df];
+
+      const view = grok.shell.addTableView(df);
+      const viewer = await df.plot.fromType('Biostructure', {
+        ligandColumnName: molColName,
+      });
+      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Target', 0.4);
     } else {
       if (test) return [df];
 
@@ -37,9 +43,10 @@ export async function importPdbqtUI(fileContent: string, test: boolean = false):
           await delay(100); /* to fill DG.FileInfo.data */
           const dataFi: DG.FileInfo = dataFileInput.value;
           const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
+          const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
           const viewer = await df.plot.fromType('Biostructure', {
-            [bsPROPS.dataJson]: buildDataJson(dataA, dataFi.extension),
-            [bsPROPS.ligandColumnName]: molColName,
+            [msvPROPS.dataJson]: BiostructureDataJson.fromData(data),
+            [msvPROPS.ligandColumnName]: molColName,
           });
           view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Docking target biostructure', 0.4);
         })

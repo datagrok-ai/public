@@ -12,6 +12,7 @@ import './tests/molstar-preview-tests';
 import './tests/molstar-viewer-tests';
 import './tests/viewers';
 import './tests/pdbqt-tests';
+import './tests/autodock-tests';
 
 // This _package object is for tests only.
 // Call package functions to test code calling package.ts/_package object.

@@ -67,13 +67,13 @@ export class AtomBase extends LineBase implements IAtomBase {
   toStr(): string {
     const res = [
       super.toStr() /* 1-6 */,
-      this.number.toFixed(0).padStart(5) /* 7-11 */, ' ' /* 12 */,
+      (this.number > 0 ? this.number.toFixed(0) : '').padStart(5) /* 7-11 */, ' ' /* 12 */,
       this.atomElement.padStart(2) /* 13-14 */,
       this.atomName.padEnd(2) /* 15-16*/,
       this.altLoc.padEnd(1) /* 17 */,
       this.resName.padStart(3) /* 18-20 */, ' ' /* 21 */,
       this.chain.padEnd(1).slice(0, 1) /* 22 */,
-      this.resNumber.toFixed(0).padStart(4) /* 23-26 */,
+      (this.resNumber >= 0 ? this.resNumber.toFixed(0) : '').padStart(4) /* 23-26 */,
       this.insCode.padEnd(1).slice(0, 1) /* 27 */,
     ].join('');
     if (res.length !== 27)
@@ -105,7 +105,7 @@ export class AtomCoordsBase extends AtomBase implements IAtomCoords {
   }
 
   static fromStr(line: string): AtomCoordsBase {
-    if (!line.startsWith('ATOM  '))
+    if (!(line.startsWith('ATOM  ') || line.startsWith('HETATM')))
       throw new Error('');
     return new AtomCoordsBase(
       AtomBase.fromStr(line.slice(1 - 1, 27)),

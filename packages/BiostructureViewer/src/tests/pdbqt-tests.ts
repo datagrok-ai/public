@@ -9,7 +9,7 @@ import {category, expect/*, expect*/, expectObject, test} from '@datagrok-librar
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
 
 import {Pdbqt} from '../utils/pdbqt/pdbqt-parser';
-import {errInfo} from '../utils/err-info';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {importPdbqt} from '../package';
 import {IPdbAtomBase, IPdbqtAtomBase} from '../utils/pdbqt/types';
 import {AtomBase, AtomCoordsBase, LineBase} from '../utils/pdbqt/types-base';
@@ -99,7 +99,11 @@ category('pdbqt', () => {
   }
 
   test('parse', async () => {
-    await _testPdbqtParser();
+    await _testPdbqtParse();
+  });
+
+  test('parse-autodock-gpu', async () => {
+    await _testPdbqtParseAutodockGpu();
   });
 
   test('import-models', async () => {
@@ -120,7 +124,7 @@ category('pdbqt', () => {
   });
 });
 
-async function _testPdbqtParser(): Promise<void> {
+async function _testPdbqtParse(): Promise<void> {
   try {
     //const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
     const dapiFilePath = `System:AppData/${_package.name}/docking/ligand_out.pdbqt`;
@@ -151,6 +155,19 @@ async function _testPdbqtParser(): Promise<void> {
     _package.logger.error(errMsg, undefined, errStack);
     throw err;
   }
+}
+
+async function _testPdbqtParseAutodockGpu(): Promise<void> {
+  const cnt = await _package.files.readAsText('samples/1bdq.autodock-gpu.pdbqt');
+  const data: Pdbqt = Pdbqt.parse(cnt);
+
+  expect(data['currentModel'], null); // last model closed
+  expect(data.models.length, 2);
+  // for (const model of data.models) {
+  //   expect(model.torsdof, 14);
+  //   expect(model.atoms.length, 19);
+  //   expect(model.children.length, 2);
+  // }
 }
 
 async function _testPdbqtImportModels(): Promise<void> {

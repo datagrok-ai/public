@@ -52,6 +52,3 @@ export async function _getPdbHelper(): Promise<IPdbHelper> {
 
   return window.$pdbHelper;
 }
-
-
-
