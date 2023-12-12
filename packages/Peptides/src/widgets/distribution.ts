@@ -104,7 +104,7 @@ function getSingleDistribution(table: DG.DataFrame, stats: StatsItem, options: D
   labelMap: DistributionLabelMap = {}): HTMLDivElement {
   const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection,
     options.peptideSelection));
-  const aggregatedColMap = getAggregatedColumnValues(table, options.columns,
+  const aggregatedColMap = getAggregatedColumnValues(table, Object.entries(options.columns),
     {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer, stats.mask.length)});
   const tableMap = getStatsTableMap(stats);
   const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};

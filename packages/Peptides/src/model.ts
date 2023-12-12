@@ -187,13 +187,13 @@ export class PeptidesModel {
           this.settings!.showMostPotentResidues ? this.addMostPotentResidues() :
             this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
       case 'columns':
-          const lst = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
-          lst._viewerGrid = null;
-          lst._logoSummaryTable = null;
-          lst.render();
-          const mpr = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as LogoSummaryTable;
-          mpr._viewerGrid = null;
-          mpr.render();
+        const lst = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+        lst._viewerGrid = null;
+        lst._logoSummaryTable = null;
+        lst.render();
+        const mpr = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as LogoSummaryTable;
+        mpr._viewerGrid = null;
+        mpr.render();
         break;
       }
     }
@@ -445,7 +445,6 @@ export class PeptidesModel {
       isAnalysis: trueModel.settings !== null && (isModelSource ||
         areObjectsEqual(trueModel.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
     }), true);
-
     return acc;
   }
 
