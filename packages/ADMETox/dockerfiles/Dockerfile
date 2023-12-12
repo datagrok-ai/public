@@ -15,8 +15,6 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba remove -n base awscli -y && \
     micromamba clean -afy
 
-RUN micromamba install -n base -c pytorch -c torchvision -c torchaudio -c pytorch-cuda=11.6 -c nvidia -y
-
 COPY environment.yml /app/
 COPY requirements.txt /app/
 
