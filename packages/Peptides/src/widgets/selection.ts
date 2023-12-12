@@ -73,11 +73,15 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   const mpStats = calculateMonomerPositionStatistics(options.activityColumn, newTable.filter,
     options.positionColumns, {isFiltered: newTable.filter.anyTrue || newTable.filter.anyFalse});
 
-  const cachedWebLogoTooltip: CachedWebLogoTooltip = {bar: '', tooltip: null};
-  const webLogoBounds: WebLogoBounds = {};
+  const cachedWebLogoTooltip: () => CachedWebLogoTooltip = () => {
+    return {bar: '', tooltip: null};
+  };
+  const webLogoBounds: () => WebLogoBounds = () => {
+    return {};
+  };
   const cellRendererOptions: CellRendererOptions = {
     isSelectionTable: true, cachedWebLogoTooltip, webLogoBounds,
-    colorPalette: options.colorPalette,
+    colorPalette: () => options.colorPalette,
   };
   const tooltipOptions: TooltipOptions = {x: 0, y: 0, monomerPosition: {} as SelectionItem, mpStats};
 

@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {View} from 'datagrok-api/dg';
 
 import {analyzePeptidesUI} from './widgets/peptides';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
@@ -12,7 +13,6 @@ import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-wo
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
-import {View} from "datagrok-api/dg";
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -51,7 +51,7 @@ async function openDemoData(chosenFile: string): Promise<void> {
 
 //name: Peptides
 //tags: app
-//output: view
+//output: view v
 export function Peptides(): DG.View {
   const appHeader = u2.appHeader({
     iconPath: _package.getIconUrl(),

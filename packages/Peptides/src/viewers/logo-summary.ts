@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
-import {SCALING_METHODS} from '../utils/constants';
+import {COLUMN_NAME, SCALING_METHODS} from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {
@@ -18,7 +18,14 @@ import {
 } from '../utils/statistics';
 import wu from 'wu';
 import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
-import {getDistributionPanel, getDistributionTable, getTotalAggColumns, modifySelection, scaleActivity} from '../utils/misc';
+import {
+  getDistributionPanel,
+  getDistributionTable,
+  getTotalAggColumns,
+  isApplicableDataframe,
+  modifySelection,
+  scaleActivity,
+} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import * as type from '../utils/types';
 import {SelectionItem} from '../utils/types';
@@ -35,8 +42,6 @@ export enum CLUSTER_TYPE {
 }
 
 export type ClusterType = `${CLUSTER_TYPE}`;
-
-const COLUMN_NAME = 'ColumnName';
 
 export const enum LST_PROPERTIES {
   WEB_LOGO_MODE = 'webLogoMode',
@@ -234,12 +239,18 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.getProperty(`${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
-      ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
-    this.getProperty(`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
-      ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
-    this.getProperty(`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`)
-      ?.set(this, wu(this.dataFrame.columns.categorical).next().value.name);
+    if (isApplicableDataframe(this.dataFrame)) {
+      this.getProperty(`${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
+        ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
+      this.getProperty(`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
+        ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+      this.getProperty(`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`)
+        ?.set(this, wu(this.dataFrame.columns.categorical).next().value.name);
+    } else {
+      const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
+      grok.log.error(msg);
+      grok.shell.warning(msg);
+    }
     this.render();
   }
 

@@ -20,7 +20,7 @@ import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
 import * as C from './utils/constants';
-import {COLUMNS_NAMES} from './utils/constants';
+import {COLUMN_NAME, COLUMNS_NAMES} from './utils/constants';
 import * as type from './utils/types';
 import {PeptidesSettings} from './utils/types';
 import {
@@ -454,16 +454,16 @@ export class PeptidesModel {
     this.webLogoBounds = {};
 
     const cellRendererOptions: CR.CellRendererOptions = {
-      selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): type.Selection =>
-        modifySelection(this.webLogoSelection, monomerPosition, options),
+      selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): void =>
+        this.modifyWebLogoSelection(monomerPosition, options),
       unhighlightCallback: (): void => this.unhighlight(),
-      colorPalette: pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName)),
-      webLogoBounds: this.webLogoBounds,
-      cachedWebLogoTooltip: this.cachedWebLogoTooltip,
+      colorPalette: () => pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName)),
+      webLogoBounds: () => this.webLogoBounds,
+      cachedWebLogoTooltip: () => this.cachedWebLogoTooltip,
       highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void =>
         highlightMonomerPosition(mp, df, mpStats),
       isSelectionTable: false,
-      headerSelectedMonomers: this.webLogoSelectedMonomers,
+      headerSelectedMonomers: () => this.webLogoSelectedMonomers,
     };
     if (this.monomerPositionStats === null || this.positionColumns === null)
       throw new Error('PeptidesError: Could not updage grid: monomerPositionStats or positionColumns are null');
@@ -664,7 +664,6 @@ export class PeptidesModel {
     sourceGridProps.allowColSelection = props?.allowColSelection ?? false;
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
-    this.df.temp[C.EMBEDDING_STATUS] = false;
     const positionCols = this.positionColumns;
     if (positionCols === null)
       throw new Error('PeptidesError: Could not set grid properties: positionColumns are null');
@@ -872,8 +871,12 @@ export class PeptidesModel {
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     if (lstViewer != null) {
       view.addViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {
-        [LST_PROPERTIES.SEQUENCE]: lstViewer.sequenceColumnName,
-        [LST_PROPERTIES.CLUSTERS]: lstViewer?.clustersColumnName,
+        [`${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`]: lstViewer.sequenceColumnName,
+        [`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`]: lstViewer.activityColumnName,
+        [LST_PROPERTIES.ACTIVITY_SCALING]: lstViewer.activityScaling,
+        [LST_PROPERTIES.WEB_LOGO_MODE]: lstViewer.webLogoMode,
+        [LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD]: lstViewer.membersRatioThreshold,
+        [`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`]: lstViewer.clustersColumnName,
       });
     }
 

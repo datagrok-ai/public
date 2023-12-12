@@ -52,7 +52,7 @@ export enum SEM_TYPES {
   MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
 }
 
-export const EMBEDDING_STATUS = 'embeddingStatus';
+export const COLUMN_NAME = 'ColumnName';
 
 export enum SCALING_METHODS {
   NONE = 'none',

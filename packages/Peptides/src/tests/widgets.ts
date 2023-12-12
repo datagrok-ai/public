@@ -14,7 +14,7 @@ import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
-import { MonomerPosition } from '../viewers/sar-viewer';
+import {MonomerPosition} from '../viewers/sar-viewer';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -91,8 +91,10 @@ category('Widgets: Distribution panel', () => {
   test('UI', async () => {
     model.df.selection.set(0, true);
     await delay(1000);
-    getDistributionWidget(model.df, {peptideSelection: DG.BitSet.create(model.df.rowCount), columns: model.settings!.columns!,
-      activityCol: scaledActivityCol});
+    getDistributionWidget(model.df, {
+      peptideSelection: DG.BitSet.create(model.df.rowCount), columns: model.settings!.columns!,
+      activityCol: scaledActivityCol,
+    });
   });
 });
 
@@ -180,7 +182,7 @@ category('Widgets: Actions', () => {
     const currentTable = grok.shell.t;
 
     expect(currentTable.getTag(C.TAGS.MULTIPLE_VIEWS), '1', 'Current table is expected to have multiple views tag');
-   // expect(currentTable.getTag(C.TAGS.UUID), newViewId, 'Current table is expected to have the same UUID as new view');
+    expect(currentTable.getTag(DG.TAGS.ID), newViewId, 'Current table is expected to have the same UUID as new view');
     expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
 
     await delay(500);

@@ -21,10 +21,10 @@ category('Viewers: Basic', () => {
     await delay(500);
   });
 
-  const viewers = DG.Func.find({ package: 'Peptides', tags: ['viewer'] }).map((f) => f.friendlyName);
+  const viewers = DG.Func.find({package: 'Peptides', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
-      await testViewer(v, df.clone(), { detectSemanticTypes: true, arbitraryDfTest: false });
+      await testViewer(v, df.clone(), {detectSemanticTypes: true, arbitraryDfTest: false});
     });
   }
 });
@@ -179,7 +179,7 @@ category('Viewers: Logo Summary Table', () => {
   });
 
   test('Tooltip', async () => {
-    const cluster = 'PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.D-Orn.D-aThr}$$$$';
+    const cluster = '0';
     const tooltipElement = lstViewer.showTooltip({
       monomerOrCluster: cluster,
       positionOrClusterType: CLUSTER_TYPE.ORIGINAL,
