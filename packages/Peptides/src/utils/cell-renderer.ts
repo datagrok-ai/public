@@ -308,7 +308,7 @@ function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionIt
       tooltipOptions.x = ev.clientX;
       tooltipOptions.y = ev.clientY;
       tooltipOptions.monomerPosition = monomerPosition;
-      options.cachedWebLogoTooltip()!.tooltip = showTooltipAt(df, activityCol, {}, tooltipOptions);
+      options.cachedWebLogoTooltip()!.tooltip = showTooltipAt(df, activityCol, [], tooltipOptions);
     }
   }
 }

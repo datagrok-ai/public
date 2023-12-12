@@ -21,6 +21,7 @@ import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution
 import {
   getDistributionPanel,
   getDistributionTable,
+  getTotalAggColumns,
   isApplicableDataframe,
   modifySelection,
   scaleActivity,
@@ -114,8 +115,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       });
 
     this.columns = this.columnList(LST_PROPERTIES.COLUMNS, [], {category: LST_CATEGORIES.AGGREGATION});
-    const aggregationChoices = Object.values(DG.AGG)
-      .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
+    const aggregationChoices = C.AGGREGATION_TYPES;
     this.aggregation = this.string(LST_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {
         category: LST_CATEGORIES.AGGREGATION,
@@ -345,6 +345,11 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     return this.clusterSelection;
   }
 
+  getTotalViewerAggColumns(): [string, DG.AggregationType][] {
+    const aggrCols = this.getAggregationColumns();
+    return getTotalAggColumns(this.columns, aggrCols, this.model?.settings?.columns);
+  }
+
   createLogoSummaryTable(): DG.DataFrame {
     const clustersColName = this.clustersColumnName;
     const isDfFiltered = this.dataFrame.filter.anyFalse;
@@ -376,7 +381,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const customRatioColData = customLSTCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
 
     let origLSTBuilder = filteredDf.groupBy([clustersColName]);
-    const aggColsEntries = Object.entries(this.getAggregationColumns());
+    const aggColsEntries = this.getTotalViewerAggColumns();
     const aggColNames = aggColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
     const customAggRawCols = new Array(aggColNames.length);
     const colAggEntries = aggColsEntries.map(
@@ -471,7 +476,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   createLogoSummaryTableGrid(): DG.Grid {
     const isDfFiltered = this.dataFrame.filter.anyFalse;
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
-    const aggColsEntries = Object.entries(this.getAggregationColumns());
+    const aggColsEntries = this.getTotalViewerAggColumns();
     const aggColNames = aggColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
 
     const grid = this.logoSummaryTable.plot.grid();
@@ -694,7 +699,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const aggregatedValues: {
       [colName: string]: number
     } = {};
-    const aggColsEntries = Object.entries(this.getAggregationColumns());
+    const aggColsEntries = this.getTotalViewerAggColumns();
     for (const [colName, aggFn] of aggColsEntries) {
       const newColName = getAggregatedColName(aggFn, colName);
       const col = this.dataFrame.getCol(colName);
@@ -801,7 +806,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
     const aggregatedColMap = getAggregatedColumnValues(this.dataFrame,
-      this.getAggregationColumns(), {
+      this.getTotalViewerAggColumns(), {
         filterDf: true,
         mask: mask,
       });

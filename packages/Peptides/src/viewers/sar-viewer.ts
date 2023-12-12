@@ -10,12 +10,13 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 import wu from 'wu';
 import * as type from '../utils/types';
 import {MutationCliffs, PeptidesSettings, SelectionItem} from '../utils/types';
-import {AggregationColumns, MonomerPositionStats, PositionStats, StatsItem} from '../utils/statistics';
+import {AggregationColumns, MonomerPositionStats, PositionStats, StatsItem, getAggregatedColName, getAggregatedColumnValuesFromDf, getAggregatedValue} from '../utils/statistics';
 import {_package} from '../package';
 import {showTooltip} from '../utils/tooltips';
 import {calculateMonomerPositionStatistics, findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import {
   extractColInfo,
+  getTotalAggColumns,
   highlightMonomerPosition,
   initSelection,
   isApplicableDataframe,
@@ -108,8 +109,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 50});
 
     this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.AGGREGATION});
-    const aggregationChoices = Object.values(DG.AGG)
-      .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
+    const aggregationChoices = C.AGGREGATION_TYPES;
     this.aggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.AGGREGATION, choices: aggregationChoices});
   }
@@ -307,6 +307,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       this._mutationCliffsSelection = null;
       this.doRender = false;
       break;
+    case SAR_PROPERTIES.COLUMNS:
+    case SAR_PROPERTIES.AGGREGATION:
+      if (this instanceof MostPotentResidues)
+        this._viewerGrid = null;
+      break;
     }
     if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
       this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
@@ -315,6 +320,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   getAggregationColumns(): AggregationColumns {
     return Object.fromEntries(
       this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
+  }
+
+  getTotalViewerAggColumns(): [string, DG.AggregationType][] {
+    const aggrCols = this.getAggregationColumns();
+    return getTotalAggColumns(this.columns, aggrCols, this.model?.settings?.columns);
   }
 
   createViewerGrid(): DG.Grid {
@@ -368,8 +378,7 @@ export class MonomerPosition extends SARViewer {
     const colorChoices = wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name);
     this.colorColumnName = this.column(MONOMER_POSITION_PROPERTIES.COLOR,
       {category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: colorChoices, nullable: false});
-    const aggregationChoices = Object.values(DG.AGG)
-      .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg));
+    const aggregationChoices = C.AGGREGATION_TYPES;
     this.colorAggregation = this.string(MONOMER_POSITION_PROPERTIES.COLOR_AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: aggregationChoices});
   }
@@ -487,7 +496,7 @@ export class MonomerPosition extends SARViewer {
       const monomerPosition = this.getMonomerPosition(gridCell);
       highlightMonomerPosition(monomerPosition, this.dataFrame, this.monomerPositionStats);
       this.model.isHighlighting = true;
-      const columnEntries = this.getAggregationColumns();
+      const columnEntries = this.getTotalViewerAggColumns();
       return showTooltip(this.model.df, this.getScaledActivityColumn(), columnEntries, {
         fromViewer: true,
         isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS, monomerPosition, x, y,
@@ -714,7 +723,10 @@ export class MostPotentResidues extends SARViewer {
     const countData: number[] = new Array(posData.length);
     const ratioData: number[] = new Array(posData.length);
     const meanData: number[] = new Array(posData.length);
-
+    const aggrColumnEntries = this.getTotalViewerAggColumns();
+    const aggColNames = aggrColumnEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
+    const aggrColsData = new Array<Array<number>>(aggColNames.length);
+    aggColNames.forEach(((_, idx) => aggrColsData[idx] = new Array(posData.length)));
     let i = 0;
     for (const [position, positionStats] of monomerPositionStatsEntries) {
       const generalPositionStats = positionStats.general;
@@ -753,6 +765,14 @@ export class MostPotentResidues extends SARViewer {
       countData[i] = maxEntry![1].count;
       ratioData[i] = maxEntry![1].ratio;
       meanData[i] = maxEntry![1].mean;
+
+      const stats = this.monomerPositionStats[position][maxEntry![0]];
+      const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, this.model.df.col(this.activityColumnName)!.length);
+      for (let j = 0; j < aggColNames.length; j++) {
+        const [colName, aggFn] = aggrColumnEntries[j];
+        const value = getAggregatedValue(this.model.df.getCol(colName), aggFn, mask);
+        aggrColsData[j][i] = value;
+      }
       ++i;
     }
 
@@ -773,6 +793,7 @@ export class MostPotentResidues extends SARViewer {
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.P_VALUE, pValData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.COUNT, countData));
     mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.RATIO, ratioData));
+    aggColNames.forEach((it, idx) => mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, it, aggrColsData[idx])));
 
     return mprDf;
   }
@@ -804,9 +825,12 @@ export class MostPotentResidues extends SARViewer {
         monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
-      const columnEntries = this.getAggregationColumns();
+      const columnEntries = this.getTotalViewerAggColumns();
+      const aggrValues = gridCell.tableRowIndex ? 
+        getAggregatedColumnValuesFromDf(gridCell.grid.dataFrame!, gridCell.tableRowIndex, columnEntries, {}) : undefined;
       return showTooltip(this.model.df, this.getScaledActivityColumn(), columnEntries,
-        {fromViewer: true, isMutationCliffs: true, monomerPosition, x, y, mpStats: this.monomerPositionStats});
+        {fromViewer: true, isMutationCliffs: true, monomerPosition, x, y, mpStats: this.monomerPositionStats, 
+          aggrColValues: aggrValues});
     });
     DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {

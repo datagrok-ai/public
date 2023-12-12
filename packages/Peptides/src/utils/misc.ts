@@ -5,7 +5,7 @@ import * as type from './types';
 import {PeptidesSettings} from './types';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MasksInfo, MonomerPositionStats, PositionStats} from './statistics';
+import {AggregationColumns, MasksInfo, MonomerPositionStats, PositionStats} from './statistics';
 import {PeptideViewer} from '../widgets/distribution';
 import wu from 'wu';
 
@@ -266,6 +266,14 @@ export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, ro
     }
   }
   return result;
+}
+
+export function getTotalAggColumns(viewerSelectedColNames: string[], aggColsViewer: AggregationColumns,
+  aggColsModel?: AggregationColumns): [string, DG.AggregationType][] {
+  const aggColsEntries = Object.entries(aggColsViewer);
+  const aggColsEntriesFromSettings = aggColsModel ?
+    Object.entries(aggColsModel).filter((it) => !viewerSelectedColNames.includes(it[0]) || aggColsViewer[it[0]] !== it[1]) : [];
+  return aggColsEntries.concat(aggColsEntriesFromSettings);
 }
 
 export function isApplicableDataframe(table: DG.DataFrame, minRows: number = 2): boolean {
