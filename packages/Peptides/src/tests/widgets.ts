@@ -91,9 +91,11 @@ category('Widgets: Distribution panel', () => {
   test('UI', async () => {
     model.df.selection.set(0, true);
     await delay(1000);
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     getDistributionWidget(model.df, {
       peptideSelection: DG.BitSet.create(model.df.rowCount), columns: model.settings!.columns!,
-      activityCol: scaledActivityCol,
+      activityCol: scaledActivityCol, clusterSelection: lstViewer!.clusterSelection, clusterColName: clusterCol.name,
+      monomerPositionSelection: model.webLogoSelection,
     });
   });
 });

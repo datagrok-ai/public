@@ -67,14 +67,16 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
   };
 }
 
-enum SPLIT_CATEGORY {
+export enum SPLIT_CATEGORY {
   SELECTION = 'Selection',
   ALL = 'All',
   PEPTIDES_SELECTION = 'Peptides selection',
 }
 
+export type DistributionLabelMap = { [key in SPLIT_CATEGORY]?: string };
+
 export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>, statsMap: StringDictionary,
-  labelMap: { [key in SPLIT_CATEGORY]?: string } = {}): HTMLDivElement {
+  labelMap: DistributionLabelMap = {}): HTMLDivElement {
   const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
   const labels = [];
   const categories = splitCol.categories as SPLIT_CATEGORY[];

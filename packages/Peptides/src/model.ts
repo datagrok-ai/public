@@ -398,12 +398,19 @@ export class PeptidesModel {
       }).root, true);
     }
     const isModelSource = requestSource === trueModel.settings;
+    const totalMonomerPositionSelection = isModelSource ? this.webLogoSelection :
+      (requestSource instanceof MonomerPosition) ? requestSource.invariantMapSelection : {};
+    const clusterSelection = (requestSource instanceof LogoSummaryTable) ? requestSource.clusterSelection :
+      trueLSTViewer?.clusterSelection ?? {};
     acc.addPane('Distribution', () => getDistributionWidget(trueModel.df, {
       peptideSelection: combinedBitset,
       columns: isModelSource ? trueModel.settings!.columns ?? {} :
-        (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
+        (requestSource as PeptideViewer).getAggregationColumns(),
       activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
-        (requestSource as unknown as PeptideViewer).getScaledActivityColumn(),
+        (requestSource as PeptideViewer).getScaledActivityColumn(),
+      monomerPositionSelection: totalMonomerPositionSelection,
+      clusterSelection: clusterSelection,
+      clusterColName: trueLSTViewer?.clustersColumnName,
     }), true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
