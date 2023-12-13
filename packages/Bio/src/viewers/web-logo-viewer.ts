@@ -17,9 +17,11 @@ import {
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 
 import {AggFunc, getAgg} from '../utils/agg';
-import {errInfo} from '../utils/err-info';
 import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
 import {_package} from '../package';
@@ -295,11 +297,9 @@ const POSITION_LABELS_HEIGHT: number = 12;
 
 export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public static residuesSet = 'nucleotides';
-  private static viewerCount: number = 0;
 
   private viewed: boolean = false;
 
-  private readonly viewerId: number = -1;
   private unitsHandler: UnitsHandler | null;
   private initialized: boolean = false;
 
@@ -381,9 +381,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   constructor() {
     super();
 
-    this.viewerId = WebLogoViewer.viewerCount;
-    WebLogoViewer.viewerCount += 1;
-
     this.textBaseline = 'top';
     this.unitsHandler = null;
 
@@ -449,13 +446,20 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.style.width = '100%';
 
     /* this.root.style.background = '#FFEEDD'; */
+    this.viewSyncer = new PromiseSyncer(_package.logger);
   }
+
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++WebLogoViewer.viewerCounter;
+
+  private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
 
   // -- Data --
 
   setData(): void {
-    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.setData(), in`);
-    this.viewPromise = this.viewPromise.then(async () => { // setData
+    const logPrefix = `${this.viewerToLog()}.setData()`;
+    _package.logger.debug(`${logPrefix}, in`);
+    this.viewSyncer.sync(`${logPrefix}`, async () => { // setData
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
         if (this.viewed) {
@@ -471,19 +475,16 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           await this.buildView(); //requests rendering
           this.viewed = true;
         }
-      } catch (err: any) {
-        const [errMsg, errStack] = errInfo(err);
-        grok.shell.error(errMsg);
-        _package.logger.error(errMsg, undefined, errStack);
       } finally {
         this.setDataInProgress = false;
       }
     });
+    _package.logger.debug(`${logPrefix}, out`);
   }
 
   // -- View --
 
-  private viewPromise: Promise<void> = Promise.resolve();
+  private viewSyncer: PromiseSyncer;
   private setDataInProgress: boolean = false;
   private viewSubs: Unsubscribable[] = [];
 
@@ -892,21 +893,19 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   /** Remove all handlers when table is a detach  */
   public override async detach() {
-    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.detach(), `);
+    const logPrefix = `${this.viewerToLog()}.detach()`;
+    _package.logger.debug(`${logPrefix}, in`);
 
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
+    this.viewSyncer.sync(`${logPrefix}`, async () => { // detach
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView();
         this.viewed = false;
       }
       superDetach();
-    })
-      .catch((err: any) => {
-        const [errMsg, errStack] = errInfo(err);
-        _package.logger.error(errMsg, undefined, errStack);
-      });
+    });
+    _package.logger.debug(`${logPrefix}, out`);
   }
 
   private _onSizeChanged: Subject<void> = new Subject<void>();
@@ -1274,6 +1273,27 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
+  }
+
+  // -- IRenderer --
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  public get onRendered(): Observable<void> { return this._onRendered; }
+
+  public invalidate(): void {
+    const logPrefix = `${this.viewerToLog()}.invalidate()`;
+    // Put the event trigger in the tail of the synced calls queue.
+    this.viewSyncer.sync(`${logPrefix}`, async () => {
+      this.invalidate();
+      this._onRendered.next();
+    });
+  }
+
+  public async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+    await testEvent(this.onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout);
   }
 }
 

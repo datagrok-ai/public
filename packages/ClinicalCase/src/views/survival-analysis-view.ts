@@ -83,14 +83,13 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     this.tabControl.addPane('Dataset', () =>
       ui.splitV([
         ui.splitH([
-          ui.box(ui.panel([
-            ui.inputs([
+          ui.box(ui.div([
+            ui.div([
               this.endpointChoices,
               this.covariatesChoices,
-              //@ts-ignore
               ui.buttonsInput([this.createSurvivalDataframe])
-            ] as Iterable<InputBase<any>>)
-          ]), { style: { maxWidth: '300px' } }),
+            ], {classes: 'ui-form'})
+          ]), { style: { maxWidth: '300px' }}),
           ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
         ])
       ]));
@@ -98,11 +97,10 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
       this.tabControl.addPane('Survival Chart', () => ui.splitV([
       ui.splitH([
         ui.box(ui.panel([
-          ui.inputs([
+          ui.div([
             this.confIntChoices,
-            //@ts-ignore
             this.strataChoicesDiv,
-          ] as Iterable<InputBase<any>>)
+          ], {classes: 'ui-form'})
         ]), { style: { maxWidth: '300px' } }),
         this.survivalPlotDiv
       ])

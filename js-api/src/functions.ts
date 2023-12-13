@@ -391,26 +391,3 @@ export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params
     return toDart(f.apply(null, jsParams));
   return f.apply(null, jsParams);
 }
-
-export class StepEditor extends DartWidget {
-
-  constructor(dart: any) {
-    super(dart);
-  }
-
-  static create(): StepEditor {
-    // @ts-ignore
-    return toJs(api.grok_StepEditor_Create());
-  }
-
-  loadScript(script: String): Promise<void> {
-    // @ts-ignore
-    return new Promise((resolve, reject) => api.grok_StepEditor_LoadScript(this.dart, script, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
-  }
-
-  toScript(): string {
-    // @ts-ignore
-    return api.grok_StepEditor_ToScript(this.dart);
-  }
-
-}

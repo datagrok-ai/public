@@ -63,8 +63,9 @@ export async function demoSequenceSpace(
       'lassoTool': true,
     })) as DG.ScatterPlotViewer;
   } else {
+    const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
     resSpaceViewer = (await sequenceSpaceTopMenu(df, df.getCol(colName),
-      DimReductionMethods.UMAP, MmDistanceFunctionsNames.LEVENSHTEIN, true)) as DG.ScatterPlotViewer;
+      DimReductionMethods.UMAP, MmDistanceFunctionsNames.LEVENSHTEIN, true, preprocessingFunc)) as DG.ScatterPlotViewer;
   }
   view.dockManager.dock(resSpaceViewer!, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
   return resSpaceViewer;

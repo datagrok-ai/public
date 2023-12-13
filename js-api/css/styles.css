@@ -42,3 +42,10 @@
 .chem-sketcher-loader-hide {
   display: none!important;
 }
+
+.chem-sketcher-filter-options {
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  gap: 10px;
+}

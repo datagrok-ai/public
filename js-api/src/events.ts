@@ -5,7 +5,7 @@ import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
 import {FileInfo, Package} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
-import {View, ViewLayout} from './views/view';
+import {View, ViewInfo, ViewLayout} from './views/view';
 import {Viewer} from "./viewer";
 import {Column} from "./dataframe";
 import {GridCell} from "./grid";
@@ -132,13 +132,13 @@ export class Events {
   get onResetFilterRequest(): rxjs.Observable<any> { return __obs('d4-reset-filter-request'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
-  get onViewLayoutGenerated(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-generated'); }
+  get onViewLayoutGenerated(): rxjs.Observable<ViewInfo> { return __obs('d4-view-layout-generated'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
-  get onViewLayoutApplying(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applying'); }
+  get onViewLayoutApplying(): rxjs.Observable<ViewInfo> { return __obs('d4-view-layout-applying'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
-  get onViewLayoutApplied(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applied'); }
+  get onViewLayoutApplied(): rxjs.Observable<ViewInfo> { return __obs('d4-view-layout-applied'); }
 
   /** File in the file share has been edited and saved by the user. */
   get onFileEdited(): rxjs.Observable<FileInfo> { return __obs('grok-file-edited'); }

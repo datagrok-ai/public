@@ -141,7 +141,7 @@ export async function _demoChemOverview(): Promise<void> {
             table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
             grok.shell.windows.showHelp = true;
             //@ts-ignore
-            grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem');
+            grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
             DG.chem.currentSketcherType = sketcherType;
     })
     .start();
@@ -178,12 +178,13 @@ export async function _demoSimilaritySearch(): Promise<void> {
 
 export async function _demoSimilarityDiversitySearch(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/smiles.csv');
-  const layoutString = await _package.files.readAsText('demo_files/similarity_diversity.layout');
-  const layout = DG.ViewLayout.fromJson(layoutString);
-  tv.loadLayout(layout);
+  _package.files.readAsText('demo_files/similarity_diversity.layout').then((layoutString: string) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    tv.loadLayout(layout);
+  })
   grok.shell.windows.showHelp = true;
   //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
 }
 
 
@@ -579,7 +580,7 @@ LIMIT 50
 
   const view = grok.shell.addView(DG.View.create());
   view.root.append(totalDiv);
-  runQuery();
+  setTimeout(() => runQuery(), 0);
 }
 
 
@@ -719,21 +720,10 @@ export async function _demoDatabases5(): Promise<void> {
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
+  _package.files.readAsText('demo_files/scaffold_tree.layout').then((layoutString: string) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    tv.loadLayout(layout);
+  });
   grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/#scaffold-tree-analysis');
-  const table: DG.DataFrame = tv.dataFrame;
-  const tree = await _package.files.readAsText('scaffold_tree.json');
-  const viewer = new ScaffoldTreeViewer();
-  viewer.allowGenerate = false;
-  viewer.dataFrame = table;
-  viewer.size = 'small';
-  viewer.addOrphanFolders = false;
-  await viewer.loadTreeStr(tree);
-  if (viewer.tree.children.length > 1) {
-    for (let n = 0; n < viewer.tree.children.length; ++n)
-      (viewer.tree.children[n] as TreeViewGroup).expanded = true;
-  }
-  tv.dockManager.dock(viewer, DG.DOCK_TYPE.LEFT, null, undefined, 0.44);
-  grok.shell.o = viewer;
+  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem/#scaffold-tree-analysis');
 }

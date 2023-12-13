@@ -69,6 +69,7 @@ export interface IDartApi {
   grok_Dapi_Models(): any;
   grok_Dapi_Packages(): any;
   grok_Dapi_Layouts(): any;
+  grok_Dapi_Views(): any;
   grok_Dapi_Tables(): any;
   grok_Dapi_Groups(): any;
   grok_Dapi_Scripts(): any;
@@ -222,11 +223,18 @@ export interface IDartApi {
   grok_ViewLayout_Get_ViewState(layout: any): any;
   grok_ViewLayout_Set_UserDataValue(layout: any, key: String, data: String): any;
   grok_ViewLayout_Get_UserDataValue(layout: any, key: String): any;
-  grok_ViewLayout_Get_View(layout: any): any;
   grok_ViewLayout_FromJson(json: String): any;
   grok_ViewLayout_FromViewState(state: String): any;
   grok_ViewLayout_ToJson(layout: any): any;
   grok_ViewLayout_Get_Columns(layout: any): any;
+  grok_ViewInfo_Set_ViewState(info: any, state: String): any;
+  grok_ViewInfo_Get_ViewState(info: any): any;
+  grok_ViewInfo_Set_UserDataValue(info: any, key: String, data: String): any;
+  grok_ViewInfo_Get_UserDataValue(info: any, key: String): any;
+  grok_ViewInfo_Get_View(info: any): any;
+  grok_ViewInfo_FromJson(json: String): any;
+  grok_ViewInfo_FromViewState(state: String): any;
+  grok_ViewInfo_ToJson(info: any): any;
   grok_TabControlBase_Get_Header(tc: any): any;
   grok_TabControlBase_Get_Panes(tc: any): any;
   grok_TabControlBase_Clear(tc: any): any;
@@ -540,6 +548,7 @@ export interface IDartApi {
   grok_Column_Get_Tags(c: any): any;
   grok_Column_Matches(c: any, filter: String): any;
   grok_Column_Init(c: any, indexToValue: any): any;
+  grok_Column_Clone(c: any, mask: any): any;
   grok_Column_SetAllValues(c: any, value: any): any;
   grok_Column_Get_ValueComparer(c: any): any;
   grok_Column_Set_ValueComparer(c: any, valueComparer: any): any;
@@ -995,6 +1004,7 @@ export interface IDartApi {
   grok_InputBase_ForInputType(inputType: String): any;
   grok_InputBase_ForColumn(column: any): any;
   grok_InputBase_FromJS(jsInput: any): any;
+  grok_InputForm_ForInputs(inputs: any): any;
   grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
@@ -1296,8 +1306,8 @@ export interface IDartApi {
   grok_Dapi_TablesDataSource_UploadDataFrame(c: any, df: any): Promise<any>;
   grok_Dapi_TablesDataSource_GetTable(c: any, id: String): Promise<any>;
   grok_Dapi_DockerImagesDataSource_Rebuild(s: any, id: String): Promise<any>;
-  grok_Dapi_DockerContainersDataSource_Run(s: any, id: String): Promise<any>;
-  grok_Dapi_DockerContainersDataSource_Stop(s: any, id: String): Promise<any>;
+  grok_Dapi_DockerContainersDataSource_Run(s: any, id: String, awaitStart: Bool): Promise<any>;
+  grok_Dapi_DockerContainersDataSource_Stop(s: any, id: String, awaitStop: Bool): Promise<any>;
   grok_Dapi_DockerContainersDataSource_ProxyRequest(s: any, id: String, path: String, params: any): Promise<any>;
   grok_Dapi_DockerContainersDataSource_GetContainerLogs(s: any, id: String, limit: Num): Promise<any>;
   grok_DockerContainer_Status(dc: any): any;
@@ -1323,7 +1333,6 @@ export interface IDartApi {
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
   grok_DockerImage_Get_dockerfile(x: any): any;
-  grok_DockerImage_Set_dockerfile(x: any, v: String): any;
   grok_DockerImage_Get_status(x: any): any;
   grok_DockerImage_Set_status(x: any, v: String): any;
   grok_DockerImage_Get_dockerName(x: any): any;
@@ -1342,7 +1351,6 @@ export interface IDartApi {
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
   grok_DockerImage_Get_dockerfile(x: any): any;
-  grok_DockerImage_Set_dockerfile(x: any, v: String): any;
   grok_DockerImage_Get_status(x: any): any;
   grok_DockerImage_Set_status(x: any, v: String): any;
   grok_DockerImage_Get_dockerName(x: any): any;
@@ -1407,7 +1415,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_element(x: any, v: any): any;
   grok_GridCellStyle_Get_choices(x: any): any;
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
-  grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool): any;
+  grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
   // Generated from ../ddt/lib/ddt.api.g.dart
   grok_Tags_Create(): any;

@@ -39,6 +39,9 @@ export interface SettingsInterface {
   /// Show user icon on top.
   showUserIcon: boolean;
 
+  /// Always show filters icons, not only on hover
+  showFiltersIconsConstantly: boolean;
+
   /// Auto-apply existing layout after selected rows are extracted
   applyLayoutWhenExtractingRows: boolean;
 

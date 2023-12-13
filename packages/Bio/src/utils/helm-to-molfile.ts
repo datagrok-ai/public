@@ -7,9 +7,9 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {RDMol, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {MonomerLibHelper} from './monomer-lib';
-import {errInfo} from './err-info';
 
 import {_package} from '../package';
 

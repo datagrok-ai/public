@@ -1,0 +1,255 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
+import { MACROMOLECULE_SIMILARITY_METRICS, SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
+import { BitArrayMetricsNames } from '../typed-metrics/consts';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import { MmDistanceFunctionsNames } from '../macromolecule-distance-functions';
+import { KnownMetrics } from '../typed-metrics';
+import { DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG, SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG } from './consts';
+
+export const SEQ_COL_NAMES = {
+    [DG.SEMTYPE.MOLECULE]: 'Molecules',
+    [DG.SEMTYPE.MACROMOLECULE]: 'Sequences'
+}
+
+export type PreprocessFunctionReturnType = {
+    entries: any[],
+    options?: {[_: string]: any}
+};
+
+export type DimReductionEditorOptions = {
+    semtype?: string,
+    type?: string,
+    units?: string,
+}
+
+export type DimReductionParams = {
+    table: DG.DataFrame,
+    col: DG.Column,
+    methodName: string,
+    preprocessingFunction: DG.Func,
+    similarityMetric: string,
+    plotEmbeddings?: boolean,
+    options: IUMAPOptions | ITSNEOptions
+};
+
+export class DimReductionBaseEditor {
+    editorSettings: DimReductionEditorOptions = {};
+    tableInput: DG.InputBase<DG.DataFrame | null>;
+    colInput!: DG.InputBase<DG.Column | null>;
+    preprocessingFunctionInput: DG.InputBase<string | null>;
+    plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
+    preprocessingFunctionInputRoot: HTMLElement | null = null;
+    colInputRoot!: HTMLElement;
+    methodInput: DG.InputBase<string | null>;
+    methodSettingsIcon: HTMLElement;
+    columnFunctionsMap: {[key: string]: string[]} = {};
+    supportedFunctions: {[name: string]: {
+        func: DG.Func,
+        semTypes: string[],
+        types: string[],
+        units: string[],
+        distanceFunctions: string[]
+    }} = {};
+    availableMetrics: string[] = [];
+    similarityMetricInputRoot!: HTMLElement;
+    methodSettingsDiv = ui.inputs([]);
+    methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
+      [DimReductionMethods.UMAP]: new UMAPOptions(),
+      [DimReductionMethods.T_SNE]: new TSNEOptions()
+    };
+    similarityMetricInput!: DG.InputBase<string | null>;
+    get algorithmOptions(): IUMAPOptions | ITSNEOptions {
+        const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
+        const options: any = {};
+        Object.keys(algorithmParams).forEach((key: string) => {
+          if ((algorithmParams as any)[key].value != null) 
+            options[key] = (algorithmParams as any)[key].value;
+        });
+        return options;
+      }
+
+    constructor(editorSettings: DimReductionEditorOptions = {}) {
+        this.editorSettings = editorSettings;
+        const preporcessingFuncs = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
+        // map that contains all preprocessing functions and their metadata
+        preporcessingFuncs.forEach((f) => {
+            const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
+            const name = f.friendlyName ?? f.name;
+            const types: string = f.options.get(SUPPORTED_TYPES_TAG) ?? '';
+            const units: string = f.options.get(SUPPORTED_UNITS_TAG) ?? '';
+            const distanceFunctions: string = f.options.get(SUPPORTED_DISTANCE_FUNCTIONS_TAG) ?? '';
+            if (this.editorSettings.semtype && !semTypes.includes(this.editorSettings.semtype))
+                return;
+            if (this.editorSettings.type && !types.includes(this.editorSettings.type))
+                return;
+            if (this.editorSettings.units && !units.includes(this.editorSettings.units))
+                return;
+            
+            this.supportedFunctions[name] = {
+                func: f,
+                semTypes: semTypes ? semTypes.split(',') : [],
+                types: types ? types.split(',') : [],
+                units: units ? units.split(',') : [],
+                distanceFunctions: distanceFunctions ? distanceFunctions.split(',') : [],
+            };
+        });
+        
+        this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
+            this.onTableInputChanged();
+        });
+        this.onTableInputChanged();
+
+        this.regenerateColInput();
+        this.onColumnInputChanged();
+        let settingsOpened = false;
+        this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
+            if(settingsOpened)
+              this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
+        });
+        this.methodSettingsIcon = ui.icons.settings(()=> {
+            settingsOpened = !settingsOpened;
+            if (!settingsOpened)
+              ui.empty(this.methodSettingsDiv);
+            else 
+              this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
+          }, 'Modify methods parameters');
+        this.methodInput.root.classList.add('ml-dim-reduction-settings-input');
+        this.methodInput.root.prepend(this.methodSettingsIcon);
+        this.methodSettingsDiv = ui.inputs([]);
+        const functions = this.columnFunctionsMap[this.colInput.value!.name];
+
+        this.preprocessingFunctionInput = ui.choiceInput('Encoding function', functions[0], functions, () => {
+            this.onPreprocessingFunctionChanged();
+        });
+        if (!this.preprocessingFunctionInputRoot)
+            this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
+        this.similarityMetricInput = ui.choiceInput('Similarity', '', [], null);
+        this.similarityMetricInput.nullable = false;
+        if (!this.similarityMetricInputRoot)
+            this.similarityMetricInputRoot = this.similarityMetricInput.root;
+        this.onPreprocessingFunctionChanged();
+    }
+
+    private getColInput() {
+        const firstSupportedColumn = this.tableInput.value?.columns.toList().find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
+        const input = ui.columnInput('Column', this.tableInput.value!, firstSupportedColumn, () => this.onColumnInputChanged(), {filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
+        if (!this.colInputRoot)
+            this.colInputRoot = input.root;
+        return input;
+    }
+
+    private regenerateColInput() {
+        let flag = false;
+        if (this.colInputRoot) {
+            flag = true;
+            ui.empty(this.colInputRoot);
+        }
+        this.colInput = this.getColInput();
+        if (flag)
+            Array.from(this.colInput.root.children).forEach((child) => this.colInputRoot.append(child));
+        this.onColumnInputChanged();
+    }
+
+    onTableInputChanged () {
+        const value = this.tableInput.value;
+        if (!value)
+            return;
+        this.columnFunctionsMap = {};
+        const columns = value.columns.toList();
+        columns.forEach((col) => {
+            Object.keys(this.supportedFunctions).forEach((funcName) => {
+                const semTypes = this.supportedFunctions[funcName].semTypes;
+                const types = this.supportedFunctions[funcName].types;
+                const units = this.supportedFunctions[funcName].units;
+                const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
+                const typeSuported = !types.length || types.includes(col.type);
+                const unitsSupported = !units.length || (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
+                if (semTypeSupported && typeSuported && unitsSupported) {
+                    if (!this.columnFunctionsMap[col.name])
+                        this.columnFunctionsMap[col.name] = [];
+                    this.columnFunctionsMap[col.name].push(funcName);
+                }
+            });
+        });
+        this.regenerateColInput();
+    }
+
+    private onColumnInputChanged() {
+        const col = this.colInput.value;
+        console.log(col?.name);
+        if (!col)
+            return;
+        const supportedPreprocessingFunctions = this.columnFunctionsMap[col.name];
+        this.preprocessingFunctionInput = ui.choiceInput('Preprocessing function', supportedPreprocessingFunctions[0], supportedPreprocessingFunctions, () => {
+            this.onPreprocessingFunctionChanged();
+        });
+        let flag = false;
+        if (!this.preprocessingFunctionInputRoot) {
+            this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
+            flag = true;
+        }
+        if (!flag) {
+            ui.empty(this.preprocessingFunctionInputRoot);
+            Array.from(this.preprocessingFunctionInput.root.children).forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
+        }
+        this.onPreprocessingFunctionChanged();
+        if(supportedPreprocessingFunctions.length < 2)
+            this.preprocessingFunctionInputRoot.style.display = 'none';
+        else
+            this.preprocessingFunctionInputRoot.style.display = 'block';
+    }
+
+    private onPreprocessingFunctionChanged() {
+        const fName = this.preprocessingFunctionInput.value!;
+        const distanceFs = this.supportedFunctions[fName].distanceFunctions;
+        this.availableMetrics = [...distanceFs];
+        this.similarityMetricInput = ui.choiceInput('Similarity', this.availableMetrics[0], this.availableMetrics, null);
+        this.similarityMetricInput.nullable = false;
+        if (!this.similarityMetricInputRoot) {
+            this.similarityMetricInputRoot = this.similarityMetricInput.root;
+        }
+        ui.empty(this.similarityMetricInputRoot);
+        Array.from(this.similarityMetricInput.root.children).forEach((child) => this.similarityMetricInputRoot.append(child));
+    }
+
+    private createAlgorithmSettingsDiv(paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions): HTMLElement {
+        ui.empty(paramsForm);
+        Object.keys(params).forEach((it: any) => {
+          const param: IDimReductionParam = (params as any)[it];
+          const input = ui.floatInput(param.uiName, param.value, () => {
+            param.value = input.value;
+          });
+          ui.tooltip.bind(input.root, param.tooltip);
+          paramsForm.append(input.root);
+        });
+        return paramsForm;
+      }
+    
+    public getEditor(): HTMLElement {
+        //@ts-ignore
+        return ui.div([
+            this.tableInput,
+            this.colInputRoot,
+            this.preprocessingFunctionInputRoot,
+            this.methodInput,
+            this.methodSettingsDiv,
+            this.similarityMetricInputRoot,
+            this.plotEmbeddingsInput
+          ], {style: {minWidth: '320px'},classes: 'ui-form'});
+    }
+
+    public getParams(): DimReductionParams {
+        return {
+            table: this.tableInput.value!,
+            col: this.colInput.value!,
+            methodName: this.methodInput.value!,
+            preprocessingFunction: this.supportedFunctions[this.preprocessingFunctionInput.value!].func,
+            similarityMetric: this.similarityMetricInput.value!,
+            plotEmbeddings: this.plotEmbeddingsInput.value!,
+            options: this.algorithmOptions
+        };
+    }
+}

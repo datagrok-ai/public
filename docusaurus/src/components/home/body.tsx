@@ -11,7 +11,7 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Feautres',
+    title: 'Features',
     icon: 'fa-magic',
     description: (
       <>
