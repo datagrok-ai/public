@@ -1014,7 +1014,7 @@ export class Package extends Entity {
   }
 
   /** Updates settings for a package. */
-  setSettings(props: Map<string, any>, group: Group): Promise<null> {
+  setSettings(props: Map<string, any>, group: Group): Promise<void> {
     return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
