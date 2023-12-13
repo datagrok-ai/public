@@ -29,7 +29,10 @@ export async function findMutations(activityArray: type.RawData, monomerInfoArra
 
   options.minActivityDelta ??= 0;
   options.maxMutations ??= 1;
-  return await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, options);
+  const mutationCliffsService = new ParallelMutationCliffs();
+  const substitutionsInfo = await mutationCliffsService.calc(activityArray, monomerInfoArray, options);
+  mutationCliffsService.terminate();
+  return substitutionsInfo;
 }
 
 export function calculateMonomerPositionStatistics(activityCol: DG.Column<number>, filter: DG.BitSet,

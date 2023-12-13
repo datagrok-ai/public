@@ -100,8 +100,9 @@ export class ParallelMutationCliffs {
   public terminate(): void {
     this._workers?.forEach((worker) => {
       try {
-        worker?.terminate()
+        worker?.terminate();
       } catch (error) {
+        console.error(error);
       }
     });
   }
