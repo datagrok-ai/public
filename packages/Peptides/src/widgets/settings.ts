@@ -100,7 +100,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     $(maxMutations.root).find('label.ui-input-description').remove();
     result.maxMutations = val;
     maxMutations.addPostfix(val.toString());
-  }) as DG.InputBase<number>;
+    //@ts-ignore TODO: UPDATE API VERSION
+  }, {step: 1}) as DG.InputBase<number>;
   maxMutations.setTooltip('Maximum number of mutations between reference and mutated sequences');
   maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
   const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, currentMinActivityDelta, 0,
@@ -109,7 +110,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       result.minActivityDelta = parseFloat(val);
       $(minActivityDelta.root).find('label.ui-input-description').remove();
       minActivityDelta.addPostfix(val);
-    }) as DG.InputBase<number>;
+      //@ts-ignore TODO: UPDATE API VERSION
+    }, {step: 0.05}) as DG.InputBase<number>;
   minActivityDelta.setTooltip('Minimum activity difference between reference and mutated sequences');
   minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
   accordion.addPane(SETTINGS_PANES.MUTATION_CLIFFS, () => ui.inputs([maxMutations, minActivityDelta]), true);

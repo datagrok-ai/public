@@ -37,6 +37,6 @@ export enum DistanceMetricsSubjects {
   }
 
 export enum NumberMetricsNames {
-  NumericDistance = 'NumericDistance',
+  Difference = 'Difference',
 }
 

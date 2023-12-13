@@ -56,7 +56,7 @@ export const intArrayDistanceMetricsMethods: { [name: string]: (x: Uint32Array, 
 };
 
 export const numberDistanceMetricsMethods: { [name: string]: (x: number, y: number) => number } = {
-  [NumberMetricsNames.NumericDistance]: numericDistance,
+  [NumberMetricsNames.Difference]: numericDistance,
 };
 
 export const AvailableMetrics = {
@@ -87,7 +87,7 @@ export const AvailableMetrics = {
     [MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE]: mmDistanceFunctions[MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE],
   },
   [DistanceMetricsSubjects.Number]: {
-    [NumberMetricsNames.NumericDistance]: numberDistanceMetricsMethods[NumberMetricsNames.NumericDistance],
+    [NumberMetricsNames.Difference]: numberDistanceMetricsMethods[NumberMetricsNames.Difference],
   },
   [DistanceMetricsSubjects.IntArray]: {
     [IntArrayMetricsNames.TanimotoIntArray]: intArrayDistanceMetricsMethods[IntArrayMetricsNames.TanimotoIntArray],

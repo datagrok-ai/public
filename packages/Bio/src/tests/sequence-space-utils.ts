@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {expect} from '@datagrok-libraries/utils/src/test';
-import {BYPASS_LARGE_DATA_WARNING, sequenceSpaceTopMenu} from '../package';
+import {sequenceSpaceTopMenu} from '../package';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
 
 export async function _testSequenceSpaceReturnsResult(
   df: DG.DataFrame, algorithm: DimReductionMethods, colName: string,
@@ -14,7 +15,10 @@ export async function _testSequenceSpaceReturnsResult(
   if (semType)
     col.semType = semType;
 
+  const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
+  if (!preprocessingFunc)
+    throw new Error('Preprocessing function not found');
   const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true,
-    0.6, {[`${BYPASS_LARGE_DATA_WARNING}`]: true});
+    preprocessingFunc, {[BYPASS_LARGE_DATA_WARNING]: true});
   expect(sp != null, true);
 }

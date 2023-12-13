@@ -391,7 +391,7 @@ class Editor {
   }
 
   constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onItemChangedAction: Function) {
-    this._form = ui.form();
+    this._form = ui.form([]);
     this.items = items;
     this._dataFrame = dataFrame;
     this._onItemChangedAction = onItemChangedAction;

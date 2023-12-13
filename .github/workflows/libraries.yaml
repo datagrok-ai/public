@@ -161,8 +161,14 @@ jobs:
             cd $(awk -F'=' '{print $2}' <<<$dep)
             echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
             npm install
+            npm run build
             cd $crnt
           done
+        working-directory: libraries/${{ matrix.project }}
+      - name: unpublished dependencies in package-lock.json
+        id: package-lock
+        if: ${{ matrix.unpublished_deps == '' }}
+        run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
         working-directory: libraries/${{ matrix.project }}
       - run: npm install
         working-directory: libraries/${{ matrix.project }}
@@ -237,7 +243,7 @@ jobs:
 
       - name: Commit package-lock.json
         continue-on-error: true
-        if: ${{ matrix.publish == 'publish' }}
+        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
         run: |
           if [ -n "$(git status -s libraries/${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'github-actions[bot]'

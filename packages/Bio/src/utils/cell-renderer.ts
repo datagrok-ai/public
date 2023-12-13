@@ -27,7 +27,7 @@ import * as C from './constants';
 import {_package, getBioLib} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {errInfo} from './err-info';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 
 type TempType = { [tagName: string]: any };

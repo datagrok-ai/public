@@ -84,7 +84,7 @@ class ControlsFormHandler {
   private monomerLibFileManager: MonomerLibFileManager;
   private inputsForm: HTMLDivElement;
 
-  async getInputsForm(): Promise<HTMLDivElement> {
+  async getInputsForm(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
     const controlList = await this.getControlList();
     const inputsForm = ui.form(controlList);

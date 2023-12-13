@@ -100,7 +100,7 @@ category('View: Events', () => {
 
   test('onViewLayoutGenerated', async () => {
     // @ts-ignore
-    await testEvent<DG.ViewLayout>(grok.events.onViewLayoutGenerated, (layout) => {
+    await testEvent<DG.ViewInfo>(grok.events.onViewLayoutGenerated, (layout) => {
       expect(layout != null, true);
     }, () => {
       tv.saveLayout();
@@ -111,8 +111,8 @@ category('View: Events', () => {
     const v = grok.shell.addTableView(df);
     try {
       // @ts-ignore
-      await testEvent<DG.ViewLayout>(grok.events.onViewLayoutApplying, (layout) => {
-        expect(layout instanceof DG.ViewLayout, true);
+      await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplying, (layout) => {
+        expect(layout instanceof DG.ViewInfo, true);
         const state = JSON.parse(layout.viewState);
         const viewerElement = state.children.find((c: { [key: string]: any }) =>
           c.state.element && c.state.element.type === DG.VIEWER.SCATTER_PLOT);
@@ -132,8 +132,8 @@ category('View: Events', () => {
     const v = grok.shell.addTableView(df);
     try {
       // @ts-ignore
-      await testEvent<DG.ViewLayout>(grok.events.onViewLayoutApplied, (layout) => {
-        expect(layout instanceof DG.ViewLayout, true);
+      await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplied, (layout) => {
+        expect(layout instanceof DG.ViewInfo, true);
         const state = JSON.parse(layout.viewState);
         const viewerElement = state.children.find((c: { [key: string]: any }) =>
           c.state.element && c.state.element.type === DG.VIEWER.HISTOGRAM);

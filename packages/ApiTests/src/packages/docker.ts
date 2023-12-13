@@ -1,26 +1,13 @@
 import * as grok from 'datagrok-api/grok';
-import {delay, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {DockerContainer} from 'datagrok-api/dg';
-
-export async function awaitContainerStart(containerName: string, tries: number = 3): Promise<DockerContainer> {
-  let dockerContainer;
-  let count: number = 0;
-  do {
-    dockerContainer = await grok.dapi.docker.dockerContainers.filter(containerName).first();
-    count++;
-    if (dockerContainer.status == 'started' || dockerContainer.status == 'checking')
-      return dockerContainer;
-    await delay(500);
-  }
-  while (count < tries);
-  throw Error('Container didn\'t start');
-}
+import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 
 category('Packages: Docker', () => {
   const containerName: string = 'Apitests-docker-test1';
 
   test('Get response', async () => {
-    const container = await awaitContainerStart(containerName);
+    const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+    if (container.status !== 'started' && container.status !== 'checking')
+      await grok.dapi.docker.dockerContainers.run(container.id, true);
     await testResponse(container.id);
   }, {timeout: 30000});
 
@@ -31,17 +18,18 @@ category('Packages: Docker', () => {
   });
 
   test('Get container logs', async () => {
-    const container = await awaitContainerStart(containerName);
+    const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+    if (container.status !== 'started' && container.status !== 'checking')
+      await grok.dapi.docker.dockerContainers.run(container.id, true);
     const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
     expect(!logs || logs.length === 0, false);
   });
 });
 
 async function testResponse(containerId: string): Promise<void> {
-  const params: RequestInit = {
-    method: 'GET',
-  };
   const path = '/square?number=4';
-  const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
-  expect(response?.trim(), '{"result":16}');
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path);
+  expect(response.status, 200, `Container response status was ${response.status}`);
+  const result = await response.json();
+  expectObject(result, {"result": 16});
 }

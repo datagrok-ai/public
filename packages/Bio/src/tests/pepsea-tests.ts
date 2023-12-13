@@ -16,7 +16,7 @@ category('PepSeA', () => {
     await awaitContainerStart();
     const table = DG.DataFrame.fromCsv(testCsv);
     const alignedCol = await runPepsea(table.getCol('HELM'), 'msa(HELM)');
-    expect(alignedCol !== null, true, 'PepSeA conainter has not started');
+    expect(alignedCol !== null, true, 'PepSeA container has not started');
     const alignedTestCol = table.getCol('MSA');
     for (let i = 0; i < alignedCol!.length; ++i)
       expect(alignedCol!.get(i) == alignedTestCol.get(i), true);

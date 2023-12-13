@@ -12,12 +12,14 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
 ): Promise<IChemFunctionsDialogResult> {
   // if compute is in dialog form, we need to show all the functions
   const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
+    .filter(({inputs: i}) => i.length > 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
       template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
 
   //const scripts = (await DG.Script.findAll({tags: [HitTriageComputeFunctionTag]})).filter((s) => s.type === 'script')
   const scripts: HitTriageTemplateScript[] =
   (await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list())
+    .filter(({inputs: i}) => i.length > 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((s) => ({name: s.name, id: s.id, args: template?.compute?.scripts?.find((ts) => ts.id === s.id)?.args ?? {}}));
 
 

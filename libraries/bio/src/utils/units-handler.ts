@@ -580,17 +580,22 @@ export class UnitsHandler {
     return regCol;
   }
 
+  private _joiner?: JoinerFunc = undefined;
+
   public getJoiner(): JoinerFunc {
-    const srcUh = this;
-    if (this.notation === NOTATION.FASTA)
-      return function(srcS: ISeqSplitted): string { return joinToFasta(srcUh, srcS); };
-    else if (this.notation === NOTATION.SEPARATOR)
-      return function(srcS: ISeqSplitted): string { return joinToSeparator(srcUh, srcS, srcUh.separator!); };
-    else if (this.notation === NOTATION.HELM) {
-      const isDnaOrRna = srcUh.alphabet === ALPHABET.DNA || srcUh.alphabet === ALPHABET.RNA;
-      return function(srcS: ISeqSplitted): string { return joinToHelm(srcUh, srcS, isDnaOrRna); };
-    } else
-      throw new Error();
+    if (this._joiner === undefined) {
+      const srcUh = this;
+      if (this.notation === NOTATION.FASTA)
+        this._joiner = function(srcS: ISeqSplitted): string { return joinToFasta(srcUh, srcS); };
+      else if (this.notation === NOTATION.SEPARATOR)
+        this._joiner = function(srcS: ISeqSplitted): string { return joinToSeparator(srcUh, srcS, srcUh.separator!); };
+      else if (this.notation === NOTATION.HELM) {
+        const isDnaOrRna = srcUh.alphabet === ALPHABET.DNA || srcUh.alphabet === ALPHABET.RNA;
+        this._joiner = function(srcS: ISeqSplitted): string { return joinToHelm(srcUh, srcS, isDnaOrRna); };
+      } else
+        throw new Error();
+    }
+    return this._joiner;
   }
 
   public getConverter(tgtUnits: NOTATION, tgtSeparator: string | undefined = undefined): ConvertFunc {
