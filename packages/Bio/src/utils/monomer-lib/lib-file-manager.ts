@@ -7,6 +7,7 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLib} from './monomer-lib';
 import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/const';
+import {InvalidFilesError} from './types';
 
 import * as rxjs from 'rxjs';
 
@@ -21,9 +22,6 @@ export class MonomerLibFileManager {
 
   private validFiles: string[] = [];
 
-  /** Tracks invalid files accidentally added to the library folder manually */
-  private invalidFiles: string[] = [];
-
   private _onFileListChange = new rxjs.Subject<void>();
 
   private static instance: MonomerLibFileManager | undefined;
@@ -31,7 +29,7 @@ export class MonomerLibFileManager {
   static async getInstance(): Promise<MonomerLibFileManager> {
     if (MonomerLibFileManager.instance === undefined) {
       MonomerLibFileManager.instance = new MonomerLibFileManager();
-      MonomerLibFileManager.instance.init();
+      await MonomerLibFileManager.instance.init();
     }
     return MonomerLibFileManager.instance;
   }
@@ -110,18 +108,30 @@ export class MonomerLibFileManager {
   }
 
   private async updateFilePaths(): Promise<void> {
-    this.invalidFiles = [];
+    const invalidFiles = [] as string[];
+    // todo: remove after debugging
+    console.log(`files before validation:`, this.validFiles);
     const filePaths = await this.getFilePaths();
     for (const path of filePaths) {
       if (!path.endsWith('.json')) {
-        this.invalidFiles.push(path);
+        invalidFiles.push(path);
         continue;
       }
       const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${path}`);
       if (!this.isValid(fileContent))
-        this.invalidFiles.push(path);
+        invalidFiles.push(path);
     }
-    this.validFiles = filePaths.filter((path) => !this.invalidFiles.includes(path));
+    this.validFiles = filePaths.filter((path) => !invalidFiles.includes(path));
+
+    // todo: remove after debugging
+    if (this.validFiles.some((el) => !el.endsWith('.json')))
+      console.warn(`Wrong validation: ${this.validFiles}`);
+
+    if (invalidFiles.length > 0) {
+      const message = `Invalid monomer library files in ${LIB_PATH}` +
+      `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
+      throw new InvalidFilesError(message);
+    }
   }
 
   private async validateFile(fileContent: string, fileName: string): Promise<void> {
@@ -133,16 +143,12 @@ export class MonomerLibFileManager {
   private async validateAllFiles(): Promise<void> {
     await this.updateFilePaths();
 
-    if (this.invalidFiles.length > 0) {
-      console.warn(
-        `Invalid monomer library files in ${LIB_PATH}, consider fixing or removing them: ${this.invalidFiles}`);
-      grok.shell.warning(
-        `The following files in ${LIB_PATH} do not satisfy` +
-        ` HELM standard and are not displayed in the list of available libraries:` +
-        ` ${this.invalidFiles.join(', ')}` +
-        `. Fix or delete them.`
-      );
-    }
+    // if (this.invalidFiles.length > 0) {
+    //   const message = `Invalid monomer library files in ${LIB_PATH}` +
+    //   `, consider fixing or removing them: ${this.invalidFiles}.join(', ')`;
+    //   console.warn(message);
+    //   grok.shell.warning(message);
+    // }
   }
 
   /** The file **must** strictly satisfy HELM standard */
