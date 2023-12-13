@@ -91,10 +91,9 @@ export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean,
     return col;
   }
 
-  const copy = DG.Column.fromType(col.type, `${col.name}${COPY_SUFFIX}`, len);
-
-  if (len < source.length)
-    copy.setRawData(getTypedArrayOfTheSameSize(col));
+  //@ts-ignore
+  const copy = col.clone();
+  copy.name = `${col.name}${COPY_SUFFIX}`;
 
   const copyRaw = copy.getRawData();
 
