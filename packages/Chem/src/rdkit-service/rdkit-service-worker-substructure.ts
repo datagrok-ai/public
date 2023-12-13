@@ -1,9 +1,10 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolList, RDModule, RDMol, RGroups} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
-import { SubstructureSearchType } from '../constants';
+import {SubstructureSearchType} from '../constants';
+import {stringArrayToMolList} from '../utils/chem-common';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -11,6 +12,11 @@ export enum MolNotation {
   MolBlock = 'molblock', // molblock V2000
   V3KMolBlock = 'v3Kmolblock', // molblock V3000
   Unknown = 'unknown',
+}
+
+export interface IRGroupAnalysisResult {
+  colNames: string[];
+  smiles: Array<string>[];
 }
 
 const MALFORMED_MOL_V2000 = `
@@ -264,6 +270,62 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._rdKitMols = null;
 
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
+  }
+
+  rGroupAnalysis(molecules: string[], coreMolecule: string, options?: string): IRGroupAnalysisResult {
+    let mols: MolList | null = null;
+    let res: RGroups | null = null;
+    let core: RDMol | null = null;
+    const resCols = [];
+    try {
+      mols = stringArrayToMolList(molecules, this._rdKitModule);
+      try {
+        core = this._rdKitModule.get_qmol(coreMolecule);
+      } catch (e) {
+        throw new Error(`Core is possibly malformed`);
+      }
+
+      res = this._rdKitModule.rgroups(core!, mols!, options ? options : '');
+
+      const colNames: string[] = [];
+      const unmatches: number[] = [];
+      const totalCols = res.columns_size();
+      const unmatchedSize = res.unmatched_size();
+
+      for (let i = 0; i < totalCols; i++)
+        colNames.push(res.col_at(i));
+
+      for (let i = 0; i < unmatchedSize; i++)
+        unmatches.push(res.get_unmatched_at(i));
+
+      const totalLength = colNames.length*res.size();
+      const smilesArray = new Array<string>(totalLength);
+
+      for (let i = 0; i < totalLength; i++)
+        smilesArray[i] = res.next();
+
+      const colLength = res.size();
+
+      let counter = 0;
+      for (let i = 0; i < totalCols; i++) {
+        const col = Array<string>(molecules.length);
+        for (let j = 0; j < molecules.length; j++) {
+          if (unmatches[counter] !== j)
+            col[j] = smilesArray[i*colLength + j];
+          else {
+            counter++;
+            col[j] = '';
+          }
+        }
+        resCols.push(col);
+        counter = 0;
+      }
+      return {colNames: colNames, smiles: resCols};
+    } finally {
+      core?.delete();
+      mols?.delete();
+      res?.delete();
+    }
   }
 
   invalidateCache() {

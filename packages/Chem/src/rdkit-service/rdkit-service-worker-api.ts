@@ -8,4 +8,5 @@ export enum WORKER_CALL {
   INVALIDATE_CACHE = 'invalidateCache',
   SET_TERMINATE_FLAG = 'setTerminateFlag',
   MOST_COMMON_STRUCTURE = 'mostCommonStructure',
+  R_GROUP_ANALYSIS = 'rGroupAnalysis',
 }
