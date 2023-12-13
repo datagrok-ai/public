@@ -51,7 +51,7 @@ export async function accessServer(csvString: string, queryParams: string): Prom
     body: csvString
   };
 
-  const path = `/smiles/df_upload/?models=${queryParams}`;
+  const path = `/df_upload?models=${queryParams}`;
   try {
     const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
     return response;
@@ -150,7 +150,8 @@ async function processColumn(smilesCol: DG.Column, selected: string): Promise<DG
     confirmed = showConfirmationDialogAsync();
 
   if (confirmed || smilesCol.length < 10000) {
-    malformedIndexes = await grok.functions.call('Chem:_getMolSafe', { molecules: smilesCol });
+    malformedIndexes = [];
+    //malformedIndexes = await grok.functions.call('Chem:_getMolSafe', { molecules: smilesCol });
     const smilesColFiltered = DG.Column.fromStrings(
       smilesCol.name,
       Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
@@ -234,22 +235,17 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malforme
 }
 
 function processCsv(csvString: string | null | undefined): DG.DataFrame {
-  csvString = csvString!.replaceAll('"', '');
-  const table = DG.DataFrame.fromCsv(csvString);
-  table.rows.removeAt(table.rowCount - 1);
-  const removeRow = Array.from(table.row(table.rowCount - 1).cells).some((cell: DG.Cell) => cell.value == '');
-  if (removeRow)
-    table.rows.removeAt(table.rowCount - 1);
+  const table = DG.DataFrame.fromCsv(csvString!);
   const modelNames: string[] = [];
   const prevColNames = table.columns.names();
   for (let i = 0; i < prevColNames.length; ++i) {
     modelNames[i] = table.get(prevColNames[i], 0);
   }
-  table.rows.removeAt(0);
   for (let i = 0; i < prevColNames.length; ++i) {
     const column: DG.Column = table.columns.byName(prevColNames[i]);
     column.name = column.dataFrame.columns.getUnusedName(modelNames[i]);
   }
+  grok.shell.addTableView(table);
   return table;
 }
 

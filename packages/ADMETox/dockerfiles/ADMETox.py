@@ -13,6 +13,7 @@ from multiprocessing import Pool
 from os import path as osp
 from flask import Flask, request, jsonify
 import torch
+import chemprop
 
 app = Flask(__name__)
 
@@ -57,6 +58,9 @@ def read_csv_and_return_string(file_path):
 
 def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
     current_path = os.path.split(os.path.realpath(__file__))[0]
+    print(test_path)
+    print(checkpoint_path)
+    print(preds_path)
     command = [
         "chemprop_predict",
         "--test_path", test_path,
@@ -64,8 +68,8 @@ def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
         "--preds_path", preds_path
     ]
 
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=current_path)
-    output, error = process.communicate()
+    process = subprocess.call(command, cwd=current_path)
+    #output, error = process.communicate()
     with open(preds_path, 'r') as file:
         content = file.read()
     return content
@@ -82,39 +86,41 @@ def make_euclia_predictions(test_path, checkpoint_path):
     return model.prediction
 
 def handle_uploaded_file(test_data_path, models):
-    models_res = [model for model in models.split(",")]
-    dfs = []
-    for model in models_res:
+    #models_res = [model for model in models.split(",")]
+    #dfs = []
+    #for model in models_res:
         #test_model_name = '{}.pt'.format(model)
-        test_model_name = next((model_ext for model_ext in models_extensions if model in model_ext), None)
-        print(test_model_name)
-        result_path = 'predictions-{}.csv'.format(model)
-        if 'pt' in test_model_name:
-            make_chemprop_predictions(test_data_path, test_model_name, result_path)
-            current_df = pd.read_csv(result_path)
-            new_columns = {col: f"{col}_{model}" for col in current_df.columns[1:]}
-            current_df = current_df.rename(columns=new_columns)
-            dfs.append(current_df)
-        else:
-            results = make_euclia_predictions(test_data_path, test_model_name)
-            current_df = pd.DataFrame({'Y_{}'.format(model): results})
-            dfs.append(current_df)
+        #test_model_name = next((model_ext for model_ext in models_extensions if model in model_ext), None)
+        #print(test_model_name)
+        #result_path = 'predictions-{}.csv'.format(model)
+        #if 'pt' in test_model_name:
+            #make_chemprop_predictions(test_data_path, test_model_name, result_path)
+            #current_df = pd.read_csv(result_path)
+            #new_columns = {col: f"{col}_{model}" for col in current_df.columns[1:]}
+            #current_df = current_df.rename(columns=new_columns)
+            #dfs.append(current_df)
+        #else:
+            #results = make_euclia_predictions(test_data_path, test_model_name)
+            #current_df = pd.DataFrame({'Y_{}'.format(model): results})
+            #dfs.append(current_df)
     
-    final_df = pd.concat(dfs, axis=1)
-    final_df = final_df.loc[:, ~final_df.columns.duplicated()]
-    return final_df.to_csv(index=False)
+    #final_df = pd.concat(dfs, axis=1)
+    #final_df = final_df.loc[:, ~final_df.columns.duplicated()]
+    #return final_df.to_csv(index=False)
+    content = make_chemprop_predictions(test_data_path, 'CYP2C19-Inhibitor.pt', 'predictions.csv')
+    return content
 
 @app.route('/df_upload', methods=['POST'])
 def df_upload():
     raw_data = request.data
+    current_path = os.path.split(os.path.realpath(__file__))[0]
     test_data_path = 'smiles_data.csv'
+    #test_data_path = '{}/{}'.format(current_path, 'smiles_data.csv')
     with open(test_data_path, 'wb') as file:
         file.write(raw_data)
     models = request.args.get('models')
-    print('models')
-    print(models)
     response = handle_uploaded_file(test_data_path, models)
-    return str(torch.cuda.is_available())
+    return response
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, threaded=True)
+    app.run(host='0.0.0.0', port=8000, threaded=True,debug=False)
