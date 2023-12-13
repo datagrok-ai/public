@@ -109,17 +109,24 @@ Define initial values of the functions in the `#inits`-block:
 
 Use the advanced features to improve your model:
 
-Specify constants in the `#constants`-block
+Use `#comment` block to write a comment in any place of your 
+
+```python
+#comment:
+  You can provide any text here. The Solver just ignores it.
+```
+
+Specify constants in the `#constants`-block and parameters in the `#parameters`-block.
+
+The Solver treats `constants` and `parameters` exactly the same way.
+However, when you [export Solver equations](#platform-script-generation) to the platform script,
+Solver creates input UI only for `parameters` and leave `constants` hardcoded inside the script.
 
 ```python
 #constants:
   C1 = 1
   C2 = 3
-```
 
-Set parameters in the `#parameters`-block:
-
-```python
 #parameters:
   P1 = 1
   P2 = -1
@@ -162,7 +169,7 @@ ranges of argument values.
 Datagrok provides a special capabilities for multi-stage simulation. 
 
 Use the `#loop`-feature to specify several modeling cycles. 
-Define the number of repetitions and 
+Define the number of repetitions in the mandatory `count` variable and 
 use any mathematical expression to modify functions and parameters.
 You can set new values for parameters and change values for functions.
 
@@ -180,20 +187,20 @@ You can set new values for parameters and change values for functions.
 
 ![add-to-workspace](loop-feature.gif)
 
-Apply the `#stage` feature to obtain acyclic simulation. 
-Set the length of the modeling stage 
-and use any mathematical expression to modify functions and parameters,
+Apply the `#update` feature to obtain acyclic simulation. 
+Set the length of the new modeling stage in the mandatory `length` variable.
+Inside you can use any mathematical expression to modify functions and parameters,
 same as for the `#loop` section.
 
 ```python
-#stage:
+#update:
   length = 6
   y = 1
 ```
 
 Use any valid expression, when specifying the updates of inputs.
 
-## Platform applications
+## Platform script generation
 
 You can convert any solver project to the Datagrok script:
 
