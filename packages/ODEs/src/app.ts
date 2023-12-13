@@ -70,14 +70,14 @@ function getProblem(state: EDITOR_STATE): string {
 
 /** Completions of control expressions */
 const completions = [
-  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the problem"},  
+  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the model"},  
   {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},
-  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the problem"},
+  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the model"},
   {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: "keyword", info: "block of differential equation(s) specification"},
   {label: `${CONTROL_EXPR.EXPR}:\n  `, type: "keyword", info: "block of auxiliary expressions & computations"},
   {label: `${CONTROL_EXPR.ARG}: `, type: "keyword", info: "independent variable specification"},
-  {label: `${CONTROL_EXPR.INITS}:\n  `, type: "keyword", info: "initial values of the problem"},
-  {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: "keyword", info: "parameters of the problem"},
+  {label: `${CONTROL_EXPR.INITS}:\n  `, type: "keyword", info: "initial values of the model"},
+  {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: "keyword", info: "parameters of the model"},
   {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: "keyword", info: "constants definition"},
   {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: "tolerance of numerical solution"},
   {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "loop feature"},
@@ -205,7 +205,7 @@ export async function runSolverApp() {
   };
 
   /** Set IVP code editor state */
-  const setState = (state: EDITOR_STATE, text?: string | undefined) => {
+  const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
@@ -221,6 +221,9 @@ export async function runSolverApp() {
     });
 
     editorView.setState(newState);
+
+    if (state != EDITOR_STATE.CLEAR)
+      await solve();
   };
 
   /** Overwrite the editor content */
@@ -252,9 +255,9 @@ export async function runSolverApp() {
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
     DG.Menu.popup()
-      .item('Load...', async () => await overwrite(undefined, loadFn), undefined, {description: 'Load problem from local file'})
-      .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-      .item('Clear...', async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
+      .item('Load...', async () => await overwrite(undefined, loadFn), undefined, {description: 'Load model from local file'})
+      .item('Save...', saveFn, undefined, {description: 'Save model to local file'})
+      .item('Clear...', async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear model'})
       .separator()
       .group('Templates')
       .item('Basic...', async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
@@ -345,7 +348,7 @@ export async function runSolverDemoApp() {
     'Interactive solution of complex problems given in a declarative form');
 
   await demoScript
-    .step('Project', async () => {      
+    .step('Model', async () => {      
       solutionTable = DG.DataFrame.create();
       solverView = grok.shell.addTableView(solutionTable);      
       solverView.name = 'Demo';
@@ -354,7 +357,7 @@ export async function runSolverDemoApp() {
       solverView.dockManager.dock(div, DG.DOCK_TYPE.LEFT);
       solverView.helpUrl = SOLVER_HELP_LINK;
       solverView.setRibbonPanels([]);
-    }, {description: 'Each project starts with the name.', delay: 0})    
+    }, {description: 'Each model starts with the name.', delay: 0})    
     .step('Equations', async () => {  
       editorView.setState(newState(DEMO_TEMPLATE.slice(0, 4)));
     }, {description: 'Declarative formulas define differential equations.', delay: 0})
@@ -373,9 +376,9 @@ export async function runSolverDemoApp() {
       editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
         event.preventDefault();
         DG.Menu.popup()
-          .item('Load...', loadFn, undefined, {description: 'Load problem from local file'})
-          .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-          .item('Clear...', async () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
+          .item('Load...', loadFn, undefined, {description: 'Load model from local file'})
+          .item('Save...', saveFn, undefined, {description: 'Save model to local file'})
+          .item('Clear...', async () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear model'})
           .separator()
           .group('Templates')
           .item('Basic...', async () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})

@@ -1,8 +1,8 @@
-# Deqs
+# Diff Studio
 
-Deqs is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [intial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE).
+Diff Studio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [intial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE).
 
-* Go to **Apps** and run **EquaSleek X**
+* Go to **Apps** and run **Diff Studio**
 * Enter formulas or modify template
 * Press <i class="fas fa-play"></i> **Run** button on the top panel
 
@@ -13,7 +13,7 @@ The solver takes a set of the differential equations in a declarative form, and 
 Datagrok provides intuitive tools for the rapid solving ODEs.
 
 * Run the solver: 
-  * Go to **Apps** and run **EquaSleek X**
+  * Go to **Apps** and run **Diff Studio**
   * Press <i class="fas fa-play"></i> **Run** button on the top panel
 * Modify a template:
   * Edit formulas or add new ones
