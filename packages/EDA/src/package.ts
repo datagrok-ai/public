@@ -343,10 +343,9 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //input: column column
 //input: string strategy = 'mean' {choices: ['mean', 'median']} [The imputation strategy]
 //input: bool inPlace = true {caption: In place} [Whether to create a new column]
-//input: bool toMark = true {caption: Mark} [Whether to mark imputed values]
-export function simpleImputationOfMissingValues(table: DG.DataFrame, column: DG.Column, strategy: string, inPlace: boolean, toMark: boolean) {
+export function simpleImputationOfMissingValues(table: DG.DataFrame, column: DG.Column, strategy: string, inPlace: boolean) {
   if (inPlace)
-    simpleImpute(column, strategy, inPlace, toMark);
+    simpleImpute(column, strategy, inPlace);
   else
-    table.columns.add(simpleImpute(column, strategy, inPlace, toMark));
+    table.columns.add(simpleImpute(column, strategy, inPlace));
 }

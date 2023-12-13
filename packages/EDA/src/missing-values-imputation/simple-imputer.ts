@@ -69,7 +69,7 @@ function getTypedArrayOfTheSameSize(col: DG.Column): Int32Array | Float32Array |
 }
 
 /** */
-export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean, toMark: boolean): DG.Column {
+export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean): DG.Column {
   if (col.stats.missingValueCount === 0)
     throw new Error(ERROR_MSG.NO_MISSING_VALUES);
 
@@ -99,6 +99,9 @@ export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean,
 
   for (let i = 0; i < len; ++i)
     copyRaw[i] = (source[i] !== nullValue) ? source[i] : fillValue;
+
+  /*console.log(source);
+  console.log(copyRaw);*/
 
   return copy;
 }
