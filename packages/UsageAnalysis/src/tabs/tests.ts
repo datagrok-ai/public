@@ -14,6 +14,7 @@ export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
   cardFilter: string | null = null;
   filterGroup: DG.FilterGroup | undefined = undefined;
+  grid?: DG.Grid;
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -22,10 +23,17 @@ export class TestsView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    // Area Chart
+    // Stacked Bar Chart
     const chart = ui.wait(async () => {
       const dfMonth: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsMonth');
       dfMonth.getCol('status').colors.setCategorical(colors);
+      dfMonth.onSelectionChanged.subscribe(async () => {
+        if (!this.grid) return;
+        // this.grid.root.style.
+        const date = dfMonth.get('date', dfMonth.selection.getSelectedIndexes()[0]);
+        const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: date});
+        this.grid.dataFrame = df;
+      });
       const areaChart = DG.Viewer.fromType('Line chart', dfMonth, historyStyle);
       return areaChart.root;
     });
@@ -33,7 +41,7 @@ export class TestsView extends UaView {
 
     // Table
     const grid = ui.wait(async () => {
-      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday');
+      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: (new Date()).toLocaleDateString('en-US')});
       df.getCol('status').colors.setCategorical(colors);
       df.getCol('id').name = '~id';
       if (filters.children.length)
@@ -41,6 +49,7 @@ export class TestsView extends UaView {
       const filters_ = DG.Viewer.filters(df, filtersStyle);
       this.filterGroup = new DG.FilterGroup(filters_.dart);
       filters.appendChild(filters_.root);
+      this.grid = df.plot.grid();
       df.onCurrentRowChanged.subscribe(async () => {
         const row = df.currentRow;
         const acc = DG.Accordion.create();
@@ -104,7 +113,7 @@ export class TestsView extends UaView {
         }), true);
         grok.shell.o = acc.root;
       });
-      return df.plot.grid().root;
+      return this.grid.root;
     });
 
     // Cards
