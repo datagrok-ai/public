@@ -7,14 +7,14 @@ sidebar_position: 3
 
 ## General
 
-|Area  |Plugin|  Tag <div style={{ width:115 }}></div> |Description  | Release|
+|Area <div style={{ width:130 }}></div>  |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:115 }}></div> |Description  | Release|
 |------|-------|------------|---------------|-------|
 | Platform |[PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)| Recommended| Commonly used platform enhancements| Stable|
 | Resources | [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)|Recommended| App for learning Datagrok with interactive tutorials, Demo app| Stable |
 
 ## Access
 
-|Area  |Plugin|  Tag <div style={{ width:100 }}></div> |Description  | Release|
+|Area <div style={{ width:130 }}></div> |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:115 }}></div> |Description <div style={{ width:270 }}></div> | Release|
 |------|-------|------------|----------------------|---|
 | Data format |[SQLite](https://github.com/datagrok-ai/public/tree/master/packages/SQLite)|Optional|Support for SQLite |Stable|
 | Data format |[Arrow](https://github.com/datagrok-ai/public/tree/master/packages/Arrow)|Optional |Support for parquet and feather |Stable|
@@ -23,14 +23,14 @@ sidebar_position: 3
 
 ## Govern
 
-|Area  |Plugin|  Tag <div style={{ width:100 }}></div> |Description  | Release|
+|Area <div style={{ width:130 }}></div> |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:90 }}></div> |Description  | Release|
 |------|-------|---------------|-------------------|---|
 | Usage analysis | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Optional|App that monitors platform and plugins usage, event log ([wiki](link)) | Beta |
 
 
 ## Visualize
 
-|Area  |Plugin|  Tag <div style={{ width:110 }}></div> |Description | Release  |
+|Area <div style={{ width:130 }}></div>  |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description | Release  |
 |------|-------|---------------|-----|--------------|
 |Spreadsheet |[PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)| Recommended| [Grid](../visualize/veiwers/grid.md) viewer enhancements | Stable|
 |Viewers, misc |[Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)|Optional| Visualizations based on external libraries ([ECharts](https://echarts.apache.org/en/index.html), [D3.js](https://d3js.org/), [Circos](https://github.com/nicgirault/circosJS), and [three.js](https://threejs.org/))| Stable |
@@ -57,7 +57,7 @@ sidebar_position: 3
 
 ## Learn
 
-|Area <div style={{ width:125 }}></div> |Plugin| Tag <div style={{ width:110 }}></div> |Description  | Release|
+|Area <div style={{ width:125 }}></div> |Plugin <div style={{ width:140 }}></div>| Tag <div style={{ width:110 }}></div> |Description  | Release|
 |------|-------|------------|----------------------|---|
 |ML Toolkit |[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)|Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
 |Jupyter Notebooks |[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)|Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
@@ -67,7 +67,7 @@ sidebar_position: 3
 
 ## Develop
 
-|Area <div style={{ width:125 }}></div> |Plugin| Tag <div style={{ width:110 }}></div> |Description  | Release|
+|Area <div style={{ width:125 }}></div> |Plugin <div style={{ width:140 }}></div>| Tag <div style={{ width:110 }}></div> |Description  | Release|
 |------|-------|------------|----------------------|---|
 |DevTools |[DevTools](https://github.com/datagrok-ai/public/tree/master/packages/DevTools)|Recommended|Developer tools (TestManager, DevPanel, etc.)|Stable|
 |Resources |[ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)|Recommended|Examples of Grok API|Stable|
@@ -95,7 +95,7 @@ sidebar_position: 3
 
 ### Bio
 
-|Area  |Package|Tag <div style={{ width:110 }}></div> | Description | Release|
+|Area  |Plugin|Tag <div style={{ width:110 }}></div> | Description | Release|
 |------|-------|-----------------|-----------------|---|
 | General |[Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) | Required| Bioinformatics support ([wiki](link))|Stable|
 |Data format|[HELM](https://github.com/datagrok-ai/public/tree/master/packages/HELM)|Recommended |Support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview), HELM editor |Stable|
@@ -106,12 +106,12 @@ sidebar_position: 3
 
 ### NLP
 
-|Area  |Plugin|  Tag <div style={{ width:100 }}></div> |Description   | Release|
+|Area <div style={{ width:110 }}></div> |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description   | Release|
 |------|-------|---------------|-------------------|---|
 |NLP |[NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP)|Optional|Integration with AWS Translate, a neural machine translation service. Extends Datagrok with info panels for text files|Stable|
 
 ### Digital health, clinical
 
-|Area  |Plugin|  Tag <div style={{ width:100 }}></div> |Description   | Release|
+|Area <div style={{ width:110 }}></div> |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description   | Release|
 |------|-------|---------------|-------------------|---|
 | Clinical data | [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase) | Fit-for-purpose|App for analyzing clinical data in SDTM format ([wiki](link)) | Demo |
