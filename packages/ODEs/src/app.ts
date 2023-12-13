@@ -33,6 +33,9 @@ enum EDITOR_STATE {
 
 const SOLVER_HELP_LINK = '/help/compute/solver.md';
 
+const COMPLETE_THE_MODEL_MSG = 'Complete the model';
+const PROVIDE_CORRECTNESS_MSG = 'Provide correct model';
+
 /** Get problem with respect to IVP editor state. */
 function getProblem(state: EDITOR_STATE): string {
   switch (state) {
@@ -148,10 +151,15 @@ export async function runSolverApp() {
       solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
 
     } catch (err) {
-        if (err instanceof Error) {
-          const b = new DG.Balloon();
-          b.error(err.message);
-        }
+        if (err instanceof Error) 
+          if (editorState != EDITOR_STATE.FROM_FILE) {
+            const b = new DG.Balloon();
+            b.error(err.message);
+          }
+          else {
+            const b = new DG.Balloon();
+            b.info(COMPLETE_THE_MODEL_MSG);
+          }
   }}; 
    
   let solutionTable = DG.DataFrame.create();
@@ -338,10 +346,10 @@ export async function runSolverDemoApp() {
       
       solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
     } catch (err) {
-        if (err instanceof Error) {
-          const b = new DG.Balloon();
-          b.error(err.message);
-        }
+      if (err instanceof Error) {
+        const b = new DG.Balloon();
+        b.info(PROVIDE_CORRECTNESS_MSG);
+      }
   }};
 
   const demoScript = new DemoScript('Solving ODEs',
