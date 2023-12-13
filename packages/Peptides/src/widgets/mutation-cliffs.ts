@@ -2,17 +2,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
-import {PeptidesModel} from '../model';
 import {addExpandIcon, getSeparator, setGridProps} from '../utils/misc';
 import {renderCellSelection} from '../utils/cell-renderer';
 
-export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
-  const filteredIndexes = table.filter.getSelectedIndexes();
-  const substInfo = model.mutationCliffs;
-  const currentCell = model.mutationCliffsSelection;
-  const positions = Object.keys(currentCell);
+export type MutationCliffsOptions = {
+  mutationCliffs: type.MutationCliffs, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
+  positionColumns: DG.Column<string>[], gridColumns: DG.GridColumnList, activityCol: DG.Column<number>,
+};
 
-  if (!positions.length || substInfo === null)
+export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliffsOptions): DG.Widget {
+  const filteredIndexes = table.filter.getSelectedIndexes();
+  const positions = Object.keys(options.mutationCliffsSelection);
+
+  if (!positions.length || options.mutationCliffs === null)
     return new DG.Widget(ui.label('No mutations table generated'));
 
   const substitutionsArray: string[] = [];
@@ -20,21 +22,24 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const substitutedToArray: string[] = [];
   const fromIdxArray: number[] = [];
   const toIdxArray: number[] = [];
-  const alignedSeqCol = table.getCol(model.settings.sequenceColumnName!);
+  const alignedSeqCol = table.getCol(options.sequenceColumnName!);
   const alignedSeqColCategories = alignedSeqCol.categories;
   const alignedSeqColData = alignedSeqCol.getRawData();
-  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
-  const activityScaledColData = activityScaledCol.getRawData();
+  // const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY);
+  const activityScaledColData = options.activityCol.getRawData();
   const seenIndexes = new Map<number, number[]>();
   const uniqueSequencesBitSet = DG.BitSet.create(table.rowCount);
 
+  const positionColumns: { [colName: string]: DG.Column<string> } =
+    Object.fromEntries(options.positionColumns.map((col) => [col.name, col]));
   for (const pos of positions) {
-    const posCol = table.getCol(pos);
+    const posCol = positionColumns[pos];
     const posColCategories = posCol.categories;
     const posColData = posCol.getRawData();
 
-    for (const monomer of currentCell[pos]) {
-      const substitutionsMap = substInfo.get(monomer)?.get(pos) as Map<number, type.UTypedArray> | undefined;
+    for (const monomer of options.mutationCliffsSelection[pos]) {
+      const substitutionsMap = options.mutationCliffs.get(monomer)
+        ?.get(pos) as Map<number, type.UTypedArray> | undefined;
       if (typeof substitutionsMap === 'undefined')
         continue;
 
@@ -144,13 +149,16 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     renderCellSelection(gcArgs.g, gcArgs.bounds);
   });
 
-  const gridCols = model.analysisView.grid.columns;
-  const originalGridColCount = gridCols.length;
-  const positionColumns = model.positionColumns.toArray().map((col) => col.name);
+  const originalGridColCount = options.gridColumns.length;
+  // const positionColumns = options.positionColumns?.map((col) => col.name) ?? null;
+  // if (positionColumns == null)
+  //   throw new Error('PeptidesError: Could not create mutation cliffs table: Position columns are not initialized');
+
   const columnNames: string[] = [];
   for (let colIdx = 1; colIdx < originalGridColCount; colIdx++) {
-    const gridCol = gridCols.byIndex(colIdx);
-    if (gridCol?.name === model.settings.sequenceColumnName || (gridCol?.visible === true && !positionColumns.includes(gridCol.name)))
+    const gridCol = options.gridColumns.byIndex(colIdx);
+    if (gridCol?.name === options.sequenceColumnName ||
+      (gridCol?.visible === true && !Object.hasOwn(positionColumns, gridCol.name)))
       columnNames.push(gridCol!.name);
   }
 
@@ -176,5 +184,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   addExpandIcon(pairsGrid);
   addExpandIcon(uniqueSequencesGrid);
 
-  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root], {style: {width: '100%'}}));
+  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root],
+    {style: {width: '100%'}}));
 }

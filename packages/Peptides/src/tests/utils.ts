@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
 import {expect} from '@datagrok-libraries/utils/src/test';
-import {PeptideSimilaritySpaceWidget, createPeptideSimilaritySpaceViewer} from '../utils/peptide-similarity-space';
 import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
@@ -24,17 +23,6 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
 }
 
 /**
- * Tests if peptide space viewer is drawing without exceptions.
- *
- * @param {DG.DataFrame} table Demo table.
- * @param {DG.TableView} view Demo view.
- */
-export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableView): Promise<void> {
-  const widget = new PeptideSimilaritySpaceWidget(table.getCol('AlignedSequence'), view);
-  await widget.draw();
-}
-
-/**
  * Tests if dimensionality reducer works for both the method and the measure chosen.
  *
  * @param {Array<string>} columnData Strings to process.
@@ -53,29 +41,4 @@ export async function _testDimensionalityReducer(
 
   expect(X.every((v) => v !== null && !Number.isNaN(v)), true);
   expect(Y.every((v) => v !== null && !Number.isNaN(v)), true);
-}
-
-/**
- * Tests if PeptideSimilaritySpaceViewer works for both the method and the measure chosen.
- *
- * @export
- * @param {DG.DataFrame} table Table.
- * @param {DG.Column} alignedSequencesColumn Aligned sequences column.
- * @param {string} method Embedding method.
- * @param {string} measure Strings similarity measure.
- * @param {number} cyclesCount Number of embedding iterations.
- * @param {(DG.TableView | null)} view Viewer to show graphics on.
- * @param {(string | null)} [activityColumnName] Name of column with activity.
- */
-export async function _testPeptideSimilaritySpaceViewer(table: DG.DataFrame, alignedSequencesColumn: DG.Column,
-  method: string, measure: string, cyclesCount: number): Promise<void> {
-  const viewer = await createPeptideSimilaritySpaceViewer(
-    table, method, measure, cyclesCount, alignedSequencesColumn, undefined);
-  const df = viewer.dataFrame;
-
-  const axesNames = ['~X', '~Y', '~MW'];
-  const axes = axesNames.map((v) => df.getCol(v).getRawData() as Float32Array);
-
-  for (const ax of axes)
-    expect(ax.every((v) => v !== null && !Number.isNaN(v)), true);
 }

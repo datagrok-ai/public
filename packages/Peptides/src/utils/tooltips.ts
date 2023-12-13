@@ -8,10 +8,14 @@ import * as C from '../utils/constants';
 import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
 import {getDistributionPanel, getDistributionTable} from './misc';
 import {getMonomerWorksInstance} from '../package';
-import {AggregationColumns, getAggregatedColumnValues, MonomerPositionStats} from './statistics';
+import {getAggregatedColumnValues, MonomerPositionStats} from './statistics';
+import { StringDictionary } from '@datagrok-libraries/utils/src/type-declarations';
 
-export type TooltipOptions = {fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number,
-  monomerPosition: type.SelectionItem, mpStats: MonomerPositionStats};
+export type TooltipOptions = {
+  fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number,
+  monomerPosition: type.SelectionItem, mpStats: MonomerPositionStats,
+  aggrColValues?: StringDictionary
+};
 
 export function showMonomerTooltip(monomer: string, x: number, y: number): boolean {
   const tooltipElements: HTMLDivElement[] = [];
@@ -35,25 +39,27 @@ export function showMonomerTooltip(monomer: string, x: number, y: number): boole
   return true;
 }
 
-export function showTooltip(df: DG.DataFrame, columns: AggregationColumns, options: TooltipOptions): boolean {
+export function showTooltip(df: DG.DataFrame, activityCol: DG.Column<number>, columns: [string, DG.AggregationType][],
+  options: TooltipOptions): boolean {
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
   if (options.monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
     showMonomerTooltip(options.monomerPosition.monomerOrCluster, options.x, options.y);
   else
-    showTooltipAt(df, columns, options);
+    showTooltipAt(df, activityCol, columns, options);
   return true;
 }
 
 //TODO: move out to viewer code
-export function showTooltipAt(df: DG.DataFrame, columns: AggregationColumns, options: TooltipOptions): HTMLDivElement | null {
+export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, columns: [string, DG.AggregationType][],
+  options: TooltipOptions): HTMLDivElement | null {
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
-  const stats = options.mpStats[options.monomerPosition.positionOrClusterType]![options.monomerPosition.monomerOrCluster];
+  const stats = options
+    .mpStats[options.monomerPosition.positionOrClusterType]![options.monomerPosition.monomerOrCluster];
   if (!stats?.count)
     return null;
 
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
   const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
 
@@ -63,7 +69,7 @@ export function showTooltipAt(df: DG.DataFrame, columns: AggregationColumns, opt
     if (tableMap['p-value'])
       tableMap['p-value'] = `${tableMap['p-value']}${options.isMutationCliffs ? ' (color)' : ''}`;
   }
-  const aggregatedColMap = getAggregatedColumnValues(df, columns, {mask: mask});
+  const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, { mask: mask });
   const resultMap = {...tableMap, ...aggregatedColMap};
 
   const distroStatsElem = getDistributionPanel(hist, resultMap);
