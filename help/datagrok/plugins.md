@@ -25,7 +25,7 @@ sidebar_position: 3
 
 |Area <div style={{ width:130 }}></div> |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:90 }}></div> |Description  | Release|
 |------|-------|---------------|-------------------|---|
-| Usage analysis | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Optional|App that monitors platform and plugins usage, event log ([wiki](link)) | Beta |
+| Usage analysis | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Optional|App that monitors platform and plugins usage, event log ([wiki](../govern/usage-analysis.md)) | Beta |
 
 
 ## Visualize
@@ -78,7 +78,7 @@ sidebar_position: 3
 
 |Area <div style={{ width:125 }}></div> |Plugin| Tag <div style={{ width:110 }}></div> |Description  | Release|
 |------|-------|-------------------|---------------|---|
-| General |[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | Required| Cheminformatics support ([wiki](link)).<br/>Comes with OpenChemLib sketcher | Stable|
+| General |[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Comes with OpenChemLib sketcher | Stable|
 | Sketchers |[Marvin](https://github.com/datagrok-ai/labs/tree/master/packages/Marvin) | Optional| Integration with Marvin JS (commercial 3rd party license) | Stable|
 | Sketchers |[KetcherSketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Optional| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
 | Sketchers |[ChemDrawSketcher](https://github.com/datagrok-ai/labs/tree/master/packages/ChemDraw) | Optional| Integration with ChemDraw (commercial 3rd party license) | Stable|
@@ -88,7 +88,7 @@ sidebar_position: 3
 | Database search |[PubChemApi](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)   | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 | Database search |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
 | Misc |[EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | Optional| Webservice integration: [Enamine](https://enaminestore.com/search), a service for online shopping for chemical building blocks |  Stable|
-| Hit to Lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening ([Hit Triage](link)) and hit design ([Hit Design](link)) | Alpha|
+| Hit to Lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Alpha|
 <!--
 |Misc |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)|Misc|Integration with the Chemspace, a service for online shopping for the chemical building blocks|Alpha|
 -->
@@ -97,10 +97,10 @@ sidebar_position: 3
 
 |Area  |Plugin|Tag <div style={{ width:110 }}></div> | Description | Release|
 |------|-------|-----------------|-----------------|---|
-| General |[Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) | Required| Bioinformatics support ([wiki](link))|Stable|
+| General |[Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) | Required| Bioinformatics support ([wiki](solutions/domains/bio/bio.md))|Stable|
 |Data format|[HELM](https://github.com/datagrok-ai/public/tree/master/packages/HELM)|Recommended |Support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview), HELM editor |Stable|
-| Visualization |[BiostructureViewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer) | Recommended| Visualization of biological structures ([wiki](link)) |Stable|
-| SAR  | [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](link))|Beta|
+| Visualization |[BiostructureViewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer) | Recommended| Visualization of biological structures ([wiki](../visualize/viewers/biostructure.md)) |Stable|
+| SAR  | [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](solutions/domains/bio/peptides-sar.md))|Beta|
 | Oligonucleotides  |[SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Fit-for-purpose| App that converts oligonucleotides into various formats  |Beta|
 | Oligonucleotides  |[OligoBatchCalculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) |Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
 
@@ -114,4 +114,4 @@ sidebar_position: 3
 
 |Area <div style={{ width:110 }}></div> |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description   | Release|
 |------|-------|---------------|-------------------|---|
-| Clinical data | [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase) | Fit-for-purpose|App for analyzing clinical data in SDTM format ([wiki](link)) | Demo |
+| Clinical data | [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase) | Fit-for-purpose|App for analyzing clinical data in SDTM format| Demo |
