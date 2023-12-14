@@ -51,7 +51,7 @@ export async function accessServer(csvString: string, queryParams: string): Prom
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}`;
+  const path = `/df_upload?models=${queryParams}&probability=True`;
   try {
     const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
     return response;
@@ -393,11 +393,17 @@ async function openModelsDialog(selected: any, smilesColumn: DG.Column, onOK: an
     //@ts-ignore
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
   molInput.root.style.marginLeft = '-70px';
+  const sliderInput = ui.sliderInput('Confidence interval', 0.6, 0, 1);
+  const boolInput = ui.boolInput('Add columns', false);
+  sliderInput.root.style.marginLeft = '-20px';
+  boolInput.root.style.marginLeft = '-55px';
   const dlg = ui.dialog('ADME/Tox');
   dlg
     .add(molInput)
     .add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
+    .add(sliderInput.root)
+    .add(boolInput)
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
     .show()
     .history(

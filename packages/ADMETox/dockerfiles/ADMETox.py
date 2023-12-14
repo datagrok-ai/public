@@ -40,39 +40,46 @@ def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
 
     subprocess.call(command, cwd=current_path)
     
-    with open(preds_path, 'r') as file:
-        content = file.read()
+    #with open(preds_path, 'r') as file:
+        #content = file.read()
     
-    return content
+    #return content
 
-def make_euclia_predictions(test_path, checkpoint_path):
+def make_euclia_predictions(test_path, checkpoint_path, add_probability):
     current_path = os.path.dirname(os.path.realpath(__file__))
     model = joblib.load(checkpoint_path)
     smiles = pd.read_csv(test_path, header=None).iloc[:, 0].tolist()
     molecules = [Chem.MolFromSmiles(smile) for smile in smiles if Chem.MolFromSmiles(smile) is not None]
-    return model.prediction
+    model(molecules)
+    predictions = model.prediction   
+    probabilities = model.probability if add_probability else None
+    probabilities = [sublist[0] for sublist in probabilities]
+    return predictions, probabilities
 
-def handle_model(model, test_data_path):
+def handle_model(model, test_data_path, add_probability):
     test_model_name = next((model_ext for model_ext in models_extensions if model in model_ext), None)
     result_path = f'predictions-{model}.csv'
     
     if 'pt' in test_model_name:
         make_chemprop_predictions(test_data_path, test_model_name, result_path)
         current_df = pd.read_csv(result_path)
+        os.remove(result_path)
         new_columns = {col: f"{col}_{model}" for col in current_df.columns[1:]}
         current_df = current_df.rename(columns=new_columns)
     else:
-        results = make_euclia_predictions(test_data_path, test_model_name)
-        current_df = pd.DataFrame({f'Y_{model}': results})
+        predictions, probabilities = make_euclia_predictions(test_data_path, test_model_name, add_probability)
+        current_df = pd.DataFrame({f'Y_{model}': predictions})
+        if add_probability:
+            current_df[f'Y_{model}_probability'] = probabilities
     
     return current_df
 
-def handle_uploaded_file(test_data_path, models):
+def handle_uploaded_file(test_data_path, models, add_probability):
     models_res = models.split(",")
     
     with ThreadPoolExecutor() as executor:
         # Process each model in parallel
-        futures = [executor.submit(handle_model, model, test_data_path) for model in models_res]
+        futures = [executor.submit(handle_model, model, test_data_path, add_probability) for model in models_res]
 
         # Collect results as they become available
         dfs = [future.result() for future in futures]
@@ -89,7 +96,9 @@ def df_upload():
         file.write(raw_data)
     
     models = request.args.get('models')
-    response = handle_uploaded_file(test_data_path, models)
+    add_probability = request.args.get('probability', False)
+    response = handle_uploaded_file(test_data_path, models, add_probability)
+    os.remove(test_data_path)
     return response
 
 if __name__ == '__main__':

@@ -10,13 +10,13 @@ USER mambauser
 
 WORKDIR /app
 
+COPY environment.yml /app/
+COPY requirements.txt /app/
+
 RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba run -n base aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive && \
     micromamba remove -n base awscli -y && \
     micromamba clean -afy
-
-COPY environment.yml /app/
-COPY requirements.txt /app/
 
 RUN set -ex ; \
     micromamba env create -f environment.yml ; \
