@@ -14,12 +14,13 @@ import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {lastSelectedPair, moleculesPairInfo, getMmpScatterPlot,
-   runMmpChemSpace} from './mmp-cliffs';
+  runMmpChemSpace} from './mmp-cliffs';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
-import { drawMoleculeLabels } from '../../rendering/molecule-label';
+  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {drawMoleculeLabels} from '../../rendering/molecule-label';
+import {getGenerations} from './mmp-generations';
 
 let currentTab = '';
 
@@ -44,12 +45,15 @@ export class MmpAnalysis {
   linesRenderer: ScatterPlotLinesRenderer | null = null;
   lines: ILineSeries;
   linesActivityCorrespondance: Uint32Array;
+  //generations tab objects
+  generationsGrid: DG.Grid;
   //rdkit
   rdkitModule: RDModule;
 
   constructor(table: DG.DataFrame, molecules: DG.Column, palette: PaletteCodes,
     rules: MmpRules, diffs: Array<Float32Array>,
-    linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, tp: DG.Viewer, sp: DG.Viewer,
+    linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, generationsGrid: DG.Grid,
+    tp: DG.Viewer, sp: DG.Viewer,
     sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule) {
@@ -63,6 +67,7 @@ export class MmpAnalysis {
     this.diffs = diffs;
     this.allPairsGrid = allPairsGrid;
     this.casesGrid = casesGrid;
+    this.generationsGrid = generationsGrid;
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
@@ -138,7 +143,7 @@ export class MmpAnalysis {
           schemes[i] = [this.colorPalette.numerical[i]];
 
         tp.setOptions({'colorShemes': schemes});
-       // tp. ;
+        // tp. ;
         progressRendering.close();
       });
 
@@ -167,6 +172,10 @@ export class MmpAnalysis {
     this.linesRenderer = linesEditor;
 
     this.refilterCliffs(sliderInputs.map((si) => si.value), true);
+
+    //generated tab
+
+
     //tabs
     const tabs = ui.tabControl(null, false);
 
@@ -191,6 +200,9 @@ export class MmpAnalysis {
     });
     tabs.addPane(MMP_TAB_CLIFFS, () => {
       return cliffs;
+    });
+    tabs.addPane(MMP_TAB_GENERATION, () => {
+      return this.generationsGrid.root;
     });
 
     tabs.onTabChanged.subscribe(() => {
@@ -257,7 +269,10 @@ export class MmpAnalysis {
         }
       });
 
-    return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,
+    const generationsGrid: DG.Grid = getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
+
+    return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs,
+      allPairsGrid, casesGrid, generationsGrid,
       tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
