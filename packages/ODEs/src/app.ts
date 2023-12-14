@@ -326,7 +326,9 @@ export async function runSolverApp() {
 export async function runSolverDemoApp() {
   let solutionTable: DG.DataFrame;
   let solverView: DG.TableView;
-  let solutionViewer: DG.Viewer | null = null;  
+  let solutionViewer: DG.Viewer | null = null;
+  let viewerDockNode: DG.DockNode | null = null;
+  let toChangeSolutionViewerProps = false;
   let div = ui.div([]);   
 
   /** Code editor for IVP specifying */
@@ -347,28 +349,35 @@ export async function runSolverDemoApp() {
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
       const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);    
+      const script = DG.Script.create(scriptText);
       const params = getScriptParams(ivp);    
       const call = script.prepare(params);
 
       await call.call();
+      
       solutionTable = call.outputs[DF_NAME];
       solverView.dataFrame = call.outputs[DF_NAME];
+      solverView.name = solutionTable.name;
 
       if (!solutionViewer) {
         solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
-        grok.shell.dockManager.dock(solutionViewer, DG.DOCK_TYPE.TOP, solverView.dockManager.findNode(solverView.grid.root));
+        viewerDockNode = grok.shell.dockManager.dock(solutionViewer, DG.DOCK_TYPE.TOP, solverView.dockManager.findNode(solverView.grid.root));
       }
-      else
+      else {
         solutionViewer.dataFrame = solutionTable;
-      
-      solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
+
+        if (toChangeSolutionViewerProps) {
+          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+          toChangeSolutionViewerProps = false;
+        }
+      }
+
     } catch (err) {
       if (err instanceof Error) {
         const b = new DG.Balloon();
         b.info(PROVIDE_CORRECTNESS_MSG);
       }
-  }};
+  }}; 
 
   const demoScript = new DemoScript('Solving ODEs',
     'Interactive solution of complex problems given in a declarative form');
@@ -494,13 +503,9 @@ export async function runSolverDemoApp() {
 
   /** Set IVP code editor state */
   const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
+    toChangeSolutionViewerProps = true;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
-    
-    if (solutionViewer) {
-      solutionViewer.close();
-      solutionViewer = null;
-    }
 
     const newState = EditorState.create({
       doc: text ?? getProblem(state), 
@@ -511,5 +516,10 @@ export async function runSolverDemoApp() {
 
     if (state != EDITOR_STATE.CLEAR)
       await solve();
+    else
+      if (solutionViewer && viewerDockNode) {
+        grok.shell.dockManager.close(viewerDockNode);
+        solutionViewer = null;
+      }
   };
 } // runSolverDemoApp
