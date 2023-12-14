@@ -4,7 +4,7 @@ export const properties: any = {
         "description": "Models to predict absorbtion",
         "models": [
         {
-            "skip": false,
+            "skip": true,
             "name": "Pgp-Inhibitor"
         },
         {
@@ -12,16 +12,28 @@ export const properties: any = {
             "name": "Pgp-Substrate"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "HIA"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "F(20%)"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "F(30%)"
+        },
+        {
+            "skip": false,
+            "name": "Caco2",
+        },
+        {
+            "skip": false,
+            "name": "Lipophilicity",
+        },
+        {
+            "skip": false,
+            "name": "Solubility",
         }]
     },
     "Distribution": {
@@ -29,15 +41,15 @@ export const properties: any = {
         "description": "Models to predict distribution",
         "models": [
         {
-            "skip": true,
-            "name": "PPB"
-        },
-        {
-            "skip": true,
-            "name": "VD"
+            "skip": false,
+            "name": "PPBR"
         },
         {
             "skip": false,
+            "name": "VDss"
+        },
+        {
+            "skip": true,
             "name": "BBB"
         }]
     },
@@ -50,15 +62,15 @@ export const properties: any = {
             "name": "CYP1A2-Inhibitor"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "CYP1A2-Substrate"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "CYP3A4-Inhibitor"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "CYP3A4-Substrate"
         },
         {
@@ -66,7 +78,7 @@ export const properties: any = {
             "name": "CYP2C19-Inhibitor"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "CYP2C19-Substrate"
         },
         {
@@ -91,12 +103,16 @@ export const properties: any = {
         "description": "Models to predict excretion",
         "models": [
         {
-            "skip": true,
-            "name": "Clearance"
+            "skip": false,
+            "name": "CL-Hepa"
         },
         {
-            "skip": true,
-            "name": "T"
+            "skip": false,
+            "name": "CL-Micro"
+        },
+        {
+            "skip": false,
+            "name": "Half-Life"
         }]
     },
     "Toxicity": {
@@ -116,11 +132,11 @@ export const properties: any = {
             "name": "H-HT"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "Ames"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "SkinSen"
         }]
     },

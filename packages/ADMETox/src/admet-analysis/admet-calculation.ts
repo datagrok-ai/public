@@ -146,10 +146,10 @@ async function openModelsDialogAsync(column: DG.Column): Promise<any[]> {
 async function processColumn(smilesCol: DG.Column, selected: string): Promise<DG.DataFrame> {
   let confirmed;
   let result: DG.DataFrame;
-  if (smilesCol.length > 10000)
+  if (smilesCol.length > 100000)
     confirmed = showConfirmationDialogAsync();
 
-  if (confirmed || smilesCol.length < 10000) {
+  if (confirmed || smilesCol.length < 100000) {
     malformedIndexes = [];
     //malformedIndexes = await grok.functions.call('Chem:_getMolSafe', { molecules: smilesCol });
     const smilesColFiltered = DG.Column.fromStrings(
@@ -213,7 +213,7 @@ export async function addPredictions(viewTable: DG.DataFrame, column: DG.Column)
 }
 
 async function addColumnsAndProcessInBatches(smilesCol: DG.Column, queryParams: string): Promise<DG.DataFrame> {
-  return await processColumnInBatches(smilesCol, 100, queryParams);
+  return await processColumnInBatches(smilesCol, 100000, queryParams);
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
@@ -236,17 +236,13 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malforme
 
 function processCsv(csvString: string | null | undefined): DG.DataFrame {
   const table = DG.DataFrame.fromCsv(csvString!);
-  const modelNames: string[] = [];
-  const prevColNames = table.columns.names();
-  for (let i = 0; i < prevColNames.length; ++i) {
-    modelNames[i] = table.get(prevColNames[i], 0);
-  }
-  for (let i = 0; i < prevColNames.length; ++i) {
-    const column: DG.Column = table.columns.byName(prevColNames[i]);
-    column.name = column.dataFrame.columns.getUnusedName(modelNames[i]);
-  }
-  grok.shell.addTableView(table);
-  return table;
+  const modelNames: string[] = table.columns.names();
+  modelNames.shift();
+  const columns = table.columns.byNames(modelNames);
+  /*for (let i = 1; i < modelNames.length; ++i) {
+    const column: DG.Column = table.columns.byName(modelNames[i]);
+  }*/
+  return DG.DataFrame.fromColumns(columns);
 }
 
 /**
