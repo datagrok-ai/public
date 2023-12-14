@@ -14,6 +14,7 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
 import {oneWayAnova} from './stat-tools';
+import { getDbscanWorker } from '@datagrok-libraries/math';
 
 export const _package = new DG.Package();
 
@@ -25,6 +26,23 @@ export function info() {
 //tags: init
 export async function init(): Promise<void> {
   await _initEDAAPI();
+}
+
+//top-menu: ML | Cluster | DBSCAN...
+//name: DBSCAN
+//description: Density-based spatial clustering of applications with noise (DBSCAN)
+//input: dataframe df
+//input: column xCol {type: numerical}
+//input: column yCol {type: numerical}
+//input: double epsilon = 0.02 {caption: Epsilon} [The maximum distance between two samples for them to be considered as in the same neighborhood.]
+//input: int minPts = 4 {caption: Minimum points} [The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.]
+export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column, epsilon: number, minPts: number) {
+  const x = xCol.getRawData() as Float32Array;
+  const y = yCol.getRawData() as Float32Array;
+  const res = await getDbscanWorker(x, y, epsilon, minPts);
+  const clusterColName = df.columns.getUnusedName('Cluster');
+  const cluster = DG.Column.fromInt32Array(clusterColName, res);
+  df.columns.add(cluster);
 }
 
 //top-menu: ML | Dimensionality Reduction | PCA...
