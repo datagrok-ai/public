@@ -824,6 +824,10 @@ export class Column<T = any> {
     return this;
   }
 
+  /** Performs deep cloning, optionally taking mask of the rows to be included.
+   * Note that the cloned colum is not added to this column's dataframe. */
+  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, mask)); }
+
   /** FOR EXPERT USE ONLY!
    *
    * Returns the raw buffer containing data.
@@ -1015,6 +1019,8 @@ export class Column<T = any> {
     return api.grok_Column_Aggregate(this.dart, type);
   }
 }
+
+
 export class BigIntColumn extends Column<BigInt> {
   /**
    * Gets [i]-th value.
@@ -1033,6 +1039,7 @@ export class BigIntColumn extends Column<BigInt> {
     api.grok_BigIntColumn_SetValue(this.dart, i, value?.toString(), notify);
   }
 }
+
 
 export class DateTimeColumn extends Column<dayjs.Dayjs> {
   /**

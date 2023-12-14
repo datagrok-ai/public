@@ -11,6 +11,10 @@ export class ModelCatalogView extends DG.CustomCardView {
     funcName: string,
     currentPackage: DG.Package,
   ): ModelCatalogView {
+
+    // this should make it a view app
+    //return this.findModelCatalogView(funcName) ?? this.createModelCatalogView(viewName, funcName, currentPackage);
+
     let modelsView = this.findModelCatalogView(funcName);
     if (modelsView == null) {
       modelsView = this.createModelCatalogView(viewName, funcName, currentPackage);
@@ -88,7 +92,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.initRibbon();
     this.initMenu();
     grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showHelp = true;
 
     setTimeout(async () => {
       grok.functions.onBeforeRunAction.subscribe((fc) => {

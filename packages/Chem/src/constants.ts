@@ -37,7 +37,7 @@ export const getSearchQueryAndType = (molecule: string | null, type: string, fp:
   molecule ? type !== SubstructureSearchType.IS_SIMILAR ? `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align';
-export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
+export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
 export const HIGHLIGHT_BY_SCAFFOLD_COL = 'highlight-scaffold-col';

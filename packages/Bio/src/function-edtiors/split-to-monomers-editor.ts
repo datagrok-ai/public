@@ -6,7 +6,7 @@ export class SplitToMonomersFunctionEditor {
   tableInput: DG.InputBase;
   seqColInput: DG.InputBase;
 
-  funcParamsDiv: HTMLDivElement;
+  funcParamsDiv: HTMLElement;
 
   get funcParams(): {} {
     return {
@@ -15,7 +15,7 @@ export class SplitToMonomersFunctionEditor {
     };
   }
 
-  get paramsUI(): HTMLDivElement {
+  get paramsUI(): HTMLElement {
     return this.funcParamsDiv;
   }
 

@@ -2,40 +2,57 @@ import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
 import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
-import {CLUSTER_TYPE} from '../model';
+import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {ClusterStats, ClusterTypeStats, MonomerPositionStats, PositionStats, Stats, SummaryStats, getStats} from './statistics';
+import {
+  ClusterStats,
+  ClusterTypeStats,
+  getStats,
+  MonomerPositionStats,
+  PositionStats,
+  StatsItem,
+  SummaryStats,
+} from './statistics';
 
-export type TargetOptions = {targetCol?: type.RawColumn | null, currentTarget?: string | null};
+export type MutationCliffsOptions = {
+  maxMutations?: number,
+  minActivityDelta?: number,
+  targetCol?: type.RawColumn | null,
+  currentTarget?: string | null
+};
 
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-  settings: type.PeptidesSettings = {}, targetOptions: TargetOptions = {}): Promise<type.MutationCliffs> {
+  options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
   if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
-  settings.minActivityDelta ??= 0;
-  settings.maxMutations ??= 1;
-  const substitutionsInfo = await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, settings, targetOptions);
+  options.minActivityDelta ??= 0;
+  options.maxMutations ??= 1;
+  const mutationCliffsService = new ParallelMutationCliffs();
+  const substitutionsInfo = await mutationCliffsService.calc(activityArray, monomerInfoArray, options);
+  mutationCliffsService.terminate();
   return substitutionsInfo;
 }
 
-export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionColumns: DG.Column<string>[],
-  options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
+export function calculateMonomerPositionStatistics(activityCol: DG.Column<number>, filter: DG.BitSet,
+  positionColumns: DG.Column<string>[], options: {
+    isFiltered?: boolean,
+    columns?: string[]
+  } = {}): MonomerPositionStats {
   options.isFiltered ??= false;
-  const monomerPositionObject = {general: {}} as MonomerPositionStats & {general: SummaryStats};
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
+  const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
   let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
-  let sourceDfLen = df.rowCount;
+  let sourceDfLen = activityCol.length;
 
   if (options.isFiltered) {
-    sourceDfLen = df.filter.trueCount;
+    sourceDfLen = filter.trueCount;
     const tempActivityData = new Float64Array(sourceDfLen);
-    const selectedIndexes = df.filter.getSelectedIndexes();
+    const selectedIndexes = filter.getSelectedIndexes();
     for (let i = 0; i < sourceDfLen; ++i)
       tempActivityData[i] = activityColData[selectedIndexes[i]];
     activityColData = tempActivityData;
-    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(df.filter).columns.toList();
+    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter).columns.toList();
   }
   options.columns ??= positionColumns.map((col) => col.name);
 
@@ -44,7 +61,7 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
       continue;
     const posColData = posCol.getRawData();
     const posColCateogries = posCol.categories;
-    const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
+    const currentPositionObject = {general: {}} as PositionStats & { general: SummaryStats };
 
     for (let categoryIndex = 0; categoryIndex < posColCateogries.length; ++categoryIndex) {
       const monomer = posColCateogries[categoryIndex];
@@ -69,7 +86,8 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
   return monomerPositionObject;
 }
 
-export function getSummaryStats(genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
+export function getSummaryStats(genObj: SummaryStats, stats: StatsItem | null = null,
+  summaryStats: SummaryStats | null = null): void {
   if (stats === null && summaryStats === null)
     throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
 
@@ -117,7 +135,7 @@ export function getSummaryStats(genObj: SummaryStats, stats: Stats | null = null
 }
 
 export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName: string,
-  customClusters: DG.Column<boolean>[]): ClusterTypeStats {
+  customClusters: DG.Column<boolean>[], activityCol: DG.Column<number>): ClusterTypeStats {
   const rowCount = df.rowCount;
   const origClustCol = df.getCol(clustersColumnName);
   const origClustColData = origClustCol.getRawData();
@@ -131,7 +149,6 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
   const customClustColNamesList = customClusters.map((v) => v.name);
 
-  const activityCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY);
   const activityColData = activityCol.getRawData() as Float64Array;
 
   const origClustStats: ClusterStats = {};
@@ -143,10 +160,9 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     const resultStats = clustType === CLUSTER_TYPE.ORIGINAL ? origClustStats : customClustStats;
     for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
       const mask = masks[maskIdx];
-      const stats = mask.allTrue || mask.allFalse ?
+      resultStats[clustNames[maskIdx]] = mask.allTrue || mask.allFalse ?
         {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask, mean: activityCol.stats.avg} :
         getStats(activityColData, mask);
-      resultStats[clustNames[maskIdx]] = stats;
     }
   }
 

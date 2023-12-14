@@ -28,6 +28,7 @@ export class PackagesView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Packages';
+    this.rout = '/Usage';
   }
 
   async initViewers(): Promise<void> {
@@ -255,5 +256,9 @@ export class PackagesView extends UaView {
         return Object.keys(data).length ? ui.tableFromMap(data) : ui.divText('No data');
       });
     }, true);
+  }
+
+  switchRout(): void {
+    this.rout = this.rout === '/Usage' ? '/InstallationTime' : '/Usage';
   }
 }

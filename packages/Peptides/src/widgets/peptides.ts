@@ -2,8 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as uuid from 'uuid';
-
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
@@ -11,12 +9,17 @@ import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ILogoSummaryTable} from '../viewers/logo-summary';
+
 
 /** Peptide analysis widget.
  * @param {DG.DataFrame} df Working table
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {host: HTMLElement, callback: () => Promise<boolean>} {
+export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {
+  host: HTMLElement,
+  callback: () => Promise<boolean>
+} {
   const logoHost = ui.div();
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
@@ -96,7 +99,6 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  //TODO: add when new version of datagrok-api is available
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
   activityColumnChoice.setTooltip('Numerical activity column');
@@ -106,12 +108,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const targetColumnChoice = ui.columnInput('Target', df, null, null, {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
-  targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in the data. ' +
-    'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
-  targetColumnChoice.nullable = true;
-
-  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
   if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
 
@@ -122,7 +119,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value, {addSequenceSpace: true});
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true});
       return model !== null;
     }
     return false;
@@ -155,11 +152,11 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   return {host: mainHost, callback: startAnalysisCallback};
 }
 
-type AnalysisOptions = {addSequenceSpace?: boolean};
+type AnalysisOptions = { addSequenceSpace?: boolean };
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-  targetColumn: DG.Column<string> | null = null, options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
+  options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
@@ -179,20 +176,16 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     const settings: type.PeptidesSettings = {
       sequenceColumnName: peptidesCol.name,
       activityColumnName: activityColumn.name,
-      scaling: scaling,
+      activityScaling: scaling,
       columns: {},
-      maxMutations: 1,
-      minActivityDelta: 0,
       showDendrogram: false,
+
     };
-    if (targetColumn !== null)
-      settings.targetColumnName = targetColumn.name;
 
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);
       if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
         newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-      settings.clustersColumnName = clustersColumn.name;
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
@@ -204,8 +197,6 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
       monomerType = alphabet === 'DNA' || alphabet === 'RNA' ? 'HELM_BASE' : 'HELM_AA';
     }
-    const dfUuid = uuid.v4();
-    newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
 
     const bitset = DG.BitSet.create(currentDf.rowCount,
@@ -214,8 +205,16 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     // Cloning dataframe with applied filter. If filter is not applied, cloning is
     // needed anyway to allow filtering on the original dataframe
     model = PeptidesModel.getInstance(newDf.clone(bitset));
-    if (clustersColumn)
-      await model.addLogoSummaryTable();
+    model.init(settings);
+    if (clustersColumn) {
+      const lstProps: ILogoSummaryTable = {
+        clustersColumnName: clustersColumn.name,
+        sequenceColumnName: peptidesCol.name,
+        activityScaling: scaling,
+        activityColumnName: activityColumn.name,
+      };
+      await model.addLogoSummaryTable(lstProps);
+    }
     await model.addMonomerPosition();
     await model.addMostPotentResidues();
 

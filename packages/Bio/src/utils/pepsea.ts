@@ -1,8 +1,23 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
+import {Subject} from 'rxjs';
+
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
 import * as C from './constants';
+
+import {_package} from '../package';
+
+export const Pepsea = new class {
+  public readonly dcName: string = 'bio';
+
+  public async getDockerContainer(): Promise<DG.DockerContainer> {
+    return await grok.dapi.docker.dockerContainers.filter(this.dcName).first();
+  }
+}();
 
 export const pepseaMethods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
 const alignmentObjectMetaKeys = ['AlignedSeq', 'AlignedSubpeptide', 'HELM', 'ID', 'PolymerID'];
@@ -28,7 +43,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   method: typeof pepseaMethods[number] = 'ginsi', gapOpen: number = 1.53, gapExtend: number = 0.0,
   clustersCol: DG.Column<string | number> | null = null,
 ): Promise<DG.Column<string> | null> {
-  const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
+  const pepseaContainer = await Pepsea.getDockerContainer();
   if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking') {
     grok.log.warning('PepSeA container has not started yet');
     return null;

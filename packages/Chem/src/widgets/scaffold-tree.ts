@@ -217,6 +217,55 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
     fillVisibleNodes(rootGroup.children[n] as TreeViewGroup, visibleNodes);
 }
 
+function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer) {
+  const items = thisViewer.tree.items;
+
+  const updateLabel = (group: DG.TreeViewGroup) => {
+    const { labelDiv, bitset } = value(group);
+    const loaderNode = labelDiv.querySelector('.grok-loader');
+    const newLoaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
+
+    labelDiv.style.display = 'flex';
+    
+    if (!loaderNode && !labelDiv.childNodes[1])
+      labelDiv.insertBefore(newLoaderDiv, labelDiv.firstChild);
+    else if (labelDiv.firstChild && labelDiv.childNodes[1])
+      labelDiv.replaceChild(newLoaderDiv, labelDiv.firstChild);
+
+    if (labelDiv.childNodes[1]) {
+      const textContent = labelDiv.childNodes[1].textContent;
+      const copiedBitset = bitset ? bitset.clone() : DG.BitSet.create(thisViewer.molColumn!.length).setAll(false);
+      const viewerBitset = thisViewer.dataFrame ? thisViewer.dataFrame.filter : DG.BitSet.create(copiedBitset!.length).setAll(false);
+      const filteredBitset = copiedBitset?.and(viewerBitset);
+      const bitsetCount = filteredBitset?.trueCount.toString();
+      const countMatch = bitsetCount === textContent;
+
+      if (countMatch)
+        labelDiv.removeChild(labelDiv.firstChild!);
+      else
+        labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild!); 
+
+      labelDiv.onmouseenter = (e) => {
+        if (!countMatch) {
+          ui.tooltip.show(ui.divV([
+            ui.divText(textContent + ' matches total'),
+            ui.divText(bitsetCount + ' matches filtered')
+          ]), e.clientX + 15, e.clientY) ;
+        }
+      };
+
+      labelDiv.onmouseleave = (e) => ui.tooltip.hide();
+    };
+  };
+
+  items.map((group) => {
+    const castedGroup = group as DG.TreeViewGroup;
+    if (isOrphans(group))
+      return;
+    updateLabel(castedGroup);
+  });
+}
+
 function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
   const labelDiv = value(group).labelDiv;
   labelDiv!.innerHTML = text;
@@ -249,9 +298,6 @@ async function updateVisibleNodesHits(thisViewer: ScaffoldTreeViewer) {
 async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes : Array<TreeViewNode>,
   start: number, end: number) {
   for (let n = start; n <= end; ++n) {
-    if (thisViewer.cancelled)
-      return;
-
     const group = visibleNodes[n];
     if (isOrphans(group))
       return;
@@ -615,7 +661,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     //this.root.style.visibility = 'hidden';
     ui.setUpdateIndicator(this.root, true);
     this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
-    this.progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
+    this.progressBar?.update(0, 'Installing ScaffoldGraph..: 0% completed');
 
     const c = this.root.getElementsByClassName('d4-update-shadow');
     if (c.length > 0) {
@@ -629,8 +675,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         eCancel.style.opacity = '90%';
 
         ui.setUpdateIndicator(this.root, false);
-        this.progressBar!.update(100, 'Build Cancelled');
-        this.progressBar!.close();
+        this.progressBar?.update(100, 'Build Cancelled');
+        this.progressBar?.close();
         this.progressBar = null;
       }, 'Cancel Tree build', 'chem-scaffold-tree-cancel-hint');
       eProgress.appendChild(eCancel);
@@ -647,7 +693,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (currentCancelled)
       return;
 
-    this.progressBar!.update(30, 'Generating tree..: 30% completed');
+    this.progressBar?.update(30, 'Generating tree..: 30% completed');
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
@@ -705,8 +751,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } catch (e: any) {
       _package.logger.error(e.toString());
       ui.setUpdateIndicator(this.root, false);
-      this.progressBar!.update(50, 'Build failed');
-      this.progressBar!.close();
+      this.progressBar?.update(50, 'Build failed');
+      this.progressBar?.close();
       this.message = 'Tree build failed...Please ensure that python package ScaffoldGraph is installed';
       return;
     }
@@ -720,8 +766,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.cancelled) {
       this.clear();
       ui.setUpdateIndicator(this.root, false);
-      this.progressBar!.update(100, 'Build Cancelled');
-      this.progressBar!.close();
+      this.progressBar?.update(100, 'Build Cancelled');
+      this.progressBar?.close();
       this.progressBar = null;
       return;
     }
@@ -756,13 +802,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     await updateVisibleNodesHits(this); //first visible N nodes
     ui.setUpdateIndicator(this.root, false);
     if (this.progressBar !== null)
-      this.progressBar!.update(100, 'Tree is ready');
+      this.progressBar.update(100, 'Tree is ready');
 
     this.updateSizes();
     this.updateUI();
 
     this.updateFilters();
     this.updateTag();
+    if (this.dataFrame) {
+      updateLabelWithLoaderOrBitset(this); 
+    }
   }
 
   get molColumn(): DG.Column | null {
@@ -1384,7 +1433,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     colorIcon.onmouseenter = (e) => {
       let text;
       const parentColor = value(group).parentColor;
-      const chosenColor = value(group).chosenColor;
     
       if (value(group).colorOn)
         text = 'Color picked by user';
@@ -1454,11 +1502,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).labelDiv = newLabelDiv;
         this.updateFilters();
         this.filterTree(this.threshold);
+        updateLabelWithLoaderOrBitset(this); 
       });
     }
     
     value(group).labelDiv = labelDiv;
-
 
     const c = molHost.getElementsByTagName('CANVAS');
     if (c.length > 0)
@@ -1522,10 +1570,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
     divFolder.classList.add('fas', 'icon-fill');
-    divFolder.onclick = (e) => {
-      this.makeNodeActiveAndFilter(group);
-    }
-
+    
     const labelDiv = ui.divText(label);
     const iconsDiv = ui.divV([
       ui.iconFA('trash-alt', () => {
@@ -1558,6 +1603,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.updateFilters();
     });
 
+    folder.onclick = (e) => {
+      this.makeNodeActiveAndFilter(group);
+    }
+    
     value(group).labelDiv = labelDiv;
 
     return group;
@@ -1715,7 +1764,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;
-    this.tree.root.onscroll = async (e) => await updateVisibleNodesHits(thisViewer);
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
       const node: TreeViewGroup = args.args.item;
@@ -1782,6 +1830,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }));
     }
 
+    this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
+      const firstChild = thisViewer.tree.items[0];
+      if (dataFrame.rowCount !== value(firstChild).bitset?.length)
+        await updateAllNodesHits(thisViewer);
+      updateLabelWithLoaderOrBitset(thisViewer); 
+    }));
+
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
       const tooltip = args.args.element;
       const text = tooltip.getAttribute('data');
@@ -1793,10 +1848,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.clearFilters();
       this.clearNotIcon(this.tree.children);
-    }));
-
-    this.subs.push(this.dataFrame.onRowsRemoved.subscribe(async (_) => {
-      await updateAllNodesHits(thisViewer);
     }));
 
     this.render();

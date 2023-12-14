@@ -17,7 +17,7 @@ let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
 let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
 
 export function initSearch() {
-  grok.dapi.queries.list().then((qs) => queries = qs);
+  //grok.dapi.queries.list().then((qs) => queries = qs);
   initTemplates();
 }
 
@@ -30,8 +30,8 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   projectsSearch(s, host);
   functionEvaluationsSearch(s, host);
   searchFunctionsSearch(s, host);
-  queriesEntitiesSearch(s, host);
-  queriesSearch(s, host);
+/*  queriesEntitiesSearch(s, host);
+  queriesSearch(s, host);*/
   templatesSearch(s, host);
   widgetsSearch(s, host);
   specificWidgetsSearch(s, host);

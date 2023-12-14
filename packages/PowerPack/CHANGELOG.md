@@ -1,5 +1,11 @@
 # PowerPack changelog
 
+## 1.1.4 (2023-11-28)
+
+### Bug Fixes
+
+* Disabled queries search to increase performance, until DG 1.18.0
+
 ## 1.1.1 (2023-11-09)
 
 ### Bug Fixes

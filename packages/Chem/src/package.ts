@@ -1054,10 +1054,10 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
   const idxCol = fingerprints.columns.byName('indexes');
   grid.sort([], []);
   grid.setRowOrder(idxCol.toList());
-  grid.props.pinnedRows = [tableRowIdx];
+  //grid.props.pinnedRows = [tableRowIdx];
   //next two rows can be added after Chem is updated to version 1.7 API
-  //grid.props.pinnedRowColumnNames = [molCol.name];
-  //grid.props.pinnedRowValues = [value.value];
+  grid.props.pinnedRowColumnNames = [molCol.name];
+  grid.props.pinnedRowValues = [value.value];
   grid.scrollToPixels(0, 0); //to address the bug in the core
 }
 
@@ -1348,7 +1348,7 @@ export async function demoChemOverview(): Promise<void> {
 //description: Searching for most similar or diverse molecules in dataset
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search
 export async function demoSimilarityDiversitySearch(): Promise<void> {
-  _demoSimilarityDiversitySearch();
+  await _demoSimilarityDiversitySearch();
 }
 
 
@@ -1375,18 +1375,18 @@ export async function demoActivityCliffs(): Promise<void> {
 //description: Running various queries to chemical databases using convenient input forms
 //meta.demoPath: Cheminformatics | Chemical Databases
 export async function demoDatabases(): Promise<void> {
-  _demoDatabases4();
+  await _demoDatabases4();
 }
 
 //name: Demo Scaffold Tree
 //description: Running scaffold analysis with hierarchical tree
 //meta.demoPath: Cheminformatics | Scaffold Tree
 export async function demoScaffold(): Promise<void> {
-  _demoScaffoldTree();
+  await _demoScaffoldTree();
 }
 
 
-//top-menu: Chem | Calculate | Names To Smiles...
+//top-menu: Chem | Transform | Names To Smiles...
 //name: namesToSmiles
 //input: dataframe data
 //input: column names
@@ -1399,7 +1399,7 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
   data.columns.add(col);
 }
 
-//top-menu: Chem | Calculate | Convert Notation...
+//top-menu: Chem | Transform | Convert Notation...
 //name: convertNotation
 //input: dataframe data
 //input: column smiles  {semType: Molecule}

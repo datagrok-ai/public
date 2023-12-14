@@ -1138,6 +1138,10 @@ export class InputForm extends DartWrapper {
     return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
   }
 
+  static forInputs(inputs: InputBase[]): InputForm {
+    return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
+  }
+
   get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }

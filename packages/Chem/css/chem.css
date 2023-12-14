@@ -335,6 +335,7 @@
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .d4-tree-view-group-label .chem-mol-box-info-buttons > .grok-icon,
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info .chem-mol-box-info-buttons > .grok-icon {
   color: var(--blue-1) !important;
+  margin: 0;
 }
 
 

@@ -39,13 +39,13 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
     this.plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
 
     //@ts-ignore
-    this.funcParamsDiv = ui.inputs([
+    this.funcParamsDiv = ui.div([
       this.tableInput,
       this.molColInput,
       this.methodInput,
       this.methodSettingsDiv,
       this.similarityMetricInputRoot,
       this.plotEmbeddingsInput
-    ], {style: {minWidth: '320px'}});
+    ], {style: {minWidth: '320px'}, classes: 'ui-form'});
   }
 }

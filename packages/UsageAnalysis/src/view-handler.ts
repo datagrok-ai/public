@@ -54,14 +54,20 @@ export class ViewHandler {
     }
     let helpShown = false;
     const puButton = ui.bigButton('Usage', () => {
-      ViewHandler.getCurrentView().viewers[1].root.style.display = 'none';
-      ViewHandler.getCurrentView().viewers[0].root.style.display = 'flex';
+      const v = ViewHandler.getCurrentView();
+      v.switchRout();
+      ViewHandler.updatePath();
+      v.viewers[1].root.style.display = 'none';
+      v.viewers[0].root.style.display = 'flex';
       puButton.disabled = true;
       piButton.disabled = false;
     });
     const piButton = ui.bigButton('Installation time', () => {
-      ViewHandler.getCurrentView().viewers[0].root.style.display = 'none';
-      ViewHandler.getCurrentView().viewers[1].root.style.display = 'flex';
+      const v = ViewHandler.getCurrentView();
+      v.switchRout();
+      ViewHandler.updatePath();
+      v.viewers[0].root.style.display = 'none';
+      v.viewers[1].root.style.display = 'flex';
       puButton.disabled = false;
       piButton.disabled = true;
     });
@@ -69,9 +75,34 @@ export class ViewHandler {
     const pButtons = ui.divH([puButton, piButton], 'ua-packages-buttons');
     pButtons.style.display = 'none';
     toolbox.filters.root.before(pButtons);
+
+    const fuButton = ui.bigButton('Usage', () => {
+      const v = ViewHandler.getCurrentView() as FunctionsView;
+      v.switchRout();
+      ViewHandler.updatePath();
+      v.functionsExecTime.style.display = 'none';
+      v.viewers[0].root.style.display = 'flex';
+      fuButton.disabled = true;
+      feButton.disabled = false;
+    });
+    const feButton = ui.bigButton('Execution time', () => {
+      const v = ViewHandler.getCurrentView() as FunctionsView;
+      v.switchRout();
+      ViewHandler.updatePath();
+      v.viewers[0].root.style.display = 'none';
+      v.functionsExecTime.style.display = 'flex';
+      fuButton.disabled = false;
+      feButton.disabled = true;
+    });
+    fuButton.disabled = true;
+    const fButtons = ui.divH([fuButton, feButton], 'ua-packages-buttons');
+    fButtons.style.display = 'none';
+    toolbox.filters.root.before(fButtons);
+
     ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
       const view = ViewHandler.UA.currentView;
-      ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z]+)/, '$1' + view.name);
+      // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
+      ViewHandler.updatePath();
       if (view instanceof UaView) {
         for (const viewer of view.viewers) {
           if (!viewer.activated) {
@@ -103,6 +134,10 @@ export class ViewHandler {
         pButtons.style.display = 'flex';
       else
         pButtons.style.display = 'none';
+      if (view.name === 'Functions')
+        fButtons.style.display = 'flex';
+      else
+        fButtons.style.display = 'none';
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
@@ -152,5 +187,12 @@ export class ViewHandler {
       this.urlParams.set(key, value);
 
     ViewHandler.UA.path = `${APP_PREFIX}${ViewHandler.getCurrentView().name}?${params.join('&')}`;
+  }
+
+  static updatePath(): void {
+    const v = ViewHandler.getCurrentView();
+    const s = ViewHandler.UA.path.split('?');
+    const params = s.length === 2 ? s[1] : null;
+    ViewHandler.UA.path = `/${v.name}${v.rout ?? ''}${params ? '?' + params : ''}`;
   }
 }

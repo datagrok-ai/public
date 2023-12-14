@@ -33,6 +33,19 @@ def prepare_autogrid_config(folder_path, receptor_basename, x, y, z):
 def calculate_hash(data):
     return hashlib.sha256(data.encode()).hexdigest()
 
+@app.route('/check_opencl', methods=['GET'])
+def check_opencl():
+    try:
+        command = ['clinfo']
+        process = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        output, _ = process.communicate()
+        if process.returncode == 0:
+            return jsonify({'success': True, 'output': output})
+        else:
+            return jsonify({'success': False, 'error': 'clinfo execution failed'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/dock', methods=['POST'])
 def dock():
     raw_data = request.data
@@ -44,6 +57,8 @@ def dock():
     x = request.args.get('x', 100)
     y = request.args.get('y', 100)
     z = request.args.get('z', 100)
+    debug_mode = request.args.get('debug', False)
+    subprocess_outputs = {}
 
     folder_name = calculate_hash(receptor_value) + str(x) + str(y) + str(z)
     folder_path = os.path.join(os.getcwd(), folder_name)
@@ -81,10 +96,15 @@ def dock():
     ]
 
     process = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=folder_path)
-    output, _ = process.communicate()
+    gpu_stdout, gpu_stderr = process.communicate()
+    subprocess_outputs['gpu_output'] = gpu_stdout
+    subprocess_outputs['gpu_error'] = gpu_stderr
 
     convert_process = subprocess.Popen('cat {}-{}.dlg | grep "^DOCKED: " | cut -b 9- > {}-{}.pdbqt'.format(receptor_name, ligand_name, receptor_name, ligand_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=folder_path)
-    stdout, stderr = convert_process.communicate()
+    grep_stdout, grep_stderr = convert_process.communicate()
+    subprocess_outputs['grep_output'] = grep_stdout
+    subprocess_outputs['grep_error'] = grep_stderr
+
     with open('{}/{}-{}.pdbqt'.format(folder_path, receptor_name, ligand_name), 'r') as result_file:
         result_content = result_file.read()
     
@@ -92,6 +112,14 @@ def dock():
         'poses': result_content
     }
 
+    if debug_mode is False and result_content == '':
+        response = {
+            'error': next((value for value in list(subprocess_outputs.values()) if value), 'not found')
+        }
+
+    if debug_mode is True:
+        response['debug_info'] = subprocess_outputs
+ 
     return jsonify(response)
 
 if __name__ == '__main__':

@@ -66,31 +66,21 @@ export class FormsViewer extends DG.JsViewer {
     const formWithHeaderDiv = ui.splitH([columnHeadersBox, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
 
+    const splitColLeft = formWithHeaderDiv.firstElementChild as HTMLElement;
+    const splitColRight = formWithHeaderDiv.lastElementChild as HTMLElement;
+
     ui.tooltip.bind(this.currentRowIndicator, 'Current row');
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
-    ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
-      let height = 0;
-      const virtualViewElements = this.virtualView.root.children[0].children;
-
-      for (let i = 0; i < virtualViewElements.length; i++) {
-        const vheight = virtualViewElements[i].getBoundingClientRect().height;
-        if (vheight > height)
-          height = vheight;
-      }
-
+    ui.tools.waitForElementInDom(this.root).then((_) => {
       this.columnHeadersDiv.style.cssText = `
         oveflow:hidden!important;
         min-width: 150px;
         flex-shrink: 0;
       `;
-
-      const columnsHeaders = columnHeadersBox.parentElement as HTMLElement;
-      columnsHeaders.style.cssText = `
+      splitColLeft.style.cssText = `
         overflow: hidden!important;
-        width: ${this.columnLabelWidth+37}px;
       `;
-
       columnHeadersBox.style.cssText = `
         box-sizing: content-box;
         width:100%;
@@ -108,8 +98,19 @@ export class FormsViewer extends DG.JsViewer {
         columnHeadersBox.scrollTop = this.virtualView.root.scrollTop;
       });
     });
+
+    ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
+      const rootWidth = this.root.getBoundingClientRect().width;
+      splitColLeft.style.width = `${this.columnLabelWidth+30}px`;
+      splitColRight.style.width = `${rootWidth-this.columnLabelWidth-30-4}px`;
+    });
+    
   }
 
+  getColumnWidth(el:HTMLElement){
+    return parseInt(el.style.width);
+  }
+  
   onTableAttached() {
     if (this.fieldsColumnNames === null)
       this.setfieldsColumnNames(this.dataFrame.columns.names());

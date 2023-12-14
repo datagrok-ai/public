@@ -153,7 +153,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (this._requestTerminated)
         return results;
       const item = molecules[i];
-      if (!item && item === '') {
+      if (!item || item === '') {
         results[i] = '';
         continue;
       }
@@ -221,6 +221,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
 
     const molsCount = molecules?.length ?? this._rdKitMols!.length;
+    if (molsCount === 0)
+      return {};
     // Prepare the result storage
     const resultValues: {[ruleId in RuleId]?: BitArray} = {};
     for (const rule of rules)

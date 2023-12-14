@@ -16,7 +16,7 @@ const benchmarkDatasetSizes = [5, 50, 100, 200];
 
 category('Benchmarks: Mutation Cliffs', () => {
   for (const size of benchmarkDatasetSizes)
-    test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 100000});
+    test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 150000});
 });
 
 category('Benchmarks: Cluster stats', () => {
@@ -28,8 +28,10 @@ category('Benchmarks: Cluster stats', () => {
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
       const clustersColumnName = 'cluster';
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
+      if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase()))
+        df.columns.remove(scaledActivity.name);
       df.columns.add(scaledActivity);
-      DG.time(`Cluster stats benchmark - ${size}k`, () => calculateClusterStatistics(df, clustersColumnName, []));
+      DG.time(`Cluster stats benchmark - ${size}k`, () => calculateClusterStatistics(df, clustersColumnName, [], scaledActivity));
     }, {timeout: 100000});
   }
 });
@@ -48,8 +50,10 @@ category('Benchmarks: Monomer-Position stats', () => {
         ++i;
       }
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
+      if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase()))
+        df.columns.remove(scaledActivity.name);
       df.columns.add(scaledActivity);
-      DG.time(`Monomer-Position stats benchmark - ${size}k`, () => calculateMonomerPositionStatistics(df, positionCols));
+      DG.time(`Monomer-Position stats benchmark - ${size}k`, () => calculateMonomerPositionStatistics(scaledActivity, DG.BitSet.create(0), positionCols));
     }, {timeout: 100000});
   }
 });

@@ -46,7 +46,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         (this.multiView.currentView as HitBaseView<HitDesignTemplate, HitDesignApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    this.mainView = grok.shell.addView(this.multiView);
+    this.mainView = this.multiView;
+    //this.mainView = grok.shell.addView(this.multiView);
     grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
         if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {

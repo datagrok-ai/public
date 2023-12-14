@@ -5,10 +5,11 @@ import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/uti
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import { MonomerPosition } from '../viewers/sar-viewer';
 
 category('Core', () => {
   let simpleTable: DG.DataFrame;
@@ -39,7 +40,8 @@ category('Core', () => {
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    model!.mutationCliffsSelection = {'11': ['D']};
+    const MPViewer = model!.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    MPViewer!.mutationCliffsSelection = {'11': ['D']};
     await delay(3000);
   });
 
@@ -59,7 +61,8 @@ category('Core', () => {
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    model!.mutationCliffsSelection = {'13': ['-']};
+    const MPViewer = model!.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    MPViewer!.mutationCliffsSelection = {'13': ['-']};
     await delay(3000);
   });
 
