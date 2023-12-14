@@ -3,13 +3,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { DimReductionMethods, IReduceDimensionalityResult } from '../reduce-dimensionality';
+import { DimReductionMethods, IReduceDimensionalityResult, ITSNEOptions, IUMAPOptions } from '../reduce-dimensionality';
 import { KnownMetrics } from '../typed-metrics';
 import { PreprocessFunctionReturnType } from './dimensionality-reduction-editor';
 import { reduceDimensinalityWithNormalization } from '../sequence-space';
 import { SHOW_SCATTERPLOT_PROGRESS } from './seq-space-base-editor';
 import { BYPASS_LARGE_DATA_WARNING } from './consts';
 import { DIMENSIONALITY_REDUCER_TERMINATE_EVENT } from '../workers/dimensionality-reducing-worker-creator';
+import { IDBScanOptions, dbscan, getDbscanWorker } from '@datagrok-libraries/math';
+import { Options } from '@datagrok-libraries/utils/src/type-declarations';
 
 export type DimRedUiOptions = {
     [BYPASS_LARGE_DATA_WARNING]?: boolean,
@@ -25,8 +27,8 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
 }
 
 export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, method: DimReductionMethods,
-    metric: KnownMetrics, preprocessingFunction: DG.Func, plotEmbeddings: boolean = false,
-    dimRedOptions: any = {}, uiOptions: DimRedUiOptions = {}) {
+    metric: KnownMetrics, preprocessingFunction: DG.Func, plotEmbeddings: boolean = true, clusterEmbeddings: boolean = false,
+    dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & Options = {}, uiOptions: DimRedUiOptions = {}) {
     const scatterPlotProps = {
         showXAxis: false,
         showYAxis: false,
@@ -109,6 +111,24 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
               return res;
           }
           const res = await getDimRed();
+
+          if(clusterEmbeddings && res && res.embedding) {
+            const clusterPg = DG.TaskBarProgressIndicator.create(`Clustering embeddings ...`);
+            try {
+              const clusterRes = await dbscan(res.embedding[0], res.embedding[1], dimRedOptions.dbScanEpsilon ?? 0.01, dimRedOptions.dbScanMinPts ?? 4);
+              const clusterColName = table.columns.getUnusedName('Cluster');
+              const clusterCol = table.columns.addNewString(clusterColName);
+              clusterCol.init((i) => clusterRes[i].toString());
+              if (scatterPlot)
+                (scatterPlot as DG.ScatterPlotViewer).props.colorColumnName = clusterColName;
+            } catch (e) {
+              grok.shell.error('Clustering embeddings failed');
+              console.error(e);
+            } finally {
+              clusterPg.close();
+            }
+          }
+
           if (res && plotEmbeddings && scatterPlot) {
               ui.setUpdateIndicator((scatterPlot as DG.ScatterPlotViewer).root, false);
               const embedXCol = table.columns.byName(embedColsNames[0]);
