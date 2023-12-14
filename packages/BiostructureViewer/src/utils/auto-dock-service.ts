@@ -117,8 +117,8 @@ export class AutoDockService implements IAutoDockService {
     const modelList: string[] = wu(adRes.poses.matchAll(/MODEL.*?ENDMDL/gs/* lazy, not greedy */))
       .map((ma) => ma[0]).toArray();
     const posesCol = DG.Column.fromStrings(poseColName ?? 'pdbqt_model', modelList);
-    posesCol.semType = DG.SEMTYPE.MOLECULE3D;
-    posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
+    // posesCol.semType = DG.SEMTYPE.MOLECULE3D;
+    // posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
     const posesDf = DG.DataFrame.fromColumns([posesCol]);
     // const posesDf: DG.DataFrame = this.ph.parsePdbqt(adRes.poses, poseColName);
     const res: AutoDockRunResult = {

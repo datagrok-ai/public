@@ -146,7 +146,7 @@ export class AutoDockApp {
 
       const posesAllDf = await runAutoDock(receptorPdb, ligandCol, this.poseColName, pi);
       if (posesAllDf !== undefined) {
-        posesAllDf.getCol(this.poseColName).setTag('cell.renderer', 'xray');
+        // posesAllDf.getCol(this.poseColName).setTag('cell.renderer', 'xray');
 
         this.posesGrid.dataFrame = posesAllDf!;
         this.posesGrid.props.rowHeight = 150;
@@ -202,6 +202,19 @@ async function runAutoDock(
 
     const adRunRes = await adSvc.run(
       receptorPdb, ligandData, npts, 10, poseColName);
+
+    const pdbqtCol = adRunRes.posesDf.getCol(poseColName);
+    pdbqtCol.name = `${poseColName}_pdbqt`;
+    pdbqtCol.semType = DG.SEMTYPE.MOLECULE3D;
+    pdbqtCol.setTag(DG.TAGS.UNITS, 'pdbqt');
+    const molCol = adRunRes.posesDf.columns.addNewString(poseColName);
+    molCol.semType = DG.SEMTYPE.MOLECULE;
+    const rowCount = adRunRes.posesDf.rowCount;
+    for (let rowI = 0; rowI < rowCount; ++rowI) {
+      const pdbqtVal = pdbqtCol.get(rowI);
+      const molVal = await pdbHelper.pdbqtToMol(pdbqtVal);
+      molCol.set(rowI, molVal);
+    }
 
     if (posesAllDf === undefined) {
       posesAllDf = adRunRes.posesDf.clone(
