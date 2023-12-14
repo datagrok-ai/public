@@ -187,9 +187,15 @@ export async function runSolverApp() {
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     parent: div
   });
-
+  
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
   let toShowWarning = true;
+  let isChanged = false;
+
+  editorView.dom.addEventListener('keydown', async (e) => {
+    if (e.key !== "F5")
+      isChanged = true;
+  });
 
   /** Load IVP from file */
   const loadFn = async () => {
@@ -227,7 +233,8 @@ export async function runSolverApp() {
 
   /** Set IVP code editor state */
   const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
-    toChangeSolutionViewerProps = true;    
+    toChangeSolutionViewerProps = true;
+    isChanged = false;
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
@@ -250,7 +257,7 @@ export async function runSolverApp() {
 
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
-    if (toShowWarning) {      
+    if (toShowWarning && isChanged) {      
       const boolInput = ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning);      
       const dlg = ui.dialog({title: 'Overwrite?', helpUrl: SOLVER_HELP_LINK});
       solverView.append(dlg);
