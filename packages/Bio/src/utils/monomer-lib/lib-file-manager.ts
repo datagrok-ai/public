@@ -7,7 +7,6 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLib} from './monomer-lib';
 import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/const';
-import {InvalidFilesError} from './types';
 
 import * as rxjs from 'rxjs';
 
@@ -130,7 +129,8 @@ export class MonomerLibFileManager {
     if (invalidFiles.length > 0) {
       const message = `Invalid monomer library files in ${LIB_PATH}` +
       `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
-      throw new InvalidFilesError(message);
+      console.warn(message);
+      grok.shell.warning(message);
     }
   }
 
@@ -142,13 +142,6 @@ export class MonomerLibFileManager {
 
   private async validateAllFiles(): Promise<void> {
     await this.updateFilePaths();
-
-    // if (this.invalidFiles.length > 0) {
-    //   const message = `Invalid monomer library files in ${LIB_PATH}` +
-    //   `, consider fixing or removing them: ${this.invalidFiles}.join(', ')`;
-    //   console.warn(message);
-    //   grok.shell.warning(message);
-    // }
   }
 
   /** The file **must** strictly satisfy HELM standard */

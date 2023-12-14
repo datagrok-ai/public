@@ -12,7 +12,6 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MonomerLib} from './monomer-lib';
 import {MonomerLibFileManager} from './lib-file-manager';
-import {InvalidFilesError} from './types';
 import {_package} from '../../package';
 
 type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibManager };
@@ -68,12 +67,6 @@ export class MonomerLibManager implements IMonomerLibHelper {
           }));
         this._monomerLib.updateLibs(libs, reload);
       } catch (err: any) {
-        if (err instanceof InvalidFilesError) {
-          const message = err.message;
-          console.warn(message);
-          grok.shell.warning(message);
-          return;
-        }
         const errMsg: string = 'Loading monomer libraries error: ' +
           `${err instanceof Error ? err.message : err.toString()}`;
         grok.shell.warning(errMsg);
