@@ -101,13 +101,15 @@ function contrCompletions(context: any) {
 }
 
 /** Return options of line chart */
-function lineChartOptions(ivp: IVP): Object {
-  const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
+function lineChartOptions(colNames: string[]): Object {
+  const count = colNames.length;
 
-  return {    
+  return {
+    xColumnName: colNames[0],
+    yColumnNames: (count > 1) ? colNames.slice(1) : colNames[0],     
     showTitle: true,
     sharex: true, 
-    multiAxis: outputColsCount > MAX_LINE_CHART,
+    multiAxis: count > MAX_LINE_CHART,
     multiAxisLegendPosition: "RightTop",
   };
 }
@@ -136,19 +138,28 @@ export async function runSolverApp() {
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
       const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);    
+      const script = DG.Script.create(scriptText);
       const params = getScriptParams(ivp);    
       const call = script.prepare(params);
 
       await call.call();
+      
       solutionTable = call.outputs[DF_NAME];
       solverView.dataFrame = call.outputs[DF_NAME];
       solverView.name = solutionTable.name;
 
-      if (!solutionViewer)
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
-      
-      solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
+      if (!solutionViewer) {
+        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+        viewerDockNode = grok.shell.dockManager.dock(solutionViewer, DG.DOCK_TYPE.TOP, solverView.dockManager.findNode(solverView.grid.root));
+      }
+      else {
+        solutionViewer.dataFrame = solutionTable;
+
+        if (toChangeSolutionViewerProps) {
+          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+          toChangeSolutionViewerProps = false;
+        }
+      }
 
     } catch (err) {
         if (err instanceof Error) 
@@ -165,6 +176,8 @@ export async function runSolverApp() {
   let solutionTable = DG.DataFrame.create();
   let solverView = grok.shell.addTableView(solutionTable);
   let solutionViewer: DG.Viewer | null = null;
+  let viewerDockNode: DG.DockNode | null = null;
+  let toChangeSolutionViewerProps = false;
   solverView.name = 'Template';
   let div = ui.divV([]);   
 
@@ -214,14 +227,10 @@ export async function runSolverApp() {
 
   /** Set IVP code editor state */
   const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
+    toChangeSolutionViewerProps = true;    
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
-    
-    if (solutionViewer) {
-      solutionViewer.close();
-      solutionViewer = null;
-    }
 
     const newState = EditorState.create({
       doc: text ?? getProblem(state), 
@@ -232,6 +241,11 @@ export async function runSolverApp() {
 
     if (state != EDITOR_STATE.CLEAR)
       await solve();
+    else
+      if (solutionViewer && viewerDockNode) {
+        grok.shell.dockManager.close(viewerDockNode);
+        solutionViewer = null;
+      }
   };
 
   /** Overwrite the editor content */
@@ -341,8 +355,12 @@ export async function runSolverDemoApp() {
       solutionTable = call.outputs[DF_NAME];
       solverView.dataFrame = call.outputs[DF_NAME];
 
-      if (!solutionViewer)
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
+      if (!solutionViewer) {
+        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+        grok.shell.dockManager.dock(solutionViewer, DG.DOCK_TYPE.TOP, solverView.dockManager.findNode(solverView.grid.root));
+      }
+      else
+        solutionViewer.dataFrame = solutionTable;
       
       solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
     } catch (err) {
