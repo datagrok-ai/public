@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
+import {getDate} from '../utils';
 
 const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 export const filters = ui.box();
@@ -15,11 +16,17 @@ export class TestsView extends UaView {
   cardFilter: string | null = null;
   filterGroup: DG.FilterGroup | undefined = undefined;
   grid?: DG.Grid;
+  leftDate = ui.label(getDate(new Date()));
+  rightDate = ui.label('');
+  leftDf?: DG.DataFrame;
+  rightDf?: DG.DataFrame;
+  current = this.leftDate;
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Tests';
     filters.style.display = 'none';
+    this.rightDate.style.marginRight = '12px';
   }
 
   async initViewers(): Promise<void> {
@@ -29,10 +36,14 @@ export class TestsView extends UaView {
       dfMonth.getCol('status').colors.setCategorical(colors);
       dfMonth.onSelectionChanged.subscribe(async () => {
         if (!this.grid) return;
-        // this.grid.root.style.
+        ui.setUpdateIndicator(this.grid.root);
         const date = dfMonth.get('date', dfMonth.selection.getSelectedIndexes()[0]);
+        this.current.innerText = getDate(date.toDate());
+        if (!!this.rightDate.innerText)
+          done.disabled = false;
         const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: date});
-        this.grid.dataFrame = df;
+        this.updateGrid(df);
+        ui.setUpdateIndicator(this.grid.root, false);
       });
       const areaChart = DG.Viewer.fromType('Line chart', dfMonth, historyStyle);
       return areaChart.root;
@@ -41,79 +52,9 @@ export class TestsView extends UaView {
 
     // Table
     const grid = ui.wait(async () => {
-      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: (new Date()).toLocaleDateString('en-US')});
-      df.getCol('status').colors.setCategorical(colors);
-      df.getCol('id').name = '~id';
-      if (filters.children.length)
-        filters.innerHTML = '';
-      const filters_ = DG.Viewer.filters(df, filtersStyle);
-      this.filterGroup = new DG.FilterGroup(filters_.dart);
-      filters.appendChild(filters_.root);
-      this.grid = df.plot.grid();
-      df.onCurrentRowChanged.subscribe(async () => {
-        const row = df.currentRow;
-        const acc = DG.Accordion.create();
-        let history: DG.DataFrame = await grok.functions.call('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
-        history.getCol('id').name = '~id';
-        history.getCol('uid').name = '~uid';
-        const resName = history.getCol('res_name');
-        if (resName.stats.valueCount) {
-          const newHistory = history.groupBy(['date', 'status', 'ms', 'result', '~uid']).add('key', '~id').aggregate();
-          const categories = resName.categories.filter((c) => c);
-          categories.forEach((c) => newHistory.columns.addNewString(c));
-          for (const row of newHistory.rows) {
-            const id = row.get('~id');
-            const df = history.rows.match({'~id': `= ${id}`}).toDataFrame();
-            for (const r of df.rows) {
-              const name = r.get('res_name');
-              if (name)
-                newHistory.set(name, row.idx, r.get('res_value'));
-            }
-          }
-          newHistory.columns.byNames(categories).forEach((col) => col.name = col.name.replace('result.', ''));
-          history = newHistory;
-        } else {
-          history.columns.remove('res_name');
-          history.columns.remove('res_value');
-        }
-        const grid = history.plot.grid();
-        grid.sort(['date'], [false]);
-        acc.addPane('Details', () => {
-          const table = ui.tableFromMap({
-            Test: row.get('test'),
-            Category: row.get('category'),
-            Package: row.get('package'),
-          });
-          table.style.userSelect = 'text';
-          return table;
-        }, true);
-        const hPane = acc.addPane('History', () => ui.waitBox(async () => {
-          history.getCol('status').colors.setCategorical(colors);
-          // grid.col('status')!.isTextColorCoded = true;
-          grid.col('date')!.format = 'MM/dd/yy'; // MM/dd/yyyy HH:mm:ss
-          grid.col('date')!.width = 70;
-          grid.col('status')!.width = 19;
-          grid.onCellTooltip((gc, x, y) => {
-            if (gc.isColHeader) return false;
-            const row = gc.tableRow;
-            ui.tooltip.show(ui.tableFromMap({
-              'Time': row?.get('date'),
-              'Run by': ui.render(`#{x.${row?.get('~uid')}}`),
-              // Package: ui.render(`#{x.${r.uid}}`),
-            }), x, y);
-            return true;
-          });
-          return grid.root;
-        }), true);
-        const info = hPane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
-        info.firstChild?.after(ui.button('Add to workspace', () => grok.shell.addTableView(history)));
-        acc.addPane('Execution time', () => ui.waitBox(async () => {
-          const lct = DG.Viewer.fromType('Line chart', history, execTimeStyle);
-          return lct.root;
-        }), true);
-        grok.shell.o = acc.root;
-      });
-      return this.grid.root;
+      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: getDate(new Date())});
+      this.updateGrid(df);
+      return this.grid!.root;
     });
 
     // Cards
@@ -141,9 +82,117 @@ export class TestsView extends UaView {
       });
       cardsView.append(card);
     }
+
+    // Compare section
+    const compare = ui.button('compare to', () => {
+      this.leftDf = this.grid?.dataFrame;
+      this.current = this.rightDate;
+      compare.disabled = true;
+    });
+    let icon = ui.iconFA('external-link');
+    icon.classList.replace('fal', 'fas');
+    const done = ui.button(icon, () => {
+      const res = grok.data.compareTables(this.leftDf!, this.grid?.dataFrame!,
+        ['package', 'test', 'category'], ['package', 'test', 'category'],
+        ['status', 'result', 'ms'], ['status', 'result', 'ms']);
+      grok.shell.addTableView(res.diffTable);
+    }, 'Compare tables');
+    done.disabled = true;
+    icon = ui.iconFA('undo');
+    icon.classList.replace('fal', 'fas');
+    const reset = ui.button(icon, () => {
+      this.current = this.leftDate;
+      this.rightDate.innerText = '';
+      compare.disabled = false;
+      done.disabled = true;
+    }, 'Reset');
+    const compareSection = ui.divH([this.leftDate, compare, this.rightDate, done, reset], 'ua-tt-compare');
+    const cardsAndCompare = ui.divV([
+      ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}),
+      compareSection,
+    ]);
+    // cardsAndCompare.parentElement!.style.maxWidth = '400px';
+
     this.root.append(ui.splitV([
-      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {height: '150px'}}),
+      ui.splitH([cardsAndCompare, chart], {style: {height: '150px'}}),
       grid], null, true));
+  }
+
+  updateGrid(df: DG.DataFrame): void {
+    df.getCol('status').colors.setCategorical(colors);
+    df.getCol('id').name = '~id';
+    if (filters.children.length)
+      filters.innerHTML = '';
+    const filters_ = DG.Viewer.filters(df, filtersStyle);
+    this.filterGroup = new DG.FilterGroup(filters_.dart);
+    filters.appendChild(filters_.root);
+    if (this.grid === undefined)
+      this.grid = df.plot.grid();
+    else
+      this.grid.dataFrame = df;
+    df.onCurrentRowChanged.subscribe(async () => {
+      const row = df.currentRow;
+      const acc = DG.Accordion.create();
+      let history: DG.DataFrame = await grok.functions.call('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
+      history.getCol('id').name = '~id';
+      history.getCol('uid').name = '~uid';
+      const resName = history.getCol('res_name');
+      if (resName.stats.valueCount) {
+        const newHistory = history.groupBy(['date', 'status', 'ms', 'result', '~uid']).add('key', '~id').aggregate();
+        const categories = resName.categories.filter((c) => c);
+        categories.forEach((c) => newHistory.columns.addNewString(c));
+        for (const row of newHistory.rows) {
+          const id = row.get('~id');
+          const df = history.rows.match({'~id': `= ${id}`}).toDataFrame();
+          for (const r of df.rows) {
+            const name = r.get('res_name');
+            if (name)
+              newHistory.set(name, row.idx, r.get('res_value'));
+          }
+        }
+        newHistory.columns.byNames(categories).forEach((col) => col.name = col.name.replace('result.', ''));
+        history = newHistory;
+      } else {
+        history.columns.remove('res_name');
+        history.columns.remove('res_value');
+      }
+      const grid = history.plot.grid();
+      grid.sort(['date'], [false]);
+      acc.addPane('Details', () => {
+        const table = ui.tableFromMap({
+          Test: row.get('test'),
+          Category: row.get('category'),
+          Package: row.get('package'),
+        });
+        table.style.userSelect = 'text';
+        return table;
+      }, true);
+      const hPane = acc.addPane('History', () => ui.waitBox(async () => {
+        history.getCol('status').colors.setCategorical(colors);
+        // grid.col('status')!.isTextColorCoded = true;
+        grid.col('date')!.format = 'MM/dd/yy'; // MM/dd/yyyy HH:mm:ss
+        grid.col('date')!.width = 70;
+        grid.col('status')!.width = 19;
+        grid.onCellTooltip((gc, x, y) => {
+          if (gc.isColHeader) return false;
+          const row = gc.tableRow;
+          ui.tooltip.show(ui.tableFromMap({
+            'Time': row?.get('date'),
+            'Run by': ui.render(`#{x.${row?.get('~uid')}}`),
+            // Package: ui.render(`#{x.${r.uid}}`),
+          }), x, y);
+          return true;
+        });
+        return grid.root;
+      }), true);
+      const info = hPane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
+      info.firstChild?.after(ui.button('Add to workspace', () => grok.shell.addTableView(history)));
+      acc.addPane('Execution time', () => ui.waitBox(async () => {
+        const lct = DG.Viewer.fromType('Line chart', history, execTimeStyle);
+        return lct.root;
+      }), true);
+      grok.shell.o = acc.root;
+    });
   }
 }
 
