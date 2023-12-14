@@ -8,6 +8,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 ```
+
 ## Why Datagrok?
 
 Datagrok helps you understand data and take action.
@@ -54,7 +55,6 @@ view schemas, tables, and column data
 [Learn more about data access](../access/access.md).
 
 </TabItem>
-
 <TabItem value="transform">
 
 Automatically generate macros from data transformations and use them on new datasets. 
@@ -86,7 +86,6 @@ suggestions.
 * Adaptive UI and data-specific suggestions.
 
 </TabItem>
-
 <TabItem value="compute">
 
 Write in any language, annotate, publish, and apply scientific models, methods,
@@ -101,7 +100,6 @@ and apps. Solve differential equations and run simulations for complex processes
 Learn more about [Compute](../compute/compute.md).
 
 </TabItem>
-
 <TabItem value="learn">
 
 No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included.
@@ -112,7 +110,6 @@ No-code modeling. State-of-the-art cheminformatics engines and ML toolkit includ
 * ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis/pls.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
 
 </TabItem>
-
 <TabItem value="collaborate">
 
 Share anything with anyone. Collaborate on decision-making. Use open-source
@@ -213,7 +210,6 @@ UI elements, full-scale applications, workflows, and
 integration with data sources and other tools, crucial for large enterprises
 combatting data silos and complex data ecosystems.
 
-
 </TabItem>
 <TabItem value="functions" label="Functions">
 
@@ -290,7 +286,6 @@ designed Datagrok from scratch:
 
 Learn more about [Datagrok's architecture](../develop/under-the-hood/architecture.md) 
 and [performance optimization](../develop/under-the-hood/performance.md).
-
 
 ## Solutions
 
