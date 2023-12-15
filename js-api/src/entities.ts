@@ -1179,6 +1179,21 @@ export class Property {
   get showPlusMinus(): string { return api.grok_Property_Get_ShowPlusMinus(this.dart); }
   set showPlusMinus(s: string) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
 
+  get format(): string { return api.grok_Property_Get_Format(this.dart); }
+  set format(s: string) { api.grok_Property_Set_Format(this.dart, s); }
+
+  get userEditable(): boolean { return api.grok_Property_Get_UserEditable(this.dart); }
+  set userEditable(s: boolean) { api.grok_Property_Set_UserEditable(this.dart, s); }
+
+  get min(): number { return api.grok_Property_Get_Min(this.dart); }
+  set min(s: number) { api.grok_Property_Set_Min(this.dart, s); }
+
+  get max(): number { return api.grok_Property_Get_Max(this.dart); }
+  set max(s: number) { api.grok_Property_Set_Max(this.dart, s); }
+
+  get step(): number { return api.grok_Property_Get_Step(this.dart); }
+  set step(s: number) { api.grok_Property_Set_Step(this.dart, s); }
+
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
    *  @returns {Array<string>} */
