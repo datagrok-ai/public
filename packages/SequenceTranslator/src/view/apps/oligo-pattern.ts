@@ -8,7 +8,7 @@ import {
   DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
 } from '../../model/pattern-app/const';
 import {isOverhang} from '../../model/pattern-app/helpers';
-import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model//pattern-app/oligo-pattern';
+import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/pattern-app/oligo-pattern';
 import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 // todo: remove ts-ignore
 //@ts-ignore
@@ -695,8 +695,8 @@ export class PatternLayoutHandler {
     }, 'Edit pattern', '');  
 
     strandLengthInput[SS].addCaption('Length');
-
-    return ui.splitH([
+    
+    const layout = ui.splitH([
       ui.box(
         ui.div([
           ui.h1('Pattern'),
@@ -743,6 +743,8 @@ export class PatternLayoutHandler {
             ]),
             asModificationDiv,
       ], {style: {overflowX: 'scroll', padding:'12px 24px'}})
-    ], {}, true)
+    ], {}, true);
+
+    return layout;
   }
 }
