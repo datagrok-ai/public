@@ -37,6 +37,8 @@ export class AutoDockApp {
       v = await AutoDockApp.loadData();
 
     await this.setData(v);
+    if (!!data)
+      await this.runBtnOnClick();
   }
 
   static async loadData(): Promise<AutoDockDataType> {
@@ -203,18 +205,24 @@ async function runAutoDock(
     const adRunRes = await adSvc.run(
       receptorPdb, ligandData, npts, 10, poseColName);
 
+    // region: add extra columns to AutoDock output
+
     const pdbqtCol = adRunRes.posesDf.getCol(poseColName);
     pdbqtCol.name = `${poseColName}_pdbqt`;
     pdbqtCol.semType = DG.SEMTYPE.MOLECULE3D;
     pdbqtCol.setTag(DG.TAGS.UNITS, 'pdbqt');
-    const molCol = adRunRes.posesDf.columns.addNewString(poseColName);
-    molCol.semType = DG.SEMTYPE.MOLECULE;
     const rowCount = adRunRes.posesDf.rowCount;
+    const molCol = DG.Column.fromType(DG.TYPE.STRING, poseColName, rowCount);
     for (let rowI = 0; rowI < rowCount; ++rowI) {
       const pdbqtVal = pdbqtCol.get(rowI);
       const molVal = await pdbHelper.pdbqtToMol(pdbqtVal);
       molCol.set(rowI, molVal);
     }
+    molCol.semType = DG.SEMTYPE.MOLECULE;
+    adRunRes.posesDf.columns.insert(molCol, 0);
+
+    // endregion: add extra columns to AutoDock output
+
 
     if (posesAllDf === undefined) {
       posesAllDf = adRunRes.posesDf.clone(

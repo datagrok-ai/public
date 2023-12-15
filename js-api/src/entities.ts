@@ -1000,9 +1000,22 @@ export class Package extends Entity {
     return api.grok_Package_Get_Credentials(this.name);
   }
 
-  /** Returns properties for a package. */
+  /**
+   * Deprecated. Use getSettings instead. 
+   *  Returns properties for a package. 
+  */
   getProperties(): Promise<Map<string, any>> {
-    return api.grok_Package_Get_Properties(this.name);
+    return this.getSettings();
+  }
+
+  /** Returns settings for a package. */
+  getSettings(): Promise<Map<string, any>> {
+    return api.grok_Package_Get_Settings(this.name);
+  }
+
+  /** Updates settings for a package. */
+  setSettings(props: Map<string, any>, group: Group): Promise<void> {
+    return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
   private _files: FileSource | null = null;

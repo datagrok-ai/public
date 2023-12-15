@@ -31,7 +31,7 @@ category('Shell: Windows', () => {
     await checkSwitch('showTables', '.grok-tables-manager');
   });
   test('ShowToolbox', async ()=> {
-    await checkSwitch('showToolbox', '.d4-app-root:not(.d4-toolbox-hidden)');
+    await checkSwitch('showToolbox', '.d4-app-root:not(.d4-toolbox-auto)');
   });
   test('ShowVariables', async () => {
     await checkSwitch('showVariables', '.grok-view-variables.grok-variables-pane');

@@ -1,120 +1,308 @@
 ---
 title: "Datagrok: Swiss Army Knife for Data"
+format: mdx
 ---
 
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-Datagrok is a platform for turning data into actionable insights. It helps you unlock the value of your organization's
-complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and
-share these results.
-
-Enhance your company's ecosystem by managing connections to data, building data pipelines, keeping repository of
-domain-related scripts, and defining ontologies. Harness the power of AI by letting computers learn from your data and
-your actions.
-
-Finally, build reusable components and domain-specific applications on top of the platform.
+```
 
 ## Why Datagrok?
 
-Simply put, because it's the best platform out there. We care about data, we understand science, technology, and how
-powerful modern computers are, so we went on a quest to build the perfect, no-compromise solution.
+Datagrok helps you understand data and take action.
 
-Our proprietary in-memory database that runs in the browser lets us process data orders of magnitudes faster than other
-products do. Interactive visualizations built on top of it are capable of working with billions of rows and millions of
-columns.
+It's fast and powerful: you can load the entire ChEMBL database (2.7 million
+molecules) in your browser, run substructure searches, apply filters, visualize,
+and interactively explore the chemical space.
 
-Data transformations, statistical computations, predictive models, and custom applications are combined together as
-plug-and-play blocks, allowing you to build your own blocks and enhance the ecosystem even further.
+Datagrok goes beyond standard data analytics. You can access data from any
+source, catalog it, analyze and visualize it, run scientific computations, train
+and apply models, and do more. Need a specific tool or functionality? Easily
+integrate or add your own code. Datagrok's plugin architecture makes it easy to
+deliver cohesive, fit-for-purpose solutions. 
 
-Don't take our word for this – [run the platform](https://public.datagrok.ai/) right now and see it yourself!
+<Tabs
+  defaultValue="access"
+  values={[
+    {label: 'Access', value: 'access'},
+    {label: 'Govern', value: 'govern'},
+    {label: 'Transform', value: 'transform'},
+    {label: 'Explore', value: 'explore'},
+    {label: 'Compute', value: 'compute'},
+    {label: 'Learn', value: 'learn'},
+    {label: 'Collaborate', value: 'collaborate'},
+    {label: 'Extend', value: 'integrate-extend'},
+  ]}>
 
-## Access
+<TabItem value="access">
 
-Seamlessly bring together data from the different silos and formats.
+Get your data from anywhere - databases, web services, file shares, pipelines.
+If it’s machine-readable, we can work with it!
 
-* [30+ connectors](access/access.md#data-connection) to all major databases
-* 1,000+ services exposed via [OpenAPI](access/open-api.md)
-* Drag-and-drop files to open ([10+ formats](access/databases/connectors/connectors.md)), or
-  browse [file shares](https://public.datagrok.ai/files)
-* [Visually explore](access/databases/databases.mdx#database-manager) and manage relational databases
-  using [schema browser](access/databases/databases.mdx#schema-browser)
-  and [aggregation editor](access/databases/databases.mdx#aggregation-editor)
-* Connect to [thousands of public datasets](access/public-datasets.md)
-* Automate via data preparation pipelines
+* [40+ connectors](../access/databases/connectors/connectors.md) to all major
+  databases and file shares (or [create your own](../access/databases/create-custom-connectors.md))
+* Support for [OpenAPI](access/open-api.md) and access to [public datasets](../access/public-datasets.md)
+* [50+ file and data formats](../access/files/supported-formats.md), including
+  molecule structure formats. Drag-and-drop files to open
+* [Explore relational databases](../access/databases/databases.mdx#database-manager): 
+view schemas, tables, and column data
+* Create, edit, and debug queries with [visual tools](../access/databases/databases.mdx#working-with-queries)
+* [Annotate queries](../access/databases/databases.mdx#parameterized-queries)
+  and save query results as [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results).
 
-## Govern
+[Learn more about data access](../access/access.md).
 
-Manage availability, usability, integrity and security of your data, all in one place.
+</TabItem>
+<TabItem value="transform">
 
-* Central [metadata](catalog/metadata.md)-annotated [catalogue](https://public.datagrok.ai/)
-  of [projects](https://public.datagrok.ai/projects), [queries](https://public.datagrok.ai/queries),
-  and [connections](https://public.datagrok.ai/connect)
-* [FAIR](catalog/fair.md): findable, accessible, interoperable, reusable
-* [Secure by design](govern/security.md)
-* Built-in [data provenance](govern/data-provenance.md), data lineage, [impact analysis]
-  , [usage analysis](govern/usage-analysis.md), and [audit](govern/audit.md) tools
+Automatically generate macros from data transformations and use them on new datasets. 
 
-## Transform
+* [Aggregate, join, filter, and edit data](../transform/transform.md), from the UI or programmatically
+* Use [500+ available functions](https://public.datagrok.ai/functions?q), or
+  write your own in JavaScript, Python, R (or any other language that compiles
+  to WASM)
+* Record and apply [macros](navigation/navigation.md#recording-macros), use in pipelines
+* Visually edit [query transformations](../transform/query-transformations.md).
 
-* [Aggregate, join, filter and edit data](transform/transform.md) right in the browser
-* Record and apply [macros](datagrok/navigation/navigation.md#recording-macros)
-* Use 500+ available [functions](datagrok/concepts/functions/functions.md), or write your own in R, Python, or JavaScript
-* Visually edit [pipelines](transform/job-editor.md)
-  and [query transformations](transform/recipe-editor.md)
+[Learn more about functions](concepts/functions/functions.md).
 
-## Explore
+</TabItem>
 
-Our unique technology lets you explore datasets faster and more efficiently than ever, allowing to find patterns that
-were previously impossible to spot, resulting in the acceleration of data-driven decisions.
+<TabItem value="explore">
 
-* [Proprietary in-memory database](develop/under-the-hood/performance.md) technology allows to handle tens of millions of rows
-  in the browser
-* [30+ high-performance interactive viewers](visualize/viewers/viewers.md)
-* [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
-* Built-in viewers: [regression lines](visualize/viewers/scatter-plot.mdx), confidence intervals,
-  correlations, [statistical tests](datagrok/solutions/domains/data-science.md)
-* Automatic detection of outliers, [missing values](transform/missing-values-imputation.md), wrong data types
-* Publish [dashboards](visualize/dashboard.md)
+Slice, dice, and visualize your data. Render millions of data points
+interactively and find patterns. Build dynamic dashboards in seconds. Leverage
+[metadata](../govern/catalog/metadata.md) for automated data enrichment and contextual
+suggestions.
 
-## Machine learning
+* [50+ interactive viewers](../visualize/viewers/viewers.md) for synchronized, dynamic dashboards
+* [Integration with visualizations in R, Python, or Julia](../visualize/viewers/scripting-viewer.md)
+* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.mdx#calculations-and-trends),
+  confidence intervals, correlations, and statistics
+* Automatic detection of outliers, [missing values](../transform/missing-values-imputation.md),
+ or incorrect data types
+* Adaptive UI and data-specific suggestions.
 
-Turn your data into actionable insights by using state-of-the art machine learning and AI techniques.
+</TabItem>
+<TabItem value="compute">
 
-* [Train, assess, apply, share models](learn/learn.md)
-* Use in [pipelines](transform/job-editor.md)
-* [Seamless integration with Python, R, or any other language](compute/scripting.md)
-* [Jupyter notebooks](compute/jupyter-notebook.md)
-* [Statistical Hypothesis Testing](datagrok/solutions/domains/data-science.md)
-* [Self-learning platform](learn/self-learning-platform.md): the more you use it, the better it gets
+Write in any language, annotate, publish, and apply scientific models, methods,
+and apps. Solve differential equations and run simulations for complex processes<!--(e.g., for [bioreactors](like) and [PKPD](link))-->.
 
-## Share
+* [500+ available functions](https://public.datagrok.ai/functions), or write your own in R, Python, or JavaScript
+* [Metadata-annotated](../compute/compute.md#metadata) scripts with [cross-language support](../compute/compute.md#functions-and-cross-language-support)
+* [Scalable](../compute/compute.md#scalable-computations) and 
+[reproducible](../compute/compute.md#reproducible-computations) computations, [model lifecycle management](../compute/compute.md#model-lifecycle)
+* [Auto-generated UI](../compute/compute.md#user-interface).
 
-* Easily share anything with anyone, and collaborate together
-* Innovate through the wisdom of crowds
-* Cross-pollinate knowledge via the knowledge base, [discussions](collaborate/chat.md)
-  and [forums](collaborate/forum.md)
-* Push ideas to users via [data augmentation](explore/data-augmentation/data-augmentation.md)
+Learn more about [Compute](../compute/compute.md).
 
-## Apply
+</TabItem>
+<TabItem value="learn">
 
-* Build [custom applications](develop/how-to/build-an-app.md) on top of the platform
-* [Cheminformatics](datagrok/solutions/domains/chem/chem.md)
-* Text analytics, [natural language processing](https://github.com/datagrok-ai/public/tree/master/packages/NLP)
-  with cloud-based machine translation
-* [Location Analytics](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)
-* [Digital signal processing](https://github.com/datagrok-ai/public/tree/master/packages/DSP)
-* [Biosignal Processing](https://github.com/datagrok-ai/public/tree/master/packages/BioSignals)
+No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included.
 
-## Deploy and integrate
+* [Train, assess, apply, and share models](../learn/learn.md) (or integrate your own)
+* Native support for R, Python, Julia, Matlab, and Octave
+* Open any dataset with a [Jupyter notebook](../compute/jupyter-notebook.md)
+* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis/pls.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
 
-* Different [hosting options](deploy/hosting-options.md)
-* [Roles, groups and privileges](govern/security.md)
-* Flexible [authentication](govern/authentication.md)
-* Create [pipelines](transform/job-editor.md), schedule jobs, and set up alerts
-* [Customizable by IT](datagrok/solutions/enterprise/it-customizations.md)
-* Easy to learn the platform with
-  * [Interactive help](datagrok/navigation/navigation.md#help),
-  * [Community forum](https://community.datagrok.ai/),
-  * Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
-  * [Video lessons](resources/video-lessons.md) and platform overviews (full [list of topics](resources/video-contents.md), including
-      selection [for developers](develop/onboarding/getting-started.md#6-videos)
-  * [Exercises for developers](develop/onboarding/exercises.md)
+</TabItem>
+<TabItem value="collaborate">
+
+Share anything with anyone. Collaborate on decision-making. Use open-source
+ecosystem to save cost and innovate.
+
+* Share within Datagrok, as a URL link, or integrate: REST API, JS API, 
+or embed as an iframe
+* [50+ open source plugins](https://github.com/datagrok-ai/public/tree/master/packages),
+  including specialized ones for
+  [cheminformatics](solutions/domains/chem/chem.md),
+  [bioinformatics](solutions/domains/bio/bio.md),
+  [NLP](solutions/domains/nlp/nlp.md), and others
+* Data annotations, [team discussions](../collaborate/chat.md)
+* [Community forum](../collaborate/forum.md) for ideas, support, and feedback.
+
+</TabItem>
+
+<TabItem value="integrate-extend">
+
+Customize anything, from context actions to UI elements. Fast development and
+deployment time with seamless integration.
+
+* [JavaScript API](../develop/packages/js-api.md) for [extending Datagrok](../develop/packages/extensions.md#what-can-be-extended)
+* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/build-an-app.md), or integrate with third party apps
+* [Developer tools](../develop/tools/inspector.md), [UI toolkit](../develop/advanced/ui.md)
+* Comprehensive help: [wiki](../develop/develop.md), [exercises](../develop/onboarding/exercises.md), [community forum](https://community.datagrok.ai/).
+
+</TabItem>
+
+<TabItem value="govern">
+
+Use catalogs, data lineage tools, audit, and usage analysis to take control.
+Your data is [FAIR](../govern/catalog/fair.md) and secure.
+
+* Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
+flexible [authentication](../govern/authentication.md), 
+ [secrets managers](../access/data-connection-credentials.md)
+* Central [metadata](../catalog/metadata.md)-annotated catalog of
+  [entities](concepts/objects.md). Powerful "everything" browser for
+  navigating, viewing, and managing data, connections, users, and more
+* Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
+* [Global search](../explore/search-filter-select/smart-search.md). 
+
+</TabItem>
+</Tabs>
+
+## Who is it for?
+
+<Tabs>
+<TabItem value="data" label="Data" default>
+
+Datagrok is optimized for structured, tabular data. It automatically
+detects the semantics, like zip codes or molecules, and has built-in support
+for areas like [cheminformatics](solutions/domains/chem/chem.md),
+[bioinformatics](solutions/domains/bio/bio.md), [data science](solutions/domains/data-science.md),
+ and others. Need more? Create [your own plugin](../develop/how-to/create-package.md).
+
+</TabItem>
+<TabItem value="skillset" label="Skillset">
+
+Datagrok is for anyone who works with data: 
+
+* Chemists analyzing SAR tables? [Perfect fit](solutions/domains/chem/chem.md#chemically-aware-spreadsheet).
+* Data analysts? Drag and drop your local files to start analyzing. 
+* Data scientists mapping new store locations? [Excellent for strategic planning](https://www.youtube.com/watch?v=tVwpRB8fikQ).
+* Research scientists running complex simulations? [Absolutely](../compute/compute.md).
+* Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results), no coding needed. 
+* Developers? Quickly develop and test data-driven applications.   
+
+</TabItem>
+<TabItem value="team-size" label="Team size">
+
+Datagrok is for individuals and teams of all sizes - from
+startups<!--insert link to customer stories--> to large enterprises<!--insert link to customer stories-->. The
+platform is [enterprise-ready](solutions/enterprise/enterprise.md),
+[scalable](../develop/under-the-hood/scaling.md), and ideal for sharing and collaboration.
+
+</TabItem>
+</Tabs>
+
+## What makes it so flexible?
+
+Our mission is to help anyone understand their data, even in complex scenarios:
+
+* Data that's scattered across various data sources
+* Data that needs specialized, domain-specific tools
+* Teams that have different data needs and expertise. 
+
+Here's how we do it. 
+
+<Tabs>
+<TabItem value="js-api" label="JS API">
+
+With JS API, you aren't confined to pre-built features or interfaces. Add new
+data formats, connectors, transformations, augmentations, dynamic calculations,
+UI elements, full-scale applications, workflows, and
+[more](../develop/function-roles.md). The API also provides seamless
+integration with data sources and other tools, crucial for large enterprises
+combatting data silos and complex data ecosystems.
+
+</TabItem>
+<TabItem value="functions" label="Functions">
+
+In Datagrok, every task is a [function](concepts/functions/functions.md) that can be [annotated](concepts/functions/func-params-annotation.md). Annotations make functions versatile, allowing them to work on their own or within larger scripts, no matter the function's language or role. This means you can use functions as blocks to build on your team's collective expertise while fully leveraging Datagrok's capabilities.
+
+<details>
+<summary>Example</summary>
+
+In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0)
+calculates and visualizes Gasteiger partial charges. When you run the script
+explicitly, Datagrok shows a dialog for sketching a query molecule and
+visualizes the results. In this case, however, the script is also tagged as a
+`panel`. This instructs Datagrok to show the results as an interactive UI
+element that updates dynamically for the current molecule.
+
+| <div style={{ width:160 }}></div>  | |
+|--|--|
+|Script with auto-generated UI based on annotation|![Gasteiger partial charges script](solutions/domains/chem/img/script-gasteiger-part-charges-0.png)|
+|Script output|![Gasteiger partial charges script output](solutions/domains/chem/img/script-output-gasteiger-part-charges-0.png)|
+|Script output in info pane|![Script-based info pane](solutions/domains/chem/img/script-output-info-pane-0.png)|
+
+</details>
+
+</TabItem>
+<TabItem value="semantic-types" label="Semantic types">
+
+[Semantic data types](../govern/catalog/semantic-types.md) provide domain-specific customization:
+
+* Automatic detection of domain-specific data types
+* Domain-specific menus and context actions
+* Custom data rendering, including spreadsheets and visualizations
+* Specialized data editing and filtering interfaces
+* Domain-specific calculation and data processing functions
+* Fit-for-purpose apps built on top of Datagrok.
+
+<details>
+<summary>Example</summary>
+
+For example, when you open a CSV file containing molecules in the SMILES format, the following happens:
+
+* Data is parsed, and the semantic type `molecule` is assigned to the corresponding column.
+* Molecules are automatically rendered in 2D in the spreadsheet.
+* Column tooltip now shows the most diverse molecules in your dataset.
+* Default column filter is now a sketcher-driven substructure search.
+* A top menu item labeled **Chem** appears.
+* Molecule-specific info panes, such as **Toxicity** or **Drug Likeness**, appear on the right.
+
+![img](solutions/domains/chem/img/chem-exploration.png)
+
+</details>
+
+</TabItem>
+</Tabs>
+
+## What makes it so fast?
+
+Our goal is to let you explore at the speed of thought. To achieve this, we
+designed Datagrok from scratch:
+
+* **Data engine**: In-memory columnar database that runs on both server and web
+  browser. Fast random access, efficient data storage, aggregation, compression,
+  filtering, transformation, and caching.
+
+* **Native viewers**: Access the data engine directly for maximum performance.
+  They share statistics, cached calculations, and cooperate on tasks like
+  filtering or selection.
+
+* **App server**: Uses the data engine to exchange binary-optimized datasets
+  with the client. Custom ORM to efficiently work with metadata in Postgres.
+
+* **Compute engine**: Supports multiple languages working with
+  binary-optimized datasets. Scales well. GPU acceleration of ML routines.
+  Supports custom Docker containers.
+
+Learn more about [Datagrok's architecture](../develop/under-the-hood/architecture.md) 
+and [performance optimization](../develop/under-the-hood/performance.md).
+
+## Solutions
+
+* [Self-service analytics](solutions/domains/use-cases/eda.md)
+* [Data science](solutions/domains/data-science.md)
+* Life sciences
+  * [Chem](solutions/domains/chem/chem.md)
+  * [Bio](solutions/domains/bio/bio.md)
+* [NLP](solutions/domains/nlp/nlp.md)
+* [Enterprise IT](solutions/enterprise/enterprise.md)
+* [Plugins](plugins.md)
+
+<!--
+
+### Customer stories
+
+* A big pharma [problem/solution] company by building a custom application for small molecules SAR
+* A biotech startup ...
+
+-->

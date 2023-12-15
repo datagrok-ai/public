@@ -26,6 +26,31 @@ namespace Forms {
   }
 }
 
+export function buildDefaultGridConfig(receptorName: string, gridSize: GridSize): string {
+  const res: string = `
+npts ${gridSize.x} ${gridSize.y} ${gridSize.y}      # num.grid points in xyz
+gridfld ${receptorName}.maps.fld                    # grid_data_file
+spacing 0.375                                       # spacing(A)
+receptor_types A C Fe N NA OA SA                    # receptor atom types
+ligand_types A C N F NA OA HD SA                    # ligand atom types
+receptor ${receptorName}.pdbqt                      # macromolecule 
+gridcenter auto                                     # xyz-coordinates or auto
+smooth 0.5                                          # store minimum energy w/in rad(A)
+map ${receptorName}.A.map                           # atom-specific affinity map
+map ${receptorName}.C.map                           # atom-specific affinity map
+map ${receptorName}.N.map                           # atom-specific affinity map
+map ${receptorName}.F.map                           # atom-specific affinity map
+map ${receptorName}.NA.map                          # atom-specific affinity map
+map ${receptorName}.OA.map                          # atom-specific affinity map
+map ${receptorName}.HD.map                          # atom-specific affinity map
+map ${receptorName}.SA.map                          # atom-specific affinity map
+elecmap ${receptorName}.e.map                       # electrostatic potential map
+dsolvmap ${receptorName}.d.map                      # desolvation potential map
+dielectric -0.1465                                  # <0, AD4 distance-dep.diel;>0, constant
+`.split('\n').filter((s) => !!s).join('\n');
+  return res;
+}
+
 export class AutoDockService implements IAutoDockService {
   private readonly dcName: string;
   private dc!: DG.DockerContainer;
@@ -114,13 +139,16 @@ export class AutoDockService implements IAutoDockService {
     // }
     //const adRes: Forms.runRes = (await adResponse.json()) as Forms.runRes;
     const adRes: Forms.runRes = JSON.parse(adResStr) as Forms.runRes;
-    const modelList: string[] = wu(adRes.poses.matchAll(/MODEL.*?ENDMDL/gs/* lazy, not greedy */))
-      .map((ma) => ma[0]).toArray();
-    const posesCol = DG.Column.fromStrings(poseColName ?? 'pdbqt_model', modelList);
-    // posesCol.semType = DG.SEMTYPE.MOLECULE3D;
-    // posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
-    const posesDf = DG.DataFrame.fromColumns([posesCol]);
-    // const posesDf: DG.DataFrame = this.ph.parsePdbqt(adRes.poses, poseColName);
+
+    // const modelList: string[] = wu(adRes.poses.matchAll(/MODEL.*?ENDMDL/gs/* lazy, not greedy */))
+    //   .map((ma) => ma[0]).toArray();
+    // const posesCol = DG.Column.fromStrings(poseColName ?? 'pdbqt_model', modelList);
+    // // posesCol.semType = DG.SEMTYPE.MOLECULE3D;
+    // // posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
+    // const posesDf = DG.DataFrame.fromColumns([posesCol]);
+
+    const posesDf: DG.DataFrame = this.ph.parsePdbqt(adRes.poses, poseColName);
+
     const res: AutoDockRunResult = {
       posesDf: posesDf,
     };

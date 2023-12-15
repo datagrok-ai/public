@@ -160,6 +160,16 @@
   margin-left: 0 !important;
 }
 
+.ua-tt-compare {
+  margin: 10px 0 0 12px;
+  align-items: baseline;
+}
+
+.ua-tt-compare label {
+  font-weight: bold;
+  width: 70px;
+}
+
 #ua-tests-filters {
   border: 1px dashed #80949b;
   border-radius: 5px;

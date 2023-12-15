@@ -60,6 +60,7 @@ def dock():
     y = request.args.get('y', 100)
     z = request.args.get('z', 100)
     debug_mode = request.args.get('debug', False)
+    subprocess_outputs = {}
 
     folder_name = calculate_hash(receptor_value) + str(x) + str(y) + str(z)
     folder_path = os.path.join(os.getcwd(), folder_name)
@@ -98,9 +99,14 @@ def dock():
 
     process = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=folder_path)
     gpu_stdout, gpu_stderr = process.communicate()
+    subprocess_outputs['gpu_output'] = gpu_stdout
+    subprocess_outputs['gpu_error'] = gpu_stderr
 
     convert_process = subprocess.Popen('cat {}-{}.dlg | grep "^DOCKED: " | cut -b 9- > {}-{}.pdbqt'.format(receptor_name, ligand_name, receptor_name, ligand_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=folder_path)
     grep_stdout, grep_stderr = convert_process.communicate()
+    subprocess_outputs['grep_output'] = grep_stdout
+    subprocess_outputs['grep_error'] = grep_stderr
+
     with open('{}/{}-{}.pdbqt'.format(folder_path, receptor_name, ligand_name), 'r') as result_file:
         result_content = result_file.read()
 
@@ -108,13 +114,13 @@ def dock():
         'poses': result_content
     }
 
-    if debug_mode:
-        response['debug_info'] = {
-            'gpu_output': gpu_stdout,
-            'gpu_error': gpu_stderr,
-            'grep_output': grep_stdout,
-            'grep_error': grep_stderr
+    if debug_mode is False and result_content == '':
+        response = {
+            'error': next((value for value in list(subprocess_outputs.values()) if value), 'not found')
         }
+
+    if debug_mode is True:
+        response['debug_info'] = subprocess_outputs
 
     return jsonify(response)
 

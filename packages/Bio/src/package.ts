@@ -30,6 +30,7 @@ import {SCORE, calculateScores} from '@datagrok-libraries/bio/src/utils/macromol
 import {
   createJsonMonomerLibFromSdf, IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {
@@ -77,7 +78,6 @@ import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
-import {errInfo} from './utils/err-info';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 
 import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';

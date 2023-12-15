@@ -548,6 +548,7 @@ export interface IDartApi {
   grok_Column_Get_Tags(c: any): any;
   grok_Column_Matches(c: any, filter: String): any;
   grok_Column_Init(c: any, indexToValue: any): any;
+  grok_Column_Clone(c: any, mask: any): any;
   grok_Column_SetAllValues(c: any, value: any): any;
   grok_Column_Get_ValueComparer(c: any): any;
   grok_Column_Set_ValueComparer(c: any, valueComparer: any): any;
@@ -1220,6 +1221,8 @@ export interface IDartApi {
   grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
+  grok_Package_Get_Settings(packageName: String): Promise<any>;
+  grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;

@@ -30,14 +30,17 @@ import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with
 import {addContextMenuUI} from './utils/context-menu';
 import {importPdbqtUI} from './utils/pdbqt/import-pdbqt';
 import {IPdbGridCellRenderer} from './utils/types';
-import {AutoDockApp} from './apps/auto-dock-app';
-import {_getNglGlService, _getPdbHelper, Package} from './package-utils';
+import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
+import {_getNglGlService, _getPdbHelper, BsvPackage} from './package-utils';
 import {AutoDockService, _runAutodock, _runAutodock2} from './utils/auto-dock-service';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {Pdbqt} from './utils/pdbqt/pdbqt-parser';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
+import {RunAutodockFuncEditor} from './utils/run-autodock-func-editor';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-export const _package: Package = new Package();
+export const _package: BsvPackage = new BsvPackage();
 
 //name: init
 //tags: init
@@ -481,6 +484,52 @@ export async function runAutodock2(): Promise<void> {
 //input: column ligandCol
 export async function runAutodock3(df: DG.DataFrame, ligandCol: DG.Column): Promise<void> {
 
+}
+
+//name: getRunAutodockFuncEditor
+//tags: editor
+//input: funccall call
+export function getRunAutodockFuncEditor(call: DG.FuncCall): void {
+  try {
+    const funcEditor = new RunAutodockFuncEditor(call);
+    funcEditor.dialog();
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    grok.shell.error(`Run AutoDock editor error: ${errMsg}`);
+    _package.logger.error(errMsg, undefined, errStack);
+  }
+}
+
+//top-menu: Chem | AutoDock
+//name: runAutodock4
+//input: file receptor { caption: 'Receptor structure file' }
+//input: file gridParams { nullable: true, caption: 'Grid parameters file' }
+//input: dataframe ligandTable { caption: 'Ligand table' }
+//input: column ligandColumn { caption: 'Ligand molecule column', semType: Molecule }
+//editor: BiostructureViewer:getRunAutodockFuncEditor
+export async function runAutodock4(
+  receptor: DG.FileInfo, gridParams: DG.FileInfo | null, ligandTable: DG.DataFrame, ligandColumn: DG.Column
+): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
+  try {
+    // AutoDock works with .pdb or .pdbqt files, both are text formats.
+    const receptorData: BiostructureData = {
+      binary: false,
+      data: (new TextDecoder).decode(receptor.data) ?? (await grok.dapi.files.readAsText(receptor)),
+      ext: receptor.extension,
+    };
+
+    const data: AutoDockDataType = {
+      ligandDf: ligandTable,
+      ligandMolColName: ligandColumn.name,
+      receptor: receptorData,
+    };
+
+    const app = new AutoDockApp();
+    await app.init(data);
+  } finally {
+    pi.close();
+  }
 }
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';

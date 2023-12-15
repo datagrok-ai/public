@@ -49,9 +49,10 @@ order by e.event_time desc
 --end
 
 --name: TestsToday
+--input: datetime date
 --connection: System:Datagrok
---meta.cache: all
---meta.invalidateOn: 0 0 0 * *
+--meta.cache1: all
+--meta.invalidateOn1: 0 0 0 * *
 select
 distinct on (e.description)
 t.id::text as id,
@@ -73,7 +74,7 @@ inner join event_parameter_values v5 inner join event_parameters p5 on p5.id = v
 left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'packageName' on v6.event_id = e.id
 left join event_parameter_values v7 inner join event_parameters p7 on p7.id = v7.parameter_id and p7.name = 'test' on v7.event_id = e.id
 left join event_parameter_values v8 inner join event_parameters p8 on p8.id = v8.parameter_id and p8.name = 'category' on v8.event_id = e.id
-where e.event_time::date = now()::date
+where e.event_time::date = @date
 order by e.description, e.event_time desc
 --end
 
