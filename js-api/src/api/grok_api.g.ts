@@ -1018,6 +1018,8 @@ export interface IDartApi {
   grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
+  grok_InputForm_Get_Source(form: any): any;
+  grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
