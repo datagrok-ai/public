@@ -561,6 +561,7 @@ export class PatternLayoutHandler {
           const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, columnNames[0], columnNames, (colName: string) => {
             validateStrandColumn(colName, strand);
             strandVar[strand] = colName;
+            console.log(`clicked ${strand} var:`, strandVar[strand]);
           });
           $(strandColumnInput[strand].root).replaceWith(input.root);
           // $(inputIdColumnDiv).replaceWith(ui.div([inputStrandColumn[strand]]));
@@ -647,6 +648,7 @@ export class PatternLayoutHandler {
 
     const convertSequenceButton = ui.bigButton('Convert', () => {
       const condition = [true, createAsStrand.value];
+      console.log(`strand vars:`, Object.values(strandVar));
       if (STRANDS.some((s, i) => condition[i] && strandVar[s] === ''))
         grok.shell.info('Please select table and columns on which to apply pattern');
       else if (STRANDS.some((s) => strandLengthInput[s].value !== inputExample[s].value.length)) {
