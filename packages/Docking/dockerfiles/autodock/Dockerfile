@@ -49,6 +49,8 @@ RUN curl -LJO https://raw.githubusercontent.com/MolecularFlipbook/FlipbookApp/ma
 
 RUN pip install Flask
 
+RUN pip install futures
+
 COPY autodock.py /app/autodock.py
 
 EXPOSE 8000
