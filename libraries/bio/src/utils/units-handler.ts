@@ -299,12 +299,11 @@ export class UnitsHandler {
    * @param {NOTATION} tgtNotation
    * @return {DG.Column}
    */
-  protected getNewColumn(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column<string> {
+  protected getNewColumn(tgtNotation: NOTATION, tgtSeparator?: string, colName?: string, data?: string[]): DG.Column<string> {
     const col = this.column;
-    const len = col.length;
     const name = tgtNotation.toLowerCase() + '(' + col.name + ')';
-    const newColName = col.dataFrame.columns.getUnusedName(name);
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
+    const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
+    const newColumn = DG.Column.fromList('string', newColName, data ?? new Array(this.column.length).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.setTag(DG.TAGS.UNITS, tgtNotation);
     if (tgtNotation === NOTATION.SEPARATOR) {
@@ -336,6 +335,11 @@ export class UnitsHandler {
 
     return newColumn;
   }
+
+  public getNewColumnFromList(name: string, list: string[]): DG.Column<string> {
+    return this.getNewColumn(this.notation, this.separator, name, list);
+  }
+
 
   /**
    * Create a new empty column using templateCol as a template
