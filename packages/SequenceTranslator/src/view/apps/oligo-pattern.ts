@@ -211,7 +211,7 @@ export class PatternLayoutHandler {
     }
 
     function allColumnValuesOfEqualLength(colName: string): boolean {
-      const col = tables.value!.getCol(colName);
+      const col = tableInput.value!.getCol(colName);
       let allLengthsAreTheSame = true;
       for (let i = 1; i < col.length; i++) {
         if (col.get(i - 1).length !== col.get(i).length && col.get(i).length !== 0) {
@@ -226,10 +226,10 @@ export class PatternLayoutHandler {
           .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
           .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
           .addButton('ADD COLUMN', () => {
-            tables.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-            grok.shell.info('Column with lengths added to \'' + tables.value!.name + '\'');
+            tableInput.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
+            grok.shell.info('Column with lengths added to \'' + tableInput.value!.name + '\'');
             dialog.close();
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
+            grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
           })
           .show();
       }
@@ -367,14 +367,14 @@ export class PatternLayoutHandler {
 
     function validateStrandColumn(colName: string, strand: string): void {
       const allLengthsAreTheSame: boolean = allColumnValuesOfEqualLength(colName);
-      const firstSequence = tables.value!.getCol(colName).get(0);
+      const firstSequence = tableInput.value!.getCol(colName).get(0);
       if (allLengthsAreTheSame && firstSequence.length !== strandLengthInput[strand].value)
-      strandLengthInput[strand].value = tables.value!.getCol(colName).get(0).length;
+      strandLengthInput[strand].value = tableInput.value!.getCol(colName).get(0).length;
       inputExample[strand].value = firstSequence;
     }
 
     function validateIdsColumn(colName: string) {
-      const col = tables.value!.getCol(colName);
+      const col = tableInput.value!.getCol(colName);
       if (col.type !== DG.TYPE.INT)
         grok.shell.error('Column should contain integers only');
       //@ts-ignore
@@ -383,10 +383,10 @@ export class PatternLayoutHandler {
         ui.dialog('Non-unique IDs')
           .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
           .onOK(() => {
-            const selection = tables.value!.selection;
+            const selection = tableInput.value!.selection;
             selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
-            grok.shell.info('Rows are selected in table \'' + tables.value!.name + '\'');
+            grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
+            grok.shell.info('Rows are selected in table \'' + tableInput.value!.name + '\'');
           })
           .show();
       }
@@ -550,13 +550,15 @@ export class PatternLayoutHandler {
 
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
 
-    function getTablesInput(): DG.InputBase {
-      const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (df: DG.DataFrame) => {
-        console.log(`table:`, df);
-        console.log(`cols:`, df.columns);
-        console.log(`names:`, df.columns.names());
+    function getTableInput(tableList: DG.DataFrame[]): DG.InputBase {
+      console.log(`tableList:`, tableList);
+      const tableInput = ui.tableInput('Tables', tableList[0], tableList, (table: DG.DataFrame) => {
+        console.log(`table:`, table);
+        console.log(`cols:`, table.columns);
+        console.log(`names:`, table.columns.names());
+
         STRANDS.forEach((strand) => {
-          inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', df.columns.names(), (colName: string) => {
+          inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', table.columns.names(), (colName: string) => {
             validateStrandColumn(colName, strand);
             strandVar[strand] = colName;
           });
@@ -566,23 +568,29 @@ export class PatternLayoutHandler {
         })
 
         // todo: unify with inputStrandColumn
-        console.log(`columns names:`, df);
-        const inputIdColumn = ui.choiceInput('ID column', '', df.columns.names(), (colName: string) => {
+        console.log(`columns names:`, table);
+        const inputIdColumn = ui.choiceInput('ID column', '', table.columns.names(), (colName: string) => {
           validateIdsColumn(colName);
           idVar = colName;
         });
         inputIdColumnDiv.innerHTML = '';
         inputIdColumnDiv.append(inputIdColumn.root);
       });
-      return tables;
+      return tableInput;
     }
 
-    const tables = getTablesInput();
+    const tableList = grok.shell.tables;
+    const tableInput = getTableInput(tableList);
 
-    grok.events.onTableAdded.subscribe(() => {
-      grok.shell.info('Table added');
-      $(tables.root).replaceWith(getTablesInput().root);
-    });
+    function updateInputs(): void {
+      grok.shell.info('Event caught');
+      const tableList = grok.shell.tables;
+      console.log(`newTables:`, tableList);
+      $(tableInput.root).replaceWith(getTableInput(tableList).root);
+    }
+
+    grok.events.onTableAdded.subscribe(() => updateInputs());
+    grok.events.onTableRemoved.subscribe(() => updateInputs());
 
 
     // todo: unify with strandVar
@@ -643,24 +651,24 @@ export class PatternLayoutHandler {
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
             STRANDS.forEach((s) => {
-              strandLengthInput[s].value = tables.value!.getCol(inputStrandColumn[s].value!).getString(0).length;
+              strandLengthInput[s].value = tableInput.value!.getCol(inputStrandColumn[s].value!).getString(0).length;
             })
             dialog.close();
           })
           .show();
       } else {
         if (idVar !== '')
-          addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
+          addColumnWithIds(tableInput.value!.name, idVar, getShortName(saveAs.value));
         const condition = [true, createAsStrand.value];
         STRANDS.forEach((strand, i) => {
           if (condition[i])
             addColumnWithTranslatedSequences(
-              tables.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
+              tableInput.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
               terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
         })
-        grok.shell.v = grok.shell.getTableView(tables.value!.name);
+        grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
         grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
-          ' added to table \'' + tables.value!.name + '\'');
+          ' added to table \'' + tableInput.value!.name + '\'');
         updateOutputExamples();
       }
     });
@@ -679,7 +687,7 @@ export class PatternLayoutHandler {
 
     const inputsSection = ui.block50([
       ui.h1('Convert options'),
-      tables.root,
+      tableInput.root,
       inputStrandColumnDiv[SS],
       inputStrandColumnDiv[AS],
       inputIdColumnDiv,
@@ -724,7 +732,7 @@ export class PatternLayoutHandler {
           loadPatternDiv,
           saveAs.root,
           ui.h1('Convert'),
-          tables.root,
+          tableInput.root,
           inputStrandColumn[SS],
           inputStrandColumn[AS],
           inputIdColumn.root,
