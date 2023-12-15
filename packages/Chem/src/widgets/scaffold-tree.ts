@@ -1570,10 +1570,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
     divFolder.classList.add('fas', 'icon-fill');
-    divFolder.onclick = (e) => {
-      this.makeNodeActiveAndFilter(group);
-    }
-
+    
     const labelDiv = ui.divText(label);
     const iconsDiv = ui.divV([
       ui.iconFA('trash-alt', () => {
@@ -1606,6 +1603,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.updateFilters();
     });
 
+    folder.onclick = (e) => {
+      this.makeNodeActiveAndFilter(group);
+    }
+    
     value(group).labelDiv = labelDiv;
 
     return group;

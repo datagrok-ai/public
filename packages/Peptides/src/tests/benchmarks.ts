@@ -31,7 +31,7 @@ category('Benchmarks: Cluster stats', () => {
       if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase()))
         df.columns.remove(scaledActivity.name);
       df.columns.add(scaledActivity);
-      DG.time(`Cluster stats benchmark - ${size}k`, () => calculateClusterStatistics(df, clustersColumnName, []));
+      DG.time(`Cluster stats benchmark - ${size}k`, () => calculateClusterStatistics(df, clustersColumnName, [], scaledActivity));
     }, {timeout: 100000});
   }
 });
@@ -53,7 +53,7 @@ category('Benchmarks: Monomer-Position stats', () => {
       if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase()))
         df.columns.remove(scaledActivity.name);
       df.columns.add(scaledActivity);
-      DG.time(`Monomer-Position stats benchmark - ${size}k`, () => calculateMonomerPositionStatistics(df, positionCols));
+      DG.time(`Monomer-Position stats benchmark - ${size}k`, () => calculateMonomerPositionStatistics(scaledActivity, DG.BitSet.create(0), positionCols));
     }, {timeout: 100000});
   }
 });

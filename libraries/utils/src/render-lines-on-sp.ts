@@ -17,6 +17,7 @@ export type MouseOverLineEvent = {
     x: number;
     y: number;
     id: number;
+    event: MouseEvent
 }
 
 export type ILineSeries = {
@@ -88,13 +89,13 @@ export class ScatterPlotLinesRenderer {
 
         this.canvas.onmousedown = (event: MouseEvent) => {
             if (this.mouseOverLineId !== -1)
-                this.lineClicked.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId});
+                this.lineClicked.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId, event: event});
         }
 
         this.canvas.onmousemove = (event: MouseEvent) => {
             this.mouseOverLineId = this.checkCoordsOnLine(event.offsetX, event.offsetY);
             if (this.mouseOverLineId !== -1)
-                this.lineHover.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId});
+                this.lineHover.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId, event: event});
         }
 
         sp.onEvent('d4-before-draw-scene')

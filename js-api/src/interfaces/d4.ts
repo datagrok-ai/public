@@ -807,6 +807,8 @@ export interface IBarChartLookSettings {
 
   showCategoryValues: boolean;
 
+  showValuesInsteadOfCategories: boolean;
+
   showCategorySelector: boolean;
 
   /// A categorical column to further split data on.
@@ -877,6 +879,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
 
   showEmptyBars: boolean;
 
@@ -1572,10 +1578,6 @@ export interface ITrellisPlotLookSettings {
   showXSelectors: boolean;
 
   showYSelectors: boolean;
-
-  showXAxes: boolean;
-
-  showYAxes: boolean;
 
   showXLabels: boolean;
 

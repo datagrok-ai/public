@@ -8,6 +8,7 @@ import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarati
 import { MmDistanceFunctionsNames } from '../macromolecule-distance-functions';
 import { KnownMetrics } from '../typed-metrics';
 import { DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG, SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG } from './consts';
+import { IDBScanOptions } from '@datagrok-libraries/math';
 
 export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -32,19 +33,28 @@ export type DimReductionParams = {
     preprocessingFunction: DG.Func,
     similarityMetric: string,
     plotEmbeddings?: boolean,
-    options: IUMAPOptions | ITSNEOptions
+    clusterEmbeddings?: boolean,
+    options: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions>
 };
 
+export class DBScanOptions {
+    epsilon: IDimReductionParam = {uiName: 'Epsilon', value: 0.01, tooltip: 'Minimum distance between cluster points'};
+    minPts: IDimReductionParam = {uiName: 'Minimum points', value: 4, tooltip: 'Minimum number of points in cluster'};
+  
+    constructor() {};
+  }
 export class DimReductionBaseEditor {
     editorSettings: DimReductionEditorOptions = {};
     tableInput: DG.InputBase<DG.DataFrame | null>;
     colInput!: DG.InputBase<DG.Column | null>;
     preprocessingFunctionInput: DG.InputBase<string | null>;
     plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
+    clusterEmbeddingsInput = ui.boolInput('Cluster embeddings', true);
     preprocessingFunctionInputRoot: HTMLElement | null = null;
     colInputRoot!: HTMLElement;
     methodInput: DG.InputBase<string | null>;
     methodSettingsIcon: HTMLElement;
+    dbScanSettingsIcon: HTMLElement;
     columnFunctionsMap: {[key: string]: string[]} = {};
     supportedFunctions: {[name: string]: {
         func: DG.Func,
@@ -56,10 +66,12 @@ export class DimReductionBaseEditor {
     availableMetrics: string[] = [];
     similarityMetricInputRoot!: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
+    dbScanSettingsDiv = ui.inputs([]);
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
       [DimReductionMethods.UMAP]: new UMAPOptions(),
       [DimReductionMethods.T_SNE]: new TSNEOptions()
     };
+    dbScanParams = new DBScanOptions();
     similarityMetricInput!: DG.InputBase<string | null>;
     get algorithmOptions(): IUMAPOptions | ITSNEOptions {
         const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
@@ -70,6 +82,13 @@ export class DimReductionBaseEditor {
         });
         return options;
       }
+    
+    get dbScanOptions(): IDBScanOptions {
+        return {
+            dbScanEpsilon: this.dbScanParams.epsilon.value ?? 0.01,
+            dbScanMinPts: this.dbScanParams.minPts.value ?? 4
+        }
+    }
 
     constructor(editorSettings: DimReductionEditorOptions = {}) {
         this.editorSettings = editorSettings;
@@ -105,6 +124,7 @@ export class DimReductionBaseEditor {
         this.regenerateColInput();
         this.onColumnInputChanged();
         let settingsOpened = false;
+        let dbScanSettingsOpened = false;
         this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
             if(settingsOpened)
               this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
@@ -116,6 +136,15 @@ export class DimReductionBaseEditor {
             else 
               this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
           }, 'Modify methods parameters');
+        this.dbScanSettingsIcon = ui.icons.settings(()=> {
+            dbScanSettingsOpened = !dbScanSettingsOpened;
+            if (!dbScanSettingsOpened)
+              ui.empty(this.dbScanSettingsDiv);
+            else 
+              this.createDBScanSettingsDiv(this.dbScanSettingsDiv, this.dbScanParams);
+          }, 'Modify clustering parameters');
+        this.clusterEmbeddingsInput.classList.add('ml-dim-reduction-settings-input');
+        this.clusterEmbeddingsInput.root.prepend(this.dbScanSettingsIcon);
         this.methodInput.root.classList.add('ml-dim-reduction-settings-input');
         this.methodInput.root.prepend(this.methodSettingsIcon);
         this.methodSettingsDiv = ui.inputs([]);
@@ -179,7 +208,6 @@ export class DimReductionBaseEditor {
 
     private onColumnInputChanged() {
         const col = this.colInput.value;
-        console.log(col?.name);
         if (!col)
             return;
         const supportedPreprocessingFunctions = this.columnFunctionsMap[col.name];
@@ -227,9 +255,21 @@ export class DimReductionBaseEditor {
         });
         return paramsForm;
       }
+
+    private createDBScanSettingsDiv(paramsForm: HTMLElement, params: DBScanOptions): HTMLElement {
+        ui.empty(paramsForm);
+        Object.keys(params).forEach((it: any) => {
+          const param: IDimReductionParam = (params as any)[it];
+          const input = ui.floatInput(param.uiName, param.value, () => {
+            param.value = input.value;
+          });
+          ui.tooltip.bind(input.root, param.tooltip);
+          paramsForm.append(input.root);
+        });
+        return paramsForm;
+    }
     
     public getEditor(): HTMLElement {
-        //@ts-ignore
         return ui.div([
             this.tableInput,
             this.colInputRoot,
@@ -237,7 +277,9 @@ export class DimReductionBaseEditor {
             this.methodInput,
             this.methodSettingsDiv,
             this.similarityMetricInputRoot,
-            this.plotEmbeddingsInput
+            this.plotEmbeddingsInput,
+            this.clusterEmbeddingsInput,
+            this.dbScanSettingsDiv
           ], {style: {minWidth: '320px'},classes: 'ui-form'});
     }
 
@@ -249,7 +291,8 @@ export class DimReductionBaseEditor {
             preprocessingFunction: this.supportedFunctions[this.preprocessingFunctionInput.value!].func,
             similarityMetric: this.similarityMetricInput.value!,
             plotEmbeddings: this.plotEmbeddingsInput.value!,
-            options: this.algorithmOptions
+            clusterEmbeddings: this.clusterEmbeddingsInput.value!,
+            options: {...this.algorithmOptions, ...this.dbScanOptions}
         };
     }
 }

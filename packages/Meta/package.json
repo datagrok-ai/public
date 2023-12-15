@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.96",
+  "version": "3.7.0",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2617,6 +2617,12 @@
         },
         "2.11.13": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.14": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.15": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3375,6 +3381,9 @@
         },
         "1.1.6": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.7": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3666,6 +3675,19 @@
         "directory": "packages/FileEditors"
       },
       "category": "Data Access"
+    },
+    "deqs": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.16.0"
+        }
+      },
+      "description": "WebAutoSolver tools for solving ODEs in a browser.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/ODEs"
+      }
     }
   }
 }

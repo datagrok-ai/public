@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Observable, Subscription} from 'rxjs';
+import {Observable} from 'rxjs';
 import {testData} from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
 
@@ -76,18 +76,19 @@ export class Test {
 
 export async function testEvent<T>(event: Observable<T>,
   handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
-  let sub: Subscription;
   return new Promise((resolve, reject) => {
-    sub = event.subscribe((args: any) => {
+    const sub = event.subscribe((args: T) => {
       try {
         handler(args);
+        resolve('OK');
       } catch (e) {
         reject(e);
       }
+      // Do not clearTimeout or event sub if handler fails
       sub.unsubscribe();
-      resolve('OK');
+      clearTimeout(timeout);
     });
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       sub.unsubscribe();
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('timeout');
@@ -539,8 +540,18 @@ export async function testViewer(v: string, df: DG.DataFrame,
       await delay(100);
       tv.dataFrame = df1;
     }
-    const optns = viewer.getOptions(true).look;
-    const props = viewer.getProperties();
+    let optns: { [p: string]: any };
+    try {
+      optns = viewer.getOptions(true).look;
+    } catch (err: any) {
+      throw new Error(`Viewer's .getOptions() error.`, {cause: err});
+    }
+    let props: DG.Property[];
+    try {
+      props = viewer.getProperties();
+    } catch (err: any) {
+      throw new Error(`Viewer's .getProperties() error.`, {cause: err});
+    }
     const newProps: Record<string, string | boolean> = {};
     Object.keys(optns).filter((k) => typeof optns[k] === 'boolean').forEach((k) => newProps[k] = !optns[k]);
     props.filter((p: DG.Property) => p.choices !== null)
@@ -574,7 +585,8 @@ export async function testViewer(v: string, df: DG.DataFrame,
         'cannot load viewer on arbitrary dataset', 3000);
     }
   } finally {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
+    // closeAll() is handling by common test workflow
+    // grok.shell.closeAll();
+    // DG.Balloon.closeAll();
   }
 }
