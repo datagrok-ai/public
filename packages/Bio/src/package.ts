@@ -246,6 +246,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
         plotEmbeddings: params.plotEmbeddings,
         options: params.options,
         preprocessingFunction: params.preprocessingFunction,
+        clusterEmbeddings: params.clusterEmbeddings,
       }).call();
     })
     .show();
@@ -493,7 +494,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
-//meta.supportedUnits: fasta,separator
+//meta.supportedUnits: fasta,separator,helm
 //meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
@@ -541,19 +542,20 @@ export async function helmPreprocessingFunction(
 //input: bool plotEmbeddings = true
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
+//input: bool clusterEmbeddings = true { optional: true }
 //output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
-  plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options
-): Promise<DG.ScatterPlotViewer | undefined> {
+  plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
+  clusterEmbeddings?: boolean): Promise<DG.ScatterPlotViewer | undefined> {
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
   if (!preprocessingFunction)
     preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
 
   const res = await reduceDimensionality(table, molecules, methodName,
-      similarityMetric as KnownMetrics, preprocessingFunction, plotEmbeddings, options, {
+      similarityMetric as KnownMetrics, preprocessingFunction, plotEmbeddings, clusterEmbeddings ?? false, options, {
         fastRowCount: 10000,
         scatterPlotName: 'Sequence space',
         bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
