@@ -33,8 +33,13 @@ enum EDITOR_STATE {
 
 const SOLVER_HELP_LINK = '/help/compute/solver.md';
 
-const COMPLETE_THE_MODEL_MSG = 'Complete the model';
-const PROVIDE_CORRECTNESS_MSG = 'Provide correct model';
+/** Specific error messages */
+enum ERROR_MSG {
+  SOLVING_FAILS = 'Solving fails',
+  APP_CREATING_FAILS = 'Application creating fails',
+  EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
+  CORE_ISSUE = 'Core issue',
+};
 
 /** Get problem with respect to IVP editor state. */
 function getProblem(state: EDITOR_STATE): string {
@@ -126,12 +131,11 @@ export async function runSolverApp() {
       grok.shell.addView(sView);
     }
     catch (err) {
-      if (err instanceof Error) {
-        const b = new DG.Balloon();
-        b.error(err.message);
-      }
-    }
-  };
+      if (err instanceof Error)
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
+      else
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+  }};
 
   /** Solve the current IVP */
   const solve = async () => {  
@@ -163,15 +167,28 @@ export async function runSolverApp() {
 
     } catch (err) {
         if (err instanceof Error) 
-          if (editorState != EDITOR_STATE.FROM_FILE) {
-            const b = new DG.Balloon();
-            b.error(err.message);
-          }
-          else {
-            const b = new DG.Balloon();
-            b.info(COMPLETE_THE_MODEL_MSG);
-          }
-  }}; 
+          grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${err.message}`);
+        else
+          grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+  }};
+
+  /** Run model application */
+  const runModelApp = async () => {
+    try {
+      const ivp = getIVP(editorView.state.doc.toString());
+      const scriptText = getScriptLines(ivp).join('\n');    
+      const script = DG.Script.create(scriptText);
+      const savedScript = await grok.dapi.scripts.save(script);
+      const params = getScriptParams(ivp);    
+      const call = savedScript.prepare(params);
+      call.edit();
+    } 
+    catch (err) {
+      if (err instanceof Error) 
+        grok.shell.error(`${ERROR_MSG.APP_CREATING_FAILS}: ${err.message}`);        
+      else
+        grok.shell.error(`${ERROR_MSG.APP_CREATING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+  }};
    
   let solutionTable = DG.DataFrame.create();
   let solverView = grok.shell.addTableView(solutionTable);
@@ -194,7 +211,7 @@ export async function runSolverApp() {
 
   editorView.dom.addEventListener('keydown', async (e) => {
     if (e.key !== "F5")
-      isChanged = true;
+      isChanged = true;    
   });
 
   /** Load IVP from file */
@@ -316,7 +333,9 @@ export async function runSolverApp() {
 
   const playIcon = ui.iconFA('play', solve, 'Solve (F5)');  
   playIcon.style.color = "var(--green-2)";
-  playIcon.classList.add("fas"); 
+  playIcon.classList.add("fas");
+
+  const appButton = ui.button('app', runModelApp, 'Run model as an application');
   
   solverView.root.addEventListener('keydown', async (e) => {
     if (e.key === "F5") {
@@ -326,207 +345,5 @@ export async function runSolverApp() {
     }
   });
 
-  solverView.setRibbonPanels([[exportIcon], [playIcon]]);
+  solverView.setRibbonPanels([[exportIcon], [appButton, playIcon]]);
 } // runSolverApp
-
-/** Run solver demo application */
-export async function runSolverDemoApp() {
-  let solutionTable: DG.DataFrame;
-  let solverView: DG.TableView;
-  let solutionViewer: DG.Viewer | null = null;
-  let viewerDockNode: DG.DockNode | null = null;
-  let toChangeSolutionViewerProps = false;
-  let div = ui.div([]);   
-
-  /** Code editor for IVP specifying */
-  let editorView = new EditorView({
-    doc: DEMO_TEMPLATE[0],
-    extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-    parent: div
-  });
-
-  /** Return new state of editor */
-  const newState = (lines: string[]) => EditorState.create({
-    doc: lines.join('\n'),
-    extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-  });
-
-  /** Solve the current IVP */
-  const solve = async () => {  
-    try {  
-      const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);
-      const params = getScriptParams(ivp);    
-      const call = script.prepare(params);
-
-      await call.call();
-      
-      solutionTable = call.outputs[DF_NAME];
-      solverView.dataFrame = call.outputs[DF_NAME];
-      solverView.name = solutionTable.name;
-
-      if (!solutionViewer) {
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
-        viewerDockNode = grok.shell.dockManager.dock(solutionViewer, DG.DOCK_TYPE.TOP, solverView.dockManager.findNode(solverView.grid.root));
-      }
-      else {
-        solutionViewer.dataFrame = solutionTable;
-
-        if (toChangeSolutionViewerProps) {
-          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
-          toChangeSolutionViewerProps = false;
-        }
-      }
-
-    } catch (err) {
-      if (err instanceof Error) {
-        const b = new DG.Balloon();
-        b.info(PROVIDE_CORRECTNESS_MSG);
-      }
-  }}; 
-
-  const demoScript = new DemoScript('Solving ODEs',
-    'Interactive solution of complex problems given in a declarative form');
-
-  await demoScript
-    .step('Model', async () => {      
-      solutionTable = DG.DataFrame.create();
-      solverView = grok.shell.addTableView(solutionTable);      
-      solverView.name = 'Demo';
-      editorView.dom.style.overflow = 'auto';
-      editorView.dom.style.height = '100%';
-      solverView.dockManager.dock(div, DG.DOCK_TYPE.LEFT);
-      solverView.helpUrl = SOLVER_HELP_LINK;
-      solverView.setRibbonPanels([]);
-    }, {description: 'Each model starts with the name.', delay: 0})    
-    .step('Equations', async () => {  
-      editorView.setState(newState(DEMO_TEMPLATE.slice(0, 4)));
-    }, {description: 'Declarative formulas define differential equations.', delay: 0})
-    .step('Argument', async () => {  
-      editorView.setState(newState(DEMO_TEMPLATE.slice(0, 9)));      
-    }, {description: 'The variable, its initial & final values and modeling step.', delay: 0})
-    .step('Initials', async () => {  
-      editorView.setState(newState(DEMO_TEMPLATE));      
-    }, {description: 'Initial values of the functions to be found.', delay: 0})
-    .step('Solution', async () => { 
-      grok.shell.windows.context.visible = false;
-      await solve();      
-    }, {description: 'Numerical results & their visualization.', delay: 0})
-    .step('Try it', async () => {
-
-      editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
-        event.preventDefault();
-        DG.Menu.popup()
-          .item('Load...', loadFn, undefined, {description: 'Load model from local file'})
-          .item('Save...', saveFn, undefined, {description: 'Save model to local file'})
-          .item('Clear...', async () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear model'})
-          .separator()
-          .group('Templates')
-          .item('Basic...', async () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-          .item('Advanced...', async () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
-          .item('Extended...', async () => setState(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
-          .endGroup()
-          .group('Use cases')
-          .item('Chem reactions...', async () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-          .item("Robertson's model...", async () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
-          .item('Fermentation...', async () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
-          //.separator()
-          .item('PK-PD...', async () => setState(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
-          .item('Acid production...', async () => setState(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
-          .item('Nimotuzumab...', async () => setState(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: 'Nimotuzumab disposition model'})
-          .endGroup()
-          .show();    
-      });
-    
-      const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
-      exportIcon.classList.add("fal");
-    
-      const playIcon = ui.iconFA('play', solve, 'Solve (F5)');  
-      playIcon.style.color = "var(--green-2)";
-      playIcon.classList.add("fas"); 
-      
-      solverView.root.addEventListener('keydown', async (e) => {
-        if (e.key === "F5") {
-          e.stopImmediatePropagation();
-          e.preventDefault();
-          await solve();
-        }
-      });
-    
-      solverView.setRibbonPanels([[exportIcon], [playIcon]]);
-    }, {description: 'Modify formulas and press Run button. Check use cases via context menu.', delay: 0})
-    .start();
-  
-  /** Get JS-script for solving the current IVP */
-  const exportToJS = () => {
-    try {
-      const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
-      const script = DG.Script.create(scriptText);
-      const sView = DG.ScriptView.create(script);
-      grok.shell.addView(sView);
-    }
-    catch (err) {
-      if (err instanceof Error) {
-        const b = new DG.Balloon();
-        b.error(err.message);
-      }
-    }
-  };  
-
-  /** Load IVP from file */
-  const loadFn = async () => {
-    let text = '';
-    const dlg = ui.dialog('Open a file');
-    const fileInp = document.createElement('input');
-    fileInp.type = 'file';
-    fileInp.onchange = () => {
-      //@ts-ignore
-      const [file] = document.querySelector("input[type=file]").files;
-      const reader = new FileReader();
-      reader.addEventListener("load", () => { 
-        text = reader.result as string; 
-        setState(EDITOR_STATE.FROM_FILE, text);
-        dlg.close();
-      }, false);
-          
-      if (file) 
-        reader.readAsText(file);
-    }     
-
-    dlg.add(fileInp);        
-    fileInp.click();
-  };
-
-  /** Save the current IVP to file */
-  const saveFn = async () => {
-    const link = document.createElement("a");
-    const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
-    link.href = URL.createObjectURL(file);
-    link.download = "equations.txt";
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
-
-  /** Set IVP code editor state */
-  const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
-    toChangeSolutionViewerProps = true;
-    solutionTable = DG.DataFrame.create();
-    solverView.dataFrame = solutionTable;
-
-    const newState = EditorState.create({
-      doc: text ?? getProblem(state), 
-      extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-    });
-
-    editorView.setState(newState);
-
-    if (state != EDITOR_STATE.CLEAR)
-      await solve();
-    else
-      if (solutionViewer && viewerDockNode) {
-        grok.shell.dockManager.close(viewerDockNode);
-        solutionViewer = null;
-      }
-  };
-} // runSolverDemoApp

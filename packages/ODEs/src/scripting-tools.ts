@@ -88,7 +88,7 @@ export type IVP = {
   outputs: Map<string, Output> | null,
 };
 
-/** Specific error messeges */
+/** Specific error messages */
 enum ERROR_MSG {
   ODES = 'Incorrect definition of the system of ordinary differential equations',
   CONTROL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
