@@ -4,34 +4,32 @@ import os
 import tempfile
 import json
 import hashlib
+import re
 
 app = Flask(__name__)
 
-def prepare_autogrid_config(folder_path, receptor_basename, x, y, z):
+def prepare_autogrid_config(folder_path, receptor_basename, autodock_gpf):
     config = "{}/{}.gpf".format(folder_path, receptor_basename)
     with open(config, "w") as config_file:
-        config_file.write("receptor {}.pdbqt\n".format(receptor_basename))
-        config_file.write("npts {} {} {}\n".format(x, y, z))
-        config_file.write("gridfld {}.maps.fld\n".format(receptor_basename))
-        config_file.write("spacing 0.375\n")
-        config_file.write("receptor_types A C Fe N NA OA SA\n")
-        config_file.write("ligand_types A C F NA OA HD\n")
-        config_file.write("gridcenter auto\n")
-        config_file.write("smooth 0.5\n")
-        config_file.write("map {}.A.map\n".format(receptor_basename))
-        config_file.write("map {}.C.map\n".format(receptor_basename))
-        config_file.write("map {}.F.map\n".format(receptor_basename))
-        config_file.write("map {}.NA.map\n".format(receptor_basename))
-        config_file.write("map {}.OA.map\n".format(receptor_basename))
-        config_file.write("map {}.HD.map\n".format(receptor_basename))
-        config_file.write("elecmap {}.e.map\n".format(receptor_basename))
-        config_file.write("dsolvmap {}.d.map\n".format(receptor_basename))
-        config_file.write("dielectric -0.1465\n")
-
+        config_file.write(autodock_gpf)
     return config
 
 def calculate_hash(data):
     return hashlib.sha256(data.encode()).hexdigest()
+
+def run_process(command, folder_path, shell=False):
+    output_file = 'out.txt'
+    error_file = 'err.txt'
+    with open(output_file, 'w+') as fout:
+        with open(error_file, 'w+') as ferr:
+            returncode = subprocess.call(command, stdout=fout, stderr=ferr, shell=shell, cwd=folder_path)
+            fout.seek(0)
+            output = fout.read()
+            ferr.seek(0)
+            error = ferr.read()
+            os.remove(output_file)
+            os.remove(error_file)
+    return returncode, output, error
 
 @app.route('/check_opencl', methods=['GET'])
 def check_opencl():
@@ -46,46 +44,48 @@ def check_opencl():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/dock', methods=['POST'])
+@app.route('/autodock/dock_ligand', methods=['POST'])
 def dock():
     raw_data = request.data
     json_data = json.loads(raw_data)
 
     receptor_value = json_data.get('receptor', '')
+    receptor_format = json_data.get('receptor_format', '')
     ligand_value = json_data.get('ligand', '')
-
-    x = request.args.get('x', 100)
-    y = request.args.get('y', 100)
-    z = request.args.get('z', 100)
+    ligand_format = json_data.get('ligand_format', '')
+    autodock_gpf = json_data.get('autodock_gpf', '')
     debug_mode = request.args.get('debug', False)
-    subprocess_outputs = {}
 
-    folder_name = calculate_hash(receptor_value) + str(x) + str(y) + str(z)
+    folder_name = calculate_hash(receptor_value + autodock_gpf)
     folder_path = os.path.join(os.getcwd(), folder_name)
-    receptor_name = 'receptor'
+
+    pattern = r"receptor\s+(\S+\.pdbqt)"
+    match = re.search(pattern, autodock_gpf)
+    receptor_basename = match.group(1) if match else None
+
+    receptor_name = receptor_basename[:-6]
     ligand_name = 'ligand'
 
-    receptor_path = "%s.pdb" % receptor_name
-    ligand_path = "%s.pdb" % ligand_name
-
-    receptor_path_prep = "%s.pdbqt" % receptor_name
-    ligand_path_prep = "%s.pdbqt" % ligand_name
+    receptor_path = '{}.{}'.format(receptor_name, receptor_format)
+    ligand_path = '{}.{}'.format(ligand_name, ligand_format)
     
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
         
         with open('{}/{}'.format(folder_path, receptor_path), 'w') as receptor_file:
             receptor_file.write(receptor_value)
+
+        if 'pdbqt' not in receptor_path:
+            subprocess.call(['prepare_receptor4.py', '-r', receptor_path], cwd=folder_path)
         
-        subprocess.call(['prepare_receptor4.py', '-r', receptor_path], cwd=folder_path)
-        
-        autogrid_config = prepare_autogrid_config(folder_path, receptor_name, x, y, z)
+        autogrid_config = prepare_autogrid_config(folder_path, receptor_name, autodock_gpf)
         subprocess.call(['/usr/local/x86_64Linux2/autogrid4', '-p', autogrid_config, '-l', "%s.autogrid.log" % receptor_name], cwd=folder_path)
 
     with open('{}/{}'.format(folder_path, ligand_path), 'w') as ligand_file:
         ligand_file.write(ligand_value)
-    
-    subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path], cwd=folder_path)
+
+    if 'pdbqt' not in ligand_path:
+        subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path], cwd=folder_path)
 
     command = [
         '/opt/autodock-gpu',
@@ -95,15 +95,27 @@ def dock():
         '--resnam', '{}-{}'.format(receptor_name, ligand_name)
     ]
 
-    process = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=folder_path)
-    gpu_stdout, gpu_stderr = process.communicate()
-    subprocess_outputs['gpu_output'] = gpu_stdout
-    subprocess_outputs['gpu_error'] = gpu_stderr
+    returncode, gpu_output, gpu_error = run_process(command, folder_path, False)
+    if returncode != 0:
+        error = gpu_output if gpu_output != '' else gpu_error
+        response = {
+            'error': error
+        }
+        return jsonify(response)
 
-    convert_process = subprocess.Popen('cat {}-{}.dlg | grep "^DOCKED: " | cut -b 9- > {}-{}.pdbqt'.format(receptor_name, ligand_name, receptor_name, ligand_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=folder_path)
-    grep_stdout, grep_stderr = convert_process.communicate()
-    subprocess_outputs['grep_output'] = grep_stdout
-    subprocess_outputs['grep_error'] = grep_stderr
+    convert_command = [
+        'cat', '{}-{}.dlg'.format(receptor_name, ligand_name),
+        '|', 'grep', '"^DOCKED: "',
+        '|', 'cut', '-b', '9-', '>', '{}-{}.pdbqt'.format(receptor_name, ligand_name)
+    ]
+
+    returncode, grep_output, grep_error = run_process(convert_command, folder_path, True)
+    if returncode != 0:
+        error = grep_output if grep_output != '' else grep_error
+        response = {
+            'error': error
+        }
+        return jsonify(response)
 
     with open('{}/{}-{}.pdbqt'.format(folder_path, receptor_name, ligand_name), 'r') as result_file:
         result_content = result_file.read()
@@ -112,13 +124,13 @@ def dock():
         'poses': result_content
     }
 
-    if debug_mode is False and result_content == '':
-        response = {
-            'error': next((value for value in list(subprocess_outputs.values()) if value), 'not found')
+    if debug_mode:
+        response['debug_info'] = {
+            'gpu_output': gpu_output,
+            'gpu_error': gpu_error,
+            'grep_output': grep_output,
+            'grep_error': grep_error
         }
-
-    if debug_mode is True:
-        response['debug_info'] = subprocess_outputs
  
     return jsonify(response)
 
