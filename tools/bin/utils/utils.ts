@@ -158,7 +158,7 @@ export const dgToTsTypeMap: Indexable = {
 };
 
 export const propertyTypes = [
-  'bool', 'int', 'float', 'string', 'datetime', 'object',
+  'bool', 'int', 'double', 'string', 'datetime', 'object',
   'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
 ];
 
