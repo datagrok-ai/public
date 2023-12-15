@@ -797,6 +797,16 @@ export interface IDartApi {
   grok_Property_Set_ShowSlider(p: any, x: any): any;
   grok_Property_Get_ShowPlusMinus(p: any): any;
   grok_Property_Set_ShowPlusMinus(p: any, x: any): any;
+  grok_Property_Get_Format(p: any): any;
+  grok_Property_Set_Format(p: any, x: any): any;
+  grok_Property_Get_UserEditable(p: any): any;
+  grok_Property_Set_UserEditable(p: any, x: any): any;
+  grok_Property_Get_Min(p: any): any;
+  grok_Property_Set_Min(p: any, x: any): any;
+  grok_Property_Get_Max(p: any): any;
+  grok_Property_Set_Max(p: any, x: any): any;
+  grok_Property_Get_Step(p: any): any;
+  grok_Property_Set_Step(p: any, x: any): any;
   grok_Property_Get_Options(p: any): any;
   grok_Property_Get(p: any, propertyName: String): any;
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
