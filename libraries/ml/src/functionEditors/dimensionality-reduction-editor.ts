@@ -153,8 +153,15 @@ export class DimReductionBaseEditor {
         this.preprocessingFunctionInput = ui.choiceInput('Encoding function', functions[0], functions, () => {
             this.onPreprocessingFunctionChanged();
         });
-        if (!this.preprocessingFunctionInputRoot)
+        let flagPfi = false;
+        if (!this.preprocessingFunctionInputRoot) {
             this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
+            flagPfi = true;
+        }
+        if (!flagPfi) {
+            ui.empty(this.preprocessingFunctionInputRoot);
+            Array.from(this.preprocessingFunctionInput.root.children).forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
+        }
         this.similarityMetricInput = ui.choiceInput('Similarity', '', [], null);
         this.similarityMetricInput.nullable = false;
         if (!this.similarityMetricInputRoot)
@@ -224,10 +231,6 @@ export class DimReductionBaseEditor {
             Array.from(this.preprocessingFunctionInput.root.children).forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
         }
         this.onPreprocessingFunctionChanged();
-        if(supportedPreprocessingFunctions.length < 2)
-            this.preprocessingFunctionInputRoot.style.display = 'none';
-        else
-            this.preprocessingFunctionInputRoot.style.display = 'block';
     }
 
     private onPreprocessingFunctionChanged() {

@@ -115,7 +115,7 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
           if(clusterEmbeddings && res && res.embedding) {
             const clusterPg = DG.TaskBarProgressIndicator.create(`Clustering embeddings ...`);
             try {
-              const clusterRes = await dbscan(res.embedding[0], res.embedding[1], dimRedOptions.dbScanEpsilon ?? 0.01, dimRedOptions.dbScanMinPts ?? 4);
+              const clusterRes = await getDbscanWorker(res.embedding[0], res.embedding[1], dimRedOptions.dbScanEpsilon ?? 0.01, dimRedOptions.dbScanMinPts ?? 4);
               const clusterColName = table.columns.getUnusedName('Cluster');
               const clusterCol = table.columns.addNewString(clusterColName);
               clusterCol.init((i) => clusterRes[i].toString());
