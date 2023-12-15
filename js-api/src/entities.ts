@@ -658,6 +658,14 @@ export class FileInfo extends Entity {
   readAsBytes(): Promise<Uint8Array> {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
+
+  static fromBytes(data: Uint8Array): FileInfo {
+      return api.grok_FileInfo_FromBytes(data);
+  }
+
+  static fromString(data: string): FileInfo {
+    return api.grok_FileInfo_FromString(data);
+  }
 }
 
 /** @extends Entity

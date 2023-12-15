@@ -1239,6 +1239,8 @@ export interface IDartApi {
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
+  grok_FileInfo_FromBytes(data: any): any;
+  grok_FileInfo_FromString(data: String): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1248,7 +1250,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
-  grok_FileInfo_ReadAsString(p0: any): Promise<any>;
+  grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
   grok_Dapi_UserFiles_Exists(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Delete(fi: any): Promise<any>;
