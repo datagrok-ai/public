@@ -3,12 +3,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
+
+import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
-import {AutoDockRunResult, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
@@ -18,27 +23,23 @@ import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
-import {PdbResDataFrame} from './utils/pdb-helper';
+import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {nglWidgetUI} from './viewers/ngl-ui';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
 import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
-import {previewBiostructure, previewNgl, viewBiostructure, viewNgl} from './viewers/view-preview';
+import {previewBiostructure, previewNgl, viewNgl} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with-base-app';
 import {addContextMenuUI} from './utils/context-menu';
-import {importPdbqtUI} from './utils/pdbqt/import-pdbqt';
+import {importPdbqtUI} from './utils/import-pdbqt';
 import {IPdbGridCellRenderer} from './utils/types';
-import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
-import {_getNglGlService, _getPdbHelper, BsvPackage} from './package-utils';
-import {AutoDockService, _runAutodock, _runAutodock2} from './utils/auto-dock-service';
+import {_getNglGlService, BsvPackage} from './package-utils';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
-import {Pdbqt} from './utils/pdbqt/pdbqt-parser';
-import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
-import {RunAutodockFuncEditor} from './utils/run-autodock-func-editor';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {Pdbqt} from './utils/pdbqt-parser';
+import {viewMolstarUI} from './viewers/molstar-viewer/utils';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -87,6 +88,14 @@ export function getNglGlService(): NglGlServiceBase {
   return _getNglGlService();
 }
 
+//name: viewBiostructure
+//input: string content
+//input: string format
+//input: string name { optional: true }
+export async function viewBiostructure(content: string, format: string, name?: string): Promise<void> {
+  await viewMolstarUI(content, name, format as BuiltInTrajectoryFormat);
+}
+
 // -- File handlers --
 
 /* The Chem package is opening formats 'mol2', 'sdf', 'mol' for small molecules */
@@ -103,7 +112,7 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
   // const app = new BiostructureApp();
   // await app.init(df);
 
-  await viewBiostructure(fileContent);
+  await viewBiostructure(fileContent, 'pdb');
   return [];
 }
 
@@ -201,7 +210,7 @@ export function previewBiostructureDensity(file: DG.FileInfo): DG.View {
 //name: openPdbResidues
 //input: file fi
 export async function openPdbResidues(fi: DG.FileInfo): Promise<void> {
-  const ph = await _getPdbHelper();
+  const ph = await PdbHelper.getInstance();
   const pdbStr: string = await fi.readAsString();
   const pdbDf: PdbResDataFrame = await ph.pdbToDf(pdbStr, fi.fileName);
   const view = grok.shell.addTableView(pdbDf);
@@ -304,18 +313,6 @@ export async function ligandsWithBiostructureApp(): Promise<void> {
 }
 
 
-//name: autoDockApp
-export async function autoDockApp(): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('AutoDock app...');
-  try {
-    const app = new AutoDockApp('autoDockApp');
-    await app.init();
-  } finally {
-    pi.close();
-  }
-}
-
-
 // -- Viewers --
 
 //name: NGL
@@ -359,11 +356,7 @@ export function saguaroViewer(): DG.JsViewer & IBiotrackViewer {
 //name: getPdbHelper
 //output: object result
 export async function getPdbHelper(): Promise<IPdbHelper> {
-  return _getPdbHelper();
-}
-
-export async function nglViewerGen(): Promise<void> {
-  _nglViewerGen();
+  return PdbHelper.getInstance();
 }
 
 //name: getPdbGridCellRenderer
@@ -437,99 +430,6 @@ export async function demoBioDockingConformations(): Promise<void> {
 //test: demoBioProteins() //wait: 3000
 export async function demoBioProteins(): Promise<void> {
   await demoBio07NoScript();
-}
-
-
-//name: getAutoDockService
-//output: object result
-export async function getAutoDockService(): Promise<IAutoDockService> {
-  const resSvc: IAutoDockService = await AutoDockService.getSvc();
-  return resSvc;
-}
-
-//name: runAutodock
-//input: file receptor
-//input: file ligand
-//input: int x
-//input: int y
-//input: int z
-//output: object dockingResults
-export async function runAutodock(
-  receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number,
-): Promise<AutoDockRunResult | null> {
-  return await _runAutodock(receptor, ligand, x, y, z);
-}
-
-//name: runAutodock2
-// //input: dataframe df
-// //input: column molCol { semType: Molecule }
-// //input: file receptorFi { optional: true }
-export async function runAutodock2(): Promise<void> {
-  const [csv, receptorPdb] = await Promise.all([
-    grok.functions.call(`${_package.name}:readAsText`,
-      {file: 'CHEMBL2366517/ic50.mol.csv'}),
-    grok.functions.call(`${_package.name}:readAsText`, {file: 'CHEMBL2366517/1bdq.pdb'}),
-  ]);
-  if (!csv || !receptorPdb)
-    throw new Error('Empty input data');
-
-  const df = DG.DataFrame.fromCsv(csv);
-  const molCol: DG.Column<string> = df.getCol('molecule');
-
-  return await _runAutodock2(molCol, receptorPdb);
-}
-
-//name: runAutodock3
-//input: dataframe name
-//input: column ligandCol
-export async function runAutodock3(df: DG.DataFrame, ligandCol: DG.Column): Promise<void> {
-
-}
-
-//name: getRunAutodockFuncEditor
-//tags: editor
-//input: funccall call
-export function getRunAutodockFuncEditor(call: DG.FuncCall): void {
-  try {
-    const funcEditor = new RunAutodockFuncEditor(call);
-    funcEditor.dialog();
-  } catch (err: any) {
-    const [errMsg, errStack] = errInfo(err);
-    grok.shell.error(`Run AutoDock editor error: ${errMsg}`);
-    _package.logger.error(errMsg, undefined, errStack);
-  }
-}
-
-//top-menu: Chem | AutoDock
-//name: runAutodock4
-//input: file receptor { caption: 'Receptor structure file' }
-//input: file gridParams { nullable: true, caption: 'Grid parameters file' }
-//input: dataframe ligandTable { caption: 'Ligand table' }
-//input: column ligandColumn { caption: 'Ligand molecule column', semType: Molecule }
-//editor: BiostructureViewer:getRunAutodockFuncEditor
-export async function runAutodock4(
-  receptor: DG.FileInfo, gridParams: DG.FileInfo | null, ligandTable: DG.DataFrame, ligandColumn: DG.Column
-): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
-  try {
-    // AutoDock works with .pdb or .pdbqt files, both are text formats.
-    const receptorData: BiostructureData = {
-      binary: false,
-      data: (new TextDecoder).decode(receptor.data) ?? (await grok.dapi.files.readAsText(receptor)),
-      ext: receptor.extension,
-    };
-
-    const data: AutoDockDataType = {
-      ligandDf: ligandTable,
-      ligandMolColName: ligandColumn.name,
-      receptor: receptorData,
-    };
-
-    const app = new AutoDockApp();
-    await app.init(data);
-  } finally {
-    pi.close();
-  }
 }
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';

@@ -102,23 +102,6 @@ export function injectTreeForGridUI2(
   // initial alignment tree with grid
   alignGridWithTree();
 
-  // -- Inject properties --
-
-  try {
-    const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
-      (obj) => {
-        return obj;
-      },
-      (obj, value) => {
-        obj = value;
-      },
-      1);
-    lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
-    DG.Property.registerAttachedProperty('GridLook', lineWidthProperty);
-  } catch (err: any) {
-    console.warn(err);
-  }
-
   // -- Handling events --
 
   // When a node is clicked, all of the leaf nodes come from it should become selected

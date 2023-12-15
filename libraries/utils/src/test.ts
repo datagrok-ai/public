@@ -9,15 +9,22 @@ const BENCHMARK_TIMEOUT = 10800000;
 
 export const tests: {
   [key: string]: {
-    tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
-    beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number
+    tests?: Test[],
+    before?: () => Promise<void>,
+    after?: () => Promise<void>,
+    beforeStatus?: string,
+    afterStatus?: string,
+    clear?: boolean,
+    timeout?: number
   }
 } = {};
 
 const autoTestsCatName = 'Auto Tests';
 const demoCatName = 'Demo';
 const detectorsCatName = 'Detectors';
-const wasRegistered: {[key: string]: boolean} = {};
+const wasRegistered: {
+  [key: string]: boolean
+} = {};
 export let currentCategory: string;
 
 export namespace assure {
@@ -116,8 +123,8 @@ export function expect(actual: any, expected: any = true, error?: string): void 
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
   if ((actual === Number.POSITIVE_INFINITY && expected === Number.POSITIVE_INFINITY) ||
-      (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
-      (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
+    (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
+    (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
     return;
   const areEqual = Math.abs(actual - expected) < tolerance;
   expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
@@ -149,7 +156,11 @@ export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame, error?
   }
 }
 
-export function expectObject(actual: { [key: string]: any }, expected: { [key: string]: any }) {
+export function expectObject(actual: {
+  [key: string]: any
+}, expected: {
+  [key: string]: any
+}) {
   for (const [expectedKey, expectedValue] of Object.entries(expected)) {
     if (!actual.hasOwnProperty(expectedKey))
       throw new Error(`Expected property "${expectedKey}" not found`);
@@ -217,8 +228,8 @@ export async function initAutoTests(packageId: string, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
   if (moduleTests[autoTestsCatName] !== undefined ||
-      moduleTests[demoCatName] !== undefined ||
-      Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
+    moduleTests[demoCatName] !== undefined ||
+    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
@@ -233,7 +244,11 @@ export async function initAutoTests(packageId: string, module?: any) {
     if ((tests && Array.isArray(tests) && tests.length)) {
       for (let i = 0; i < tests.length; i++) {
         const res = (tests[i] as string).matchAll(reg);
-        const map: {skip?: string, wait?: number, cat?: string} = {};
+        const map: {
+          skip?: string,
+          wait?: number,
+          cat?: string
+        } = {};
         Array.from(res).forEach((arr) => {
           if (arr[0].startsWith('skip')) map['skip'] = arr[1];
           else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
@@ -289,11 +304,21 @@ export async function initAutoTests(packageId: string, module?: any) {
 }
 
 export async function runTests(options?:
-  {category?: string, test?: string, testContext?: TestContext}, exclude?: string[]) {
+  {
+    category?: string,
+    test?: string,
+    testContext?: TestContext
+  }, exclude?: string[]) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   await initAutoTests(package_.id);
-  const results: { category?: string, name?: string, success: boolean,
-                   result: string, ms: number, skipped: boolean }[] = [];
+  const results: {
+    category?: string,
+    name?: string,
+    success: boolean,
+    result: string,
+    ms: number,
+    skipped: boolean
+  }[] = [];
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -358,17 +383,21 @@ export async function runTests(options?:
     for (const cat of categories) {
       const res = results.filter((r) => r.category === cat);
       const failed_ = res.filter((r) => !r.success).length;
-      const params = {success: failed_ === 0,
+      const params = {
+        success: failed_ === 0,
         passed: res.filter((r) => r.success).length,
         skipped: res.filter((r) => r.skipped).length,
         failed: failed_,
-        type: 'package', packageName, category: cat};
+        type: 'package', packageName, category: cat
+      };
       grok.log.usage(`${packageName}: ${cat}`,
         params, `category-package ${packageName}: ${cat}`);
     }
     if (!options.category) {
-      const params = {success: failed.length === 0, passed: successful, skipped, failed: failed.length,
-        type: 'package', packageName};
+      const params = {
+        success: failed.length === 0, passed: successful, skipped, failed: failed.length,
+        type: 'package', packageName
+      };
       grok.log.usage(packageName, params, `package-package ${packageName}`);
     }
     if (options.testContext.report) {
@@ -392,7 +421,14 @@ function getResult(x: any) {
 }
 
 async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
-  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean };
+  let r: {
+    category?: string,
+    name?: string,
+    success: boolean,
+    result: any,
+    ms: number,
+    skipped: boolean
+  };
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
   const skipReason = filter ? 'skipped' : t.options?.skipReason;
@@ -404,7 +440,7 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     } else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
-        categoryTimeout ? categoryTimeout : t.options?.timeout!;
+      categoryTimeout ? categoryTimeout : t.options?.timeout!;
       timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
       r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
@@ -417,8 +453,10 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   r.category = t.category;
   r.name = t.name;
   if (!filter) {
-    let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
-      'type': 'package', packageName, 'category': t.category, 'test': t.name};
+    let params = {
+      'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
+      'type': 'package', packageName, 'category': t.category, 'test': t.name
+    };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
       params = {...params, ...res};
@@ -514,7 +552,11 @@ const catDF = DG.DataFrame.fromColumns([DG.Column.fromStrings('col', ['val1', 'v
  * @return {Promise<void>} The test is considered successful if it completes without errors
  */
 export async function testViewer(v: string, df: DG.DataFrame,
-  options?: {detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean}): Promise<void> {
+  options?: {
+    detectSemanticTypes?: boolean,
+    readOnly?: boolean,
+    arbitraryDfTest?: boolean
+  }): Promise<void> {
   if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
   let tv = grok.shell.addTableView(df);
   const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
@@ -528,7 +570,7 @@ export async function testViewer(v: string, df: DG.DataFrame,
     const tag = document.querySelector(selector)?.tagName;
     res.push(Array.from(tv.viewers).length);
     if (!options?.readOnly) {
-      Array.from(df.row(0).cells).forEach((c:any) => c.value = null);
+      Array.from(df.row(0).cells).forEach((c: any) => c.value = null);
       const num = df.rowCount < 20 ? Math.floor(df.rowCount / 2) : 10;
       df.rows.select((row: DG.Row) => row.idx >= 0 && row.idx < num);
       await delay(50);
@@ -540,16 +582,20 @@ export async function testViewer(v: string, df: DG.DataFrame,
       await delay(100);
       tv.dataFrame = df1;
     }
-    let optns: { [p: string]: any };
+    let optns: {
+      [p: string]: any
+    };
     try {
       optns = viewer.getOptions(true).look;
     } catch (err: any) {
+      // @ts-ignore
       throw new Error(`Viewer's .getOptions() error.`, {cause: err});
     }
     let props: DG.Property[];
     try {
       props = viewer.getProperties();
     } catch (err: any) {
+      // @ts-ignore
       throw new Error(`Viewer's .getProperties() error.`, {cause: err});
     }
     const newProps: Record<string, string | boolean> = {};

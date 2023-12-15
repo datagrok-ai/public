@@ -1,0 +1,49 @@
+{
+  "name": "docking",
+  "beta": true,
+  "friendlyName": "Docking",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/bio": "^5.39.10",
+    "@datagrok-libraries/utils": "^4.1.36",
+    "datagrok-api": "^1.17.9",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "rxjs": "^6.5.5",
+    "wu": "latest"
+  },
+  "devDependencies": {
+    "@types/wu": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "debug-docking": "webpack && grok publish ",
+    "release-docking": "webpack && grok publish --release",
+    "build-docking": "webpack",
+    "build": "webpack",
+    "debug-docking-dev": "grok publish dev --rebuild",
+    "release-docking-dev": "grok publish dev --rebuild --release",
+    "debug-docking-local": "grok publish local --rebuild",
+    "release-docking-local": "grok publish local --rebuild --release",
+    "debug-docking-local2": "grok publish local2 --rebuild",
+    "release-docking-local2": "grok publish local2 --rebuild --release",
+    "debug-docking-release.datagrok.ai": "grok publish release.datagrok.ai --rebuild",
+    "release-docking-release.datagrok.ai": "grok publish release.datagrok.ai --rebuild --release",
+    "debug-docking-test.datagrok.ai": "grok publish test.datagrok.ai --rebuild",
+    "release-docking-test.datagrok.ai": "grok publish test.datagrok.ai --rebuild --release",
+    "debug-docking-sandbox": "grok publish sandbox --rebuild",
+    "release-docking-sandbox": "grok publish sandbox --rebuild --release",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
+}

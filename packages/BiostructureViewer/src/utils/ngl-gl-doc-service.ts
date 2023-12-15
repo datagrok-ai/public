@@ -1,10 +1,11 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {SignalBinding} from 'signals';
 import * as ngl from 'NGL';
 
+import {SignalBinding} from 'signals';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';

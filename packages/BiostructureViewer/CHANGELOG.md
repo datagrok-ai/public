@@ -17,6 +17,7 @@
 * Add layout to Demo Docking Conformations
 * Add AutoDockService
 * Add Molecule3D detector for pdbqt units
+* Split to Docking package
 
 ### Bug fixes
 

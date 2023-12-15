@@ -38,6 +38,7 @@
     "build-math": "git clean -f -X -d ./src && tsc",
     "build": "git clean -f -X -d ./src && tsc",
     "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
+    "build-all": "npm --prefix ./../../js-api run build && npm run build"
   }
 }

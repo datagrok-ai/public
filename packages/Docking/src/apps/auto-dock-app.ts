@@ -7,14 +7,11 @@ import {BiostructureProps, IBiostructureViewer,} from '@datagrok-libraries/bio/s
 import {
   IAutoDockService, getAutoDockService, GridSize,
 } from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
-import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-import {PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
-
-import {_package, getPdbHelper} from '../package';
-
+import {_package} from '../package';
 
 export type AutoDockDataType = {
   ligandDf: DG.DataFrame,
@@ -63,7 +60,7 @@ export class AutoDockApp {
 
   // -- Data --
 
-  private data: AutoDockDataType;
+  private data!: AutoDockDataType;
 
   async setData(data: AutoDockDataType): Promise<void> {
     this.data = data;
@@ -73,9 +70,9 @@ export class AutoDockApp {
 
   // -- View --
 
-  private view: DG.TableView;
-  private targetViewer: TargetViewerType;
-  private posesGrid: DG.Grid;
+  private view!: DG.TableView;
+  private targetViewer!: TargetViewerType;
+  private posesGrid!: DG.Grid;
 
   async buildView(): Promise<void> {
     this.view = grok.shell.addTableView(this.data.ligandDf);
@@ -88,8 +85,8 @@ export class AutoDockApp {
 
     this.posesGrid = await poseDf.plot.fromType(DG.VIEWER.GRID, {}) as DG.Grid;
     this.targetViewer = await poseDf.plot.fromType('Biostructure', {
-      [msvPROPS.dataJson]: BiostructureDataJson.fromData(this.data.receptor),
-      [msvPROPS.ligandColumnName]: this.poseColName,
+      dataJson: BiostructureDataJson.fromData(this.data.receptor),
+      ligandColumnName: this.poseColName,
     }) as unknown as TargetViewerType;
     const k = 42;
 
@@ -112,8 +109,8 @@ export class AutoDockApp {
     }
   }
 
-  private runBtn: HTMLButtonElement;
-  private downloadPosesBtn: HTMLButtonElement;
+  private runBtn!: HTMLButtonElement;
+  private downloadPosesBtn!: HTMLButtonElement;
 
   setRibbonPanels(): void {
     const runIcon = ui.iconFA('play');

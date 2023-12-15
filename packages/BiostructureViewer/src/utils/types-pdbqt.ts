@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {AtomBase, AtomCoordsBase, AtomTerBase} from './types-base';
-import {IPdbAtomTer, IPdbqtAtomCoords, IPdbqtAtomTer} from './types';
-import {PdbAtomCoords, PdbAtomTer} from './types-pdb';
+import {AtomBase, AtomCoordsBase, AtomTerBase} from '@datagrok-libraries/bio/src/pdb/format/types-base';
+import {IPdbAtomTer, IPdbqtAtomCoords, IPdbqtAtomTer} from '@datagrok-libraries/bio/src/pdb/format/types';
+import {PdbAtomCoords, PdbAtomTer} from '@datagrok-libraries/bio/src/pdb/format/types-pdb';
 
 export type VinaResultType = {
   affinity: number,

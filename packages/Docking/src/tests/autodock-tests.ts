@@ -5,9 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {getAutoDockService, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package} from '../package-test';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 
 category('AutoDock', () => {

@@ -1,13 +1,17 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
+
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {IPdbqtAtomBase} from './types';
-import {PdbqtAtomCoords, PdbqtAtomTer, VinaResultType} from './types-pdbqt';
-import {IMPORT} from '../../consts-import';
+import {IPdbqtAtomBase} from '@datagrok-libraries/bio/src/pdb/format/types';
 
-import {_package} from '../../package';
+import {PdbqtAtomCoords, PdbqtAtomTer, VinaResultType} from './types-pdbqt';
+
+import {_package} from '../package';
+import {IMPORT} from '../consts-import';
 
 
 export class PdbqtBranch {
@@ -94,7 +98,9 @@ export class PdbqtBranch {
 const mantissaReS = '[+-]?[\\d]*(\\.\\d+)?';
 const orderReS = 'e[+-]\\d+';
 const floatReS = `${mantissaReS}(${orderReS})?`;
-const pdbqtUserTemplates: { [p: string]: RegExp } = {
+const pdbqtUserTemplates: {
+  [p: string]: RegExp
+} = {
   affinity: new RegExp(`Estimated Free Energy of Binding *= *(${floatReS}) *kcal\/mol`),
   intermolecular: new RegExp(`\\(1\\) *Final Intermolecular Energy *= *(${floatReS}) *kcal\/mol`),
   electrostatic: new RegExp(`Electrostatic Energy *= *(${floatReS}) *kcal\/mol`),
@@ -106,19 +112,19 @@ const pdbqtUserTemplates: { [p: string]: RegExp } = {
 };
 
 export class PdbqtModel extends PdbqtBranch {
-  name: string;
+  name!: string;
   userList: string[] = [];
-  root: PdbqtAtomCoords[];
-  vinaResult: VinaResultType;
+  root!: PdbqtAtomCoords[];
+  vinaResult!: VinaResultType;
 
-  affinity: number;
-  intermolecular: number;
-  electrostatic: number;
-  ligandFixed: number;
-  ligandMoving: number;
-  totalInternal: number;
-  torsionalFree: number;
-  unboundSystems: number;
+  affinity!: number;
+  intermolecular!: number;
+  electrostatic!: number;
+  ligandFixed!: number;
+  ligandMoving!: number;
+  totalInternal!: number;
+  torsionalFree!: number;
+  unboundSystems!: number;
 
   private _torsdof = 0;
   public get torsdof(): number { return this._torsdof; }
@@ -347,6 +353,7 @@ export class Pdbqt {
             throw new Error(`Pdbqt unsupported line #${lineI} '${line}'.`);
         }
       } catch (err: any) {
+        // @ts-ignore
         throw new Error(`Error on pdbqt line #${lineI} '${line}'.`, {cause: err});
       }
     }

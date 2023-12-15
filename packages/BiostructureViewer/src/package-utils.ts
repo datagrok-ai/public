@@ -37,7 +37,6 @@ export class BsvPackage extends DG.Package {
 // -- _getNglGlService, _getPdbHelper--
 
 type BsvWindowType = Window & {
-  $pdbHelper?: IPdbHelper,
   $nglGlService?: NglGlServiceBase,
 };
 declare const window: BsvWindowType;
@@ -49,13 +48,4 @@ export function _getNglGlService() {
   }
 
   return window.$nglGlService;
-}
-
-export async function _getPdbHelper(): Promise<IPdbHelper> {
-  if (!(window.$pdbHelper)) {
-    const ph = await PdbHelper.getInstance(); // getPdbHelper
-    window.$pdbHelper = ph;
-  }
-
-  return window.$pdbHelper;
 }

@@ -66,7 +66,7 @@ export interface IAutoDockService {
 }
 
 export async function getAutoDockService(): Promise<IAutoDockService> {
-  const packageName: string = 'BiostructureViewer';
+  const packageName: string = 'Docking';
   const funcName: string = 'getAutoDockService';
   const funcList = DG.Func.find({package: packageName, name: funcName});
   if (funcList.length === 0)

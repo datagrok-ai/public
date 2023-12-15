@@ -113,3 +113,9 @@ declare module 'datagrok-api/dg' {
     fromType(viewerType: 'Biostructure', options: Partial<BiostructureProps>): Promise<DG.Viewer<BiostructureProps> & IBiostructureViewer>;
   }
 }
+
+export async function viewBiostructure(content: string, format: string = 'pdb', name?: string): Promise<void> {
+  const packageName: string = 'BiostructureViewer';
+  const funcName: string = 'viewBiostructure';
+  await grok.functions.call(`${packageName}:${funcName}`, {content, format, name});
+}

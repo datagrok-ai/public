@@ -95,7 +95,7 @@
     "test-dev": "grok test --host dev",
     "test-localhost": "grok test --host localhost",
     "analyze": "webpack --profile --json > ./stats.json && npx webpack-bundle-analyzer ./stats.json",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Developers"

@@ -6,11 +6,10 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {viewBiostructure} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
 import {Pdbqt} from './pdbqt-parser';
-import {IMPORT} from '../../consts-import';
-import {PROPS as msvPROPS} from '../../viewers/molstar-viewer/molstar-viewer';
-import {viewBiostructure} from '../../viewers/view-preview';
+import {IMPORT} from '../consts-import';
 
 
 export async function importPdbqtUI(fileContent: string, test: boolean = false): Promise<DG.DataFrame[]> {
@@ -45,8 +44,8 @@ export async function importPdbqtUI(fileContent: string, test: boolean = false):
           const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
           const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
           const viewer = await df.plot.fromType('Biostructure', {
-            [msvPROPS.dataJson]: BiostructureDataJson.fromData(data),
-            [msvPROPS.ligandColumnName]: molColName,
+            dataJson: BiostructureDataJson.fromData(data),
+            ligandColumnName: molColName,
           });
           view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Docking target biostructure', 0.4);
         })

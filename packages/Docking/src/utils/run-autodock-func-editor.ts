@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {_package} from '../package';
 
 export enum INs {
@@ -13,11 +14,11 @@ export enum INs {
 
 export class RunAutodockFuncEditor {
   inputs = new class {
-    [INs.receptor]: DG.InputBase<DG.FileInfo | null>;
-    [INs.gridParams]: DG.InputBase<DG.FileInfo | null>;
-    [INs.gridParamsAuto]: DG.InputBase<boolean>;
-    [INs.ligandTable]: DG.InputBase<DG.DataFrame | null>;
-    [INs.ligandColumn]: DG.ChoiceInput<DG.Column | null>;
+    [INs.receptor]!: DG.InputBase<DG.FileInfo | null>;
+    [INs.gridParams]!: DG.InputBase<DG.FileInfo | null>;
+    [INs.gridParamsAuto]!: DG.InputBase<boolean>;
+    [INs.ligandTable]!: DG.InputBase<DG.DataFrame | null>;
+    [INs.ligandColumn]!: DG.ChoiceInput<DG.Column | null>;
   }();
 
   constructor(

@@ -26,6 +26,8 @@
     "wu": "latest"
   },
   "devDependencies": {
+    "@types/three": "^0.159.0",
+    "@types/signals": "1.0.1",
     "@types/uuid": "^9.0.1",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",

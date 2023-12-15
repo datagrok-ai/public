@@ -14,6 +14,7 @@ import {DockerContainerStatus, awaitStatus} from '@datagrok-libraries/bio/src/ut
 import {_package, getAutoDockService} from '../package';
 import {DockerContainer} from 'datagrok-api/dg';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {getPdbqtHelper, IPdbqtHelper} from '@datagrok-libraries/bio/src/pdb/pdbqt-helper';
 
 namespace Forms {
   export type run = {
@@ -54,7 +55,7 @@ dielectric -0.1465                                  # <0, AD4 distance-dep.diel;
 export class AutoDockService implements IAutoDockService {
   private readonly dcName: string;
   private dc!: DG.DockerContainer;
-  private ph: IPdbHelper;
+  private ph!: IPdbqtHelper;
 
   constructor() {
     this.dcName = `${_package.name.toLowerCase()}-autodock`;
@@ -96,7 +97,7 @@ export class AutoDockService implements IAutoDockService {
     [this.dc, this.ph] = await Promise.all([
       // returns docker container with status not actual soon
       grok.dapi.docker.dockerContainers.filter(this.dcName).first(),
-      getPdbHelper()
+      getPdbqtHelper()
     ]);
     if (!this.dc)
       throw new Error(`AutoDock docker container not found '${this.dcName}'.`);

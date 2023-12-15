@@ -22,6 +22,7 @@ export async function demoBio01aUI() {
   let _spViewer: DG.ScatterPlotViewer;
 
   const dimRedMethod: string = 'UMAP';
+  const activityColName = 'activity';
 
   try {
     const demoScript = new DemoScript(
@@ -48,6 +49,7 @@ export async function demoBio01aUI() {
       })
       .step('Build sequence space', async () => {
         _spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
+        _spViewer.setOptions({color: activityColName});
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
         delay: 2000,
@@ -66,16 +68,13 @@ export async function demoBio01aUI() {
         delay: 2000,
       })
       .step('Select a sequence', async () => {
-        df.selection.init((idx: number) => [15].includes(idx));
+        df.selection.set(65, true);
       }, {
         description: `Handling selection of data frame row reflecting on linked viewers.`,
         delay: 2000,
       })
       .step('Select a bunch of sequences', async () => {
-        const seqIdCol: DG.Column<string> = df.getCol('sequence_id');
-        df.selection.init((rowI: number) => {
-          return ['c0_seq120', 'c0_seq105', 'c0_seq121', 'c0_seq93'].includes(seqIdCol.get(rowI)!);
-        });
+        [67, 72, 77, 82, 83, 84, 85, 91, 93].forEach((idx) => df.selection.set(idx, true));
         df.currentRowIdx = 27;
       }, {
         // eslint-disable-next-line max-len
