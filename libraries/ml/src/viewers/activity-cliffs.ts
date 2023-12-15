@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {debounceTime} from 'rxjs/operators';
 import {getDistanceFromSimilarity, getSimilarityFromDistance} from '../distance-metrics-methods';
 import {Subject} from 'rxjs';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
@@ -11,6 +12,7 @@ import {BitArrayMetrics, isBitArrayMetric} from '../typed-metrics/typed-metrics'
 import {DistanceMatrix, dmLinearIndex} from '../distance-matrix';
 import { SparseMatrixResult, SparseMatrixService } from '../distance-matrix/sparse-matrix-service';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer} from '@datagrok-libraries/utils/src/render-lines-on-sp';
 
 export let activityCliffsIdx = 0;
 
@@ -26,16 +28,8 @@ export const enum TEMPS{
   cliffsDfGrid = '.cliffsDfGrid',
 }
 
-export interface ILine {
-  id: number;
-  mols: number[];
-  selected: boolean;
-  a: number[]; // [x, y]
-  b: number[]; // [x, y]
-}
-
 interface IRenderedLines {
-  lines: ILine[];
+  lines: ILineSeries;
   linesDf: DG.DataFrame;
 }
 
@@ -55,8 +49,8 @@ export interface ISequenceSpaceResult {
 export type SequenceSpaceFunc = (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>;
 
 export interface ITooltipAndPanelParams {
-  cashedData: any,
-  line: ILine,
+  lineId: number,
+  points: number[],
   df: DG.DataFrame,
   seqCol: DG.Column,
   activityCol: DG.Column,
@@ -99,12 +93,10 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
   const dimensionalityReduceCol = encodedCol ?? seqCol;
-  let zoom = false;
-  let ignoreSelectionChange = false;
-  const cashedLinesData: any = {};
   // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let timer: NodeJS.Timeout;
+  let clickedSp = false;
 
   const seqSpaceParams = {
     seqCol: dimensionalityReduceCol,
@@ -154,14 +146,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     cliffsMetrics.n2, axesNames, activities);
   df.columns.add(sali);
 
-  const cliffCol: DG.Column = getCliffsBooleanCol(df, cliffsMetrics.cliffsMolIds);
-  df.columns.add(cliffCol);
+  const cliffsBitSet: DG.BitSet = getCliffsBitset(df, cliffsMetrics.cliffsMolIds);
 
   const saliMinMax = getSaliMinMax(cliffsMetrics.saliVals);
   const saliOpacityCoef = 0.8 / (saliMinMax.max - saliMinMax.min);
 
   const view = grok.shell.getTableView(df.name);
-  view.grid.columns.byName(cliffCol.name)!.visible = false;
   const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -177,7 +167,11 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   }) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
-  const linesRes = createLines(cliffsMetrics, seqCol, activities, semType, tags);
+  const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
+
+  //creating scatter plot lines renderer
+  const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
+    axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);
 
   const linesDfGrid = linesGridFunc ?
     linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
@@ -195,12 +189,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   switch inputs on other viewers are disabled */
   const filterCliffsButton = ui.switchInput(`Show only cliffs`, false, () => {
     if (filterCliffsButton.value) {
-      sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, cliffCol.name);
-      df.rows.match({[cliffCol.name]: true}).filter();
-      filterCliffsSubj.next(cliffCol.name);
+      sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, axesNames[0]);
+      df.filter.and(cliffsBitSet);
+      filterCliffsSubj.next(axesNames[0]);
     } else {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, '');
-      df.filter.setAll(true, true);
+      df.filter.setAll(true);
       filterCliffsSubj.next('');
     }
   });
@@ -208,8 +202,23 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   sp.root.append(filterCliffsButton.root);
 
   filterCliffsSubj.subscribe((s: string) => {
-    filterCliffsButton.enabled = s !== '' ? s !== cliffCol.name ? false : true : true;
+    filterCliffsButton.enabled = s !== '' ? s !== axesNames[0] ? false : true : true;
   });
+
+  //need to apply filtering by cliffs on each d4-before-draw-scene since redrawing scatter plot on zoom or move resets the filter 
+  let cliffsFilterApplied = false;
+  sp.onEvent('d4-before-draw-scene')
+    .subscribe((_: any) => {
+      if (!cliffsFilterApplied) {
+        if (filterCliffsButton.value) {
+          setTimeout(() => {df.filter.and(cliffsBitSet)}, 100);
+          cliffsFilterApplied = true;
+        }
+      } else {
+        cliffsFilterApplied = false;
+      }
+    }); 
+    
 
   //closing docked grid when viewer is closed
   const viewerClosedSub = grok.events.onViewerClosed.subscribe((v) => {
@@ -222,118 +231,107 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   });
   view.subs.push(viewerClosedSub);
 
-
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
-    zoom = true;
-    const currentMolIdx = linesRes.linesDf.currentCol && linesRes.linesDf.currentCol.name === LINES_DF_MOL_COLS_NAMES[1] ? 1 : 0;
-    const line = linesRes.linesDf.currentRowIdx !== -1 ? linesRes.lines[linesRes.linesDf.currentRowIdx] : null;
-    sp.dataFrame.currentRowIdx = line ? line.mols[currentMolIdx] : -1;
-    sp.dataFrame.filter.set(0, !linesRes.lines[0].selected); //calling filter to force scatter plot re-rendering
-    sp.dataFrame.filter.set(0, linesRes.lines[0].selected);
-    if (line) {
+    for (let i = 0; i < linesRes.linesDf.rowCount; i++)
+      linesRes.lines.widths![i] = i === linesRes.linesDf.currentRowIdx ? 3 : 1;
+    spEditor.linesToRender = linesRes.lines;
+    const molIdsArray = linesRes.linesDf.currentCol && linesRes.linesDf.currentCol.name === LINES_DF_MOL_COLS_NAMES[1] ?
+      linesRes.lines.to : linesRes.lines.from;
+    const lineIdx = linesRes.linesDf.currentRowIdx !== -1 ? linesRes.linesDf.currentRowIdx : null;
+    sp.dataFrame.currentRowIdx = lineIdx ? molIdsArray[lineIdx] : -1;
+    if (lineIdx !== null) {
+      const currentLineId = linesRes.linesDf.currentRowIdx;
+      spEditor.currentLineId = currentLineId;
+      const { zoomLeft, zoomRight, zoomTop, zoomBottom } = getZoomCoordinates(
+        sp.viewport.width,
+        sp.viewport.height,
+        sp.dataFrame.get(axesNames[0], linesRes.lines.from[currentLineId]),
+        sp.dataFrame.get(axesNames[1], linesRes.lines.from[currentLineId]),
+        sp.dataFrame.get(axesNames[0], linesRes.lines.to[currentLineId]),
+        sp.dataFrame.get(axesNames[1], linesRes.lines.to[currentLineId]),
+      );
+      sp.zoom(zoomLeft,
+        zoomTop,
+        zoomRight,
+        zoomBottom);
+      if (filterCliffsButton.value)
+        df.filter.and(cliffsBitSet);
+      else
+        if (filterCliffsButton.enabled === true)
+          df.filter.setAll(true);
       setTimeout(() => {
-        updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities,
-          linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, line.id), propertyPanelFunc);
+        updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
+          seqCol, activities, linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, lineIdx), propertyPanelFunc);
         const order = sp.dataFrame.getSortedOrder(view.grid.sortByColumns, view.grid.sortTypes);
         view.grid.scrollToCell(seqCol.name, order.indexOf(sp.dataFrame.currentRowIdx));
       }, 1000);
     }
   });
 
-  linesRes.linesDf.onSelectionChanged.subscribe((_: any) => {
-    if (linesRes.linesDf.selection.anyTrue === false) { //case when selection is reset by pushing Esc
-      linesRes.lines.forEach((l) => { l.selected = false; });
-    } else {
-      if (linesRes.linesDf.mouseOverRowIdx !== -1) {
-        const line = linesRes.lines[linesRes.linesDf.mouseOverRowIdx];
-        line.selected = !line.selected;
+  const updateParentDfSelectionAndLineColors = () => {
+    const selection = DG.BitSet.create(df.rowCount);
+    for (let i = 0; i < linesRes.linesDf.rowCount; i++) {
+      const selected = linesRes.linesDf.selection.get(i);
+      if (selected) {
+        selection.set(linesRes.lines.from[i], true);
+        selection.set(linesRes.lines.to[i], true);
       }
+      linesRes.lines.colors![i] = selected ? '255,255,0' : '0,128,0';
     }
-    setTimeout(() => {
-      const selection = DG.BitSet.create(df.rowCount);
-      linesRes.lines.forEach((l) => {
-        if (l.selected) {
-          l.mols.forEach((m) => {
-            selection.set(m, l.selected, true);
-          });
-        }
-      });
-      df.selection.copyFrom(selection);
-      view.grid.invalidate();
-    }, 300); //timeout is required because of resetting selection by clicking on scatter plot. First selection is reset and after it is set again using by this method
+    df.selection.copyFrom(selection);
+    spEditor.linesToRender = linesRes.lines;
+  }
+
+  const resetSelectionOnEsc = (dataframe: DG.DataFrame) => {
+    dataframe.selection.setAll(false);
+    for (let i = 0; i < linesRes.lines.colors!.length; i++)
+      linesRes.lines.colors![i] = '0,128,0' //reset color to default for all lines
+    spEditor.linesToRender = linesRes.lines;
+  }
+
+  linesRes.linesDf.onSelectionChanged.subscribe((e: any) => {
+    setTimeout(() => updateParentDfSelectionAndLineColors(), 100);
   });
 
   df.onSelectionChanged.subscribe((e: any) => {
-    if (ignoreSelectionChange) {
-      ignoreSelectionChange = false;
-    } else {
-      if (df.selection.anyTrue === false && typeof e === 'number') { //catching event when initial df selection is reset by pushing Esc
-        linesRes.lines.forEach((l) => { l.selected = false; });
-        linesDfGrid.dataFrame.selection.setAll(false, false);
-        linesDfGrid.invalidate();
-      }
-    }
-  });
-
-  canvas.addEventListener('mousemove', function(event: MouseEvent) {
-    clearTimeout(timer);
-    timer = global.setTimeout(function() {
-      const line = checkCursorOnLine(event, canvas, linesRes.lines);
-      if (line && df.mouseOverRowIdx === -1) {
-        ui.tooltip.show(tooltipFunc({cashedData: cashedLinesData, line: line, df: df, seqCol: seqCol,
-          activityCol: activities}), event.clientX, event.clientY);
-      }
-    }, 500);
-  });
-
-  canvas.addEventListener('mousedown', function(event: MouseEvent) {
-    ignoreSelectionChange = true; //clicking on a scatter plot leads to selection reset. Variable is required to prevent from resetting (is used in df.onSelectionChanged.subscribe)
-    const line = checkCursorOnLine(event, canvas, linesRes.lines);
-    if (line && df.mouseOverRowIdx === -1) {
-      if (event.ctrlKey) {
-        line.selected = !line.selected;
-        linesRes.linesDf.selection.set(line.id, line.selected);
-      } else {
-        if (linesRes.linesDf.currentRowIdx !== line.id) {
-          linesRes.linesDf.currentRowIdx = line.id;
-          df.currentRowIdx = line.mols[0];
-          df.filter.set(0, !linesRes.lines[0].selected); //calling filter to force scatter plot re-rendering
-          df.filter.set(0, linesRes.lines[0].selected);
-        }
-      }
-      const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
-      linesDfGrid.scrollToCell(LINES_DF_MOL_COLS_NAMES[0], order.indexOf(line.id));
-    }
-  });
-
-  sp.onEvent('d4-before-draw-scene')
-    .subscribe((_: any) => {
-      const lines = renderLines(sp,
-        axesNames[0], axesNames[1], linesRes, cliffsMetrics.saliVals, saliOpacityCoef, saliMinMax.min);
-      if (zoom) {
-        const currentLine = lines[linesRes.linesDf.currentRowIdx];
-        setTimeout(()=> {
-          const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
-            sp.viewport.width,
-            sp.viewport.height,
-            sp.dataFrame.get(axesNames[0], currentLine.mols[0]),
-            sp.dataFrame.get(axesNames[1], currentLine.mols[0]),
-            sp.dataFrame.get(axesNames[0], currentLine.mols[1]),
-            sp.dataFrame.get(axesNames[1], currentLine.mols[1]),
-          );
-          sp.zoom(zoomLeft,
-            zoomTop,
-            zoomRight,
-            zoomBottom);
-        }, 300);
-        zoom = false;
-      }
-      if (filterCliffsButton.value)
-        df.rows.match({[cliffCol.name]: true}).filter();
+    if (df.selection.anyTrue === false && typeof e === 'number') { //catching event when initial df selection is reset by pushing Esc
+      if (!clickedSp)
+        resetSelectionOnEsc(linesDfGrid.dataFrame);
       else
-      if (filterCliffsButton.enabled === true)
-        df.filter.setAll(true, false);
-    });
+       clickedSp = false;
+    }
+  });
+
+  spEditor.lineClicked.subscribe((event: MouseOverLineEvent) => {
+    clickedSp = true;
+    spEditor.currentLineId = event.id;
+    if (event.id !== -1) {
+      const savedSelection = linesRes.linesDf.selection.clone(); 
+      setTimeout(() => { //clicking on a scatter plot leads to selection reset, thus we need to set selection after a little timeout 
+        if (event.event.ctrlKey) {
+            savedSelection.set(event.id, !savedSelection.get(event.id));
+            linesRes.linesDf.selection.copyFrom(savedSelection);
+        } else {
+          if (linesRes.linesDf.currentRowIdx !== event.id) {
+            linesRes.linesDf.currentRowIdx = event.id;
+            df.currentRowIdx = linesRes.lines.from[event.id];
+          }
+          linesRes.linesDf.selection.copyFrom(savedSelection);
+        }
+        const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
+        linesDfGrid.scrollToCell(LINES_DF_MOL_COLS_NAMES[0], order.indexOf(event.id));
+       }, 500);
+    }
+  });
+
+
+  spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
+    if (event.id !== -1 && df.mouseOverRowIdx === -1) {
+      ui.tooltip.show(tooltipFunc({lineId: event.id, 
+        points: [linesRes.lines.from[event.id], linesRes.lines.to[event.id]], df: df, seqCol: seqCol,
+        activityCol: activities}), event.x, event.y);
+    }
+  });
 
   sp.addProperty('similarityLimit', 'double', similarityLimit);
   acc = createPopertyPanel();
@@ -436,11 +434,11 @@ function createPopertyPanel(): DG.Accordion {
   return acc;
 }
 
-function updatePropertyPanel(df: DG.DataFrame, acc: DG.Accordion, cashedData: any, line: ILine, seqCol: DG.Column,
-  activities: DG.Column, sali: number, propPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement) {
+function updatePropertyPanel(df: DG.DataFrame, acc: DG.Accordion, pointFrom: number, pointTo: number, lineId: number,
+  seqCol: DG.Column, activities: DG.Column, sali: number, propPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement) {
   const panel = acc.getPane('Cliff Details');
   ui.empty(panel.root);
-  const panelElement = propPanelFunc({cashedData: cashedData, line: line, df: df, seqCol: seqCol,
+  const panelElement = propPanelFunc({points: [pointFrom, pointTo], lineId, df: df, seqCol: seqCol,
     activityCol: activities, sali: sali});
   panel.root.append(panelElement);
   setTimeout(() => {
@@ -465,64 +463,31 @@ function getZoomCoordinates(W0: number, H0: number, x1: number, y1: number, x2: 
   return {zoomLeft: zoomLeft, zoomRight: zoomRight, zoomTop: zoomTop, zoomBottom: zoomBottom};
 }
 
-function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | null {
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  let closestLine = null;
-  let minDist = 0;
-  for (const line of lines) {
-    const dist =
-      Math.abs(Math.hypot(line.a[0] - x, line.a[1] - y) +
-      Math.hypot(line.b[0] - x, line.b[1] - y) - Math.hypot(line.a[0] - line.b[0], line.a[1] - line.b[1]));
-    if ((!minDist && dist < 2) || dist < minDist) {
-      minDist = dist;
-      closestLine = line;
-    }
-  }
-  return closestLine;
-}
 
-function renderLines(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, linesRes: IRenderedLines,
-  saliVals: number[], saliOpacityCoef: number, saliMin: number): ILine [] {
-  const lines = linesRes.lines;
-  const canvas = (sp.getInfo() as {[index: string] : any})['canvas'];
-  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-  const x = sp.dataFrame!.columns.byName(xAxis);
-  const y = sp.dataFrame!.columns.byName(yAxis);
-  for (let i = 0; i < lines.length; i++) {
-    const pointFrom = sp.worldToScreen(x.get(lines[i].mols[0]), y.get(lines[i].mols[0]));
-    const pointTo = sp.worldToScreen(x.get(lines[i].mols[1]), y.get(lines[i].mols[1]));
-    lines[i].a = [pointFrom.x, pointFrom.y];
-    lines[i].b = [pointTo.x, pointTo.y];
-    const line = new Path2D();
-    line.moveTo(lines[i].a[0], lines[i].a[1]);
-    const color = lines[i].selected ? '255,255,0' : '0,128,0';
-    const opacity = saliVals[i] === Infinity ? 1 : 0.2 + (saliVals[i] - saliMin) * saliOpacityCoef;
-    ctx.strokeStyle = `rgba(${color},${opacity})`;
-    ctx.lineWidth = lines[i].id === linesRes.linesDf.currentRowIdx ? 3 : 1;
-    line.lineTo(lines[i].b[0], lines[i].b[1]);
-    ctx.stroke(line);
+function createLines(df: DG.DataFrame, params: IActivityCliffsMetrics, seq: DG.Column, activities: DG.Column, semType: string,
+  tags: {[index: string]: string}, saliMinMax: ISaliLims, saliOpacityCoef: number) : IRenderedLines {
+  const lines: ILineSeries = {
+    from: new Uint32Array(params.n1.length), 
+    to: new Uint32Array(params.n1.length),
+    opacities: new Float32Array(params.n1.length),
+    colors: new Array<string>(params.n1.length),
+    widths: new Float32Array(params.n1.length)
+  };
+  for (let i = 0; i < params.n1.length; i++) {   
+    lines.from[i] = params.n1[i];
+    lines.to[i] = params.n2[i];
+    lines.opacities![i] = params.saliVals[i] === Infinity ? 1 : 0.2 + (params.saliVals[i] - saliMinMax.min) * saliOpacityCoef;
+    lines.colors![i] = df.selection.get(lines.from[i]) && df.selection.get(lines.to[i]) ? '255,255,0' : '0,128,0';
+    lines.widths![i] = 1;
   }
-  return lines;
-}
-
-function createLines(params: IActivityCliffsMetrics, seq: DG.Column, activities: DG.Column, semType: string,
-  tags: {[index: string]: string}) : IRenderedLines {
-  const lines: ILine[] = new Array(params.n1.length).fill(null);
-  for (let i = 0; i < params.n1.length; i++) {
-    const num1 = params.n1[i];
-    const num2 = params.n2[i];
-    lines[i] = ({id: i, mols: [num1, num2], selected: false, a: [], b: []});
-  }
-  const linesDf = DG.DataFrame.create(lines.length);
+  const linesDf = DG.DataFrame.create(lines.from.length);
   LINES_DF_MOL_COLS_NAMES.forEach((it, idx) => {
-    linesDf.columns.addNewString(it).init((i: number) => seq.get(lines[i].mols[idx]));
+    linesDf.columns.addNewString(it).init((i: number) => seq.get(idx === 0 ? lines.from[i] : lines.to[i]));
     setTags(linesDf.col(it)!, tags);
     linesDf.col(it)!.semType = semType;
   });
   linesDf.columns.addNewFloat(LINES_DF_ACT_DIFF_COL_NAME)
-    .init((i: number) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
+    .init((i: number) => Math.abs(activities.get(lines.from[i]) - activities.get(lines.to[i])));
   linesDf.columns.addNewInt(LINES_DF_LINE_IND_COL_NAME).init((i: number) => i);
   linesDf.columns.addNewFloat(LINES_DF_SALI_COL_NAME).init((i: number) => params.saliVals[i]);
   linesDf.columns.addNewFloat(LINES_DF_SIM_COL_NAME).init((i: number) => params.simVals[i]);
@@ -566,4 +531,11 @@ export function getCliffsBooleanCol(df: DG.DataFrame, ids: Set<number>): DG.Colu
   const colNameInd = df.columns.names().filter((it: string) => it.includes(colname)).length + 1;
   const newColName = `${colname}_${colNameInd}`;
   return DG.Column.bool(newColName, df.rowCount).init((i) => ids.has(i));
+}
+
+export function getCliffsBitset(df: DG.DataFrame, ids: Set<number>): DG.BitSet {
+  const bitset = DG.BitSet.create(df.rowCount);
+  for (let i = 0; i < df.rowCount; i++)
+    bitset.set(i, ids.has(i));
+  return bitset;
 }
