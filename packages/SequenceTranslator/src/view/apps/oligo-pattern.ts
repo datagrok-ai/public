@@ -447,7 +447,7 @@ export class PatternLayoutHandler {
 
     // todo: rename to strandColumnInput
     const inputStrandColumn = Object.fromEntries(STRANDS.map((strand) => {
-      const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
+      const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
         validateStrandColumn(colName, strand);
         strandVar[strand] = colName;
       });
@@ -552,7 +552,12 @@ export class PatternLayoutHandler {
 
     function getTableInput(tableList: DG.DataFrame[]): DG.InputBase {
       console.log(`tableList:`, tableList);
-      const tableInput = ui.tableInput('Tables', tableList[0], tableList, (table: DG.DataFrame) => {
+      const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
+        const table = tableInput.value;
+        if (table === null) {
+          console.warn('Table is null');
+          return;
+        }
         console.log(`table:`, table);
         console.log(`cols:`, table.columns);
         console.log(`names:`, table.columns.names());
@@ -563,34 +568,40 @@ export class PatternLayoutHandler {
             strandVar[strand] = colName;
           });
           // $(inputIdColumnDiv).replaceWith(ui.div([inputStrandColumn[strand]]));
-          inputStrandColumnDiv[strand].innerHTML = '';
-          inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
+          console.log(`${strand} input`,inputStrandColumn[strand].root.innerHTML);
+          // $(inputStrandColumnDiv[strand]).replaceWith(ui.divText('ababa'));
+          // $(inputStrandColumnDiv[strand])
+          //   .replaceWith(ui.div([inputStrandColumn[strand]]));
+          inputStrandColumnDiv[strand].innerHTML = ui.divText('ababa').innerHTML;
+          // inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
+          console.log(`${strand} input div`,inputStrandColumnDiv[strand].innerHTML);
         })
 
         // todo: unify with inputStrandColumn
-        console.log(`columns names:`, table);
         const inputIdColumn = ui.choiceInput('ID column', '', table.columns.names(), (colName: string) => {
           validateIdsColumn(colName);
           idVar = colName;
         });
+        console.log('id input', inputIdColumn.root.innerHTML);
         inputIdColumnDiv.innerHTML = '';
         inputIdColumnDiv.append(inputIdColumn.root);
+        console.log('id input div', inputIdColumnDiv.innerHTML);
       });
       return tableInput;
     }
 
-    const tableList = grok.shell.tables;
-    const tableInput = getTableInput(tableList);
+    // const tableList = grok.shell.tables;
+    const tableInput = getTableInput([]);
 
-    function updateInputs(): void {
-      grok.shell.info('Event caught');
-      const tableList = grok.shell.tables;
-      console.log(`newTables:`, tableList);
-      $(tableInput.root).replaceWith(getTableInput(tableList).root);
-    }
+    // function updateInputs(): void {
+    //   grok.shell.info('Event caught');
+    //   const tableList = grok.shell.tables;
+    //   console.log(`newTables:`, tableList);
+    //   $(tableInput.root).replaceWith(getTableInput(tableList).root);
+    // }
 
-    grok.events.onTableAdded.subscribe(() => updateInputs());
-    grok.events.onTableRemoved.subscribe(() => updateInputs());
+    // grok.events.onTableAdded.subscribe(() => updateInputs());
+    // grok.events.onTableRemoved.subscribe(() => updateInputs());
 
 
     // todo: unify with strandVar
