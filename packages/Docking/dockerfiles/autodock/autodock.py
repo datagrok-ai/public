@@ -5,6 +5,8 @@ import tempfile
 import json
 import hashlib
 import re
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
@@ -31,6 +33,79 @@ def run_process(command, folder_path, shell=False):
             os.remove(error_file)
     return returncode, output, error
 
+def run_docking(receptor_name, folder_path, autodock_gpf, ligand_value, ligand_format, ligand_name):
+    ligand_path = '{}.{}'.format(ligand_name, ligand_format)
+
+    with open('{}/{}'.format(folder_path, ligand_path), 'w') as ligand_file:
+        ligand_file.write(ligand_value)
+
+    if 'pdbqt' not in ligand_format:
+        subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path], cwd=folder_path)
+
+    command = [
+        '/opt/autodock-gpu',
+        '--ffile', '{}.maps.fld'.format(receptor_name),
+        '--lfile', '{}.pdbqt'.format(ligand_name),
+        '--nrun', '30',
+        '--resnam', '{}-{}'.format(receptor_name, ligand_name)
+    ]
+
+    return run_process(command, folder_path, False)
+
+def prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, autodock_gpf):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+        with open('{}/{}'.format(folder_path, receptor_path), 'w') as receptor_file:
+            receptor_file.write(receptor_value)
+
+        if 'pdbqt' not in receptor_path:
+            subprocess.call(['prepare_receptor4.py', '-r', receptor_path], cwd=folder_path)
+
+        autogrid_config = prepare_autogrid_config(folder_path, receptor_name, autodock_gpf)
+        subprocess.call(['/usr/local/x86_64Linux2/autogrid4', '-p', autogrid_config, '-l', "{}.autogrid.log".format(receptor_name)], cwd=folder_path)
+
+def convert_dlg_to_pdbqt(folder_path, receptor_name, ligand_name):
+    convert_command = [
+        'cat', '{}-{}.dlg'.format(receptor_name, ligand_name),
+        '|', 'grep', '"^DOCKED: "',
+        '|', 'cut', '-b', '9-', '>', '{}-{}.pdbqt'.format(receptor_name, ligand_name)
+    ]
+
+    return run_process(convert_command, folder_path, True)
+
+def get_receptor_name(autodock_gpf):
+    pattern = r"receptor\s+(\S+\.pdbqt)"
+    match = re.search(pattern, autodock_gpf)
+    return match.group(1)[:-6] if match else None
+
+def process_ligand(i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format):
+    ligand_name = 'ligand{}'.format(i + 1)
+    returncode, gpu_output, gpu_error = run_docking(receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format, ligand_name)
+
+    if returncode != 0:
+        return i, {'error': gpu_output if gpu_output != '' else gpu_error}
+    
+    returncode, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, receptor_name, ligand_name)
+
+    if returncode != 0:
+        return i, {'error': grep_output if grep_output != '' else grep_error}
+
+    with open('{}/{}-{}.pdbqt'.format(folder_path, receptor_name, ligand_name), 'r') as result_file:
+        result_content = result_file.read()
+
+    return i, {'poses': result_content}
+
+def extract_json_values(json_data):
+    receptor_value = json_data.get('receptor', '')
+    receptor_format = json_data.get('receptor_format', '')
+    ligand_value = json_data.get('ligand', '')
+    ligand_format = json_data.get('ligand_format', '')
+    autodock_gpf = json_data.get('autodock_gpf', '')
+    debug_mode = request.args.get('debug', False)
+
+    return receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, debug_mode
+
 @app.route('/check_opencl', methods=['GET'])
 def check_opencl():
     try:
@@ -45,57 +120,23 @@ def check_opencl():
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/autodock/dock_ligand', methods=['POST'])
-def dock():
+def dock_ligand():
     raw_data = request.data
     json_data = json.loads(raw_data)
 
-    receptor_value = json_data.get('receptor', '')
-    receptor_format = json_data.get('receptor_format', '')
-    ligand_value = json_data.get('ligand', '')
-    ligand_format = json_data.get('ligand_format', '')
-    autodock_gpf = json_data.get('autodock_gpf', '')
-    debug_mode = request.args.get('debug', False)
+    receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, debug_mode = extract_json_values(json_data)
 
     folder_name = calculate_hash(receptor_value + autodock_gpf)
     folder_path = os.path.join(os.getcwd(), folder_name)
 
-    pattern = r"receptor\s+(\S+\.pdbqt)"
-    match = re.search(pattern, autodock_gpf)
-    receptor_basename = match.group(1) if match else None
-
-    receptor_name = receptor_basename[:-6]
+    receptor_name = get_receptor_name(autodock_gpf)
     ligand_name = 'ligand'
 
     receptor_path = '{}.{}'.format(receptor_name, receptor_format)
-    ligand_path = '{}.{}'.format(ligand_name, ligand_format)
-    
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        
-        with open('{}/{}'.format(folder_path, receptor_path), 'w') as receptor_file:
-            receptor_file.write(receptor_value)
 
-        if 'pdbqt' not in receptor_path:
-            subprocess.call(['prepare_receptor4.py', '-r', receptor_path], cwd=folder_path)
-        
-        autogrid_config = prepare_autogrid_config(folder_path, receptor_name, autodock_gpf)
-        subprocess.call(['/usr/local/x86_64Linux2/autogrid4', '-p', autogrid_config, '-l', "%s.autogrid.log" % receptor_name], cwd=folder_path)
+    prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, autodock_gpf)
+    returncode, gpu_output, gpu_error = run_docking(receptor_name, folder_path,autodock_gpf, ligand_value, ligand_format, ligand_name)
 
-    with open('{}/{}'.format(folder_path, ligand_path), 'w') as ligand_file:
-        ligand_file.write(ligand_value)
-
-    if 'pdbqt' not in ligand_path:
-        subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path], cwd=folder_path)
-
-    command = [
-        '/opt/autodock-gpu',
-        '--ffile', '{}.maps.fld'.format(receptor_name),
-        '--lfile', '{}.pdbqt'.format(ligand_name),
-        '--nrun', '30',
-        '--resnam', '{}-{}'.format(receptor_name, ligand_name)
-    ]
-
-    returncode, gpu_output, gpu_error = run_process(command, folder_path, False)
     if returncode != 0:
         error = gpu_output if gpu_output != '' else gpu_error
         response = {
@@ -103,13 +144,7 @@ def dock():
         }
         return jsonify(response)
 
-    convert_command = [
-        'cat', '{}-{}.dlg'.format(receptor_name, ligand_name),
-        '|', 'grep', '"^DOCKED: "',
-        '|', 'cut', '-b', '9-', '>', '{}-{}.pdbqt'.format(receptor_name, ligand_name)
-    ]
-
-    returncode, grep_output, grep_error = run_process(convert_command, folder_path, True)
+    returncode, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, receptor_name, ligand_name)
     if returncode != 0:
         error = grep_output if grep_output != '' else grep_error
         response = {
@@ -132,6 +167,31 @@ def dock():
             'grep_error': grep_error
         }
  
+    return jsonify(response)
+
+@app.route('/autodock/dock_list_ligands', methods=['POST'])
+def dock_list_ligands():
+    raw_data = request.data
+    json_data = json.loads(raw_data)
+
+    receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, debug_mode = extract_json_values(json_data)
+
+    folder_name = calculate_hash(receptor_value + autodock_gpf)
+    folder_path = os.path.join(os.getcwd(), folder_name)
+
+    receptor_name = get_receptor_name(autodock_gpf)
+    receptor_path = '{}.{}'.format(receptor_name, receptor_format)
+    prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, autodock_gpf)
+    result_poses = {}
+
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(process_ligand, i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format) for i, ligand_data in enumerate(ligand_value)]
+
+        for future in concurrent.futures.as_completed(futures):
+            i, result = future.result()
+            result_poses[i] = result
+
+    response = {'ligand_results': result_poses}
     return jsonify(response)
 
 if __name__ == '__main__':
