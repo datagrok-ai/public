@@ -695,54 +695,85 @@ export class PatternLayoutHandler {
     }, 'Edit pattern', '');  
 
     strandLengthInput[SS].addCaption('Length');
-    
-    const layout = ui.splitH([
-      ui.box(
-        ui.div([
-          ui.h1('Pattern'),
-          createAsStrand.root,
-          strandLengthInput[SS],
-          strandLengthInput[AS],
-          sequenceBase.root,
-          comment.root,
-          loadPatternDiv,
-          saveAs.root,
-          ui.h1('Convert'),
-          tables.root,
-          inputStrandColumn[SS],
-          inputStrandColumn[AS],
-          inputIdColumn.root,
-          ui.buttonsInput([
-            convertSequenceButton,
-          ]),
-        ], 'ui-form')
-      , {style:{maxWidth:'450px'}}),
-      ui.panel([
+
+    function getLeftSection(): HTMLDivElement {
+      const patternControlsBlock = [
+        ui.h1('Pattern'),
+        createAsStrand.root,
+        strandLengthInput[SS],
+        strandLengthInput[AS],
+        sequenceBase.root,
+        comment.root,
+        loadPatternDiv,
+        saveAs.root,
+      ];
+
+      const convertControlsBlock = [
+        ui.h1('Convert'),
+        tables.root,
+        inputStrandColumn[SS],
+        inputStrandColumn[AS],
+        inputIdColumn.root,
+        ui.buttonsInput([
+          convertSequenceButton,
+        ]),
+      ];
+
+      const leftSection = ui.box(
+          ui.div([
+            ...patternControlsBlock,
+            ...convertControlsBlock,
+          ], 'ui-form')
+        , {style:{maxWidth:'450px'}});
+      return leftSection;
+    }
+
+    function getRightSection(): HTMLDivElement {
+      const svgBlock = [
         svgDiv,
         isEnumerateModificationsDiv,
         ui.divH([
           downloadButton,
           editPattern
         ], {style:{gap:'12px', marginTop:'12px'}}),
-        ui.divH([
-          ui.divV([
-            ui.h1('Sense strand'),
-            inputExample[SS].root,
-            outputExample[SS].root,
-          ], 'ui-block'),
-          ui.divV([
-            ui.h1('Anti sense'),
-            inputExample[AS],
-            outputExample[AS]
-          ], 'ui-block'),
-        ], {style:{gap:'24px', marginTop:'24px'}}),
+      ];
+
+      const translationExample = Object.entries(STRAND_NAME)
+        .map(([strand, strandName]) => {
+          return ui.divV([
+            ui.h1(strandName),
+            inputExample[strand].root,
+            outputExample[strand].root,
+          ], 'ui-block');
+        });
+
+      const strands = [
+        ui.divH(
+          Object.values(translationExample),
+          {style:{gap:'24px', marginTop:'24px'}}
+        ),
+      ];
+
+      const additionalModifications = [
         ui.h1('Additional modifications'),
-            ui.form([
-              terminalModification[SS][FIVE_PRIME],
-              terminalModification[SS][THREE_PRIME],
-            ]),
-            asModificationDiv,
-      ], {style: {overflowX: 'scroll', padding:'12px 24px'}})
+        ui.form([
+          terminalModification[SS][FIVE_PRIME],
+          terminalModification[SS][THREE_PRIME],
+        ]),
+        asModificationDiv,
+      ];
+
+      const rightPanel = ui.panel([
+          ...svgBlock,
+          ...strands,
+          ...additionalModifications,
+        ], {style: {overflowX: 'scroll', padding:'12px 24px'}});
+      return rightPanel;
+    }
+
+    const layout = ui.splitH([
+      getLeftSection(),
+      getRightSection(),
     ], {}, true);
 
     return layout;
