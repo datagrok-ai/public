@@ -377,6 +377,7 @@ export class PatternLayoutHandler {
       const col = tables.value!.getCol(colName);
       if (col.type !== DG.TYPE.INT)
         grok.shell.error('Column should contain integers only');
+      //@ts-ignore
       else if (col.categories.filter((e) => e !== '').length < col.toList().filter((e) => e !== '').length) {
         const duplicates = findDuplicates(col.getRawData());
         ui.dialog('Non-unique IDs')
@@ -549,23 +550,38 @@ export class PatternLayoutHandler {
 
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
 
-    const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
-      STRANDS.forEach((strand) => {
-        inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', t.columns.names(), (colName: string) => {
-          validateStrandColumn(colName, strand);
-          strandVar[strand] = colName;
-        });
-        inputStrandColumnDiv[strand].innerHTML = '';
-        inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
-      })
+    function getTablesInput(): DG.InputBase {
+      const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (df: DG.DataFrame) => {
+        console.log(`table:`, df);
+        console.log(`cols:`, df.columns);
+        console.log(`names:`, df.columns.names());
+        STRANDS.forEach((strand) => {
+          inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', df.columns.names(), (colName: string) => {
+            validateStrandColumn(colName, strand);
+            strandVar[strand] = colName;
+          });
+          // $(inputIdColumnDiv).replaceWith(ui.div([inputStrandColumn[strand]]));
+          inputStrandColumnDiv[strand].innerHTML = '';
+          inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
+        })
 
-      // todo: unify with inputStrandColumn
-      const inputIdColumn = ui.choiceInput('ID column', '', t.columns.names(), (colName: string) => {
-        validateIdsColumn(colName);
-        idVar = colName;
+        // todo: unify with inputStrandColumn
+        console.log(`columns names:`, df);
+        const inputIdColumn = ui.choiceInput('ID column', '', df.columns.names(), (colName: string) => {
+          validateIdsColumn(colName);
+          idVar = colName;
+        });
+        inputIdColumnDiv.innerHTML = '';
+        inputIdColumnDiv.append(inputIdColumn.root);
       });
-      inputIdColumnDiv.innerHTML = '';
-      inputIdColumnDiv.append(inputIdColumn.root);
+      return tables;
+    }
+
+    const tables = getTablesInput();
+
+    grok.events.onTableAdded.subscribe(() => {
+      grok.shell.info('Table added');
+      $(tables.root).replaceWith(getTablesInput().root);
     });
 
 
