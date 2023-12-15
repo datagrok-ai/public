@@ -14,7 +14,8 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
-import {getIVP, getScriptLines, getScriptParams, IVP} from './scripting-tools';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC} from './ui-constants';
+import {getIVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -29,16 +30,6 @@ enum EDITOR_STATE {
   PKPD = 8,
   ACID_PROD = 9,
   NIMOTUZUMAB = 10,
-};
-
-const SOLVER_HELP_LINK = '/help/compute/solver.md';
-
-/** Specific error messages */
-enum ERROR_MSG {
-  SOLVING_FAILS = 'Solving fails',
-  APP_CREATING_FAILS = 'Application creating fails',
-  EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
-  CORE_ISSUE = 'Core issue',
 };
 
 /** Get problem with respect to IVP editor state. */
@@ -78,20 +69,20 @@ function getProblem(state: EDITOR_STATE): string {
 
 /** Completions of control expressions */
 const completions = [
-  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the model"},  
-  {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},
-  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the model"},
-  {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: "keyword", info: "block of differential equation(s) specification"},
-  {label: `${CONTROL_EXPR.EXPR}:\n  `, type: "keyword", info: "block of auxiliary expressions & computations"},
-  {label: `${CONTROL_EXPR.ARG}: `, type: "keyword", info: "independent variable specification"},
-  {label: `${CONTROL_EXPR.INITS}:\n  `, type: "keyword", info: "initial values of the model"},
-  {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: "keyword", info: "parameters of the model"},
-  {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: "keyword", info: "constants definition"},
-  {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: "tolerance of numerical solution"},
-  {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "loop feature"},
-  {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: "update model feature"},
-  {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: "keyword", info: "output specification"},
-  {label: `${CONTROL_EXPR.COMMENT}: `, type: "keyword", info: "block with comments"},
+  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: INFO.NAME},  
+  {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: INFO.TAGS},
+  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: INFO.DESCR},
+  {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: "keyword", info: INFO.DIF_EQ},
+  {label: `${CONTROL_EXPR.EXPR}:\n  `, type: "keyword", info: INFO.EXPR},
+  {label: `${CONTROL_EXPR.ARG}: `, type: "keyword", info: INFO.ARG},
+  {label: `${CONTROL_EXPR.INITS}:\n  `, type: "keyword", info: INFO.INITS},
+  {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: "keyword", info: INFO.PARAMS},
+  {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: "keyword", info: INFO.CONSTS},
+  {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: INFO.TOL},
+  {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: INFO.LOOP},
+  {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: INFO.UPDATE},
+  {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: "keyword", info: INFO.OUTPUT},
+  {label: `${CONTROL_EXPR.COMMENT}: `, type: "keyword", info: INFO.COMMENT},
 ];
 
 /** Control expressions completion utilite */
@@ -154,7 +145,12 @@ export async function runSolverApp() {
 
       if (!solutionViewer) {
         solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
-        viewerDockNode = grok.shell.dockManager.dock(solutionViewer, DG.DOCK_TYPE.TOP, solverView.dockManager.findNode(solverView.grid.root));
+        viewerDockNode = grok.shell.dockManager.dock(
+          solutionViewer, 
+          DG.DOCK_TYPE.TOP, 
+          solverView.dockManager.
+          findNode(solverView.grid.root
+        ));
       }
       else {
         solutionViewer.dataFrame = solutionTable;
@@ -195,7 +191,7 @@ export async function runSolverApp() {
   let solutionViewer: DG.Viewer | null = null;
   let viewerDockNode: DG.DockNode | null = null;
   let toChangeSolutionViewerProps = false;
-  solverView.name = 'Template';
+  solverView.name = MISC.VIEW_DEFAULT_NAME;
   let div = ui.divV([]);   
 
   /** Code editor for IVP specifying */
@@ -210,7 +206,7 @@ export async function runSolverApp() {
   let isChanged = false;
 
   editorView.dom.addEventListener('keydown', async (e) => {
-    if (e.key !== "F5")
+    if (e.key !== HOT_KEY.RUN)
       isChanged = true;    
   });
 
@@ -243,7 +239,7 @@ export async function runSolverApp() {
     const link = document.createElement("a");
     const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
     link.href = URL.createObjectURL(file);
-    link.download = "equations.txt";
+    link.download = MISC.FILE_DEFAULT_NAME;
     link.click();
     URL.revokeObjectURL(link.href);
   };
@@ -275,13 +271,13 @@ export async function runSolverApp() {
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
     if (toShowWarning && isChanged) {      
-      const boolInput = ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning);      
-      const dlg = ui.dialog({title: 'Overwrite?', helpUrl: SOLVER_HELP_LINK});
+      const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
+      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
       solverView.append(dlg);
 
       dlg
-        .add(ui.label('This will overwrite the current project.'))
-        .add(ui.label('Do you want to go on?'))
+        .add(ui.label(WARNING.MES))
+        .add(ui.label(WARNING.QUE))
         .add(ui.divH([boolInput.root]))
         .onCancel(() => dlg.close())
         .onOK(async () => {
@@ -301,24 +297,24 @@ export async function runSolverApp() {
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
     DG.Menu.popup()
-      .item('Load...', async () => await overwrite(undefined, loadFn), undefined, {description: 'Load model from local file'})
-      .item('Save...', saveFn, undefined, {description: 'Save model to local file'})
-      .item('Clear...', async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear model'})
+      .item(TITLE.LOAD, async () => await overwrite(undefined, loadFn), undefined, {description: HINT.LOAD})
+      .item(TITLE.SAVE, saveFn, undefined, {description: HINT.SAVE})
+      .separator()         
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC})
+      .item(TITLE.ADV, async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV})
+      .item(TITLE.EXT, async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+      .endGroup()
+      .group(TITLE.CASES)
+      .item(TITLE.CHEM, async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})      
+      .item(TITLE.PKPD, async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .endGroup()
       .separator()
-      .group('Templates')
-      .item('Basic...', async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-      .item('Advanced...', async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
-      .item('Extended...', async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
-      .endGroup()
-      .group('Use cases')
-      .item('Chem reactions...', async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-      .item("Robertson's model...", async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
-      .item('Fermentation...', async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
-      //.separator()
-      .item('PK-PD...', async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
-      .item('Acid production...', async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
-      .item('Nimotuzumab...', async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: 'Nimotuzumab disposition model'})
-      .endGroup()
+      .item(TITLE.CLEAR, async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: HINT.CLEAR})
       .show();    
   });
   
@@ -326,24 +322,44 @@ export async function runSolverApp() {
   editorView.dom.style.height = '100%';
 
   solverView.dockManager.dock(div, 'left');
-  solverView.helpUrl = SOLVER_HELP_LINK;
+  solverView.helpUrl = LINK.DIF_STUDIO_MD;
 
-  const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
-  exportIcon.classList.add("fal");
+  const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
-  const playIcon = ui.iconFA('play', solve, 'Solve (F5)');  
+  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);
+
+  const playIcon = ui.iconFA('play', solve, HINT.RUN);  
   playIcon.style.color = "var(--green-2)";
   playIcon.classList.add("fas");
 
-  const appButton = ui.button('app', runModelApp, 'Run model as an application');
+  const appButton = ui.bigButton(TITLE.APP, runModelApp, HINT.APP);
   
   solverView.root.addEventListener('keydown', async (e) => {
-    if (e.key === "F5") {
+    if (e.key === HOT_KEY.RUN) {
       e.stopImmediatePropagation();
       e.preventDefault();
       await solve();
     }
   });
 
-  solverView.setRibbonPanels([[exportIcon], [appButton, playIcon]]);
+  const openMenu = DG.Menu.popup()
+    .item(TITLE.FROM_FILE, async () => await overwrite(undefined, loadFn), undefined, {description: HINT.LOAD})
+    .group(TITLE.TEMPL)
+    .item(TITLE.BASIC, async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC})
+    .item(TITLE.ADV, async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV})
+    .item(TITLE.EXT, async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+    .endGroup()
+    .group(TITLE.CASES)
+    .item(TITLE.CHEM, async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+    .item(TITLE.ROB, async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+    .item(TITLE.FERM, async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})   
+    .item(TITLE.PKPD, async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+    .item(TITLE.ACID, async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+    .item(TITLE.NIM, async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+    .endGroup();
+
+  const openIcon = ui.iconFA('folder-open', () => openMenu.show(), HINT.OPEN);
+  const saveIcon = ui.iconFA('save', async () => {await saveFn()}, HINT.SAVE);
+
+  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, appButton], [playIcon]]);
 } // runSolverApp
