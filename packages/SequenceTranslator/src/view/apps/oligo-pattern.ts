@@ -107,7 +107,7 @@ export class PatternLayoutHandler {
 
     function updateInputExamples() {
       STRANDS.forEach((s) => {
-        if (inputStrandColumn[s].value === '')
+        if (strandColumnInput[s].value === '')
           inputExample[s].value = generateExample(strandLengthInput[s].value!, sequenceBase.value!);
       });
     }
@@ -436,23 +436,20 @@ export class PatternLayoutHandler {
         return [strand, input];
     }));
     const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
-    // todo: rename to strandColumnInputDiv
-    const inputStrandColumnDiv = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, ui.div([])]
-    ));
+    // const strandColumnInputDiv = Object.fromEntries(STRANDS.map(
+    //   (strand) => [strand, ui.div([])]
+    // ));
     const inputExample = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.textInput(
         ``, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
       ]));
 
-    // todo: rename to strandColumnInput
-    const inputStrandColumn = Object.fromEntries(STRANDS.map((strand) => {
+    const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
         validateStrandColumn(colName, strand);
         strandVar[strand] = colName;
       });
-      inputStrandColumnDiv[strand].append(input.root);
-      //input.addPostfix(``);
+      // strandColumnInputDiv[strand].append(input.root);
       return [strand, input];
     }));
 
@@ -465,8 +462,6 @@ export class PatternLayoutHandler {
       input.captionLabel.style.maxWidth = '100px';
       input.captionLabel.style.minWidth = '40px';
       input.captionLabel.style.width = 'auto';
-      
-    
 
       return [strand, input];
     }));
@@ -509,9 +504,7 @@ export class PatternLayoutHandler {
     STRANDS.forEach((s) => {
       
       inputExample[s].input.style.resize = 'none';
-      //inputExample[s].input.style.minWidth = EXAMPLE_MIN_WIDTH;
       outputExample[s].input.style.resize = 'none';
-      //outputExample[s].input.styl
       inputExample[s].input.style.minWidth = 'none';
       inputExample[s].input.style.flexGrow = '1';
       outputExample[s].input.style.minWidth = 'none';
@@ -528,7 +521,7 @@ export class PatternLayoutHandler {
       );
     })
 
-    const inputIdColumnDiv = ui.div([]);
+    // const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
     const loadPatternDiv = ui.div([]);
@@ -558,34 +551,34 @@ export class PatternLayoutHandler {
           console.warn('Table is null');
           return;
         }
-        console.log(`table:`, table);
-        console.log(`cols:`, table.columns);
-        console.log(`names:`, table.columns.names());
+        // console.log(`table:`, table);
+        // console.log(`cols:`, table.columns);
+        // console.log(`names:`, table.columns.names());
+        const columnNames = table.columns.names();
 
         STRANDS.forEach((strand) => {
-          inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', table.columns.names(), (colName: string) => {
+          //@ts-ignore
+          const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, columnNames[0], columnNames, (colName: string) => {
             validateStrandColumn(colName, strand);
             strandVar[strand] = colName;
           });
+          $(strandColumnInput[strand].root).replaceWith(input.root);
           // $(inputIdColumnDiv).replaceWith(ui.div([inputStrandColumn[strand]]));
-          console.log(`${strand} input`,inputStrandColumn[strand].root.innerHTML);
+          console.log(`${strand} input`,strandColumnInput[strand].root.innerHTML);
           // $(inputStrandColumnDiv[strand]).replaceWith(ui.divText('ababa'));
           // $(inputStrandColumnDiv[strand])
           //   .replaceWith(ui.div([inputStrandColumn[strand]]));
-          inputStrandColumnDiv[strand].innerHTML = ui.divText('ababa').innerHTML;
-          // inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
-          console.log(`${strand} input div`,inputStrandColumnDiv[strand].innerHTML);
+          // strandColumnInputDiv[strand].innerHTML = ui.divText('ababa').innerHTML;
+          // // inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
+          // console.log(`${strand} input div`,strandColumnInputDiv[strand].innerHTML);
         })
 
         // todo: unify with inputStrandColumn
-        const inputIdColumn = ui.choiceInput('ID column', '', table.columns.names(), (colName: string) => {
+        const idInput = ui.choiceInput('ID column', columnNames[0], columnNames, (colName: string) => {
           validateIdsColumn(colName);
           idVar = colName;
         });
-        console.log('id input', inputIdColumn.root.innerHTML);
-        inputIdColumnDiv.innerHTML = '';
-        inputIdColumnDiv.append(inputIdColumn.root);
-        console.log('id input div', inputIdColumnDiv.innerHTML);
+        $(inputIdColumn.root).replaceWith(idInput.root);
       });
       return tableInput;
     }
@@ -610,13 +603,14 @@ export class PatternLayoutHandler {
       validateIdsColumn(colName);
       idVar = colName;
     });
-    inputIdColumnDiv.append(inputIdColumn.root);
+    // inputIdColumnDiv.append(inputIdColumn.root);
 
     updatePatternsList();
 
     const createAsStrand = ui.boolInput('Anti sense strand', true, (v: boolean) => {
       modificationSection[AS].hidden = !v;
-      inputStrandColumnDiv[AS].hidden = !v;
+      // strandColumnInputDiv[AS].hidden = !v;
+      strandColumnInput[AS].root.hidden = !v;
       asLengthDiv.hidden = !v;
       asModificationDiv.hidden = !v;
       asExampleDiv.hidden = !v;
@@ -662,7 +656,7 @@ export class PatternLayoutHandler {
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
             STRANDS.forEach((s) => {
-              strandLengthInput[s].value = tableInput.value!.getCol(inputStrandColumn[s].value!).getString(0).length;
+              strandLengthInput[s].value = tableInput.value!.getCol(strandColumnInput[s].value!).getString(0).length;
             })
             dialog.close();
           })
@@ -699,9 +693,9 @@ export class PatternLayoutHandler {
     const inputsSection = ui.block50([
       ui.h1('Convert options'),
       tableInput.root,
-      inputStrandColumnDiv[SS],
-      inputStrandColumnDiv[AS],
-      inputIdColumnDiv,
+      strandColumnInput[SS].root,
+      strandColumnInput[AS].root,
+      inputIdColumn.root,
       ui.buttonsInput([
         convertSequenceButton,
       ]),
@@ -744,8 +738,8 @@ export class PatternLayoutHandler {
           saveAs.root,
           ui.h1('Convert'),
           tableInput.root,
-          inputStrandColumn[SS],
-          inputStrandColumn[AS],
+          strandColumnInput[SS],
+          strandColumnInput[AS],
           inputIdColumn.root,
           ui.buttonsInput([
             convertSequenceButton,
