@@ -114,8 +114,7 @@ export class PatternLayoutHandler {
 
     function updateInputExamples() {
       STRANDS.forEach((s) => {
-        if (inputStrandColumn[s].value === '')
-          inputExample[s].value = generateExample(strandLengthInput[s].value!, sequenceBase.value!);
+        inputExample[s].value = generateExample(strandLengthInput[s].value!, sequenceBase.value!);
       });
     }
 
@@ -444,8 +443,7 @@ export class PatternLayoutHandler {
     }));
 
     const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
-    // todo: rename to strandColumnInputDiv
-    const inputStrandColumnDiv = Object.fromEntries(STRANDS.map(
+    const strandColumnInputDiv = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.div([])]
     ));
     const inputExample = Object.fromEntries(STRANDS.map(
@@ -453,13 +451,12 @@ export class PatternLayoutHandler {
         ``, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
       ]));
 
-    // todo: rename to strandColumnInput
-    const inputStrandColumn = Object.fromEntries(STRANDS.map((strand) => {
+    const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
       const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
         validateStrandColumn(colName, strand);
         strandVar[strand] = colName;
       });
-      inputStrandColumnDiv[strand].append(input.root);
+      strandColumnInputDiv[strand].append(input.root);
       //input.addPostfix(``);
       return [strand, input];
     }));
@@ -560,12 +557,12 @@ export class PatternLayoutHandler {
 
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
       STRANDS.forEach((strand) => {
-        inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', t.columns.names(), (colName: string) => {
+        strandColumnInput[strand] = ui.choiceInput(`${strand} column`, '', t.columns.names(), (colName: string) => {
           validateStrandColumn(colName, strand);
           strandVar[strand] = colName;
         });
-        inputStrandColumnDiv[strand].innerHTML = '';
-        inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
+        strandColumnInputDiv[strand].innerHTML = '';
+        strandColumnInputDiv[strand].append(strandColumnInput[strand].root);
       })
 
       // todo: unify with inputStrandColumn
@@ -590,7 +587,7 @@ export class PatternLayoutHandler {
 
     const createAsStrand = ui.boolInput('Anti sense strand', true, (v: boolean) => {
       modificationSection[AS].hidden = !v;
-      inputStrandColumnDiv[AS].hidden = !v;
+      strandColumnInputDiv[AS].hidden = !v;
       asLengthDiv.hidden = !v;
       asModificationDiv.hidden = !v;
       asExampleDiv.hidden = !v;
@@ -636,7 +633,7 @@ export class PatternLayoutHandler {
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
             STRANDS.forEach((s) => {
-              strandLengthInput[s].value = tables.value!.getCol(inputStrandColumn[s].value!).getString(0).length;
+              strandLengthInput[s].value = tables.value!.getCol(strandColumnInput[s].value!).getString(0).length;
             })
             dialog.close();
           })
@@ -673,8 +670,8 @@ export class PatternLayoutHandler {
     const inputsSection = ui.block50([
       ui.h1('Convert options'),
       tables.root,
-      inputStrandColumnDiv[SS],
-      inputStrandColumnDiv[AS],
+      strandColumnInputDiv[SS],
+      strandColumnInputDiv[AS],
       inputIdColumnDiv,
       ui.buttonsInput([
         convertSequenceButton,
@@ -720,8 +717,8 @@ export class PatternLayoutHandler {
       const convertControlsBlock = [
         ui.h1('Convert'),
         tables.root,
-        inputStrandColumn[SS],
-        inputStrandColumn[AS],
+        strandColumnInput[SS],
+        strandColumnInput[AS],
         inputIdColumn.root,
         ui.buttonsInput([
           convertSequenceButton,
@@ -749,11 +746,16 @@ export class PatternLayoutHandler {
 
       const translationExample = Object.entries(STRAND_NAME)
         .map(([strand, strandName]) => {
-          const getDiv = () => ui.divV([
-            ui.h1(strandName),
-            inputExample[strand].root,
-            outputExample[strand].root,
-          ], 'ui-block');
+          const getDiv = () =>  {
+            const input = inputExample[strand];
+            const output = outputExample[strand];
+            const result = ui.divV([
+              ui.h1(strandName),
+              input.root,
+              output.root,
+            ], 'ui-block');
+            return result;
+          }
           const div = getDiv();
           onStrandLengthChange.subscribe(() => {
             updateInputExamples();
