@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
 } from '../../../model/pattern-app/const';
+import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../../model/pattern-app/oligo-pattern';
 import {DataManager} from './utils';
 import {PatternManager} from './pattern-manager';
 
@@ -69,19 +70,17 @@ class PatternBlock {
     // saveAs.addOptions(savePatternButton);
 
     const loadPatternInputDiv = ui.div([]);
+    this.updatePatternsList(loadPatternInputDiv);
 
-    const content = [
-      this.createAsStrandInput,
-      this.strandLengthInput[SS],
-      this.strandLengthInput[AS],
-      this.sequenceBaseInput,
-      comment,
-      loadPatternInputDiv,
-      // saveAs,
-    ].map((it) => it.root);
     const patternControlsBlock = [
       ui.h1('Pattern'),
-      ...content
+      this.createAsStrandInput.root,
+      this.strandLengthInput[SS].root,
+      this.strandLengthInput[AS].root,
+      this.sequenceBaseInput.root,
+      comment.root,
+      loadPatternInputDiv,
+      // saveAs,
     ];
 
     return patternControlsBlock;
@@ -135,28 +134,16 @@ class PatternBlock {
     return input as DG.InputBase<string>;
   }
 
-  private async getLoadPatternInput(): Promise<DG.InputBase<string>> {
-    const patternManager = new PatternManager();
-    const currentUserPatternList = patternManager.getCurrentUserPatternList();
-    let loadPattern = ui.choiceInput(
-      'Load pattern', '',
-      currentUserPatternList,
-      // todo: restore
-      // (v: string) => parsePatternAndUpdateUi(v)
-    );
+  private async updatePatternsList(loadPatternDiv: HTMLDivElement) {
+    const updatePatternsListFunction = async () => this.updatePatternsList(loadPatternDiv);
 
-    const currentUserName = (await grok.dapi.users.current()).friendlyName;
-    const otherUsers = 'Other users';
+    function createPatternChoiceInput(patternList: string[], callback: (arg: string) => any) {
+      return ui.choiceInput('Load pattern', '', patternList, (v: string) => callback(v));
+    }
 
-
-    const patternListChoiceInput = ui.choiceInput(
-      '', currentUserName, [currentUserName, otherUsers], (v: string) => {
-      const currentList = v === currentUserName ? lstMy : lstOthers;
-      loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
-
+    function updateLoadPattern(): void {
       loadPattern.root.append(patternListChoiceInput.input);
       loadPattern.root.append(loadPattern.input);
-      // @ts-ignore
       loadPattern.input.style.maxWidth = '120px';
       loadPattern.input.style.marginLeft = '12px';
       loadPattern.setTooltip('Apply Existing Pattern');
@@ -168,19 +155,58 @@ class PatternBlock {
           ui.button(ui.iconFA('trash-alt', () => {}), async () => {
             if (loadPattern.value === null)
               grok.shell.warning('Choose pattern to delete');
-            else if (await isPatternCreatedByCurrentUser(saveAs.value))
-              grok.shell.warning('Cannot delete pattern, created by other user');
-            else {
-              await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
-                .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
-            }
-            await updatePatternsList();
+            //todo: restore
+            // else if (await isPatternCreatedByCurrentUser(saveAs.value))
+            //   grok.shell.warning('Cannot delete pattern, created by other user');
+            // else {
+            //   await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
+            //     .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
+            // }
+            await updatePatternsListFunction();
           }),
         ], 'ui-input-options'),
       );
-    });
+    }
 
-    return loadPattern as DG.InputBase<string>;
+    const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+
+    const currentUser = await grok.dapi.users.current();
+    const currentUserName = currentUser.friendlyName;
+
+    const otherUsers = 'Other users';
+
+    // todo: rename
+    const lstMy: string[] = [];
+    const lstOthers: string[] = [];
+
+    // todo: rename
+    for (const ent of Object.keys(entities)) {
+      const isCreatedByCurrentUser = await isPatternCreatedByCurrentUser(ent);
+      (isCreatedByCurrentUser ? lstOthers : lstMy).push(ent);
+    }
+
+    let loadPattern = createPatternChoiceInput(lstMy,
+      (v: string) => {
+        // todo: restore
+        // parsePatternAndUpdateUi(v)
+      }
+    );
+
+    const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
+      // todo: rename v to value
+      const currentList = v === currentUserName ? lstMy : lstOthers;
+      loadPattern = createPatternChoiceInput(
+        currentList,
+        (v: string) => {
+          // todo: restore
+          // parsePatternAndUpdateUi(v);
+        }
+      )
+      updateLoadPattern();
+    });
+    patternListChoiceInput.input.style.maxWidth = '142px';
+
+    updateLoadPattern();
   }
 }
 
