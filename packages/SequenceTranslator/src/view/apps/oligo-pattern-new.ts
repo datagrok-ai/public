@@ -47,19 +47,9 @@ class LeftSection {
   );
   private onSequenceBaseChoice = new rxjs.Subject<string>();
 
-  private get sequenceBaseInput(): DG.InputBase<string> {
-    const baseChoices = this.data.baseChoices;
-    const defaultBase = baseChoices[0];
-    const input = ui.choiceInput(
-      'Sequence basis',
-      defaultBase, baseChoices,
-      (value: string) => {
-        this.onSequenceBaseChoice.next(value);
-        // updateBases(v);
-        // updateOutputExamples();
-      });
-    return input as DG.InputBase<string>;
-  }
+  // todo: this should emit messages to external handlers that have all the
+  // necessary information
+  private triggerUpdateSvg = new rxjs.Subject<string>();
 
   public getLayout(): HTMLDivElement {
     const patternControlsBlock = this.getPatternControlsBlock();
@@ -74,18 +64,26 @@ class LeftSection {
   }
 
   private getPatternControlsBlock(): HTMLElement[] {
+    const comment = ui.textInput('Comment', '', () => this.triggerUpdateSvg.next());
+
+    const loadPatternInput = new PatternManager().getLoadPatternInput();
+
+    // const saveAs = ui.textInput('Save as', 'Pattern name', () => this.triggerUpdateSvg.next());
+    // saveAs.setTooltip('Name Of New Pattern');
+    // saveAs.addOptions(savePatternButton);
+
     const content = [
       this.createAsStrandInput,
       this.strandLengthInput[SS],
       this.strandLengthInput[AS],
       this.sequenceBaseInput,
+      comment,
+      loadPatternInput,
+      // saveAs,
     ].map((it) => it.root);
     const patternControlsBlock = [
       ui.h1('Pattern'),
       ...content
-      // comment.root,
-      // loadPatternDiv,
-      // saveAs.root,
     ];
 
     return patternControlsBlock;
@@ -141,4 +139,25 @@ class LeftSection {
 
     return strandLengthInput;
   }
+
+  private get sequenceBaseInput(): DG.InputBase<string> {
+    const baseChoices = this.data.baseChoices;
+    const defaultBase = baseChoices[0];
+    const input = ui.choiceInput('Sequence basis', defaultBase, baseChoices,
+      (value: string) => {
+        this.onSequenceBaseChoice.next(value);
+        // updateBases(v);
+        // updateOutputExamples();
+      });
+    return input as DG.InputBase<string>;
+  }
+
+}
+
+class PatternManager {
+  getLoadPatternInput(): DG.InputBase {
+    // const loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+    const loadPattern = ui.choiceInput('Load pattern', '', [], () => {});
+    return loadPattern;
+  };
 }
