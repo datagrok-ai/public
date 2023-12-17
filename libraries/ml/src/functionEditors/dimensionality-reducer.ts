@@ -28,7 +28,8 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
 
 export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, method: DimReductionMethods,
     metric: KnownMetrics, preprocessingFunction: DG.Func, plotEmbeddings: boolean = true, clusterEmbeddings: boolean = false,
-    dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & Options = {}, uiOptions: DimRedUiOptions = {}) {
+    dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & {preprocessingFuncArgs?: Options} & Options = {},
+    uiOptions: DimRedUiOptions = {}) {
     const scatterPlotProps = {
         showXAxis: false,
         showYAxis: false,
@@ -94,7 +95,7 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
                     const colInputName = preprocessingFunction.inputs[0].name;
                     const metricInputName = preprocessingFunction.inputs[1].name;
                     const {entries, options}: PreprocessFunctionReturnType =
-                        await preprocessingFunction.apply({[colInputName]: col, [metricInputName]: metric});
+                        await preprocessingFunction.apply({[colInputName]: col, [metricInputName]: metric, ...(dimRedOptions.preprocessingFuncArgs ?? {})});
                     dimRedOptions = dimRedOptions ?? {};
                     dimRedOptions.distanceFnArgs = options;
                     const res = await reduceDimensinalityWithNormalization(entries, method, metric, dimRedOptions, true,
