@@ -6,11 +6,14 @@ import * as DG from 'datagrok-api/dg';
 import {
   DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
 } from '../../model/pattern-app/const';
+import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
 export class PatternLayoutHandler {
+  private dataManager = new DataManager();
+
   get htmlDivElement(): HTMLDivElement {
     const leftSection = this.getLeftSection();
     // const rightSection = this.getRightSection();
@@ -23,18 +26,40 @@ export class PatternLayoutHandler {
   }
 
   private getLeftSection(): HTMLDivElement {
-    return new LeftSection().getLayout();
+    return new LeftSection(this.dataManager).getLayout();
   }
 
   // private getRightSection(): HTMLDivElement {
   // }
 }
 
+class DataManager {
+  readonly baseChoices: string[] = Object.keys(axolabsStyleMap);
+  readonly defaultBase: string = this.baseChoices[0];
+}
+
 class LeftSection {
+  constructor(private data: DataManager) { }
+
   private onCreateAsStrand = new rxjs.Subject<boolean>();
   private onStrandLengthChange = Object.fromEntries(
     STRANDS.map((strand) => [strand, new rxjs.Subject<number>()])
   );
+  private onSequenceBaseChoice = new rxjs.Subject<string>();
+
+  private get sequenceBaseInput(): DG.InputBase<string> {
+    const baseChoices = this.data.baseChoices;
+    const defaultBase = baseChoices[0];
+    const input = ui.choiceInput(
+      'Sequence basis',
+      defaultBase, baseChoices,
+      (value: string) => {
+        this.onSequenceBaseChoice.next(value);
+        // updateBases(v);
+        // updateOutputExamples();
+      });
+    return input as DG.InputBase<string>;
+  }
 
   public getLayout(): HTMLDivElement {
     const patternControlsBlock = this.getPatternControlsBlock();
@@ -49,12 +74,15 @@ class LeftSection {
   }
 
   private getPatternControlsBlock(): HTMLElement[] {
+    const content = [
+      this.createAsStrandInput,
+      this.strandLengthInput[SS],
+      this.strandLengthInput[AS],
+      this.sequenceBaseInput,
+    ].map((it) => it.root);
     const patternControlsBlock = [
       ui.h1('Pattern'),
-      this.createAsStrandInput.root,
-      this.strandLengthInput[SS].root,
-      this.strandLengthInput[AS].root,
-      // sequenceBase.root,
+      ...content
       // comment.root,
       // loadPatternDiv,
       // saveAs.root,
