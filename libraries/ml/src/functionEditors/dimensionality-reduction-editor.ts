@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
 import { MACROMOLECULE_SIMILARITY_METRICS, SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
 import { BitArrayMetricsNames } from '../typed-metrics/consts';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import { ColumnInputOptions, Options } from '@datagrok-libraries/utils/src/type-declarations';
 import { MmDistanceFunctionsNames } from '../macromolecule-distance-functions';
 import { KnownMetrics } from '../typed-metrics';
 import { DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG, SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG } from './consts';
@@ -34,7 +34,7 @@ export type DimReductionParams = {
     similarityMetric: string,
     plotEmbeddings?: boolean,
     clusterEmbeddings?: boolean,
-    options: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions>
+    options: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & {preprocessingFuncArgs?: Options} & Options
 };
 
 export class DBScanOptions {
@@ -55,6 +55,7 @@ export class DimReductionBaseEditor {
     methodInput: DG.InputBase<string | null>;
     methodSettingsIcon: HTMLElement;
     dbScanSettingsIcon: HTMLElement;
+    preprocessingFuncSettingsIcon: HTMLElement;
     columnFunctionsMap: {[key: string]: string[]} = {};
     supportedFunctions: {[name: string]: {
         func: DG.Func,
@@ -67,6 +68,8 @@ export class DimReductionBaseEditor {
     similarityMetricInputRoot!: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
     dbScanSettingsDiv = ui.inputs([]);
+    preprocessingFuncSettingsDiv = ui.inputs([]);
+    preprocessingFunctionSettings: Options = {};
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
       [DimReductionMethods.UMAP]: new UMAPOptions(),
       [DimReductionMethods.T_SNE]: new TSNEOptions()
@@ -141,7 +144,7 @@ export class DimReductionBaseEditor {
             if (!dbScanSettingsOpened)
               ui.empty(this.dbScanSettingsDiv);
             else 
-              this.createDBScanSettingsDiv(this.dbScanSettingsDiv, this.dbScanParams);
+              this.createAlgorithmSettingsDiv(this.dbScanSettingsDiv, this.dbScanParams);
           }, 'Modify clustering parameters');
         this.clusterEmbeddingsInput.classList.add('ml-dim-reduction-settings-input');
         this.clusterEmbeddingsInput.root.prepend(this.dbScanSettingsIcon);
@@ -162,6 +165,17 @@ export class DimReductionBaseEditor {
             ui.empty(this.preprocessingFunctionInputRoot);
             Array.from(this.preprocessingFunctionInput.root.children).forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
         }
+        this.preprocessingFunctionInputRoot.classList.add('ml-dim-reduction-settings-input');
+        let preprocessingSettingsOpened = false;
+        this.preprocessingFuncSettingsIcon = ui.icons.settings(async ()=> {
+            if (!preprocessingSettingsOpened)
+                await this.createPreprocessingFuncParamsDiv(this.preprocessingFuncSettingsDiv, this.supportedFunctions[this.preprocessingFunctionInput.value!].func);
+            else
+                ui.empty(this.preprocessingFuncSettingsDiv);
+            preprocessingSettingsOpened = !preprocessingSettingsOpened;
+        }, 'Modify encoding function parameters');
+        this.preprocessingFunctionInputRoot.prepend(this.preprocessingFuncSettingsIcon);
+        
         this.similarityMetricInput = ui.choiceInput('Similarity', '', [], null);
         this.similarityMetricInput.nullable = false;
         if (!this.similarityMetricInputRoot)
@@ -234,6 +248,8 @@ export class DimReductionBaseEditor {
     }
 
     private onPreprocessingFunctionChanged() {
+        ui.empty(this.preprocessingFuncSettingsDiv);
+        this.preprocessingFunctionSettings = {};
         const fName = this.preprocessingFunctionInput.value!;
         const distanceFs = this.supportedFunctions[fName].distanceFunctions;
         this.availableMetrics = [...distanceFs];
@@ -244,9 +260,15 @@ export class DimReductionBaseEditor {
         }
         ui.empty(this.similarityMetricInputRoot);
         Array.from(this.similarityMetricInput.root.children).forEach((child) => this.similarityMetricInputRoot.append(child));
+        if (this.preprocessingFuncSettingsIcon) {
+            if (this.supportedFunctions[fName].func.inputs.length < 3)
+                this.preprocessingFuncSettingsIcon.style.display = 'none';
+            else
+                this.preprocessingFuncSettingsIcon.style.display = 'flex';
+        }
     }
 
-    private createAlgorithmSettingsDiv(paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions): HTMLElement {
+    private createAlgorithmSettingsDiv(paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions | DBScanOptions): HTMLElement {
         ui.empty(paramsForm);
         Object.keys(params).forEach((it: any) => {
           const param: IDimReductionParam = (params as any)[it];
@@ -257,18 +279,26 @@ export class DimReductionBaseEditor {
           paramsForm.append(input.root);
         });
         return paramsForm;
-      }
+    }
 
-    private createDBScanSettingsDiv(paramsForm: HTMLElement, params: DBScanOptions): HTMLElement {
+    private async createPreprocessingFuncParamsDiv(paramsForm: HTMLElement, func: DG.Func): Promise<HTMLElement> {
         ui.empty(paramsForm);
-        Object.keys(params).forEach((it: any) => {
-          const param: IDimReductionParam = (params as any)[it];
-          const input = ui.floatInput(param.uiName, param.value, () => {
-            param.value = input.value;
-          });
-          ui.tooltip.bind(input.root, param.tooltip);
-          paramsForm.append(input.root);
-        });
+        if (func.inputs.length < 3)
+            return ui.div();
+        const fc = func.prepare();
+        const inputs = await fc.buildEditor(ui.div());
+        for (let i = 2; i < func.inputs.length; i++) {
+            const fInput = func.inputs[i];
+            if (this.preprocessingFunctionSettings[fInput.name] || fc.inputParams[func.inputs[i].name].value || fInput.defaultValue)
+                this.preprocessingFunctionSettings[fInput.name] = this.preprocessingFunctionSettings[fInput.name] ?? fc.inputParams[fInput.name].value ?? fInput.defaultValue;
+            const input = inputs.find((inp) => inp.property.name === fInput.name);
+            if (!input)
+                continue;
+            if (this.preprocessingFunctionSettings[fInput.name] !== null && this.preprocessingFunctionSettings[fInput.name] !== undefined)
+                input.value = this.preprocessingFunctionSettings[fInput.name];
+            input.onChanged(() => {this.preprocessingFunctionSettings[fInput.name] = input.value});
+            paramsForm.append(input.root);
+        }
         return paramsForm;
     }
     
@@ -277,6 +307,7 @@ export class DimReductionBaseEditor {
             this.tableInput,
             this.colInputRoot,
             this.preprocessingFunctionInputRoot,
+            this.preprocessingFuncSettingsDiv,
             this.methodInput,
             this.methodSettingsDiv,
             this.similarityMetricInputRoot,
@@ -295,7 +326,7 @@ export class DimReductionBaseEditor {
             similarityMetric: this.similarityMetricInput.value!,
             plotEmbeddings: this.plotEmbeddingsInput.value!,
             clusterEmbeddings: this.clusterEmbeddingsInput.value!,
-            options: {...this.algorithmOptions, ...this.dbScanOptions}
+            options: {...this.algorithmOptions, ...this.dbScanOptions, preprocessingFuncArgs: (this.preprocessingFunctionSettings ?? {})}
         };
     }
 }
