@@ -64,11 +64,11 @@ class PatternBlock {
   getHtmlElements(): HTMLElement[] {
     const comment = ui.textInput('Comment', '', () => this.triggerUpdateSvg.next());
 
-    const loadPatternInput = new PatternManager().getLoadPatternInput();
-
     // const saveAs = ui.textInput('Save as', 'Pattern name', () => this.triggerUpdateSvg.next());
     // saveAs.setTooltip('Name Of New Pattern');
     // saveAs.addOptions(savePatternButton);
+
+    const loadPatternInputDiv = ui.div([]);
 
     const content = [
       this.createAsStrandInput,
@@ -76,7 +76,7 @@ class PatternBlock {
       this.strandLengthInput[AS],
       this.sequenceBaseInput,
       comment,
-      loadPatternInput,
+      loadPatternInputDiv,
       // saveAs,
     ].map((it) => it.root);
     const patternControlsBlock = [
@@ -134,4 +134,56 @@ class PatternBlock {
       });
     return input as DG.InputBase<string>;
   }
+
+  private async getLoadPatternInput(): Promise<DG.InputBase<string>> {
+    const patternManager = new PatternManager();
+    const currentUserPatternList = patternManager.getCurrentUserPatternList();
+    let loadPattern = ui.choiceInput(
+      'Load pattern', '',
+      currentUserPatternList,
+      // todo: restore
+      // (v: string) => parsePatternAndUpdateUi(v)
+    );
+
+    const currentUserName = (await grok.dapi.users.current()).friendlyName;
+    const otherUsers = 'Other users';
+
+
+    const patternListChoiceInput = ui.choiceInput(
+      '', currentUserName, [currentUserName, otherUsers], (v: string) => {
+      const currentList = v === currentUserName ? lstMy : lstOthers;
+      loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
+
+      loadPattern.root.append(patternListChoiceInput.input);
+      loadPattern.root.append(loadPattern.input);
+      // @ts-ignore
+      loadPattern.input.style.maxWidth = '120px';
+      loadPattern.input.style.marginLeft = '12px';
+      loadPattern.setTooltip('Apply Existing Pattern');
+
+      loadPatternDiv.innerHTML = '';
+      loadPatternDiv.append(loadPattern.root);
+      loadPattern.root.append(
+        ui.div([
+          ui.button(ui.iconFA('trash-alt', () => {}), async () => {
+            if (loadPattern.value === null)
+              grok.shell.warning('Choose pattern to delete');
+            else if (await isPatternCreatedByCurrentUser(saveAs.value))
+              grok.shell.warning('Cannot delete pattern, created by other user');
+            else {
+              await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
+                .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
+            }
+            await updatePatternsList();
+          }),
+        ], 'ui-input-options'),
+      );
+    });
+
+    return loadPattern as DG.InputBase<string>;
+  }
+}
+
+class ConvertBlock {
+
 }
