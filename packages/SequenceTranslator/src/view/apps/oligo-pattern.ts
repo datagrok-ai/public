@@ -8,7 +8,7 @@ import {
   DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
 } from '../../model/pattern-app/const';
 import {isOverhang} from '../../model/pattern-app/helpers';
-import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/pattern-app/oligo-pattern';
+import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/pattern-app/oligo-pattern';
 import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 // todo: remove ts-ignore
 //@ts-ignore
@@ -283,7 +283,7 @@ export class PatternLayoutHandler {
 
         // TODO: display short name, but use long for querying userdataStorage
         for (const ent of Object.keys(entities)) {
-          if (await isCurrentUserCreatedThisPattern(ent))
+          if (await isPatternCreatedByCurrentUser(ent))
             lstOthers.push(ent);
           else
             lstMy.push(ent);//getShortName(ent));
@@ -312,7 +312,7 @@ export class PatternLayoutHandler {
               ui.button(ui.iconFA('trash-alt', () => {}), async () => {
                 if (loadPattern.value === null)
                   grok.shell.warning('Choose pattern to delete');
-                else if (await isCurrentUserCreatedThisPattern(saveAs.value))
+                else if (await isPatternCreatedByCurrentUser(saveAs.value))
                   grok.shell.warning('Cannot delete pattern, created by other user');
                 else {
                   await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
@@ -337,7 +337,7 @@ export class PatternLayoutHandler {
             ui.button(ui.iconFA('trash-alt', () => {}), async () => {
               if (loadPattern.value === null)
                 grok.shell.warning('Choose pattern to delete');
-              else if (await isCurrentUserCreatedThisPattern(saveAs.value))
+              else if (await isPatternCreatedByCurrentUser(saveAs.value))
                 grok.shell.warning('Cannot delete pattern, created by other user');
               else {
                 await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)

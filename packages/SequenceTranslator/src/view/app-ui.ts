@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {TAB, APP} from './const/ui';
 import {TranslatorLayoutHandler} from './apps/oligo-translator';
 import {StructureLayoutHandler} from './apps/oligo-structure';
-import {PatternLayoutHandler} from './apps/oligo-pattern-new';
+import {PatternLayoutHandler} from './apps/oligo-pattern/layout';
 import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 import {_package} from '../package';
 import {tryCatch} from '../model/helpers';

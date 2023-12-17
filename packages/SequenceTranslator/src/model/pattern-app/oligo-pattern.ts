@@ -18,7 +18,7 @@ export function findDuplicates(data: Int32Array | Float32Array | Float64Array | 
   return Array.from(new Set(data)).filter((value) => data.indexOf(value) !== data.lastIndexOf(value));
 }
 
-export async function isCurrentUserCreatedThisPattern(patternName: string): Promise<boolean> {
+export async function isPatternCreatedByCurrentUser(patternName: string): Promise<boolean> {
   return await grok.dapi.users.current().then((user) => {
     const [firstName, lastName] = getUserName(patternName);
     return (user.firstName !== firstName || user.lastName !== lastName);

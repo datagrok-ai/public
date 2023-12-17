@@ -5,41 +5,51 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
-} from '../../model/pattern-app/const';
-import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
+} from '../../../model/pattern-app/const';
+import {DataManager} from './utils';
+import {PatternManager} from './pattern-manager';
 
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
-export class PatternLayoutHandler {
-  private dataManager = new DataManager();
-
-  get htmlDivElement(): HTMLDivElement {
-    const leftSection = this.getLeftSection();
-    // const rightSection = this.getRightSection();
-    const layout = ui.splitH([
-      leftSection,
-      // rightSection
-    ], {}, true);
-
-    return layout;
+export class LeftSection {
+  constructor(data: DataManager) {
+    this.patternBlock = new PatternBlock(data);
   }
 
-  private getLeftSection(): HTMLDivElement {
-    return new LeftSection(this.dataManager).getLayout();
+  private patternBlock: PatternBlock;
+
+  public getLayout(): HTMLDivElement {
+    const patternControlsBlock = this.patternBlock.getHtmlElements();
+    const convertControlsBlock = this.getConvertControlsBlock();
+    const leftSection = ui.box(
+      ui.div([
+        ...patternControlsBlock,
+        ...convertControlsBlock,
+      ], 'ui-form')
+      , {style:{maxWidth:'450px'}});
+    return leftSection;
   }
 
-  // private getRightSection(): HTMLDivElement {
-  // }
+  private getConvertControlsBlock(): HTMLDivElement[] {
+    const convertControlsBlock = [
+      ui.h1('Convert'),
+      // tables.root,
+      // strandColumnInput[SS],
+      // strandColumnInput[AS],
+      // inputIdColumn.root,
+      // ui.buttonsInput([
+      //   convertSequenceButton,
+      // ]),
+    ];
+
+    return convertControlsBlock;
+  }
+
 }
 
-class DataManager {
-  readonly baseChoices: string[] = Object.keys(axolabsStyleMap);
-  readonly defaultBase: string = this.baseChoices[0];
-}
-
-class LeftSection {
-  constructor(private data: DataManager) { }
+class PatternBlock {
+  constructor(private data: DataManager) {};
 
   private onCreateAsStrand = new rxjs.Subject<boolean>();
   private onStrandLengthChange = Object.fromEntries(
@@ -51,19 +61,7 @@ class LeftSection {
   // necessary information
   private triggerUpdateSvg = new rxjs.Subject<string>();
 
-  public getLayout(): HTMLDivElement {
-    const patternControlsBlock = this.getPatternControlsBlock();
-    const convertControlsBlock = this.getConvertControlsBlock();
-    const leftSection = ui.box(
-      ui.div([
-        ...patternControlsBlock,
-        ...convertControlsBlock,
-      ], 'ui-form')
-      , {style:{maxWidth:'450px'}});
-    return leftSection;
-  }
-
-  private getPatternControlsBlock(): HTMLElement[] {
+  getHtmlElements(): HTMLElement[] {
     const comment = ui.textInput('Comment', '', () => this.triggerUpdateSvg.next());
 
     const loadPatternInput = new PatternManager().getLoadPatternInput();
@@ -87,21 +85,6 @@ class LeftSection {
     ];
 
     return patternControlsBlock;
-  }
-
-  private getConvertControlsBlock(): HTMLDivElement[] {
-    const convertControlsBlock = [
-      ui.h1('Convert'),
-      // tables.root,
-      // strandColumnInput[SS],
-      // strandColumnInput[AS],
-      // inputIdColumn.root,
-      // ui.buttonsInput([
-      //   convertSequenceButton,
-      // ]),
-    ];
-
-    return convertControlsBlock;
   }
 
   // todo: rename to input
@@ -151,13 +134,4 @@ class LeftSection {
       });
     return input as DG.InputBase<string>;
   }
-
-}
-
-class PatternManager {
-  getLoadPatternInput(): DG.InputBase {
-    // const loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
-    const loadPattern = ui.choiceInput('Load pattern', '', [], () => {});
-    return loadPattern;
-  };
 }
