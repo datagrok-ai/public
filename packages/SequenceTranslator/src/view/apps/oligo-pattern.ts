@@ -15,11 +15,19 @@ import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
+import * as rxjs from 'rxjs';
+
 type BooleanInput = DG.InputBase<boolean | null>;
 type StringInput = DG.InputBase<string | null>;
 
 export class PatternLayoutHandler {
   get htmlDivElement() {
+    const onStrandLengthChange = new rxjs.Subject<string>();
+    onStrandLengthChange.subscribe(() => {
+      updateUiForNewSequenceLength();
+    });
+
+
     function updateModification(strand: string) {
       modificationItems[strand].innerHTML = '';
       ptoLinkages[strand] = ptoLinkages[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(fullyPto));
@@ -83,7 +91,6 @@ export class PatternLayoutHandler {
           .add(ui.divText('Sequence length should be less than ' +
             MAX_SEQUENCE_LENGTH.toString() + ' due to UI constrains.'))
           .onOK(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
-          .onCancel(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
           .showModal(false);
       }
     }
@@ -428,12 +435,14 @@ export class PatternLayoutHandler {
          return [strand, choiceInputs];
       }
     ));
+
     const strandLengthInput = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => updateUiForNewSequenceLength());
+        const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => onStrandLengthChange.next());
         input.setTooltip(`Length of ${STRAND_NAME[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
     }));
+
     const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
     // todo: rename to strandColumnInputDiv
     const inputStrandColumnDiv = Object.fromEntries(STRANDS.map(
@@ -740,14 +749,29 @@ export class PatternLayoutHandler {
 
       const translationExample = Object.entries(STRAND_NAME)
         .map(([strand, strandName]) => {
-          return ui.divV([
+          const getDiv = () => ui.divV([
             ui.h1(strandName),
             inputExample[strand].root,
             outputExample[strand].root,
           ], 'ui-block');
+          const div = getDiv();
+          onStrandLengthChange.subscribe(() => {
+            updateInputExamples();
+            updateOutputExamples();
+            const output = outputExample[strand].value;
+            grok.shell.info(`output length: ${output.length}`);
+            console.log(`output: ${output}`);
+            const input = inputExample[strand].value;
+            grok.shell.info(`input length: ${input.length}`);
+            console.log(`input: ${input}`);
+            const newDiv = getDiv();
+            console.log(`parent of div`, div.parentElement);
+            $(div).replaceWith(newDiv);
+          });
+          return div;
         });
 
-      const strands = [
+      const example = [
         ui.divH(
           Object.values(translationExample),
           {style:{gap:'24px', marginTop:'24px'}}
@@ -765,7 +789,7 @@ export class PatternLayoutHandler {
 
       const rightPanel = ui.panel([
           ...svgBlock,
-          ...strands,
+          ...example,
           ...additionalModifications,
         ], {style: {overflowX: 'scroll', padding:'12px 24px'}});
       return rightPanel;
