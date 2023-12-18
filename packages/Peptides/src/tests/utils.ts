@@ -15,8 +15,7 @@ export enum TEST_COLUMN_NAMES {
 
 /**
  * Tests if a table has non zero rows and columns.
- *
- * @param {DG.DataFrame} table Target table.
+ * @param table Target table.
  */
 export function _testTableIsNotEmpty(table: DG.DataFrame): void {
   expect(table.columns.length > 0 && table.rowCount > 0, true);
@@ -24,10 +23,9 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
 
 /**
  * Tests if dimensionality reducer works for both the method and the measure chosen.
- *
- * @param {Array<string>} columnData Strings to process.
- * @param {string} method Embedding method.
- * @param {string} measure Measure to apply to a pair of strings.
+ * @param columnData Strings to process.
+ * @param method Embedding method.
+ * @param measure Measure to apply to a pair of strings.
  */
 export async function _testDimensionalityReducer(
   columnData: Array<string>, method: StringMetrics, measure: string): Promise<void> {

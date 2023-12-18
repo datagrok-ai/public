@@ -39,10 +39,15 @@ export const PANES_INPUTS = {
   [SETTINGS_PANES.COLUMNS]: COLUMNS_INPUTS,
 };
 
-//TODO: show sliderInput values
+/**
+ * Creates settings dialog for peptides analysis.
+ * @param model - Peptides analysis model.
+ * @return - Settings dialog elements.
+ */
 export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   if (model.settings == null)
     grok.log.error('PeptidesError: Settings are not initialized');
+
   const accordion = ui.accordion();
   const settings = model.settings;
   const currentScaling = settings?.activityScaling ?? C.SCALING_METHODS.NONE;
@@ -96,6 +101,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     const colName = col.name;
     if (colName === settings!.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY)
       continue;
+
 
     const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',
       () => {

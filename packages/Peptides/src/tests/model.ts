@@ -1,6 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
+import {
+  after,
+  awaitCheck,
+  before,
+  category,
+  delay,
+  expect,
+  expectFloat,
+  test,
+} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -10,7 +19,7 @@ import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {LogoSummaryTable} from '../viewers/logo-summary';
 import {TEST_COLUMN_NAMES} from './utils';
 import {getAggregatedColName} from '../utils/statistics';
-import { MonomerPosition } from '../viewers/sar-viewer';
+import {MonomerPosition} from '../viewers/sar-viewer';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -33,8 +42,9 @@ category('Model: Settings', () => {
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
       SCALING_METHODS.NONE);
-    if (tempModel === null)
+    if (tempModel === null) {
       throw new Error('Model is null');
+    }
     model = tempModel;
 
     await delay(500);
@@ -52,13 +62,15 @@ category('Model: Settings', () => {
 
     // Check initial 'none' scaling
     let scaledActivityData = scaledActivity.getRawData();
-    for (let i = 0; i < dfLen; i++)
+    for (let i = 0; i < dfLen; i++) {
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
+    }
 
     // Check 'lg' scaling
     scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.LG).getRawData();
-    for (let i = 0; i < dfLen; i++)
+    for (let i = 0; i < dfLen; i++) {
       expectFloat(scaledActivityData[i], Math.log10(origActivityData[i]), tolerance, getError(i, SCALING_METHODS.LG));
+    }
 
     // Check '-lg' scaling
     scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.MINUS_LG).getRawData();
@@ -69,8 +81,9 @@ category('Model: Settings', () => {
 
     // Check 'none' scaling
     scaledActivityData = scaledActivityCol.getRawData();
-    for (let i = 0; i < dfLen; i++)
+    for (let i = 0; i < dfLen; i++) {
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
+    }
   });
 
   test('Mutation Cliffs', async () => {

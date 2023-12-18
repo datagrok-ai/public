@@ -17,6 +17,12 @@ export {tests};
 //input: string test {optional: true}
 //input: object testContext {optional: true}
 //output: dataframe result
+/**
+ *
+ * @param category
+ * @param test
+ * @param testContext
+ */
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
