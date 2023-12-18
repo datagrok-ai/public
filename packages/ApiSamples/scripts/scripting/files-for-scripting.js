@@ -2,10 +2,21 @@
 //help-url: https://datagrok.ai/help/compute/scripting
 // An example of using files in a script
 
-async function logFileContent(fileInfo) {
+async function logFileContentAsString(fileInfo) {
     let data = await fileInfo.readAsString();
     grok.shell.info(data);
-} 
+}
 
-var fileInfo = DG.FileInfo.fromString('test of a script using dfiles');
-logFileContent(fileInfo);
+async function logFileContentAsBytes(fileInfo) {
+    let data = await fileInfo.readAsBytes();
+    grok.shell.info(data);
+}
+
+var line = 'test how script uses files'
+var bytes = [0x74, 0x65, 0x73, 0x74, 0x20, 0x68, 0x6F, 0x77, 0x20, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x20, 0x75, 0x73, 0x65, 0x73, 0x20, 0x66, 0x69, 0x6C, 0x65, 0x73]
+var fileInfo = DG.FileInfo.fromString(line);
+logFileContentAsString(fileInfo);
+logFileContentAsBytes(fileInfo);
+fileInfo = DG.FileInfo.fromBytes();
+logFileContentAsString(fileInfo);
+logFileContentAsBytes(fileInfo);
