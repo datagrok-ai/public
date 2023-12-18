@@ -498,11 +498,14 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
+//input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
+//input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
-  col: DG.Column, metric: MmDistanceFunctionsNames): Promise<PreprocessFunctionReturnType> {
+  col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6
+): Promise<PreprocessFunctionReturnType> {
   const {seqList, options} = await getEncodedSeqSpaceCol(col, metric);
-  return {entries: seqList, options};
+  return {entries: seqList, options: {...options, gapOpen, gapExtend}};
 }
 
 //name: Helm Fingerprints
