@@ -672,6 +672,7 @@ export class PeptidesModel {
     const sourceGridProps = sourceGrid.props;
     sourceGridProps.allowColSelection = props?.allowColSelection ?? false;
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
+    sourceGridProps.showReadOnlyNotifications = props?.showReadOnlyNotifications ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     const positionCols = this.positionColumns;
     if (positionCols === null)

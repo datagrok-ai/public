@@ -657,6 +657,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     gridProps.allowBlockSelection = false;
     gridProps.allowColSelection = false;
     gridProps.showCurrentRowIndicator = false;
+    gridProps.showReadOnlyNotifications = false;
 
     return grid;
   }
