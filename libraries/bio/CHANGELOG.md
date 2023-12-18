@@ -8,6 +8,10 @@
 * Add WebLogo `valueAggrType`, `valueColumnName` properties.
 * Add routines to get/set user monomer library settings.
 * Add Molecule3DUnitsHandler
+* Move NGL typings to bio lib
+* Move pdb, pdbqt parser to bio lib
+* Add IAutoDockService checkOpenCl, dockLigandColumn
+* Add Molecule, Molecule3D units handler getAsPdb
 
 ### Bug fixes
 
