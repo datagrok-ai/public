@@ -26,9 +26,8 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (let i = 0; i < splitSequence.length; i++) {
       const part = splitSequence[i];
-      if (currentDf.col(i.toString()) !== null) {
+      if (currentDf.col(i.toString()) !== null)
         currentDf.set(i.toString(), affectedRowIndex, part);
-      }
     }
     const temp = grok.shell.o;
     grok.shell.o = null;

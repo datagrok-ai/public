@@ -26,11 +26,10 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     // Building UI for starting analysis from dialog (top menu)
     const potentialCol = DG.Utils.firstOrNull(
       df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE));
-    if (potentialCol === null) {
+    if (potentialCol === null)
       throw new Error('Peptides Error: table doesn\'t contain sequence columns');
-    } else if (potentialCol.stats.missingValueCount !== 0) {
+    else if (potentialCol.stats.missingValueCount !== 0)
       grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
-    }
 
 
     seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
@@ -40,9 +39,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
-      if (seqCol.stats.missingValueCount !== 0) {
+      if (seqCol.stats.missingValueCount !== 0)
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
-      }
     }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
@@ -92,9 +90,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const activityScalingMethodState = (): void => {
     activityScalingMethod.enabled = (activityColumnChoice.value ?? false) && activityColumnChoice.value!.stats.min > 0;
     activityScalingMethod.value = C.SCALING_METHODS.NONE;
-    if (activityColumnChoice.value!.stats.missingValueCount !== 0) {
+    if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
-    }
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
@@ -106,9 +103,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   activityScalingMethod.fireChanged();
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
-  if (seqColInput !== null) {
+  if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
-  }
 
 
   const bitsetChanged = df.filter.onChanged.subscribe(() => activityScalingMethodState());
@@ -168,7 +164,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
   options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   let model = null;
-  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
+  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT) {
     grok.shell.error('The activity column must be of numeric type!');
     return model;
   }
@@ -181,9 +177,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   newDfCols.add(scaledCol);
   for (const col of sourceDf.columns) {
     if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
-      if (col.name.toLowerCase() === scaledCol.name.toLowerCase()) {
+      if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
         col.name = sourceDf.columns.getUnusedName(col.name);
-      }
 
 
       newDfCols.add(col);
@@ -197,9 +192,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
 
   if (clustersColumn) {
     const clusterCol = newDf.getCol(clustersColumn.name);
-    if (clusterCol.type !== DG.COLUMN_TYPE.STRING) {
+    if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
       newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-    }
   }
   newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
@@ -221,9 +215,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   await model.addMostPotentResidues();
 
   // FIXME: enable by default for tests
-  if (options.addSequenceSpace ?? false) {
+  if (options.addSequenceSpace ?? false)
     model.addSequenceSpace();
-  }
 
 
   progress.close();

@@ -45,6 +45,7 @@ category('Model: Settings', () => {
     if (tempModel === null) {
       throw new Error('Model is null');
     }
+
     model = tempModel;
 
     await delay(500);
@@ -66,11 +67,13 @@ category('Model: Settings', () => {
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
     }
 
+
     // Check 'lg' scaling
     scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.LG).getRawData();
     for (let i = 0; i < dfLen; i++) {
       expectFloat(scaledActivityData[i], Math.log10(origActivityData[i]), tolerance, getError(i, SCALING_METHODS.LG));
     }
+
 
     // Check '-lg' scaling
     scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.MINUS_LG).getRawData();

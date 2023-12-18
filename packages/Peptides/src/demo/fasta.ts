@@ -9,9 +9,6 @@ import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-librarie
 import {PeptidesModel} from '../model';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-/**
- *
- */
 export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   const alignedSequenceCol = 'AlignedSequence';

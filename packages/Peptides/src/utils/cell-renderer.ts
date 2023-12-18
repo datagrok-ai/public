@@ -87,20 +87,17 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   if (substitutions !== null) {
     for (const [key, value] of substitutions) {
       uniqueValues.add(key);
-      for (const val of value) {
+      for (const val of value)
         uniqueValues.add(val);
-      }
     }
   }
-  if (uniqueValues.size !== 0) {
+  if (uniqueValues.size !== 0)
     canvasContext.fillText(uniqueValues.size.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
-  }
 
 
   const monomerSelection = viewer.mutationCliffsSelection[currentPosition];
-  if (monomerSelection && monomerSelection.includes(currentMonomer)) {
+  if (monomerSelection && monomerSelection.includes(currentMonomer))
     renderCellSelection(canvasContext, bounds);
-  }
 }
 
 /**
@@ -130,9 +127,8 @@ export function renderInvariantMapCell(canvasContext: CanvasRenderingContext2D, 
     bounds.width);
 
   const monomerSelection = invariantMapSelection[currentPosition];
-  if (monomerSelection && monomerSelection.includes(currentMonomer)) {
+  if (monomerSelection && monomerSelection.includes(currentMonomer))
     renderCellSelection(canvasContext, bounds);
-  }
 }
 
 /**
@@ -152,9 +148,8 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
     bounds.width);
 
   if (clusterSelection[CLUSTER_TYPE.CUSTOM].includes(cellValue) ||
-    clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue)) {
+    clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue))
     renderCellSelection(canvasContext, bounds);
-  }
 }
 
 /**
@@ -264,9 +259,8 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
     monomerPosition: {} as type.SelectionItem,
   }): void {
   options.isSelectionTable ??= false;
-  if (Object.keys(tooltipOptions.mpStats).length == 0) {
+  if (Object.keys(tooltipOptions.mpStats).length == 0)
     tooltipOptions.mpStats = monomerPositionStats;
-  }
 
 
   if (options.isSelectionTable && (!options.webLogoBounds || !options.cachedWebLogoTooltip)) {
@@ -296,9 +290,9 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
           const colCache = cache?.[col.name];
           const dfFilterBuffer = df.filter.getBuffer();
           if (cache && colCache && colCache.filter.length === dfFilterBuffer.length &&
-            colCache.filter.every((v, i) => v === dfFilterBuffer[i])) {
+            colCache.filter.every((v, i) => v === dfFilterBuffer[i]))
             stats = colCache.stats[col.name];
-          } else {
+          else {
             const fullStats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {
               isFiltered: true,
               columns: [col.name],
@@ -312,23 +306,20 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
             isFiltered: true,
             columns: [col.name],
           })[col.name];
-        } else {
+        } else
           stats = monomerPositionStats[col.name];
-        }
 
 
-        if (!stats) {
+        if (!stats)
           return;
-        }
 
 
         //TODO: precalc on stats creation
         const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
-          if (a === '' || a === '-') {
+          if (a === '' || a === '-')
             return +1;
-          } else if (b === '' || b === '-') {
+          else if (b === '' || b === '-')
             return -1;
-          }
 
 
           return 0;
@@ -354,18 +345,16 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
     if (cell?.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER) {
       const monomerPosition = findWebLogoMonomerPosition(cell, ev, (options.webLogoBounds()));
       if (monomerPosition === null) {
-        if (!options.isSelectionTable && options.unhighlightCallback != null) {
+        if (!options.isSelectionTable && options.unhighlightCallback != null)
           options.unhighlightCallback();
-        }
 
 
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
       requestWebLogoAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
-      if (!options.isSelectionTable && options.highlightCallback != null) {
+      if (!options.isSelectionTable && options.highlightCallback != null)
         options.highlightCallback(monomerPosition, df, monomerPositionStats);
-      }
     }
   };
 
@@ -385,13 +374,13 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
  */
 function requestWebLogoAction(ev: MouseEvent, monomerPosition: type.SelectionItem, df: DG.DataFrame,
   activityCol: DG.Column<number>, options: WebLogoCellRendererOptions, tooltipOptions: TooltipOptions): void {
-  if (ev.type === 'click' && !options.isSelectionTable && options.selectionCallback != null) {
+  if (ev.type === 'click' && !options.isSelectionTable && options.selectionCallback != null)
     options.selectionCallback(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
-  } else {
+  else {
     const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
-    if (options.cachedWebLogoTooltip()!.bar === bar) {
+    if (options.cachedWebLogoTooltip()!.bar === bar)
       ui.tooltip.show(options.cachedWebLogoTooltip()!.tooltip!, ev.clientX, ev.clientY);
-    } else {
+    else {
       options.cachedWebLogoTooltip()!.bar = bar;
       tooltipOptions.x = ev.clientX;
       tooltipOptions.y = ev.clientY;
@@ -414,9 +403,8 @@ function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBo
   for (const [monomer, coords] of Object.entries(barCoords)) {
     const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
     const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
-    if (isIntersectingX && isIntersectingY) {
+    if (isIntersectingX && isIntersectingY)
       return {monomerOrCluster: monomer, positionOrClusterType: cell.tableColumn!.name};
-    }
   }
 
   return null;

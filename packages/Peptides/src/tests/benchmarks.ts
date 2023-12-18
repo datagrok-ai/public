@@ -27,12 +27,14 @@ category('Benchmarks: Cluster stats', () => {
         return null;
       }
 
+
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
       const clustersColumnName = 'cluster';
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
       if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase())) {
         df.columns.remove(scaledActivity.name);
       }
+
       df.columns.add(scaledActivity);
       DG.time(`Cluster stats benchmark - ${size}k`,
         () => calculateClusterStatistics(df, clustersColumnName, [], scaledActivity));
@@ -47,6 +49,7 @@ category('Benchmarks: Monomer-Position stats', () => {
         return null;
       }
 
+
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
       const positionCols: DG.Column<string>[] = [];
       let i = 1;
@@ -58,6 +61,7 @@ category('Benchmarks: Monomer-Position stats', () => {
       if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase())) {
         df.columns.remove(scaledActivity.name);
       }
+
       df.columns.add(scaledActivity);
       DG.time(`Monomer-Position stats benchmark - ${size}k`,
         () => calculateMonomerPositionStatistics(scaledActivity, DG.BitSet.create(0), positionCols));
@@ -71,6 +75,7 @@ category('Benchmarks: Analysis start', () => {
       if (!DG.Test.isInBenchmark) {
         return;
       }
+
 
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
       const activityCol = df.getCol('activity');
@@ -91,14 +96,11 @@ category('Benchmarks: Analysis start', () => {
   }
 });
 
-/**
- *
- * @param size
- */
 async function mutationCliffsBenchmark(size: number): Promise<void> {
   if (!DG.Test.isInBenchmark) {
     return;
   }
+
 
   const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
   const activityCol: type.RawData = df.getCol('activity').getRawData();
