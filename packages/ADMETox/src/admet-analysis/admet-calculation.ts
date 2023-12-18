@@ -120,7 +120,10 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
       accPanes[i].append(ui.icons.help(() => {window.open('https://github.com/datagrok-ai/public/blob/1ef0f6c050754a432640301139f41fcc26e2b6c3/packages/ADMETox/README.md', '_blank')}));
   }
   const update = async (result: HTMLDivElement, modelName: string) => {
-    const queryParams = properties[modelName]['models'].map((model: any) => model['name']);
+    const queryParams = properties[modelName]['models']
+    .filter((model: any) => model.skip !== false)
+    .map((model: any) => model['name']);
+
     if (smiles.value === 'MALFORMED_INPUT_VALUE') {
       result.appendChild(ui.divText('The molecule is possibly malformed'));
     } else {
@@ -145,12 +148,18 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
   };
 
   for (const property of Object.keys(properties)) {
-    const result = ui.div();
-    acc.addPane(property, () => {
-      update(result, property);
-      return result;
-    }, false);
-  }
+    const models = properties[property]['models'];
+    const shouldAddProperty = models.some((model: any) => !model.skip);
+
+    if (shouldAddProperty) {
+        const result = ui.div();
+        acc.addPane(property, () => {
+            update(result, property);
+            return result;
+        }, false);
+    }
+}
+
 
   return acc;
 }
