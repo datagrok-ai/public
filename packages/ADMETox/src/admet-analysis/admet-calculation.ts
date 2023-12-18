@@ -2,30 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { models, properties } from './const';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import { properties } from './const';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
-import { DockerContainer, DockerContainersDataSource } from 'datagrok-api/dg';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 const _COLUMN_NAME_STORAGE = 'column_names';
-let terminated = false;
-let malformedIndexes: number[] = [];
-
-/**
- * Fetches the Admetox Docker container.
- * @returns {Promise<DockerContainer | undefined>} A promise that returns Admetox Docker container or undefined if not found.
- */
-async function getAdmetoxContainer(): Promise<DockerContainer | undefined> {
-  try {
-    const dockerContainers: DockerContainersDataSource = await grok.dapi.docker.dockerContainers;
-    return dockerContainers.filter('admetox').first();
-  } catch (error) {
-    console.error('Failed to get the Admetox container:', error);
-    return undefined;
-  }
-}
 
 /**
  * Sends a POST request to the Admetox server with CSV data and specific query parameters.
@@ -34,12 +16,11 @@ async function getAdmetoxContainer(): Promise<DockerContainer | undefined> {
  * @param {string} queryParams - The query parameters to be included in the request URL (model names).
  * @returns {Promise<string | null | undefined>} A promise that resolves to the server response or undefined if an error occurs.
  */
-export async function accessServer(csvString: string, queryParams: string): Promise<string | null | undefined> {
-  const admetDockerfile = await getAdmetoxContainer();
-
-  if (!admetDockerfile) {
-    console.error('Admetox container is not available.');
-    return;
+export async function runAdmetox(csvString: string, queryParams: string): Promise<string | null> {
+  const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
+  if (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking') {
+    grok.log.warning('ADMETox container has not started yet.');
+    return null;
   }
 
   const params: RequestInit = {
@@ -51,47 +32,25 @@ export async function accessServer(csvString: string, queryParams: string): Prom
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}&probability=True`;
+  const path = `/df_upload?models=${queryParams}&probability=False`;
   try {
-    const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
+    const response = await grok.dapi.docker.dockerContainers.request(admetoxContainer.id, path, params);
     return response;
   } catch (error) {
     console.error('Failed to access the server:', error);
-    return;
+    return null;
   }
 }
 
-/**
- * Attaches a tooltip handler to the DataGrid cells in the current TableView to show
- * additional information based on the cell's content and column.
- */
-export function addTooltip() {
-  const tableView = grok.shell.tv;
-
-  tableView.grid.onCellTooltip((cell, x, y) => {
-    const col = cell.tableColumn?.name;
-
-    if (cell.isTableCell && col && models[col]) {
-      const keys = Object.keys(models[col]);
-      const rowValue = tableView.dataFrame.get(cell.gridColumn.name, cell.gridRow);
-
-      let val = '';
-      keys.some((range, i) => {
-        const nextRange = keys[i + 1];
-        const isLastRange = i === keys.length - 1;
-
-        if (nextRange && rowValue >= +range && rowValue <= +nextRange) {
-          val = models[col][range];
-          return true;
-        } else if (isLastRange) {
-          val = models[col][range];
-          return true;
-        }
-      });
-
-      ui.tooltip.show(ui.divV([ui.div(val)]), x, y);
-      return true;
-    }
+export async function addCalculations(smilesCol: DG.Column, viewTable: DG.DataFrame) {
+  openModelsDialog(await getSelected(), smilesCol, async (selected: any) => {
+    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+    selected = await getSelected();
+    //const pi = DG.TaskBarProgressIndicator.create('Prediction...');
+    const csvString = DG.DataFrame.fromColumns([smilesCol]).toCsv();
+    const admetoxResults = await runAdmetox(csvString, selected.join(','));
+    const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
+    table ? addResultColumns(table, viewTable) : grok.log.warning('');
   });
 }
 
@@ -123,103 +82,16 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
     .filter(obj => obj['skip'] !== true)
     .map(obj => obj['name'])
     .join(',');
-  const df = await processColumn(smilesCol, queryParams);
-  addResultColumns(df, viewTable, malformedIndexes);
+  const csvString = await runAdmetox(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+  const table = csvString ? DG.DataFrame.fromCsv(csvString) : null;
+  if (table)
+    addResultColumns(table, viewTable);
 }
 
-async function openModelsDialogAsync(column: DG.Column): Promise<any[]> {
-  const selected = await getSelected();
-
-  return new Promise<any[]>((resolve, reject) => {
-    openModelsDialog(selected, column, async (selected: any[]) => {
-      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-      if (selected.length === 0) {
-        grok.shell.warning('No models have been selected!');
-        reject('No models selected');
-      } else {
-        resolve(selected);
-      }
-    });
-  });
-}
-
-async function processColumn(smilesCol: DG.Column, selected: string): Promise<DG.DataFrame> {
-  let confirmed;
-  let result: DG.DataFrame;
-  if (smilesCol.length > 100000)
-    confirmed = showConfirmationDialogAsync();
-
-  if (confirmed || smilesCol.length < 100000) {
-    malformedIndexes = [];
-    //malformedIndexes = await grok.functions.call('Chem:_getMolSafe', { molecules: smilesCol });
-    const smilesColFiltered = DG.Column.fromStrings(
-      smilesCol.name,
-      Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-    result = await addColumnsAndProcessInBatches(smilesColFiltered, selected);
-  }
-
-  return result!;
-}
-
-function showConfirmationDialogAsync(): boolean {
-  const dialog = ui.dialog({ title: 'Proceed with computations' });
-  let confirmed: boolean = false;
-  dialog
-    .add(
-      ui.divText(
-        `Performing computations could potentially consume a significant amount of time.
-        Do you want to continue?`
-      )
-    )
-    .addButton('YES', () => {
-      dialog.close();
-      confirmed = true;
-    })
-    .onCancel(() => {confirmed = false})
-    .show();
-  return confirmed;
-}
-
-/**
- * Retrieves the selected models and performs predictions for ADME/Tox properties on a DataFrame column.
- *
- * @param {DG.DataFrame} viewTable - The DataFrame containing the molecules.
- * @param {DG.Column} column - The column representing the SMILES strings of the molecules.
- * @returns {Promise<DG.DataFrame>} A promise that resolves to a DataFrame with ADME/Tox predictions.
- */
-export async function getPredictions(viewTable: DG.DataFrame, column: DG.Column): Promise<DG.DataFrame> {
-  try {
-    const selected = await openModelsDialogAsync(column);
-    const colName = await grok.dapi.userDataStorage.getValue(_COLUMN_NAME_STORAGE, _KEY);
-    const smilesCol = viewTable.columns.byName(colName);
-
-    return processColumn(smilesCol, selected.join(','));
-  } catch (error) {
-    console.error('Error in getPredictions:', error);
-    throw error;
-  }
-}
-
-/**
- * Fetches ADME/Tox predictions for the specified DataFrame column and adds the result columns to the DataFrame.
- *
- * @param {DG.DataFrame} viewTable - The DataFrame containing the molecules.
- * @param {DG.Column} column - The column representing the SMILES strings of the molecules.
- * @returns {Promise<void>} A promise that resolves when the predictions are added to the DataFrame.
- */
-export async function addPredictions(viewTable: DG.DataFrame, column: DG.Column) {
-  const df = await getPredictions(viewTable, column);
-  addResultColumns(df, viewTable, malformedIndexes);
-}
-
-async function addColumnsAndProcessInBatches(smilesCol: DG.Column, queryParams: string): Promise<DG.DataFrame> {
-  return await processColumnInBatches(smilesCol, 100000, queryParams);
-}
-
-function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
+function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
+  //substitute after demo
+  const confidenceInterval = 0.5;
   if (table.columns.length > 0) {
-    if (malformedIndexes)
-      malformedIndexes.map((index) => table.rows.insertAt(index));
     const modelNames: string[] = table.columns.names();
     const updatedModelNames: string[] = [];
     for (let i = 0; i < modelNames.length; ++i) {
@@ -229,20 +101,9 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malforme
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
+    viewTable.rows.removeWhere((row) => row.get('Y_Pgp-Inhibitor_probability') <= 0.5);
     addColorCoding(updatedModelNames);
-    addTooltip();
   }
-}
-
-function processCsv(csvString: string | null | undefined): DG.DataFrame {
-  const table = DG.DataFrame.fromCsv(csvString!);
-  const modelNames: string[] = table.columns.names();
-  modelNames.shift();
-  const columns = table.columns.byNames(modelNames);
-  /*for (let i = 1; i < modelNames.length; ++i) {
-    const column: DG.Column = table.columns.byName(modelNames[i]);
-  }*/
-  return DG.DataFrame.fromColumns(columns);
 }
 
 /**
@@ -264,7 +125,7 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
       result.appendChild(ui.divText('The molecule is possibly malformed'));
     } else {
       result.appendChild(ui.loader());
-      accessServer(
+      runAdmetox(
         `smiles
         ${smiles.value}`,
         queryParams.toString()
@@ -273,7 +134,7 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
         console.log(e);
       }).then((csvString: any) => {
         ui.empty(result);
-        const table = processCsv(csvString);
+        const table = DG.DataFrame.fromCsv(csvString);
         const map: { [_: string]: any } = {};
         for (const model of queryParams)
           map[model] = Number(table.col(model)?.get(0)).toFixed(2);
@@ -421,118 +282,4 @@ async function getSelected() : Promise<any> {
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   return selected;
-}
-
-/**
- * Process a batch of molecules using the ADME/Tox server.
- * @param {any[]} batch - Array containing the molecules to process in the batch.
- * @param {string} queryParams - Query parameters for ADME/Tox predictions.
- * @returns {Promise<DG.DataFrame>} - Promise that resolves to the processed DataFrame.
- * @throws {Error} - If an error occurs during batch processing.
- */
-export async function processBatch(batch: any[], queryParams: string): Promise<DG.DataFrame> {
-  try {
-    const csvString = await accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams);
-    return processCsv(csvString);
-  } catch (error) {
-    console.error('Error processing batch:', error);
-    throw error;
-  }
-}
-
-class Semaphore {
-  concurrency: number;
-  current: number;
-  queue: (() => void)[];
-
-  constructor(concurrency: number) {
-    this.concurrency = concurrency;
-    this.current = 0;
-    this.queue = [];
-  }
-
-  async acquire() {
-    if (this.current < this.concurrency) {
-      this.current++;
-      return Promise.resolve();
-    } else {
-      return new Promise<void>(resolve => {
-        this.queue.push(resolve);
-      });
-    }
-  }
-
-  release() {
-    this.current--;
-    if (this.queue.length > 0) {
-      const resolve = this.queue.shift();
-      resolve?.();
-    }
-  }
-}
-
-/**
- * Processes a DataFrame column in batches and evaluates ADME/Tox predictions for each batch.
- *
- * @param {DG.Column} column - The column to be processed in batches.
- * @param {number} [batchSize=100] - The size of each batch.
- * @param {string} queryParams - The query parameters for ADME/Tox predictions.
- * @returns {Promise<DG.DataFrame>} A promise that resolves to a DataFrame with evaluated predictions.
- */
-async function processColumnInBatches(column: DG.Column, batchSize = 100, queryParams: string): Promise<DG.DataFrame> {
-  //@ts-ignore
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...', {cancelable: true});
-  //@ts-ignore
-  progressIndicator.onCanceled.subscribe(() => {
-    progressIndicator.close();
-    terminated = true;
-  });
-
-  const semaphore = new Semaphore(10);
-
-  const totalBatches = Math.ceil(column.length / batchSize);
-  let processedBatches = 0;
-  let resultDf: DG.DataFrame;
-  let entered = false;
-
-  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-    if (terminated) {
-      terminated = false;
-      break;
-    }
-
-    await semaphore.acquire();
-
-    const start = batchIndex * batchSize;
-    const end = start + batchSize;
-    const batch = Array.from(column.values()).slice(start, end);
-
-    try {
-      const processedBatch = await processBatch(batch, queryParams);
-      if (!entered) {
-        resultDf = processedBatch;
-        entered = true;
-      } else {
-        resultDf!.append(processedBatch, true);
-      }
-    } catch (error) {
-      console.error('Error processing batch:', error);
-    } finally {
-      processedBatches++;
-      const percent = (processedBatches / totalBatches) * 100;
-      progressIndicator.update(percent, `${percent.toFixed(2)}% is evaluated...`);
-      semaphore.release();
-    }
-  }
-
-  while (processedBatches < totalBatches) {
-    if (terminated) {
-      terminated = false;
-      break;
-    }
-    await delay(100);
-  }
-
-  progressIndicator.close();
-  return resultDf!;
 }

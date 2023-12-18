@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getModelsSingle, addForm, addTooltip, addColorCoding, addPredictions } from './admet-analysis/admet-calculation';
+import { getModelsSingle, addForm, addCalculations } from './admet-analysis/admet-calculation';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 export const _package = new DG.Package();
@@ -25,7 +25,7 @@ export function admetWidget(smiles: DG.SemanticValue): DG.Widget<any> {
 export async function admetoxCalculators() {
   const table = grok.shell.tv.dataFrame;
   const col = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  addPredictions(table, col!);
+  addCalculations(col!, table);
 }
 
 //name: admeFormEditor
@@ -59,5 +59,4 @@ export async function addFormViewer(molecules: DG.Column) {
   const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", molecules.name);
   const view = grok.shell.tv;
   view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
-  addTooltip();
 }
