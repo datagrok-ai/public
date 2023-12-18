@@ -4,13 +4,17 @@ import subprocess
 import joblib
 import torch
 import chemprop
+import numpy as np
+from numpy.linalg import norm
 import jaqpotpy
 from jaqpotpy import jaqpot
 from jaqpotpy.models import MolecularModel
 import pandas as pd
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request
+from constants import mean_vectors
 
 app = Flask(__name__)
 
@@ -39,11 +43,27 @@ def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
     ]
 
     subprocess.call(command, cwd=current_path)
-    
-    #with open(preds_path, 'r') as file:
-        #content = file.read()
-    
-    #return content
+
+def generate_fingerprint(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is not None:
+        fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
+        return [int(bit) for bit in fingerprint]
+    else:
+        return None
+
+def calculate_similarity(mean_vector, fingerprint):
+    return np.dot(mean_vector, fingerprint) / (norm(mean_vector) * norm(fingerprint))
+
+def calculate_chemprop_probability(smiles_list, model):
+    mean_vector = mean_vectors[model]
+    probabilities = [
+        calculate_similarity(mean_vector, generate_fingerprint(smiles))
+        if generate_fingerprint(smiles) is not None
+        else 0.0
+        for smiles in smiles_list
+    ]
+    return probabilities
 
 def make_euclia_predictions(test_path, checkpoint_path, add_probability):
     current_path = os.path.dirname(os.path.realpath(__file__))
@@ -66,6 +86,9 @@ def handle_model(model, test_data_path, add_probability):
         os.remove(result_path)
         new_columns = {col: f"{col}_{model}" for col in current_df.columns[1:]}
         current_df = current_df.rename(columns=new_columns)
+        if add_probability:
+            probabilities = calculate_chemprop_probability(current_df.iloc[:, 0].tolist(), model)
+            current_df[f'Y_{model}_probability'] = probabilities
     else:
         predictions, probabilities = make_euclia_predictions(test_data_path, test_model_name, add_probability)
         current_df = pd.DataFrame({f'Y_{model}': predictions})
