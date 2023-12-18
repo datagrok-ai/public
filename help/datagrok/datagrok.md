@@ -168,7 +168,7 @@ combatting data silos and complex data ecosystems.
 functions versatile, allowing them to work on their own or within larger
 scripts, no matter the function's language or role. This means you can use
 functions as blocks to build on your team's collective expertise while fully
-leveraging Datagrok's capabilities. [See this example](solutions/domains/chem/chem.md#chemical-scripts).
+leveraging Datagrok's capabilities. (See the cheminformatics example below).
 
 <!---
 
