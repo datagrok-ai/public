@@ -8,7 +8,7 @@ import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 import {IPdbqtAtomBase} from '@datagrok-libraries/bio/src/pdb/format/types';
 
-import {PdbqtAtomCoords, PdbqtAtomTer, VinaResultType} from './types-pdbqt';
+import {PdbqtAtomCoords, PdbqtAtomTer, VinaResultType} from '@datagrok-libraries/bio/src/pdb/format/types-pdbqt';
 
 import {_package} from '../package';
 import {IMPORT} from '../consts-import';

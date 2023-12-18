@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {AutoDockRunResult, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {AutoDockRunResult, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -52,11 +52,12 @@ export async function autoDockApp(): Promise<void> {
 //input: int x
 //input: int y
 //input: int z
-//output: object dockingResults
+//output: dataframe result
 export async function runAutodock(
   receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number,
-): Promise<AutoDockRunResult | null> {
-  return await _runAutodock(receptor, ligand, x, y, z);
+): Promise<DG.DataFrame | null> {
+  const npts = new GridSize(x, y, z);
+  return await _runAutodock(receptor, ligand, npts);
 }
 
 //name: runAutodock2
@@ -116,6 +117,7 @@ export async function runAutodock4(
       binary: false,
       data: (new TextDecoder).decode(receptor.data) ?? (await grok.dapi.files.readAsText(receptor)),
       ext: receptor.extension,
+      options: {name: receptor.name,},
     };
 
     const data: AutoDockDataType = {

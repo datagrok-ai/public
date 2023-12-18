@@ -12,6 +12,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package';
+import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 
 export type AutoDockDataType = {
   ligandDf: DG.DataFrame,
@@ -139,11 +140,10 @@ export class AutoDockApp {
       // TODO: Convert receptor data to PDB string
       if (this.data.receptor.ext !== 'pdb' || typeof this.data.receptor.data !== 'string')
         throw new Error('Unsupported receptor data');
-      const receptorPdb: string = this.data.receptor.data as string;
 
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
 
-      const posesAllDf = await runAutoDock(receptorPdb, ligandCol, this.poseColName, pi);
+      const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.poseColName, pi);
       if (posesAllDf !== undefined) {
         // posesAllDf.getCol(this.poseColName).setTag('cell.renderer', 'xray');
 
@@ -177,7 +177,7 @@ export class AutoDockApp {
 
 // -- Routines --
 async function runAutoDock(
-  receptorPdb: string, ligandCol: DG.Column<string>, poseColName: string, pi: DG.ProgressIndicator
+  receptorData: BiostructureData, ligandCol: DG.Column<string>, poseColName: string, pi: DG.ProgressIndicator
 ): Promise<DG.DataFrame | undefined> {
   let adSvc!: IAutoDockService;
   try {
@@ -191,7 +191,6 @@ async function runAutoDock(
   const pdbHelper: IPdbHelper = await getPdbHelper();
   let posesAllDf: DG.DataFrame | undefined = undefined;
 
-  const npts: GridSize = {x: 40, y: 40, z: 40};
   const ligandRowCount = ligandCol.length;
   for (let lRowI = 0; lRowI < ligandRowCount && lRowI < 3; ++lRowI) {
     const ligandMol = ligandCol.get(lRowI);
@@ -199,16 +198,18 @@ async function runAutoDock(
     const ligandPdb = await pdbHelper.molToPdb(ligandMol!);
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
 
-    const adRunRes = await adSvc.run(
-      receptorPdb, ligandData, npts, 10, poseColName);
+    const npts: GridSize = {x: 40, y: 40, z: 40};
+    const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
+    const posesDf = await adSvc.dockLigand(
+      receptorData, ligandData, autodockGpf, 10, poseColName);
 
     // region: add extra columns to AutoDock output
 
-    const pdbqtCol = adRunRes.posesDf.getCol(poseColName);
+    const pdbqtCol = posesDf.getCol(poseColName);
     pdbqtCol.name = `${poseColName}_pdbqt`;
     pdbqtCol.semType = DG.SEMTYPE.MOLECULE3D;
     pdbqtCol.setTag(DG.TAGS.UNITS, 'pdbqt');
-    const rowCount = adRunRes.posesDf.rowCount;
+    const rowCount = posesDf.rowCount;
     const molCol = DG.Column.fromType(DG.TYPE.STRING, poseColName, rowCount);
     for (let rowI = 0; rowI < rowCount; ++rowI) {
       const pdbqtVal = pdbqtCol.get(rowI);
@@ -216,23 +217,22 @@ async function runAutoDock(
       molCol.set(rowI, molVal);
     }
     molCol.semType = DG.SEMTYPE.MOLECULE;
-    adRunRes.posesDf.columns.insert(molCol, 0);
+    posesDf.columns.insert(molCol, 0);
 
     // endregion: add extra columns to AutoDock output
 
-
     if (posesAllDf === undefined) {
-      posesAllDf = adRunRes.posesDf.clone(
-        DG.BitSet.create(adRunRes.posesDf.rowCount, (_i) => false));
+      posesAllDf = posesDf.clone(
+        DG.BitSet.create(posesDf.rowCount, (_i) => false));
       for (let colI = 0; colI < posesAllDf!.columns.length; ++colI) {
-        const srcCol = adRunRes.posesDf.columns.byIndex(colI);
+        const srcCol = posesDf.columns.byIndex(colI);
         const tgtCol = posesAllDf!.columns.byIndex(colI);
         // for (const [tagName, tagValue] of Object.entries(srcCol.tags)) {
         //   tgtCol.setTag(tagName, tagValue);
         // }
       }
     }
-    posesAllDf!.append(adRunRes.posesDf, true);
+    posesAllDf!.append(posesDf, true);
     pi.update(100 * lRowI / ligandRowCount, 'AutoDock running...');
   }
 

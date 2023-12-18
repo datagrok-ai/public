@@ -2,23 +2,32 @@
   "name": "docking",
   "beta": true,
   "friendlyName": "Docking",
+  "author": {
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
+  },
   "version": "0.0.1",
-  "description": "",
+  "description": "Integrates Datagrok with molecular docking algorithms and tools.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Docking"
+  },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.39.10",
+    "@datagrok-libraries/bio": "^5.39.11",
     "@datagrok-libraries/utils": "^4.1.36",
     "datagrok-api": "^1.17.9",
     "cash-dom": "latest",
-    "dayjs": "latest",
+    "dayjs": "^1.11.4",
     "rxjs": "^6.5.5",
     "wu": "latest"
   },
   "devDependencies": {
     "@types/wu": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest"
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "9.4.2",
+    "typescript": "^5.3.3"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",

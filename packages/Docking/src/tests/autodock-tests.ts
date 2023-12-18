@@ -8,6 +8,7 @@ import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package} from '../package-test';
+import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 
 
 category('AutoDock', () => {
@@ -19,7 +20,7 @@ category('AutoDock', () => {
       if (!adSvc.ready) {
         _package.logger.warning('AutoDock docker container is not ready, trying to start.');
         await adSvc.startDockerContainer();
-        _package.logger.warning('AutoDock docker container successfully started .');
+        _package.logger.warning('AutoDock docker container successfully started.');
         if (!adSvc.ready) {
           _package.logger.warning('AutoDock docker container can not start, skip tests');
           adSvc = null;
@@ -31,6 +32,13 @@ category('AutoDock', () => {
     }
   });
 
+  test('clinfo', async () => {
+    if (!adSvc) return;
+
+    const clinfoCount = await adSvc.checkOpenCl();
+    expect(clinfoCount > 0, true, 'OpenCL platform not found.');
+  });
+
   test('1bdq', async () => {
     if (!adSvc) return;
 
@@ -39,10 +47,11 @@ category('AutoDock', () => {
     if (receptorPdb === '' && ligandPdb === '')
       throw new Error('Empty test data');
 
+    const receptorData: BiostructureData = {binary: false, ext: 'pdb', data: receptorPdb};
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
-
     const npts = new GridSize(20, 20, 20);
-    const adRes = await adSvc.run(receptorPdb, ligandData, npts);
-    expect(adRes.posesDf.rowCount, 30);
+    const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
+    const posesDf = await adSvc.dockLigand(receptorData, ligandData, autodockGpf);
+    expect(posesDf.rowCount, 30);
   }, {timeout: 60000});
 });

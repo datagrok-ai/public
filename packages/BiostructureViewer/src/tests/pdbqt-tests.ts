@@ -13,7 +13,7 @@ import {PdbAtomCoords} from '@datagrok-libraries/bio/src/pdb/format/types-pdb';
 
 import {IMPORT} from '../consts-import';
 import {importPdbqtUI} from '../utils/import-pdbqt';
-import {PdbqtAtomCoords} from '../utils/types-pdbqt';
+import {PdbqtAtomCoords} from '@datagrok-libraries/bio/src/pdb/format/types-pdbqt';
 import {Pdbqt} from '../utils/pdbqt-parser';
 
 import {_package} from '../package-test';
