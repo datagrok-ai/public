@@ -106,8 +106,8 @@ export class MonomerPlacer {
     }
     this._monomerLengthList[0] ??= new Array(0);
     const res = this._monomerLengthList[0];
-    const startIdx = Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0);
-    const endIdx = Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length);
+    const startIdx = Math.max(Math.floor((this.grid?.root ? this.grid?.vertScroll.min ?? 0 : 0) - 10), 0);
+    const endIdx = Math.min(Math.ceil((this.grid?.root ? this.grid?.vertScroll.max ?? 0 : 0) + 10), this.col.length);
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._rowsProcessed.get(seqIdx))
         continue;
