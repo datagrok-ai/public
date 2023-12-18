@@ -9,7 +9,6 @@ import {getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
-import {IPdbqtHelper} from '@datagrok-libraries/bio/src/pdb/pdbqt-helper';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
