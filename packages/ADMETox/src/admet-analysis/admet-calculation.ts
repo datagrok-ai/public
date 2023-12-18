@@ -121,7 +121,7 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
   }
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties[modelName]['models']
-    .filter((model: any) => model.skip !== false)
+    .filter((model: any) => model.skip === false)
     .map((model: any) => model['name']);
 
     if (smiles.value === 'MALFORMED_INPUT_VALUE') {
