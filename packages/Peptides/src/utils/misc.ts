@@ -155,6 +155,7 @@ export function addExpandIcon(grid: DG.Grid): void {
 
 export function setGridProps(grid: DG.Grid): void {
   grid.props.allowEdit = false;
+  grid.props.showReadOnlyNotifications = false;
   grid.props.allowRowSelection = false;
   grid.props.allowBlockSelection = false;
   grid.props.allowColSelection = false;

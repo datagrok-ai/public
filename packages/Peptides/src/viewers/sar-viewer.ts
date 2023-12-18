@@ -889,15 +889,6 @@ export class MostPotentResidues extends SARViewer {
         grok.shell.windows.help.showHelp(ui.markdown(text));
       }).catch((e) => grok.log.error(e));
     });
-    
-    grid.onCellDoubleClick.subscribe((event) => {
-      
-      console.log(`QWERTYUIOP`);
-    })
-
-    grid.root.addEventListener('dblclick', (ev) => {
-      console.log(`dblclick`);
-    });
 
     setViewerGridProps(grid);
     const mdCol: DG.GridColumn = grid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
