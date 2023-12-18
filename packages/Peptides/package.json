@@ -32,8 +32,6 @@
     "@typescript-eslint/parser": "latest",
     "css-loader": "latest",
     "eslint": "latest",
-    "jsdoc": "latest",
-    "eslint-plugin-jsdoc": "latest",
     "eslint-config-google": "latest",
     "style-loader": "latest",
     "ts-loader": "latest",
