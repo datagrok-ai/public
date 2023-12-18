@@ -182,7 +182,7 @@ visualizes the results. In this case, however, the script is also tagged as a
 `panel`. This instructs Datagrok to show the results as an interactive UI
 element that updates dynamically for the current molecule.
 
-| <div style={{ width:160 }}></div>  | |
+|  | |
 |--|--|
 |Script with auto-generated UI based on annotation|![Gasteiger partial charges script](solutions/domains/chem/img/script-gasteiger-part-charges-0.png)|
 |Script output|![Gasteiger partial charges script output](solutions/domains/chem/img/script-output-gasteiger-part-charges-0.png)|
