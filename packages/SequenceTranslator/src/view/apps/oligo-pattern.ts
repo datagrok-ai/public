@@ -544,28 +544,31 @@ export class PatternLayoutHandler {
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
 
     function getTableInput(tableList: DG.DataFrame[]): DG.InputBase {
-      console.log(`tableList:`, tableList);
       const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
         const table = tableInput.value;
         if (table === null) {
           console.warn('Table is null');
           return;
         }
+        const tableName = table!.name;
+        if (!grok.shell.tableNames.includes(tableName))
+          grok.shell.addTableView(table!);
         // console.log(`table:`, table);
         // console.log(`cols:`, table.columns);
         // console.log(`names:`, table.columns.names());
         const columnNames = table.columns.names();
 
         STRANDS.forEach((strand) => {
-          //@ts-ignore
-          const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, columnNames[0], columnNames, (colName: string) => {
+          const defaultColumn = columnNames[0];
+          validateStrandColumn(defaultColumn, strand);
+          strandVar[strand] = defaultColumn;
+          const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, defaultColumn, columnNames, (colName: string) => {
             validateStrandColumn(colName, strand);
             strandVar[strand] = colName;
             console.log(`clicked ${strand} var:`, strandVar[strand]);
           });
           $(strandColumnInput[strand].root).replaceWith(input.root);
           // $(inputIdColumnDiv).replaceWith(ui.div([inputStrandColumn[strand]]));
-          console.log(`${strand} input`,strandColumnInput[strand].root.innerHTML);
           // $(inputStrandColumnDiv[strand]).replaceWith(ui.divText('ababa'));
           // $(inputStrandColumnDiv[strand])
           //   .replaceWith(ui.div([inputStrandColumn[strand]]));
@@ -574,6 +577,7 @@ export class PatternLayoutHandler {
           // console.log(`${strand} input div`,strandColumnInputDiv[strand].innerHTML);
         })
 
+        idVar = columnNames[0];
         // todo: unify with inputStrandColumn
         const idInput = ui.choiceInput('ID column', columnNames[0], columnNames, (colName: string) => {
           validateIdsColumn(colName);
