@@ -1,0 +1,326 @@
+[
+  {
+    "name": "Dendrogram",
+    "date": "2023-12-15T12:29:10.199Z",
+    "version": "1.2.22",
+    "summary": "",
+    "dir": "packages/Dendrogram",
+    "changelog": false,
+    "changelogDate": "2023-12-15T12:29:10.199Z"
+  },
+  {
+    "name": "Bio",
+    "date": "2023-12-14T14:57:46.567Z",
+    "version": "2.11.15",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2023-12-14T14:57:46.567Z"
+  },
+  {
+    "name": "EDA",
+    "date": "2023-12-14T10:47:39.379Z",
+    "version": "1.1.7",
+    "summary": "",
+    "dir": "packages/EDA",
+    "changelog": false,
+    "changelogDate": "2023-12-14T10:47:39.379Z"
+  },
+  {
+    "name": "Deqs",
+    "date": "2023-12-12T16:54:26.108Z",
+    "version": "1.0.0",
+    "summary": "In-browser tools for solving ordinary differential equations (ODE) systems.",
+    "dir": "packages/ODEs",
+    "changelog": true,
+    "changelogDate": "2023-12-12"
+  },
+  {
+    "name": "Tutorials",
+    "date": "2023-12-07T13:44:41.035Z",
+    "version": "1.3.21",
+    "summary": "* Fixed dock size.",
+    "dir": "packages/Tutorials",
+    "changelog": true,
+    "changelogDate": "2023-12-07"
+  },
+  {
+    "name": "Chem",
+    "date": "2023-12-07T10:56:35.131Z",
+    "version": "1.8.8",
+    "summary": "* Chem: Fix demos for scaffold tree, chemical databases and similarity/diversity search.",
+    "dir": "packages/Chem",
+    "changelog": true,
+    "changelogDate": "2023-12-07"
+  },
+  {
+    "name": "PowerPack",
+    "date": "2023-12-05T17:00:39.712Z",
+    "version": "1.1.4",
+    "summary": "* Disabled queries search to increase performance, until DG 1.18.0",
+    "dir": "packages/PowerPack",
+    "changelog": true,
+    "changelogDate": "2023-11-28"
+  },
+  {
+    "name": "Compute",
+    "date": "2023-12-01T12:41:10.302Z",
+    "version": "1.17.4",
+    "summary": "",
+    "dir": "packages/Compute",
+    "changelog": false,
+    "changelogDate": "2023-12-01T12:41:10.302Z"
+  },
+  {
+    "name": "PowerGrid",
+    "date": "2023-11-30T20:10:20.293Z",
+    "version": "1.2.6",
+    "summary": "* Forms viewer: Fixed indicator margins.",
+    "dir": "packages/PowerGrid",
+    "changelog": true,
+    "changelogDate": "2023-11-30"
+  },
+  {
+    "name": "Peptides",
+    "date": "2023-11-29T15:30:32.607Z",
+    "version": "1.17.0",
+    "summary": "* Renamed activity column to _Activity_ (previously: _Scaled activity_).\n* Improved input tooltip in the Mutation Cliffs pairs panel.\n* Autosize grids in the Mutation Cliffs pairs panel.\n* Hid sequence space embedding columns and axes selectors.\n* Saving context panels state.\n* Selected cells now have an orange thick border.\n* Distribution panel now shows distribution for (1) all activity values, (2) selected rows, (3) peptides selection from\n  viewers if mismatched with the total selection.\n* Sequence space viewer now uses the Needleman-Wunsch algorithm to compute distances.\n* Linearization of helm format macromolecules before sequence space computation.\n* Improved rendering speed of invariant map (no lags).\n* Improved rendering speed upon selection/filtering.",
+    "dir": "packages/Peptides",
+    "changelog": true,
+    "changelogDate": "2023-11-29"
+  },
+  {
+    "name": "Chembl",
+    "date": "2023-11-29T06:44:02.876Z",
+    "version": "1.0.35",
+    "summary": "",
+    "dir": "packages/Chembl",
+    "changelog": false,
+    "changelogDate": "2023-11-29T06:44:02.876Z"
+  },
+  {
+    "name": "Usage Analysis",
+    "date": "2023-11-27T11:41:33.035Z",
+    "version": "1.0.4",
+    "summary": "",
+    "dir": "packages/UsageAnalysis",
+    "changelog": false,
+    "changelogDate": "2023-11-27T11:41:33.035Z"
+  },
+  {
+    "name": "HitTriage",
+    "date": "2023-11-21T05:20:23.000Z",
+    "version": "1.1.1",
+    "summary": "Hit Design application improvements",
+    "dir": "packages/HitTriage",
+    "changelog": true,
+    "changelogDate": "2023-11-20"
+  },
+  {
+    "name": "Curves",
+    "date": "2023-11-17T17:47:48.646Z",
+    "version": "1.2.15",
+    "summary": "* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added capability to substitute zeroes in curve fitting for logarithmic data",
+    "dir": "packages/Curves",
+    "changelog": true,
+    "changelogDate": "2023-11-17"
+  },
+  {
+    "name": "Helm",
+    "date": "2023-11-14T12:52:24.689Z",
+    "version": "2.1.22",
+    "summary": "",
+    "dir": "packages/Helm",
+    "changelog": false,
+    "changelogDate": "2023-11-14T12:52:24.689Z"
+  },
+  {
+    "name": "Sequence Translator",
+    "date": "2023-11-14T11:36:01.020Z",
+    "version": "1.2.4",
+    "summary": "",
+    "dir": "packages/SequenceTranslator",
+    "changelog": false,
+    "changelogDate": "2023-11-14T11:36:01.020Z"
+  },
+  {
+    "name": "API Samples",
+    "date": "2023-11-14T09:38:11.570Z",
+    "version": "1.0.8",
+    "summary": "",
+    "dir": "packages/ApiSamples",
+    "changelog": false,
+    "changelogDate": "2023-11-14T09:38:11.570Z"
+  },
+  {
+    "name": "Bioreactor",
+    "date": "2023-11-13T12:19:32.302Z",
+    "version": "1.1.5",
+    "summary": "Descriptions are updated.",
+    "dir": "packages/Bioreactors",
+    "changelog": true,
+    "changelogDate": "2023-11-13"
+  },
+  {
+    "name": "SimPKPD",
+    "date": "2023-11-13T11:24:41.390Z",
+    "version": "1.0.5",
+    "summary": "Tooltips update.",
+    "dir": "packages/SimPKPD",
+    "changelog": true,
+    "changelogDate": "2023-11-13"
+  },
+  {
+    "name": "File Editors",
+    "date": "2023-11-13T09:46:32.049Z",
+    "version": "1.0.0",
+    "summary": "Released package",
+    "dir": "packages/FileEditors",
+    "changelog": true,
+    "changelogDate": "2023-11-13"
+  },
+  {
+    "name": "Samples",
+    "date": "2023-11-10T15:34:00.292Z",
+    "version": "1.0.0",
+    "summary": "",
+    "dir": "packages/Samples",
+    "changelog": false,
+    "changelogDate": "2023-11-10T15:34:00.292Z"
+  },
+  {
+    "name": "Charts",
+    "date": "2023-09-19T10:29:22.193Z",
+    "version": "1.2.2",
+    "summary": "* [#2096](https://github.com/datagrok-ai/public/issues/2096): Sunburst: Added different click types (make work for Mac keyboard shortcuts)",
+    "dir": "packages/Charts",
+    "changelog": true,
+    "changelogDate": "2023-09-19"
+  },
+  {
+    "name": "PubChem",
+    "date": "2023-09-18T11:24:16.795Z",
+    "version": "1.1.15",
+    "summary": "",
+    "dir": "packages/PubChemApi",
+    "changelog": false,
+    "changelogDate": "2023-09-18T11:24:16.795Z"
+  },
+  {
+    "name": "Arrow",
+    "date": "2023-09-13T07:18:19.720Z",
+    "version": "1.0.4",
+    "summary": "* GROK-13909: An error occurs when opening files",
+    "dir": "packages/Arrow",
+    "changelog": true,
+    "changelogDate": "2023-09-13"
+  },
+  {
+    "name": "ChaRPy",
+    "date": "2023-08-10T12:21:08.477Z",
+    "version": "1.0.5",
+    "summary": "",
+    "dir": "packages/ChaRPy",
+    "changelog": false,
+    "changelogDate": "2023-08-10T12:21:08.477Z"
+  },
+  {
+    "name": "SQLite",
+    "date": "2023-08-10T12:09:17.013Z",
+    "version": "1.0.2",
+    "summary": "",
+    "dir": "packages/SQLite",
+    "changelog": false,
+    "changelogDate": "2023-08-10T12:09:17.013Z"
+  },
+  {
+    "name": "Alation",
+    "date": "2023-08-10T12:08:23.936Z",
+    "version": "1.1.6",
+    "summary": "",
+    "dir": "packages/Alation",
+    "changelog": false,
+    "changelogDate": "2023-08-10T12:08:23.936Z"
+  },
+  {
+    "name": "Ketcher Sketcher",
+    "date": "2023-08-07T15:48:52.037Z",
+    "version": "2.1.4",
+    "summary": "",
+    "dir": "packages/Ketcher",
+    "changelog": false,
+    "changelogDate": "2023-08-07T15:48:52.037Z"
+  },
+  {
+    "name": "Notebooks",
+    "date": "2023-07-26T10:54:32.934Z",
+    "version": "1.0.1",
+    "summary": "Initial release of notebooks package",
+    "dir": "packages/Notebooks",
+    "changelog": true,
+    "changelogDate": "2023-07-24"
+  },
+  {
+    "name": "Enamine Store",
+    "date": "2023-07-24T11:34:36.337Z",
+    "version": "1.0.2",
+    "summary": "This release focuses on improving package usability.",
+    "dir": "packages/EnamineStore",
+    "changelog": true,
+    "changelogDate": "2023-07-24"
+  },
+  {
+    "name": "GIS",
+    "date": "2023-07-24T10:21:42.068Z",
+    "version": "1.1.4",
+    "summary": "* Fixed the test dataset location in the package.",
+    "dir": "packages/GIS",
+    "changelog": true,
+    "changelogDate": "2023-07-24"
+  },
+  {
+    "name": "Chemspace",
+    "date": "2023-07-24T08:53:34.143Z",
+    "version": "1.0.2",
+    "summary": "This release focuses on improving package usability.",
+    "dir": "packages/Chemspace",
+    "changelog": true,
+    "changelogDate": "2023-07-24"
+  },
+  {
+    "name": "ChemblAPI",
+    "date": "2023-06-30T06:33:01.826Z",
+    "version": "1.0.11",
+    "summary": "",
+    "dir": "packages/ChemblAPI",
+    "changelog": true,
+    "changelogDate": "WIP"
+  },
+  {
+    "name": "DrugBank",
+    "date": "2023-06-27T11:40:38.789Z",
+    "version": "1.0.16",
+    "summary": "This release focuses on improving package usability.",
+    "dir": "packages/DrugBank",
+    "changelog": true,
+    "changelogDate": "2023-06-27"
+  },
+  {
+    "name": "NLP",
+    "date": "2023-04-05T07:52:18.188Z",
+    "version": "1.0.6",
+    "summary": "Initial release of NLP package",
+    "dir": "packages/NLP",
+    "changelog": true,
+    "changelogDate": "2023-07-24"
+  },
+  {
+    "name": "Oligo Batch Calculator",
+    "date": "2022-12-22T13:58:28.785Z",
+    "version": "1.0.6",
+    "summary": "* Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
+    "dir": "packages/OligoBatchCalculator",
+    "changelog": true,
+    "changelogDate": "2022-12-12"
+  }
+]
