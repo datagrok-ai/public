@@ -14,20 +14,20 @@ export interface RDModule {
   set_log_tee(logName: string): RDLog;
   set_log_capture(logName: string): RDLog;
   MolList: MolListConstructor;
-  rgroups(core: RDMol, mols: MolList, details: string): RGroups;
+  RGroupDecomp: RGroupDecompConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
 }
 
-export interface RGroups {
-  columns_size(): number;
-  get_unmatched_at(pos: number): number;
-  col_at(pos: number): string;
-  size(): number;
-  unmatched_size(): number;
-  smiles_by_col_and_idx(name: string, idx: number): string
+export interface RGroupDecomp {
+  add(mol: RDMol): number;
+  process(): boolean;
+  get_rgroups_as_columns(): {[colName: string]: MolList};
+  get_rgroups_as_rows(): {[rowNum: string]: MolList};
   delete(): void;
-  next(): string;
-  reset(): void;
+}
+
+interface RGroupDecompConstructor {
+  new(core: RDMol, details: string): RGroupDecomp;
 }
 
 export interface RDMol {

@@ -72,7 +72,7 @@ export function hexToPercentRgb(hex: string): number[] | null {
   ] : null;
 }
 
-export function stringArrayToMolList(molecules: string[], rdkit: RDModule): MolList {  
+export function stringArrayToMolList(molecules: string[], rdkit: RDModule): MolList {
   const mols = new rdkit.MolList();
   for (let i = 0; i < molecules.length; i++)
     appendMolList(molecules[i], mols, rdkit);

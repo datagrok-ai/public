@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {findRGroups} from '../scripts-api';
 import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../utils/chem-common-rdkit';
 
@@ -137,7 +136,6 @@ export function rGroupAnalysis(col: DG.Column): void {
           alignment: rGroupAlignment.value!,
         };
         const result = await rGroupsMinilib(col, core, rGroupOptions);
-
         if (result.length) {
           result.forEach((rCol) => col.dataFrame.columns.add(rCol));
 
@@ -164,6 +162,7 @@ export function rGroupAnalysis(col: DG.Column): void {
 
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string, options?:
     {[key: string]: string}): Promise<DG.Column<string>[]> {
+  const mod = getRdKitModule();
   const res: IRGroupAnalysisResult =
     await (await getRdKitService())
       .getRGroups(molecules.toList(), coreMolecule, options ? JSON.stringify(options) : '');

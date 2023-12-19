@@ -1,5 +1,5 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {MolList, RDModule, RDMol, RGroups} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
@@ -274,8 +274,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   rGroupAnalysis(molecules: string[], coreMolecule: string, options?: string): IRGroupAnalysisResult {
     let mols: MolList | null = null;
-    let res: RGroups | null = null;
+    let res: RGroupDecomp | null = null;
     let core: RDMol | null = null;
+    let cols: {[colName: string] : MolList | null} = {};
+    let totalCols = 0;
+    let colNames: string [] = [];
     const resCols = [];
     try {
       mols = stringArrayToMolList(molecules, this._rdKitModule);
@@ -285,33 +288,29 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         throw new Error(`Core is possibly malformed`);
       }
 
-      res = this._rdKitModule.rgroups(core!, mols!, options ? options : '');
-
-      const colNames: string[] = [];
+      //res = this._rdKitModule.rgroups(core!, mols!, options ? options : '');
+      res = new this._rdKitModule.RGroupDecomp(core!, options ? options : '');
       const unmatches: number[] = [];
-      const totalCols = res.columns_size();
-      const unmatchedSize = res.unmatched_size();
+      for (let i = 0; i < molecules.length; i ++) {
+        const match = res.add(mols!.at(i));
+        if (match == -1)
+          unmatches.push(i);
+      }
 
-      for (let i = 0; i < totalCols; i++)
-        colNames.push(res.col_at(i));
+      res.process();
 
-      for (let i = 0; i < unmatchedSize; i++)
-        unmatches.push(res.get_unmatched_at(i));
+      cols = res.get_rgroups_as_columns();
+      colNames = Object.keys(cols);
 
-      const totalLength = colNames.length*res.size();
-      const smilesArray = new Array<string>(totalLength);
 
-      for (let i = 0; i < totalLength; i++)
-        smilesArray[i] = res.next();
-
-      const colLength = res.size();
+      totalCols = colNames.length;
 
       let counter = 0;
       for (let i = 0; i < totalCols; i++) {
         const col = Array<string>(molecules.length);
         for (let j = 0; j < molecules.length; j++) {
           if (unmatches[counter] !== j)
-            col[j] = smilesArray[i*colLength + j];
+            col[j] = cols[colNames[i]]!.at(j - counter).get_smiles();
           else {
             counter++;
             col[j] = '';
@@ -325,6 +324,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       core?.delete();
       mols?.delete();
       res?.delete();
+      for (let i = 0; i < totalCols; i ++)
+        cols[colNames[i]]?.delete();
     }
   }
 
