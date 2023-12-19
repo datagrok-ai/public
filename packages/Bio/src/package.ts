@@ -68,7 +68,7 @@ import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomer
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+// import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
@@ -268,16 +268,16 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Package settings editor --
 
-//name: packageSettingsEditor
-//description: The database connection
-//tags: packageSettingsEditor
-//input: object propList
-//output: widget result
-export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
-  const widget = new PackageSettingsEditorWidget(propList);
-  widget.init().then(); // Ignore promise returned
-  return widget as DG.Widget;
-}
+// //name: packageSettingsEditor
+// //description: The database connection
+// //tags: packageSettingsEditor
+// //input: object propList
+// //output: widget result
+// export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
+//   const widget = new PackageSettingsEditorWidget(propList);
+//   widget.init().then(); // Ignore promise returned
+//   return widget as DG.Widget;
+// }
 
 // -- Cell renderers --
 
