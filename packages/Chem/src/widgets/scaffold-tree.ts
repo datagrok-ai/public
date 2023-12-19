@@ -455,6 +455,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   resizable: boolean = false;
   smartsExist: boolean = false;
   current?: DG.TreeViewNode;
+  closeAll?: boolean = false;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -1072,8 +1073,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (changeBitwise)
       this._bitOpInput!.value = BitwiseOp.OR;
     this.clearNotIcon(this.tree.children);
-    
-    this.dataFrame.rows.requestFilter();
+
+    if (!this.closeAll)
+      this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
 
@@ -1848,6 +1850,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.clearFilters();
       this.clearNotIcon(this.tree.children);
+    }));
+
+    this.subs.push(grok.events.onViewRemoving.subscribe((_) => {
+      this.closeAll = true;
     }));
 
     this.render();
