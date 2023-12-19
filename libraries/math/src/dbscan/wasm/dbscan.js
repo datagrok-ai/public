@@ -2,7 +2,6 @@ import { exportCppDbscanLib } from "./wasmDbscan.js";
 
 export async function dbscan(embedX, embedY, epsilon, minPts) {
     const wasmUrl = new URL('./wasmDbscan.wasm', import.meta.url).href;
-    console.log('aaa');
     const wasmPath = wasmUrl.substring(0, wasmUrl.lastIndexOf('/') + 1) + 'wasmDbscan.wasm';
     let wasmInstance;
     try {
