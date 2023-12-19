@@ -117,7 +117,7 @@ To learn more about querying data and data access in general, see the [Access](.
 
 When you open a dataset, Datagrok automatically detects molecules and makes available molecule-specific context actions. For example, when you open a CSV file containing molecules in the SMILES format, the following happens:
 
-* Data is parsed, and the [semantic type](../../../../catalog/semantic-types.md) _molecule_ is assigned to the corresponding column.
+* Data is parsed, and the [semantic type](../../../../govern/catalog/semantic-types.md) _molecule_ is assigned to the corresponding column.
 * Molecules are automatically rendered in the spreadsheet.
 * Column tooltip now shows the most diverse molecules in your dataset.
 * Default column filter is now a sketcher-driven substructure search.
