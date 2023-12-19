@@ -2,13 +2,14 @@ import { exportCppDbscanLib } from "./wasmDbscan.js";
 
 export async function dbscan(embedX, embedY, epsilon, minPts) {
     const wasmUrl = new URL('./wasmDbscan.wasm', import.meta.url).href;
+    console.log('aaa');
     const wasmPath = wasmUrl.substring(0, wasmUrl.lastIndexOf('/') + 1) + 'wasmDbscan.wasm';
     let wasmInstance;
     try {
-        wasmInstance = await exportCppDbscanLib({locateFile: () => wasmPath});
+        wasmInstance = await exportCppDbscanLib({locateFile: () => wasmUrl});
     } catch (e) {
         try {
-            wasmInstance = await exportCppDbscanLib({locateFile: () => wasmUrl});
+            wasmInstance = await exportCppDbscanLib({locateFile: () => wasmPath});
         }
         catch (e) {
             console.error(e);
