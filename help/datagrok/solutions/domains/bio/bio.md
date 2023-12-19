@@ -582,7 +582,7 @@ molecule (Gapmers / siRNA). Each modification is color-coded or letter-coded on 
 | `Z-New`        |                                                          | `Z`                                  |
 | `InvAbasic`    | Inverted abasic capped                                   | `(invabasic)`                        |
 | `InvAbasic(o)` | Inverted abasic capped (overhang)                        | `(invabasic)`                        |
-| `2'-OMe-U(o)`  | Nucleotide Uridine with 2’O-Methyl protection (overhang) | `mU`                                 |
+| `2'-OMe-U(o)`  | Nucleotide Uridine with 2'O-Methyl protection (overhang) | `mU`                                 |
 
 </details>
 </details>

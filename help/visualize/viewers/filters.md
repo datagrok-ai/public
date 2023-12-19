@@ -62,7 +62,7 @@ On the **Filter Panel**, you can search or filter text using keywords. To create
 
 To set the column tag value via the UI:
 
-1. Right-click the column’s header and select **Column Properties** from the
+1. Right-click the column's header and select **Column Properties** from the
    context menu. A dialog with column metadata opens.
 1. In the dialog, use the **Plus** icon to add a new tag.
 1. Enter the tag name and value.
