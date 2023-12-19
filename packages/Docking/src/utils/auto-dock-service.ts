@@ -240,6 +240,7 @@ export class AutoDockService implements IAutoDockService {
   }
 
   private async fetchAndCheck(path: string, params: RequestInit): Promise<any> {
+    // @ts-ignore
     const adResponse: Response = await grok.dapi.docker.dockerContainers.fetchProxy(this.dc.id, path, params);
     if (adResponse.status !== 200) {
       const errMsg = adResponse.statusText;
