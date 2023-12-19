@@ -8,7 +8,7 @@ are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 ## Column
 
 Dataframes consist of columns. In addition to the data type, a column can be associated with
-[tags](../../catalog/tags.md) that specify units, data format, semantic type, tooltip content and so forth. Right-click on
+[tags](../../govern/catalog/tags.md) that specify units, data format, semantic type, tooltip content and so forth. Right-click on
 a column header and open `Properties...` to view the tags and other column information.
 
 ## Metadata
@@ -41,5 +41,5 @@ See also:
 * [Project](../../collaborate/project.md)
 * [Table view](../navigation/table-view.md)
 * [View layout](../../visualize/view-layout.md)
-* [Tags](../../catalog/tags.md)
+* [Tags](../../govern/catalog/tags.md)
 * [Grid](../../visualize/viewers/grid.md)

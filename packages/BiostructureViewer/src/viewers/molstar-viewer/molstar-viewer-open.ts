@@ -7,16 +7,14 @@ import {v4 as uuidv4} from 'uuid';
 import {FileInfo as msFileInfo} from 'molstar/lib/mol-util/file-info';
 import {Color as msColor} from 'molstar/lib/mol-util/color';
 import {StateObjectSelector} from 'molstar/lib/mol-state';
-
 import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
 import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {createVolumeRepresentationParams} from 'molstar/lib/mol-plugin-state/helpers/volume-representation-params';
-
 import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
 import {VolumeIsovalueInfo} from 'molstar/lib/apps/viewer';
 
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 
-import {MolstarDataType} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {molecule3dFileExtensions} from './consts';
 
 enum ParsedParts {
@@ -30,7 +28,7 @@ enum ParsedParts {
   // density = 'density',
 }
 
-export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: MolstarDataType): Promise<void> {
+export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: BiostructureData): Promise<void> {
   if (!dataEff) return;
 
   const {binary} = molecule3dFileExtensions[dataEff.ext];
@@ -44,8 +42,17 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Mols
     throw new Error(`Can not find data provider for file ext '${dataEff.ext}'.`);
 
   const entryId = uuidv4();
+  let dataVal: BiostructureData;
+  if (dataEff.ext === 'pdb' && dataEff.binary) {
+    dataVal = {
+      binary: false, ext: dataEff.ext, options: dataEff.options,
+      data: (new TextDecoder()).decode(dataEff.data as Uint8Array)
+    };
+  } else
+    dataVal = dataEff;
 
-  const _data = await plugin.builders.data.rawData({data: dataEff.data, label: dataEff.options?.dataLabel});
+  const _data = await plugin.builders.data.rawData(
+    {data: dataVal.data, label: dataVal.options?.dataLabel});
   const parsed = await dataProvider.parse(plugin, _data, {entryId: entryId});
 
   if (parsed.hasOwnProperty(ParsedParts.trajectory) || parsed.hasOwnProperty(ParsedParts.structure) ||
@@ -66,7 +73,7 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Mols
     const isovalues: VolumeIsovalueInfo[] = [{
       type: 'relative',
       value: 1,
-      color: msColor(0x3377aa)
+      color: msColor(0x3377aa),
     }];
 
     for (const iso of isovalues) {
@@ -80,11 +87,11 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Mols
               alpha: iso.alpha ?? 1,
               isoValue: iso.type === 'absolute' ? {kind: 'absolute', absoluteValue: iso.value} : {
                 kind: 'relative',
-                relativeValue: iso.value
-              }
+                relativeValue: iso.value,
+              },
             },
             color: 'uniform',
-            colorParams: {value: iso.color}
+            colorParams: {value: iso.color},
           }));
     }
 

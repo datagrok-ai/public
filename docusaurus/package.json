@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "start": "docusaurus start",
-    "start-debug": "cd ../js-api && npm install && cd ../docusaurus && TYPEDOC_WATCH=true docusaurus start --config docusaurus-debug.config.js",
-    "build": "docusaurus build",
+    "start": "node generatePluginsPages.js && docusaurus start",
+    "start-debug": "cd ../js-api && npm install && cd ../docusaurus && node generatePluginsPages.js latest && TYPEDOC_WATCH=true docusaurus start --config docusaurus-debug.config.js",
+    "build": "node generatePluginsPages.js && docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",

@@ -2,20 +2,24 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {Observable} from 'rxjs';
+
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IViewer} from '@datagrok-libraries/bio/src/viewers/viewer';
 import {INglViewer, NglProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
-import {Observable} from 'rxjs';
+import {PromiseSyncer} from '@datagrok-libraries//bio/src/utils/syncer';
 
 import {_package} from '../package';
 
-export abstract class LigandsWithBase {
+export abstract class LigandsWithBaseApp {
   constructor(
     private readonly appFuncName: string,
-  ) { }
+  ) {
+    this.viewSyncer = new PromiseSyncer(_package.logger);
+  }
 
   async init(): Promise<void> {
-    const [df, pdb]: [DG.DataFrame, string] = await LigandsWithBase.loadDefaultData();
+    const [df, pdb]: [DG.DataFrame, string] = await LigandsWithBaseApp.loadDefaultData();
 
     this.df = df;
     this.pdb = pdb;
@@ -43,7 +47,7 @@ export abstract class LigandsWithBase {
   protected pdb: string;
 
   setData(): void {
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewSyncer.sync('setData()', async () => {
       await this.buildView();
     });
   }
@@ -51,7 +55,7 @@ export abstract class LigandsWithBase {
   // -- View --
 
   protected view?: DG.TableView;
-  protected viewPromise: Promise<void> = Promise.resolve();
+  protected viewSyncer: PromiseSyncer;
 
   async buildView(): Promise<void> {
     if (!this.df) throw new Error('df is not set');
@@ -65,7 +69,7 @@ export abstract class LigandsWithBase {
   abstract buildViewViewer(): Promise<void>;
 }
 
-export class LigandsWithNglApp extends LigandsWithBase {
+export class LigandsWithNglApp extends LigandsWithBaseApp {
   // -- View --
 
   override async buildViewViewer(): Promise<void> {
@@ -76,7 +80,7 @@ export class LigandsWithNglApp extends LigandsWithBase {
   }
 }
 
-export class LigandsWithBiostructureApp extends LigandsWithBase {
+export class LigandsWithBiostructureApp extends LigandsWithBaseApp {
   // -- View --
 
   override async buildViewViewer(): Promise<void> {

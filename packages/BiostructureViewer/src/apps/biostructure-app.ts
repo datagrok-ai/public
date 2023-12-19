@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-
-import {_getPdbHelper} from '../package-utils';
+import {PdbHelper} from '../utils/pdb-helper';
 
 /** The app for .pdb file handler, builds up PdbResDataFrame */
 export class BiostructureApp {
@@ -20,7 +19,7 @@ export class BiostructureApp {
   }
 
   async loadData(df: DG.DataFrame): Promise<void> {
-    const ph: IPdbHelper = await _getPdbHelper();
+    const ph: IPdbHelper = await PdbHelper.getInstance();
     await this.setData(df);
   }
 

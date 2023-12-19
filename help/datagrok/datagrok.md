@@ -42,7 +42,7 @@ Your data is [FAIR](../govern/catalog/fair.md) and secure.
 * Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
 flexible [authentication](../govern/authentication.md), 
 [secrets managers](../access/data-connection-credentials.md)
-* Central [metadata](../catalog/metadata.md)-annotated catalog of
+* Central [metadata](../govern/catalog/metadata.md)-annotated catalog of
 [entities](concepts/objects.md). Powerful "everything" browser for
 navigating, viewing, and managing data, connections, users, and more
 * Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
@@ -168,7 +168,7 @@ combatting data silos and complex data ecosystems.
 functions versatile, allowing them to work on their own or within larger
 scripts, no matter the function's language or role. This means you can use
 functions as blocks to build on your team's collective expertise while fully
-leveraging Datagrok's capabilities. [See this example](solutions/domains/chem/chem.md#chemical-scripts).
+leveraging Datagrok's capabilities. (See the cheminformatics example below).
 
 <!---
 
@@ -182,7 +182,7 @@ visualizes the results. In this case, however, the script is also tagged as a
 `panel`. This instructs Datagrok to show the results as an interactive UI
 element that updates dynamically for the current molecule.
 
-| <div style={{ width:160 }}></div>  | |
+|  | |
 |--|--|
 |Script with auto-generated UI based on annotation|![Gasteiger partial charges script](solutions/domains/chem/img/script-gasteiger-part-charges-0.png)|
 |Script output|![Gasteiger partial charges script output](solutions/domains/chem/img/script-output-gasteiger-part-charges-0.png)|

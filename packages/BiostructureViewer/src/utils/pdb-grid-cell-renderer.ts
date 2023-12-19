@@ -3,17 +3,16 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
+import {Observable, Subject} from 'rxjs';
 
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-
-import {_getNglGlService} from '../package-utils';
-
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {Observable, Subject} from 'rxjs';
+import {ILogger, LogLevel} from '@datagrok-libraries/bio/src/utils/syncer';
 
-import {_package} from '../package';
 import {IPdbGridCellRenderer} from './types';
+import {_getNglGlService} from '../package-utils';
+import {_package} from '../package';
 
 async function base64ToImg(base64: string): Promise<HTMLImageElement> {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -58,7 +57,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
 
     g.save();
     try {
-      const cacheDisabled: boolean = true;
+      const cacheDisabled: boolean = false;
       const image = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
 
       if (cacheDisabled || !image ||

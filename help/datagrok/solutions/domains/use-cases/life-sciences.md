@@ -55,7 +55,7 @@ them. Most common reasons for that are:
 4. A value can be interpreted only in the context of the continuous stream of data. Examples: ECG values
 
 In order to present users with a meaningful interpretation of a dataset, the platform tries to infer
-the [true meaning of the raw data](../../../../catalog/semantic-types.md) and then offers a number of visualizations and actions
+the [true meaning of the raw data](../../../../govern/catalog/semantic-types.md) and then offers a number of visualizations and actions
 that can be applied either to the whole dataset or an individual point.
 
 <!--Examples:
@@ -68,9 +68,9 @@ that can be applied either to the whole dataset or an individual point.
 
 Due to the complexity of scientific data, having the proper metadata associated with it is pivotal for computers (as
 well as people!) to understand it. Datagrok provides a comprehensive
-[metadata management framework](../../../../catalog/metadata.md).
+[metadata management framework](../../../../govern/catalog/metadata.md).
 
-We also support [FAIR Principles](../../../../catalog/fair.md) where applicable.
+We also support [FAIR Principles](../../../../govern/catalog/fair.md) where applicable.
 
 ## Formats
 

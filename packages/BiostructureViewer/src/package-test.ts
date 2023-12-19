@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 
@@ -12,6 +13,7 @@ import './tests/molstar-preview-tests';
 import './tests/molstar-viewer-tests';
 import './tests/viewers';
 import './tests/pdbqt-tests';
+
 
 // This _package object is for tests only.
 // Call package functions to test code calling package.ts/_package object.
