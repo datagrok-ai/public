@@ -233,7 +233,7 @@ export class PatternLayoutHandler {
           })
           .show();
       }
-      if (col.get(0) !== strandLengthInput[SS].value) {
+      if (col.get(0).length !== strandLengthInput[SS].value) {
         const d = ui.dialog('Length was updated by value to from imported file');
         d.add(ui.divText('Latest modifications may not take effect during translation'))
           .onOK(() => grok.shell.info('Lengths changed')).show();
@@ -551,8 +551,11 @@ export class PatternLayoutHandler {
           return;
         }
         const tableName = table!.name;
-        if (!grok.shell.tableNames.includes(tableName))
+        if (!grok.shell.tableNames.includes(tableName)) {
+          const view = grok.shell.v;
           grok.shell.addTableView(table!);
+          grok.shell.v = view;
+        }
         // console.log(`table:`, table);
         // console.log(`cols:`, table.columns);
         // console.log(`names:`, table.columns.names());
