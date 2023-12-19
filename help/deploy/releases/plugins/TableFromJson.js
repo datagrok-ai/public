@@ -40,7 +40,9 @@ const JSONTable = () => (<table>
     </thead>
     <tbody>
     {JSONData.map((row, rowIndex) => (<tr key={'row' + rowIndex}>
-        <td key='cell0'>{row.name}</td>
+        <td key='cell0'>
+            <a key={'link' + makeid(5)} href={"https://github.com/datagrok-ai/public/blob/master/" + row.dir + "/README.md"}>{row.name}</a>
+        </td>
         <td key='cell1'>{row.changelogDate}</td>
         <td key='cell2'>{row.changelog ?
             <a key={'link' + makeid(5)} href={"/help/deploy/releases/plugins/" + row.name.replaceAll(' ', '_') + "#" + row.version.replaceAll('.', '') + '-' + row.changelogDate}>{row.version}</a> : row.version}</td>
