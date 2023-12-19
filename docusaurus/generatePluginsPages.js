@@ -159,7 +159,8 @@ async function getPackages() {
                 summary: summary,
                 dir: dir,
                 changelog: changelog,
-                changelogDate: changelogDate || response.time[p.version].split("T")[0]
+                changelogDate: changelogDate || response.time[p.version].split("T")[0],
+                readme: fs.existsSync(`${rootDir}/${dir}/README.md`)
             });
         } else {
             console.log(`Added plugin ${p.displayName} with all published versions`)
@@ -179,7 +180,8 @@ async function getPackages() {
                         summary: summary,
                         dir: dir,
                         changelog: changelog,
-                        changelogDate: changelogDate || v[1].split("T")[0]
+                        changelogDate: changelogDate || v[1].split("T")[0],
+                        readme: fs.existsSync(`${rootDir}/${dir}/README.md`)
                     });
                 }
             }
