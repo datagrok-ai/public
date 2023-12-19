@@ -114,10 +114,17 @@ function lineChartOptions(colNames: string[]): Object {
 export async function runSolverApp() {
 
   /** Get JS-script for solving the current IVP */
-  const exportToJS = () => {
+  const exportToJS = async () => {
     try {
-      const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
+      const ivp = getIVP(editorView.state.doc.toString());
+      const scriptText = getScriptLines(ivp).join('\n');      
       const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);    
+      const call = script.prepare(params);
+      await call.call();
+
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     }
@@ -175,7 +182,12 @@ export async function runSolverApp() {
       const scriptText = getScriptLines(ivp).join('\n');    
       const script = DG.Script.create(scriptText);
       const savedScript = await grok.dapi.scripts.save(script);
-      const params = getScriptParams(ivp);    
+      const params = getScriptParams(ivp);
+
+      // try to call computations - correctness check
+      const testCall = script.prepare(params);
+      await testCall.call();
+
       const call = savedScript.prepare(params);
       call.edit();
     } 
