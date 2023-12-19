@@ -108,7 +108,7 @@ that changing the `formula` tag does not cause recalculation.
 ## Layout-id
 
 Applicable to columns. Used for matching layout columns with table columns when a layout is applied.
-See [layout suggestions](../visualize/view-layout.md#layout-suggestions) for details.
+See [layout suggestions](../../visualize/view-layout.md#layout-suggestions) for details.
 
 ## .tooltip
 
@@ -142,7 +142,7 @@ Column cell renderer.
 
 ## Query
 
-A [query](../access/access.md#data-query) that was used to produce this table. Applicable to tables.
+A [query](../../access/access.md#data-query) that was used to produce this table. Applicable to tables.
 
 ## Import-time
 
@@ -180,11 +180,11 @@ retrieved from. Used for data augmentation and impact analysis. See also [db](#d
 
 ## ID
 
-Entity id, as it is stored in the database. Applicable to tables, columnms, and other entities.
+Entity id, as it is stored in the database. Applicable to tables, columns, and other entities.
 
 ## Data-connection-id
 
-ID of the [data connection](../access/access.md#data-connection) that was used to populate the table. Applicable to tables.
+ID of the [data connection](../../access/access.md#data-connection) that was used to populate the table. Applicable to tables.
 
 ## .history
 
@@ -192,9 +192,9 @@ History of all modifications applied to that table. Applies to tables.
 
 ## .script
 
-[Grok script](../develop/under-the-hood/grok-script.md) that was used to create a table. It could represent getting a data via
-a [database query](../access/access.md#data-query), from a web service, from a file share, or using any
-other [function](../datagrok/concepts/functions/functions.md) that returns a [table](../datagrok/concepts/table.md).
+[Grok script](../../develop/under-the-hood/grok-script.md) that was used to create a table. It could represent getting a data via
+a [database query](../../access/access.md#data-query), from a web service, from a file share, or using any
+other [function](../../datagrok/concepts/functions/functions.md) that returns a [table](../../datagrok/concepts/table.md).
 
 If this tag is present in a table, a "data sync" option appears next to this table in the
 "Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead, the script will
@@ -204,11 +204,11 @@ Applies to tables.
 
 ## Chem-descriptor
 
-A [molecular descriptor](../datagrok/solutions/domains/chem/descriptors.md) used for calculating the values of that column.
+A [molecular descriptor](../../datagrok/solutions/domains/chem/descriptors.md) used for calculating the values of that column.
 
 ## Chem-fingerprinter
 
-A [molecular fingerprinter](../datagrok/solutions/domains/chem/fingerprints.md) used for calculating the values of that column.
+A [molecular fingerprinter](../../datagrok/solutions/domains/chem/fingerprints.md) used for calculating the values of that column.
 
 See also:
 

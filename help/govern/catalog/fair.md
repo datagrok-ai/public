@@ -7,7 +7,7 @@ Datagrok's mission is to connect data, algorithms, models, analysis, and visuali
 _From [go-fair.org](https://www.go-fair.org/fair-principles/): In 2016, the
 [FAIR Guiding Principles for scientific data management and stewardship](https://www.nature.com/articles/sdata201618)
 were published in Scientific Data. The authors intended to provide guidelines to improve the findability, accessibility,
-interoperability, and reuse of digital assets. The principles emphasise machine-actionability
+interoperability, and reuse of digital assets. The principles emphasize machine-actionability
 (i.e., the capacity of computational systems to find, access, interoperate, and reuse data with none or minimal human
 intervention) because humans increasingly rely on computational support to deal with data as a result of the increase in
 volume, complexity, and creation speed of data._
@@ -28,7 +28,7 @@ essential component of the FAIRification process.
 
 ## Accessible
 
-A1. (Meta)data are retrievable by their identifier using a standardised communications protocol
+A1. (Meta)data are retrievable by their identifier using a standardized communications protocol
 
 ### A1.1 The protocol is open, free, and universally implementable
 
@@ -47,7 +47,7 @@ workflows for analysis, storage, and processing.
 
 ## Reusable
 
-The ultimate goal of FAIR is to optimise the reuse of data. To achieve this, metadata and data should be well-described
+The ultimate goal of FAIR is to optimize the reuse of data. To achieve this, metadata and data should be well-described
 so that they can be replicated and/or combined in different settings.
 
 ### R1. Meta(data) are richly described with a plurality of accurate and relevant attributes
