@@ -37,11 +37,8 @@
       "nullable": true
     }
   ],
-  "sources": [
-    "common/ngl_viewer/ngl.js"
-  ],
   "dependencies": {
-    "datagrok-api": "^1.17.0",
+    "datagrok-api": "^1.17.3",
     "@datagrok-libraries/chem-meta": "^1.2.1",
     "@datagrok-libraries/ml": "^6.3.63",
     "@datagrok-libraries/utils": "^4.1.35",
