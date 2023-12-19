@@ -158,7 +158,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
-7. Now let’s put the result of the previously created `complement` function into an
+7. Now let's put the result of the previously created `complement` function into an
    [info panel](../how-to/add-info-panel.md): Create function `complementWidget` and add special comments block to
    allow Datagrok system recognize it and upload properly (see an example [here](../how-to/add-info-panel.md#functions)).
 

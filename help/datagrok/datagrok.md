@@ -20,7 +20,7 @@ deliver cohesive, fit-for-purpose solutions.
 #### Access
 
 Get your data from anywhere - databases, web services, file shares, pipelines.
-If it’s machine-readable, we can work with it!
+If it's machine-readable, we can work with it!
 
 * [40+ connectors](../access/databases/connectors/connectors.md) to all major
   databases and file shares (or [create your own](../access/databases/create-custom-connectors.md))

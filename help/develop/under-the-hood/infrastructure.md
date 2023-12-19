@@ -164,13 +164,13 @@ patterns, and cooperate on certain tasks.
 
 * Fast, slick, relevant.
 * Engineered to take full advantage of DDT
-  * Uses DDT’s data frames - super-fast and no additional memory overhead
+  * Uses DDT's data frames - super-fast and no additional memory overhead
   * Uses the same cached descriptive statistics, sorted orders, etc
   * Many viewers use lightweight, calculated on-the-fly dataframes as an aggregate data source
   * Picking up column metadata (formats, etc.)
   * Fast, extensible, annotated aggregation functions that work across all viewers
 * High-performance rendering
-  * Choosing the best option for rendering (HTML / canvas / SVG / WebGL) based on the viewer’s distinctive features,
+  * Choosing the best option for rendering (HTML / canvas / SVG / WebGL) based on the viewer's distinctive features,
     without compromising performance. The stretch goal is for all viewers to be able to visualize a billion rows (
     certain viewers will resort to auto-sampling in order to still be interactive during the data exploration stage).
     Many viewers utilize hybrid rendering systems, i.e., SVG for high-level controls and canvas for performance and
@@ -178,7 +178,7 @@ patterns, and cooperate on certain tasks.
   * Immediate-mode canvas rendering
   * Renders millions of primitives quickly
     * Adaptive marker rendering - switches between drawing directly on the canvas, rendering from the cache, or
-      rendering into an array of bytes. This is transparent to viewers’ code.
+      rendering into an array of bytes. This is transparent to viewers' code.
   * Multithreaded rendering
   * WebGL-accelerated rendering with custom shaders (coming soon)
   * Adaptive rendering behavior - the system keeps track of how long it took each viewer to render and optimizes

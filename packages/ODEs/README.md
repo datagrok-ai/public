@@ -46,7 +46,7 @@ The solver has built-in use cases. Get access to them via the context menu. You 
   * simulates [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action)
   * illustrates annotation of inputs
 * `Robertson's model`
-  * Robertson’s chemical reaction model
+  * Robertson's chemical reaction model
   * [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation) example
   * shows how Datagrok solves complicated ODEs
 * `Fermentation`
