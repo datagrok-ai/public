@@ -165,76 +165,22 @@ export const properties: any = {
 }
 
 export const models: any = {
-    "Pgp-Inhibitor": {
-        "0": "Non-inhibitor",
-        "0.5": "Inhibitor"
-    },
-    "Pgp-Substrate": {
-        "0": "Non-Substrate",
-        "0.5": "Substrate"
-    },
-    "HIA": {
-        "0": "HIA-", 
-        "0.5": "HIA+"
-    },
-    "Caco2": {
-
-    },
-    "Lipophilicity": {
-
-    },
-    "Solubility": {
-        
-    },
-    "PPBR": {
-        "0": "Significant with drugs that are highly protein-bound and have a low therapeutic index",
-        "90": "Significant with drugs that are highly protein-bound and have a low therapeutic index"
-    },
-    "VDss": {
-        "0.07": "Evenly distributed",
-        "0.7": "Bound to tissue components, highly lipophilic"
-    },
-    "CYP1A2-Inhibitor": {
-        "0": "Non-inhibitor",
-        "0.5": "Inhibitor"
-    },
-    "CYP3A4-Inhibitor": {
-        "0": "Non-inhibitor", 
-        "0.5": "Inhibitor"
-    },
-    "CYP3A4-Substrate": {
-        "0": "Non-Substrate", 
-        "0.5": "Substrate"
-    }, 
-    "CYP2C19-Inhibitor": {
-        "0": "Non-inhibitor", 
-        "0.5": "Inhibitor"
-    },
-    "CYP2C9-Inhibitor": {
-        "0": "Non-inhibitor", 
-        "0.5": "Inhibitor"
-    },
-    "CYP2C9-Substrate": {
-        "0": "Non-Substrate", 
-        "0.5": "Substrate"
-    },
-    "CYP2D6-Inhibitor": {
-        "0": "Non-inhibitor", 
-        "0.5": "Inhibitor"
-    },
-    "CYP2D6-Substrate": {
-        "0": "Non-Substrate", 
-        "0.5": "Substrate"
-    },
-    "CL-Hepa": {
-
-    },
-    "CL-Micro": {
-
-    },
-    "Half-Life": {
-        "-100": "Low",
-        "3": "Moderate",
-        "8": "High"
-    }
+    "Pgp-Inhibitor": "A probability of being an inhibitor of P-glycoprotein which is responsible for cell membrane transport. Inhibiting Pgp leads to low cell permeability of substance.",
+    "Pgp-Substrate": "A probability of being a substrate of P-glycoprotein which is responsible for cell membrane permeability. Compounds with high molecular mass and a large number of polar atoms are the most probable substrates. Binding the substrate leads to low cell permeability of substance.",
+    "Caco2": "It is a rate of compound flux across polarized human colon carcinoma Caco-2 cells layers, cm/s (VALIDATE). High values indicate good permeability characteristics.",
+    "Lipophilicity": "This is a charachteristic of compound quatifying the distribution between lipophilic and hydrophiliv environments. High lipophilicity values  are good for the most of memranes permeability, though low values are related to achievment of therapeutical plasma concentrations. This characterestic is specific to analyzed problem.",
+    "Solubility": "Indicates the fraction of compound that can be solved in water solution, e.g. plasma. This characterestic is specific to analyzed problem.",
+    "PPBR": "This value stands for plasma protein binding. PPB strongly influences drug behavior as only free drug is able to penetrate mebranes. Low values indicate good permeability characteristics.",
+    "VDss": "Volume of distribution (L) is a pharmacokinetic parameter representing the ability of drug to remain in plasma or redistribute to other tissues. Hih VD has a propensity to leave the plasma to other tissues, low VD indicates the ability of drug to achieve desired concentration at lower doses.",
+    "CYP1A2-Inhibitor": "A probability of being an inhibitor of cytochrome CYP1A2 which catalyzes drug metabolism. Inhibiting CYP1A2 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CYP3A4-Inhibitor": "A probability of being an inhibitor of cytochrome CYP3A4 which catalyzes drug metabolism. Inhibiting CYP3A4 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CYP3A4-Substrate": "A probability of being an inhibitor of substrate CYP3A4 which catalyzes drug metabolism. Binding CYP3A4 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.", 
+    "CYP2C19-Inhibitor": "A probability of being an inhibitor of cytochrome CYP2C19 which catalyzes drug metabolism. Inhibiting CYP2C19 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CYP2C9-Inhibitor": "A probability of being an inhibitor of cytochrome CYP2C9 which catalyzes drug metabolism. Inhibiting CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CYP2C9-Substrate": "A probability of being an inhibitor of substrate CYP2C9 which catalyzes drug metabolism. Binding CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CYP2D6-Inhibitor": "A probability of being an inhibitor of cytochrome CYP2D6 which catalyzes drug metabolism. Inhibiting CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CYP2D6-Substrate": " A probability of being an inhibitor of substrate CYP2D6 which catalyzes drug metabolism. Binding CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+    "CL-Hepa": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to  pojection of dose and drug exposure. This characterestic is specific to analyzed problem.",
+    "CL-Micro": "Estimates intrinsic clearance which is related ro compound's metabolic stability. This characterestic is specific to analyzed problem.",
+    "Half-Life": "This estimates metabolic half-time of the drug or the time when concentration drops by half. This characterestic is specific to analyzed problem."
 }

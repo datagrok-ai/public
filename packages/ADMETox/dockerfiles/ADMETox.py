@@ -83,8 +83,9 @@ def handle_model(model, test_data_path, add_probability):
     if 'pt' in test_model_name:
         make_chemprop_predictions(test_data_path, test_model_name, result_path)
         current_df = pd.read_csv(result_path)
+        current_df = current_df.drop(current_df.columns[0], axis=1)
         os.remove(result_path)
-        new_columns = {col: f"{col}_{model}" for col in current_df.columns[1:]}
+        new_columns = {col: f"{col}_{model}" for col in current_df.columns}
         current_df = current_df.rename(columns=new_columns)
         if add_probability:
             probabilities = calculate_chemprop_probability(current_df.iloc[:, 0].tolist(), model)

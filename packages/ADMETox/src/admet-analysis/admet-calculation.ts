@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { properties } from './const';
+import { properties, models } from './const';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 const _STORAGE_NAME = 'admet_models';
@@ -90,18 +90,23 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   //substitute after demo
-  const confidenceInterval = 0.5;
+  //const confidenceInterval = 0.5;
   if (table.columns.length > 0) {
     const modelNames: string[] = table.columns.names();
     const updatedModelNames: string[] = [];
     for (let i = 0; i < modelNames.length; ++i) {
       let column: DG.Column = table.columns.byName(modelNames[i]);
       column.name = viewTable.columns.getUnusedName(modelNames[i]);
+      for (const key in models) {
+        if (modelNames[i].includes(key)) {
+          column.setTag(DG.TAGS.DESCRIPTION, models[key]);
+        }
+      }
       updatedModelNames[i] = column.name;
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
-    viewTable.rows.removeWhere((row) => row.get('Y_Pgp-Inhibitor_probability') <= 0.5);
+    //viewTable.rows.removeWhere((row) => row.get('Y_Pgp-Inhibitor_probability') <= 0.5);
     addColorCoding(updatedModelNames);
   }
 }
