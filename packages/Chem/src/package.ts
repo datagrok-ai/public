@@ -12,7 +12,6 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {IUMAPOptions, ITSNEOptions, DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
   SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
@@ -34,7 +33,7 @@ import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
-import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule, getRdKitService} from './utils/chem-common-rdkit';
+import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
@@ -46,7 +45,7 @@ import {getMCS} from './utils/most-common-subs';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
-import {chemSpace, getEmbeddingColsNames, runChemSpace} from './analysis/chem-space';
+import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 
 //file importers
@@ -58,13 +57,17 @@ import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {identifiersWidget} from './widgets/identifiers';
-import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {BitArrayMetrics, BitArrayMetricsNames, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { MolNotation } from './rdkit-service/rdkit-service-worker-substructure';
+import {malformedDataWarning} from './utils/malformed-data-utils';
+import {DimReductionBaseEditor} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
+import {reduceDimensionality} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reducer';
+import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -465,13 +468,38 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
 //tags: editor
 //input: funccall call
 export function ChemSpaceEditor(call: DG.FuncCall): void {
-  const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
-  ui.dialog({title: 'Chemical Space'})
-    .add(funcEditor.paramsUI)
+  const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
+  ui.dialog({title: 'Chemical space'})
+    .add(funcEditor.getEditor())
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call();
+      const params = funcEditor.getParams();
+      return call.func.prepare({
+        molecules: params.col,
+        table: params.table,
+        methodName: params.methodName,
+        similarityMetric: params.similarityMetric,
+        plotEmbeddings: params.plotEmbeddings,
+        options: params.options,
+        preprocessingFunction: params.preprocessingFunction,
+        clusterEmbeddings: params.clusterEmbeddings,
+      }).call();
     })
     .show();
+}
+
+//name: Fingerprints
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Molecule
+//meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
+//input: column col {semType: Molecule}
+//input: string _metric {optional: true}
+//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern']}
+//output: object result
+export async function getFingerprints(
+  col: DG.Column, _metric: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
+  malformedDataWarning(fpColumn, col);
+  return {entries: fpColumn, options: {}};
 }
 
 
@@ -484,46 +512,27 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 //input: object options {optional: true}
+//input: func preprocessingFunction {optional: true}
+//input: bool clusterEmbeddings {optional: true}
 //editor: Chem:ChemSpaceEditor
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
-  options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+  options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
+): Promise<DG.Viewer | undefined> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
   }
+  if (!preprocessingFunction)
+    preprocessingFunction = DG.Func.find({name: 'morganFingerprints', package: 'Chem'})[0];
 
-  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 10000;
-  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
-
-  if (table.rowCount > allowedRowCount) {
-    grok.shell.warning(`Too many rows, maximum for chemical space is ${allowedRowCount}`);
-    return;
-  }
-
-  const pg = DG.TaskBarProgressIndicator.create(`Initializing Chemical space...`);
-
-  const progressFunc = (progress: number) => {
-    pg.update(progress, `Running Chemical space... ${progress.toFixed(0)}%`);
-  };
-
-  if (table.rowCount > fastRowCount) {
-    ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
-    Do you want to continue?`))
-      .onOK(async () => {
-        const res =
-          await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
-        pg.close();
-        return res;
-      })
-      .onCancel(() => pg.close())
-      .show();
-  } else {
-    const res =
-      await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
-    pg.close();
-    return res;
-  }
+  const res = await reduceDimensionality(table, molecules, methodName,
+      similarityMetric as KnownMetrics, preprocessingFunction, plotEmbeddings, clusterEmbeddings ?? false, options, {
+        fastRowCount: 10000,
+        scatterPlotName: 'Chemical space',
+        bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
+      });
+  return res;
 }
 
 
@@ -1406,7 +1415,6 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
     data.columns.add(col);
   }
 }
-
 
 
 export {getMCS};
