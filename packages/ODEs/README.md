@@ -1,6 +1,6 @@
 # Diff Studio
 
-Diff Studio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [intial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE).
+Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [intial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE).
 
 * Go to **Apps** and run **Diff Studio**
 * Enter formulas or modify template
@@ -19,13 +19,15 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Edit formulas or add new ones
   * Click **F5** or <i class="fas fa-play"></i> **Run** button
 * Use an advanced template:
-  * Rigth click and select **Templates > Advanced...**
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel 
+  * Select **Templates > Advanced...**
   * Modify formulas and click **F5**
 * Save formulas in a local file:
-  * Rigth click and select **Save...**
+  * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
   * Find the file in Downloads
 * Load equations from a local file:
-  * Rigth click and select **Load...**
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Select **From file...**
   * Select a file with formulas
 
 ## Create model from template
@@ -100,13 +102,9 @@ Use the following sections to specify various problems:
 |```#meta.runOnInput```|Updates results immediately upon input changes after the model is exported to JavaScript script.|
 |```#comment```|Specifies comments block.|
 
-## Platform applications
+## Platform application
 
-Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
-
-1. Press **Export** button on the top panel
-2. Press **SAVE** button
-3. Script is created, and can be found in the "Scripts" section of the platform
+Once you are satisfied with the result, you can convert your model to a Datagrok application. Press **APP** button on the top panel to do so.
 
 Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
 
@@ -148,6 +146,14 @@ Provide hints in brackets `[ ]`:
 ```python
   P1 = 1 {category: Parameters} [P1 parameter tooltip]
 ```
+
+## Export to JavaScript script
+
+Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
+
+1. Press **JS** button on the top panel
+2. Press **SAVE** button
+3. Script is created, and can be found in the "Scripts" section of the platform
 
 Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 

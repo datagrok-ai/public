@@ -1,8 +1,12 @@
-# Deqs changelog
+# Diff Studio changelog
 
 ## 1.0.1 (WIP)
 
-UI/UX improvement
+### Features
+
+* Export model to the platform application
+* Layout and ribbon update
+* Run model on open 
 
 ## 1.0.0 (2023-12-12)
 
