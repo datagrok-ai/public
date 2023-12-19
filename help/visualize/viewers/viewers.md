@@ -28,7 +28,7 @@ reuse them (or share with teammates) later on.
 * [Statistical hypothesis testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
 
-# Creating
+## Creating
 
 Once a table is open, click on the icons shown on the left pane to open the corresponding viewer.
 
@@ -38,7 +38,7 @@ drag the viewer's border.
 
 ![viewers-interaction-main](../viewers-interaction-main.gif)
 
-# Docking
+## Docking
 
 Datagrok provides a flexible window management system, where windows
 could be either dragged out and positioned manually, or set up automatically.
@@ -48,7 +48,7 @@ could be either dragged out and positioned manually, or set up automatically.
 Use `grok.shell.dockManager` to dock, undock, or reposition windows.
 See also `View.dockNode`
 
-# Nested docking
+### Nested docking
 
 Some of the views contain a nested docking manager, which allows to manage
 windows within that particular view (they cannot be undocked and docked on
@@ -57,7 +57,29 @@ View class.
 
 [![Docking](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1726s)
 
-# Selection
+## Layouts
+
+View Layout contains relative positions of viewers in
+a [table view](../../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
+data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
+different dataset
+(**View | Layout | Open Gallery**). 
+Saved layouts that are [applicable](../view-layout.md#layout-applicability) to the current table are shown in the 
+"Layouts" pane, see picture below.
+
+To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
+choose **Clone**.
+
+To save a layout and then apply it to a different dataset:
+1. Open a dataset
+2. Add viewers, arrange them, and customize the way you want
+3. Click View | Layout | Save to gallery to save the layout on a server (or View | Layout | Download to save locally)
+4. Open another dataset with similar columns
+5. Click View | Layout | Open Gallery and select a layout saved in step 3. Or, in case you saved it locally at step 3, drag-and-drop the layout file to the view.
+
+![layout-suggestions](../layout-suggestions.gif)
+
+## Selection
 
 All viewers share the same row selection and filtered state, which can be manipulated in a consistent way across all
 viewers:
@@ -88,7 +110,7 @@ To select rows in the [grid](grid.md):
 
 ![viewers-selection](../viewers-selection.gif)
 
-# Current rows
+## Current rows
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and
 highlights it in green. This indication is a neat and lightweight way to update information related to the current value
@@ -104,7 +126,7 @@ element, you will see the row it represents in the grid.
 
 ![current-rows](../current-rows-2.gif "Current rows")
 
-# Filter
+## Filter
 
 To open filter group, click on the funnel icon in the toolbox:
 
@@ -114,7 +136,7 @@ Alternatively, click on the column's "hamburger icon" to filter by the individua
 
 ![grid-column-filter](grid-column-filter.png)
 
-# Viewers as filters
+### Viewers as filters
 
 By default, clicking on a segment that represents multiple rows will select these rows. However, some viewers, such
 as [Bar Chart](bar-chart.md) and [Pie Chart](pie-chart.md), could be also used for filtering of the
@@ -133,40 +155,7 @@ viewer that shows only selected rows)
 
 ![viewers-as-filters](../viewers-as-filters.gif)
 
-# Embedding
-
-Each viewer created in Datagrok can be embedded into an external site as an iframe. It remains fully interactive and
-will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its
-context menu, then go to the **Viewer** submenu and select **Embed**:
-
-![Viewers Embedding](../../uploads/viewers/embedding.png "Viewers Embedding")
-
-Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this feature
-works only for data uploaded as a project to the server.
-
-# Interaction
-
-All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
-
-![Viewers Interaction](../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
-
-For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.mdx):
-
-![Viewers Interaction 2](../../uploads/gifs/sp-hist.gif "Viewers Interaction 2")
-
-# Properties
-
-Each viewer has a set of properties associated with it that define either the appearance
-(such as "Back Color" or "Font"), or data (such as "Value" or "Split"). The most important data properties (usually
-columns to visualize) are exposed as combo boxes on top of the viewer. To edit the rest of the properties, either click
-on the "gear" icon on top of the viewer, or press F4 when the viewer has focus, or right-click and
-select `Viewer | Properties`.
-
-[![Properties](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
-
-![viewer-property-panel](viewer-property-panel.gif)
-
-# Common actions
+## Common actions
 
 Many viewers support the following:
 
@@ -219,7 +208,32 @@ Python:
 | to R      | Open the visualization preview and get the code snippet in R      |
 | to Python | Open the visualization preview and get the code snippet in Python |
 
-# Row tooltips
+
+## Interaction
+
+All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
+
+![Viewers Interaction](../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
+
+For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.mdx):
+
+![Viewers Interaction 2](../../uploads/gifs/sp-hist.gif "Viewers Interaction 2")
+
+## Properties
+
+Each viewer has a set of properties associated with it that define either the appearance
+(such as "Back Color" or "Font"), or data (such as "Value" or "Split"). The most important data properties (usually
+columns to visualize) are exposed as combo boxes on top of the viewer. To edit the rest of the properties, either click
+on the "gear" icon on top of the viewer, or press F4 when the viewer has focus, or right-click and
+select `Viewer | Properties`.
+
+[![Properties](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
+
+![viewer-property-panel](viewer-property-panel.gif)
+
+## Tooltips
+
+### Row tooltips
 
 Tooltip-related settings reside under the **Tooltip** submenu:
 
@@ -233,7 +247,7 @@ Tooltip-related settings reside under the **Tooltip** submenu:
 
 See also: [setting tooltips programmatically](https://public.datagrok.ai/js/samples/ui/viewers/viewew-tooltips)
 
-# Group tooltips
+### Group tooltips
 
 One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows in a tooltip,
 using the settings of another viewer.
@@ -245,24 +259,8 @@ The following picture illustrates the concept:
 
 ![Group Tooltip](../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
-# Trellis
 
-Trellis plots are useful for finding the structure and patterns in complex data. A Trellis plot is a layout of smaller
-charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
-grid layout looks similar to a garden trellis, hence the name Trellis Chart.
-
-There are two ways to add a trellis plot:
-
-* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking on the "gear" icon on
-  the left
-* create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
-  on `Viewer | Use in Trellis`
-
-See [Trellis Plot](trellis-plot.md) for more details.
-
-![viewers-as-trellis](../viewers-as-trellis.gif)
-
-# Statistical hypothesis testing
+## Statistical hypothesis testing
 
 To help users analyze their data in depth, our visualizations include a number of statistical features:
 
@@ -279,57 +277,64 @@ To help users analyze their data in depth, our visualizations include a number o
 
 [![Statistical hypothesis testing](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4810s)
 
-# Layouts
+## Embedding
 
-View Layout contains relative positions of viewers in
-a [table view](../../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
-data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
-different dataset
-(**View | Layout | Open Gallery**). 
-Saved layouts that are [applicable](../view-layout.md#layout-applicability) to the current table are shown in the 
-"Layouts" pane, see picture below.
+Each viewer created in Datagrok can be embedded into an external site as an iframe. It remains fully interactive and
+will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its
+context menu, then go to the **Viewer** submenu and select **Embed**:
 
-To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
-choose **Clone**.
+![Viewers Embedding](../../uploads/viewers/embedding.png "Viewers Embedding")
 
-To save a layout and then apply it to a different dataset:
-1. Open a dataset
-2. Add viewers, arrange them, and customize the way you want
-3. Click View | Layout | Save to gallery to save the layout on a server (or View | Layout | Download to save locally)
-4. Open another dataset with similar columns
-5. Click View | Layout | Open Gallery and select a layout saved in step 3. Or, in case you saved it locally at step 3, drag-and-drop the layout file to the view.
+Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this feature
+works only for data uploaded as a project to the server.
 
+## Viewers
 
-![layout-suggestions](../layout-suggestions.gif)
+### Trellis
 
-## Google map
+Trellis plots are useful for finding the structure and patterns in complex data. A Trellis plot is a layout of smaller
+charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
+grid layout looks similar to a garden trellis, hence the name Trellis Chart.
+
+There are two ways to add a trellis plot:
+
+* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking on the "gear" icon on
+  the left
+* create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
+  on `Viewer | Use in Trellis`
+
+See [Trellis Plot](trellis-plot.md) for more details.
+
+![viewers-as-trellis](../viewers-as-trellis.gif)
+
+### Google map
 
 |                                                                  |                                                                                                                                                   |
 |------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
 | ![Google Map](../../uploads/viewers/google-map.png "Google Map") | Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.<br />[Google Map](google-map.md)        |
 
-## Shape map
+### Shape map
 
 |                                                                                                                                                      |                                                                                                                                                                                                                                                                                                |
 |------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ![Shape Map](../../uploads/viewers/shape-map-pa-counties.png "Shape Map") <br /> ![Shape Map](../../uploads/viewers/shape-map-plate.png "Shape Map") | Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but also it can show an arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).<br />[Shape Map](shape-map.md)        |
 
 
-## Markup viewer
+### Markup viewer
 
 |                                               |                                                                                                                                                                                                                                                       |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ![Markup](markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
 
-## Statistics
+### Statistics
 
 Provides specified descriptive [Statistics](statistics.md) for the chosen columns.
 
-## Globe
+### Globe
 
 Visualizes magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](globe.md)
 
-### Videos
+## Resources
 
 [![Viewers](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=67LzPsdNrEc)
 

@@ -42,7 +42,7 @@ Your data is [FAIR](../govern/catalog/fair.md) and secure.
 * Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
 flexible [authentication](../govern/authentication.md), 
 [secrets managers](../access/data-connection-credentials.md)
-* Central [metadata](../catalog/metadata.md)-annotated catalog of
+* Central [metadata](../govern/catalog/metadata.md)-annotated catalog of
 [entities](concepts/objects.md). Powerful "everything" browser for
 navigating, viewing, and managing data, connections, users, and more
 * Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools

@@ -43,7 +43,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
 
 * Data visualization and exploration
   * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
-  * [Automatic detection of sequences](../../../../catalog/semantic-types.md) upon data import.
+  * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
   * Customizable [info panes](../../../../explore/data-augmentation/info-panels.md) with information about macromolecules and context actions.
@@ -88,7 +88,7 @@ clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other 
 
 When you open a dataset, Datagrok automatically detects macromolecules and makes available macromolecule-specific context actions. For example, when you open a CSV file containing macromolecules in the FASTA format, the following happens:
 
-* Data is parsed, and the [semantic type](../../../../catalog/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
+* Data is parsed, and the [semantic type](../../../../govern/catalog/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
 * Macromolecules are automatically rendered in the spreadsheet.
 * Column tooltip now shows the sequence composition.
 * Default column filter is now a subsequence search.
