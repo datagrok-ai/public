@@ -9,6 +9,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //skipTest: #2596, Fix for test data in the utils library
   detectPdb(col) {
     let res = null;
     if (DG.Detector.sampleCategories(col,
