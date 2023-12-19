@@ -7,16 +7,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.BigIntColumn;
 import serialization.Column;
+import java.math.BigInteger;
 
 public class DefaultBigIntColumnManager implements ColumnManager<String> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBigIntColumnManager.class);
     private static final Converter<String> DEFAULT_CONVERTER = Object::toString;
+    private static final Converter<String> BIT_CONVERTER = value -> Integer.toBinaryString(new BigInteger((byte[]) value).intValue());
 
     @Override
     public String convert(Object value, ColumnMeta columnMetal) {
         LOGGER.trace("convert method was called");
-        LOGGER.trace("using default converter");
-        return value == null ? "" : DEFAULT_CONVERTER.convert(value);
+        if (value == null) return "";
+        if (value.getClass().isArray() && value.getClass().getComponentType().equals(byte.class))
+            return BIT_CONVERTER.convert(value);
+        return DEFAULT_CONVERTER.convert(value);
     }
 
     @Override
