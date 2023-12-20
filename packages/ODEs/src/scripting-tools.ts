@@ -88,7 +88,7 @@ export type IVP = {
   outputs: Map<string, Output> | null,
 };
 
-/** Specific error messeges */
+/** Specific error messages */
 enum ERROR_MSG {
   ODES = 'Incorrect definition of the system of ordinary differential equations',
   CONTROL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
@@ -526,7 +526,7 @@ function getInputSpec(inp: Input): string {
 
 /** Return annotation line specifying viewers */
 function getViewersLine(ivp: IVP): string {
-  const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
+  const outputColsCount = (ivp.outputs) ? (ivp.outputs.size - 1) : ivp.inits.size;
   const multiAxis = (outputColsCount > MAX_LINE_CHART) ? 'true' : 'false';
 
   return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)`;
