@@ -137,7 +137,7 @@ class BioPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  async detectMacromolecule(col) {
+  detectMacromolecule(col) {
     const tableName = col.dataFrame ? col.dataFrame.name : null;
     this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
     const t1 = Date.now();
