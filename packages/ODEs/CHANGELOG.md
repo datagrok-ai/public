@@ -6,7 +6,8 @@
 
 * Export model to the platform application
 * Layout and ribbon update
-* Run model on open 
+* Run model on open
+* Demo application update
 
 ## 1.0.0 (2023-12-12)
 

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {ODEs, solveODEs} from './solver';
-import {runSolverApp} from './app';
+import {runSolverApp, runSolverDemoApp} from './app';
 
 export const _package = new DG.Package();
 
@@ -31,4 +31,12 @@ export function solve(problem: ODEs): DG.DataFrame {
 //tags: app
 export async function DiffStudio() {
   await runSolverApp(); 
+}
+
+//name: Diff Studio Demo
+//description: Interactive solver of ordinary differential equations (ODE)
+//meta.demoPath: Compute | Diff Studio
+//test: demoEquaSleekX() //wait: 100
+export async function demoDiffStudio(): Promise<any>  {
+  await runSolverDemoApp();
 }

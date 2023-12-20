@@ -93,3 +93,23 @@ export enum INFO {
   OUTPUT = 'output specification',
   COMMENT = 'block with comments',
 };
+
+/** Demo app help info */
+export const demoInfo = `# Try
+Modify formulas and press <i class="fas fa-play"></i> **Run** button.
+
+# No-code
+Define equations in a declarative form.
+
+# UI
+Press **APP** button and get Datagrok application.
+
+# Examples
+Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
+
+# Scripting
+Press **JS** button and export model to JavaScript script.
+
+# Learn more
+* [Compute](https://datagrok.ai/help/compute)
+* [Diff Studio](${LINK.DIF_STUDIO})`;
