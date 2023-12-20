@@ -25,7 +25,7 @@ class DatabaseService {
 const PICK_COLUMN_NAME = 'Pick' as const;
 const ID_COLUMN_NAME = 'ID' as const;
 
-export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
+export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T | null> {
   /**
    * Emitted when parictular historical run is chosen
    * @deprecated. Use {@link onInput} or {@link onChanged} instead
@@ -49,7 +49,7 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
   private _historyDialog = this.getHistoryDialog();
 
   private _visibleInput = ui.stringInput(this.label, '', null);
-  private _value: DG.FuncCall | null = null;
+  private _chosenRun: DG.FuncCall | null = null;
 
   constructor(
     // Label placed before next to the input
@@ -97,23 +97,13 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
         const newId = newRunsGridDf.getCol(ID_COLUMN_NAME).get(newRunsGridDf.currentRow.idx);
 
         (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = false;
-        this._value = newRuns.find((run) => run.id === newId) ?? null;
+        this.setValue(newRuns.find((run) => run.id === newId) ?? null);
       });
       this.store.experimentRunsDf.next(newRunsGridDf);
     });
 
-    this.store.experimentRunsDf.subscribe((newDf) => {
-      // Bug: should re-render all viewers inside of the dialog
-      const newHistoryFilters = DG.Viewer.filters(newDf, {title: 'Filters'});
-      this._historyFilters.root.replaceWith(newHistoryFilters.root);
-      this._historyFilters = newHistoryFilters;
-
-      const newHistoryGrid = DG.Viewer.grid(newDf, {showRowHeader: false, showColumnGridlines: false, allowEdit: false});
-      this._historyGrid.root.replaceWith(newHistoryGrid.root);
-      this._historyGrid = newHistoryGrid;
-
-      this.styleHistoryGrid();
-      this.styleHistoryFilters();
+    this.store.experimentRunsDf.subscribe(() => {
+      this.renderGridFilters();
     });
 
     this.store.isExperimentRunsLoading.subscribe((newValue) => {
@@ -124,6 +114,9 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
   }
 
   public showSelectionDialog() {
+    // Bug: should re-render all viewers inside of the dialog
+    this.renderGridFilters();
+
     this._historyDialog.show({
       modal: true,
       fullScreen: true,
@@ -133,15 +126,28 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
     });
   }
 
+  private renderGridFilters() {
+    const newHistoryFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
+    this._historyFilters.root.replaceWith(newHistoryFilters.root);
+    this._historyFilters = newHistoryFilters;
+
+    const newHistoryGrid = DG.Viewer.grid(this.store.experimentRunsDf.value, {showRowHeader: false, showColumnGridlines: false, allowEdit: false});
+    this._historyGrid.root.replaceWith(newHistoryGrid.root);
+    this._historyGrid = newHistoryGrid;
+
+    this.styleHistoryGrid();
+    this.styleHistoryFilters();
+  }
+
   private getHistoryDialog() {
     const historyDialog = ui.dialog();
 
     historyDialog.onOK(async () => {
-      if (this.value) {
-        let funcCall = this.value;
+      if (this.getValue()) {
+        let funcCall = this.getValue();
         if (!this.includeParams)
-          funcCall = await historyUtils.loadRun(funcCall.id);
-        this.value = funcCall;
+          funcCall = await historyUtils.loadRun(funcCall!.id);
+        this.setValue(funcCall);
       }
       this.fireInput();
     });
@@ -201,6 +207,19 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
     this._historyGrid.columns.setVisible([PICK_COLUMN_NAME, ...Object.keys(this._visibleColumnsForGrid).map((colName) => colName)]);
   }
 
+  protected setValue(val: DG.FuncCall | null) {
+    this._chosenRun = val;
+    this.onHistoricalRunChosen.next(val);
+    this._visibleInput.value = val ? this._stringValueFunc(val): '';
+    if (!this.notify) return;
+
+    this.fireChanged();
+  }
+
+  protected getValue() {
+    return this._chosenRun;
+  }
+
   // Viever object of grid
   get historyGrid() {
     return this._historyGrid;
@@ -216,19 +235,6 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
     return this._visibleInput.root;
   }
 
-  set value(val: DG.FuncCall | null) {
-    this._value = val;
-    this.onHistoricalRunChosen.next(val);
-    this._visibleInput.value = val ? this._stringValueFunc(val): '';
-    if (!this.notify) return;
-
-    this.fireChanged();
-  }
-
-  get value() {
-    return this._value;
-  }
-
   set stringValue(val: string) {
     this._visibleInput.value = val;
   }
@@ -239,5 +245,15 @@ export class HistoryInput extends DG.InputBase<DG.FuncCall | null> {
 
   public toggleLoaderExpRuns(newState: boolean) {
     this.store.isExperimentRunsLoading.next(newState);
+  }
+}
+
+export class HistoryInput extends HistoryInputBase {
+  set value(val: DG.FuncCall | null) {
+    this.setValue(val);
+  }
+
+  get value() {
+    return this.getValue();
   }
 }
