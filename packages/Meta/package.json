@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.3",
+  "version": "3.7.4",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3688,6 +3688,19 @@
     "deqs": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "^1.16.0"
+        }
+      },
+      "description": "WebAutoSolver tools for solving ODEs in a browser.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/ODEs"
+      }
+    },
+    "diff-studio": {
+      "dependencies": {
+        "1.0.1": {
           "datagrok-api": "^1.16.0"
         }
       },
