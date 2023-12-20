@@ -100,6 +100,15 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
         (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = false;
         this.setValue(newRuns.find((run) => run.id === newId) ?? null);
       });
+      if (this.getValue()) {
+        for (const row of newRunsGridDf.rows) {
+          if (row.get(ID_COLUMN_NAME) === this.getValue()?.id) {
+            newRunsGridDf.currentRowIdx = row.idx;
+            break;
+          }
+        }
+      }
+
       this.store.experimentRunsDf.next(newRunsGridDf);
     });
 
@@ -109,6 +118,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
     this.store.isExperimentRunsLoading.subscribe((newValue) => {
       ui.setUpdateIndicator(this._visibleInput.root, newValue);
+      ui.setUpdateIndicator(this._historyGrid.root, newValue);
     });
 
     this.experimentRunsUpdate.next();
@@ -117,6 +127,8 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
   public showSelectionDialog() {
     // Bug: should re-render all viewers inside of the dialog
     this.renderGridFilters();
+
+    (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = (this.store.experimentRunsDf.value.currentRow.idx === -1);
 
     this._historyDialog.show({
       modal: true,
@@ -162,7 +174,6 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       historyDialog.close();
     }, 1, 'Discard the previous choice');
     $(historyDialog.getButton('CANCEL')).hide();
-    (historyDialog.getButton('OK') as HTMLButtonElement).disabled = (this.store.experimentRunsDf.value.currentRow.idx === -1);
 
     historyDialog.add(
       ui.divH([
@@ -219,6 +230,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
   }
 
   protected getValue() {
+    return this._chosenRun;
+  }
+
+  get chosenRun() {
     return this._chosenRun;
   }
 

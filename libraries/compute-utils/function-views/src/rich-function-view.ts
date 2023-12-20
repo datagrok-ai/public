@@ -17,6 +17,7 @@ import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInput
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {HistoryInputBase} from '../../shared-components/src/history-input';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -798,6 +799,7 @@ export class RichFunctionView extends FunctionView {
         this.inputsMap[val.property.name] = input;
         if (field === SYNC_FIELD.INPUTS) {
           this.syncInput(val, input, field);
+          this.checkForMapping(val, input);
           this.disableInputsOnRun(val.property.name, input);
           this.bindOnHotkey(input);
         }
@@ -844,6 +846,25 @@ export class RichFunctionView extends FunctionView {
       }
     });
     this.subs.push(disableOnRunSub);
+  }
+
+  private checkForMapping(val: DG.FuncCallParam, funcCallInput: InputVariants) {
+    const isHistoryInputBase = (input: InputVariants): input is HistoryInputBase => funcCallInput.hasOwnProperty('_chosenRun');
+
+    if (!isHistoryInputBase(funcCallInput)) return;
+
+    const mappingJson = val.property.options.funccallMapping;
+    if (!mappingJson) return;
+
+    const mapping = JSON.parse(mappingJson) as Record<string, string>;
+    const paramSub = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => val.onChanged),
+    ).subscribe(() => {
+      const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
+      Object.entries(mapping).forEach(([input, key]) => this.setInput(input, funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue, funcCallInput.chosenRun ? 'restricted': 'user input'));
+    });
+    this.subs.push(paramSub);
   }
 
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
