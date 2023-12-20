@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## 1.0.1 (WIP)
+## 1.0.1 (2023-12-20)
 
 ### Features
 
