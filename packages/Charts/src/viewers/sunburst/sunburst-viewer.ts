@@ -35,6 +35,7 @@ export class SunburstViewer extends EChartViewer {
       series: [
         {
           type: 'sunburst',
+          nodeClick: false,
           label: {
             rotate: 'radial',
           }
