@@ -165,9 +165,13 @@ export class PatternLayoutHandler {
     function updateValues(type: UPDATE_TYPE, newValue: boolean | string): void {
       const targetObject = type === UPDATE_TYPE.PTO ? ptoLinkages : baseInputsObject;
       STRANDS.forEach((strand) => {
-        console.log('Before', targetObject[strand].map((item) => item.value));
-        targetObject[strand].forEach(item => item.value = newValue);
-        console.log('After', targetObject[strand].map((item) => item.value));
+        console.log(`${strand} before`, targetObject[strand].map(item => item.value));
+        targetObject[strand].forEach(item => {
+          console.log(`${strand} before`, item.value);
+          item.value = newValue;
+          console.log(`${strand} after`, item.value);
+        });
+        console.log(`${strand} after`, targetObject[strand].map(item => item.value));
       });
       updateSvgScheme();
     }
@@ -196,21 +200,31 @@ export class PatternLayoutHandler {
       });
     }
 
+    function getBaseInputValues(strand: string) {
+      return baseInputsObject[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!);
+    }
+
+    function getPtoLinkageValues(strand: string): boolean[] {
+      return [firstPto[strand].value!, ...ptoLinkages[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!)];
+    }
+
     function updateSvgScheme() {
       svgDiv.innerHTML = '';
+      const baseInputValues = Object.fromEntries(STRANDS.map((strand) => [strand, getBaseInputValues(strand)]));
+      const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
+
       svgDiv.append(
         ui.span([
-
           // todo: refactor the funciton, reduce # of args
           drawAxolabsPattern(
             getShortName(saveAs.value),
             createAsStrand.value!,
 
-            baseInputsObject[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!),
-            baseInputsObject[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!),
+            baseInputValues[SS],
+            baseInputValues[AS],
 
-            [firstPto[SS].value!].concat(ptoLinkages[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!)),
-            [firstPto[AS].value!].concat(ptoLinkages[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!)),
+            ptoLinkageValues[SS],
+            ptoLinkageValues[AS],
 
             terminalModification[SS][THREE_PRIME].value,
             terminalModification[SS][FIVE_PRIME].value,
