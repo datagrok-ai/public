@@ -15,6 +15,11 @@ import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
+const enum UPDATE_TYPE {
+  PTO,
+  BASIS
+}
+
 type BooleanInput = DG.InputBase<boolean | null>;
 type StringInput = DG.InputBase<string | null>;
 
@@ -86,9 +91,8 @@ export class PatternLayoutHandler {
         appendModificationToDiv(value);
       } else {
         const index = enumerateModifications.indexOf(value);
-        if (index > -1) {
+        if (index > -1)
           enumerateModifications.splice(index, 1);
-        }
       }
     }
 
@@ -110,11 +114,12 @@ export class PatternLayoutHandler {
     }
 
     function createModificationItem(strand: string, nucleotideCounter: number, index: number) {
-      return ui.divH([
-        ui.div([ui.label(isOverhang(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter))], {style: {width: '20px'}}),
-        ui.block75([baseInputsObject[strand][index].root]),
-        ui.div([ptoLinkages[strand][index]]),
-      ], {style: {alignItems: 'center'}});
+      const labelText = isOverhang(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
+      const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
+      const baseInputUI = ui.block75([baseInputsObject[strand][index].root]);
+      const ptoLinkageUI = ui.div([ptoLinkages[strand][index]]);
+
+      return ui.divH([labelUI, baseInputUI, ptoLinkageUI], {style: {alignItems: 'center'}});
     }
 
     function updateUiForNewSequenceLength() {
@@ -157,37 +162,38 @@ export class PatternLayoutHandler {
       Object.values(strandLengthInput).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
     }
 
-    // todo: unify with updateBases
-    function updatePto(newPtoValue: boolean): void {
+    function updateValues(type: UPDATE_TYPE, newValue: boolean | string): void {
+      const targetObject = type === UPDATE_TYPE.PTO ? ptoLinkages : baseInputsObject;
       STRANDS.forEach((strand) => {
-        for (let i = 0; i < ptoLinkages[strand].length; i++)
-          ptoLinkages[strand][i].value = newPtoValue;
-      })
+        console.log('Before', targetObject[strand].map((item) => item.value));
+        targetObject[strand].forEach(item => item.value = newValue);
+        console.log('After', targetObject[strand].map((item) => item.value));
+      });
       updateSvgScheme();
     }
 
-    function updateBases(newBasisValue: string): void {
+    function updateInputExamples(): void {
       STRANDS.forEach((strand) => {
-        for (let i = 0; i < baseInputsObject[strand].length; i++)
-          baseInputsObject[strand][i].value = newBasisValue;
-      })
-      updateSvgScheme();
-    }
-
-    function updateInputExamples() {
-      STRANDS.forEach((s) => {
-        if (strandColumnInput[s].value === '')
-          inputExample[s].value = generateExample(strandLengthInput[s].value!, sequenceBase.value!);
+        if (strandColumnInput[strand].value === '') {
+          inputExample[strand].value = generateExample(strandLengthInput[strand].value!, sequenceBase.value!);
+        }
       });
     }
 
-    function updateOutputExamples() {
+    function updateOutputExamples(): void {
       const conditions = [true, createAsStrand.value];
-      STRANDS.forEach((strand, i) => {
-        if (conditions[i]) {
-          outputExample[strand].value = translateSequence(inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
+      STRANDS.forEach((strand, idx) => {
+        if (conditions[idx]) {
+          outputExample[strand].value = translateSequence(
+            inputExample[strand].value,
+            baseInputsObject[strand],
+            ptoLinkages[strand],
+            terminalModification[strand][FIVE_PRIME],
+            terminalModification[strand][THREE_PRIME],
+            firstPto[strand].value!
+          );
         }
-      })
+      });
     }
 
     function updateSvgScheme() {
@@ -465,12 +471,14 @@ export class PatternLayoutHandler {
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
     const sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => {
-      updateBases(v);
+      // updateBases(v);
+      updateValues(UPDATE_TYPE.BASIS, v);
       updateOutputExamples();
     });
     const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PTO, (v: boolean) => {
       STRANDS.forEach((s) => { firstPto[s].value = v; })
-      updatePto(v);
+      // updatePto(v);
+      updateValues(UPDATE_TYPE.PTO, v);
       updateOutputExamples();
     });
     fullyPto.captionLabel.classList.add('ui-label-right');
