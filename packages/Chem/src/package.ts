@@ -524,7 +524,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
   if (!preprocessingFunction)
-    preprocessingFunction = DG.Func.find({name: 'morganFingerprints', package: 'Chem'})[0];
+    preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
 
   const res = await reduceDimensionality(table, molecules, methodName,
       similarityMetric as KnownMetrics, preprocessingFunction, plotEmbeddings, clusterEmbeddings ?? false, options, {
