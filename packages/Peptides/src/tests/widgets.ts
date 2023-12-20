@@ -48,7 +48,7 @@ category('Widgets: Settings', () => {
 
     // Check number of panes
     const panes = settingsElements.accordion.panes.map((pane) => pane.name);
-    expect(panes.length, 3, `Expected 3 panes, got ${settingsElements.accordion.panes.length}`);
+    expect(panes.length, 4, `Expected 4 panes, got ${settingsElements.accordion.panes.length}`);
     for (const paneName of Object.values(SETTINGS_PANES))
       expect(panes.includes(paneName), true, `Pane ${paneName} is missing`);
 
