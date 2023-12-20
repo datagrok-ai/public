@@ -118,24 +118,43 @@ export class PatternLayoutHandler {
     }
 
     function updateUiForNewSequenceLength() {
-      if (Object.values(strandLengthInput).every((input) => input.value! < MAX_SEQUENCE_LENGTH)) {
-        STRANDS.forEach((strand) => {
-          if (strandLengthInput[strand].value! > maxStrandLength[strand])
-            maxStrandLength[strand] = strandLengthInput[strand].value!;
-          updateModification(strand);
-        })
-
-        updateSvgScheme();
-        updateInputExamples();
-        updateOutputExamples();
+      if (isSequenceLengthWithinRange()) {
+        updateStrandsForNewLength();
+        updateUiComponents();
       } else {
-        ui.dialog('Out of range')
-          .add(ui.divText('Sequence length should be less than ' +
-            MAX_SEQUENCE_LENGTH.toString() + ' due to UI constrains.'))
-          .onOK(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
-          .onCancel(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
-          .showModal(false);
+        showOutOfRangeDialog();
       }
+    }
+
+    function isSequenceLengthWithinRange() {
+      return Object.values(strandLengthInput).every(input => input.value! < MAX_SEQUENCE_LENGTH);
+    }
+
+    function updateStrandsForNewLength() {
+      STRANDS.forEach(strand => {
+        if (strandLengthInput[strand].value! > maxStrandLength[strand]) {
+          maxStrandLength[strand] = strandLengthInput[strand].value!;
+        }
+        updateModification(strand);
+      });
+    }
+
+    function updateUiComponents() {
+      updateSvgScheme();
+      updateInputExamples();
+      updateOutputExamples();
+    }
+
+    function showOutOfRangeDialog() {
+      ui.dialog('Out of range')
+        .add(ui.divText(`Sequence length should be less than ${MAX_SEQUENCE_LENGTH} due to UI constraints.`))
+        .onOK(() => resetStrandLengthInputs())
+        .onCancel(() => resetStrandLengthInputs())
+        .showModal(false);
+    }
+
+    function resetStrandLengthInputs() {
+      Object.values(strandLengthInput).forEach(input => input.value = 34); // Assuming 34 is the default or reset value
     }
 
     // todo: unify with updateBases
