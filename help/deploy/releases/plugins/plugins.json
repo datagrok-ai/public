@@ -1,5 +1,15 @@
 [
   {
+    "name": "Diff Studio",
+    "date": "2023-12-20T19:52:46.577Z",
+    "version": "1.0.1",
+    "summary": "* Export model to the platform application\n* Layout and ribbon update\n* Run model on open\n* Demo application update",
+    "dir": "packages/ODEs",
+    "changelog": true,
+    "changelogDate": "2023-12-20",
+    "readme": true
+  },
+  {
     "name": "Bio",
     "date": "2023-12-20T17:52:16.980Z",
     "version": "2.11.19",
@@ -9987,16 +9997,6 @@
     "dir": "packages/Peptides",
     "changelog": false,
     "changelogDate": "2022-01-19",
-    "readme": true
-  },
-  {
-    "name": "DevTools",
-    "date": "2022-01-17T12:51:17.895Z",
-    "version": "1.2.3",
-    "summary": "",
-    "dir": "packages/DevTools",
-    "changelog": false,
-    "changelogDate": "2022-01-17",
     "readme": true
   }
 ]
