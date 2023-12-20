@@ -156,8 +156,9 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       this.experimentRunsUpdate.next();
     }, 2, 'Reload list of runs');
     historyDialog.addButton('Discard', () => {
-      this.value = null;
+      this.setValue(null);
       this.historyGrid.dataFrame.currentRowIdx = -1;
+      this.fireInput();
       historyDialog.close();
     }, 1, 'Discard the previous choice');
     $(historyDialog.getButton('CANCEL')).hide();
