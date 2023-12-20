@@ -49,6 +49,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
   private _historyDialog = this.getHistoryDialog();
 
   private _visibleInput = ui.stringInput(this.label, '', null);
+  private _visibleIcon = ui.iconFA('search', () => this.showSelectionDialog());
   private _chosenRun: DG.FuncCall | null = null;
 
   constructor(
@@ -71,7 +72,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     this._visibleInput = primaryInput;
     this._visibleInput.readOnly = true;
     this._visibleInput.input.addEventListener('click', () => this.showSelectionDialog());
-    this._visibleInput.addOptions(ui.iconFA('search', () => this.showSelectionDialog()));
+    this._visibleInput.addOptions(this._visibleIcon);
 
     this.store.experimentRuns = this.experimentRunsUpdate.pipe(
       tap(() => this.toggleLoaderExpRuns(true)),
@@ -241,6 +242,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
   get stringValue() {
     return this._visibleInput.value;
+  }
+
+  get iconRoot() {
+    return this._visibleIcon;
   }
 
   public toggleLoaderExpRuns(newState: boolean) {
