@@ -44,7 +44,7 @@ import {calculateMonomerPositionStatistics} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
-import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
@@ -95,7 +95,8 @@ export class PeptidesModel {
   controlFire: boolean = false;
   // Indicates the source of accordion construction
   accordionSource: VIEWER_TYPE | null = null;
-
+  // sequence space viewer
+  _sequenceSpaceViewer: DG.ScatterPlotViewer | null = null;
   /**
    * @param dataFrame - DataFrame to use for analysis
    */
@@ -151,6 +152,7 @@ export class PeptidesModel {
 
   // Peptides analysis settings
   _settings: type.PeptidesSettings | null = null;
+  _sequenceSpaceCols: string[] = [];
 
   /**
    * @return - Peptides analysis settings
@@ -196,6 +198,8 @@ export class PeptidesModel {
       case 'columns':
         updateVars.add('columns');
         break;
+      case 'sequenceSpaceParams':
+        updateVars.add('sequenceSpaceParams');
       }
     }
     // Write updated settings
@@ -244,6 +248,9 @@ export class PeptidesModel {
         const mpr = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as LogoSummaryTable;
         mpr._viewerGrid = null;
         mpr.render();
+        break;
+      case 'sequenceSpaceParams':
+        this.addSequenceSpace();
         break;
       }
     }
@@ -1161,6 +1168,14 @@ export class PeptidesModel {
    * Adds Sequence Space viewer to the analysis view
    */
   async addSequenceSpace(): Promise<void> {
+    if (this._sequenceSpaceViewer !== null) {
+      this._sequenceSpaceViewer?.detach();
+      this._sequenceSpaceViewer?.close();
+    }
+    if (this._sequenceSpaceCols.length !== 0)
+      this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
+
+    this._sequenceSpaceCols = [];
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     const uh = UnitsHandler.getOrCreate(seqCol);
     const isHelm = uh.isHelm();
@@ -1180,6 +1195,7 @@ export class PeptidesModel {
         return;
       }
     }
+    const seqSpaceSettings = this.settings?.sequenceSpaceParams ?? new type.SequenceSpaceParams();
     const seqSpaceParams: {
       table: DG.DataFrame,
       molecules: DG.Column,
@@ -1187,34 +1203,37 @@ export class PeptidesModel {
       similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
       plotEmbeddings: boolean,
       sparseMatrixThreshold?: number,
+      clusterEmbeddings?: boolean,
       options?: (IUMAPOptions | ITSNEOptions) & Options
     } =
       {
         table: this.df,
         molecules: seqCol,
         methodName: DimReductionMethods.UMAP,
-        similarityMetric: MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH,
+        similarityMetric: seqSpaceSettings.distanceF,
         plotEmbeddings: true,
         sparseMatrixThreshold: 0.3,
-        options: {'bypassLargeDataWarning': true},
+        options: {'bypassLargeDataWarning': true, dbScanEpsilon: seqSpaceSettings.epsilon, dbScanMinPts: seqSpaceSettings.minPts,
+        preprocessingFuncArgs: {gapOpen: seqSpaceSettings.gapOpen, gapExtend: seqSpaceSettings.gapExtend}},
+        clusterEmbeddings: seqSpaceSettings.clusterEmbeddings,
       };
 
     // Use counter to unsubscribe when 2 columns are hidden
     let counter = 0;
+    const addedColCount = seqSpaceSettings.clusterEmbeddings ? 3 : 2;
     const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
       for (const col of colArgs.columns) {
-        if (col.name.startsWith('Embed_')) {
+        if (col.name.startsWith('Embed_') || ( seqSpaceSettings.clusterEmbeddings && col.name.toLowerCase().startsWith('cluster'))) {
           const gridCol = this.analysisView.grid.col(col.name);
           if (gridCol == null) {
             continue;
           }
-
-
           gridCol.visible = false;
+          this._sequenceSpaceCols.push(col.name);
           counter++;
         }
       }
-      if (counter === 2) {
+      if (counter === addedColCount) {
         columnAddedSub.unsubscribe();
       }
     });
@@ -1225,9 +1244,19 @@ export class PeptidesModel {
       return;
     }
 
-
-    seqSpaceViewer.props.colorColumnName = this.getScaledActivityColumn()!.name;
+    if (!seqSpaceSettings.clusterEmbeddings) { // color by activity if clusters are not automatically generated.
+      seqSpaceViewer.props.colorColumnName = this.getScaledActivityColumn()!.name;
+    }
     seqSpaceViewer.props.showXSelector = false;
     seqSpaceViewer.props.showYSelector = false;
+    this._sequenceSpaceViewer = seqSpaceViewer;
+    seqSpaceViewer.onContextMenu.subscribe((menu) => {
+      try {
+        menu.item('Modify Sequence space parameters', () => {
+          getSettingsDialog(this);
+        });
+      } catch (e) {
+      }
+    });
   }
 }

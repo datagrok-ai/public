@@ -187,7 +187,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
 
   const settings: type.PeptidesSettings = {
     sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
-    columns: {}, showDendrogram: false,
+    columns: {}, showDendrogram: false, sequenceSpaceParams: new type.SequenceSpaceParams(),
   };
 
   if (clustersColumn) {
