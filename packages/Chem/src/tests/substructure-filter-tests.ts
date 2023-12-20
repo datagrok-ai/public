@@ -6,6 +6,9 @@ import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import {readDataframe} from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import { chemSimilaritySearch } from '../analysis/chem-similarity-viewer';
+import { BitArrayMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import { Fingerprint } from '../utils/chem-common';
 
 const expectedResults: {[key: string]: any} = {
   'oneColumn': [737141248, 593097, 3256025153, 4],
@@ -99,7 +102,7 @@ M  END
       'terminate_substructure_search-tests/sar-small_empty_vals-smiles', 'empty', 16);
   });
 
-  test('terminatedSearch', async () => {
+  test('terminateOneSearchByAnother', async () => {
     const df = await readDataframe('tests/smi10K.csv');
     await grok.data.detectSemanticTypes(df);
     const sketcherDialogs: DG.Dialog[] = [];
@@ -190,7 +193,35 @@ M  END
     filter1.detach();
     filter2.detach();
   }, {timeout: 60000});
+
+  test('similaritySearchAfterTerminatedSearch', async () => { //#2533 (https://github.com/datagrok-ai/public/issues/2533)
+    const df = await readDataframe('tests/smi10K.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    const filter = await createFilter('smiles', df, sketcherDialogs);
+    const substr1 = 'C1CCCCC1';
+    const substr2 = DG.WHITE_MOLBLOCK;
+
+    //start filtering by 1st structure
+    filter.sketcher.setSmiles(substr1);
+    await delay(500);
+    //terminate filtering
+    filter.sketcher.setSmiles(substr2);
+    //finish filtering
+    await awaitCheck(() => df.filter.trueCount === df.rowCount, 'filter hasn\'t been reset', 10000);
+    const simResults = await chemSimilaritySearch(df, df.col('smiles')!, df.get('smiles', 0),
+      'Tanimoto' as BitArrayMetrics, 12, 0.01, 'Morgan' as Fingerprint);
+    expect(simResults?.get('indexes', 0), 0);
+    expect(simResults?.get('indexes', 5), 4002);
+    expect(simResults?.get('indexes', 11), 731);
+    sketcherDialogs.forEach((it) => it.close());
+    filter.detach();
+  });
+
 });
+
+
 
 async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):
   Promise<SubstructureFilter> {
