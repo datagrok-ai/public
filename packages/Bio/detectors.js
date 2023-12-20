@@ -59,8 +59,8 @@ class LoggerWrapper {
   }
 
   async getLoggerSettings() {
-    await this.package.getSettings(); // TODO: workaround
-    const settings = await this.package.getSettings();
+    await this.package.getProperties(); // TODO: workaround
+    const settings = await this.package.getProperties();
     this.debugEnabled = settings['Debug'].includes(this.componentName);
   }
 
