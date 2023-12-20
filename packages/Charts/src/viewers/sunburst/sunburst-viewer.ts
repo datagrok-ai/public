@@ -191,15 +191,6 @@ export class SunburstViewer extends EChartViewer {
   render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
-    
-    if (this.dataFrame.rowCount > MAX_ROW_NUMBER || (this.dataFrame.rowCount < MAX_ROW_NUMBER && this.hierarchyColumnNames.length > 1)) {
-      this.option.series[0].labelLayout = {
-        hideOverlap: 'true',
-        align: 'center',
-      }
-    } else {
-      delete this.option.series[0].labelLayout;
-    }
 
     this.handleStructures(this.getSeriesData()).then((data) => {
       this.option.series[0].data = data;
