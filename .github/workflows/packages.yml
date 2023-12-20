@@ -580,7 +580,7 @@ jobs:
         run: node generatePluginsPages.js latest
 
       - name: Commit plugins.json
-        id: git
+        id: git-plugins
         continue-on-error: true
         if: steps.plugins-json.outcome == 'success'
         run: |
