@@ -51,6 +51,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
   private _visibleInput = ui.stringInput(this.label, '', null);
   private _visibleIcon = ui.iconFA('search', () => this.showSelectionDialog());
   private _chosenRun: DG.FuncCall | null = null;
+  private _chosenRunId: string | null = null;
 
   constructor(
     // Label placed before next to the input
@@ -100,16 +101,9 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
         (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = false;
         this.setValue(newRuns.find((run) => run.id === newId) ?? null);
       });
-      if (this.getValue()) {
-        for (const row of newRunsGridDf.rows) {
-          if (row.get(ID_COLUMN_NAME) === this.getValue()?.id) {
-            newRunsGridDf.currentRowIdx = row.idx;
-            break;
-          }
-        }
-      }
 
       this.store.experimentRunsDf.next(newRunsGridDf);
+      this.setCurrentRow();
     });
 
     this.store.experimentRunsDf.subscribe(() => {
@@ -124,11 +118,24 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     this.experimentRunsUpdate.next();
   }
 
+  private setCurrentRow() {
+    if (this.getValue() || this.chosenRunId) {
+      for (const row of this.store.experimentRunsDf.value.rows) {
+        if (row.get(ID_COLUMN_NAME) === (this.getValue()?.id ?? this.chosenRunId)) {
+          this.store.experimentRunsDf.value.currentRowIdx = row.idx;
+          break;
+        }
+      }
+    }
+  }
+
   public showSelectionDialog() {
     // Bug: should re-render all viewers inside of the dialog
     this.renderGridFilters();
 
     (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = (this.store.experimentRunsDf.value.currentRow.idx === -1);
+
+    this.setCurrentRow();
 
     this._historyDialog.show({
       modal: true,
@@ -222,6 +229,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
   protected setValue(val: DG.FuncCall | null) {
     this._chosenRun = val;
+    this._chosenRunId = this._chosenRun?.id ?? null;
     this.onHistoricalRunChosen.next(val);
     this._visibleInput.value = val ? this._stringValueFunc(val): '';
     if (!this.notify) return;
@@ -235,6 +243,14 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
   get chosenRun() {
     return this._chosenRun;
+  }
+
+  get chosenRunId() {
+    return this._chosenRunId;
+  }
+
+  set chosenRunId(id: string | null) {
+    this._chosenRunId = id;
   }
 
   // Viever object of grid
