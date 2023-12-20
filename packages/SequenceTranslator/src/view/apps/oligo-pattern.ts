@@ -154,7 +154,7 @@ export class PatternLayoutHandler {
     }
 
     function resetStrandLengthInputs() {
-      Object.values(strandLengthInput).forEach(input => input.value = 34); // Assuming 34 is the default or reset value
+      Object.values(strandLengthInput).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
     }
 
     // todo: unify with updateBases
