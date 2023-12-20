@@ -21,50 +21,100 @@ type StringInput = DG.InputBase<string | null>;
 export class PatternLayoutHandler {
   get htmlDivElement() {
     function updateModification(strand: string) {
-      modificationItems[strand].innerHTML = '';
-      ptoLinkages[strand] = ptoLinkages[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(fullyPto));
-      baseInputsObject[strand] = baseInputsObject[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(sequenceBase));
+      clearModificationItems(strand);
+      extendStrandArrays(strand);
       let nucleotideCounter = 0;
-      for (let i = 0; i < strandLengthInput[strand].value!; i++) {
-        ptoLinkages[strand][i] = ui.boolInput('', ptoLinkages[strand][i].value!, () => {
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        baseInputsObject[strand][i] = ui.choiceInput('', baseInputsObject[strand][i].value, baseChoices, (v: string) => {
-          if (!enumerateModifications.includes(v)) {
-            enumerateModifications.push(v);
-            isEnumerateModificationsDiv.append(
-              ui.divText('', {style: {width: '25px'}}),
-              ui.boolInput(v, true, (boolV: boolean) => {
-                if (boolV) {
-                  if (!enumerateModifications.includes(v))
-                    enumerateModifications.push(v);
-                } else {
-                  const index = enumerateModifications.indexOf(v, 0);
-                  if (index > -1)
-                    enumerateModifications.splice(index, 1);
-                }
-                updateSvgScheme();
-              }).root,
-            );
-          }
-          updateModification(AS);
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        $(baseInputsObject[strand][i].root).addClass('st-pattern-choice-input');
-        if (!isOverhang(baseInputsObject[strand][i].value!))
-          nucleotideCounter++;
 
-        modificationItems[strand].append(
-          ui.divH([
-            ui.div([ui.label(isOverhang(baseInputsObject[strand][i].value!) ? '' : String(nucleotideCounter))],
-              {style: {width: '20px'}})!,
-            ui.block75([baseInputsObject[strand][i].root])!,
-            ui.div([ptoLinkages[strand][i]])!,
-          ], {style: {alignItems: 'center'}}),
-        );
+      for (let i = 0; i < getStrandLength(strand); i++) {
+        updatePtoLinkage(strand, i);
+        updateBaseInputObject(strand, i);
+
+        if (!isOverhang(getBaseInputValue(strand, i))) {
+          nucleotideCounter++;
+        }
+
+        const modificationItem = createModificationItem(strand, nucleotideCounter, i);
+        modificationItems[strand].append(modificationItem);
       }
+    }
+
+    function clearModificationItems(strand: string) {
+      modificationItems[strand].innerHTML = '';
+    }
+
+    function extendStrandArrays(strand: string) {
+      const extensionLength = maxStrandLength[strand] - baseInputsObject[strand].length;
+      ptoLinkages[strand] = ptoLinkages[strand].concat(Array(extensionLength).fill(fullyPto));
+      baseInputsObject[strand] = baseInputsObject[strand].concat(Array(extensionLength).fill(sequenceBase));
+    }
+
+    function getStrandLength(strand: string) {
+      return strandLengthInput[strand].value!;
+    }
+
+    function updatePtoLinkage(strand: string, index: number) {
+      ptoLinkages[strand][index] = ui.boolInput('', ptoLinkages[strand][index].value!, () => {
+        updateSvgScheme();
+        updateOutputExamples();
+      });
+    }
+
+    function updateBaseInputObject(strand: string, index: number) {
+      baseInputsObject[strand][index] = ui.choiceInput('', getBaseInputValue(strand, index), baseChoices, (v: string) => {
+        handleBaseInputChange(v);
+        updateModification(AS);
+        updateSvgScheme();
+        updateOutputExamples();
+      });
+
+      $(baseInputsObject[strand][index].root).addClass('st-pattern-choice-input');
+    }
+
+    function getBaseInputValue(strand: string, index: number) {
+      return baseInputsObject[strand][index].value!;
+    }
+
+    function handleBaseInputChange(value: string) {
+      if (!enumerateModifications.includes(value)) {
+        updateEnumerateModifications(value);
+      }
+    }
+
+    function updateEnumerateModifications(value: string) {
+      if (!enumerateModifications.includes(value)) {
+        enumerateModifications.push(value);
+        appendModificationToDiv(value);
+      } else {
+        const index = enumerateModifications.indexOf(value);
+        if (index > -1) {
+          enumerateModifications.splice(index, 1);
+        }
+      }
+    }
+
+    function appendModificationToDiv(value: string) {
+      isEnumerateModificationsDiv.append(
+        ui.divText('', {style: {width: '25px'}}),
+        ui.boolInput(value, true, (boolV: boolean) => {
+          if (boolV && !enumerateModifications.includes(value)) {
+            enumerateModifications.push(value);
+          } else if (!boolV) {
+            const index = enumerateModifications.indexOf(value);
+            if (index > -1) {
+              enumerateModifications.splice(index, 1);
+            }
+          }
+          updateSvgScheme();
+        }).root,
+      );
+    }
+
+    function createModificationItem(strand: string, nucleotideCounter: number, index: number) {
+      return ui.divH([
+        ui.div([ui.label(isOverhang(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter))], {style: {width: '20px'}}),
+        ui.block75([baseInputsObject[strand][index].root]),
+        ui.div([ptoLinkages[strand][index]]),
+      ], {style: {alignItems: 'center'}});
     }
 
     function updateUiForNewSequenceLength() {
@@ -425,8 +475,8 @@ export class PatternLayoutHandler {
     const baseInputsObject = Object.fromEntries(STRANDS.map(
       (strand) => {
         const choiceInputs = Array<StringInput>(DEFAULT_SEQUENCE_LENGTH)
-        .fill(ui.choiceInput('', defaultBase, baseChoices));
-         return [strand, choiceInputs];
+          .fill(ui.choiceInput('', defaultBase, baseChoices));
+        return [strand, choiceInputs];
       }
     ));
     const strandLengthInput = Object.fromEntries(STRANDS.map(
@@ -434,7 +484,7 @@ export class PatternLayoutHandler {
         const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => updateUiForNewSequenceLength());
         input.setTooltip(`Length of ${STRAND_NAME[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
-    }));
+      }));
     const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
     // const strandColumnInputDiv = Object.fromEntries(STRANDS.map(
     //   (strand) => [strand, ui.div([])]
@@ -467,16 +517,16 @@ export class PatternLayoutHandler {
     }));
 
     const terminalModification = Object.fromEntries(STRANDS.map((strand) => {
-        const inputs = Object.fromEntries(TERMINAL_KEYS.map((key) => {
-            const input = ui.stringInput(`${strand} ${TERMINAL[key]}\' Modification`, '', () => {
-              updateSvgScheme();
-              updateOutputExamples();
-            });
-            input.setTooltip(`Additional ${strand} ${TERMINAL[key]}\' Modification`);
-            return [key, input];
-          }));
-        return [strand, inputs];
+      const inputs = Object.fromEntries(TERMINAL_KEYS.map((key) => {
+        const input = ui.stringInput(`${strand} ${TERMINAL[key]}\' Modification`, '', () => {
+          updateSvgScheme();
+          updateOutputExamples();
+        });
+        input.setTooltip(`Additional ${strand} ${TERMINAL[key]}\' Modification`);
+        return [key, input];
       }));
+      return [strand, inputs];
+    }));
 
     const outputExample = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.textInput('', translateSequence(
@@ -502,7 +552,7 @@ export class PatternLayoutHandler {
     }));
 
     STRANDS.forEach((s) => {
-      
+
       inputExample[s].input.style.resize = 'none';
       outputExample[s].input.style.resize = 'none';
       inputExample[s].input.style.minWidth = 'none';
@@ -713,23 +763,23 @@ export class PatternLayoutHandler {
 
     const downloadButton = ui.link('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
       {backgroundColor: 'white'}), 'Download pattern as PNG image', '');
-     
+
     const editPattern = ui.link('Edit pattern', ()=>{
       ui.dialog('Edit pattern')
-      .add(ui.divV([
-        ui.h1('PTO'),
-        ui.divH([
-          fullyPto.root,
-          firstPto[SS].root,
-          firstPto[AS].root,
-        ], {style:{gap:'12px'}})
-      ]))
-      .add(ui.divH([
-        modificationSection[SS],
-        modificationSection[AS],
-      ], {style:{gap:'24px'}}))
-      .onOK(()=>{grok.shell.info('Saved')})
-      .show()
+        .add(ui.divV([
+          ui.h1('PTO'),
+          ui.divH([
+            fullyPto.root,
+            firstPto[SS].root,
+            firstPto[AS].root,
+          ], {style:{gap:'12px'}})
+        ]))
+        .add(ui.divH([
+          modificationSection[SS],
+          modificationSection[AS],
+        ], {style:{gap:'24px'}}))
+        .onOK(()=>{grok.shell.info('Saved')})
+        .show()
     }, 'Edit pattern', '');  
 
     strandLengthInput[SS].addCaption('Length');
@@ -754,7 +804,7 @@ export class PatternLayoutHandler {
             convertSequenceButton,
           ]),
         ], 'ui-form')
-      , {style:{maxWidth:'450px'}}),
+        , {style:{maxWidth:'450px'}}),
       ui.panel([
         svgDiv,
         isEnumerateModificationsDiv,
@@ -775,11 +825,11 @@ export class PatternLayoutHandler {
           ], 'ui-block'),
         ], {style:{gap:'24px', marginTop:'24px'}}),
         ui.h1('Additional modifications'),
-            ui.form([
-              terminalModification[SS][FIVE_PRIME],
-              terminalModification[SS][THREE_PRIME],
-            ]),
-            asModificationDiv,
+        ui.form([
+          terminalModification[SS][FIVE_PRIME],
+          terminalModification[SS][THREE_PRIME],
+        ]),
+        asModificationDiv,
       ], {style: {overflowX: 'scroll', padding:'12px 24px'}})
     ], {}, true)
   }
