@@ -521,15 +521,34 @@ export class PatternLayoutHandler {
       await updatePatternsList();
     }
 
-
-
     function validateStrandColumn(colName: string, strand: string): void {
-      const allLengthsAreTheSame: boolean = checkColumnLengthsUniform(colName);
-      const firstSequence = tableInput.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length !== strandLengthInput[strand].value)
-      strandLengthInput[strand].value = tableInput.value!.getCol(colName).get(0).length;
-      inputExample[strand].value = firstSequence;
+      if (!checkColumnLengthsUniform(colName)) {
+        return;
+      }
+
+      const firstSequence = getFirstSequence(colName);
+      updateStrandLengthIfNeeded(firstSequence.length, strand);
+      updateInputExample(firstSequence, strand);
     }
+
+    function getFirstSequence(colName: string): string {
+      return tableInput.value!.getCol(colName).get(0);
+    }
+
+    function updateStrandLengthIfNeeded(sequenceLength: number, strand: string): void {
+      const currentStrandLength = strandLengthInput[strand].value;
+      if (sequenceLength !== currentStrandLength) {
+        strandLengthInput[strand].value = sequenceLength;
+      }
+    }
+
+    function updateInputExample(sequence: string, strand: string): void {
+      inputExample[strand].value = sequence;
+    }
+
+
+
+
 
     function validateIdsColumn(colName: string) {
       const col = tableInput.value!.getCol(colName);
