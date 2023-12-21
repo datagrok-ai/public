@@ -409,8 +409,7 @@ export class PatternLayoutHandler {
     }
 
 
-
-
+    
     async function updatePatternsList() {
       grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false).then(async (entities) => {
         const lstMy: string[] = [];
@@ -432,58 +431,59 @@ export class PatternLayoutHandler {
         const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
           const currentList = v === currentUserName ? lstMy : lstOthers;
           loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
-
-          loadPattern.root.append(patternListChoiceInput.input);
-          loadPattern.root.append(loadPattern.input);
-          // @ts-ignore
-          loadPattern.input.style.maxWidth = '120px';
-          loadPattern.input.style.marginLeft = '12px';
-          loadPattern.setTooltip('Apply Existing Pattern');
-
-          loadPatternDiv.innerHTML = '';
-          loadPatternDiv.append(loadPattern.root);
-          loadPattern.root.append(
-            ui.div([
-              ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-                if (loadPattern.value === null)
-                  grok.shell.warning('Choose pattern to delete');
-                else if (await isCurrentUserCreatedThisPattern(saveAs.value))
-                  grok.shell.warning('Cannot delete pattern, created by other user');
-                else {
-                  await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
-                    .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
-                }
-                await updatePatternsList();
-              }),
-            ], 'ui-input-options'),
-          );
+          
+          setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
         });
         patternListChoiceInput.input.style.maxWidth = '142px';
-        loadPattern.root.append(patternListChoiceInput.input);
-        loadPattern.root.append(loadPattern.input);
-        // @ts-ignore
-        loadPattern.input.style.maxWidth = '100px';
-        loadPattern.setTooltip('Apply Existing Pattern');
 
-        loadPatternDiv.innerHTML = '';
-        loadPatternDiv.append(loadPattern.root);
-        loadPattern.root.append(
-          ui.div([
-            ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-              if (loadPattern.value === null)
+        setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
+
+        function setupLoadPatternUI(loadPattern: StringInput, loadPatternDiv: HTMLElement, patternListChoiceInput: StringInput) {
+          clearAndAppendNewElements(loadPatternDiv, loadPattern, patternListChoiceInput);
+
+          styleLoadPatternInput(loadPattern.input);
+          loadPattern.setTooltip('Apply Existing Pattern');
+
+          const deleteButton = createDeleteButton(loadPattern);
+          loadPattern.root.append(deleteButton);
+        }
+
+        function clearAndAppendNewElements(loadPatternDiv: HTMLElement, loadPattern: StringInput, patternListChoiceInput: StringInput) {
+          loadPatternDiv.innerHTML = '';
+          loadPattern.root.append(patternListChoiceInput.input, loadPattern.input);
+          loadPatternDiv.append(loadPattern.root);
+        }
+
+        function styleLoadPatternInput(loadPatternInput: HTMLElement) {
+          // loadPatternInput.style.maxWidth = '100px';
+          loadPatternInput.style.maxWidth = '120px';
+          loadPatternInput.style.marginLeft = '12px';
+        }
+
+        function createDeleteButton(loadPattern: StringInput): HTMLElement {
+          return ui.div([
+            ui.button(ui.iconFA('trash-alt'), async () => {
+              if (!loadPattern.value) {
                 grok.shell.warning('Choose pattern to delete');
-              else if (await isCurrentUserCreatedThisPattern(saveAs.value))
+              } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
                 grok.shell.warning('Cannot delete pattern, created by other user');
-              else {
-                await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
-                  .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
+              } else {
+                await deletePattern(loadPattern.value);
+                await updatePatternsList();
               }
-              await updatePatternsList();
-            }),
-          ], 'ui-input-options'),
-        );
+            })
+          ], 'ui-input-options');
+        }
+
+        async function deletePattern(patternName: string) {
+          await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+          grok.shell.info(`Pattern '${patternName}' deleted`);
+        }
       });
     }
+
+    
+
 
     async function savePattern() {
       await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false)
