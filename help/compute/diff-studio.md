@@ -44,13 +44,13 @@ To run **Diff Studio**:
 
 ### Loading and saving data
 
-* **To save formulas** in a local file, press the **Save** button on the ribbon, and find the file in Downloads
-* **To load formulas** from a local file, press the **Load...** on the ribbon, choose **From file...**
+* **To save formulas** in a local file, press the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the file in Downloads
+* **To load formulas** from a local file, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
 
-### Loading templates and use-cases
+### Loading templates and examples
 
-To load a template, press the **Load...** on the ribbon, 
+To load a template, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, 
 select **Templates** and choose one of the following templates:
 
 | Template   | Features                                                                                    |
@@ -59,7 +59,7 @@ select **Templates** and choose one of the following templates:
 | `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
 | `Extended` | The *annotating* feature for extended UI generation                                         |
 
-To load an example, press the **Load...** on the ribbon, 
+To load an example, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, 
 select **Examples** and choose a one.
 
 ## Creating a custom differential equation model
@@ -202,8 +202,8 @@ Use any valid expression, when specifying the updates of inputs.
 
 You can convert any Diff Studio project to the Datagrok script:
 
-* Press **JS** button on the top panel
-* Press **SAVE** button to save generated script
+* Press the **JS** button on the top panel
+* Press the **SAVE** button to save generated script
 
 Find the created Javascript script in the platform `Scripts`.
 
@@ -268,10 +268,10 @@ Use the following `meta`-s:
 | `#meta.runOnInput: true` | Re-calculate results immediately upon input changes. | 
 
 
-## Use cases
+## Examples
 
-The Diff Studio has built-in use cases. Get access to them 
-via the **Load...** button on the ribbon and use it as a template.
+The Diff Studio has built-in examples. Get access to them 
+via the <i class="fas fa-folder-open"></i> **Load...** button on the ribbon and use it as a template.
 
 |<div style={{ width:400 }}></div> |Use case|Features|
 |----------------------------------|--------|--------|
