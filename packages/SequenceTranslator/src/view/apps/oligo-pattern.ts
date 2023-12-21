@@ -20,6 +20,10 @@ const enum UPDATE_TYPE {
   BASIS
 }
 
+interface PatternObject {
+  [key: string]: any; // todo: replace any with more specific type
+}
+
 type BooleanInput = DG.InputBase<boolean | null>;
 type StringInput = DG.InputBase<string | null>;
 
@@ -256,46 +260,67 @@ export class PatternLayoutHandler {
       return mostFrequentElement;
     }
 
-    async function parsePatternAndUpdateUi(newName: string) {
-      const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
-      await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false).then((entities) => {
-        const obj = JSON.parse(entities[newName]);
-        sequenceBase.value = detectDefaultBasis(obj[FIELD.AS_BASES].concat(obj[FIELD.SS_BASES]));
-        createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
-        saveAs.value = newName;
-
-        let fields = [FIELD.SS_BASES, FIELD.AS_BASES];
-        STRANDS.forEach((strand, i) => {
-          baseInputsObject[strand] = [];
-          const field = fields[i];
-          for (let j = 0; j < obj[field].length; j++)
-            baseInputsObject[strand].push(ui.choiceInput('', obj[field][j], baseChoices));
-        })
-
-        fields = [FIELD.SS_PTO, FIELD.AS_PTO];
-        STRANDS.forEach((s, i) => {
-          const field = fields[i];
-          firstPto[s].value = obj[field][0];
-          ptoLinkages[s] = [];
-          for (let j = 1; j < obj[field].length; j++)
-            ptoLinkages[s].push(ui.boolInput('', obj[field][j]));
-        });
-
-        fields = [FIELD.SS_BASES, FIELD.AS_BASES];
-        STRANDS.forEach((strand, i) => {
-          strandLengthInput[strand].value = obj[fields[i]].length;
-        })
-
-        const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
-        STRANDS.forEach((strand, i) => {
-          TERMINAL_KEYS.forEach((terminal, j) => {
-            terminalModification[strand][terminal].value = obj[field[i][j]];
-          })
-        })
-        comment.value = obj[FIELD.COMMENT];
-      });
-      pi.close();
+    async function parsePattern(newName: string): Promise<PatternObject> {
+      const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      return JSON.parse(entities[newName]);
     }
+
+    async function updateUiWithPattern(newName: string, obj: PatternObject): Promise<void> {
+      sequenceBase.value = detectDefaultBasis([...obj[FIELD.AS_BASES], ...obj[FIELD.SS_BASES]]);
+      createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
+      saveAs.value = newName;
+
+      updateBaseInputs(obj);
+      updatePtoLinkages(obj);
+      updateStrandLengths(obj);
+      updateTerminalModifications(obj);
+
+      comment.value = obj[FIELD.COMMENT];
+    }
+
+    async function parsePatternAndUpdateUi(newName: string): Promise<void> {
+      const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
+      try {
+        const patternObj = await parsePattern(newName);
+        await updateUiWithPattern(newName, patternObj);
+      } catch (error) {
+        console.error("Error parsing pattern and updating UI: ", error);
+      } finally {
+        pi.close();
+      }
+    }
+
+    function updateBaseInputs(obj: PatternObject): void {
+      const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
+      STRANDS.forEach((strand, i) => {
+        baseInputsObject[strand] = obj[fields[i]].map((base: string) => ui.choiceInput('', base, baseChoices));
+      });
+    }
+
+    function updatePtoLinkages(obj: PatternObject): void {
+      const fields = [FIELD.SS_PTO, FIELD.AS_PTO];
+      STRANDS.forEach((strand, i) => {
+        firstPto[strand].value = obj[fields[i]][0];
+        ptoLinkages[strand] = obj[fields[i]].slice(1).map((value: boolean) => ui.boolInput('', value));
+      });
+    }
+
+    function updateStrandLengths(obj: PatternObject): void {
+      const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
+      STRANDS.forEach((strand, i) => {
+        strandLengthInput[strand].value = obj[fields[i]].length;
+      });
+    }
+
+    function updateTerminalModifications(obj: PatternObject): void {
+      const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
+      STRANDS.forEach((strand, i) => {
+        TERMINAL_KEYS.forEach((terminal, j) => {
+          terminalModification[strand][terminal].value = obj[field[i][j]];
+        });
+      });
+    }
+    //
 
     function allColumnValuesOfEqualLength(colName: string): boolean {
       const col = tableInput.value!.getCol(colName);
