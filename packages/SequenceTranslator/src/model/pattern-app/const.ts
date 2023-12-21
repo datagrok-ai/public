@@ -28,8 +28,10 @@ export const STRAND_NAME: Record<StrandType, string> = {
 
 export const THREE_PRIME = 'THREE_PRIME' as const;
 export const FIVE_PRIME = 'FIVE_PRIME' as const;
-export const TERMINAL_KEYS = [THREE_PRIME, FIVE_PRIME];
-export const TERMINAL = {
+export type TerminalType = typeof THREE_PRIME | typeof FIVE_PRIME;
+
+export const TERMINAL_KEYS: TerminalType[] = [THREE_PRIME, FIVE_PRIME];
+export const TERMINAL: Record<TerminalType, number> = {
   [THREE_PRIME]: 3,
   [FIVE_PRIME]: 5,
-}
+};

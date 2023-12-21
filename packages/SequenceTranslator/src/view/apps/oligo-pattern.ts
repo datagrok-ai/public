@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 import {
-  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD, StrandType
+  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD, StrandType, TerminalType
 } from '../../model/pattern-app/const';
 import {isOverhang} from '../../model/pattern-app/helpers';
 import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model//pattern-app/oligo-pattern';
@@ -238,11 +238,11 @@ export class PatternLayoutHandler {
             ptoLinkageValues[SS],
             ptoLinkageValues[AS],
 
-            terminalModification[SS][THREE_PRIME].value,
-            terminalModification[SS][FIVE_PRIME].value,
+            terminalModification[SS][THREE_PRIME].value!,
+            terminalModification[SS][FIVE_PRIME].value!,
 
-            terminalModification[AS][THREE_PRIME].value,
-            terminalModification[AS][FIVE_PRIME].value,
+            terminalModification[AS][THREE_PRIME].value!,
+            terminalModification[AS][FIVE_PRIME].value!,
 
             comment.value,
             enumerateModifications,
@@ -400,10 +400,10 @@ export class PatternLayoutHandler {
         [FIELD.AS_BASES]: createBasesArray(AS),
         [FIELD.SS_PTO]: createPtoArray(SS),
         [FIELD.AS_PTO]: createPtoArray(AS),
-        [FIELD.SS_3]: terminalModification[SS][THREE_PRIME].value,
-        [FIELD.SS_5]: terminalModification[SS][FIVE_PRIME].value,
-        [FIELD.AS_3]: terminalModification[AS][THREE_PRIME].value,
-        [FIELD.AS_5]: terminalModification[AS][FIVE_PRIME].value,
+        [FIELD.SS_3]: terminalModification[SS][THREE_PRIME].value!,
+        [FIELD.SS_5]: terminalModification[SS][FIVE_PRIME].value!,
+        [FIELD.AS_3]: terminalModification[AS][THREE_PRIME].value!,
+        [FIELD.AS_5]: terminalModification[AS][FIVE_PRIME].value!,
         [FIELD.COMMENT]: comment.value,
       };
     }
@@ -688,17 +688,29 @@ export class PatternLayoutHandler {
 
     const firstPto = createFirstPtoInputs(fullyPto);
 
-    const terminalModification = Object.fromEntries(STRANDS.map((strand) => {
-      const inputs = Object.fromEntries(TERMINAL_KEYS.map((key) => {
-        const input = ui.stringInput(`${strand} ${TERMINAL[key]}\' Modification`, '', () => {
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        input.setTooltip(`Additional ${strand} ${TERMINAL[key]}\' Modification`);
-        return [key, input];
-      }));
-      return [strand, inputs];
-    }));
+    function createTerminalModificationInputs() {
+      return Object.fromEntries(STRANDS.map(strand => [strand, createStrandInputs(strand)]));
+    }
+
+    function createStrandInputs(strand: StrandType) {
+      return Object.fromEntries(TERMINAL_KEYS.map((key: TerminalType) => [key, createModificationInput(strand, key)]));
+    }
+
+    function createModificationInput(strand: StrandType, key: TerminalType): StringInput {
+      const label = `${strand} ${TERMINAL[key]}\' Modification`;
+      const tooltip = `Additional ${strand} ${TERMINAL[key]}\' Modification`;
+      const input = ui.stringInput(label, '', modificationInputChangeCallback);
+
+      input.setTooltip(tooltip);
+      return input;
+    }
+
+    function modificationInputChangeCallback(): void {
+      updateSvgScheme();
+      updateOutputExamples();
+    }
+
+    const terminalModification = createTerminalModificationInputs();
 
     const outputExample = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.textInput('', translateSequence(
@@ -724,7 +736,6 @@ export class PatternLayoutHandler {
     }));
 
     STRANDS.forEach((s) => {
-
       inputExample[s].input.style.resize = 'none';
       outputExample[s].input.style.resize = 'none';
       inputExample[s].input.style.minWidth = 'none';
@@ -778,9 +789,6 @@ export class PatternLayoutHandler {
           grok.shell.addTableView(table!);
           grok.shell.v = view;
         }
-        // console.log(`table:`, table);
-        // console.log(`cols:`, table.columns);
-        // console.log(`names:`, table.columns.names());
         const columnNames = table.columns.names();
 
         STRANDS.forEach((strand) => {
@@ -793,13 +801,6 @@ export class PatternLayoutHandler {
             console.log(`clicked ${strand} var:`, strandVar[strand]);
           });
           $(strandColumnInput[strand].root).replaceWith(input.root);
-          // $(inputIdColumnDiv).replaceWith(ui.div([inputStrandColumn[strand]]));
-          // $(inputStrandColumnDiv[strand]).replaceWith(ui.divText('ababa'));
-          // $(inputStrandColumnDiv[strand])
-          //   .replaceWith(ui.div([inputStrandColumn[strand]]));
-          // strandColumnInputDiv[strand].innerHTML = ui.divText('ababa').innerHTML;
-          // // inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
-          // console.log(`${strand} input div`,strandColumnInputDiv[strand].innerHTML);
         })
 
         idVar = columnNames[0];
