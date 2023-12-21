@@ -230,17 +230,21 @@ For additional capabilities of the Datagrok script editor, see the
 
 
 
-## More Datagrok scripting
+## Datagrok scripting in details
 
-### Dataframes, scalars, and default values
+### Parameters: scalars and dataframes
 
-The template script accepts the **dataframe** as the input parameter.
+Datagrok natively supports standard scalar data types: 
+`int`, `double`, `bool`, `string`.
+Also, Datagrok supports `datetime` as a specific parameter type.
+
+For table data, Datagrok supports **Dataframe** as input/output parameters.
 For [Python](https://www.python.org/) this parameter
 is a [Pandas](https://pandas.pydata.org/)
 [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html).
 [R](https://www.r-project.org/) supports dataframes natively.
 
-Let's modify it to accept and return both dataframes and scalars.
+Let's modify the default example accept and return both dataframes and scalars.
 We copy the original dataframe and add a new ID column to it.
 Also, we return the number of rows in the table.
 
@@ -260,7 +264,7 @@ Also, we return the number of rows in the table.
 #output: dataframe new_table [New table with additional column]
 #output: int last_row [number of last row]
 
-new_table = table
+new_table = table.copy()
 l = len(new_table)
 new_table[id_column] = [f"{id_prefix}{n:04}" for n in range(l)]
 last_row = len(new_table)
@@ -297,10 +301,41 @@ When you run the script, you will see the following dialog:
 ![DataframeIdDemo input](pics/dataframeiddemo-input.png)
 
 Datagrok created the script UI,
-populated default values, and created popups with help text
+populated default values, and created popups with help text.
 
-After running this script, Datagrok automatically opens the new dataframe.
+After running this script, 
+Datagrok automatically catches and opens the new dataframe.
 It will contain an additional column **ID** with the generated row ID.
+
+### Using column inputs
+
+For the dataframe, Datagrok provides you special data input to select one or multiple columns.
+* The `column` input parameter allows you to select one column from the dataframe. 
+  In the script it will be a string variable containing column ID
+* The `column_list` input parameter allows you to select multiple columns.
+  In the script it will be a list of strings, containing column IDs
+
+Both of these selectors require at least one **Dataframe** input 
+to choose a dataframe for column selection.
+
+```python
+#name: DataframeIdDemo
+#description: Adding ID column to a dataframe
+#language: python
+#tags: demo, dataframe
+#input: dataframe table [Data table]
+#input: column id [Fill this column with auto-d=generated ID]
+#input: column_list data [Keep this column and drom all others]
+#output: dataframe new_table [New table with additional column]
+
+new_table = table.copy()
+l = len(new_table)
+new_table[id_column] = [f"{id_prefix}{n:04}" for n in range(l)]
+last_row = len(new_table)
+```
+
+![ColumnSelectorDemo.png](pics/ColumnSelectorDemo.png)
+
 
 ### Enhancing script input view
 
