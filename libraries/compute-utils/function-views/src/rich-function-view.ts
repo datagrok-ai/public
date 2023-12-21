@@ -1182,7 +1182,10 @@ export class RichFunctionView extends FunctionView {
           view: this,
         });
       }
-      return [name, mergeValidationResults(standardMsgs, customMsgs)] as const;
+      return [name, mergeValidationResults(
+        ...this.funcCall.inputParams[name].property.options.nullable ? []: [standardMsgs],
+        customMsgs),
+      ] as const;
     }));
     return Object.fromEntries(validationItems);
   }
