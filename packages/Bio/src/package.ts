@@ -500,11 +500,13 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //input: string metric
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
 //input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
+// eslint-disable-next-line max-len
+//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern']; default: Morgan; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
-  col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6
-): Promise<PreprocessFunctionReturnType> {
-  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric);
+  col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
+  fingerprintType = 'Morgan'): Promise<PreprocessFunctionReturnType> {
+  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType);
   return {entries: seqList, options: {...options, gapOpen, gapExtend}};
 }
 
