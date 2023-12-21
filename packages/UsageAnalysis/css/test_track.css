@@ -1,0 +1,17 @@
+#tt-tree {
+  width: 100%;
+}
+
+#tt-tree .d4-tree-view-group {
+  width: 100%;
+}
+
+#tt-test-case-div {
+  height: 200px;
+  background-color: var(--grey-1);
+  margin: 7px;
+  border-radius: 7px;
+  padding: 10px;
+  overflow-y: scroll;
+  line-height: 1.5;
+}

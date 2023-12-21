@@ -5,7 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {UsageWidget} from './widgets/usage-widget';
 import {PackageUsageWidget} from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
+import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
+import {TestTrack} from './test-track/app';
 
 export const _package = new DG.Package();
 
@@ -13,8 +15,14 @@ export const _package = new DG.Package();
 //name: Usage Analysis
 //tags: app
 export function usageAnalysisApp(): void {
-  ViewHandler.getInstance();
   if (!grok.shell.view(ViewHandler.UAname)) ViewHandler.getInstance().init();
+}
+
+//name: Test Track
+//tags: app
+export function testTrackApp(): void {
+  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
+    TestTrack.getInstance().init();
 }
 
 //output: widget result
