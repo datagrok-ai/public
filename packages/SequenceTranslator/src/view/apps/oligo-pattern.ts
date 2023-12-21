@@ -375,7 +375,7 @@ export class PatternLayoutHandler {
       return ` (created by ${user.friendlyName})`;
     }
 
-    async function postPatternToUserStorage(): Promise<void> {
+    async function showPostPatternToUserStorage(): Promise<void> {
       const currUserName = await getCurrentUserName();
       saveAs.value = createSaveAsValue(currUserName);
 
@@ -407,8 +407,6 @@ export class PatternLayoutHandler {
         [FIELD.COMMENT]: comment.value,
       };
     }
-
-
 
     async function categorizePatterns(patternsData: PatternData): Promise<{ lstMy: string[], lstOthers: string[] }> {
       const lstMy: string[] = [];
@@ -487,29 +485,43 @@ export class PatternLayoutHandler {
       }
     }
 
+    async function patternExists(patternData: PatternData, patternName: string) {
+      return Object.keys(patternData).includes(patternName);
+    }
 
+    async function showConfirmReplacePatternDialog(patternName: string) {
+      const dialog = ui.dialog('Pattern already exists');
+      $(dialog.getButton('OK')).hide();
+      dialog
+        .add(ui.divText(`Pattern name '${patternName}' already exists.`))
+        .add(ui.divText('Replace pattern?'))
+        .addButton('YES', async () => {
+          await removePattern(patternName);
+          await showPostPatternToUserStorage();
+          dialog.close();
+        })
+        .show();
+    }
 
+    async function removePattern(patternName: string) {
+      return grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+    }
 
-    async function savePattern() {
-      await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false)
-        .then((entities) => {
-          if (Object.keys(entities).includes(saveAs.value)) {
-            const dialog = ui.dialog('Pattern already exists');
-            $(dialog.getButton('OK')).hide();
-            dialog
-              .add(ui.divText('Pattern name \'' + saveAs.value + '\' already exists.'))
-              .add(ui.divText('Replace pattern?'))
-              .addButton('YES', async () => {
-                await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, saveAs.value, false)
-                  .then(() => postPatternToUserStorage());
-                dialog.close();
-              })
-              .show();
-          } else
-            postPatternToUserStorage();
-        });
+    async function savePattern(): Promise<void> {
+      const patternData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+
+      const patternName = saveAs.value;
+
+      if (await patternExists(patternData, patternName)) {
+        await showConfirmReplacePatternDialog(patternName);
+      } else {
+        await showPostPatternToUserStorage();
+      }
+
       await updatePatternsList();
     }
+
+
 
     function validateStrandColumn(colName: string, strand: string): void {
       const allLengthsAreTheSame: boolean = checkColumnLengthsUniform(colName);
