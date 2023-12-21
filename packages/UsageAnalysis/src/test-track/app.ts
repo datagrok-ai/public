@@ -8,8 +8,8 @@ const FILENAME = 'test-cases.csv';
 
 export class TestTrack extends DG.ViewBase {
   private static instance: TestTrack;
-  tree: DG.TreeViewGroup = ui.tree();
-  testCaseDiv: HTMLDivElement = ui.div();
+  tree: DG.TreeViewGroup;
+  testCaseDiv: HTMLDivElement;
   inited: boolean = false;
   df: DG.DataFrame = DG.DataFrame.create(0);
 
@@ -23,7 +23,10 @@ export class TestTrack extends DG.ViewBase {
     super();
     this.name = 'Test Track';
     this.path = '/TestTrack';
+    this.tree = ui.tree();
+    this.tree.value = {id: null, parent_id: null, test_case: null};
     this.tree.root.id = 'tt-tree';
+    this.testCaseDiv = ui.div();
     this.testCaseDiv.id = 'tt-test-case-div';
     this.tree.onSelectedNodeChanged.subscribe((node) => {
       this.testCaseDiv.innerText = node.value.test_case;
@@ -35,10 +38,28 @@ export class TestTrack extends DG.ViewBase {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
       return;
     }
+
+    // Generate tree
     this.df = await readDataframe(FILENAME);
-    for (const row of this.df.rows)
+    const order = this.df.getSortedOrder(['is_group', 'name'], [false, true]);
+    let row: DG.Row;
+    for (const i of order) {
+      row = this.df.row(i);
       this.initNodeAndParentsRecursive(row);
+    }
+
+    // Ribbon
+    let icon = ui.iconFA('plus');
+    icon.classList.replace('fal', 'fas');
+    const plus = ui.button(icon, () => {
+      this.showAddDialog(this.tree);
+    }, 'Add root group');
+    icon = ui.iconFA('undo');
+    const ribbon = ui.divH([plus]);
+
+    // UI
     this.append(this.testCaseDiv);
+    this.append(ribbon);
     this.append(this.tree.root);
     this.root.style.padding = '0';
     grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
@@ -86,20 +107,30 @@ export class TestTrack extends DG.ViewBase {
 
   showAddDialog(parent: DG.TreeViewGroup, testCase: boolean = false) {
     const dialog = ui.dialog(`Add new ${testCase ? 'test case' : 'group'}`);
+    dialog.root.addEventListener('keydown', (e) => {
+      if (e.key == 'Enter') {
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+      }
+    });
     const nameInput = ui.textInput('Name', '', () => {});
     const testCaseInput = ui.textInput('Test case', '', () => {});
+    nameInput.nullable = false;
     dialog.add(nameInput);
-    if (testCase)
+    if (testCase) {
       dialog.add(testCaseInput);
+      testCaseInput.input.classList.add('tt-new-test-case-input');
+      testCaseInput.root.style.maxWidth = 'unset';
+    }
     dialog.onOK(() => this.addNode(parent, nameInput.value, testCase ? testCaseInput.value : null));
-    dialog.show();
+    dialog.show({resizable: true});
   }
 
   showRemoveDialog(node: DG.TreeViewGroup | DG.TreeViewNode) {
     const isGroup = node.constructor.name === 'TreeViewGroup';
     const post = `"${node.text}" ${isGroup ? 'group' : 'test case'}`;
     const dialog = ui.dialog('Remove ' + post);
-    dialog.add(ui.divText('Are you sure you want to delete ' + post + '?'));
+    dialog.add(ui.divText('Are you sure you want to remove ' + post + '?'));
     if (isGroup) {
       dialog.add(ui.divText('The following items will also be deleted:'));
       dialog.add(ui.list((node as DG.TreeViewGroup).items.map((n) => n.text)));
@@ -115,7 +146,7 @@ export class TestTrack extends DG.ViewBase {
       node = parent.getOrCreateGroup(name, values, false);
     else
       node = parent.item(name, values);
-    console.log(node.value);
+    // console.log(node.value);
     this.setContextMenu(node);
     this.df.rows.addNew([name, values.id, values.parent_id, testCase === null, testCase]);
     await this.updateDf();
@@ -129,7 +160,7 @@ export class TestTrack extends DG.ViewBase {
   }
 
   async removeChildrenRecursive(id: string[]): Promise<void> {
-    const removedIds = this.removeRowsByParentId(id);
+    const removedIds = this.removeRowsByParentIds(id);
     if (removedIds.length)
       this.removeChildrenRecursive(removedIds);
   }
@@ -151,7 +182,7 @@ export class TestTrack extends DG.ViewBase {
     this.df.rows.removeAt(this.findRowById(id));
   }
 
-  removeRowsByParentId(id: string[]): string[] {
+  removeRowsByParentIds(id: string[]): string[] {
     const ind: string[] = [];
     this.df.rows.removeWhere((r) => {
       const b = id.includes(r.get('parent_id'));
