@@ -546,28 +546,52 @@ export class PatternLayoutHandler {
       inputExample[strand].value = sequence;
     }
 
-
-
-
-
     function validateIdsColumn(colName: string) {
-      const col = tableInput.value!.getCol(colName);
-      if (col.type !== DG.TYPE.INT)
-        grok.shell.error('Column should contain integers only');
-      //@ts-ignore
-      else if (col.categories.filter((e) => e !== '').length < col.toList().filter((e) => e !== '').length) {
-        const duplicates = findDuplicates(col.getRawData());
-        ui.dialog('Non-unique IDs')
-          .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
-          .onOK(() => {
-            const selection = tableInput.value!.selection;
-            selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
-            grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
-            grok.shell.info('Rows are selected in table \'' + tableInput.value!.name + '\'');
-          })
-          .show();
+      const col = getColumn(colName);
+      validateColumnType(col);
+
+      if (hasDuplicates(col)) {
+        showDuplicatesDialog(col);
       }
     }
+
+    function getColumn(colName: string): DG.Column {
+      return tableInput.value!.getCol(colName);
+    }
+
+    function validateColumnType(col: DG.Column): void {
+      if (col.type !== DG.TYPE.INT) {
+        grok.shell.error('Column should contain integers only');
+        // throw new Error('Invalid column type');
+      }
+    }
+
+    function hasDuplicates(col: DG.Column): boolean {
+      const uniqueValues = col.categories.filter((e) => e !== '').length;
+      const totalValues = col.toList().filter((e) => e !== '').length;
+      return uniqueValues < totalValues;
+    }
+
+    function showDuplicatesDialog(col: DG.Column): void {
+      const duplicates = findDuplicates(col.getRawData());
+      const tableName = tableInput.value!.name;
+
+      ui.dialog('Non-unique IDs')
+      .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
+      .onOK(() => selectDuplicateRows(duplicates, col))
+      .show();
+
+      grok.shell.info(`Rows are selected in table '${tableName}'`);
+    }
+
+    function selectDuplicateRows(duplicates: any[], col: DG.Column): void {
+      const selection = tableInput.value!.selection;
+      selection.init((i: number) => duplicates.includes(col.get(i)));
+      grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
+    }
+
+
+
 
     const baseChoices: string[] = Object.keys(axolabsStyleMap);
     const defaultBase: string = baseChoices[0];
@@ -577,18 +601,31 @@ export class PatternLayoutHandler {
       updateValues(UPDATE_TYPE.BASIS, v);
       updateOutputExamples();
     });
-    const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PTO, (v: boolean) => {
-      STRANDS.forEach((s) => { firstPto[s].value = v; })
+    
+    function createFullyPtoInput(): BooleanInput {
+      const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PTO, onFullyPtoChanged);
+      configureFullyPtoLabel(fullyPto.captionLabel);
+      return fullyPto;
+    }
+
+    function configureFullyPtoLabel(label: HTMLElement): void {
+      label.classList.add('ui-label-right');
+      Object.assign(label.style, {
+        textAlign: 'left',
+        maxWidth: '100px',
+        minWidth: '40px',
+        width: 'auto'
+      });
+    }
+
+    function onFullyPtoChanged(v: boolean): void {
+      STRANDS.forEach((s) => { firstPto[s].value = v; });
       // updatePto(v);
       updateValues(UPDATE_TYPE.PTO, v);
       updateOutputExamples();
-    });
-    fullyPto.captionLabel.classList.add('ui-label-right');
-    fullyPto.captionLabel.style.textAlign = 'left';
-    fullyPto.captionLabel.style.maxWidth = '100px';
-    fullyPto.captionLabel.style.maxWidth = '100px';
-    fullyPto.captionLabel.style.minWidth = '40px';
-    fullyPto.captionLabel.style.width = 'auto';
+    }
+
+    const fullyPto = createFullyPtoInput();
 
     const maxStrandLength = Object.fromEntries(STRANDS.map(
       (strand) => [strand, DEFAULT_SEQUENCE_LENGTH]
