@@ -70,16 +70,6 @@
     "readme": true
   },
   {
-    "name": "Deqs",
-    "date": "2023-12-12T16:54:26.108Z",
-    "version": "1.0.0",
-    "summary": "In-browser tools for solving ordinary differential equations (ODE) systems.",
-    "dir": "packages/ODEs",
-    "changelog": true,
-    "changelogDate": "2023-12-12",
-    "readme": true
-  },
-  {
     "name": "Bio",
     "date": "2023-12-12T12:40:04.785Z",
     "version": "2.11.14",
@@ -9993,6 +9983,16 @@
     "name": "Peptides",
     "date": "2022-01-19T10:11:10.955Z",
     "version": "0.8.5",
+    "summary": "",
+    "dir": "packages/Peptides",
+    "changelog": false,
+    "changelogDate": "2022-01-19",
+    "readme": true
+  },
+  {
+    "name": "Peptides",
+    "date": "2022-01-19T09:38:35.843Z",
+    "version": "0.8.4",
     "summary": "",
     "dir": "packages/Peptides",
     "changelog": false,
