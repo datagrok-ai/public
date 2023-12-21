@@ -859,10 +859,17 @@ export class RichFunctionView extends FunctionView {
     const mapping = JSON.parse(mappingJson) as Record<string, string>;
     const paramSub = this.funcCallReplaced.pipe(
       startWith(true),
-      switchMap(() => val.onChanged),
+      switchMap(() => {
+        const currentParam = this.funcCall.inputParams[val.property.name];
+        return currentParam.onChanged;
+      }),
     ).subscribe(() => {
       const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
-      Object.entries(mapping).forEach(([input, key]) => this.setInput(input, funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue, funcCallInput.chosenRun ? 'restricted': 'user input'));
+      Object.entries(mapping).forEach(([input, key]) => this.setInput(
+        input,
+        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? 'restricted': 'user input',
+      ));
     });
     this.subs.push(paramSub);
   }

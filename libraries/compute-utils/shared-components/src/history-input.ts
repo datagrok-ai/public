@@ -294,3 +294,24 @@ export class HistoryInput extends HistoryInputBase {
     return this.getValue();
   }
 }
+
+export class HistoryInputJSON extends HistoryInputBase<string | null> {
+  get value() {
+    const funccall = this.getValue();
+    if (funccall) {
+      return JSON.stringify({
+        visualValue: this.stringValue,
+        // BUG HERE: if GUID is present in the string, DB fails to save it
+        id: funccall.id.split('-'),
+      });
+    } else
+      return null;
+  }
+
+  set value(jsonVal: string | null) {
+    this.setValue(null);
+    this.stringValue = jsonVal ? JSON.parse(jsonVal).visualValue: '';
+    // Recovering initial GUID here
+    this.chosenRunId = jsonVal ? JSON.parse(jsonVal).id.join('-'): '';
+  }
+}
