@@ -209,8 +209,20 @@ export class SensitivityAnalysisView {
             input: ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v),
             value: false,
           } as InputWithValue<boolean>,
+          changing: {
+            input: ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v),
+            value: false,
+          } as InputWithValue<boolean>,
           isChanging: {
-            input: ui.switchInput('', false, (v: boolean) => boolRef.isChanging.value.next(v)),
+            input: (() => {
+              const input = ui.switchInput(' ', false, (v: boolean) => {
+                boolRef.isChanging.value.next(v);
+                this.updateRunButtonText();
+              });
+              $(input.root).css({'min-width': '50px', 'width': '50px'});
+              $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
+              return input;
+            })(),
             value: new BehaviorSubject<boolean>(false),
           },
         };
@@ -218,10 +230,27 @@ export class SensitivityAnalysisView {
         acc[inputProp.name] = {
           ...tempBool,
           constForm: ui.form([tempBool.const.input], {style: {flexGrow: '1'}}),
-          saForm: ui.form([tempBool.const.input], {style: {flexGrow: '1'}}),
-        } as SensitivityBoolStore;       
+          saForm: ui.form([tempBool.changing.input], {style: {flexGrow: '1'}}),
+        } as SensitivityBoolStore;
 
         const boolRef = acc[inputProp.name] as SensitivityBoolStore;
+        combineLatest([
+          tempBool.isChanging.value, analysisInputs.analysisType.value,
+        ]).subscribe(([isChanging, analysisType]) => {
+          if (isChanging) {
+            $(boolRef.constForm).hide();
+            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
+              $(boolRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).show());
+            } else {
+              $(boolRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).hide());
+            }
+          } else {
+            $(boolRef.constForm).show();
+            $(boolRef.saForm).hide();
+          }
+        });
         break;
 
       case DG.TYPE.STRING:
@@ -232,19 +261,48 @@ export class SensitivityAnalysisView {
             input: ui.stringInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? '', (v: string) => (strRef as SensitivityStrStore).const.value = v),
             value: inputProp.defaultValue,
           } as InputWithValue<string>,
+          changing: {
+            input: ui.stringInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? '', (v: string) => (strRef as SensitivityStrStore).const.value = v),
+            value: inputProp.defaultValue,
+          } as InputWithValue<string>,
           isChanging: {
-            input: ui.switchInput('', false, (v: boolean) => ref.isChanging.value.next(v)),
+            input: (() => {
+              const input = ui.switchInput(' ', false, (v: boolean) => {
+                strRef.isChanging.value.next(v);
+                this.updateRunButtonText();
+              });
+              $(input.root).css({'min-width': '50px', 'width': '50px'});
+              $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
+              return input;
+            })(),
             value: new BehaviorSubject<boolean>(false),
           },
         };
-  
+
         acc[inputProp.name] = {
           ...tempStr,
           constForm: ui.form([tempStr.const.input], {style: {flexGrow: '1'}}),
-          saForm: ui.form([tempStr.const.input], {style: {flexGrow: '1'}}),
+          saForm: ui.form([tempStr.changing.input], {style: {flexGrow: '1'}}),
         } as SensitivityStrStore;
 
         const strRef = acc[inputProp.name] as SensitivityStrStore;
+        combineLatest([
+          tempStr.isChanging.value, analysisInputs.analysisType.value,
+        ]).subscribe(([isChanging, analysisType]) => {
+          if (isChanging) {
+            $(strRef.constForm).hide();
+            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
+              $(strRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).show());
+            } else {
+              $(strRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).hide());
+            }
+          } else {
+            $(strRef.constForm).show();
+            $(strRef.saForm).hide();
+          }
+        });
         break;
 
       default:
@@ -407,17 +465,16 @@ export class SensitivityAnalysisView {
     this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
   }
 
-  private isPropNumeric(type: DG.TYPE): boolean {
-    return ((type === DG.TYPE.INT) || (type === DG.TYPE.FLOAT));
+  private isPropSupported(type: DG.TYPE): boolean {
+    return ((type === DG.TYPE.INT) || (type === DG.TYPE.FLOAT) || (type === DG.TYPE.STRING) || (type === DG.TYPE.BOOL));
   }
 
   private hideNonNumericalSwitchInputs() {
     for (const name of Object.keys(this.store.inputs)) {
       const inp = this.store.inputs[name];
-      if (!this.isPropNumeric(inp.prop.propertyType)) 
+      if (!this.isPropSupported(inp.prop.propertyType))
         $(inp.isChanging.input.root).hide();
     }
-        
   }
 
   private closeOpenedViewers() {
