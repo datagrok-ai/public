@@ -28,6 +28,7 @@ export interface RGroupDecomp {
 
 interface RGroupDecompConstructor {
   new(core: RDMol, details: string): RGroupDecomp;
+  new(cores: MolList, details: string, manyCores: boolean): RGroupDecomp;
 }
 
 export interface RDMol {
