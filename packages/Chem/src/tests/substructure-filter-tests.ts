@@ -249,9 +249,32 @@ M  END
     filter2.detach();
   });
 
+  test('properSearchFinish', async () => { //#2400 (https://github.com/datagrok-ai/public/issues/2400)
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    DG.chem.currentSketcherType = 'Ketcher';
+    const filter1 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const substr = 'C1CCCCC1';
+    const terminateFlag = 'terminate_substructure_search-tests/spgi-100-Structure';
+
+    //filter by structure and wait for results
+    filter1.sketcher.setSmiles(substr);
+    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
+      expect(df.filter.trueCount, 5);
+    }, () => {}, 3000);
+
+    //check that search is finished and loader is disabled
+    expect(filter1.calculating, false, 'search hasn\'t been finished properly, loader is active');
+    sketcherDialogs.forEach((it) => it.close());
+    filter1.detach();
+    DG.chem.currentSketcherType = 'OpenChemLib';
+  });
+
 });
 
-async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):
+async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
   Promise<SubstructureFilter> {
   const filter = new SubstructureFilter();
   filter.attach(df);
@@ -261,7 +284,7 @@ async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: 
   filter.column = df.col(colName);
   filter.columnName = colName;
   filter.tableName = df.name;
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 5000);
+  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', waitForSketcherMs ?? 5000);
   return filter;
 }
 
