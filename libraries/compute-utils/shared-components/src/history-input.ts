@@ -231,7 +231,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     this._chosenRun = val;
     this._chosenRunId = this._chosenRun?.id ?? null;
     this.onHistoricalRunChosen.next(val);
-    this._visibleInput.value = val ? this._stringValueFunc(val): '';
+    this._visibleInput.value = val ? this._stringValueFunc(val): 'No run chosen';
     if (!this.notify) return;
 
     this.fireChanged();
@@ -310,7 +310,7 @@ export class HistoryInputJSON extends HistoryInputBase<string | null> {
 
   set value(jsonVal: string | null) {
     this.setValue(null);
-    this.stringValue = jsonVal ? JSON.parse(jsonVal).visualValue: '';
+    this.stringValue = jsonVal ? JSON.parse(jsonVal).visualValue: 'No run is chosen';
     // Recovering initial GUID here
     this.chosenRunId = jsonVal ? JSON.parse(jsonVal).id.join('-'): '';
   }
