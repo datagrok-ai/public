@@ -176,15 +176,15 @@ export class PatternLayoutHandler {
 
     function updateValues(type: UPDATE_TYPE, newValue: boolean | string): void {
       const targetObject = type === UPDATE_TYPE.PTO ? ptoLinkages : baseInputsObject;
-      STRANDS.forEach((strand) => {
-        console.log(`${strand} before`, targetObject[strand].map(item => item.value));
-        targetObject[strand].forEach(item => {
-          console.log(`${strand} before`, item.value);
+
+      for (let i = 0; i < STRANDS.length; i++) {
+        const strand = STRANDS[i];
+        // WARNING: replacing this with for (const ...) or .forEach() leads to a bug: some values are not updated !!!
+        for (let j = 0; j < targetObject[strand].length; j++) {
+          const item = targetObject[strand][j];
           item.value = newValue;
-          console.log(`${strand} after`, item.value);
-        });
-        console.log(`${strand} after`, targetObject[strand].map(item => item.value));
-      });
+        }
+      }
       updateSvgScheme();
     }
 
@@ -407,6 +407,9 @@ export class PatternLayoutHandler {
         [FIELD.COMMENT]: comment.value,
       };
     }
+
+
+
 
     async function updatePatternsList() {
       grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false).then(async (entities) => {
