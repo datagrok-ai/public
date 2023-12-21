@@ -20,6 +20,17 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2023-12-21 1.17.10
+
+### Addressed Issues
+
+* (Bug) [#2535](https://github.com/datagrok-ai/public/issues/2535): Pivot table: non-default aggregations are not saved in layout 
+* (Bug) GROK-14381: Grid | Add Summary column: impossible to hide or add a column through the Order or Hide Columns dialog 
+* (Bug) [#2577](https://github.com/datagrok-ai/public/issues/2577): Line chart: colours in the legend do not match colour in the plot in some cases 
+* (Bug) [#2570](https://github.com/datagrok-ai/public/issues/2570): Viewers: legend does not show all categories after filtering in specific cases (WIP)
+* (Bug) [#2574](https://github.com/datagrok-ai/public/issues/2574): Multiple errors in console on hovering line chart with logarithmic axis and no data 
+
+
 ## 2023-12-11 1.17.9
 
 ### Addressed Issues
