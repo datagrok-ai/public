@@ -1,17 +1,18 @@
-#tt-tree {
-  width: 100%;
-}
-
-#tt-tree .d4-tree-view-group {
+#tt-tree, #tt-tree .d4-tree-view-group {
   width: 100%;
 }
 
 #tt-test-case-div {
   height: 200px;
   background-color: var(--grey-1);
-  margin: 7px;
-  border-radius: 7px;
+  margin: 10px 10px 0 10px;
+  border-radius: 9px;
   padding: 10px;
   overflow-y: scroll;
   line-height: 1.5;
+}
+
+.tt-new-test-case-input {
+  width: 300px;
+  height: 200px;
 }
