@@ -158,10 +158,7 @@ general, viewers, mutation cliffs, and columns.
 
 ## General
 
-The General section has settings for the activity column, activity scaling method and bidirectional analysis.
-Bidirectional analysis modifies the coloring of circles monomer-position and most potent residues viewers: orange for negative and green for positive mean difference.
-
-![Bidirectional mutation cliffs](img/bidirectional-mutation-cliffs.png)
+The General section has settings for the activity column and activity scaling method.
 
 ## Viewers
 
@@ -181,8 +178,6 @@ is the minimum difference in the activity.
 The Columns section lists all the numeric columns in the dataset, except activity. Enable the checkbox near the
 column name and choose the aggregation function to add the aggregated value to all the tooltips with statistics,
 Logo Summary Table and Distribution panel. The column also appears in the table view and Mutation Cliffs pairs panel.
-
-![Columns aggregation](img/columns-aggregation.png)
 
 # Analysis sharing
 
