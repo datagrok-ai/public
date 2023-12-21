@@ -1,6 +1,5 @@
 /** Diff Studio application UI constants */
 
-
 /** Hot keys */
 export enum HOT_KEY {
   RUN = 'F5',
