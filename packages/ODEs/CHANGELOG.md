@@ -1,5 +1,15 @@
 # Diff Studio changelog
 
+## 1.0.2 (2023-12-21)
+
+### Features
+
+* Run computations on open Diff Studio
+
+### Bug fixes
+
+* Solver package name fix
+
 ## 1.0.1 (2023-12-20)
 
 ### Features
