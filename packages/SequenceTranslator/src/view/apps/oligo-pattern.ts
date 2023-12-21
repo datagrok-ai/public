@@ -20,8 +20,16 @@ const enum UPDATE_TYPE {
   BASIS
 }
 
-interface PatternObject {
-  [key: string]: any; // todo: replace any with more specific type
+interface PatternData {
+  [FIELD.SS_BASES]: string[];
+  [FIELD.AS_BASES]: string[];
+  [FIELD.SS_PTO]:  boolean[];
+  [FIELD.AS_PTO]: boolean[];
+  [FIELD.SS_3]: string;
+  [FIELD.SS_5]: string;
+  [FIELD.AS_3]: string;
+  [FIELD.AS_5]: string;
+  [FIELD.COMMENT]: string;
 }
 
 type BooleanInput = DG.InputBase<boolean | null>;
@@ -260,12 +268,12 @@ export class PatternLayoutHandler {
       return mostFrequentElement;
     }
 
-    async function parsePattern(newName: string): Promise<PatternObject> {
+    async function parsePattern(newName: string): Promise<PatternData> {
       const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
       return JSON.parse(entities[newName]);
     }
 
-    async function updateUiWithPattern(newName: string, obj: PatternObject): Promise<void> {
+    async function updateUiWithPattern(newName: string, obj: PatternData): Promise<void> {
       sequenceBase.value = detectDefaultBasis([...obj[FIELD.AS_BASES], ...obj[FIELD.SS_BASES]]);
       createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
       saveAs.value = newName;
@@ -290,96 +298,114 @@ export class PatternLayoutHandler {
       }
     }
 
-    function updateBaseInputs(obj: PatternObject): void {
+    function updateBaseInputs(obj: PatternData): void {
       const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
       STRANDS.forEach((strand, i) => {
-        baseInputsObject[strand] = obj[fields[i]].map((base: string) => ui.choiceInput('', base, baseChoices));
+        baseInputsObject[strand] = (obj[fields[i]] as string[]).map((base: string) => ui.choiceInput('', base, baseChoices));
       });
     }
 
-    function updatePtoLinkages(obj: PatternObject): void {
+    function updatePtoLinkages(obj: PatternData): void {
       const fields = [FIELD.SS_PTO, FIELD.AS_PTO];
       STRANDS.forEach((strand, i) => {
-        firstPto[strand].value = obj[fields[i]][0];
-        ptoLinkages[strand] = obj[fields[i]].slice(1).map((value: boolean) => ui.boolInput('', value));
+        const ptoValues = obj[fields[i]] as boolean[];
+        firstPto[strand].value = ptoValues[0];
+        ptoLinkages[strand] = ptoValues.slice(1).map((value: boolean) => ui.boolInput('', value));
       });
     }
 
-    function updateStrandLengths(obj: PatternObject): void {
+    function updateStrandLengths(obj: PatternData): void {
       const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
       STRANDS.forEach((strand, i) => {
         strandLengthInput[strand].value = obj[fields[i]].length;
       });
     }
 
-    function updateTerminalModifications(obj: PatternObject): void {
+    function updateTerminalModifications(obj: PatternData): void {
       const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
       STRANDS.forEach((strand, i) => {
         TERMINAL_KEYS.forEach((terminal, j) => {
-          terminalModification[strand][terminal].value = obj[field[i][j]];
+          terminalModification[strand][terminal].value = obj[field[i][j]] as string;
         });
       });
     }
-    //
 
-    function allColumnValuesOfEqualLength(colName: string): boolean {
+    function checkColumnLengthsUniform(colName: string): boolean {
       const col = tableInput.value!.getCol(colName);
-      let allLengthsAreTheSame = true;
-      for (let i = 1; i < col.length; i++) {
-        if (col.get(i - 1).length !== col.get(i).length && col.get(i).length !== 0) {
-          allLengthsAreTheSame = false;
-          break;
-        }
+      const areLengthsUniform = col.toList().every((value, index, array) =>
+        index === 0 || value.length === array[index - 1].length || value.length === 0);
+
+      if (!areLengthsUniform) {
+        showSequencesLengthMismatchDialog(colName);
+      } else if (col.get(0).length !== strandLengthInput[SS].value) {
+        showLengthUpdatedDialog();
       }
-      if (!allLengthsAreTheSame) {
-        const dialog = ui.dialog('Sequences lengths mismatch');
-        $(dialog.getButton('OK')).hide();
-        dialog
-          .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
-          .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
-          .addButton('ADD COLUMN', () => {
-            tableInput.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-            grok.shell.info('Column with lengths added to \'' + tableInput.value!.name + '\'');
-            dialog.close();
-            grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
-          })
-          .show();
-      }
-      if (col.get(0).length !== strandLengthInput[SS].value) {
-        const d = ui.dialog('Length was updated by value to from imported file');
-        d.add(ui.divText('Latest modifications may not take effect during translation'))
-          .onOK(() => grok.shell.info('Lengths changed')).show();
-      }
-      return allLengthsAreTheSame;
+
+      return areLengthsUniform;
+    }
+
+    function showSequencesLengthMismatchDialog(colName: string) {
+      const dialog = ui.dialog('Sequences lengths mismatch');
+      $(dialog.getButton('OK')).hide();
+
+      dialog
+        .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
+        .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
+        .addButton('ADD COLUMN', () => addLengthColumn(colName, dialog))
+        .show();
+    }
+
+    function addLengthColumn(colName: string, dialog: any) {
+      const table = tableInput.value!;
+      table.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => table.getCol(colName).get(j).length);
+      grok.shell.info('Column with lengths added to \'' + table.name + '\'');
+      dialog.close();
+      grok.shell.v = grok.shell.getTableView(table.name);
+    }
+
+    function showLengthUpdatedDialog() {
+      const d = ui.dialog('Length was updated by value from imported file');
+      d.add(ui.divText('Latest modifications may not take effect during translation'))
+        .onOK(() => grok.shell.info('Lengths changed'))
+        .show();
     }
 
     async function getCurrentUserName(): Promise<string> {
-      return await grok.dapi.users.current().then((user) => {
-        return ' (created by ' + user.friendlyName + ')';
-      });
+      const user = await grok.dapi.users.current();
+      return ` (created by ${user.friendlyName})`;
     }
 
-    async function postPatternToUserStorage() {
+    async function postPatternToUserStorage(): Promise<void> {
       const currUserName = await getCurrentUserName();
-      saveAs.value = (saveAs.stringValue.includes('(created by ')) ?
-        getShortName(saveAs.value) + currUserName :
-        saveAs.stringValue + currUserName;
-      return grok.dapi.userDataStorage.postValue(
-        USER_STORAGE_KEY,
-        saveAs.value,
-        JSON.stringify({
-          [FIELD.SS_BASES]: baseInputsObject[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value),
-          [FIELD.AS_BASES]: baseInputsObject[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value),
-          [FIELD.SS_PTO]: [firstPto[SS].value].concat(ptoLinkages[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value)),
-          [FIELD.AS_PTO]: [firstPto[AS].value].concat(ptoLinkages[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value)),
-          [FIELD.SS_3]: terminalModification[SS][THREE_PRIME].value,
-          [FIELD.SS_5]:terminalModification[SS][FIVE_PRIME].value,
-          [FIELD.AS_3]: terminalModification[AS][THREE_PRIME].value,
-          [FIELD.AS_5]: terminalModification[AS][FIVE_PRIME].value,
-          [FIELD.COMMENT]: comment.value,
-        }),
-        false,
-      ).then(() => grok.shell.info('Pattern \'' + saveAs.value + '\' was successfully uploaded!'));
+      saveAs.value = createSaveAsValue(currUserName);
+
+      const patternData = createPatternData();
+      await grok.dapi.userDataStorage.postValue(USER_STORAGE_KEY, saveAs.value, JSON.stringify(patternData), false);
+
+      grok.shell.info(`Pattern '${saveAs.value}' was successfully uploaded!`);
+    }
+
+    function createSaveAsValue(currUserName: string): string {
+      return saveAs.stringValue.includes('(created by ') ? 
+        `${getShortName(saveAs.value)}${currUserName}` : 
+        `${saveAs.stringValue}${currUserName}`;
+    }
+
+    function createPatternData(): PatternData {
+      const createBasesArray = (strand: string) => baseInputsObject[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value) as string[];
+      const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkages[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value)] as boolean[];
+
+      return {
+        [FIELD.SS_BASES]: createBasesArray(SS),
+        [FIELD.AS_BASES]: createBasesArray(AS),
+        [FIELD.SS_PTO]: createPtoArray(SS),
+        [FIELD.AS_PTO]: createPtoArray(AS),
+        [FIELD.SS_3]: terminalModification[SS][THREE_PRIME].value,
+        [FIELD.SS_5]: terminalModification[SS][FIVE_PRIME].value,
+        [FIELD.AS_3]: terminalModification[AS][THREE_PRIME].value,
+        [FIELD.AS_5]: terminalModification[AS][FIVE_PRIME].value,
+        [FIELD.COMMENT]: comment.value,
+      };
     }
 
     async function updatePatternsList() {
@@ -478,7 +504,7 @@ export class PatternLayoutHandler {
     }
 
     function validateStrandColumn(colName: string, strand: string): void {
-      const allLengthsAreTheSame: boolean = allColumnValuesOfEqualLength(colName);
+      const allLengthsAreTheSame: boolean = checkColumnLengthsUniform(colName);
       const firstSequence = tableInput.value!.getCol(colName).get(0);
       if (allLengthsAreTheSame && firstSequence.length !== strandLengthInput[strand].value)
       strandLengthInput[strand].value = tableInput.value!.getCol(colName).get(0).length;
@@ -657,7 +683,7 @@ export class PatternLayoutHandler {
 
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
 
-    function getTableInput(tableList: DG.DataFrame[]): DG.InputBase {
+    function getTableInput(tableList: DG.DataFrame[]): DG.InputBase<DG.DataFrame | null> {
       const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
         const table = tableInput.value;
         if (table === null) {
