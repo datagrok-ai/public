@@ -1,0 +1,36 @@
+name,id,parent_id,is_group,test_case
+Projects,a089924a-55e0-47b9-9de8-061292a6b70b,,true,
+Browser,94a057af-eb28-468d-9620-f89b879dc5d5,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Open a ""Projects"" view for ""Data"" section on Sidebar
+2. Use search to find the ""demog"" project
+3. Open ""Share"" dialog for the ""demog"" project from its context menu
+4. Check ""Details"" for the ""demog"" project from its context menu
+5. Check all tabs on Property Panel for ""demog"" project
+
+* it is possible to use any other project that currently exists on the tested instance for testing"
+Uploading,3f87ade9-1f24-4c0f-81fe-f449b676ecae,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Add the table in Datagrok (from anywhere: files, queries, local storage, etc.)
+2. Click on “Share” section on Sidebar
+3. Click “Upload” button near “Scratchpad” project
+4. Enter a name for the new project
+5. Enter description for the new project
+6. Turn on the “Presentation mode” switch
+7. Click “OK”
+8. Click “OK” in “Share dialog”"
+Opening,1f174c90-09d4-4e30-b64e-2866d720e871,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Find the project you upload in the previous step (1.2)
+2. Check all attributes added to the project (sharing, description, name, picture)
+3. Double-click on it project
+4. Note that it should open in presentation mode
+5. Press F7 to exit from presentation mode
+6. Open “Sharing” section on sidebar to see open project 
+7. Call context menu on sidebar and Close All"
+Deleting,f618d7b2-9e05-4d8e-a72e-b496b902375b,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Find the project you upload in the previous steps (1.2)
+2. Call context menu 
+3. Click on “Delete project” and then YES in confirmation dialog
+4. Check that the project has been deleted and is no longer present in the project gallery"
+Group 1,06b41831-5032-4e15-a0d4-aac22293b3d6,a089924a-55e0-47b9-9de8-061292a6b70b,true,
+test case 1,d3de6c3d-cbd2-444a-96ea-ddd5295c63c9,06b41831-5032-4e15-a0d4-aac22293b3d6,false,werwer
+test case 2,7e1b5d9b-a676-4e2c-8504-8d4a874051c9,06b41831-5032-4e15-a0d4-aac22293b3d6,false,werwe
+Group 2,76b234b9-8c7e-418b-a870-b70f84b9bdc6,06b41831-5032-4e15-a0d4-aac22293b3d6,true,
+Group 3,88f31084-29c1-48dc-b9b1-c6e4a67ebd2e,76b234b9-8c7e-418b-a870-b70f84b9bdc6,true,
+Group 4,d6345367-5fbc-41a2-a76f-e9ad592d137a,88f31084-29c1-48dc-b9b1-c6e4a67ebd2e,true,
+Test case 3,55f6352c-baa8-4395-873b-47f30955a31f,d6345367-5fbc-41a2-a76f-e9ad592d137a,false,ewrewr
+test case 4,8d10c793-8ce8-4533-8ca7-281739a0885b,88f31084-29c1-48dc-b9b1-c6e4a67ebd2e,false,werwer
