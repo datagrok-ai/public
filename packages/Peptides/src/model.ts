@@ -1169,8 +1169,10 @@ export class PeptidesModel {
    */
   async addSequenceSpace(): Promise<void> {
     if (this._sequenceSpaceViewer !== null) {
-      this._sequenceSpaceViewer?.detach();
-      this._sequenceSpaceViewer?.close();
+      try {
+        this._sequenceSpaceViewer?.detach();
+        this._sequenceSpaceViewer?.close();
+      } catch (_) {}
     }
     if (this._sequenceSpaceCols.length !== 0)
       this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
@@ -1214,7 +1216,7 @@ export class PeptidesModel {
         plotEmbeddings: true,
         sparseMatrixThreshold: 0.3,
         options: {'bypassLargeDataWarning': true, dbScanEpsilon: seqSpaceSettings.epsilon, dbScanMinPts: seqSpaceSettings.minPts,
-        preprocessingFuncArgs: {gapOpen: seqSpaceSettings.gapOpen, gapExtend: seqSpaceSettings.gapExtend}},
+        preprocessingFuncArgs: {gapOpen: seqSpaceSettings.gapOpen, gapExtend: seqSpaceSettings.gapExtend, fingerprintType: seqSpaceSettings.fingerprintType}},
         clusterEmbeddings: seqSpaceSettings.clusterEmbeddings,
       };
 

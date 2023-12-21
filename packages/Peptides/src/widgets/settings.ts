@@ -41,6 +41,7 @@ export enum SEQUENCE_SPACE_INPUTS {
   CLUSTER_EMBEDDINGS = 'Cluster embeddings',
   EPSILON = 'Epsilon',
   MIN_PTS = 'Minimum points',
+  FINGERPRINT_TYPE = 'Fingerprint type',
 }
 
 
@@ -156,8 +157,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   // Sequence space pane options
   const modifiedSeqSpaceParams: Partial<type.SequenceSpaceParams> = {};
   function onSeqSpaceParamsChange(fieldName: keyof type.SequenceSpaceParams, value: any) {
-    toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
-    toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
+    correctSeqSpaceInputs();
     if (value === null || value === undefined || value === '')
       return;
     modifiedSeqSpaceParams[fieldName] = value;
@@ -196,10 +196,17 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   epsilonInput.setTooltip('Epsilon parameter for DBSCAN. Minimum distance between two points to be considered as a cluster');
   const minPtsInput = ui.intInput(SEQUENCE_SPACE_INPUTS.MIN_PTS, seqSpaceParams.minPts, () => onSeqSpaceParamsChange('minPts', minPtsInput.value));
   minPtsInput.setTooltip('Minimum number of points in a cluster');
-  toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
-  toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
+  const fingerprintTypesInput = ui.choiceInput('Fingerprint type', seqSpaceParams.fingerprintType, ['Morgan', 'RDKit', 'Pattern'],
+    () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value));
+  function correctSeqSpaceInputs() {
+    toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
+    toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
+    toggleInputs([fingerprintTypesInput],
+      distanceFunctionInput.value === distFNames.MONOMER_CHEMICAL_DISTANCE || distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
+  }
+  correctSeqSpaceInputs();
 
-  const seqSpaceInputs = [distanceFunctionInput, gapOpenInput, gapExtendInput, clusterEmbeddingsInput, epsilonInput, minPtsInput];
+  const seqSpaceInputs = [distanceFunctionInput, fingerprintTypesInput, gapOpenInput, gapExtendInput, clusterEmbeddingsInput, epsilonInput, minPtsInput];
   accordion.addPane(SETTINGS_PANES.SEQUENCE_SPACE, () => ui.inputs(seqSpaceInputs), true);
   inputs[SETTINGS_PANES.SEQUENCE_SPACE] = seqSpaceInputs;
   const dialog = ui.dialog('Peptides settings').add(accordion);
