@@ -20,7 +20,7 @@ const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
 
 /** Solver package name */
-const PACKAGE_NAME = 'Deqs';
+const PACKAGE_NAME = 'DiffStudio';
 
 /** Numerical solver function */
 const SOLVER_FUNC = 'solve';
