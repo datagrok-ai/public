@@ -1012,12 +1012,12 @@ export class Package extends Entity {
    * Deprecated. Use getSettings instead. 
    *  Returns properties for a package. 
   */
-  getProperties(): Promise<Map<string, any>> {
+  getProperties(): Promise<any> {
     return this.getSettings();
   }
 
   /** Returns settings for a package. */
-  getSettings(): Promise<Map<string, any>> {
+  getSettings(): Promise<any> {
     return api.grok_Package_Get_Settings(this.name);
   }
 
