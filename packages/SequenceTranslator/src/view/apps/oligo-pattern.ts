@@ -409,80 +409,80 @@ export class PatternLayoutHandler {
     }
 
 
-    
+
     async function updatePatternsList() {
-      grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false).then(async (entities) => {
+      const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      const { lstMy, lstOthers } = await categorizePatterns();
+
+      const currentUserName = (await grok.dapi.users.current()).friendlyName;
+      const otherUsers = 'Other users';
+
+      let loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+      const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
+        const currentList = v === currentUserName ? lstMy : lstOthers;
+        loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
+        setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
+      });
+
+      patternListChoiceInput.input.style.maxWidth = '142px';
+      setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
+
+      async function categorizePatterns(): Promise<{ lstMy: string[], lstOthers: string[] }> {
         const lstMy: string[] = [];
         const lstOthers: string[] = [];
 
-        // TODO: display short name, but use long for querying userdataStorage
-        for (const ent of Object.keys(entities)) {
+        for (const ent of Object.keys(patternsData)) {
           if (await isCurrentUserCreatedThisPattern(ent))
             lstOthers.push(ent);
           else
-            lstMy.push(ent);//getShortName(ent));
+            lstMy.push(ent);
         }
 
-        let loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+        return { lstMy, lstOthers };
+      }
 
-        const currentUserName = (await grok.dapi.users.current()).friendlyName;
-        const otherUsers = 'Other users';
 
-        const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
-          const currentList = v === currentUserName ? lstMy : lstOthers;
-          loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
-          
-          setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
-        });
-        patternListChoiceInput.input.style.maxWidth = '142px';
+      function setupLoadPatternUI(loadPattern: StringInput, loadPatternDiv: HTMLElement, patternListChoiceInput: StringInput) {
+        clearAndAppendNewElements(loadPatternDiv, loadPattern, patternListChoiceInput);
+        styleLoadPatternInput(loadPattern.input);
+        loadPattern.setTooltip('Apply Existing Pattern');
+        const deleteButton = createDeleteButton(loadPattern);
+        loadPattern.root.append(deleteButton);
+      }
 
-        setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
+      function clearAndAppendNewElements(loadPatternDiv: HTMLElement, loadPattern: StringInput, patternListChoiceInput: StringInput) {
+        loadPatternDiv.innerHTML = '';
+        loadPattern.root.append(patternListChoiceInput.input, loadPattern.input);
+        loadPatternDiv.append(loadPattern.root);
+      }
 
-        function setupLoadPatternUI(loadPattern: StringInput, loadPatternDiv: HTMLElement, patternListChoiceInput: StringInput) {
-          clearAndAppendNewElements(loadPatternDiv, loadPattern, patternListChoiceInput);
+      function styleLoadPatternInput(loadPatternInput: HTMLElement) {
+        loadPatternInput.style.maxWidth = '120px';
+        loadPatternInput.style.marginLeft = '12px';
+      }
 
-          styleLoadPatternInput(loadPattern.input);
-          loadPattern.setTooltip('Apply Existing Pattern');
+      function createDeleteButton(loadPattern: StringInput): HTMLElement {
+        return ui.div([
+          ui.button(ui.iconFA('trash-alt'), async () => {
+            if (!loadPattern.value) {
+              grok.shell.warning('Choose pattern to delete');
+            } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
+              grok.shell.warning('Cannot delete pattern, created by other user');
+            } else {
+              await deletePattern(loadPattern.value);
+              await updatePatternsList();
+            }
+          })
+        ], 'ui-input-options');
+      }
 
-          const deleteButton = createDeleteButton(loadPattern);
-          loadPattern.root.append(deleteButton);
-        }
-
-        function clearAndAppendNewElements(loadPatternDiv: HTMLElement, loadPattern: StringInput, patternListChoiceInput: StringInput) {
-          loadPatternDiv.innerHTML = '';
-          loadPattern.root.append(patternListChoiceInput.input, loadPattern.input);
-          loadPatternDiv.append(loadPattern.root);
-        }
-
-        function styleLoadPatternInput(loadPatternInput: HTMLElement) {
-          // loadPatternInput.style.maxWidth = '100px';
-          loadPatternInput.style.maxWidth = '120px';
-          loadPatternInput.style.marginLeft = '12px';
-        }
-
-        function createDeleteButton(loadPattern: StringInput): HTMLElement {
-          return ui.div([
-            ui.button(ui.iconFA('trash-alt'), async () => {
-              if (!loadPattern.value) {
-                grok.shell.warning('Choose pattern to delete');
-              } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
-                grok.shell.warning('Cannot delete pattern, created by other user');
-              } else {
-                await deletePattern(loadPattern.value);
-                await updatePatternsList();
-              }
-            })
-          ], 'ui-input-options');
-        }
-
-        async function deletePattern(patternName: string) {
-          await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
-          grok.shell.info(`Pattern '${patternName}' deleted`);
-        }
-      });
+      async function deletePattern(patternName: string) {
+        await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+        grok.shell.info(`Pattern '${patternName}' deleted`);
+      }
     }
 
-    
+
 
 
     async function savePattern() {
