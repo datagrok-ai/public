@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 import {
-  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
+  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD, StrandType
 } from '../../model/pattern-app/const';
 import {isOverhang} from '../../model/pattern-app/helpers';
 import {generateExample, translateSequence, getShortName, isCurrentUserCreatedThisPattern, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model//pattern-app/oligo-pattern';
@@ -652,9 +652,6 @@ export class PatternLayoutHandler {
         return [strand, input];
       }));
     const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
-    // const strandColumnInputDiv = Object.fromEntries(STRANDS.map(
-    //   (strand) => [strand, ui.div([])]
-    // ));
     const inputExample = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.textInput(
         ``, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
@@ -665,22 +662,31 @@ export class PatternLayoutHandler {
         validateStrandColumn(colName, strand);
         strandVar[strand] = colName;
       });
-      // strandColumnInputDiv[strand].append(input.root);
       return [strand, input];
     }));
 
-    const firstPto = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, () => updateSvgScheme());
+    function createFirstPtoInputs(fullyPto: BooleanInput): Record<string,BooleanInput> {
+      return Object.fromEntries(STRANDS.map((strand) => [strand, createStrandPtoInput(strand, fullyPto)]));
+    }
+
+    function createStrandPtoInput(strand: StrandType, fullyPto: BooleanInput): BooleanInput {
+      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, updateSvgScheme);
       input.setTooltip(`ps linkage before first nucleotide of ${STRAND_NAME[strand].toLowerCase()}`);
+      configureInputLabel(input.captionLabel);
+      return input;
+    }
 
-      input.captionLabel.classList.add('ui-label-right');
-      input.captionLabel.style.textAlign = 'left';
-      input.captionLabel.style.maxWidth = '100px';
-      input.captionLabel.style.minWidth = '40px';
-      input.captionLabel.style.width = 'auto';
+    function configureInputLabel(label: HTMLElement): void {
+      label.classList.add('ui-label-right');
+      Object.assign(label.style, {
+        textAlign: 'left',
+        maxWidth: '100px',
+        minWidth: '40px',
+        width: 'auto'
+      });
+    }
 
-      return [strand, input];
-    }));
+    const firstPto = createFirstPtoInputs(fullyPto);
 
     const terminalModification = Object.fromEntries(STRANDS.map((strand) => {
       const inputs = Object.fromEntries(TERMINAL_KEYS.map((key) => {

@@ -18,11 +18,13 @@ export const enum JSON_FIELD {
 
 export const SS = 'SS' as const;
 export const AS = 'AS' as const;
-export const STRANDS = [SS, AS];
-export const STRAND_NAME = {
+export type StrandType = typeof SS | typeof AS;
+
+export const STRANDS: StrandType[] = [SS, AS];
+export const STRAND_NAME: Record<StrandType, string> = {
   [SS]: 'Sense strand',
   [AS]: 'Anti sense',
-}
+};
 
 export const THREE_PRIME = 'THREE_PRIME' as const;
 export const FIVE_PRIME = 'FIVE_PRIME' as const;
