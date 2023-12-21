@@ -240,22 +240,20 @@ export class PatternLayoutHandler {
     }
 
     // todo: rename
-    function detectDefaultBasis(array: string[]) {
-      const modeMap: {[index: string]: number} = {};
-      let maxEl = array[0];
-      let maxCount = 1;
-      for (let i = 0; i < array.length; i++) {
-        const el = array[i];
-        if (modeMap[el] === null)
-          modeMap[el] = 1;
-        else
-          modeMap[el]++;
-        if (modeMap[el] > maxCount) {
-          maxEl = el;
-          maxCount = modeMap[el];
+    function detectDefaultBasis(array: string[]): string {
+      const countMap: {[element: string]: number} = {};
+      let mostFrequentElement = array[0];
+      let highestCount = 1;
+
+      array.forEach(element => {
+        countMap[element] = (countMap[element] || 0) + 1;
+        if (countMap[element] > highestCount) {
+          mostFrequentElement = element;
+          highestCount = countMap[element];
         }
-      }
-      return maxEl;
+      });
+
+      return mostFrequentElement;
     }
 
     async function parsePatternAndUpdateUi(newName: string) {
