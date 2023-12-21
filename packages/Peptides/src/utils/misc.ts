@@ -175,7 +175,7 @@ export function getDistributionTable(activityCol: DG.Column<number>, selection: 
 export function addExpandIcon(grid: DG.Grid): void {
   const fullscreenIcon = ui.iconFA('expand-alt', () => {
     const fullscreenGrid = grid.dataFrame.plot.grid();
-    setGridProps(fullscreenGrid);
+    setGridProps(fullscreenGrid, false);
     fullscreenGrid.root.style.height = '100%';
     const pairsFullscreenDialog = ui.dialog(grid.dataFrame.name);
     pairsFullscreenDialog.add(fullscreenGrid.root);
@@ -198,8 +198,9 @@ export function addExpandIcon(grid: DG.Grid): void {
 /**
  * Sets common properties for grid in property panel.
  * @param grid - Grid to set properties to.
+ * @param autosize - Flag whether to autosize grid.
  */
-export function setGridProps(grid: DG.Grid): void {
+export function setGridProps(grid: DG.Grid, autosize: boolean = true): void {
   grid.props.allowEdit = false;
   grid.props.showReadOnlyNotifications = false;
   grid.props.allowRowSelection = false;
@@ -209,7 +210,9 @@ export function setGridProps(grid: DG.Grid): void {
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
   grid.root.style.maxWidth = '100%';
-  grid.autoSize(1000, 400, 0, 0, true);
+  if (autosize) {
+    grid.autoSize(1000, 175, 0, 0, true);
+  }
 }
 
 /**
