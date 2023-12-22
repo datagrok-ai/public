@@ -201,6 +201,7 @@ jobs:
           retention-days: 7
       - name: Commit plugins.json
         id: git
+        if: github.ref == 'refs/heads/master'
         continue-on-error: true
         run: |
           git config --global user.name 'github-actions[bot]'
