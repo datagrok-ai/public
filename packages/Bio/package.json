@@ -30,13 +30,6 @@
       "propertyType": "string",
       "defaultValue": ".",
       "nullable": false
-    },
-    {
-      "name": "Debug",
-      "propertyType": "string_list",
-      "choices": ["detectors", "WebLogo"],
-      "defaultValue": [],
-      "nullable": false
     }
   ],
   "dependencies": {
