@@ -37,14 +37,14 @@ type StringInput = DG.InputBase<string | null>;
 
 export class PatternLayoutHandler {
   get htmlDivElement() {
-    function updateModification(strand: string) {
+    function updateStrandModificationItems(strand: string) {
       clearModificationItems(strand);
-      extendStrandArrays(strand);
+      extendStrandInputArrays(strand);
       let nucleotideCounter = 0;
 
       for (let i = 0; i < getStrandLength(strand); i++) {
-        updatePtoLinkage(strand, i);
-        updateBaseInputObject(strand, i);
+        updatePtoLinkageInputs(strand, i);
+        updateBaseInputs(strand, i);
 
         if (!isOverhang(getBaseInputValue(strand, i))) {
           nucleotideCounter++;
@@ -59,77 +59,80 @@ export class PatternLayoutHandler {
       modificationItems[strand].innerHTML = '';
     }
 
-    function extendStrandArrays(strand: string) {
-      const extensionLength = maxStrandLength[strand] - baseInputsObject[strand].length;
-      ptoLinkages[strand] = ptoLinkages[strand].concat(Array(extensionLength).fill(fullyPto));
-      baseInputsObject[strand] = baseInputsObject[strand].concat(Array(extensionLength).fill(sequenceBase));
+    function extendStrandInputArrays(strand: string) {
+      const extensionLength = maxStrandLength[strand] - baseInputs[strand].length;
+      ptoLinkageInputs[strand] = ptoLinkageInputs[strand].concat(Array(extensionLength).fill(fullyPto));
+      baseInputs[strand] = baseInputs[strand].concat(Array(extensionLength).fill(sequenceBase));
     }
 
     function getStrandLength(strand: string) {
       return strandLengthInput[strand].value!;
     }
 
-    function updatePtoLinkage(strand: string, index: number) {
-      ptoLinkages[strand][index] = ui.boolInput('', ptoLinkages[strand][index].value!, () => {
+    function updatePtoLinkageInputs(strand: string, index: number) {
+      ptoLinkageInputs[strand][index] = ui.boolInput('', ptoLinkageInputs[strand][index].value!, () => {
         updateSvgScheme();
         updateOutputExamples();
       });
     }
 
-    function updateBaseInputObject(strand: string, index: number) {
-      baseInputsObject[strand][index] = ui.choiceInput('', getBaseInputValue(strand, index), baseChoices, (v: string) => {
+    function updateBaseInputs(strand: string, index: number) {
+      baseInputs[strand][index] = ui.choiceInput('', getBaseInputValue(strand, index), baseChoices, (v: string) => {
         handleBaseInputChange(v);
-        updateModification(AS);
+        updateStrandModificationItems(AS);
         updateSvgScheme();
         updateOutputExamples();
       });
 
-      $(baseInputsObject[strand][index].root).addClass('st-pattern-choice-input');
+      $(baseInputs[strand][index].root).addClass('st-pattern-choice-input');
     }
 
     function getBaseInputValue(strand: string, index: number) {
-      return baseInputsObject[strand][index].value!;
+      return baseInputs[strand][index].value!;
     }
 
     function handleBaseInputChange(value: string) {
       if (!enumerateModifications.includes(value)) {
-        updateEnumerateModifications(value);
+        toggleModificationInList(value);
       }
     }
 
-    function updateEnumerateModifications(value: string) {
-      if (!enumerateModifications.includes(value)) {
+    function updateModificationsList(value: string, shouldAdd: boolean): void {
+      const index = enumerateModifications.indexOf(value);
+      if (shouldAdd && index === -1) {
         enumerateModifications.push(value);
-        appendModificationToDiv(value);
-      } else {
-        const index = enumerateModifications.indexOf(value);
-        if (index > -1)
-          enumerateModifications.splice(index, 1);
+      } else if (!shouldAdd && index > -1) {
+        enumerateModifications.splice(index, 1);
       }
     }
 
-    function appendModificationToDiv(value: string) {
+    function appendToModificationsContainer(
+      value: string,
+      onChangeCallback: (value: string, shouldAdd: boolean) => void
+    ): void {
+      const boolInput = ui.boolInput(value, true, (boolV: boolean) => onChangeCallback(value, boolV));
       isEnumerateModificationsDiv.append(
         ui.divText('', {style: {width: '25px'}}),
-        ui.boolInput(value, true, (boolV: boolean) => {
-          if (boolV && !enumerateModifications.includes(value)) {
-            enumerateModifications.push(value);
-          } else if (!boolV) {
-            const index = enumerateModifications.indexOf(value);
-            if (index > -1) {
-              enumerateModifications.splice(index, 1);
-            }
-          }
-          updateSvgScheme();
-        }).root,
+        boolInput.root,
       );
+    }
+
+    function toggleModificationInList(value: string): void {
+      const shouldAdd = !enumerateModifications.includes(value);
+      updateModificationsList(value, shouldAdd);
+      if (shouldAdd) {
+        appendToModificationsContainer(value, (val, shouldAdd) => {
+          updateModificationsList(val, shouldAdd);
+          updateSvgScheme();
+        });
+      }
     }
 
     function createModificationItem(strand: string, nucleotideCounter: number, index: number) {
       const labelText = isOverhang(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
       const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
-      const baseInputUI = ui.block75([baseInputsObject[strand][index].root]);
-      const ptoLinkageUI = ui.div([ptoLinkages[strand][index]]);
+      const baseInputUI = ui.block75([baseInputs[strand][index].root]);
+      const ptoLinkageUI = ui.div([ptoLinkageInputs[strand][index]]);
 
       return ui.divH([labelUI, baseInputUI, ptoLinkageUI], {style: {alignItems: 'center'}});
     }
@@ -152,7 +155,7 @@ export class PatternLayoutHandler {
         if (strandLengthInput[strand].value! > maxStrandLength[strand]) {
           maxStrandLength[strand] = strandLengthInput[strand].value!;
         }
-        updateModification(strand);
+        updateStrandModificationItems(strand);
       });
     }
 
@@ -175,7 +178,7 @@ export class PatternLayoutHandler {
     }
 
     function updateValues(type: UPDATE_TYPE, newValue: boolean | string): void {
-      const targetObject = type === UPDATE_TYPE.PTO ? ptoLinkages : baseInputsObject;
+      const targetObject = type === UPDATE_TYPE.PTO ? ptoLinkageInputs : baseInputs;
 
       for (let i = 0; i < STRANDS.length; i++) {
         const strand = STRANDS[i];
@@ -202,8 +205,8 @@ export class PatternLayoutHandler {
         if (conditions[idx]) {
           outputExample[strand].value = translateSequence(
             inputExample[strand].value,
-            baseInputsObject[strand],
-            ptoLinkages[strand],
+            baseInputs[strand],
+            ptoLinkageInputs[strand],
             terminalModification[strand][FIVE_PRIME],
             terminalModification[strand][THREE_PRIME],
             firstPto[strand].value!
@@ -213,11 +216,11 @@ export class PatternLayoutHandler {
     }
 
     function getBaseInputValues(strand: string) {
-      return baseInputsObject[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!);
+      return baseInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!);
     }
 
     function getPtoLinkageValues(strand: string): boolean[] {
-      return [firstPto[strand].value!, ...ptoLinkages[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!)];
+      return [firstPto[strand].value!, ...ptoLinkageInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!)];
     }
 
     function updateSvgScheme() {
@@ -278,7 +281,7 @@ export class PatternLayoutHandler {
       createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
       saveAs.value = newName;
 
-      updateBaseInputs(obj);
+      updateBaseInputsUponPatternLoading(obj);
       updatePtoLinkages(obj);
       updateStrandLengths(obj);
       updateTerminalModifications(obj);
@@ -298,10 +301,10 @@ export class PatternLayoutHandler {
       }
     }
 
-    function updateBaseInputs(obj: PatternData): void {
+    function updateBaseInputsUponPatternLoading(obj: PatternData): void {
       const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
       STRANDS.forEach((strand, i) => {
-        baseInputsObject[strand] = (obj[fields[i]] as string[]).map((base: string) => ui.choiceInput('', base, baseChoices));
+        baseInputs[strand] = (obj[fields[i]] as string[]).map((base: string) => ui.choiceInput('', base, baseChoices));
       });
     }
 
@@ -310,7 +313,7 @@ export class PatternLayoutHandler {
       STRANDS.forEach((strand, i) => {
         const ptoValues = obj[fields[i]] as boolean[];
         firstPto[strand].value = ptoValues[0];
-        ptoLinkages[strand] = ptoValues.slice(1).map((value: boolean) => ui.boolInput('', value));
+        ptoLinkageInputs[strand] = ptoValues.slice(1).map((value: boolean) => ui.boolInput('', value));
       });
     }
 
@@ -392,8 +395,8 @@ export class PatternLayoutHandler {
     }
 
     function createPatternData(): PatternData {
-      const createBasesArray = (strand: string) => baseInputsObject[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value) as string[];
-      const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkages[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value)] as boolean[];
+      const createBasesArray = (strand: string) => baseInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value) as string[];
+      const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkageInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value)] as boolean[];
 
       return {
         [FIELD.SS_BASES]: createBasesArray(SS),
@@ -632,11 +635,11 @@ export class PatternLayoutHandler {
     const modificationItems = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.div([])]
     ));
-    const ptoLinkages = Object.fromEntries(STRANDS.map(
+    const ptoLinkageInputs = Object.fromEntries(STRANDS.map(
       (strand) => [strand, Array<BooleanInput>(DEFAULT_SEQUENCE_LENGTH)
         .fill(ui.boolInput('', DEFAULT_PTO))]
     ));
-    const baseInputsObject = Object.fromEntries(STRANDS.map(
+    const baseInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
         const choiceInputs = Array<StringInput>(DEFAULT_SEQUENCE_LENGTH)
           .fill(ui.choiceInput('', defaultBase, baseChoices));
@@ -713,8 +716,8 @@ export class PatternLayoutHandler {
     function createOutputExample(strand: StrandType) {
       const translatedSequence = translateSequence(
         inputExample[strand].value,
-        baseInputsObject[strand],
-        ptoLinkages[strand],
+        baseInputs[strand],
+        ptoLinkageInputs[strand],
         terminalModification[strand][THREE_PRIME],
         terminalModification[strand][FIVE_PRIME],
         firstPto[strand].value!
@@ -950,7 +953,7 @@ export class PatternLayoutHandler {
       STRANDS.forEach((strand, i) => {
         if (condition[i]) {
           addColumnWithTranslatedSequences(
-            tableInput.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
+            tableInput.value!.name, strandVar[strand], baseInputs[strand], ptoLinkageInputs[strand],
             terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!
           );
         }
