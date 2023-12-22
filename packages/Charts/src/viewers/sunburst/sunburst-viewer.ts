@@ -105,6 +105,7 @@ export class SunburstViewer extends EChartViewer {
         }
         return false;
       }, params.event.event.x, params.event.event.y);
+      ui.tooltip.root.innerText += params.name;
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {
