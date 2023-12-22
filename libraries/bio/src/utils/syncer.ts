@@ -5,15 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 
 import {errInfo} from './err-info';
+import {ILogger} from './logger';
 
 export enum LogLevel { error = 0, warning = 1, info = 2, debug = 3}
-
-export interface ILogger {
-  error(message: any, params?: object | undefined, stackTrace?: string | undefined): void;
-  warning(message: string, params?: object | undefined): void;
-  info(message: string, params?: object | undefined): void;
-  debug(message: string, params?: object | undefined): void;
-}
 
 export class PromiseSyncer {
   private promise: Promise<void> = Promise.resolve();
