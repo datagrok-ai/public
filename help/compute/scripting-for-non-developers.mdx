@@ -319,19 +319,19 @@ Both of these selectors require at least one **Dataframe** input
 to choose a dataframe for column selection.
 
 ```python
-#name: DataframeIdDemo
-#description: Adding ID column to a dataframe
+#name: ColumnSelectorDemo
+#description: Using column selectors
 #language: python
-#tags: demo, dataframe
+#tags: demo, dataframe, column_selector
 #input: dataframe table [Data table]
-#input: column id [Fill this column with auto-d=generated ID]
-#input: column_list data [Keep this column and drom all others]
+#input: column id_column [Fill this column with auto-d=generated ID]
+#input: column_list data_columns [Keep this column and drom all others]
 #output: dataframe new_table [New table with additional column]
 
 new_table = table.copy()
 l = len(new_table)
-new_table[id_column] = [f"{id_prefix}{n:04}" for n in range(l)]
-last_row = len(new_table)
+new_table[id_column] = [f"id_{n:04}" for n in range(l)]
+new_table = new_table[ [id_column] + data_columns ]
 ```
 
 ![ColumnSelectorDemo.png](pics/ColumnSelectorDemo.png)
