@@ -57,11 +57,6 @@ async function getChangelog(filename, version) {
     return [changelog, summary, changelogDate];
 }
 
-function string_between_strings(startStr, endStr, str) {
-    const pos = str.indexOf(startStr) + startStr.length;
-    return str.toString().substring(pos, str.indexOf(endStr, pos));
-}
-
 const rootDir = path.resolve('../');
 const helpDirLoc = `${rootDir}/help/deploy/releases/plugins`;
 const jsonTemplateLoc = `${helpDirLoc}/plugins.json`;
