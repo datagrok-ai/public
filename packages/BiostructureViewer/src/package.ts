@@ -40,6 +40,7 @@ import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {Pdbqt} from './utils/pdbqt-parser';
 import {viewMolstarUI} from './viewers/molstar-viewer/utils';
+import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -306,6 +307,17 @@ export async function ligandsWithBiostructureApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Ligands with Biostructure app');
   try {
     const app = new LigandsWithBiostructureApp('ligandsWithBiostructureApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: biostructureDataProviderApp
+export async function biostructureDataProviderApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Biostructure data provider app');
+  try {
+    const app = new BiostructureDataProviderApp();
     await app.init();
   } finally {
     pi.close();
@@ -616,4 +628,36 @@ export async function readAsTextDapi(file: string): Promise<string> {
   if (!exists)
     throw new Error(`File not found '${file}'.`);
   return resStr;
+}
+
+// -- Data provider --
+
+//name: RCSB PDB
+//description: Get biostructure by id as PDB
+//meta.dataProvider: Molecule3D
+//input: string id
+//output: object result
+export async function getBiostructureRcsbPdb(id: string): Promise<BiostructureData> {
+  const url = `https://files.rcsb.org/download/${id}.pdb`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(response.statusText);
+  const data: string = await response.text();
+  return {binary: false, data: data, ext: 'pdb', options: {name: id}};
+}
+
+//name: RCSB mmCIF
+//description: Get biostructure by id as mmCIF
+//meta.dataProvider: Molecule3D
+//meta.cache: client
+//meta.invalidateOn: 0 0 1 * * ?
+//input: string id
+//output: object result
+export async function getBiostructureRcsbMmcif(id: string): Promise<BiostructureData> {
+  const url = `https://files.rcsb.org/download/${id}.cif`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(response.statusText);
+  const data: string = await response.text();
+  return {binary: false, data: data, ext: 'cif', options: {name: id}};
 }

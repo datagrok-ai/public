@@ -6,7 +6,7 @@ import {category, delay, expect/*, expect*/, test} from '@datagrok-libraries/uti
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {awaitGrid} from './utils';
-import {MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+import {DebounceIntervals, MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
 
 import {_package} from '../package-test';
 
@@ -42,20 +42,20 @@ category('MolstarViewer', () => {
 
     df.currentRowIdx = 0;
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
-    await delay(50); // await for debounce onRebuildViewLigands
+    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
     expect(viewer.ligands.current !== null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 0);
 
     df.selection.init((rowI) => rowI === 1 || rowI === 2);
-    await delay(50); // await for debounce onRebuildViewLigands
+    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 2);
 
     df.currentRowIdx = 3;
-    await delay(50); // await for debounce onRebuildViewLigands
+    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 3, 'The current ligand of rowIdx = 3.');

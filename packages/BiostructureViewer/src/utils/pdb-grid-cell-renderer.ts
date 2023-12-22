@@ -8,10 +8,11 @@ import {Observable, Subject} from 'rxjs';
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {ILogger, LogLevel} from '@datagrok-libraries/bio/src/utils/syncer';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
+
 import {_package} from '../package';
 
 async function base64ToImg(base64: string): Promise<HTMLImageElement> {
@@ -33,6 +34,8 @@ export const enum Temps {
 }
 
 export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
+  private readonly logger: ILogger;
+
   private readonly _renderComplete: Subject<void> = new Subject<void>();
   public get renderComplete(): Observable<void> { return this._renderComplete; }
 
@@ -41,7 +44,9 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
 
   constructor(
     protected readonly gridCol: DG.GridColumn,
-  ) { }
+  ) {
+    this.logger = _package.logger;
+  }
 
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
@@ -53,7 +58,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
     if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
 
     const rowIdx: number = gridCell.tableRowIndex;
-    _package.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
+    this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
 
     g.save();
     try {
@@ -81,7 +86,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
           onAfterRender: (canvas: HTMLCanvasElement) => {
             g.save();
             try {
-              _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
+              this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
               service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, canvas);
 
               const imageStr: string = canvas.toDataURL();
@@ -100,12 +105,12 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
         this.taskQueueMap.set(rowIdx, task);
         service.render(task, rowIdx);
       } else {
-        _package.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
+        this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
         service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
-      _package.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
+      this.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
         err instanceof Error ? err.stack : undefined);
       //throw err; // Do not throw to prevent disabling event handler
     } finally {
