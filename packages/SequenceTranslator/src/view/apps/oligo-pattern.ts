@@ -71,8 +71,8 @@ export class PatternLayoutHandler {
 
     function updatePtoLinkageInputs(strand: string, index: number) {
       ptoLinkageInputs[strand][index] = ui.boolInput('', ptoLinkageInputs[strand][index].value!, () => {
-        updateSvgScheme();
-        updateOutputExamples();
+        refreshSvgDisplay();
+        refreshOutputExamples();
       });
     }
 
@@ -80,8 +80,8 @@ export class PatternLayoutHandler {
       baseInputs[strand][index] = ui.choiceInput('', getBaseInputValue(strand, index), baseChoices, (v: string) => {
         handleBaseInputChange(v);
         updateStrandModificationItems(AS);
-        updateSvgScheme();
-        updateOutputExamples();
+        refreshSvgDisplay();
+        refreshOutputExamples();
       });
 
       $(baseInputs[strand][index].root).addClass('st-pattern-choice-input');
@@ -106,12 +106,12 @@ export class PatternLayoutHandler {
       }
     }
 
-    function appendToModificationsContainer(
+    function appendToNumberedModificationsContainer(
       value: string,
       onChangeCallback: (value: string, shouldAdd: boolean) => void
     ): void {
       const boolInput = ui.boolInput(value, true, (boolV: boolean) => onChangeCallback(value, boolV));
-      isEnumerateModificationsDiv.append(
+      numberedModificationsListDiv.append(
         ui.divText('', {style: {width: '25px'}}),
         boolInput.root,
       );
@@ -121,9 +121,9 @@ export class PatternLayoutHandler {
       const shouldAdd = !enumerateModifications.includes(value);
       updateModificationsList(value, shouldAdd);
       if (shouldAdd) {
-        appendToModificationsContainer(value, (val, shouldAdd) => {
+        appendToNumberedModificationsContainer(value, (val, shouldAdd) => {
           updateModificationsList(val, shouldAdd);
-          updateSvgScheme();
+          refreshSvgDisplay();
         });
       }
     }
@@ -137,20 +137,20 @@ export class PatternLayoutHandler {
       return ui.divH([labelUI, baseInputUI, ptoLinkageUI], {style: {alignItems: 'center'}});
     }
 
-    function updateUiForNewSequenceLength() {
-      if (isSequenceLengthWithinRange()) {
-        updateStrandsForNewLength();
-        updateUiComponents();
+    function refreshUIForNewSequenceLength() {
+      if (checkSequenceLengthValidity()) {
+        extendStrandsToNewLength();
+        refreshUIComponents();
       } else {
-        showOutOfRangeDialog();
+        displayOutOfRangeDialog();
       }
     }
 
-    function isSequenceLengthWithinRange() {
+    function checkSequenceLengthValidity() {
       return Object.values(strandLengthInput).every(input => input.value! < MAX_SEQUENCE_LENGTH);
     }
 
-    function updateStrandsForNewLength() {
+    function extendStrandsToNewLength() {
       STRANDS.forEach(strand => {
         if (strandLengthInput[strand].value! > maxStrandLength[strand]) {
           maxStrandLength[strand] = strandLengthInput[strand].value!;
@@ -159,39 +159,39 @@ export class PatternLayoutHandler {
       });
     }
 
-    function updateUiComponents() {
-      updateSvgScheme();
-      updateInputExamples();
-      updateOutputExamples();
+    function refreshUIComponents() {
+      refreshSvgDisplay();
+      refreshInputExamples();
+      refreshOutputExamples();
     }
 
-    function showOutOfRangeDialog() {
+    function displayOutOfRangeDialog() {
       ui.dialog('Out of range')
         .add(ui.divText(`Sequence length should be less than ${MAX_SEQUENCE_LENGTH} due to UI constraints.`))
-        .onOK(() => resetStrandLengthInputs())
-        .onCancel(() => resetStrandLengthInputs())
+        .onOK(() => resetAllStrandLengthsToMax())
+        .onCancel(() => resetAllStrandLengthsToMax())
         .showModal(false);
     }
 
-    function resetStrandLengthInputs() {
+    function resetAllStrandLengthsToMax() {
       Object.values(strandLengthInput).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
     }
 
-    function updateValues(type: UPDATE_TYPE, newValue: boolean | string): void {
-      const targetObject = type === UPDATE_TYPE.PTO ? ptoLinkageInputs : baseInputs;
+    function updateInputValues(type: UPDATE_TYPE, newValue: boolean | string): void {
+      const inputs = type === UPDATE_TYPE.PTO ? ptoLinkageInputs : baseInputs;
 
       for (let i = 0; i < STRANDS.length; i++) {
         const strand = STRANDS[i];
         // WARNING: replacing this with for (const ...) or .forEach() leads to a bug: some values are not updated !!!
-        for (let j = 0; j < targetObject[strand].length; j++) {
-          const item = targetObject[strand][j];
+        for (let j = 0; j < inputs[strand].length; j++) {
+          const item = inputs[strand][j];
           item.value = newValue;
         }
       }
-      updateSvgScheme();
+      refreshSvgDisplay();
     }
 
-    function updateInputExamples(): void {
+    function refreshInputExamples(): void {
       STRANDS.forEach((strand) => {
         if (strandColumnInput[strand].value === '') {
           inputExample[strand].value = generateExample(strandLengthInput[strand].value!, sequenceBase.value!);
@@ -199,7 +199,7 @@ export class PatternLayoutHandler {
       });
     }
 
-    function updateOutputExamples(): void {
+    function refreshOutputExamples(): void {
       const conditions = [true, createAsStrand.value];
       STRANDS.forEach((strand, idx) => {
         if (conditions[idx]) {
@@ -223,7 +223,7 @@ export class PatternLayoutHandler {
       return [firstPto[strand].value!, ...ptoLinkageInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value!)];
     }
 
-    function updateSvgScheme() {
+    function refreshSvgDisplay() {
       svgDiv.innerHTML = '';
       const baseInputValues = Object.fromEntries(STRANDS.map((strand) => [strand, getBaseInputValues(strand)]));
       const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
@@ -254,8 +254,7 @@ export class PatternLayoutHandler {
       );
     }
 
-    // todo: rename
-    function detectDefaultBasis(array: string[]): string {
+    function detectMostFrequentBase(array: string[]): string {
       const countMap: {[element: string]: number} = {};
       let mostFrequentElement = array[0];
       let highestCount = 1;
@@ -271,29 +270,29 @@ export class PatternLayoutHandler {
       return mostFrequentElement;
     }
 
-    async function parsePattern(newName: string): Promise<PatternData> {
+    async function fetchPatternFromStorage(newName: string): Promise<PatternData> {
       const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
       return JSON.parse(entities[newName]);
     }
 
-    async function updateUiWithPattern(newName: string, obj: PatternData): Promise<void> {
-      sequenceBase.value = detectDefaultBasis([...obj[FIELD.AS_BASES], ...obj[FIELD.SS_BASES]]);
+    async function applyPatternDataToUI(newName: string, obj: PatternData): Promise<void> {
+      sequenceBase.value = detectMostFrequentBase([...obj[FIELD.AS_BASES], ...obj[FIELD.SS_BASES]]);
       createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
       saveAs.value = newName;
 
-      updateBaseInputsUponPatternLoading(obj);
-      updatePtoLinkages(obj);
-      updateStrandLengths(obj);
-      updateTerminalModifications(obj);
+      refreshBaseInputsFromPattern(obj);
+      refreshPtoLinkagesFromPattern(obj);
+      adjustStrandLengthsFromPattern(obj);
+      refreshTerminalModificationsFromPattern(obj);
 
       comment.value = obj[FIELD.COMMENT];
     }
 
-    async function parsePatternAndUpdateUi(newName: string): Promise<void> {
+    async function fetchAndUpdatePatternInUI(newName: string): Promise<void> {
       const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
       try {
-        const patternObj = await parsePattern(newName);
-        await updateUiWithPattern(newName, patternObj);
+        const patternObj = await fetchPatternFromStorage(newName);
+        await applyPatternDataToUI(newName, patternObj);
       } catch (error) {
         console.error("Error parsing pattern and updating UI: ", error);
       } finally {
@@ -301,14 +300,14 @@ export class PatternLayoutHandler {
       }
     }
 
-    function updateBaseInputsUponPatternLoading(obj: PatternData): void {
+    function refreshBaseInputsFromPattern(obj: PatternData): void {
       const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
       STRANDS.forEach((strand, i) => {
         baseInputs[strand] = (obj[fields[i]] as string[]).map((base: string) => ui.choiceInput('', base, baseChoices));
       });
     }
 
-    function updatePtoLinkages(obj: PatternData): void {
+    function refreshPtoLinkagesFromPattern(obj: PatternData): void {
       const fields = [FIELD.SS_PTO, FIELD.AS_PTO];
       STRANDS.forEach((strand, i) => {
         const ptoValues = obj[fields[i]] as boolean[];
@@ -317,14 +316,14 @@ export class PatternLayoutHandler {
       });
     }
 
-    function updateStrandLengths(obj: PatternData): void {
+    function adjustStrandLengthsFromPattern(obj: PatternData): void {
       const fields = [FIELD.SS_BASES, FIELD.AS_BASES];
       STRANDS.forEach((strand, i) => {
         strandLengthInput[strand].value = obj[fields[i]].length;
       });
     }
 
-    function updateTerminalModifications(obj: PatternData): void {
+    function refreshTerminalModificationsFromPattern(obj: PatternData): void {
       const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
       STRANDS.forEach((strand, i) => {
         TERMINAL_KEYS.forEach((terminal, j) => {
@@ -333,32 +332,32 @@ export class PatternLayoutHandler {
       });
     }
 
-    function checkColumnLengthsUniform(colName: string): boolean {
+    function verifyUniformColumnLengths(colName: string): boolean {
       const col = tableInput.value!.getCol(colName);
       const areLengthsUniform = col.toList().every((value, index, array) =>
         index === 0 || value.length === array[index - 1].length || value.length === 0);
 
       if (!areLengthsUniform) {
-        showSequencesLengthMismatchDialog(colName);
+        displayLengthMismatchDialog(colName);
       } else if (col.get(0).length !== strandLengthInput[SS].value) {
-        showLengthUpdatedDialog();
+        displayLengthUpdatedDialog();
       }
 
       return areLengthsUniform;
     }
 
-    function showSequencesLengthMismatchDialog(colName: string) {
+    function displayLengthMismatchDialog(colName: string) {
       const dialog = ui.dialog('Sequences lengths mismatch');
       $(dialog.getButton('OK')).hide();
 
       dialog
         .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
         .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
-        .addButton('ADD COLUMN', () => addLengthColumn(colName, dialog))
+        .addButton('ADD COLUMN', () => addColumnWithSequenceLengths(colName, dialog))
         .show();
     }
 
-    function addLengthColumn(colName: string, dialog: any) {
+    function addColumnWithSequenceLengths(colName: string, dialog: any) {
       const table = tableInput.value!;
       table.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => table.getCol(colName).get(j).length);
       grok.shell.info('Column with lengths added to \'' + table.name + '\'');
@@ -366,35 +365,35 @@ export class PatternLayoutHandler {
       grok.shell.v = grok.shell.getTableView(table.name);
     }
 
-    function showLengthUpdatedDialog() {
-      const d = ui.dialog('Length was updated by value from imported file');
-      d.add(ui.divText('Latest modifications may not take effect during translation'))
+    function displayLengthUpdatedDialog() {
+      ui.dialog('Length was updated by value from imported file')
+        .add(ui.divText('Latest modifications may not take effect during translation'))
         .onOK(() => grok.shell.info('Lengths changed'))
         .show();
     }
 
-    async function getCurrentUserName(): Promise<string> {
+    async function fetchCurrentUserName(): Promise<string> {
       const user = await grok.dapi.users.current();
       return ` (created by ${user.friendlyName})`;
     }
 
-    async function showPostPatternToUserStorage(): Promise<void> {
-      const currUserName = await getCurrentUserName();
-      saveAs.value = createSaveAsValue(currUserName);
+    async function savePatternAndNotify(): Promise<void> {
+      const currUserName = await fetchCurrentUserName();
+      saveAs.value = generatePatternSaveName(currUserName);
 
-      const patternData = createPatternData();
+      const patternData = assemblePatternData();
       await grok.dapi.userDataStorage.postValue(USER_STORAGE_KEY, saveAs.value, JSON.stringify(patternData), false);
 
       grok.shell.info(`Pattern '${saveAs.value}' was successfully uploaded!`);
     }
 
-    function createSaveAsValue(currUserName: string): string {
+    function generatePatternSaveName(currUserName: string): string {
       return saveAs.stringValue.includes('(created by ') ? 
         `${getShortName(saveAs.value)}${currUserName}` : 
         `${saveAs.stringValue}${currUserName}`;
     }
 
-    function createPatternData(): PatternData {
+    function assemblePatternData(): PatternData {
       const createBasesArray = (strand: string) => baseInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value) as string[];
       const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkageInputs[strand].slice(0, strandLengthInput[strand].value!).map(e => e.value)] as boolean[];
 
@@ -411,7 +410,7 @@ export class PatternLayoutHandler {
       };
     }
 
-    async function categorizePatterns(patternsData: PatternData): Promise<{ lstMy: string[], lstOthers: string[] }> {
+    async function sortPatternsByOwnership(patternsData: PatternData): Promise<{ lstMy: string[], lstOthers: string[] }> {
       const lstMy: string[] = [];
       const lstOthers: string[] = [];
 
@@ -425,26 +424,26 @@ export class PatternLayoutHandler {
       return { lstMy, lstOthers };
     }
 
-    function setupLoadPatternUI(loadPattern: StringInput, loadPatternDiv: HTMLElement, patternListChoiceInput: StringInput) {
-      clearAndAppendNewElements(loadPatternDiv, loadPattern, patternListChoiceInput);
-      styleLoadPatternInput(loadPattern.input);
+    function initializeLoadPatternInterface(loadPattern: StringInput, loadPatternDiv: HTMLElement, patternListChoiceInput: StringInput) {
+      clearAndRepopulateUIElements(loadPatternDiv, loadPattern, patternListChoiceInput);
+      applyStyleToLoadPatternInput(loadPattern.input);
       loadPattern.setTooltip('Apply Existing Pattern');
-      const deleteButton = createDeleteButton(loadPattern);
+      const deleteButton = generateDeletePatternButton(loadPattern);
       loadPattern.root.append(deleteButton);
     }
 
-    function clearAndAppendNewElements(loadPatternDiv: HTMLElement, loadPattern: StringInput, patternListChoiceInput: StringInput) {
+    function clearAndRepopulateUIElements(loadPatternDiv: HTMLElement, loadPattern: StringInput, patternListChoiceInput: StringInput) {
       loadPatternDiv.innerHTML = '';
       loadPattern.root.append(patternListChoiceInput.input, loadPattern.input);
       loadPatternDiv.append(loadPattern.root);
     }
 
-    function styleLoadPatternInput(loadPatternInput: HTMLElement) {
+    function applyStyleToLoadPatternInput(loadPatternInput: HTMLElement) {
       loadPatternInput.style.maxWidth = '120px';
       loadPatternInput.style.marginLeft = '12px';
     }
 
-    function createDeleteButton(loadPattern: StringInput): HTMLElement {
+    function generateDeletePatternButton(loadPattern: StringInput): HTMLElement {
       return ui.div([
         ui.button(ui.iconFA('trash-alt'), async () => {
           if (!loadPattern.value) {
@@ -452,26 +451,26 @@ export class PatternLayoutHandler {
           } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
             grok.shell.warning('Cannot delete pattern, created by other user');
           } else {
-            await deletePattern(loadPattern.value);
-            await updatePatternsList();
+            await removePatternFromStorage(loadPattern.value);
+            await refreshPatternsList();
           }
         })
       ], 'ui-input-options');
     }
 
-    async function deletePattern(patternName: string) {
+    async function removePatternFromStorage(patternName: string) {
       await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
       grok.shell.info(`Pattern '${patternName}' deleted`);
     }
 
-    async function updatePatternsList() {
+    async function refreshPatternsList() {
       const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
-      const { lstMy, lstOthers } = await categorizePatterns(patternsData);
+      const { lstMy, lstOthers } = await sortPatternsByOwnership(patternsData);
 
       const currentUserName = (await grok.dapi.users.current()).friendlyName;
       const otherUsers = 'Other users';
 
-      let loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+      let loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => fetchAndUpdatePatternInUI(v));
 
       const patternListChoiceInput = ui.choiceInput(
         '', currentUserName, [currentUserName, otherUsers],
@@ -479,97 +478,97 @@ export class PatternLayoutHandler {
       );
 
       patternListChoiceInput.input.style.maxWidth = '142px';
-      setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
+      initializeLoadPatternInterface(loadPattern, loadPatternDiv, patternListChoiceInput);
 
       function patternListChoiceInputOnChange(v: string) {
         const currentList = v === currentUserName ? lstMy : lstOthers;
-        loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
-        setupLoadPatternUI(loadPattern, loadPatternDiv, patternListChoiceInput);
+        loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => fetchAndUpdatePatternInUI(v));
+        initializeLoadPatternInterface(loadPattern, loadPatternDiv, patternListChoiceInput);
       }
     }
 
-    async function patternExists(patternData: PatternData, patternName: string) {
+    async function checkIfPatternExistsInStorage(patternData: PatternData, patternName: string) {
       return Object.keys(patternData).includes(patternName);
     }
 
-    async function showConfirmReplacePatternDialog(patternName: string) {
+    async function displayPatternReplaceConfirmationDialog(patternName: string) {
       const dialog = ui.dialog('Pattern already exists');
       $(dialog.getButton('OK')).hide();
       dialog
         .add(ui.divText(`Pattern name '${patternName}' already exists.`))
         .add(ui.divText('Replace pattern?'))
         .addButton('YES', async () => {
-          await removePattern(patternName);
-          await showPostPatternToUserStorage();
+          await deletePatternFromStorage(patternName);
+          await savePatternAndNotify();
           dialog.close();
         })
         .show();
     }
 
-    async function removePattern(patternName: string) {
+    async function deletePatternFromStorage(patternName: string) {
       return grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
     }
 
-    async function savePattern(): Promise<void> {
+    async function savePatternInUserDataStorage(): Promise<void> {
       const patternData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
 
       const patternName = saveAs.value;
 
-      if (await patternExists(patternData, patternName)) {
-        await showConfirmReplacePatternDialog(patternName);
+      if (await checkIfPatternExistsInStorage(patternData, patternName)) {
+        await displayPatternReplaceConfirmationDialog(patternName);
       } else {
-        await showPostPatternToUserStorage();
+        await savePatternAndNotify();
       }
 
-      await updatePatternsList();
+      await refreshPatternsList();
     }
 
     function validateStrandColumn(colName: string, strand: string): void {
-      if (!checkColumnLengthsUniform(colName)) {
+      if (!verifyUniformColumnLengths(colName)) {
         return;
       }
 
-      const firstSequence = getFirstSequence(colName);
-      updateStrandLengthIfNeeded(firstSequence.length, strand);
-      updateInputExample(firstSequence, strand);
+      const firstSequence = fetchFirstSequenceFromColumn(colName);
+      adjustStrandLengthIfRequired(firstSequence.length, strand);
+      refreshInputExampleValue(firstSequence, strand);
     }
 
-    function getFirstSequence(colName: string): string {
+    function fetchFirstSequenceFromColumn(colName: string): string {
       return tableInput.value!.getCol(colName).get(0);
     }
 
-    function updateStrandLengthIfNeeded(sequenceLength: number, strand: string): void {
+    function adjustStrandLengthIfRequired(sequenceLength: number, strand: string): void {
       const currentStrandLength = strandLengthInput[strand].value;
       if (sequenceLength !== currentStrandLength) {
         strandLengthInput[strand].value = sequenceLength;
       }
     }
 
-    function updateInputExample(sequence: string, strand: string): void {
+    function refreshInputExampleValue(sequence: string, strand: string): void {
       inputExample[strand].value = sequence;
     }
 
     function validateIdsColumn(colName: string) {
-      const col = getColumn(colName);
-      validateColumnType(col);
+      const col = retrieveColumnFromTable(colName);
+      checkColumnTypeForIntType(col);
 
-      if (hasDuplicates(col)) {
+      if (checkForDuplicateValues(col)) {
         showDuplicatesDialog(col);
       }
     }
 
-    function getColumn(colName: string): DG.Column {
+    function retrieveColumnFromTable(colName: string): DG.Column {
       return tableInput.value!.getCol(colName);
     }
 
-    function validateColumnType(col: DG.Column): void {
+    function checkColumnTypeForIntType(col: DG.Column): void {
       if (col.type !== DG.TYPE.INT) {
         grok.shell.error('Column should contain integers only');
         // throw new Error('Invalid column type');
       }
     }
 
-    function hasDuplicates(col: DG.Column): boolean {
+    function checkForDuplicateValues(col: DG.Column): boolean {
       const uniqueValues = col.categories.filter((e) => e !== '').length;
       const totalValues = col.toList().filter((e) => e !== '').length;
       return uniqueValues < totalValues;
@@ -587,7 +586,7 @@ export class PatternLayoutHandler {
       grok.shell.info(`Rows are selected in table '${tableName}'`);
     }
 
-    function selectDuplicateRows(duplicates: any[], col: DG.Column): void {
+    function selectDuplicateRows(duplicates: number[], col: DG.Column): void {
       const selection = tableInput.value!.selection;
       selection.init((i: number) => duplicates.includes(col.get(i)));
       grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
@@ -599,17 +598,17 @@ export class PatternLayoutHandler {
     const enumerateModifications = [defaultBase];
     const sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => {
       // updateBases(v);
-      updateValues(UPDATE_TYPE.BASIS, v);
-      updateOutputExamples();
+      updateInputValues(UPDATE_TYPE.BASIS, v);
+      refreshOutputExamples();
     });
     
     function createFullyPtoInput(): BooleanInput {
-      const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PTO, onFullyPtoChanged);
-      configureFullyPtoLabel(fullyPto.captionLabel);
+      const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PTO, handleFullPtoInputChange);
+      styleFullyPtoInputLabel(fullyPto.captionLabel);
       return fullyPto;
     }
 
-    function configureFullyPtoLabel(label: HTMLElement): void {
+    function styleFullyPtoInputLabel(label: HTMLElement): void {
       label.classList.add('ui-label-right');
       Object.assign(label.style, {
         textAlign: 'left',
@@ -619,11 +618,11 @@ export class PatternLayoutHandler {
       });
     }
 
-    function onFullyPtoChanged(v: boolean): void {
+    function handleFullPtoInputChange(v: boolean): void {
       STRANDS.forEach((s) => { firstPto[s].value = v; });
       // updatePto(v);
-      updateValues(UPDATE_TYPE.PTO, v);
-      updateOutputExamples();
+      updateInputValues(UPDATE_TYPE.PTO, v);
+      refreshOutputExamples();
     }
 
     const fullyPto = createFullyPtoInput();
@@ -648,7 +647,7 @@ export class PatternLayoutHandler {
     ));
     const strandLengthInput = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => updateUiForNewSequenceLength());
+        const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => refreshUIForNewSequenceLength());
         input.setTooltip(`Length of ${STRAND_NAME[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
       }));
@@ -671,7 +670,7 @@ export class PatternLayoutHandler {
     }
 
     function createStrandPtoInput(strand: StrandType, fullyPto: BooleanInput): BooleanInput {
-      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, updateSvgScheme);
+      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, refreshSvgDisplay);
       input.setTooltip(`ps linkage before first nucleotide of ${STRAND_NAME[strand].toLowerCase()}`);
       configureInputLabel(input.captionLabel);
       return input;
@@ -707,8 +706,8 @@ export class PatternLayoutHandler {
     }
 
     function modificationInputChangeCallback(): void {
-      updateSvgScheme();
-      updateOutputExamples();
+      refreshSvgDisplay();
+      refreshOutputExamples();
     }
 
     const terminalModification = createTerminalModificationInputs();
@@ -805,11 +804,11 @@ export class PatternLayoutHandler {
       }
     }
 
-    const isEnumerateModificationsDiv = ui.divH([
+    const numberedModificationsListDiv = ui.divH([
       ui.boolInput(defaultBase, true, (v: boolean) => {
         updateEnumerateModificationsList(v);
-        updateSvgScheme();
-        updateOutputExamples();
+        refreshSvgDisplay();
+        refreshOutputExamples();
       }).root,
     ]);
 
@@ -872,7 +871,7 @@ export class PatternLayoutHandler {
     });
     // inputIdColumnDiv.append(inputIdColumn.root);
 
-    updatePatternsList();
+    refreshPatternsList();
 
     function toggleUiElementsBasedOnAsStrand(value: boolean) {
       const elementsToToggle = [
@@ -889,14 +888,14 @@ export class PatternLayoutHandler {
         element.hidden = !value;
       });
 
-      updateSvgScheme();
+      refreshSvgDisplay();
     }
 
     // Create the boolean input UI component with the refactored event handler.
     const createAsStrand = ui.boolInput('Anti sense strand', true, toggleUiElementsBasedOnAsStrand);
     createAsStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
-    const saveAs = ui.textInput('Save as', 'Pattern name', () => updateSvgScheme());
+    const saveAs = ui.textInput('Save as', 'Pattern name', () => refreshSvgDisplay());
     saveAs.setTooltip('Name Of New Pattern');
 
 
@@ -904,7 +903,7 @@ export class PatternLayoutHandler {
       asModificationDiv.append(terminalModification[AS][terminal].root);
     })
 
-    const comment = ui.textInput('Comment', '', () => updateSvgScheme());
+    const comment = ui.textInput('Comment', '', () => refreshSvgDisplay());
 
     function handleSave() {
       if (saveAs.value !== '') {
@@ -916,7 +915,7 @@ export class PatternLayoutHandler {
 
     function savePatternWithName(patternName: string) {
       saveAs.value = patternName;
-      savePattern().then(() => grok.shell.info('Pattern saved'));
+      savePatternInUserDataStorage().then(() => grok.shell.info('Pattern saved'));
     }
 
     function promptForPatternNameAndSave() {
@@ -983,7 +982,7 @@ export class PatternLayoutHandler {
       }
 
       addTranslatedSequenceColumns();
-      updateOutputExamples();
+      refreshOutputExamples();
     }
 
     const convertSequenceButton = ui.bigButton('Convert', handleConvert);
@@ -992,7 +991,7 @@ export class PatternLayoutHandler {
     asExampleDiv.append(inputExample[AS].root);
     asExampleDiv.append(outputExample[AS].root);
 
-    updateUiForNewSequenceLength();
+    refreshUIForNewSequenceLength();
 
     const inputsSection = ui.block50([
       ui.h1('Convert options'),
@@ -1054,7 +1053,7 @@ export class PatternLayoutHandler {
     function createRightPanel() {
       return ui.panel([
         svgDiv,
-        isEnumerateModificationsDiv,
+        numberedModificationsListDiv,
         createDownloadEditButtons(),
         createStrandSections(),
         ui.h1('Additional modifications'),
