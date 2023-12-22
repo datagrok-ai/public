@@ -332,20 +332,23 @@ export class RichFunctionView extends FunctionView {
    */
   public buildIO(): HTMLElement {
     const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
+    const inputElements = ([
+      ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
+      ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
+    ]);
 
     ui.tools.handleResize(inputBlock, () => {
-      if (([
-        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
-        ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
-      ]).some((child) => $(child).width() < 250) ||
-      $(inputBlock).width() < 350) {
+      //if (inputElements.some((child) => $(child).width() < 150) ||
+      if ($(inputBlock).width() < 350) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
         $(controlsWrapper).addClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100px'));
       } else {
         $(inputForm).removeClass('ui-form-condensed');
         $(outputForm).removeClass('ui-form-condensed');
         $(controlsWrapper).removeClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100%'));
       }
     });
 
@@ -363,7 +366,7 @@ export class RichFunctionView extends FunctionView {
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
 
-    inputBlock.style.maxWidth = '450px';
+    inputBlock.style.maxWidth = '360px';
 
     return out;
   }
@@ -386,6 +389,7 @@ export class RichFunctionView extends FunctionView {
     $(controlsForm).css({
       'padding-left': '0px',
       'padding-bottom': '0px',
+      'padding-right': '6px',
       'max-width': '100%',
       'min-height': '50px',
     });
@@ -782,6 +786,11 @@ export class RichFunctionView extends FunctionView {
     $(inputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
+      'padding-right': '12px',
+      'padding-top': '0px',
+      'padding-left': '0px',
+      'max-width': '100%',
+      'gap': '4px',
     });
 
     let prevCategory = 'Misc';
@@ -816,9 +825,6 @@ export class RichFunctionView extends FunctionView {
       );
 
     inputs.classList.remove('ui-panel');
-    inputs.style.paddingTop = '0px';
-    inputs.style.paddingLeft = '0px';
-    inputs.style.maxWidth = '100%';
 
     return inputs;
   }
