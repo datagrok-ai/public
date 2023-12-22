@@ -2,10 +2,10 @@
 title: "Exploratory data analysis"
 sidebar position: 4
 keywords:
- -- EDA
- -- exploratory data analysis
- -- interactive exploration
- -- interactive dashboards
+ - EDA
+ - exploratory data analysis
+ - interactive exploration
+ - interactive dashboards
 
 ---
 
