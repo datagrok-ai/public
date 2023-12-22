@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMPUTATION_STRATEGY, ERROR_MSG, COPY_SUFFIX} from './constants';
+import {IMPUTATION_STRATEGY, ERROR_MSG, COPY_SUFFIX} from './ui-constants';
 
 /** */
 function getNullValue(col: DG.Column): number {
@@ -104,4 +104,31 @@ export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean)
   console.log(copyRaw);*/
 
   return copy;
+}
+
+/** Distance types. */
+export enum DISTANCE_TYPE {
+  EUCLIDEAN = 'Euclidian',
+  MANHATTAN = 'Manhattan',
+  ONE_HOT = 'One-hot'
+};
+
+/** Metric specification. */
+export type DistanceInfo = {
+  weight: number,
+  type: DISTANCE_TYPE,
+};
+
+/** */
+export enum DEFAULT {
+  WEIGHT = 1,
+  NEIGHBORS = 1,
+  IN_PLACE = 1,
+};
+
+/** */
+export const MIN_NEIGHBORS = 1;
+
+/** */
+export function impute(df: DG.DataFrame, col: DG.Column, featuresDist: Map<string, DistanceInfo>, neighbors: number, inPlace: boolean) {
 }
