@@ -39,7 +39,6 @@ export async function importPdbqtUI(fileContent: string, test: boolean = false):
         .add(ui.divText('Docking target structure required to display ligand poses from pdbqt data.'))
         .add(ui.divV([ui.inputs([dataFileInput])]))
         .onOK(async () => {
-          await delay(100); /* to fill DG.FileInfo.data */
           const dataFi: DG.FileInfo = dataFileInput.value;
           const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
           const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};

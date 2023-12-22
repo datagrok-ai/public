@@ -9,7 +9,7 @@ import {SignalBinding} from 'signals';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {ILogger, LogLevel} from '@datagrok-libraries/bio/src/utils/syncer';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {awaitNgl} from '../viewers/ngl-viewer-utils';
@@ -21,6 +21,8 @@ const NGL_ERROR_LIMIT: number = 3;
 const NGL_TRY_LIMIT: number = 3;
 
 export class NglGlDocService extends NglGlServiceBase {
+  private readonly logger: ILogger;
+
   private nglDiv: HTMLDivElement;
 
   private ngl: ngl.Stage | null = null;
@@ -57,6 +59,7 @@ export class NglGlDocService extends NglGlServiceBase {
     this._queue = [];
     this._queueDict = {};
 
+    this.logger = _package.logger;
     // window.setInterval(() => { this._sweepQueue(); }, 200);
   }
 
@@ -72,7 +75,7 @@ export class NglGlDocService extends NglGlServiceBase {
   }
 
   render(task: NglGlTask, key?: keyof any, tryCount: number = 0): void {
-    _package.logger.debug('NglGlDocService.render() start ' + `key: ${key?.toString()}`);
+    this.logger.debug('NglGlDocService.render() start ' + `key: ${key?.toString()}`);
 
     if (key !== undefined) {
       if (key in this._queueDict) {
@@ -80,25 +83,25 @@ export class NglGlDocService extends NglGlServiceBase {
         const oldTaskI = this._queue.findIndex((item) => item.key === key);
         this._queue.splice(oldTaskI, 1);
       }
-      _package.logger.debug(`NglGlDocService.render() _queueDict[ key: ${key?.toString()} ] = <task>`);
+      this.logger.debug(`NglGlDocService.render() _queueDict[ key: ${key?.toString()} ] = <task>`);
       this._queueDict[key] = task;
     }
 
-    _package.logger.debug('NglGlDocService.render() _queue.push(), ' + `key: ${key?.toString()}`);
+    this.logger.debug('NglGlDocService.render() _queue.push(), ' + `key: ${key?.toString()}`);
     this._queue.push({key, task, tryCount, dt: window.performance.now()});
 
     if (!this._busy) {
       this._busy = true;
 
       // TODO: Use requestAnimationFrame()
-      _package.logger.debug('NglGlDocService.render(), window.setTimeout() -> this._processQueue() ');
+      this.logger.debug('NglGlDocService.render(), window.setTimeout() -> this._processQueue() ');
       window.setTimeout(() => { this._processQueue(); }, 0 /* next event cycle */);
     }
   }
 
   private _processQueue(): void {
     if (this._queue.length === 0) return;
-    _package.logger.debug(`NglGlDocService._processQueue(), ` +
+    this.logger.debug(`NglGlDocService._processQueue(), ` +
       `queue: ${JSON.stringify(this._queue.map((t) => t.key))}`);
 
     let nglRenderBinding: SignalBinding<any> | null = null;
@@ -108,29 +111,29 @@ export class NglGlDocService extends NglGlServiceBase {
       if (nglRenderBinding !== null) nglRenderBinding.detach();
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
-        _package.logger.debug(`${logPrefix}, ` + 'window.setTimeout() -> this._processQueue() ');
+        this.logger.debug(`${logPrefix}, ` + 'window.setTimeout() -> this._processQueue() ');
         window.setTimeout(() => { this._processQueue(); }, 0 /* next event cycle */);
       } else {
         // release flag allowing _processQueue on add queue item
-        _package.logger.debug(`${logPrefix}, ` + 'this._busy = false');
+        this.logger.debug(`${logPrefix}, ` + 'this._busy = false');
         this._busy = false;
       }
     };
 
     const queueItem = this._queue.shift();
     if (!queueItem) {
-      _package.logger.error('NglGlDocService._processQueue() queueItem = undefined ');
+      this.logger.error('NglGlDocService._processQueue() queueItem = undefined ');
       finallyProcessQueue('no queue item');
       return;
     } // in case of empty queue
 
     const {key, task, tryCount, dt} = queueItem;
     if (key !== undefined) {
-      _package.logger.debug('NglGlDocService._processQueue() ' + `key: ${key.toString()}`);
+      this.logger.debug('NglGlDocService._processQueue() ' + `key: ${key.toString()}`);
       delete this._queueDict[key];
     }
     if (tryCount > NGL_TRY_LIMIT) {
-      _package.logger.warning('NglGlDocService._processQueue(), skip task, ' +
+      this.logger.warning('NglGlDocService._processQueue(), skip task, ' +
         ` key: ${key?.toString()}, tryCount: ${tryCount}`);
       finallyProcessQueue('try count limit');
       return;
@@ -141,7 +144,7 @@ export class NglGlDocService extends NglGlServiceBase {
 
     const timeoutHandle = window.setTimeout(() => {
       if (!handled) {
-        _package.logger.warning('NglGlDocService._processQueue().timeoutHandle() not handled, ' +
+        this.logger.warning('NglGlDocService._processQueue().timeoutHandle() not handled, ' +
           `key: ${key?.toString}`);
         this.nglErrorCount += 1;
         this.render(task, key, tryCount + 1); // return task to the queue
@@ -150,7 +153,7 @@ export class NglGlDocService extends NglGlServiceBase {
     }, 1000);
 
     const renderHandler = () => {
-      _package.logger.debug('NglGlDocService._processQueue().handler(), ' + `key: ${key?.toString()}`);
+      this.logger.debug('NglGlDocService._processQueue().handler(), ' + `key: ${key?.toString()}`);
       if (this.nglOnRendered(key, task, emptyCanvasHash)) {
         handled = true;
         window.clearTimeout(timeoutHandle);
@@ -170,7 +173,7 @@ export class NglGlDocService extends NglGlServiceBase {
       .catch((err: any) => {
         // Not waiting timeout on error
         const [errMsg, errStack] = errInfo(err);
-        _package.logger.error(errMsg, undefined, errStack);
+        this.logger.error(errMsg, undefined, errStack);
         window.clearTimeout(timeoutHandle);
         this.nglErrorCount += 1;
         this.render(task, key, tryCount + 1); // return task to the queue
@@ -182,7 +185,7 @@ export class NglGlDocService extends NglGlServiceBase {
     key: any, task: NglGlTask, renderHandler: () => void,
   ): Promise<[SignalBinding<any>, number, () => void]> {
     const logPrefix = 'NglGlDocService.nglRender()';
-    _package.logger.debug(`${logPrefix}, ` + `key: ${key?.toString()}`);
+    this.logger.debug(`${logPrefix}, ` + `key: ${key?.toString()}`);
     const dpr = window.devicePixelRatio;
 
     // TODO: Convert string to Blob once converting PDB string column to Blob
@@ -193,7 +196,7 @@ export class NglGlDocService extends NglGlServiceBase {
     // if (key === 1) throw new Error('NglGlDocService: Test error');
 
     if (this.nglErrorCount > NGL_ERROR_LIMIT) {
-      _package.logger.warning(`${logPrefix}, ` + 'recreate ngl.Stage, ' +
+      this.logger.warning(`${logPrefix}, ` + 'recreate ngl.Stage, ' +
         `nglTimeoutCount = ${this.nglErrorCount} > ${NGL_ERROR_LIMIT}`);
       await this.reset();
     }
@@ -226,13 +229,13 @@ export class NglGlDocService extends NglGlServiceBase {
     const echST = window.performance.now();
     const emptyCanvasHash = DG.StringUtils.hashCode(canvas.toDataURL());
     if (emptyCanvasHash === undefined)
-      _package.logger.warning(`${logPrefix}, emptyCanvasHash undefined at calc`);
+      this.logger.warning(`${logPrefix}, emptyCanvasHash undefined at calc`);
     const echET = window.performance.now();
 
     const rST = window.performance.now();
     const renderHandlerInt = (...params: any): void => {
       const rET: number = window.performance.now();
-      _package.logger.warning('NglGlDocService.nglRender().renderHandlerInt(), ' +
+      this.logger.warning('NglGlDocService.nglRender().renderHandlerInt(), ' +
         `key: ${key?.toString()}, ` +
         `load: ${lET - lST} ms,\n    ` + `emptyCanvasHashET: ${echET - echST} ms, ` + `renderET: ${rET - rST} ms, ` +
         `emptyCanvasHash: ${emptyCanvasHash}, ` + `params: ${JSON.stringify(params)}, `);
@@ -275,15 +278,15 @@ export class NglGlDocService extends NglGlServiceBase {
   private nglOnRendered(key: keyof any | undefined, task: NglGlTask, emptyCanvasHash: number): boolean {
     const logPrefix = `NglGlDocService.nglOnRendered( key = ${key?.toString()} )`;
     if (emptyCanvasHash === undefined)
-      _package.logger.warning(`${logPrefix}, emptyCanvasHash undefined`);
-    _package.logger.debug(`${logPrefix}, start`);
+      this.logger.warning(`${logPrefix}, emptyCanvasHash undefined`);
+    this.logger.debug(`${logPrefix}, start`);
     const canvas = this.ngl!.viewer.renderer.domElement;
     const canvasHash = DG.StringUtils.hashCode(canvas.toDataURL());
     if (canvasHash == emptyCanvasHash) { // render is not ready yet
-      _package.logger.debug(`NglGlDocService.onNglRendered(), empty canvas`);
+      this.logger.debug(`NglGlDocService.onNglRendered(), empty canvas`);
       return false;
     }
-    _package.logger.debug(`${logPrefix}, end, ` + `emptyCanvasHash = ${emptyCanvasHash}, canvasHash = ${canvasHash}`);
+    this.logger.debug(`${logPrefix}, end, ` + `emptyCanvasHash = ${emptyCanvasHash}, canvasHash = ${canvasHash}`);
 
     task.onAfterRender(canvas);
     return true;
@@ -298,7 +301,7 @@ export class NglGlDocService extends NglGlServiceBase {
     gCtx.save();
     gCtx.resetTransform();
     try {
-      _package.logger.debug(`${logPrefix}, start`);
+      this.logger.debug(`${logPrefix}, start`);
 
       const vertScrollMin: number = Math.floor(gCell.grid.vertScroll.min);
       // Correction for vert scrolling happened between task and render, calculate bd.y directly

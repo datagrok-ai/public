@@ -13,6 +13,7 @@ import './tests/molstar-preview-tests';
 import './tests/molstar-viewer-tests';
 import './tests/viewers';
 import './tests/pdbqt-tests';
+import './tests/data-provider-tests';
 
 
 // This _package object is for tests only.

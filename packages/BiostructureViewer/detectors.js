@@ -9,7 +9,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  //skipTest: #2596, Fix for test data in the utils library
+  //meta.skipTest: #2596, Fix for test data in the utils library
   detectPdb(col) {
     if (DG.Detector.sampleCategories(col,
       // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)

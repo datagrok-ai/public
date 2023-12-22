@@ -89,7 +89,7 @@ export class LigandsWithBiostructureApp extends LigandsWithBaseApp {
       showSelectedRowsLigands: false,
       showCurrentRowLigand: true,
       showMouseOverRowLigand: true,
-    })) as DG.Viewer & INglViewer;
+    })) as DG.Viewer & IBiostructureViewer;
     this.view!.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.35);
   }
 }
