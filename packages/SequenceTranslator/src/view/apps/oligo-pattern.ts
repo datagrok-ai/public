@@ -665,18 +665,18 @@ export class PatternLayoutHandler {
       return [strand, input];
     }));
 
-    function createFirstPtoInputs(fullyPto: BooleanInput): Record<string,BooleanInput> {
-      return Object.fromEntries(STRANDS.map((strand) => [strand, createStrandPtoInput(strand, fullyPto)]));
+    function generateInitialPtoInputs(fullyPto: BooleanInput): Record<string,BooleanInput> {
+      return Object.fromEntries(STRANDS.map((strand) => [strand, generateStrandSpecificPtoInput(strand, fullyPto)]));
     }
 
-    function createStrandPtoInput(strand: StrandType, fullyPto: BooleanInput): BooleanInput {
+    function generateStrandSpecificPtoInput(strand: StrandType, fullyPto: BooleanInput): BooleanInput {
       const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, refreshSvgDisplay);
       input.setTooltip(`ps linkage before first nucleotide of ${STRAND_NAME[strand].toLowerCase()}`);
-      configureInputLabel(input.captionLabel);
+      styleStrandPtoInputLabel(input.captionLabel);
       return input;
     }
 
-    function configureInputLabel(label: HTMLElement): void {
+    function styleStrandPtoInputLabel(label: HTMLElement): void {
       label.classList.add('ui-label-right');
       Object.assign(label.style, {
         textAlign: 'left',
@@ -686,7 +686,7 @@ export class PatternLayoutHandler {
       });
     }
 
-    const firstPto = createFirstPtoInputs(fullyPto);
+    const firstPto = generateInitialPtoInputs(fullyPto);
 
     function createTerminalModificationInputs() {
       return Object.fromEntries(STRANDS.map(strand => [strand, createStrandInputs(strand)]));
@@ -699,13 +699,13 @@ export class PatternLayoutHandler {
     function createModificationInput(strand: StrandType, key: TerminalType): StringInput {
       const label = `${strand} ${TERMINAL[key]}\' Modification`;
       const tooltip = `Additional ${strand} ${TERMINAL[key]}\' Modification`;
-      const input = ui.stringInput(label, '', modificationInputChangeCallback);
+      const input = ui.stringInput(label, '', handleModificationInputChange);
 
       input.setTooltip(tooltip);
       return input;
     }
 
-    function modificationInputChangeCallback(): void {
+    function handleModificationInputChange(): void {
       refreshSvgDisplay();
       refreshOutputExamples();
     }
@@ -737,7 +737,7 @@ export class PatternLayoutHandler {
       STRANDS.map((strand) => [strand, createOutputExample(strand)])
     );
 
-    function createModificationHeader() {
+    function generateModificationSectionHeader() {
       return ui.divH([
         ui.div([ui.divText('#')], {style: {width: '20px'}}),
         ui.block75([ui.divText('Modification')]),
@@ -745,27 +745,27 @@ export class PatternLayoutHandler {
       ]);
     }
 
-    function createModificationPanel(strand: StrandType) {
+    function generateStrandModificationPanel(strand: StrandType) {
       return ui.block([
         ui.h1(`${STRAND_NAME[strand]}`),
-        createModificationHeader(),
+        generateModificationSectionHeader(),
         modificationItems[strand],
       ], {style: {paddingTop: '12px'}});
     }
 
     const modificationSection = Object.fromEntries(
-      STRANDS.map((strand) => [strand, createModificationPanel(strand)])
+      STRANDS.map((strand) => [strand, generateStrandModificationPanel(strand)])
     );
 
-    function applyExampleStyles(example: StringInput) {
-      Object.assign(example.input.style, {
+    function applyExampleStyles(exampleInput: StringInput) {
+      Object.assign(exampleInput.input.style, {
         resize: 'none',
         minWidth: 'none',
         flexGrow: '1',
       });
     }
 
-    function appendOptionsToOutput(output: StringInput) {
+    function addOptionsToOutputControl(output: StringInput) {
       const options = ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
           navigator.clipboard.writeText(output.value!).then(() =>
@@ -780,7 +780,7 @@ export class PatternLayoutHandler {
     STRANDS.forEach((s) => {
       applyExampleStyles(inputExample[s]);
       applyExampleStyles(outputExample[s]);
-      appendOptionsToOutput(outputExample[s]);
+      addOptionsToOutputControl(outputExample[s]);
     });
 
 
@@ -905,11 +905,11 @@ export class PatternLayoutHandler {
 
     const comment = ui.textInput('Comment', '', () => refreshSvgDisplay());
 
-    function handleSave() {
+    function processSaveButtonClick() {
       if (saveAs.value !== '') {
         savePatternWithName(saveAs.value);
       } else {
-        promptForPatternNameAndSave();
+        requestPatternNameAndSave();
       }
     }
 
@@ -918,7 +918,7 @@ export class PatternLayoutHandler {
       savePatternInUserDataStorage().then(() => grok.shell.info('Pattern saved'));
     }
 
-    function promptForPatternNameAndSave() {
+    function requestPatternNameAndSave() {
       const nameInput = ui.stringInput('Enter name', '');
       ui.dialog('Pattern Name')
         .add(nameInput.root)
@@ -926,25 +926,25 @@ export class PatternLayoutHandler {
         .show();
     }
 
-    const savePatternButton = ui.bigButton('Save', handleSave);
+    const savePatternButton = ui.bigButton('Save', processSaveButtonClick);
     saveAs.addOptions(savePatternButton);
 
-    function areRequiredColumnsSelected() {
+    function checkForRequiredColumnSelection() {
       const condition = [true, createAsStrand.value];
       return STRANDS.some((s, i) => condition[i] && strandVar[s] === '');
     }
 
-    function isLengthMismatchPresent() {
+    function checkForLengthMismatch() {
       return STRANDS.some((s) => strandLengthInput[s].value !== inputExample[s].value.length);
     }
 
-    function updateStrandLengthsBasedOnTable() {
+    function adjustStrandLengthsFromTableData() {
       STRANDS.forEach((s) => {
         strandLengthInput[s].value = tableInput.value!.getCol(strandColumnInput[s].value!).getString(0).length;
       });
     }
 
-    function addTranslatedSequenceColumns() {
+    function addColumnsWithTranslatedSequences() {
       if (idVar !== '') {
         addColumnWithIds(tableInput.value!.name, idVar, getShortName(saveAs.value));
       }
@@ -962,30 +962,30 @@ export class PatternLayoutHandler {
       grok.shell.info(`${columnPhrase} added to table '${tableInput.value!.name}'`);
     }
 
-    function handleConvert() {
-      if (areRequiredColumnsSelected()) {
+    function processConvertButtonClick() {
+      if (checkForRequiredColumnSelection()) {
         grok.shell.info('Please select table and columns on which to apply pattern');
         return;
       }
 
-      if (isLengthMismatchPresent()) {
+      if (checkForLengthMismatch()) {
         const dialog = ui.dialog('Length Mismatch');
         $(dialog.getButton('OK')).hide();
         dialog
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
-            updateStrandLengthsBasedOnTable();
+            adjustStrandLengthsFromTableData();
             dialog.close();
           })
           .show();
         return;
       }
 
-      addTranslatedSequenceColumns();
+      addColumnsWithTranslatedSequences();
       refreshOutputExamples();
     }
 
-    const convertSequenceButton = ui.bigButton('Convert', handleConvert);
+    const convertSequenceButton = ui.bigButton('Convert', processConvertButtonClick);
 
 
     asExampleDiv.append(inputExample[AS].root);
@@ -1028,7 +1028,7 @@ export class PatternLayoutHandler {
 
     strandLengthInput[SS].addCaption('Length');
 
-    function createLeftPanel() {
+    function createLeftPanelLayout() {
       return ui.box(
         ui.div([
           ui.h1('Pattern'),
@@ -1050,12 +1050,12 @@ export class PatternLayoutHandler {
       );
     }
 
-    function createRightPanel() {
+    function createRightPanelLayout() {
       return ui.panel([
         svgDiv,
         numberedModificationsListDiv,
-        createDownloadEditButtons(),
-        createStrandSections(),
+        generateDownloadAndEditControls(),
+        generateStrandSectionDisplays(),
         ui.h1('Additional modifications'),
         ui.form([
           terminalModification[SS][FIVE_PRIME],
@@ -1065,14 +1065,14 @@ export class PatternLayoutHandler {
       ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
     }
 
-    function createDownloadEditButtons() {
+    function generateDownloadAndEditControls() {
       return ui.divH([
         downloadButton,
         editPattern
       ], {style: {gap: '12px', marginTop: '12px'}});
     }
 
-    function createStrandSections() {
+    function generateStrandSectionDisplays() {
       return ui.divH([
         ui.divV([
           ui.h1('Sense strand'),
@@ -1088,8 +1088,8 @@ export class PatternLayoutHandler {
     }
 
     return ui.splitH([
-      createLeftPanel(),
-      createRightPanel()
+      createLeftPanelLayout(),
+      createRightPanelLayout()
     ], {}, true);
   }
 }
