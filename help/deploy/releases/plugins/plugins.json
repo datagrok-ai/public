@@ -1,5 +1,15 @@
 [
   {
+    "name": "Bio",
+    "date": "2023-12-22T21:37:12.710Z",
+    "version": "2.11.20",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2023-12-22",
+    "readme": true
+  },
+  {
     "name": "Diff Studio",
     "date": "2023-12-21T17:30:47.147Z",
     "version": "1.0.2",
@@ -9988,15 +9998,5 @@
     "changelog": false,
     "changelogDate": "2022-01-19",
     "readme": false
-  },
-  {
-    "name": "Peptides",
-    "date": "2022-01-19T10:11:10.955Z",
-    "version": "0.8.5",
-    "summary": "",
-    "dir": "packages/Peptides",
-    "changelog": false,
-    "changelogDate": "2022-01-19",
-    "readme": true
   }
 ]
