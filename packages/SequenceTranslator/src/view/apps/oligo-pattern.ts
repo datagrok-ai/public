@@ -735,41 +735,53 @@ export class PatternLayoutHandler {
       STRANDS.map((strand) => [strand, createOutputExample(strand)])
     );
 
+    function createModificationHeader() {
+      return ui.divH([
+        ui.div([ui.divText('#')], {style: {width: '20px'}}),
+        ui.block75([ui.divText('Modification')]),
+        ui.div([ui.divText('PTO')]),
+      ]);
+    }
 
-
-
-
-    const modificationSection = Object.fromEntries(STRANDS.map((strand) => {
-      const panel = ui.block([
+    function createModificationPanel(strand: StrandType) {
+      return ui.block([
         ui.h1(`${STRAND_NAME[strand]}`),
-        ui.divH([
-          ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-          ui.block75([ui.divText('Modification')])!,
-          ui.div([ui.divText('PTO')])!,
-        ]),
+        createModificationHeader(),
         modificationItems[strand],
       ], {style: {paddingTop: '12px'}});
-      return [strand, panel];
-    }));
+    }
 
-    STRANDS.forEach((s) => {
-      inputExample[s].input.style.resize = 'none';
-      outputExample[s].input.style.resize = 'none';
-      inputExample[s].input.style.minWidth = 'none';
-      inputExample[s].input.style.flexGrow = '1';
-      outputExample[s].input.style.minWidth = 'none';
-      outputExample[s].input.style.flexGrow = '1';
-      let options = ui.div([
+    const modificationSection = Object.fromEntries(
+      STRANDS.map((strand) => [strand, createModificationPanel(strand)])
+    );
+
+    function applyExampleStyles(example: StringInput) {
+      Object.assign(example.input.style, {
+        resize: 'none',
+        minWidth: 'none',
+        flexGrow: '1',
+      });
+    }
+
+    function appendOptionsToOutput(output: StringInput) {
+      const options = ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(outputExample[s].value).then(() =>
+          navigator.clipboard.writeText(output.value!).then(() =>
             grok.shell.info('Sequence was copied to clipboard'));
         }),
       ], 'ui-input-options');
+
       options.style.height = 'inherit';
-      outputExample[s].root.append(
-        options
-      );
-    })
+      output.root.append(options);
+    }
+
+    STRANDS.forEach((s) => {
+      applyExampleStyles(inputExample[s]);
+      applyExampleStyles(outputExample[s]);
+      appendOptionsToOutput(outputExample[s]);
+    });
+
+
 
     // const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
@@ -915,39 +927,64 @@ export class PatternLayoutHandler {
     const savePatternButton = ui.bigButton('Save', handleSave);
     saveAs.addOptions(savePatternButton);
 
-    const convertSequenceButton = ui.bigButton('Convert', () => {
+    function areRequiredColumnsSelected() {
       const condition = [true, createAsStrand.value];
-      console.log(`strand vars:`, Object.values(strandVar));
-      if (STRANDS.some((s, i) => condition[i] && strandVar[s] === ''))
+      return STRANDS.some((s, i) => condition[i] && strandVar[s] === '');
+    }
+
+    function isLengthMismatchPresent() {
+      return STRANDS.some((s) => strandLengthInput[s].value !== inputExample[s].value.length);
+    }
+
+    function updateStrandLengthsBasedOnTable() {
+      STRANDS.forEach((s) => {
+        strandLengthInput[s].value = tableInput.value!.getCol(strandColumnInput[s].value!).getString(0).length;
+      });
+    }
+
+    function addTranslatedSequenceColumns() {
+      if (idVar !== '') {
+        addColumnWithIds(tableInput.value!.name, idVar, getShortName(saveAs.value));
+      }
+      const condition = [true, createAsStrand.value];
+      STRANDS.forEach((strand, i) => {
+        if (condition[i]) {
+          addColumnWithTranslatedSequences(
+            tableInput.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
+            terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!
+          );
+        }
+      });
+      grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
+      const columnPhrase = createAsStrand.value ? 'Columns were' : 'Column was';
+      grok.shell.info(`${columnPhrase} added to table '${tableInput.value!.name}'`);
+    }
+
+    function handleConvert() {
+      if (areRequiredColumnsSelected()) {
         grok.shell.info('Please select table and columns on which to apply pattern');
-      else if (STRANDS.some((s) => strandLengthInput[s].value !== inputExample[s].value.length)) {
+        return;
+      }
+
+      if (isLengthMismatchPresent()) {
         const dialog = ui.dialog('Length Mismatch');
         $(dialog.getButton('OK')).hide();
         dialog
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
-            STRANDS.forEach((s) => {
-              strandLengthInput[s].value = tableInput.value!.getCol(strandColumnInput[s].value!).getString(0).length;
-            })
+            updateStrandLengthsBasedOnTable();
             dialog.close();
           })
           .show();
-      } else {
-        if (idVar !== '')
-          addColumnWithIds(tableInput.value!.name, idVar, getShortName(saveAs.value));
-        const condition = [true, createAsStrand.value];
-        STRANDS.forEach((strand, i) => {
-          if (condition[i])
-            addColumnWithTranslatedSequences(
-              tableInput.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
-              terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
-        })
-        grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
-        grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
-          ' added to table \'' + tableInput.value!.name + '\'');
-        updateOutputExamples();
+        return;
       }
-    });
+
+      addTranslatedSequenceColumns();
+      updateOutputExamples();
+    }
+
+    const convertSequenceButton = ui.bigButton('Convert', handleConvert);
+
 
     asExampleDiv.append(inputExample[AS].root);
     asExampleDiv.append(outputExample[AS].root);
@@ -989,8 +1026,8 @@ export class PatternLayoutHandler {
 
     strandLengthInput[SS].addCaption('Length');
 
-    return ui.splitH([
-      ui.box(
+    function createLeftPanel() {
+      return ui.box(
         ui.div([
           ui.h1('Pattern'),
           createAsStrand.root,
@@ -1005,37 +1042,52 @@ export class PatternLayoutHandler {
           strandColumnInput[SS],
           strandColumnInput[AS],
           inputIdColumn.root,
-          ui.buttonsInput([
-            convertSequenceButton,
-          ]),
-        ], 'ui-form')
-        , {style:{maxWidth:'450px'}}),
-      ui.panel([
+          ui.buttonsInput([convertSequenceButton]),
+        ], 'ui-form'),
+        {style: {maxWidth: '450px'}}
+      );
+    }
+
+    function createRightPanel() {
+      return ui.panel([
         svgDiv,
         isEnumerateModificationsDiv,
-        ui.divH([
-          downloadButton,
-          editPattern
-        ], {style:{gap:'12px', marginTop:'12px'}}),
-        ui.divH([
-          ui.divV([
-            ui.h1('Sense strand'),
-            inputExample[SS].root,
-            outputExample[SS].root,
-          ], 'ui-block'),
-          ui.divV([
-            ui.h1('Anti sense'),
-            inputExample[AS],
-            outputExample[AS]
-          ], 'ui-block'),
-        ], {style:{gap:'24px', marginTop:'24px'}}),
+        createDownloadEditButtons(),
+        createStrandSections(),
         ui.h1('Additional modifications'),
         ui.form([
           terminalModification[SS][FIVE_PRIME],
           terminalModification[SS][THREE_PRIME],
         ]),
         asModificationDiv,
-      ], {style: {overflowX: 'scroll', padding:'12px 24px'}})
-    ], {}, true)
+      ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
+    }
+
+    function createDownloadEditButtons() {
+      return ui.divH([
+        downloadButton,
+        editPattern
+      ], {style: {gap: '12px', marginTop: '12px'}});
+    }
+
+    function createStrandSections() {
+      return ui.divH([
+        ui.divV([
+          ui.h1('Sense strand'),
+          inputExample[SS].root,
+          outputExample[SS].root,
+        ], 'ui-block'),
+        ui.divV([
+          ui.h1('Anti sense'),
+          inputExample[AS].root,
+          outputExample[AS].root,
+        ], 'ui-block'),
+      ], {style: {gap: '24px', marginTop: '24px'}});
+    }
+
+    return ui.splitH([
+      createLeftPanel(),
+      createRightPanel()
+    ], {}, true);
   }
 }
