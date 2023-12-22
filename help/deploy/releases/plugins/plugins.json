@@ -1,5 +1,15 @@
 [
   {
+    "name": "Diff Studio",
+    "date": "2023-12-21T17:30:47.147Z",
+    "version": "1.0.2",
+    "summary": "",
+    "dir": "packages/ODEs",
+    "changelog": false,
+    "changelogDate": "2023-12-21",
+    "readme": true
+  },
+  {
     "name": "Tutorials",
     "date": "2023-12-21T08:11:17.405Z",
     "version": "1.3.22",
@@ -9983,16 +9993,6 @@
     "name": "Peptides",
     "date": "2022-01-19T10:11:10.955Z",
     "version": "0.8.5",
-    "summary": "",
-    "dir": "packages/Peptides",
-    "changelog": false,
-    "changelogDate": "2022-01-19",
-    "readme": true
-  },
-  {
-    "name": "Peptides",
-    "date": "2022-01-19T09:38:35.843Z",
-    "version": "0.8.4",
     "summary": "",
     "dir": "packages/Peptides",
     "changelog": false,
