@@ -339,7 +339,7 @@ export class RichFunctionView extends FunctionView {
 
     ui.tools.handleResize(inputBlock, () => {
       //if (inputElements.some((child) => $(child).width() < 150) ||
-      if ($(inputBlock).width() < 350) {
+      if ($(inputBlock).width() < 300) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
         $(controlsWrapper).addClass('ui-form-condensed');
