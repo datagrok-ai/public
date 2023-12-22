@@ -776,16 +776,23 @@ export class PatternLayoutHandler {
     const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
     const loadPatternDiv = ui.div([]);
     const asModificationDiv = ui.form([]);
+
+    function updateEnumerateModificationsList(value: boolean) {
+      if (value) {
+        if (!enumerateModifications.includes(defaultBase)) {
+          enumerateModifications.push(defaultBase);
+        }
+      } else {
+        const index = enumerateModifications.indexOf(defaultBase, 0);
+        if (index > -1) {
+          enumerateModifications.splice(index, 1);
+        }
+      }
+    }
+
     const isEnumerateModificationsDiv = ui.divH([
       ui.boolInput(defaultBase, true, (v: boolean) => {
-        if (v) {
-          if (!enumerateModifications.includes(defaultBase))
-            enumerateModifications.push(defaultBase);
-        } else {
-          const index = enumerateModifications.indexOf(defaultBase, 0);
-          if (index > -1)
-            enumerateModifications.splice(index, 1);
-        }
+        updateEnumerateModificationsList(v);
         updateSvgScheme();
         updateOutputExamples();
       }).root,
@@ -794,20 +801,8 @@ export class PatternLayoutHandler {
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
 
     function getTableInput(tableList: DG.DataFrame[]): DG.InputBase<DG.DataFrame | null> {
-      const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
-        const table = tableInput.value;
-        if (table === null) {
-          console.warn('Table is null');
-          return;
-        }
-        const tableName = table!.name;
-        if (!grok.shell.tableNames.includes(tableName)) {
-          const view = grok.shell.v;
-          grok.shell.addTableView(table!);
-          grok.shell.v = view;
-        }
+      function updateStrandColumns(table: DG.DataFrame) {
         const columnNames = table.columns.names();
-
         STRANDS.forEach((strand) => {
           const defaultColumn = columnNames[0];
           validateStrandColumn(defaultColumn, strand);
@@ -815,35 +810,44 @@ export class PatternLayoutHandler {
           const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, defaultColumn, columnNames, (colName: string) => {
             validateStrandColumn(colName, strand);
             strandVar[strand] = colName;
-            console.log(`clicked ${strand} var:`, strandVar[strand]);
           });
           $(strandColumnInput[strand].root).replaceWith(input.root);
-        })
+        });
+      }
 
+      function updateIdColumnInput(columnNames: string[]) {
         idVar = columnNames[0];
-        // todo: unify with inputStrandColumn
-        const idInput = ui.choiceInput('ID column', columnNames[0], columnNames, (colName: string) => {
+        const idInput = ui.choiceInput('ID column', idVar, columnNames, (colName: string) => {
           validateIdsColumn(colName);
           idVar = colName;
         });
         $(inputIdColumn.root).replaceWith(idInput.root);
+      }
+
+      function addTableViewIfNeeded(table: DG.DataFrame) {
+        const tableName = table.name;
+        if (!grok.shell.tableNames.includes(tableName)) {
+          const previousView = grok.shell.v;
+          grok.shell.addTableView(table);
+          grok.shell.v = previousView;
+        }
+      }
+
+      const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
+        const table = tableInput.value;
+        if (!table) {
+          console.warn('Table is null');
+          return;
+        }
+        addTableViewIfNeeded(table);
+        updateStrandColumns(table);
+        updateIdColumnInput(table.columns.names());
       });
+
       return tableInput;
     }
 
-    // const tableList = grok.shell.tables;
     const tableInput = getTableInput([]);
-
-    // function updateInputs(): void {
-    //   grok.shell.info('Event caught');
-    //   const tableList = grok.shell.tables;
-    //   console.log(`newTables:`, tableList);
-    //   $(tableInput.root).replaceWith(getTableInput(tableList).root);
-    // }
-
-    // grok.events.onTableAdded.subscribe(() => updateInputs());
-    // grok.events.onTableRemoved.subscribe(() => updateInputs());
-
 
     // todo: unify with strandVar
     let idVar = '';
@@ -855,16 +859,26 @@ export class PatternLayoutHandler {
 
     updatePatternsList();
 
-    const createAsStrand = ui.boolInput('Anti sense strand', true, (v: boolean) => {
-      modificationSection[AS].hidden = !v;
-      // strandColumnInputDiv[AS].hidden = !v;
-      strandColumnInput[AS].root.hidden = !v;
-      asLengthDiv.hidden = !v;
-      asModificationDiv.hidden = !v;
-      asExampleDiv.hidden = !v;
-      firstPto[AS].root.hidden = !v;
+    function toggleUiElementsBasedOnAsStrand(value: boolean) {
+      const elementsToToggle = [
+        modificationSection[AS],
+        // strandColumnInputDiv[AS],
+        strandColumnInput[AS].root,
+        asLengthDiv,
+        asModificationDiv,
+        asExampleDiv,
+        firstPto[AS].root
+      ];
+
+      elementsToToggle.forEach(element => {
+        element.hidden = !value;
+      });
+
       updateSvgScheme();
-    });
+    }
+
+    // Create the boolean input UI component with the refactored event handler.
+    const createAsStrand = ui.boolInput('Anti sense strand', true, toggleUiElementsBasedOnAsStrand);
     createAsStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     const saveAs = ui.textInput('Save as', 'Pattern name', () => updateSvgScheme());
@@ -877,20 +891,28 @@ export class PatternLayoutHandler {
 
     const comment = ui.textInput('Comment', '', () => updateSvgScheme());
 
-    const savePatternButton = ui.bigButton('Save', () => {
-      if (saveAs.value !== '')
-        savePattern().then(() => grok.shell.info('Pattern saved'));
-      else {
-        const name = ui.stringInput('Enter name', '');
-        ui.dialog('Pattern Name')
-          .add(name.root)
-          .onOK(() => {
-            saveAs.value = name.value;
-            savePattern().then(() => grok.shell.info('Pattern saved'));
-          })
-          .show();
+    function handleSave() {
+      if (saveAs.value !== '') {
+        savePatternWithName(saveAs.value);
+      } else {
+        promptForPatternNameAndSave();
       }
-    });
+    }
+
+    function savePatternWithName(patternName: string) {
+      saveAs.value = patternName;
+      savePattern().then(() => grok.shell.info('Pattern saved'));
+    }
+
+    function promptForPatternNameAndSave() {
+      const nameInput = ui.stringInput('Enter name', '');
+      ui.dialog('Pattern Name')
+        .add(nameInput.root)
+        .onOK(() => savePatternWithName(nameInput.value))
+        .show();
+    }
+
+    const savePatternButton = ui.bigButton('Save', handleSave);
     saveAs.addOptions(savePatternButton);
 
     const convertSequenceButton = ui.bigButton('Convert', () => {
@@ -931,13 +953,6 @@ export class PatternLayoutHandler {
     asExampleDiv.append(outputExample[AS].root);
 
     updateUiForNewSequenceLength();
-
-    const exampleSection = ui.div([
-      ui.h1('Conversion preview'),
-      inputExample[SS].root,
-      outputExample[SS].root,
-      asExampleDiv,
-    ], 'ui-form ui-form-wide');
 
     const inputsSection = ui.block50([
       ui.h1('Convert options'),
