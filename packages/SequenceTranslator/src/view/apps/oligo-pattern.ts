@@ -591,8 +591,6 @@ export class PatternLayoutHandler {
     }
 
 
-
-
     const baseChoices: string[] = Object.keys(axolabsStyleMap);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
@@ -712,15 +710,34 @@ export class PatternLayoutHandler {
 
     const terminalModification = createTerminalModificationInputs();
 
-    const outputExample = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.textInput('', translateSequence(
-        inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][THREE_PRIME],terminalModification[strand][FIVE_PRIME], firstPto[strand].value!
-      ));
-      input.input.style.minWidth = 'none';
-      input.input.style.flexGrow = '1';
+    function createOutputExample(strand: StrandType) {
+      const translatedSequence = translateSequence(
+        inputExample[strand].value,
+        baseInputsObject[strand],
+        ptoLinkages[strand],
+        terminalModification[strand][THREE_PRIME],
+        terminalModification[strand][FIVE_PRIME],
+        firstPto[strand].value!
+      );
+
+      const input = ui.textInput('', translatedSequence);
+
+      Object.assign(input.input.style, {
+        minWidth: 'none',
+        flexGrow: '1',
+      });
       $(input.root.lastChild).css('height', 'auto');
-      return [strand, input];
-    }));
+
+      return input;
+    }
+
+    const outputExample = Object.fromEntries(
+      STRANDS.map((strand) => [strand, createOutputExample(strand)])
+    );
+
+
+
+
 
     const modificationSection = Object.fromEntries(STRANDS.map((strand) => {
       const panel = ui.block([
