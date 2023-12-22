@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {readDataframe, writeDataframe} from './utils';
+import {readDataframe, writeDataframe, getIcon} from './utils';
 
 const FILENAME = 'test-cases.csv';
 
@@ -28,9 +28,6 @@ export class TestTrack extends DG.ViewBase {
     this.tree.root.id = 'tt-tree';
     this.testCaseDiv = ui.div();
     this.testCaseDiv.id = 'tt-test-case-div';
-    this.tree.onSelectedNodeChanged.subscribe((node) => {
-      this.testCaseDiv.innerText = node.value.test_case;
-    });
   }
 
   async init() {
@@ -49,16 +46,32 @@ export class TestTrack extends DG.ViewBase {
     }
 
     // Ribbon
-    let icon = ui.iconFA('plus');
-    icon.classList.replace('fal', 'fas');
+    let icon = getIcon('plus', {style: 'fas'});
     const plus = ui.button(icon, () => {
       this.showAddDialog(this.tree);
     }, 'Add root group');
-    icon = ui.iconFA('undo');
     const ribbon = ui.divH([plus]);
 
+    // Test case div
+    icon = getIcon('edit');
+    const edit = ui.button(icon, () => {
+      this.testCaseDiv.setAttribute('contenteditable', 'true');
+      this.testCaseDiv.focus();
+      this.testCaseDiv.addEventListener('focusout', () => {
+        this.testCaseDiv.setAttribute('contenteditable', 'false');
+      }, {once: true});
+    }, 'Edit test case');
+    edit.id = 'tt-edit-button';
+    this.tree.onSelectedNodeChanged.subscribe((node) => {
+      this.testCaseDiv.innerText = node.value.test_case;
+      if (node.constructor.name === 'TreeViewGroup')
+        edit.disabled = true;
+      else
+        edit.disabled = false;
+    });
+
     // UI
-    this.append(this.testCaseDiv);
+    this.append(ui.div([this.testCaseDiv, edit], {id: 'tt-test-case-div-outer'}));
     this.append(ribbon);
     this.append(this.tree.root);
     this.root.style.padding = '0';

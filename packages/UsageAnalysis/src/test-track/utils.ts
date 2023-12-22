@@ -1,5 +1,5 @@
 // import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
@@ -17,4 +17,16 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 
 export async function writeDataframe(tableName: string, data: string): Promise<void> {
   await _package.files.writeAsText(tableName, data);
+}
+
+export function getIcon(name: string, options?: {style?: string, class?: string[], color?: string, id?: string}): HTMLElement {
+  const icon = ui.iconFA(name);
+  icon.classList.replace('fal', options?.style ?? 'far');
+  if (options?.class)
+    icon.classList.add(...options.class);
+  if (options?.color)
+    icon.style.color = options.color;
+  if (options?.id)
+    icon.id = options.id;
+  return icon;
 }

@@ -5,14 +5,41 @@
 #tt-test-case-div {
   height: 200px;
   background-color: var(--grey-1);
-  margin: 10px 10px 0 10px;
   border-radius: 9px;
   padding: 10px;
   overflow-y: scroll;
   line-height: 1.5;
 }
 
+#tt-test-case-div-outer {
+  margin: 10px 10px 0 10px;
+}
+
+#tt-edit-button {
+  position: absolute;
+  display: none;
+  right: 19px;
+  top: 18px;
+  margin: 0;
+  padding: 4px;
+  height: unset;
+  /* box-shadow: 0 0 10px var(--grey-1);
+  background-color: var(--grey-1); */
+}
+
+#tt-test-case-div-outer:hover #tt-edit-button {
+  display: flex;
+}
+
+#tt-test-case-div:focus-visible + #tt-edit-button {
+  display: none;
+}
+
 .tt-new-test-case-input {
   width: 300px;
   height: 200px;
+}
+
+.tt-status-icon {
+  margin-left: 7px;
 }
