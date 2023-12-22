@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {BiostructureDataJson} from '../pdb/types';
+import {BiostructureData, BiostructureDataJson} from '../pdb/types';
 import {IViewer} from './viewer';
 import {PdbResDataFrameType} from '../pdb/pdb-helper';
 import {TAGS as pdbTAGS} from '../pdb/index';
@@ -39,9 +39,14 @@ export const BiostructurePropsDefault = new class {
   dataJson: BiostructureDataJson = BiostructureDataJson.null;
   pdb: string | null = null;
   pdbTag: string | null = pdbTAGS.PDB;
+
+  biostructureIdColumnName: string | null = null;
+  /** DG.Func nqName */
+  biostructureDataProvider: string | null = null;
+
   ligandColumnName: string | null = null;
-  pdbProvider: string = 'rcsb';
-  emdbProvider: string = 'rcsb';
+  // pdbProvider: string = 'rcsb';
+  // emdbProvider: string = 'rcsb';
 
   // -- Style --
   representation: RepresentationType = RepresentationType.Cartoon;
@@ -99,6 +104,7 @@ export const BiostructurePropsDefault = new class {
 export type BiostructureProps = typeof BiostructurePropsDefault;
 
 export interface IBiostructureViewer extends IViewer {
+  get dataEff(): BiostructureData | null;
   setOptions(options: Partial<BiostructureProps>): void;
 }
 

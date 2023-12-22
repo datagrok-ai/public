@@ -4,12 +4,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {Base64} from 'js-base64';
 
+import {DataProviderFunc} from '../utils/data-provider';
+
 export type BiostructureData = {
   binary: boolean,
   ext: string,
   data: string | Uint8Array,
   options?: { name?: string, dataLabel?: string, },
 }
+
+export type BiostructureDataProviderFunc = DataProviderFunc<string, BiostructureData>;
 
 /**
  * Viewer does not support a property of type extending String event completely compatible
