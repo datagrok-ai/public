@@ -8,18 +8,17 @@ import {toJs} from "./wrappers";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
-import {map} from 'rxjs/operators';
+import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
-import {IDartApi} from "./api/grok_api.g";
+import {ViewerEvent} from './api/d4.api.g';
 
 declare let DG: any;
 declare let ui: any;
-const api: IDartApi = <any>window;
-
+let api = <any>window;
 
 export class TypedEventArgs<TData> {
   dart: any;
@@ -74,6 +73,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     super(root ?? api.grok_Viewer_Root(dart));
     this.initDartObject(dart);
   }
+
+  get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
+  get onHoverEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-hover-event')); }
+  get onSelectEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select-event')); }
 
   initDartObject(dart: any) {
     this.dart = dart;
@@ -445,7 +448,7 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
-  getStates(columnName: string, filterType: string): Array<Object> {
+  getStates(columnName: string, filterType: String): Array<Object> {
     return api.grok_FilterGroup_GetStates(this.dart, columnName, filterType);
   }
 
