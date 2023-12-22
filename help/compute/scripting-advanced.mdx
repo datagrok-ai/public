@@ -522,9 +522,68 @@ change input values, and then rerun it,
 the platform will create a new historical run.
 
 
+## Converting your script to the application
+
+A [Datagrok application](../develop/how-to/build-an-app.md)
+is a fit-for-purpose solution build on top of the Datagrok platform.
+Applications have its own section in the Datagrok UI and a start icon.
+
+You can convert your script in the application, regardless of the script language.
+Briefly, you need to do the follows:
+
+1. Create a TypeScript [package](../develop/packages).
+   ```shell
+   grok init package_name --ts
+   ```
+2. Install required NodeJs modules:
+   ```shell
+   npm install
+   ```
+3. Add your script to the package. 
+   * If you are writing in Javascript/Typescript, 
+     you can convert your script to the JS function, annotate it, and add directly to `src` folder:
+     ```typescript
+     //name: DemoScript
+     //tags: demo
+     //language: javascript
+     //input: int input1
+     ...
+     export async function DemoScript(input1: int, ...) {
+     ...
+     }
+     ```
+   * Alternatively, create the `scripts` folder in your package directory and place your script file in it. 
+     This approach works for all script languages.
+4. Add the application function to the `src/package.ts`:
+   ```typescript
+   //name: ApplicationFromScript
+   //tags: app, demo
+   //description: Demo application created from a script
+   //language: javascript
+   export async function DemoAppCreate() {
+     const func = await grok.functions.eval(`${_package.name}:DemoScript`);
+     const call = func.prepare(); 
+     call.edit(); 
+   }
+   ```
+    Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
+    (what you used in the `//name:` annotation, not the file name).
+5. Compile and [publish](../develop/develop.md#publishing) the package:
+   ```shell
+   npm run build && grok publish your_environment
+   ```
+   If you want to make your package publicly available, use the `--release` [publishing mode](../develop/develop.md#publishing-modes).
+   ```shell
+   npm run build && grok publish your_environment --release
+   ```
+
+That's all.
+Now you can run your application from the **Functions > Apps** section
+of the Datagrok UI.
+
 ## Integration
 
-Datagrok is designed to be as extensible and easy to integrate as possible.
+Datagrok is designed to be as extensible and as easy to integrate as possible.
 So, out of the box, we get many platform integration capabilities such as authentication, data access, 
 and many others. 
 In addition to that,
