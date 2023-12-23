@@ -3,20 +3,30 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+
 import {
-  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME_END, FIVE_PRIME_END, PATTERN_FIELD as PATTERN_KEY, StrandType, TerminalType
+  SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, DEFAULT_SEQUENCE_LENGTH
 } from '../../../model/pattern-app/const';
 
-import {PatternConfiguration, BooleanInput, StringInput, NumberInput} from './types';
+import {BooleanInput, StringInput, NumberInput} from './types';
 import {applyToAllStrands} from './utils';
 
 import {EventBus} from '../../../model/pattern-app/event-bus';
+import {ExternalDataManager} from '../../../model/pattern-app/external-data-manager';
+import {PatternConfigurationManager} from '../../../model/pattern-app/pattern-state-manager';
 
 export class LeftSection {
-  private eventBus = new EventBus();
+  constructor(private eventBus: EventBus) { };
+  private patternConfiguration = new PatternConfigurationManager();
+  private externalDataManager = new ExternalDataManager();
 
   getLayout(): HTMLDivElement {
-    const patternConstrolsBlock = new PatternControlsManager(this.eventBus).getUiElements();
+    const patternControlsManager = new PatternControlsManager(
+      this.eventBus,
+      this.patternConfiguration,
+      this.externalDataManager
+    );
+    const patternConstrolsBlock = patternControlsManager.getUiElements();
     const layout = ui.box(
       ui.div([
           ...patternConstrolsBlock
@@ -30,7 +40,11 @@ export class LeftSection {
 }
 
 export class PatternControlsManager {
-  constructor(private eventBus: EventBus) { }
+  constructor(
+    private eventBus: EventBus,
+    private patternConfiguration: PatternConfigurationManager,
+    private externalDataManager: ExternalDataManager,
+  ) { }
 
   getUiElements(): HTMLElement[] {
     return [
@@ -38,7 +52,7 @@ export class PatternControlsManager {
       this.toggleAntisenseStrandControl,
       this.strandLengthInputs[SENSE_STRAND].root,
       this.strandLengthInputs[ANTISENSE_STRAND].root,
-      // sequenceBase.root,
+      this.sequenceBaseInput.root,
       // patternCommentInput.root,
       // loadPatternDiv,
       // patternNameInput.root,
@@ -62,16 +76,27 @@ export class PatternControlsManager {
   private get strandLengthInputs(): Record<string, NumberInput> {
     const strandLengthInputs = applyToAllStrands(
       (strand) => {
+        const sequenceLength = this.patternConfiguration.getCurrentConfiguration();
         const input = ui.intInput(`${STRAND_LABEL[strand]} length`, DEFAULT_SEQUENCE_LENGTH);
         input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
       }
     );
 
-    this.eventBus.antisenseStrandVisible$.subscribe((createAsCriterion: boolean) => {
-      $(strandLengthInputs[ANTISENSE_STRAND].root).toggle(createAsCriterion);
+    this.eventBus.antisenseStrandVisible$.subscribe((visible: boolean) => {
+      $(strandLengthInputs[ANTISENSE_STRAND].root).toggle(visible);
     })
 
     return strandLengthInputs;
+  }
+
+  private get sequenceBaseInput(): StringInput {
+    const nucleotideBaseChoices = this.externalDataManager.fetchNucleotideBases();
+    const defaultNucleotideBase = nucleotideBaseChoices[0];
+
+    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (value: string) => {
+    });
+    sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
+    return sequenceBaseInput;
   }
 }

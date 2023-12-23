@@ -1,0 +1,13 @@
+/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import {axolabsStyleMap} from '../data-loading-utils/json-loader';
+
+export class ExternalDataManager {
+  fetchNucleotideBases(): string[] {
+    const nucleotideBases: string[] = Object.keys(axolabsStyleMap);
+    return nucleotideBases;
+  }
+}

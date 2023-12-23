@@ -4,7 +4,7 @@ export const MAX_SEQUENCE_LENGTH: number = 35;
 export const USER_STORAGE_KEY: string = 'SequenceTranslator';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
 
-export const enum PATTERN_FIELD {
+export const enum PATTERN_KEY {
   SS_BASES = 'ssBases',
   AS_BASES = 'asBases',
   SS_PTO = 'ssPtoLinkages',

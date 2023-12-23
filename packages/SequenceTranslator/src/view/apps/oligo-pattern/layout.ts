@@ -4,8 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {LeftSection} from './left-section';
+import {EventBus} from '../../../model/pattern-app/event-bus';
 
 export class PatternLayoutHandler {
+  private eventBus = new EventBus();
 
   get htmlDivElement(): HTMLDivElement {
     const leftSection = this.getLeftSection();
@@ -19,7 +21,7 @@ export class PatternLayoutHandler {
   }
 
   private getLeftSection(): HTMLDivElement {
-    return new LeftSection().getLayout();
+    return new LeftSection(this.eventBus).getLayout();
   }
 
   // private getRightSection(): HTMLDivElement {

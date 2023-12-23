@@ -5,13 +5,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 import {
-  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME_END, FIVE_PRIME_END, PATTERN_FIELD as PATTERN_KEY, StrandType, TerminalType
+  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME_END, FIVE_PRIME_END, PATTERN_KEY, StrandType, TerminalType
 } from '../../model/pattern-app/const';
 import {isOverhang} from '../../model/pattern-app/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/pattern-app/oligo-pattern';
 import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 
-import {PatternConfiguration, BooleanInput, StringInput} from './oligo-pattern/types';
+import { BooleanInput, StringInput} from './oligo-pattern/types';
+import {PatternConfiguration} from '../../model/pattern-app/types';
 // todo: remove ts-ignore
 //@ts-ignore
 import * as svgExport from 'save-svg-as-png';
