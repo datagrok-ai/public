@@ -1,10 +1,10 @@
-export const DEFAULT_PTO: boolean = true;
+export const DEFAULT_PHOSPHOROTHIOATE: boolean = true;
 export const DEFAULT_SEQUENCE_LENGTH: number = 23;
 export const MAX_SEQUENCE_LENGTH: number = 35;
 export const USER_STORAGE_KEY: string = 'SequenceTranslator';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
 
-export const enum JSON_FIELD {
+export const enum PATTERN_FIELD {
   SS_BASES = 'ssBases',
   AS_BASES = 'asBases',
   SS_PTO = 'ssPtoLinkages',
@@ -16,18 +16,22 @@ export const enum JSON_FIELD {
   COMMENT = 'comment',
 };
 
-export const SS = 'SS' as const;
-export const AS = 'AS' as const;
-export const STRANDS = [SS, AS];
-export const STRAND_NAME = {
-  [SS]: 'Sense strand',
-  [AS]: 'Anti sense',
-}
+export const SENSE_STRAND = 'SS' as const;
+export const ANTISENSE_STRAND = 'AS' as const;
+export type StrandType = typeof SENSE_STRAND | typeof ANTISENSE_STRAND;
 
-export const THREE_PRIME = 'THREE_PRIME' as const;
-export const FIVE_PRIME = 'FIVE_PRIME' as const;
-export const TERMINAL_KEYS = [THREE_PRIME, FIVE_PRIME];
-export const TERMINAL = {
-  [THREE_PRIME]: 3,
-  [FIVE_PRIME]: 5,
-}
+export const STRANDS: StrandType[] = [SENSE_STRAND, ANTISENSE_STRAND];
+export const STRAND_LABEL: Record<StrandType, string> = {
+  [SENSE_STRAND]: 'Sense strand',
+  [ANTISENSE_STRAND]: 'Anti sense',
+};
+
+export const THREE_PRIME_END = 'THREE_PRIME_END' as const;
+export const FIVE_PRIME_END = 'FIVE_PRIME_END' as const;
+export type TerminalType = typeof THREE_PRIME_END | typeof FIVE_PRIME_END;
+
+export const TERMINAL_KEYS: TerminalType[] = [THREE_PRIME_END, FIVE_PRIME_END];
+export const TERMINAL: Record<TerminalType, number> = {
+  [THREE_PRIME_END]: 3,
+  [FIVE_PRIME_END]: 5,
+};

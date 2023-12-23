@@ -5,803 +5,1089 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 import {
-  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
+  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME_END, FIVE_PRIME_END, PATTERN_FIELD as PATTERN_KEY, StrandType, TerminalType
 } from '../../model/pattern-app/const';
 import {isOverhang} from '../../model/pattern-app/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/pattern-app/oligo-pattern';
 import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
 // todo: remove ts-ignore
 //@ts-ignore
-import * as svg from 'save-svg-as-png';
+import * as svgExport from 'save-svg-as-png';
 import $ from 'cash-dom';
 
-import * as rxjs from 'rxjs';
+const enum MODIFICATION_CATEGORY {
+  PTO,
+  BASIS
+}
+
+interface PatternConfiguration {
+  [PATTERN_KEY.SS_BASES]: string[];
+  [PATTERN_KEY.AS_BASES]: string[];
+  [PATTERN_KEY.SS_PTO]:  boolean[];
+  [PATTERN_KEY.AS_PTO]: boolean[];
+  [PATTERN_KEY.SS_3]: string;
+  [PATTERN_KEY.SS_5]: string;
+  [PATTERN_KEY.AS_3]: string;
+  [PATTERN_KEY.AS_5]: string;
+  [PATTERN_KEY.COMMENT]: string;
+}
 
 type BooleanInput = DG.InputBase<boolean | null>;
 type StringInput = DG.InputBase<string | null>;
 
 export class PatternLayoutHandler {
   get htmlDivElement() {
-    const onStrandLengthChange = new rxjs.Subject<string>();
-    onStrandLengthChange.subscribe(() => {
-      updateUiForNewSequenceLength();
-    });
-
-
-    function updateModification(strand: string) {
-      modificationItems[strand].innerHTML = '';
-      ptoLinkages[strand] = ptoLinkages[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(fullyPto));
-      baseInputsObject[strand] = baseInputsObject[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(sequenceBase));
+    function updateStrandModificationControls(strand: string) {
+      clearModificationControls(strand);
+      extendStrandInputsForNewSequenceLength(strand);
       let nucleotideCounter = 0;
-      for (let i = 0; i < strandLengthInput[strand].value!; i++) {
-        ptoLinkages[strand][i] = ui.boolInput('', ptoLinkages[strand][i].value!, () => {
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        baseInputsObject[strand][i] = ui.choiceInput('', baseInputsObject[strand][i].value, baseChoices, (v: string) => {
-          if (!enumerateModifications.includes(v)) {
-            enumerateModifications.push(v);
-            isEnumerateModificationsDiv.append(
-              ui.divText('', {style: {width: '25px'}}),
-              ui.boolInput(v, true, (boolV: boolean) => {
-                if (boolV) {
-                  if (!enumerateModifications.includes(v))
-                    enumerateModifications.push(v);
-                } else {
-                  const index = enumerateModifications.indexOf(v, 0);
-                  if (index > -1)
-                    enumerateModifications.splice(index, 1);
-                }
-                updateSvgScheme();
-              }).root,
-            );
-          }
-          updateModification(AS);
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        $(baseInputsObject[strand][i].root).addClass('st-pattern-choice-input');
-        if (!isOverhang(baseInputsObject[strand][i].value!))
+
+      for (let i = 0; i < getStrandLength(strand); i++) {
+        updateSinglePhosphorothioateLinkageInput(strand, i);
+        updateSingleNucleotideBaseInput(strand, i);
+
+        if (!isOverhang(getBaseInputValue(strand, i))) {
           nucleotideCounter++;
+        }
 
-        modificationItems[strand].append(
-          ui.divH([
-            ui.div([ui.label(isOverhang(baseInputsObject[strand][i].value!) ? '' : String(nucleotideCounter))],
-              {style: {width: '20px'}})!,
-            ui.block75([baseInputsObject[strand][i].root])!,
-            ui.div([ptoLinkages[strand][i]])!,
-          ], {style: {alignItems: 'center'}}),
-        );
+        const modificationControlGroup = generateSingleModificationControlGroup(strand, nucleotideCounter, i);
+        modificationControls[strand].append(modificationControlGroup);
       }
     }
 
-    function updateUiForNewSequenceLength() {
-      if (Object.values(strandLengthInput).every((input) => input.value! < MAX_SEQUENCE_LENGTH)) {
-        STRANDS.forEach((strand) => {
-          if (strandLengthInput[strand].value! > maxStrandLength[strand])
-            maxStrandLength[strand] = strandLengthInput[strand].value!;
-          updateModification(strand);
-        })
-
-        updateSvgScheme();
-        updateInputExamples();
-        updateOutputExamples();
-      } else {
-        ui.dialog('Out of range')
-          .add(ui.divText('Sequence length should be less than ' +
-            MAX_SEQUENCE_LENGTH.toString() + ' due to UI constrains.'))
-          .onOK(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
-          .showModal(false);
-      }
+    function clearModificationControls(strand: string) {
+      modificationControls[strand].innerHTML = '';
     }
 
-    // todo: unify with updateBases
-    function updatePto(newPtoValue: boolean): void {
-      STRANDS.forEach((strand) => {
-        for (let i = 0; i < ptoLinkages[strand].length; i++)
-          ptoLinkages[strand][i].value = newPtoValue;
-      })
-      updateSvgScheme();
+    function extendStrandInputsForNewSequenceLength(strand: string) {
+      const extensionLength = maxStrandLength[strand] - nucleobaseInputs[strand].length;
+      ptoLinkageInputs[strand] = ptoLinkageInputs[strand].concat(Array(extensionLength).fill(isFullyPtoInput));
+      nucleobaseInputs[strand] = nucleobaseInputs[strand].concat(Array(extensionLength).fill(sequenceBase));
     }
 
-    function updateBases(newBasisValue: string): void {
-      STRANDS.forEach((strand) => {
-        for (let i = 0; i < baseInputsObject[strand].length; i++)
-          baseInputsObject[strand][i].value = newBasisValue;
-      })
-      updateSvgScheme();
+    function getStrandLength(strand: string) {
+      return strandLengthInputs[strand].value!;
     }
 
-    function updateInputExamples() {
-      STRANDS.forEach((s) => {
-        inputExample[s].value = generateExample(strandLengthInput[s].value!, sequenceBase.value!);
+    function updateSinglePhosphorothioateLinkageInput(strand: string, index: number) {
+      ptoLinkageInputs[strand][index] = ui.boolInput('', ptoLinkageInputs[strand][index].value!, () => {
+        refreshSvgDisplay();
+        refreshOutputExamples();
       });
     }
 
-    function updateOutputExamples() {
-      const conditions = [true, createAsStrand.value];
-      STRANDS.forEach((strand, i) => {
-        if (conditions[i]) {
-          outputExample[strand].value = translateSequence(inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
-        }
-      })
+    function updateSingleNucleotideBaseInput(strand: string, index: number) {
+      nucleobaseInputs[strand][index] = ui.choiceInput('', getBaseInputValue(strand, index), nucleotideBaseChoices, (value: string) => {
+        handleBaseInputChange(value);
+        updateStrandModificationControls(ANTISENSE_STRAND);
+        refreshSvgDisplay();
+        refreshOutputExamples();
+      });
+
+      $(nucleobaseInputs[strand][index].root).addClass('st-pattern-choice-input');
     }
 
-    function updateSvgScheme() {
-      svgDiv.innerHTML = '';
-      svgDiv.append(
-        ui.span([
+    function getBaseInputValue(strand: string, index: number) {
+      return nucleobaseInputs[strand][index].value!;
+    }
 
+    function handleBaseInputChange(value: string) {
+      if (!modificationsWithNumericLabels.includes(value)) {
+        toggleModificationInList(value);
+      }
+    }
+
+    function updateNumberedModificationsList(value: string, shouldAdd: boolean): void {
+      const index = modificationsWithNumericLabels.indexOf(value);
+      if (shouldAdd && index === -1) {
+        modificationsWithNumericLabels.push(value);
+      } else if (!shouldAdd && index > -1) {
+        modificationsWithNumericLabels.splice(index, 1);
+      }
+    }
+
+    function appendToNumberedModificationsContainer(
+      value: string,
+      onChangeCallback: (value: string, shouldAdd: boolean) => void
+    ): void {
+      const boolInput = ui.boolInput(value, true, (boolV: boolean) => onChangeCallback(value, boolV));
+      numericLabelTogglesContainer.append(
+        ui.divText('', {style: {width: '25px'}}),
+        boolInput.root,
+      );
+    }
+
+    function toggleModificationInList(value: string): void {
+      const shouldAdd = !modificationsWithNumericLabels.includes(value);
+      updateNumberedModificationsList(value, shouldAdd);
+      if (shouldAdd) {
+        appendToNumberedModificationsContainer(value, (val, shouldAdd) => {
+          updateNumberedModificationsList(val, shouldAdd);
+          refreshSvgDisplay();
+        });
+      }
+    }
+
+    function generateSingleModificationControlGroup(strand: string, nucleotideCounter: number, index: number) {
+      const labelText = isOverhang(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
+      const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
+      const baseInputUI = ui.block75([nucleobaseInputs[strand][index].root]);
+      const ptoLinkageUI = ui.div([ptoLinkageInputs[strand][index]]);
+
+      return ui.divH([labelUI, baseInputUI, ptoLinkageUI], {style: {alignItems: 'center'}});
+    }
+
+    function refreshUIForNewSequenceLength() {
+      if (checkSequenceLengthValidity()) {
+        extendStrandsToNewLength();
+        refreshUIComponents();
+      } else {
+        displayOutOfRangeDialog();
+      }
+    }
+
+    function checkSequenceLengthValidity() {
+      return Object.values(strandLengthInputs).every(input => input.value! < MAX_SEQUENCE_LENGTH);
+    }
+
+    function extendStrandsToNewLength() {
+      STRANDS.forEach(strand => {
+        if (strandLengthInputs[strand].value! > maxStrandLength[strand]) {
+          maxStrandLength[strand] = strandLengthInputs[strand].value!;
+        }
+        updateStrandModificationControls(strand);
+      });
+    }
+
+    function refreshUIComponents() {
+      refreshSvgDisplay();
+      refreshInputExamples();
+      refreshOutputExamples();
+    }
+
+    function displayOutOfRangeDialog() {
+      ui.dialog('Out of range')
+        .add(ui.divText(`Sequence length should be less than ${MAX_SEQUENCE_LENGTH} due to UI constraints.`))
+        .onOK(() => resetAllStrandLengthsToMax())
+        .onCancel(() => resetAllStrandLengthsToMax())
+        .showModal(false);
+    }
+
+    function resetAllStrandLengthsToMax() {
+      Object.values(strandLengthInputs).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
+    }
+
+    function updateInputValues(category: MODIFICATION_CATEGORY, newValue: boolean | string): void {
+      const inputs = category === MODIFICATION_CATEGORY.PTO ? ptoLinkageInputs : nucleobaseInputs;
+
+      for (let i = 0; i < STRANDS.length; i++) {
+        const strand = STRANDS[i];
+        // WARNING: replacing this with for (const ...) or .forEach() leads to a bug: some values are not updated !!!
+        for (let j = 0; j < inputs[strand].length; j++) {
+          const item = inputs[strand][j];
+          item.value = newValue;
+        }
+      }
+      refreshSvgDisplay();
+    }
+
+    function refreshInputExamples(): void {
+      STRANDS.forEach((strand) => {
+        if (strandColumnInput[strand].value === '') {
+          inputExample[strand].value = generateExample(strandLengthInputs[strand].value!, sequenceBase.value!);
+        }
+      });
+    }
+
+    function refreshOutputExamples(): void {
+      const conditions = [true, createAsStrand.value];
+      STRANDS.forEach((strand, idx) => {
+        if (conditions[idx]) {
+          outputExample[strand].value = translateSequence(
+            inputExample[strand].value,
+            nucleobaseInputs[strand],
+            ptoLinkageInputs[strand],
+            terminalModificationInputs[strand][FIVE_PRIME_END],
+            terminalModificationInputs[strand][THREE_PRIME_END],
+            firstPto[strand].value!
+          );
+        }
+      });
+    }
+
+    function getBaseInputValues(strand: string) {
+      return nucleobaseInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value!);
+    }
+
+    function getPtoLinkageValues(strand: string): boolean[] {
+      return [firstPto[strand].value!, ...ptoLinkageInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value!)];
+    }
+
+    function refreshSvgDisplay() {
+      svgDisplayDiv.innerHTML = '';
+      const baseInputValues = Object.fromEntries(STRANDS.map((strand) => [strand, getBaseInputValues(strand)]));
+      const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
+
+      svgDisplayDiv.append(
+        ui.span([
           // todo: refactor the funciton, reduce # of args
           drawAxolabsPattern(
-            getShortName(saveAs.value),
+            getShortName(patternNameInput.value),
             createAsStrand.value!,
 
-            baseInputsObject[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!),
-            baseInputsObject[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!),
+            baseInputValues[SENSE_STRAND],
+            baseInputValues[ANTISENSE_STRAND],
 
-            [firstPto[SS].value!].concat(ptoLinkages[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!)),
-            [firstPto[AS].value!].concat(ptoLinkages[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!)),
+            ptoLinkageValues[SENSE_STRAND],
+            ptoLinkageValues[ANTISENSE_STRAND],
 
-            terminalModification[SS][THREE_PRIME].value,
-            terminalModification[SS][FIVE_PRIME].value,
+            terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END].value!,
+            terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END].value!,
 
-            terminalModification[AS][THREE_PRIME].value,
-            terminalModification[AS][FIVE_PRIME].value,
+            terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME_END].value!,
+            terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME_END].value!,
 
-            comment.value,
-            enumerateModifications,
+            patternCommentInput.value,
+            modificationsWithNumericLabels,
           ),
         ]),
       );
     }
 
-    // todo: rename
-    function detectDefaultBasis(array: string[]) {
-      const modeMap: {[index: string]: number} = {};
-      let maxEl = array[0];
-      let maxCount = 1;
-      for (let i = 0; i < array.length; i++) {
-        const el = array[i];
-        if (modeMap[el] === null)
-          modeMap[el] = 1;
+    function detectMostFrequentBase(array: string[]): string {
+      const countMap: {[element: string]: number} = {};
+      let mostFrequentElement = array[0];
+      let highestCount = 1;
+
+      array.forEach(element => {
+        countMap[element] = (countMap[element] || 0) + 1;
+        if (countMap[element] > highestCount) {
+          mostFrequentElement = element;
+          highestCount = countMap[element];
+        }
+      });
+
+      return mostFrequentElement;
+    }
+
+    async function fetchPatternFromStorage(newName: string): Promise<PatternConfiguration> {
+      const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      return JSON.parse(entities[newName]);
+    }
+
+    async function applyPatternDataToUI(newName: string, patternConfig: PatternConfiguration): Promise<void> {
+      sequenceBase.value = detectMostFrequentBase([...patternConfig[PATTERN_KEY.AS_BASES], ...patternConfig[PATTERN_KEY.SS_BASES]]);
+      createAsStrand.value = (patternConfig[PATTERN_KEY.AS_BASES].length > 0);
+      patternNameInput.value = newName;
+
+      refreshBaseInputsFromPattern(patternConfig);
+      refreshPtoLinkagesFromPattern(patternConfig);
+      adjustStrandLengthsFromPattern(patternConfig);
+      refreshTerminalModificationsFromPattern(patternConfig);
+
+      patternCommentInput.value = patternConfig[PATTERN_KEY.COMMENT];
+    }
+
+    async function fetchAndUpdatePatternInUI(newName: string): Promise<void> {
+      const progressIndicator = DG.TaskBarProgressIndicator.create('Loading pattern...');
+      try {
+        const patternObj = await fetchPatternFromStorage(newName);
+        await applyPatternDataToUI(newName, patternObj);
+      } catch (error) {
+        console.error("Error parsing pattern and updating UI: ", error);
+      } finally {
+        progressIndicator.close();
+      }
+    }
+
+    function refreshBaseInputsFromPattern(obj: PatternConfiguration): void {
+      const fields = [PATTERN_KEY.SS_BASES, PATTERN_KEY.AS_BASES];
+      STRANDS.forEach((strand, i) => {
+        nucleobaseInputs[strand] = (obj[fields[i]] as string[]).map((base: string) => ui.choiceInput('', base, nucleotideBaseChoices));
+      });
+    }
+
+    function refreshPtoLinkagesFromPattern(obj: PatternConfiguration): void {
+      const fields = [PATTERN_KEY.SS_PTO, PATTERN_KEY.AS_PTO];
+      STRANDS.forEach((strand, i) => {
+        const ptoValues = obj[fields[i]] as boolean[];
+        firstPto[strand].value = ptoValues[0];
+        ptoLinkageInputs[strand] = ptoValues.slice(1).map((value: boolean) => ui.boolInput('', value));
+      });
+    }
+
+    function adjustStrandLengthsFromPattern(obj: PatternConfiguration): void {
+      const fields = [PATTERN_KEY.SS_BASES, PATTERN_KEY.AS_BASES];
+      STRANDS.forEach((strand, i) => {
+        strandLengthInputs[strand].value = obj[fields[i]].length;
+      });
+    }
+
+    function refreshTerminalModificationsFromPattern(obj: PatternConfiguration): void {
+      const field = [[PATTERN_KEY.SS_3, PATTERN_KEY.SS_5], [PATTERN_KEY.AS_3, PATTERN_KEY.AS_5]];
+      STRANDS.forEach((strand, i) => {
+        TERMINAL_KEYS.forEach((terminal, j) => {
+          terminalModificationInputs[strand][terminal].value = obj[field[i][j]] as string;
+        });
+      });
+    }
+
+    function verifyUniformColumnLengths(colName: string): boolean {
+      const col = tableInput.value!.getCol(colName);
+      const areLengthsUniform = col.toList().every((value, index, array) =>
+        index === 0 || value.length === array[index - 1].length || value.length === 0);
+
+      if (!areLengthsUniform) {
+        displayLengthMismatchDialog(colName);
+      } else if (col.get(0).length !== strandLengthInputs[SENSE_STRAND].value) {
+        displayLengthUpdatedDialog();
+      }
+
+      return areLengthsUniform;
+    }
+
+    function displayLengthMismatchDialog(colName: string) {
+      const dialog = ui.dialog('Sequences lengths mismatch');
+      $(dialog.getButton('OK')).hide();
+
+      dialog
+        .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
+        .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
+        .addButton('ADD COLUMN', () => addColumnWithSequenceLengths(colName, dialog))
+        .show();
+    }
+
+    function addColumnWithSequenceLengths(colName: string, dialog: any) {
+      const table = tableInput.value!;
+      table.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => table.getCol(colName).get(j).length);
+      grok.shell.info('Column with lengths added to \'' + table.name + '\'');
+      dialog.close();
+      grok.shell.v = grok.shell.getTableView(table.name);
+    }
+
+    function displayLengthUpdatedDialog() {
+      ui.dialog('Length was updated by value from imported file')
+        .add(ui.divText('Latest modifications may not take effect during translation'))
+        .onOK(() => grok.shell.info('Lengths changed'))
+        .show();
+    }
+
+    async function fetchCurrentUserName(): Promise<string> {
+      const user = await grok.dapi.users.current();
+      return ` (created by ${user.friendlyName})`;
+    }
+
+    async function savePatternAndNotifyUser(): Promise<void> {
+      const currUserName = await fetchCurrentUserName();
+      patternNameInput.value = createPatternNameForSaving(currUserName);
+
+      const patternData = assemblePatternData();
+      await grok.dapi.userDataStorage.postValue(USER_STORAGE_KEY, patternNameInput.value, JSON.stringify(patternData), false);
+
+      grok.shell.info(`Pattern '${patternNameInput.value}' was successfully uploaded!`);
+    }
+
+    function createPatternNameForSaving(currUserName: string): string {
+      return patternNameInput.stringValue.includes('(created by ') ?
+        `${getShortName(patternNameInput.value)}${currUserName}` :
+        `${patternNameInput.stringValue}${currUserName}`;
+    }
+
+    function assemblePatternData(): PatternConfiguration {
+      const createBasesArray = (strand: string) => nucleobaseInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value) as string[];
+      const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkageInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value)] as boolean[];
+
+      return {
+        [PATTERN_KEY.SS_BASES]: createBasesArray(SENSE_STRAND),
+        [PATTERN_KEY.AS_BASES]: createBasesArray(ANTISENSE_STRAND),
+        [PATTERN_KEY.SS_PTO]: createPtoArray(SENSE_STRAND),
+        [PATTERN_KEY.AS_PTO]: createPtoArray(ANTISENSE_STRAND),
+        [PATTERN_KEY.SS_3]: terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END].value!,
+        [PATTERN_KEY.SS_5]: terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END].value!,
+        [PATTERN_KEY.AS_3]: terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME_END].value!,
+        [PATTERN_KEY.AS_5]: terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME_END].value!,
+        [PATTERN_KEY.COMMENT]: patternCommentInput.value,
+      };
+    }
+
+    async function sortPatternsByUserOwnership(patternsData: PatternConfiguration): Promise<{ ownPatterns: string[], otherUsersPatterns: string[] }> {
+      const ownPatterns: string[] = [];
+      const otherUsersPatterns: string[] = [];
+
+      for (const patternName of Object.keys(patternsData)) {
+        if (await isCurrentUserCreatedThisPattern(patternName))
+          otherUsersPatterns.push(patternName);
         else
-          modeMap[el]++;
-        if (modeMap[el] > maxCount) {
-          maxEl = el;
-          maxCount = modeMap[el];
-        }
+          ownPatterns.push(patternName);
       }
-      return maxEl;
+
+      return { ownPatterns, otherUsersPatterns };
     }
 
-    async function parsePatternAndUpdateUi(newName: string) {
-      const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
-      await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false).then((entities) => {
-        const obj = JSON.parse(entities[newName]);
-        sequenceBase.value = detectDefaultBasis(obj[FIELD.AS_BASES].concat(obj[FIELD.SS_BASES]));
-        createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
-        saveAs.value = newName;
+    function initializeLoadPatternInterface(loadPattern: StringInput, loadPatternDiv: HTMLElement, patternListChoiceInput: StringInput) {
+      clearAndRepopulateUIElements(loadPatternDiv, loadPattern, patternListChoiceInput);
+      styleLoadPatternInputField(loadPattern.input);
+      loadPattern.setTooltip('Apply Existing Pattern');
+      const deleteButton = createPatternDeletionButton(loadPattern);
+      loadPattern.root.append(deleteButton);
+    }
 
-        let fields = [FIELD.SS_BASES, FIELD.AS_BASES];
-        STRANDS.forEach((strand, i) => {
-          baseInputsObject[strand] = [];
-          const field = fields[i];
-          for (let j = 0; j < obj[field].length; j++)
-            baseInputsObject[strand].push(ui.choiceInput('', obj[field][j], baseChoices));
+    function clearAndRepopulateUIElements(loadPatternDiv: HTMLElement, loadPattern: StringInput, patternListChoiceInput: StringInput) {
+      loadPatternDiv.innerHTML = '';
+      loadPattern.root.append(patternListChoiceInput.input, loadPattern.input);
+      loadPatternDiv.append(loadPattern.root);
+    }
+
+    function styleLoadPatternInputField(loadPatternInput: HTMLElement) {
+      loadPatternInput.style.maxWidth = '120px';
+      loadPatternInput.style.marginLeft = '12px';
+    }
+
+    function createPatternDeletionButton(loadPattern: StringInput): HTMLElement {
+      return ui.div([
+        ui.button(ui.iconFA('trash-alt'), async () => {
+          if (!loadPattern.value) {
+            grok.shell.warning('Choose pattern to delete');
+          } else if (await isCurrentUserCreatedThisPattern(patternNameInput.value)) {
+            grok.shell.warning('Cannot delete pattern, created by other user');
+          } else {
+            await removePatternFromStorage(loadPattern.value);
+            await refreshPatternsList();
+          }
         })
+      ], 'ui-input-options');
+    }
 
-        fields = [FIELD.SS_PTO, FIELD.AS_PTO];
-        STRANDS.forEach((s, i) => {
-          const field = fields[i];
-          firstPto[s].value = obj[field][0];
-          ptoLinkages[s] = [];
-          for (let j = 1; j < obj[field].length; j++)
-            ptoLinkages[s].push(ui.boolInput('', obj[field][j]));
-        });
+    async function removePatternFromStorage(patternName: string) {
+      await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+      grok.shell.info(`Pattern '${patternName}' deleted`);
+    }
 
-        fields = [FIELD.SS_BASES, FIELD.AS_BASES];
-        STRANDS.forEach((strand, i) => {
-          strandLengthInput[strand].value = obj[fields[i]].length;
+    async function refreshPatternsList() {
+      const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      const { ownPatterns, otherUsersPatterns } = await sortPatternsByUserOwnership(patternsData);
+
+      const currentUserName = (await grok.dapi.users.current()).friendlyName;
+      const otherUsers = 'Other users';
+
+      let loadPattern = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
+
+      const patternListChoiceInput = ui.choiceInput(
+        '', currentUserName, [currentUserName, otherUsers],
+        (value: string) => patternListChoiceInputOnChange(value)
+      );
+
+      patternListChoiceInput.input.style.maxWidth = '142px';
+      initializeLoadPatternInterface(loadPattern, loadPatternDiv, patternListChoiceInput);
+
+      function patternListChoiceInputOnChange(value: string) {
+        const currentList = value === currentUserName ? ownPatterns : otherUsersPatterns;
+        loadPattern = ui.choiceInput('Load pattern', '', currentList, (value: string) => fetchAndUpdatePatternInUI(value));
+        initializeLoadPatternInterface(loadPattern, loadPatternDiv, patternListChoiceInput);
+      }
+    }
+
+    async function checkIfPatternExistsInStorage(patternData: PatternConfiguration, patternName: string) {
+      return Object.keys(patternData).includes(patternName);
+    }
+
+    async function displayPatternReplaceConfirmationDialog(patternName: string) {
+      const dialog = ui.dialog('Pattern already exists');
+      $(dialog.getButton('OK')).hide();
+      dialog
+        .add(ui.divText(`Pattern name '${patternName}' already exists.`))
+        .add(ui.divText('Replace pattern?'))
+        .addButton('YES', async () => {
+          await deletePatternFromStorage(patternName);
+          await savePatternAndNotifyUser();
+          dialog.close();
         })
-
-        const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
-        STRANDS.forEach((strand, i) => {
-          TERMINAL_KEYS.forEach((terminal, j) => {
-            terminalModification[strand][terminal].value = obj[field[i][j]];
-          })
-        })
-        comment.value = obj[FIELD.COMMENT];
-      });
-      pi.close();
+        .show();
     }
 
-    function allColumnValuesOfEqualLength(colName: string): boolean {
-      const col = tables.value!.getCol(colName);
-      let allLengthsAreTheSame = true;
-      for (let i = 1; i < col.length; i++) {
-        if (col.get(i - 1).length !== col.get(i).length && col.get(i).length !== 0) {
-          allLengthsAreTheSame = false;
-          break;
-        }
+    async function deletePatternFromStorage(patternName: string) {
+      return grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+    }
+
+    async function savePatternInUserDataStorage(): Promise<void> {
+      const patternData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+
+      const patternName = patternNameInput.value;
+
+      if (await checkIfPatternExistsInStorage(patternData, patternName)) {
+        await displayPatternReplaceConfirmationDialog(patternName);
+      } else {
+        await savePatternAndNotifyUser();
       }
-      if (!allLengthsAreTheSame) {
-        const dialog = ui.dialog('Sequences lengths mismatch');
-        $(dialog.getButton('OK')).hide();
-        dialog
-          .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
-          .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
-          .addButton('ADD COLUMN', () => {
-            tables.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-            grok.shell.info('Column with lengths added to \'' + tables.value!.name + '\'');
-            dialog.close();
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
-          })
-          .show();
-      }
-      if (col.get(0) !== strandLengthInput[SS].value) {
-        const d = ui.dialog('Length was updated by value to from imported file');
-        d.add(ui.divText('Latest modifications may not take effect during translation'))
-          .onOK(() => grok.shell.info('Lengths changed')).show();
-      }
-      return allLengthsAreTheSame;
-    }
 
-    async function getCurrentUserName(): Promise<string> {
-      return await grok.dapi.users.current().then((user) => {
-        return ' (created by ' + user.friendlyName + ')';
-      });
-    }
-
-    async function postPatternToUserStorage() {
-      const currUserName = await getCurrentUserName();
-      saveAs.value = (saveAs.stringValue.includes('(created by ')) ?
-        getShortName(saveAs.value) + currUserName :
-        saveAs.stringValue + currUserName;
-      return grok.dapi.userDataStorage.postValue(
-        USER_STORAGE_KEY,
-        saveAs.value,
-        JSON.stringify({
-          [FIELD.SS_BASES]: baseInputsObject[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value),
-          [FIELD.AS_BASES]: baseInputsObject[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value),
-          [FIELD.SS_PTO]: [firstPto[SS].value].concat(ptoLinkages[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value)),
-          [FIELD.AS_PTO]: [firstPto[AS].value].concat(ptoLinkages[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value)),
-          [FIELD.SS_3]: terminalModification[SS][THREE_PRIME].value,
-          [FIELD.SS_5]:terminalModification[SS][FIVE_PRIME].value,
-          [FIELD.AS_3]: terminalModification[AS][THREE_PRIME].value,
-          [FIELD.AS_5]: terminalModification[AS][FIVE_PRIME].value,
-          [FIELD.COMMENT]: comment.value,
-        }),
-        false,
-      ).then(() => grok.shell.info('Pattern \'' + saveAs.value + '\' was successfully uploaded!'));
-    }
-
-    async function updatePatternsList() {
-      grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false).then(async (entities) => {
-        const lstMy: string[] = [];
-        const lstOthers: string[] = [];
-
-        // TODO: display short name, but use long for querying userdataStorage
-        for (const ent of Object.keys(entities)) {
-          if (await isPatternCreatedByCurrentUser(ent))
-            lstOthers.push(ent);
-          else
-            lstMy.push(ent);//getShortName(ent));
-        }
-
-        let loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
-
-        const currentUserName = (await grok.dapi.users.current()).friendlyName;
-        const otherUsers = 'Other users';
-
-        const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
-          const currentList = v === currentUserName ? lstMy : lstOthers;
-          loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
-
-          loadPattern.root.append(patternListChoiceInput.input);
-          loadPattern.root.append(loadPattern.input);
-          // @ts-ignore
-          loadPattern.input.style.maxWidth = '120px';
-          loadPattern.input.style.marginLeft = '12px';
-          loadPattern.setTooltip('Apply Existing Pattern');
-
-          loadPatternDiv.innerHTML = '';
-          loadPatternDiv.append(loadPattern.root);
-          loadPattern.root.append(
-            ui.div([
-              ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-                if (loadPattern.value === null)
-                  grok.shell.warning('Choose pattern to delete');
-                else if (await isPatternCreatedByCurrentUser(saveAs.value))
-                  grok.shell.warning('Cannot delete pattern, created by other user');
-                else {
-                  await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
-                    .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
-                }
-                await updatePatternsList();
-              }),
-            ], 'ui-input-options'),
-          );
-        });
-        patternListChoiceInput.input.style.maxWidth = '142px';
-        loadPattern.root.append(patternListChoiceInput.input);
-        loadPattern.root.append(loadPattern.input);
-        // @ts-ignore
-        loadPattern.input.style.maxWidth = '100px';
-        loadPattern.setTooltip('Apply Existing Pattern');
-
-        loadPatternDiv.innerHTML = '';
-        loadPatternDiv.append(loadPattern.root);
-        loadPattern.root.append(
-          ui.div([
-            ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-              if (loadPattern.value === null)
-                grok.shell.warning('Choose pattern to delete');
-              else if (await isPatternCreatedByCurrentUser(saveAs.value))
-                grok.shell.warning('Cannot delete pattern, created by other user');
-              else {
-                await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, loadPattern.value, false)
-                  .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
-              }
-              await updatePatternsList();
-            }),
-          ], 'ui-input-options'),
-        );
-      });
-    }
-
-    async function savePattern() {
-      await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false)
-        .then((entities) => {
-          if (Object.keys(entities).includes(saveAs.value)) {
-            const dialog = ui.dialog('Pattern already exists');
-            $(dialog.getButton('OK')).hide();
-            dialog
-              .add(ui.divText('Pattern name \'' + saveAs.value + '\' already exists.'))
-              .add(ui.divText('Replace pattern?'))
-              .addButton('YES', async () => {
-                await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, saveAs.value, false)
-                  .then(() => postPatternToUserStorage());
-                dialog.close();
-              })
-              .show();
-          } else
-            postPatternToUserStorage();
-        });
-      await updatePatternsList();
+      await refreshPatternsList();
     }
 
     function validateStrandColumn(colName: string, strand: string): void {
-      const allLengthsAreTheSame: boolean = allColumnValuesOfEqualLength(colName);
-      const firstSequence = tables.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length !== strandLengthInput[strand].value)
-      strandLengthInput[strand].value = tables.value!.getCol(colName).get(0).length;
-      inputExample[strand].value = firstSequence;
+      if (!verifyUniformColumnLengths(colName)) {
+        return;
+      }
+
+      const firstSequence = fetchFirstSequenceFromColumn(colName);
+      adjustStrandLengthIfRequired(firstSequence.length, strand);
+      refreshInputExampleValue(firstSequence, strand);
     }
 
-    function validateIdsColumn(colName: string) {
-      const col = tables.value!.getCol(colName);
-      if (col.type !== DG.TYPE.INT)
-        grok.shell.error('Column should contain integers only');
-      else if (col.categories.filter((e) => e !== '').length < col.toList().filter((e) => e !== '').length) {
-        const duplicates = findDuplicates(col.getRawData());
-        ui.dialog('Non-unique IDs')
-          .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
-          .onOK(() => {
-            const selection = tables.value!.selection;
-            selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
-            grok.shell.info('Rows are selected in table \'' + tables.value!.name + '\'');
-          })
-          .show();
+    function fetchFirstSequenceFromColumn(colName: string): string {
+      return tableInput.value!.getCol(colName).get(0);
+    }
+
+    function adjustStrandLengthIfRequired(sequenceLength: number, strand: string): void {
+      const currentStrandLength = strandLengthInputs[strand].value;
+      if (sequenceLength !== currentStrandLength) {
+        strandLengthInputs[strand].value = sequenceLength;
       }
     }
 
-    const baseChoices: string[] = Object.keys(axolabsStyleMap);
-    const defaultBase: string = baseChoices[0];
-    const enumerateModifications = [defaultBase];
-    const sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => {
-      updateBases(v);
-      updateOutputExamples();
+    function refreshInputExampleValue(sequence: string, strand: string): void {
+      inputExample[strand].value = sequence;
+    }
+
+    function validateIdsColumn(colName: string) {
+      const col = retrieveColumnFromTable(colName);
+      checkColumnTypeForIntType(col);
+
+      if (checkForDuplicateValues(col)) {
+        showDuplicatesDialog(col);
+      }
+    }
+
+    function retrieveColumnFromTable(colName: string): DG.Column {
+      return tableInput.value!.getCol(colName);
+    }
+
+    function checkColumnTypeForIntType(col: DG.Column): void {
+      if (col.type !== DG.TYPE.INT) {
+        grok.shell.error('Column should contain integers only');
+        // throw new Error('Invalid column type');
+      }
+    }
+
+    function checkForDuplicateValues(col: DG.Column): boolean {
+      const uniqueValues = col.categories.filter((e) => e !== '').length;
+      const totalValues = col.toList().filter((e) => e !== '').length;
+      return uniqueValues < totalValues;
+    }
+
+    function showDuplicatesDialog(col: DG.Column): void {
+      const duplicates = findDuplicates(col.getRawData());
+      const tableName = tableInput.value!.name;
+
+      ui.dialog('Non-unique IDs')
+      .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
+      .onOK(() => selectDuplicateRows(duplicates, col))
+      .show();
+
+      grok.shell.info(`Rows are selected in table '${tableName}'`);
+    }
+
+    function selectDuplicateRows(duplicates: number[], col: DG.Column): void {
+      const selection = tableInput.value!.selection;
+      selection.init((i: number) => duplicates.includes(col.get(i)));
+      grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
+    }
+
+
+    const nucleotideBaseChoices: string[] = Object.keys(axolabsStyleMap);
+    const defaultNucleotideBase: string = nucleotideBaseChoices[0];
+    const modificationsWithNumericLabels = [defaultNucleotideBase];
+    const sequenceBase = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (value: string) => {
+      // updateBases(value);
+      updateInputValues(MODIFICATION_CATEGORY.BASIS, value);
+      refreshOutputExamples();
     });
-    const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PTO, (v: boolean) => {
-      STRANDS.forEach((s) => { firstPto[s].value = v; })
-      updatePto(v);
-      updateOutputExamples();
-    });
-    fullyPto.captionLabel.classList.add('ui-label-right');
-    fullyPto.captionLabel.style.textAlign = 'left';
-    fullyPto.captionLabel.style.maxWidth = '100px';
-    fullyPto.captionLabel.style.maxWidth = '100px';
-    fullyPto.captionLabel.style.minWidth = '40px';
-    fullyPto.captionLabel.style.width = 'auto';
+
+    function createFullyPtoInput(): BooleanInput {
+      const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PHOSPHOROTHIOATE, handleFullPtoInputChange);
+      styleFullyPtoInputLabel(fullyPto.captionLabel);
+      return fullyPto;
+    }
+
+    function styleFullyPtoInputLabel(label: HTMLElement): void {
+      label.classList.add('ui-label-right');
+      Object.assign(label.style, {
+        textAlign: 'left',
+        maxWidth: '100px',
+        minWidth: '40px',
+        width: 'auto'
+      });
+    }
+
+    function handleFullPtoInputChange(value: boolean): void {
+      STRANDS.forEach((strand) => { firstPto[strand].value = value; });
+      // updatePto(value);
+      updateInputValues(MODIFICATION_CATEGORY.PTO, value);
+      refreshOutputExamples();
+    }
+
+    const isFullyPtoInput = createFullyPtoInput();
 
     const maxStrandLength = Object.fromEntries(STRANDS.map(
       (strand) => [strand, DEFAULT_SEQUENCE_LENGTH]
     ));
-    // todo: remove vague legacy 'items' from name
-    const modificationItems = Object.fromEntries(STRANDS.map(
+    const modificationControls = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.div([])]
     ));
-    const ptoLinkages = Object.fromEntries(STRANDS.map(
+    const ptoLinkageInputs = Object.fromEntries(STRANDS.map(
       (strand) => [strand, Array<BooleanInput>(DEFAULT_SEQUENCE_LENGTH)
-        .fill(ui.boolInput('', DEFAULT_PTO))]
+        .fill(ui.boolInput('', DEFAULT_PHOSPHOROTHIOATE))]
     ));
-    const baseInputsObject = Object.fromEntries(STRANDS.map(
+    const nucleobaseInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
         const choiceInputs = Array<StringInput>(DEFAULT_SEQUENCE_LENGTH)
-        .fill(ui.choiceInput('', defaultBase, baseChoices));
-         return [strand, choiceInputs];
+          .fill(ui.choiceInput('', defaultNucleotideBase, nucleotideBaseChoices));
+        return [strand, choiceInputs];
       }
     ));
-
-    const strandLengthInput = Object.fromEntries(STRANDS.map(
+    const strandLengthInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => onStrandLengthChange.next());
-        input.setTooltip(`Length of ${STRAND_NAME[strand].toLowerCase()}, including overhangs`);
+        const input = ui.intInput(`${STRAND_LABEL[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => refreshUIForNewSequenceLength());
+        input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
-    }));
-
-    const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
-    const strandColumnInputDiv = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, ui.div([])]
-    ));
+      }));
+    const selectedStrandColumn = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
     const inputExample = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.textInput(
-        ``, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
+        ``, generateExample(strandLengthInputs[strand].value!, sequenceBase.value!))
       ]));
 
     const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
-      const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
+      const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, '', [], (colName: string) => {
         validateStrandColumn(colName, strand);
-        strandVar[strand] = colName;
+        selectedStrandColumn[strand] = colName;
       });
-      strandColumnInputDiv[strand].append(input.root);
-      //input.addPostfix(``);
       return [strand, input];
     }));
 
-    const firstPto = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, () => updateSvgScheme());
-      input.setTooltip(`ps linkage before first nucleotide of ${STRAND_NAME[strand].toLowerCase()}`);
+    function generateInitialPtoInputs(fullyPto: BooleanInput): Record<string,BooleanInput> {
+      return Object.fromEntries(STRANDS.map((strand) => [strand, generateStrandSpecificPtoInput(strand, fullyPto)]));
+    }
 
-      input.captionLabel.classList.add('ui-label-right');
-      input.captionLabel.style.textAlign = 'left';
-      input.captionLabel.style.maxWidth = '100px';
-      input.captionLabel.style.minWidth = '40px';
-      input.captionLabel.style.width = 'auto';
-      
-    
+    function generateStrandSpecificPtoInput(strand: StrandType, fullyPto: BooleanInput): BooleanInput {
+      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, refreshSvgDisplay);
+      input.setTooltip(`ps linkage before first nucleotide of ${STRAND_LABEL[strand].toLowerCase()}`);
+      styleStrandPtoInputLabel(input.captionLabel);
+      return input;
+    }
 
-      return [strand, input];
-    }));
+    function styleStrandPtoInputLabel(label: HTMLElement): void {
+      label.classList.add('ui-label-right');
+      Object.assign(label.style, {
+        textAlign: 'left',
+        maxWidth: '100px',
+        minWidth: '40px',
+        width: 'auto'
+      });
+    }
 
-    const terminalModification = Object.fromEntries(STRANDS.map((strand) => {
-        const inputs = Object.fromEntries(TERMINAL_KEYS.map((key) => {
-            const input = ui.stringInput(`${strand} ${TERMINAL[key]}\' Modification`, '', () => {
-              updateSvgScheme();
-              updateOutputExamples();
-            });
-            input.setTooltip(`Additional ${strand} ${TERMINAL[key]}\' Modification`);
-            return [key, input];
-          }));
-        return [strand, inputs];
-      }));
+    const firstPto = generateInitialPtoInputs(isFullyPtoInput);
 
-    const outputExample = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.textInput('', translateSequence(
-        inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][THREE_PRIME],terminalModification[strand][FIVE_PRIME], firstPto[strand].value!
-      ));
-      input.input.style.minWidth = 'none';
-      input.input.style.flexGrow = '1';
+    function createTerminalModificationInputs() {
+      return Object.fromEntries(STRANDS.map(strand => [strand, createStrandInputs(strand)]));
+    }
+
+    function createStrandInputs(strand: StrandType) {
+      return Object.fromEntries(TERMINAL_KEYS.map((key: TerminalType) => [key, createTerminalModificationInput(strand, key)]));
+    }
+
+    function createTerminalModificationInput(strand: StrandType, key: TerminalType): StringInput {
+      const label = `${strand} ${TERMINAL[key]}\' Modification`;
+      const tooltip = `Additional ${strand} ${TERMINAL[key]}\' Modification`;
+      const input = ui.stringInput(label, '', handleTerminalModificationInputChange);
+
+      input.setTooltip(tooltip);
+      return input;
+    }
+
+    function handleTerminalModificationInputChange(): void {
+      refreshSvgDisplay();
+      refreshOutputExamples();
+    }
+
+    const terminalModificationInputs = createTerminalModificationInputs();
+
+    function createOutputExample(strand: StrandType) {
+      const translatedSequence = translateSequence(
+        inputExample[strand].value,
+        nucleobaseInputs[strand],
+        ptoLinkageInputs[strand],
+        terminalModificationInputs[strand][THREE_PRIME_END],
+        terminalModificationInputs[strand][FIVE_PRIME_END],
+        firstPto[strand].value!
+      );
+
+      const input = ui.textInput('', translatedSequence);
+
+      Object.assign(input.input.style, {
+        minWidth: 'none',
+        flexGrow: '1',
+      });
       $(input.root.lastChild).css('height', 'auto');
-      return [strand, input];
-    }));
 
-    const modificationSection = Object.fromEntries(STRANDS.map((strand) => {
-      const panel = ui.block([
-        ui.h1(`${STRAND_NAME[strand]}`),
-        ui.divH([
-          ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-          ui.block75([ui.divText('Modification')])!,
-          ui.div([ui.divText('PTO')])!,
-        ]),
-        modificationItems[strand],
+      return input;
+    }
+
+    const outputExample = Object.fromEntries(
+      STRANDS.map((strand) => [strand, createOutputExample(strand)])
+    );
+
+    function generateModificationSectionHeader() {
+      return ui.divH([
+        ui.div([ui.divText('#')], {style: {width: '20px'}}),
+        ui.block75([ui.divText('Modification')]),
+        ui.div([ui.divText('PTO')]),
+      ]);
+    }
+
+    function generateStrandModificationPanel(strand: StrandType) {
+      return ui.block([
+        ui.h1(`${STRAND_LABEL[strand]}`),
+        generateModificationSectionHeader(),
+        modificationControls[strand],
       ], {style: {paddingTop: '12px'}});
-      return [strand, panel];
-    }));
+    }
 
-    STRANDS.forEach((s) => {
-      
-      inputExample[s].input.style.resize = 'none';
-      //inputExample[s].input.style.minWidth = EXAMPLE_MIN_WIDTH;
-      outputExample[s].input.style.resize = 'none';
-      //outputExample[s].input.styl
-      inputExample[s].input.style.minWidth = 'none';
-      inputExample[s].input.style.flexGrow = '1';
-      outputExample[s].input.style.minWidth = 'none';
-      outputExample[s].input.style.flexGrow = '1';
-      let options = ui.div([
+    const modificationSection = Object.fromEntries(
+      STRANDS.map((strand) => [strand, generateStrandModificationPanel(strand)])
+    );
+
+    function styleExampleInputField(exampleInput: StringInput) {
+      Object.assign(exampleInput.input.style, {
+        resize: 'none',
+        minWidth: 'none',
+        flexGrow: '1',
+      });
+    }
+
+    function appendOptionsToOutputInput(output: StringInput) {
+      const options = ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(outputExample[s].value).then(() =>
+          navigator.clipboard.writeText(output.value!).then(() =>
             grok.shell.info('Sequence was copied to clipboard'));
         }),
       ], 'ui-input-options');
-      options.style.height = 'inherit';
-      outputExample[s].root.append(
-        options
-      );
-    })
 
-    const inputIdColumnDiv = ui.div([]);
-    const svgDiv = ui.div([]);
+      options.style.height = 'inherit';
+      output.root.append(options);
+    }
+
+    STRANDS.forEach((strand) => {
+      styleExampleInputField(inputExample[strand]);
+      styleExampleInputField(outputExample[strand]);
+      appendOptionsToOutputInput(outputExample[strand]);
+    });
+
+
+
+    // const inputIdColumnDiv = ui.div([]);
+    const svgDisplayDiv = ui.div([]);
     const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
     const loadPatternDiv = ui.div([]);
     const asModificationDiv = ui.form([]);
-    const isEnumerateModificationsDiv = ui.divH([
-      ui.boolInput(defaultBase, true, (v: boolean) => {
-        if (v) {
-          if (!enumerateModifications.includes(defaultBase))
-            enumerateModifications.push(defaultBase);
-        } else {
-          const index = enumerateModifications.indexOf(defaultBase, 0);
-          if (index > -1)
-            enumerateModifications.splice(index, 1);
+
+    function updateListOfModificationsWithNumericLabels(value: boolean) {
+      if (value) {
+        if (!modificationsWithNumericLabels.includes(defaultNucleotideBase)) {
+          modificationsWithNumericLabels.push(defaultNucleotideBase);
         }
-        updateSvgScheme();
-        updateOutputExamples();
+      } else {
+        const index = modificationsWithNumericLabels.indexOf(defaultNucleotideBase, 0);
+        if (index > -1) {
+          modificationsWithNumericLabels.splice(index, 1);
+        }
+      }
+    }
+
+    const numericLabelTogglesContainer = ui.divH([
+      ui.boolInput(defaultNucleotideBase, true, (value: boolean) => {
+        updateListOfModificationsWithNumericLabels(value);
+        refreshSvgDisplay();
+        refreshOutputExamples();
       }).root,
     ]);
 
-    const asLengthDiv = ui.div([strandLengthInput[AS].root]);
+    const asLengthDiv = ui.div([strandLengthInputs[ANTISENSE_STRAND].root]);
 
-    const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
-      STRANDS.forEach((strand) => {
-        strandColumnInput[strand] = ui.choiceInput(`${strand} column`, '', t.columns.names(), (colName: string) => {
-          validateStrandColumn(colName, strand);
-          strandVar[strand] = colName;
+    function getTableInput(tableList: DG.DataFrame[]): DG.InputBase<DG.DataFrame | null> {
+      function updateStrandColumns(table: DG.DataFrame) {
+        const columnNames = table.columns.names();
+        STRANDS.forEach((strand) => {
+          const defaultColumn = columnNames[0];
+          validateStrandColumn(defaultColumn, strand);
+          selectedStrandColumn[strand] = defaultColumn;
+          const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, defaultColumn, columnNames, (colName: string) => {
+            validateStrandColumn(colName, strand);
+            selectedStrandColumn[strand] = colName;
+          });
+          $(strandColumnInput[strand].root).replaceWith(input.root);
         });
-        strandColumnInputDiv[strand].innerHTML = '';
-        strandColumnInputDiv[strand].append(strandColumnInput[strand].root);
-      })
+      }
 
-      // todo: unify with inputStrandColumn
-      const inputIdColumn = ui.choiceInput('ID column', '', t.columns.names(), (colName: string) => {
-        validateIdsColumn(colName);
-        idVar = colName;
+      function updateIdColumnInput(columnNames: string[]) {
+        selectedIdColumn = columnNames[0];
+        const idInput = ui.choiceInput('ID column', selectedIdColumn, columnNames, (colName: string) => {
+          validateIdsColumn(colName);
+          selectedIdColumn = colName;
+        });
+        $(idColumnSelector.root).replaceWith(idInput.root);
+      }
+
+      function addTableViewIfNeeded(table: DG.DataFrame) {
+        const tableName = table.name;
+        if (!grok.shell.tableNames.includes(tableName)) {
+          const previousView = grok.shell.v;
+          grok.shell.addTableView(table);
+          grok.shell.v = previousView;
+        }
+      }
+
+      const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
+        const table = tableInput.value;
+        if (!table) {
+          console.warn('Table is null');
+          return;
+        }
+        addTableViewIfNeeded(table);
+        updateStrandColumns(table);
+        updateIdColumnInput(table.columns.names());
       });
-      inputIdColumnDiv.innerHTML = '';
-      inputIdColumnDiv.append(inputIdColumn.root);
-    });
 
+      return tableInput;
+    }
 
-    // todo: unify with strandVar
-    let idVar = '';
-    const inputIdColumn = ui.choiceInput('ID column', '', [], (colName: string) => {
+    const tableInput = getTableInput([]);
+
+    let selectedIdColumn = '';
+    const idColumnSelector = ui.choiceInput('ID column', '', [], (colName: string) => {
       validateIdsColumn(colName);
-      idVar = colName;
+      selectedIdColumn = colName;
     });
-    inputIdColumnDiv.append(inputIdColumn.root);
+    // inputIdColumnDiv.append(inputIdColumn.root);
 
-    updatePatternsList();
+    refreshPatternsList();
 
-    const createAsStrand = ui.boolInput('Anti sense strand', true, (v: boolean) => {
-      modificationSection[AS].hidden = !v;
-      strandColumnInputDiv[AS].hidden = !v;
-      asLengthDiv.hidden = !v;
-      asModificationDiv.hidden = !v;
-      asExampleDiv.hidden = !v;
-      firstPto[AS].root.hidden = !v;
-      updateSvgScheme();
-    });
+    function toggleUiElementsBasedOnAsStrand(value: boolean) {
+      const elementsToToggle = [
+        modificationSection[ANTISENSE_STRAND],
+        // strandColumnInputDiv[AS],
+        strandColumnInput[ANTISENSE_STRAND].root,
+        asLengthDiv,
+        asModificationDiv,
+        asExampleDiv,
+        firstPto[ANTISENSE_STRAND].root
+      ];
+
+      elementsToToggle.forEach(element => {
+        element.hidden = !value;
+      });
+
+      refreshSvgDisplay();
+    }
+
+    // Create the boolean input UI component with the refactored event handler.
+    const createAsStrand = ui.boolInput('Anti sense strand', true, toggleUiElementsBasedOnAsStrand);
     createAsStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
-    const saveAs = ui.textInput('Save as', 'Pattern name', () => updateSvgScheme());
-    saveAs.setTooltip('Name Of New Pattern');
+    const patternNameInput = ui.textInput('Save as', 'Pattern name', () => refreshSvgDisplay());
+    patternNameInput.setTooltip('Name Of New Pattern');
 
 
     TERMINAL_KEYS.forEach((terminal) => {
-      asModificationDiv.append(terminalModification[AS][terminal].root);
+      asModificationDiv.append(terminalModificationInputs[ANTISENSE_STRAND][terminal].root);
     })
 
-    const comment = ui.textInput('Comment', '', () => updateSvgScheme());
+    const patternCommentInput = ui.textInput('Comment', '', () => refreshSvgDisplay());
 
-    const savePatternButton = ui.bigButton('Save', () => {
-      if (saveAs.value !== '')
-        savePattern().then(() => grok.shell.info('Pattern saved'));
-      else {
-        const name = ui.stringInput('Enter name', '');
-        ui.dialog('Pattern Name')
-          .add(name.root)
-          .onOK(() => {
-            saveAs.value = name.value;
-            savePattern().then(() => grok.shell.info('Pattern saved'));
-          })
-          .show();
+    function processSaveButtonClick() {
+      if (patternNameInput.value !== '') {
+        savePatternWithName(patternNameInput.value);
+      } else {
+        requestPatternNameAndSave();
       }
-    });
-    saveAs.addOptions(savePatternButton);
+    }
 
-    const convertSequenceButton = ui.bigButton('Convert', () => {
+    function savePatternWithName(patternName: string) {
+      patternNameInput.value = patternName;
+      savePatternInUserDataStorage().then(() => grok.shell.info('Pattern saved'));
+    }
+
+    function requestPatternNameAndSave() {
+      const nameInput = ui.stringInput('Enter name', '');
+      ui.dialog('Pattern Name')
+        .add(nameInput.root)
+        .onOK(() => savePatternWithName(nameInput.value))
+        .show();
+    }
+
+    const savePatternButton = ui.bigButton('Save', processSaveButtonClick);
+    patternNameInput.addOptions(savePatternButton);
+
+    function checkForRequiredColumnSelection() {
       const condition = [true, createAsStrand.value];
-      if (STRANDS.some((s, i) => condition[i] && strandVar[s] === ''))
+      return STRANDS.some((strand, i) => condition[i] && selectedStrandColumn[strand] === '');
+    }
+
+    function checkForLengthMismatch() {
+      return STRANDS.some((strand) => strandLengthInputs[strand].value !== inputExample[strand].value.length);
+    }
+
+    function adjustStrandLengthsFromTableData() {
+      STRANDS.forEach((strand) => {
+        strandLengthInputs[strand].value = tableInput.value!.getCol(strandColumnInput[strand].value!).getString(0).length;
+      });
+    }
+
+    function addColumnsWithTranslatedSequences() {
+      if (selectedIdColumn !== '') {
+        addColumnWithIds(tableInput.value!.name, selectedIdColumn, getShortName(patternNameInput.value));
+      }
+      const condition = [true, createAsStrand.value];
+      STRANDS.forEach((strand, i) => {
+        if (condition[i]) {
+          addColumnWithTranslatedSequences(
+            tableInput.value!.name, selectedStrandColumn[strand], nucleobaseInputs[strand], ptoLinkageInputs[strand],
+            terminalModificationInputs[strand][FIVE_PRIME_END], terminalModificationInputs[strand][THREE_PRIME_END], firstPto[strand].value!
+          );
+        }
+      });
+      grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
+      const columnPhrase = createAsStrand.value ? 'Columns were' : 'Column was';
+      grok.shell.info(`${columnPhrase} added to table '${tableInput.value!.name}'`);
+    }
+
+    function processConvertButtonClick() {
+      if (checkForRequiredColumnSelection()) {
         grok.shell.info('Please select table and columns on which to apply pattern');
-      else if (STRANDS.some((s) => strandLengthInput[s].value !== inputExample[s].value.length)) {
+        return;
+      }
+
+      if (checkForLengthMismatch()) {
         const dialog = ui.dialog('Length Mismatch');
         $(dialog.getButton('OK')).hide();
         dialog
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
-            STRANDS.forEach((s) => {
-              strandLengthInput[s].value = tables.value!.getCol(strandColumnInput[s].value!).getString(0).length;
-            })
+            adjustStrandLengthsFromTableData();
             dialog.close();
           })
           .show();
-      } else {
-        if (idVar !== '')
-          addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
-        const condition = [true, createAsStrand.value];
-        STRANDS.forEach((strand, i) => {
-          if (condition[i])
-            addColumnWithTranslatedSequences(
-              tables.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
-              terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
-        })
-        grok.shell.v = grok.shell.getTableView(tables.value!.name);
-        grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
-          ' added to table \'' + tables.value!.name + '\'');
-        updateOutputExamples();
+        return;
       }
-    });
 
-    asExampleDiv.append(inputExample[AS].root);
-    asExampleDiv.append(outputExample[AS].root);
+      addColumnsWithTranslatedSequences();
+      refreshOutputExamples();
+    }
 
-    updateUiForNewSequenceLength();
+    const convertSequenceButton = ui.bigButton('Convert', processConvertButtonClick);
 
-    const exampleSection = ui.div([
-      ui.h1('Conversion preview'),
-      inputExample[SS].root,
-      outputExample[SS].root,
-      asExampleDiv,
-    ], 'ui-form ui-form-wide');
 
-    const inputsSection = ui.block50([
+    asExampleDiv.append(inputExample[ANTISENSE_STRAND].root);
+    asExampleDiv.append(outputExample[ANTISENSE_STRAND].root);
+
+    refreshUIForNewSequenceLength();
+
+    const conversionOptionsSection = ui.block50([
       ui.h1('Convert options'),
-      tables.root,
-      strandColumnInputDiv[SS],
-      strandColumnInputDiv[AS],
-      inputIdColumnDiv,
+      tableInput.root,
+      strandColumnInput[SENSE_STRAND].root,
+      strandColumnInput[ANTISENSE_STRAND].root,
+      idColumnSelector.root,
       ui.buttonsInput([
         convertSequenceButton,
       ]),
     ]);
-    inputsSection.classList.add('ui-form');
+    conversionOptionsSection.classList.add('ui-form');
 
-    const downloadButton = ui.link('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
+    const svgDownloadLink = ui.link('Download', () => svgExport.saveSvgAsPng(document.getElementById('mySvg'), patternNameInput.value,
       {backgroundColor: 'white'}), 'Download pattern as PNG image', '');
-     
-    const editPattern = ui.link('Edit pattern', ()=>{
+
+    const editPatternLink = ui.link('Edit pattern', ()=>{
       ui.dialog('Edit pattern')
-      .add(ui.divV([
-        ui.h1('PTO'),
-        ui.divH([
-          fullyPto.root,
-          firstPto[SS].root,
-          firstPto[AS].root,
-        ], {style:{gap:'12px'}})
-      ]))
-      .add(ui.divH([
-        modificationSection[SS],
-        modificationSection[AS],
-      ], {style:{gap:'24px'}}))
-      .onOK(()=>{grok.shell.info('Saved')})
-      .show()
-    }, 'Edit pattern', '');  
+        .add(ui.divV([
+          ui.h1('PTO'),
+          ui.divH([
+            isFullyPtoInput.root,
+            firstPto[SENSE_STRAND].root,
+            firstPto[ANTISENSE_STRAND].root,
+          ], {style:{gap:'12px'}})
+        ]))
+        .add(ui.divH([
+          modificationSection[SENSE_STRAND],
+          modificationSection[ANTISENSE_STRAND],
+        ], {style:{gap:'24px'}}))
+        .onOK(()=>{grok.shell.info('Saved')})
+        .show()
+    }, 'Edit pattern', '');
 
-    strandLengthInput[SS].addCaption('Length');
+    strandLengthInputs[SENSE_STRAND].addCaption('Length');
 
-    function getLeftSection(): HTMLDivElement {
-      const patternControlsBlock = [
-        ui.h1('Pattern'),
-        createAsStrand.root,
-        strandLengthInput[SS],
-        strandLengthInput[AS],
-        sequenceBase.root,
-        comment.root,
-        loadPatternDiv,
-        saveAs.root,
-      ];
-
-      const convertControlsBlock = [
-        ui.h1('Convert'),
-        tables.root,
-        strandColumnInput[SS],
-        strandColumnInput[AS],
-        inputIdColumn.root,
-        ui.buttonsInput([
-          convertSequenceButton,
-        ]),
-      ];
-
-      const leftSection = ui.box(
-          ui.div([
-            ...patternControlsBlock,
-            ...convertControlsBlock,
-          ], 'ui-form')
-        , {style:{maxWidth:'450px'}});
-      return leftSection;
+    function createLeftPanelLayout() {
+      return ui.box(
+        ui.div([
+          ui.h1('Pattern'),
+          createAsStrand.root,
+          strandLengthInputs[SENSE_STRAND],
+          strandLengthInputs[ANTISENSE_STRAND],
+          sequenceBase.root,
+          patternCommentInput.root,
+          loadPatternDiv,
+          patternNameInput.root,
+          ui.h1('Convert'),
+          tableInput.root,
+          strandColumnInput[SENSE_STRAND],
+          strandColumnInput[ANTISENSE_STRAND],
+          idColumnSelector.root,
+          ui.buttonsInput([convertSequenceButton]),
+        ], 'ui-form'),
+        {style: {maxWidth: '450px'}}
+      );
     }
 
-    function getRightSection(): HTMLDivElement {
-      const svgBlock = [
-        svgDiv,
-        isEnumerateModificationsDiv,
-        ui.divH([
-          downloadButton,
-          editPattern
-        ], {style:{gap:'12px', marginTop:'12px'}}),
-      ];
-
-      const translationExample = Object.entries(STRAND_NAME)
-        .map(([strand, strandName]) => {
-          const getDiv = () =>  {
-            const input = inputExample[strand];
-            const output = outputExample[strand];
-            const result = ui.divV([
-              ui.h1(strandName),
-              input.root,
-              output.root,
-            ], 'ui-block');
-            return result;
-          }
-          const div = getDiv();
-          onStrandLengthChange.subscribe(() => {
-            updateInputExamples();
-            updateOutputExamples();
-            const output = outputExample[strand].value;
-            grok.shell.info(`output length: ${output.length}`);
-            console.log(`output: ${output}`);
-            const input = inputExample[strand].value;
-            grok.shell.info(`input length: ${input.length}`);
-            console.log(`input: ${input}`);
-            const newDiv = getDiv();
-            console.log(`parent of div`, div.parentElement);
-            $(div).replaceWith(newDiv);
-          });
-          return div;
-        });
-
-      const example = [
-        ui.divH(
-          Object.values(translationExample),
-          {style:{gap:'24px', marginTop:'24px'}}
-        ),
-      ];
-
-      const additionalModifications = [
+    function createRightPanelLayout() {
+      return ui.panel([
+        svgDisplayDiv,
+        numericLabelTogglesContainer,
+        generateDownloadAndEditControls(),
+        generateStrandSectionDisplays(),
         ui.h1('Additional modifications'),
         ui.form([
-          terminalModification[SS][FIVE_PRIME],
-          terminalModification[SS][THREE_PRIME],
+          terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END],
+          terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END],
         ]),
         asModificationDiv,
-      ];
-
-      const rightPanel = ui.panel([
-          ...svgBlock,
-          ...example,
-          ...additionalModifications,
-        ], {style: {overflowX: 'scroll', padding:'12px 24px'}});
-      return rightPanel;
+      ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
     }
 
-    const layout = ui.splitH([
-      getLeftSection(),
-      getRightSection(),
-    ], {}, true);
+    function generateDownloadAndEditControls() {
+      return ui.divH([
+        svgDownloadLink,
+        editPatternLink
+      ], {style: {gap: '12px', marginTop: '12px'}});
+    }
 
-    return layout;
+    function generateStrandSectionDisplays() {
+      return ui.divH([
+        ui.divV([
+          ui.h1('Sense strand'),
+          inputExample[SENSE_STRAND].root,
+          outputExample[SENSE_STRAND].root,
+        ], 'ui-block'),
+        ui.divV([
+          ui.h1('Anti sense'),
+          inputExample[ANTISENSE_STRAND].root,
+          outputExample[ANTISENSE_STRAND].root,
+        ], 'ui-block'),
+      ], {style: {gap: '24px', marginTop: '24px'}});
+    }
+
+    return ui.splitH([
+      createLeftPanelLayout(),
+      createRightPanelLayout()
+    ], {}, true);
   }
 }
