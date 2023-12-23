@@ -15,7 +15,7 @@ const FONT_COLOR = 'var(--grey-6)';
 const TITLE_FONT_COLOR = 'black';
 const MODIFICATIONS_COLOR = 'red';
 const SS_LEFT_TEXT = 'SENSE_STRAND: 5\'';
-const AS_LEFT_TEXT = 'AS: 3\'';
+const AS_LEFT_TEXT = 'ANTISENSE_STRAND: 3\'';
 const SS_RIGHT_TEXT = '3\'';
 const AS_RIGHT_TEXT = '5\'';
 

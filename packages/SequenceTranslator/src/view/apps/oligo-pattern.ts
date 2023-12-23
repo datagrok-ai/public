@@ -448,7 +448,7 @@ export class PatternLayoutHandler {
         ui.button(ui.iconFA('trash-alt'), async () => {
           if (!loadPattern.value) {
             grok.shell.warning('Choose pattern to delete');
-          } else if (await isCurrentUserCreatedThisPattern(patternNameInput.value)) {
+          } else if (await isPatternCreatedByCurrentUser(patternNameInput.value)) {
             grok.shell.warning('Cannot delete pattern, created by other user');
           } else {
             await removePatternFromStorage(loadPattern.value);
@@ -874,7 +874,7 @@ export class PatternLayoutHandler {
     function toggleUiElementsBasedOnAsStrand(value: boolean) {
       const elementsToToggle = [
         modificationSection[ANTISENSE_STRAND],
-        // strandColumnInputDiv[AS],
+        // strandColumnInputDiv[ANTISENSE_STRAND],
         strandColumnInput[ANTISENSE_STRAND].root,
         asLengthDiv,
         asModificationDiv,

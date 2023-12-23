@@ -36,7 +36,7 @@ export function linkStrandsV3000(
 
   let inverted = false;
   const molBlocks = strands.senseStrands.concat(strands.antiStrands);
-  /** Minimal value of AS and AS2 shift  */
+  /** Minimal value of ANTISENSE_STRAND and AS2 shift  */
   let ssYShift = 0;
 
   for (let i = 0; i < molBlocks.length; i++) {
@@ -47,7 +47,7 @@ export function linkStrandsV3000(
 
     if (i >= strands.senseStrands.length) {
       if (inverted === false) {
-        // AS strand
+        // ANTISENSE_STRAND strand
         inverted = true;
         xShift = 0;
       }
