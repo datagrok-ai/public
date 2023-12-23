@@ -476,6 +476,33 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
+  async encodeSequences(seqs: DG.Column): Promise<string[]> {
+    const ncUH = UnitsHandler.getOrCreate(seqs);
+    const seqList = seqs.toList();
+    const splitter = ncUH.getSplitter();
+    const seqColLength = seqList.length;
+    let charCodeCounter = 36;
+    const charCodeMap = new Map<string, string>();
+    for (let i = 0; i < seqColLength; i++) {
+      const seq = seqList[i];
+      if (seqList[i] === null || seqs.isNone(i)) {
+        seqList[i] = null;
+        continue;
+      }
+      seqList[i] = '';
+      const splittedSeq = splitter(seq);
+      for (let j = 0; j < splittedSeq.length; j++) {
+        const char = splittedSeq[j];
+        if (!charCodeMap.has(char)) {
+          charCodeMap.set(char, String.fromCharCode(charCodeCounter));
+          charCodeCounter++;
+        }
+        seqList[i] += charCodeMap.get(char)!;
+      }
+    }
+    return seqList;
+  }
+
   async calcDistanceMatrix(
     df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean,
   ) {
@@ -486,17 +513,13 @@ export class TreeHelper implements ITreeHelper {
     const columns = colNames.map((name) => df.getCol(name));
     for (const col of columns) {
       let values: Float32Array;
-      let isUsingNeedlemanWunsch: boolean = false;
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
+        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.Difference, false);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = UnitsHandler.getOrCreate(col);
         // Use Hamming distance when sequences are aligned
-        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
-
-        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
-          isUsingNeedlemanWunsch = true;
-        values = await distanceMatrixService.calc(col.toList(), seqDistanceFunction, false);
+        const seqDistanceFunction: MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN;
+        const encodedSeqs = await this.encodeSequences(col);
+        values = await distanceMatrixService.calc(encodedSeqs, seqDistanceFunction, false);
       } else if (col.semType === DG.SEMTYPE.MOLECULE) {
         const fingerPrintCol: DG.Column<DG.BitSet | null> =
           await grok.functions.call('Chem:getMorganFingerprints', {molColumn: col});
@@ -511,9 +534,6 @@ export class TreeHelper implements ITreeHelper {
           out.normalize();
           if (method === DistanceMetric.Euclidean)
             out.square();
-        } else if (isUsingNeedlemanWunsch) {
-          // we need to normalize as needleman wunsch returns negative and positive values as well
-          out.normalize();
         }
       } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
