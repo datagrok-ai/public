@@ -1,5 +1,15 @@
 [
   {
+    "name": "Helm",
+    "date": "2023-12-23T16:42:56.846Z",
+    "version": "2.1.23",
+    "summary": "",
+    "dir": "packages/Helm",
+    "changelog": false,
+    "changelogDate": "2023-12-23",
+    "readme": true
+  },
+  {
     "name": "Bio",
     "date": "2023-12-22T21:37:12.710Z",
     "version": "2.11.20",
@@ -9988,15 +9998,5 @@
     "changelog": false,
     "changelogDate": "2022-01-21",
     "readme": true
-  },
-  {
-    "name": "Demo",
-    "date": "2022-01-19T11:44:56.482Z",
-    "version": "0.0.2",
-    "summary": "",
-    "dir": "packages/Demo",
-    "changelog": false,
-    "changelogDate": "2022-01-19",
-    "readme": false
   }
 ]
