@@ -177,8 +177,8 @@ export class PatternLayoutHandler {
       Object.values(strandLengthInputs).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
     }
 
-    function updateInputValues(type: MODIFICATION_CATEGORY, newValue: boolean | string): void {
-      const inputs = type === MODIFICATION_CATEGORY.PTO ? ptoLinkageInputs : nucleobaseInputs;
+    function updateInputValues(category: MODIFICATION_CATEGORY, newValue: boolean | string): void {
+      const inputs = category === MODIFICATION_CATEGORY.PTO ? ptoLinkageInputs : nucleobaseInputs;
 
       for (let i = 0; i < STRANDS.length; i++) {
         const strand = STRANDS[i];
@@ -388,8 +388,8 @@ export class PatternLayoutHandler {
     }
 
     function createPatternNameForSaving(currUserName: string): string {
-      return patternNameInput.stringValue.includes('(created by ') ? 
-        `${getShortName(patternNameInput.value)}${currUserName}` : 
+      return patternNameInput.stringValue.includes('(created by ') ?
+        `${getShortName(patternNameInput.value)}${currUserName}` :
         `${patternNameInput.stringValue}${currUserName}`;
     }
 
@@ -601,7 +601,7 @@ export class PatternLayoutHandler {
       updateInputValues(MODIFICATION_CATEGORY.BASIS, value);
       refreshOutputExamples();
     });
-    
+
     function createFullyPtoInput(): BooleanInput {
       const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PHOSPHOROTHIOATE, handleFullPtoInputChange);
       styleFullyPtoInputLabel(fullyPto.captionLabel);
@@ -630,7 +630,6 @@ export class PatternLayoutHandler {
     const maxStrandLength = Object.fromEntries(STRANDS.map(
       (strand) => [strand, DEFAULT_SEQUENCE_LENGTH]
     ));
-    // todo: remove vague legacy 'items' from name
     const modificationControls = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.div([])]
     ));
@@ -1023,7 +1022,7 @@ export class PatternLayoutHandler {
         ], {style:{gap:'24px'}}))
         .onOK(()=>{grok.shell.info('Saved')})
         .show()
-    }, 'Edit pattern', '');  
+    }, 'Edit pattern', '');
 
     strandLengthInputs[SENSE_STRAND].addCaption('Length');
 
