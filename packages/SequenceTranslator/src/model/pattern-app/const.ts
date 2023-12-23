@@ -16,7 +16,7 @@ export const enum PATTERN_FIELD {
   COMMENT = 'comment',
 };
 
-export const SENSE_STRAND = 'SS' as const;
+export const SENSE_STRAND = 'SENSE_STRAND' as const;
 export const ANTISENSE_STRAND = 'AS' as const;
 export type StrandType = typeof SENSE_STRAND | typeof ANTISENSE_STRAND;
 

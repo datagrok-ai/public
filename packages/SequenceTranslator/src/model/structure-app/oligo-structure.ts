@@ -62,7 +62,7 @@ export function saveSdf(
     nonEmptyStrands.length === 0 ||
     nonEmptyStrands.length === 1 && ss.strand === ''
   ) {
-    grok.shell.warning('Enter SS and optionally AS/AS2 to save SDF');
+    grok.shell.warning('Enter SENSE_STRAND and optionally AS/AS2 to save SDF');
   } else {
     let result: string;
     if (oneEntity) {

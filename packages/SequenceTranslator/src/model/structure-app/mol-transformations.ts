@@ -52,7 +52,7 @@ export function linkStrandsV3000(
         xShift = 0;
       }
     } else {
-      // SS strands
+      // SENSE_STRAND strands
       ssYShift = Math.min(ssYShift, Math.min(
         ...coordinates.y.filter((item) => item < 0)
       ));

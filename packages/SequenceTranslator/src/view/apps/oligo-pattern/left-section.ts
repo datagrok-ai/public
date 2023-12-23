@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
+  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
 } from '../../../model/pattern-app/const';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../../model/pattern-app/oligo-pattern';
 import {DataManager} from './utils';
@@ -36,7 +36,7 @@ export class LeftSection {
     const convertControlsBlock = [
       ui.h1('Convert'),
       // tables.root,
-      // strandColumnInput[SS],
+      // strandColumnInput[SENSE_STRAND],
       // strandColumnInput[AS],
       // inputIdColumn.root,
       // ui.buttonsInput([
@@ -75,7 +75,7 @@ class PatternBlock {
     const patternControlsBlock = [
       ui.h1('Pattern'),
       this.createAsStrandInput.root,
-      this.strandLengthInput[SS].root,
+      this.strandLengthInput[SENSE_STRAND].root,
       this.strandLengthInput[AS].root,
       this.sequenceBaseInput.root,
       comment.root,

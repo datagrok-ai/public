@@ -415,7 +415,7 @@ export class PatternLayoutHandler {
       const otherUsersPatterns: string[] = [];
 
       for (const patternName of Object.keys(patternsData)) {
-        if (await isCurrentUserCreatedThisPattern(patternName))
+        if (await isPatternCreatedByCurrentUser(patternName))
           otherUsersPatterns.push(patternName);
         else
           ownPatterns.push(patternName);
