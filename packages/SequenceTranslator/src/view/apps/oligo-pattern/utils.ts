@@ -3,9 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {axolabsStyleMap} from '../../../model/data-loading-utils/json-loader';
+import { STRANDS, StrandType } from '../../../model/pattern-app/const';
 
-export class DataManager {
-  readonly baseChoices: string[] = Object.keys(axolabsStyleMap);
-  readonly defaultBase: string = this.baseChoices[0];
+// import {axolabsStyleMap} from '../../../model/data-loading-utils/json-loader';
+
+export function applyToAllStrands(callback: (strand: StrandType) => any) {
+  const result = Object.fromEntries(STRANDS.map((strand) => callback(strand)));
+  return result;
 }

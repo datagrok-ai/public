@@ -10,6 +10,8 @@ import {
 import {isOverhang} from '../../model/pattern-app/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../../model/pattern-app/oligo-pattern';
 import {drawAxolabsPattern} from '../../model/pattern-app/draw-svg';
+
+import {PatternConfiguration, BooleanInput, StringInput} from './oligo-pattern/types';
 // todo: remove ts-ignore
 //@ts-ignore
 import * as svgExport from 'save-svg-as-png';
@@ -19,21 +21,6 @@ const enum MODIFICATION_CATEGORY {
   PTO,
   BASIS
 }
-
-interface PatternConfiguration {
-  [PATTERN_KEY.SS_BASES]: string[];
-  [PATTERN_KEY.AS_BASES]: string[];
-  [PATTERN_KEY.SS_PTO]:  boolean[];
-  [PATTERN_KEY.AS_PTO]: boolean[];
-  [PATTERN_KEY.SS_3]: string;
-  [PATTERN_KEY.SS_5]: string;
-  [PATTERN_KEY.AS_3]: string;
-  [PATTERN_KEY.AS_5]: string;
-  [PATTERN_KEY.COMMENT]: string;
-}
-
-type BooleanInput = DG.InputBase<boolean | null>;
-type StringInput = DG.InputBase<string | null>;
 
 export class PatternLayoutHandler {
   get htmlDivElement() {
