@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS } from '../../../model/pattern-app/const';
+import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType } from '../../../model/pattern-app/const';
 
 import {BooleanInput, StringInput, NumberInput} from './types';
 
@@ -74,15 +74,15 @@ export class PatternControlsManager {
   }
 
   private get strandLengthInputs(): Record<string, NumberInput> {
+    const createStrandLengthInput = (strand: StrandType) => {
+      const sequenceLength = this.patternConfiguration.getBases(strand).length;
+      const input = ui.intInput(`${STRAND_LABEL[strand]} length`, sequenceLength);
+      input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
+      return [strand, input];
+    }
+
     const strandLengthInputs = Object.fromEntries(
-      STRANDS.map(
-        (strand) => {
-          const sequenceLength = this.patternConfiguration.getBases(strand).length;
-          const input = ui.intInput(`${STRAND_LABEL[strand]} length`, sequenceLength);
-          input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
-          return [strand, input];
-        }
-      )
+      STRANDS.map((strand) => createStrandLengthInput(strand))
     );
 
     this.eventBus.antisenseStrandVisible$.subscribe((visible: boolean) => {
@@ -106,4 +106,20 @@ export class PatternControlsManager {
     const patternCommentInput = ui.textInput('Comment', '', (value: string) => this.eventBus.changeComment(value));
     return patternCommentInput;
   }
+}
+
+class LoadPatternControls {
+  constructor(
+    private eventBus: EventBus,
+    // private patternConfiguration: PatternConfigurationManager,
+    private externalDataManager: ExternalDataManager,
+  ) { }
+
+  // private patternChoiceInput = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
+
+  // private getCurrentUserPatterns(): string[] {
+  //   const currentUser = grok.shell.user;
+  //   const currentUserPatterns = this.externalDataManager.fetchPatterns(currentUser);
+  //   return currentUserPatterns;
+  // }
 }
