@@ -4,6 +4,7 @@ export const MAX_SEQUENCE_LENGTH: number = 35;
 export const USER_STORAGE_KEY: string = 'SequenceTranslator';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
 
+// todo: remove as legacy
 export const enum PATTERN_KEY {
   SS_BASES = 'ssBases',
   AS_BASES = 'asBases',

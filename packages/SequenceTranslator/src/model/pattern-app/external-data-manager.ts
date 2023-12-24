@@ -6,6 +6,16 @@ import * as DG from 'datagrok-api/dg';
 import {axolabsStyleMap} from '../data-loading-utils/json-loader';
 
 export class ExternalDataManager {
+  private static instance: ExternalDataManager;
+  private constructor() { }
+
+  static getInstance(): ExternalDataManager {
+    if (!ExternalDataManager.instance) {
+      ExternalDataManager.instance = new ExternalDataManager();
+    }
+    return ExternalDataManager.instance;
+  }
+
   fetchNucleotideBases(): string[] {
     const nucleotideBases: string[] = Object.keys(axolabsStyleMap);
     return nucleotideBases;

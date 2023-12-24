@@ -8,6 +8,7 @@ import {PATTERN_KEY, STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './
 import {PatternConfiguration} from './types';
 import {DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {ExternalDataManager} from './external-data-manager';
+import {EventBus} from './event-bus';
 
 export class PatternConfigurationManager {
   private _bases = {} as Record<StrandType, string[]>;
@@ -15,25 +16,45 @@ export class PatternConfigurationManager {
   private _terminalModification = {} as Record<StrandType, Record<TerminalType, string>>;
   private _comment: string;
 
-  constructor() {
+  constructor(private eventBus: EventBus) {
+    this.initializeBases();
+    this.initializePhosphorothioate();
+    this.initializeTerminalModification();
+    this.initializeComment();
+  }
+
+  private initializeBases(): void {
     const defaultBase = this.fetchDefaultBase();
     STRANDS.forEach((strand) => {
       this._bases[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(defaultBase);
     });
+  }
+
+  private fetchDefaultBase(): string {
+    return ExternalDataManager.getInstance().fetchNucleotideBases()[0];
+  }
+  
+  private initializePhosphorothioate(): void {
     STRANDS.forEach((strand) => {
       this._phosphorothioate[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(DEFAULT_PHOSPHOROTHIOATE);
     });
+  }
+  
+  private initializeTerminalModification(): void {
     STRANDS.forEach((strand) => {
       this._terminalModification[strand] = {} as Record<TerminalType, string>;
       TERMINAL_KEYS.forEach((terminal) => {
         this._terminalModification[strand][terminal] = '';
       });
     });
-    this._comment = '';
   }
 
-  private fetchDefaultBase(): string {
-    return new ExternalDataManager().fetchNucleotideBases()[0];
+  private initializeComment(): void {
+    this._comment = '';
+
+    this.eventBus.commentChange$.subscribe((comment) => {
+      this._comment = comment;
+    });
   }
 
   getBases(strand: StrandType): string[] {

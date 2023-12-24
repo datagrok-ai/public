@@ -13,9 +13,12 @@ import {ExternalDataManager} from '../../../model/pattern-app/external-data-mana
 import {PatternConfigurationManager} from '../../../model/pattern-app/pattern-state-manager';
 
 export class LeftSection {
-  constructor(private eventBus: EventBus) { };
-  private patternConfiguration = new PatternConfigurationManager();
-  private externalDataManager = new ExternalDataManager();
+  constructor(private eventBus: EventBus) {
+    this.externalDataManager = ExternalDataManager.getInstance();
+    this.patternConfiguration = new PatternConfigurationManager(this.eventBus);
+  };
+  private patternConfiguration: PatternConfigurationManager;
+  private externalDataManager: ExternalDataManager;
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
@@ -50,7 +53,7 @@ export class PatternControlsManager {
       this.strandLengthInputs[SENSE_STRAND].root,
       this.strandLengthInputs[ANTISENSE_STRAND].root,
       this.sequenceBaseInput.root,
-      // patternCommentInput.root,
+      this.patternCommentInput.root,
       // loadPatternDiv,
       // patternNameInput.root,
       // ui.h1('Convert'),
@@ -97,5 +100,10 @@ export class PatternControlsManager {
     });
     sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
     return sequenceBaseInput;
+  }
+
+  private get patternCommentInput(): StringInput {
+    const patternCommentInput = ui.textInput('Comment', '', (value: string) => this.eventBus.changeComment(value));
+    return patternCommentInput;
   }
 }
