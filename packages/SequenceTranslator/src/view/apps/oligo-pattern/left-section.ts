@@ -4,12 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import {
-  SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, DEFAULT_SEQUENCE_LENGTH
-} from '../../../model/pattern-app/const';
+import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS } from '../../../model/pattern-app/const';
 
 import {BooleanInput, StringInput, NumberInput} from './types';
-import {applyToAllStrands} from './utils';
 
 import {EventBus} from '../../../model/pattern-app/event-bus';
 import {ExternalDataManager} from '../../../model/pattern-app/external-data-manager';
@@ -74,13 +71,15 @@ export class PatternControlsManager {
   }
 
   private get strandLengthInputs(): Record<string, NumberInput> {
-    const strandLengthInputs = applyToAllStrands(
-      (strand) => {
-        const sequenceLength = this.patternConfiguration.getCurrentConfiguration();
-        const input = ui.intInput(`${STRAND_LABEL[strand]} length`, DEFAULT_SEQUENCE_LENGTH);
-        input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
-        return [strand, input];
-      }
+    const strandLengthInputs = Object.fromEntries(
+      STRANDS.map(
+        (strand) => {
+          const sequenceLength = this.patternConfiguration.getBases(strand).length;
+          const input = ui.intInput(`${STRAND_LABEL[strand]} length`, sequenceLength);
+          input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
+          return [strand, input];
+        }
+      )
     );
 
     this.eventBus.antisenseStrandVisible$.subscribe((visible: boolean) => {

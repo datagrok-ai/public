@@ -4,48 +4,51 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {PATTERN_KEY } from './const';
+import {PATTERN_KEY, STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './const';
 import {PatternConfiguration} from './types';
 import {DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {ExternalDataManager} from './external-data-manager';
 
 export class PatternConfigurationManager {
+  private _bases = {} as Record<StrandType, string[]>;
+  private _phosphorothioate = {} as Record<StrandType, boolean[]>;
+  private _terminalModification = {} as Record<StrandType, Record<TerminalType, string>>;
+  private _comment: string;
+
   constructor() {
-    const defaultPatternConfiguration = this.getDefaultConfiguration();
-    this._patternConfiguration = new rxjs.BehaviorSubject<PatternConfiguration>(defaultPatternConfiguration);
+    const defaultBase = this.fetchDefaultBase();
+    STRANDS.forEach((strand) => {
+      this._bases[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(defaultBase);
+    });
+    STRANDS.forEach((strand) => {
+      this._phosphorothioate[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(DEFAULT_PHOSPHOROTHIOATE);
+    });
+    STRANDS.forEach((strand) => {
+      this._terminalModification[strand] = {} as Record<TerminalType, string>;
+      TERMINAL_KEYS.forEach((terminal) => {
+        this._terminalModification[strand][terminal] = '';
+      });
+    });
+    this._comment = '';
   }
 
-  private _patternConfiguration: rxjs.BehaviorSubject<PatternConfiguration>;
-  private externalDataManager = new ExternalDataManager();
-
-  getCurrentConfiguration(): PatternConfiguration {
-    return this._patternConfiguration.getValue();
+  private fetchDefaultBase(): string {
+    return new ExternalDataManager().fetchNucleotideBases()[0];
   }
 
-  updateConfiguration(newConfig: PatternConfiguration) {
-    this._patternConfiguration.next(newConfig);
+  getBases(strand: StrandType): string[] {
+    return [...this._bases[strand]];
   }
 
-  private getDefaultConfiguration(): PatternConfiguration {
-    const nucleotideBases = this.externalDataManager.fetchNucleotideBases();
-    const defaultBase = nucleotideBases[0];
-    const defaultBases = new Array<string>(DEFAULT_SEQUENCE_LENGTH).fill(defaultBase);
-    const defaultPhosphorothioate = new Array<boolean>(DEFAULT_SEQUENCE_LENGTH).fill(DEFAULT_PHOSPHOROTHIOATE);
-    const defaultTerminalModification = '';
-    const defaultComment = '';
+  getPhosphorothioate(strand: StrandType): boolean[] {
+    return [...this._phosphorothioate[strand]];
+  }
 
-    const defaultPatternConfiguration: PatternConfiguration = {
-      [PATTERN_KEY.SS_BASES]: defaultBases,
-      [PATTERN_KEY.AS_BASES]: defaultBases,
-      [PATTERN_KEY.SS_PTO]: defaultPhosphorothioate,
-      [PATTERN_KEY.AS_PTO]: defaultPhosphorothioate,
-      [PATTERN_KEY.SS_3]: defaultTerminalModification,
-      [PATTERN_KEY.SS_5]: defaultTerminalModification,
-      [PATTERN_KEY.AS_3]: defaultTerminalModification,
-      [PATTERN_KEY.AS_5]: defaultTerminalModification,
-      [PATTERN_KEY.COMMENT]: defaultComment,
-    }
+  getTerminalModification(strand: StrandType, terminal: TerminalType): string {
+    return this._terminalModification[strand][terminal];
+  }
 
-    return defaultPatternConfiguration;
+  getComment(): string {
+    return this._comment;
   }
 }
