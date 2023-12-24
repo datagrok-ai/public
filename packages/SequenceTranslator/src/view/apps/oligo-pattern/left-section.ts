@@ -9,22 +9,22 @@ import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType } fro
 import {BooleanInput, StringInput, NumberInput} from './types';
 
 import {EventBus} from '../../../model/pattern-app/event-bus';
-import {ExternalDataManager} from '../../../model/pattern-app/external-data-manager';
+import {AppDataManager} from '../../../model/pattern-app/external-data-manager';
 import {PatternConfigurationManager} from '../../../model/pattern-app/pattern-state-manager';
 
 export class LeftSection {
   constructor(private eventBus: EventBus) {
-    this.externalDataManager = ExternalDataManager.getInstance();
+    this.dataManager = AppDataManager.getInstance(this.eventBus);
     this.patternConfiguration = new PatternConfigurationManager(this.eventBus);
   };
   private patternConfiguration: PatternConfigurationManager;
-  private externalDataManager: ExternalDataManager;
+  private dataManager: AppDataManager;
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
       this.eventBus,
       this.patternConfiguration,
-      this.externalDataManager
+      this.dataManager
     );
     const patternConstrolsBlock = patternControlsManager.getUiElements();
     const layout = ui.box(
@@ -43,7 +43,7 @@ export class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
     private patternConfiguration: PatternConfigurationManager,
-    private externalDataManager: ExternalDataManager,
+    private dataManager: AppDataManager,
   ) { }
 
   getUiElements(): HTMLElement[] {
@@ -93,7 +93,7 @@ export class PatternControlsManager {
   }
 
   private get sequenceBaseInput(): StringInput {
-    const nucleotideBaseChoices = this.externalDataManager.fetchNucleotideBases();
+    const nucleotideBaseChoices = this.dataManager.fetchNucleotideBases();
     const defaultNucleotideBase = nucleotideBaseChoices[0];
 
     const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (value: string) => {
@@ -108,18 +108,20 @@ export class PatternControlsManager {
   }
 }
 
-class LoadPatternControls {
+class PatternChoiceControls {
   constructor(
     private eventBus: EventBus,
     // private patternConfiguration: PatternConfigurationManager,
-    private externalDataManager: ExternalDataManager,
+    private dataManager: AppDataManager,
   ) { }
 
-  // private patternChoiceInput = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
+  private get patternChoiceInput() {
+    const choiceInput = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
+  }
 
   // private getCurrentUserPatterns(): string[] {
   //   const currentUser = grok.shell.user;
-  //   const currentUserPatterns = this.externalDataManager.fetchPatterns(currentUser);
+  //   const currentUserPatterns = this.dataManager.fetchPatterns(currentUser);
   //   return currentUserPatterns;
   // }
 }

@@ -7,7 +7,7 @@ import * as rxjs from 'rxjs';
 import {PATTERN_KEY, STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './const';
 import {PatternConfiguration} from './types';
 import {DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
-import {ExternalDataManager} from './external-data-manager';
+import {AppDataManager} from './external-data-manager';
 import {EventBus} from './event-bus';
 
 export class PatternConfigurationManager {
@@ -31,7 +31,7 @@ export class PatternConfigurationManager {
   }
 
   private fetchDefaultBase(): string {
-    return ExternalDataManager.getInstance().fetchNucleotideBases()[0];
+    return AppDataManager.getInstance().fetchNucleotideBases()[0];
   }
   
   private initializePhosphorothioate(): void {

@@ -8,6 +8,7 @@ import * as rxjs from 'rxjs';
 export class EventBus {
   private _antisenseStrandVisible$ = new rxjs.BehaviorSubject<boolean>(true);
   private _commentChange$ = new rxjs.BehaviorSubject<string>('');
+  private _updatePatternList$ = new rxjs.Subject<void>();
 
   get antisenseStrandVisible$(): rxjs.Observable<boolean> {
     return this._antisenseStrandVisible$.asObservable();
@@ -23,5 +24,9 @@ export class EventBus {
 
   changeComment(value: string) {
     this._commentChange$.next(value);
+  }
+
+  updatePatternList() {
+    this._updatePatternList$.next();
   }
 }
