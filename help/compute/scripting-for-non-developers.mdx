@@ -336,6 +336,71 @@ new_table = new_table[ [id_column] + data_columns ]
 
 ![ColumnSelectorDemo.png](pics/ColumnSelectorDemo.png)
 
+### File I/O
+
+You can exchange raw files between a Datagrok script and your computer
+using `file` and `blob` annotations.
+
+The `file` annotation allows you to load and save any binary file.
+Inside the `Python`/`R` script this parameter will be a string variable 
+containing path to the local file.
+
+For example, let's save a dataframe to a JSON file:
+
+```python
+#name: DfToJSON
+#description: Saves a dataframe to JSON file
+#language: python
+#tags: template, demo, FileIo
+#input: dataframe df [Dataframe to convert to JSON]
+#output: file json_file
+
+df.to_json(json_file)
+```
+
+When you run this script, Datagrok will return to you the `FileInfo` object in the scalar variables panel.
+To save the file, right-click on the highlighted file link and choose the **Download** option.
+The file name always matches the output variable name.
+Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
+
+![Save to local file](pics/Scripting-FileIO-save.png)
+
+When you use the `file` annotation for the input parameter,
+Datagrok creates an interface to load file.
+
+```python
+#name: DfFromJSON
+#description: Loads a dataframe from JSON file
+#language: python
+#tags: template, demo, FileIo
+#input: file json_file {caption:JSON file} [A JSON file to load a dataframe]
+#output: dataframe df 
+
+df = pd.read_json(json_file)
+```
+
+![Load from local file](pics/Scripting-FileIO-load.png)
+
+You can upload the file from your computer, choose it from Datagrok file storage,
+or use any of the file connectors supported by Datagrok.
+
+![Datafork FileIO connectors.png](pics/Scripting-FileIO-connectors.png)
+
+The `blob` input works in a very similar way, but provides the binary stream instead of a file name.
+
+```python
+#name: BlobTest
+#description: Example of Blob usage
+#language: python
+#tags: template, demo
+#input: blob array_blob 
+#output: string typeofblob
+
+typeofblob = type(array_blob)
+```
+
+You can use this capability to effectively transfer a large set of data 
+from one Datagrok function/script to another. 
 
 ### Enhancing script input view
 
