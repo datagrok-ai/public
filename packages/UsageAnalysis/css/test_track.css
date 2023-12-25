@@ -1,4 +1,9 @@
-#tt-tree, #tt-tree .d4-tree-view-group {
+#tt-tree {
+  width: 100%;
+  overflow-y: unset;
+}
+
+#tt-tree .d4-tree-view-group {
   width: 100%;
 }
 
@@ -42,4 +47,28 @@
 
 .tt-status-icon {
   margin-left: 7px;
+}
+
+.tt-ribbon-button {
+  margin: 4px 0 !important;
+}
+
+.tt-ribbon-button:nth-child(1) {
+  margin-left: 2px !important;
+}
+
+#tt-ribbon-save-button:enabled {
+  animation-name: color;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse;
+  animation-timing-function: linear;
+}
+
+@keyframes color {
+  from {
+    }
+  to {
+    color: #c9e7ff;
+    }
 }
