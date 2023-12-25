@@ -3,16 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { TITLE, LINK, ERROR_MSG, HINT } from './ui-constants';
-import { METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
+import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
 
-/** Column types supported by the missing values imputer */
-const SUPPORTED_COLUMN_TYPES = [
-  DG.COLUMN_TYPE.INT,
-  DG.COLUMN_TYPE.FLOAT,
-  DG.COLUMN_TYPE.STRING,
-  DG.COLUMN_TYPE.DATE_TIME,
-  DG.COLUMN_TYPE.QNUM,
-] as string[];
+
 
 /** Setting of the feature metric inputs */
 type FeatureInputSettings = {
@@ -115,7 +108,7 @@ export function runKNNImputer(): void {
   targetColInput.setTooltip(HINT.TARGET);
 
   // Feature columns components
-  let selectedFeatureColNames = [] as string[];
+  let selectedFeatureColNames = availableFeatureColsNames as string[];
   const featuresInput = ui.columnsInput(TITLE.FEATURES, df, () => {    
     selectedFeatureColNames = featuresInput.value.map((col) => col.name);
 
@@ -172,7 +165,7 @@ export function runKNNImputer(): void {
     const div = ui.divH([distTypeInput.root, weightInput.root]);
     metricInfoInputs.set(name, div);
     metricsDiv.append(div);
-  });  
+  });
 
   // The main dialog
   const dlg = ui.dialog({title: TITLE.KNN_IMPUTER, helpUrl: LINK.KNN_IMPUTER});

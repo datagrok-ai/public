@@ -5,10 +5,14 @@ export enum ERROR_MSG {
   UNSUPPORTED_COLUMN_TYPE = 'Unsupported column type',
   UNSUPPORTED_IMPUTATION_STRATEGY = 'Unsupported imputation strategy',
   KNN_CANNOT_BE_APPLIED = 'KNN imputer cannot be applied: no columns to be used as features',
+  KNN_NO_TARGET_COLUMNS = 'KNN imputer cannot be applied: no columns with missing values',
+  KNN_NO_FEATURE_COLUMNS = 'KNN imputer cannot be applied: no feature columns',
+  KNN_NOT_ENOUGH_OF_ROWS = 'KNN imputer cannot be applied: not enough of rows',
+  KNN_IMPOSSIBLE_IMPUTATION = 'Imputation is impossible, no features can be used',
 };
 
 /** Suffix used for column copy */
-export const COPY_SUFFIX = '(copy)';
+export const COPY_SUFFIX = 'copy';
 
 /** UI titles */
 export enum TITLE {
