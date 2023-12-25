@@ -458,20 +458,20 @@ export class PatternLayoutHandler {
       const currentUserName = (await grok.dapi.users.current()).friendlyName;
       const otherUsers = 'Other users';
 
-      let loadPattern = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
+      let patternChoiceInput = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
 
-      const patternListChoiceInput = ui.choiceInput(
+      const userChoiceInput = ui.choiceInput(
         '', currentUserName, [currentUserName, otherUsers],
         (value: string) => patternListChoiceInputOnChange(value)
       );
 
-      patternListChoiceInput.input.style.maxWidth = '142px';
-      initializeLoadPatternInterface(loadPattern, loadPatternDiv, patternListChoiceInput);
+      userChoiceInput.input.style.maxWidth = '142px';
+      initializeLoadPatternInterface(patternChoiceInput, loadPatternDiv, userChoiceInput);
 
       function patternListChoiceInputOnChange(value: string) {
         const currentList = value === currentUserName ? ownPatterns : otherUsersPatterns;
-        loadPattern = ui.choiceInput('Load pattern', '', currentList, (value: string) => fetchAndUpdatePatternInUI(value));
-        initializeLoadPatternInterface(loadPattern, loadPatternDiv, patternListChoiceInput);
+        patternChoiceInput = ui.choiceInput('Load pattern', '', currentList, (value: string) => fetchAndUpdatePatternInUI(value));
+        initializeLoadPatternInterface(patternChoiceInput, loadPatternDiv, userChoiceInput);
       }
     }
 

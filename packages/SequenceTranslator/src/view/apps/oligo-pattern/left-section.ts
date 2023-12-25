@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType } from '../../../model/pattern-app/const';
+import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType, OTHER_USERS } from '../../../model/pattern-app/const';
 
 import {BooleanInput, StringInput, NumberInput} from './types';
 
@@ -113,15 +113,56 @@ class PatternChoiceControls {
     private eventBus: EventBus,
     // private patternConfiguration: PatternConfigurationManager,
     private dataManager: AppDataManager,
-  ) { }
+  ) {
+    this.eventBus.userChoice$.subscribe((value: string) => this.handleUserChoice(value));
+    this.eventBus.loadPattern$.subscribe((value: string) => this.handlePatternChoice(value));
 
-  private get patternChoiceInput() {
-    const choiceInput = ui.choiceInput('Load pattern', '', ownPatterns, (value: string) => fetchAndUpdatePatternInUI(value));
+    const defaultUser = this.dataManager.getCurrentUserName();
+    this.selectedUser = defaultUser;
+
+    const defaultPattern = this.dataManager.getCurrentUserPatterns()[0];
+    this.selectedPattern = defaultPattern;
   }
 
-  // private getCurrentUserPatterns(): string[] {
-  //   const currentUser = grok.shell.user;
-  //   const currentUserPatterns = this.dataManager.fetchPatterns(currentUser);
-  //   return currentUserPatterns;
-  // }
+  private selectedUser: string;
+  private selectedPattern: string;
+
+  private handleUserChoice(value: string) {
+    this.selectedUser = value;
+    grok.shell.info(`User ${value} selected`);
+  }
+
+  private handlePatternChoice(value: string) {
+    this.selectedPattern = value;
+    grok.shell.info(`Pattern ${value} selected`);
+  }
+
+  private isCurrentUserSelected(): boolean {
+    return this.selectedUser !==  OTHER_USERS;
+  }
+
+  private get userChoiceInput(): StringInput {
+    const currentUser = this.dataManager.getCurrentUserName();
+
+    const values = [currentUser, OTHER_USERS];
+    const userChoiceInput = ui.choiceInput(
+      '', currentUser, values,
+      (value: string) => this.eventBus.chooseUser(value)
+    );
+    userChoiceInput.setTooltip('Choose user to load pattern from');
+
+    return userChoiceInput;
+  }
+
+  private getPatternChoiceInput(): StringInput {
+    const patternList = this.isCurrentUserSelected() ? this.dataManager.getCurrentUserPatterns() : this.dataManager.getOtherUsersPatterns();
+    const choiceInput = ui.choiceInput('Load pattern', this.selectedPattern, patternList, (value: string) => this.eventBus.loadPattern(value));
+    return choiceInput;
+  }
+
+  private get deletePatternButton(): HTMLDivElement {
+    const button = ui.button(ui.iconFA('trash-alt'), () => this.eventBus.deletePattern(this.selectedPattern));
+
+    return ui.div([ button, ], 'ui-input-options');
+  }
 }

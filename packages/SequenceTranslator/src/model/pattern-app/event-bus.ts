@@ -9,6 +9,9 @@ export class EventBus {
   private _antisenseStrandVisible$ = new rxjs.BehaviorSubject<boolean>(true);
   private _commentChange$ = new rxjs.BehaviorSubject<string>('');
   private _updatePatternList$ = new rxjs.Subject<void>();
+  private _loadPattern$ = new rxjs.BehaviorSubject<string>('');
+  private _chooseUser$ = new rxjs.BehaviorSubject<string>('');
+  private _deletePattern$ = new rxjs.Subject<string>();
 
   get antisenseStrandVisible$(): rxjs.Observable<boolean> {
     return this._antisenseStrandVisible$.asObservable();
@@ -16,6 +19,14 @@ export class EventBus {
 
   get commentChange$(): rxjs.Observable<string> {
     return this._commentChange$.asObservable();
+  }
+
+  get userChoice$(): rxjs.Observable<string> {
+    return this._chooseUser$.asObservable();
+  }
+
+  get loadPattern$(): rxjs.Observable<string> {
+    return this._loadPattern$.asObservable();
   }
 
   toggleAntisenseStrand(value: boolean) {
@@ -28,5 +39,21 @@ export class EventBus {
 
   updatePatternList() {
     this._updatePatternList$.next();
+  }
+
+  loadPattern(patternName: string) {
+    this._loadPattern$.next(patternName);
+  }
+
+  chooseUser(userName: string) {
+    this._chooseUser$.next(userName);
+  }
+
+  getUserNameChoice(): string {
+    return this._chooseUser$.getValue();
+  }
+
+  deletePattern(patternName: string) {
+    this._deletePattern$.next(patternName);
   }
 }

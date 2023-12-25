@@ -30,12 +30,16 @@ export class AppDataManager {
     return nucleotideBases;
   }
 
-  fetchCurrentUserPatterns(): string[] {
+  getCurrentUserPatterns(): string[] {
     return this.patternListManager.getCurrentUserPatterns();
   }
 
-  fetchOtherUsersPatterns(): string[] {
+  getOtherUsersPatterns(): string[] {
     return this.patternListManager.getOtherUsersPatterns();
+  }
+
+  getCurrentUserName(): string {
+    return this.patternListManager.getCurrentUserName();
   }
 }
 
@@ -43,6 +47,8 @@ class PatternListManager {
   // private initialized = false;
   private currentUserPatterns: string[] = [];
   private otherUsersPatterns: string[] = [];
+  private currentUserFriendlyName = '';
+
   private eventBus: EventBus
 
   constructor(eventBus: EventBus) {
@@ -50,13 +56,18 @@ class PatternListManager {
   }
 
   async init(): Promise<void> {
-    const patternsRecords = await this.fetchAllPatterns();
-    const categorizedPatterns = await this.categorizePatternsByUserOwnership(patternsRecords);
+    try {
+      const patternsRecords = await this.fetchAllPatterns();
+      const categorizedPatterns = await this.categorizePatternsByUserOwnership(patternsRecords);
 
-    this.currentUserPatterns = categorizedPatterns.currentUserPatterns;
-    this.otherUsersPatterns = categorizedPatterns.otherUsersPatterns;
+      this.currentUserPatterns = categorizedPatterns.currentUserPatterns;
+      this.otherUsersPatterns = categorizedPatterns.otherUsersPatterns;
+      this.currentUserFriendlyName = await this.fetchCurrentUserName();
 
-    this.eventBus.updatePatternList();
+      this.eventBus.updatePatternList();
+    } catch (e) {
+      console.error('Error while initializing pattern list manager', e);
+    }
   }
 
   getCurrentUserPatterns(): string[] {
@@ -67,11 +78,15 @@ class PatternListManager {
     return this.otherUsersPatterns;
   }
 
+  getCurrentUserName(): string {
+    return this.currentUserFriendlyName;
+  }
+
   async savePatternToUserStorage(patternName: string, pattern: string): Promise<void> {
     // todo: implement
   }
 
-  private async fetchAllPatterns() {
+  private async fetchAllPatterns(): Promise<PatternsRecord> {
     const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false) as PatternsRecord;
     return patternsData;
   }
@@ -90,5 +105,10 @@ class PatternListManager {
     }
 
     return { currentUserPatterns, otherUsersPatterns };
+  }
+
+  async fetchCurrentUserName(): Promise<string> {
+    const friendlyName = (await grok.dapi.users.current()).friendlyName;
+    return friendlyName;
   }
 }

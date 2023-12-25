@@ -36,3 +36,5 @@ export const TERMINAL: Record<TerminalType, number> = {
   [THREE_PRIME_END]: 3,
   [FIVE_PRIME_END]: 5,
 };
+
+export const OTHER_USERS = 'Other users';
