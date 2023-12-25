@@ -1,5 +1,15 @@
 [
   {
+    "name": "Bio",
+    "date": "2023-12-25T12:54:59.719Z",
+    "version": "2.11.21",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2023-12-25",
+    "readme": true
+  },
+  {
     "name": "Compute",
     "date": "2023-12-25T10:50:34.154Z",
     "version": "1.18.0",
@@ -9987,16 +9997,6 @@
     "dir": "packages/Demo",
     "changelog": false,
     "changelogDate": "2022-01-25",
-    "readme": false
-  },
-  {
-    "name": "Demo",
-    "date": "2022-01-24T20:44:06.085Z",
-    "version": "0.0.3",
-    "summary": "",
-    "dir": "packages/Demo",
-    "changelog": false,
-    "changelogDate": "2022-01-24",
     "readme": false
   }
 ]
