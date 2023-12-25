@@ -40,6 +40,7 @@ export class SunburstViewer extends EChartViewer {
           nodeClick: false,
           label: {
             rotate: 'radial',
+            fontSize: 8,
           }
         },
       ],
@@ -187,6 +188,53 @@ export class SunburstViewer extends EChartViewer {
 
   getSeriesData(): treeDataType[] | undefined {
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter);
+  }
+
+  formatLabel(params: any) {
+    //@ts-ignore
+    const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+    const getCurrentItemIndex = params.seriesIndex;
+    const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => {
+        if (getCurrentItemIndex === index) {
+            return item;
+        }
+    });
+    const r = ItemLayoutInfo.r;
+    const startAngle = ItemLayoutInfo.startAngle;
+    const endAngle = ItemLayoutInfo.endAngle;
+    const cx = ItemLayoutInfo.cx;
+    const cy = ItemLayoutInfo.cy;
+    const width = Math.abs(cx + r * Math.cos(startAngle) - (cx + r * Math.cos(endAngle)));
+    const height = Math.abs(cy + r / 1.5 * Math.sin(startAngle) - (cy + r / 1.5 * Math.sin(endAngle)));
+
+    const averageCharWidth = 10 * 0.6;
+    const averageCharHeight = 10 * 1.2;
+    const maxWidthCharacters = Math.floor(width / averageCharWidth);
+    const maxHeightCharacters = Math.floor(height / averageCharHeight);
+
+    const maxLength = maxWidthCharacters;
+    let name = params.name;
+    let lines = [name];
+
+    if (name.length > maxLength) {
+      lines = [];
+      let remainingHeight = maxHeightCharacters;
+      while (name.length > 0 && remainingHeight > 0) {
+        let line = name.substring(0, maxLength);
+        const lastSpaceIndex = line.lastIndexOf(' ');
+        if (lastSpaceIndex !== -1) {
+          line = line.substring(0, lastSpaceIndex);
+        }
+        line = line.trimRight();
+        lines.push(line);  
+        remainingHeight -= 1;
+        name = name.substring(line.length).trim();
+      }
+      if (name.length > 0) {
+        lines[lines.length - 1] += '...';
+      }
+    }
+    return lines.join('\n');
   }
 
   async handleStructures(data: treeDataType[] | undefined) {
