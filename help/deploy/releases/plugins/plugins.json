@@ -1,5 +1,15 @@
 [
   {
+    "name": "Compute",
+    "date": "2023-12-25T10:50:34.154Z",
+    "version": "1.18.0",
+    "summary": "- RFV: Added input form adaptiveness\n- RFV: Renamed validator tag to `validatorFunc`\n- RFV: Added `nullable` tag for inputs",
+    "dir": "packages/Compute",
+    "changelog": true,
+    "changelogDate": "2023-12-25",
+    "readme": true
+  },
+  {
     "name": "Helm",
     "date": "2023-12-23T16:42:56.846Z",
     "version": "2.1.23",
@@ -9988,15 +9998,5 @@
     "changelog": false,
     "changelogDate": "2022-01-24",
     "readme": false
-  },
-  {
-    "name": "Peptides",
-    "date": "2022-01-21T15:28:55.890Z",
-    "version": "0.8.6",
-    "summary": "",
-    "dir": "packages/Peptides",
-    "changelog": false,
-    "changelogDate": "2022-01-21",
-    "readme": true
   }
 ]
