@@ -252,9 +252,9 @@ export class RichFunctionView extends FunctionView {
   public async loadInputsValidators() {
     const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
-      if (param.property.options.validator) {
-        const func: DG.Func = await grok.functions.eval(param.property.options.validator);
-        const call = func.prepare({params: JSON.parse(param.property.options.validatorOptions || '{}')});
+      if (param.property.options.validatorFunc) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
         this.validators[param.name] = call.outputs.validator;
       }
