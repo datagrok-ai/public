@@ -1,11 +1,31 @@
 [
   {
+    "name": "Helm",
+    "date": "2023-12-23T16:42:56.846Z",
+    "version": "2.1.23",
+    "summary": "",
+    "dir": "packages/Helm",
+    "changelog": false,
+    "changelogDate": "2023-12-23",
+    "readme": true
+  },
+  {
+    "name": "Bio",
+    "date": "2023-12-22T21:37:12.710Z",
+    "version": "2.11.20",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2023-12-22",
+    "readme": true
+  },
+  {
     "name": "Diff Studio",
     "date": "2023-12-21T17:30:47.147Z",
     "version": "1.0.2",
-    "summary": "",
+    "summary": "* Run computations on open Diff Studio",
     "dir": "packages/ODEs",
-    "changelog": false,
+    "changelog": true,
     "changelogDate": "2023-12-21",
     "readme": true
   },
@@ -9977,26 +9997,6 @@
     "dir": "packages/Peptides",
     "changelog": false,
     "changelogDate": "2022-01-21",
-    "readme": true
-  },
-  {
-    "name": "Demo",
-    "date": "2022-01-19T11:44:56.482Z",
-    "version": "0.0.2",
-    "summary": "",
-    "dir": "packages/Demo",
-    "changelog": false,
-    "changelogDate": "2022-01-19",
-    "readme": false
-  },
-  {
-    "name": "Peptides",
-    "date": "2022-01-19T10:11:10.955Z",
-    "version": "0.8.5",
-    "summary": "",
-    "dir": "packages/Peptides",
-    "changelog": false,
-    "changelogDate": "2022-01-19",
     "readme": true
   }
 ]
