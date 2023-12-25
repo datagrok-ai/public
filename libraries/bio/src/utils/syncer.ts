@@ -2,8 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {v4 as uuidv4} from 'uuid';
-
 import {errInfo} from './err-info';
 import {ILogger} from './logger';
 
