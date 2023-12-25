@@ -3,33 +3,33 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { TITLE, LINK, ERROR_MSG, HINT } from './ui-constants';
-import { DISTANCE_TYPE, DistanceInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
+import { METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
 
-/** */
+/** Column types supported by the missing values imputer */
 const SUPPORTED_COLUMN_TYPES = [
   DG.COLUMN_TYPE.INT,
   DG.COLUMN_TYPE.FLOAT,
   DG.COLUMN_TYPE.STRING,
   DG.COLUMN_TYPE.DATE_TIME,
   DG.COLUMN_TYPE.QNUM,
-];
+] as string[];
 
-/** */
+/** Setting of the feature metric inputs */
 type FeatureInputSettings = {
   defaultWeight: number,
-  defaultDistance: DISTANCE_TYPE,
-  availableDistances: DISTANCE_TYPE[], 
+  defaultMetric: METRIC_TYPE,
+  availableMetrics: METRIC_TYPE[], 
 };
 
-/** */
+/** Return default setting of the feature metric inputs */
 function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
   switch (type) {
     case DG.COLUMN_TYPE.STRING:
     case DG.COLUMN_TYPE.DATE_TIME:
       return {
         defaultWeight: DEFAULT.WEIGHT,
-        defaultDistance: DISTANCE_TYPE.ONE_HOT,
-        availableDistances: [DISTANCE_TYPE.ONE_HOT]
+        defaultMetric: METRIC_TYPE.ONE_HOT,
+        availableMetrics: [METRIC_TYPE.ONE_HOT]
       };
 
     case DG.COLUMN_TYPE.INT:
@@ -37,8 +37,8 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
     case DG.COLUMN_TYPE.QNUM:
       return {
         defaultWeight: DEFAULT.WEIGHT,
-        defaultDistance: DISTANCE_TYPE.EUCLIDEAN,
-        availableDistances: [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN, DISTANCE_TYPE.ONE_HOT]
+        defaultMetric: METRIC_TYPE.DIFFERENCE,
+        availableMetrics: [METRIC_TYPE.DIFFERENCE, METRIC_TYPE.ONE_HOT]
       };
 
     default:
@@ -46,33 +46,33 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
   }
 }
 
-/** */
-function isSupportedColumnType(col: DG.Column): boolean {
-  return SUPPORTED_COLUMN_TYPES.includes(col.type as DG.COLUMN_TYPE);
-}
-
-/** Check whether missing values imputation can be applied */
-function canImputationBeApplied(col: DG.Column): boolean {
-  return isSupportedColumnType(col) && (col.stats.missingValueCount > 0);
-}
-
-/** */
+/** Run the KNN missing values imputer */
 export function runKNNImputer(): void {
+  /** current dataframe */
   let df: DG.DataFrame | null = grok.shell.t;
 
   if (df === null)
     throw new Error(ERROR_MSG.NO_DATAFRAME);
 
+  /** columns with missing values */
   const colsWithMissingVals = [] as DG.Column[];
-  const availableColsNames = [] as string[];
 
+  /** names of columns with missing values */
+  const availableTargetColsNames = [] as string[];
+
+  /** names of columns that can be used as features */
+  const availableFeatureColsNames = [] as string[];
+
+  // get columns with missing vals & available feature cols
   df.columns.toList()
-    .filter((col) => isSupportedColumnType(col))
+    .filter((col) => SUPPORTED_COLUMN_TYPES.includes(col.type))
     .forEach((col) => {
-      availableColsNames.push(col.name);
+      availableFeatureColsNames.push(col.name);
 
-      if (canImputationBeApplied(col))
+      if (col.stats.missingValueCount > 0) {
         colsWithMissingVals.push(col);
+        availableTargetColsNames.push(col.name);
+      }
     });
 
   if (colsWithMissingVals.length === 0) {
@@ -80,112 +80,123 @@ export function runKNNImputer(): void {
     return;
   }
 
-  if (colsWithMissingVals.length === 1) {
-    grok.shell.error(ERROR_MSG.KNN_CANNOT_BE_APPLIED);
-    return;
-  }
-
+  // In-place components
   let inPlace = DEFAULT.IN_PLACE > 0;
   const inPlaceInput = ui.boolInput(TITLE.IN_PLACE, inPlace, () => { inPlace = inPlaceInput.value ?? false;});
   inPlaceInput.setTooltip(HINT.IN_PLACE);
 
+  // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
   const neighborsInput = ui.intInput(TITLE.NEIGHBORS, neighbors, () => {
     const val = neighborsInput.value;
     if (val === null)
       neighborsInput.value = neighbors;
-    else if (val > MIN_NEIGHBORS)
+    else if (val >= MIN_NEIGHBORS) 
       neighbors = val;
+    else
+      neighborsInput.value = neighbors;
   });
   neighborsInput.setTooltip(HINT.NEIGHBORS);
 
-  let targetCol: DG.Column | null = null;
-  const targetColInput = ui.columnInput(TITLE.COLUMN, df, null, () => {
-    hideWidgets();
-    targetCol = targetColInput.value;
+  // Distance components
+  let distType = DISTANCE_TYPE.EUCLIDEAN;
+  const distTypeInput = ui.choiceInput(TITLE.DISTANCE, distType, [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN], 
+    () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN);
+  distTypeInput.setTooltip(HINT.DISTANCE);
 
-    if (targetCol !== null)
-      featuresInput.root.hidden = false;
-  }, {filter: (col: DG.Column) => colsWithMissingVals.includes(col)});
-  targetColInput.setTooltip(HINT.FEATURES);
+  // Target columns components (cols with missing values to be imputed)
+  let targetCols = colsWithMissingVals;
+  const targetColInput = ui.columnsInput(TITLE.COLUMNS, df, () => {
+    if (targetColInput.value.length !== 0)
+      targetCols = targetColInput.value;
+    else
+      targetColInput.value = targetCols;
+  }, {available: availableTargetColsNames, checked: availableTargetColsNames});
+  targetColInput.setTooltip(HINT.TARGET);
 
+  // Feature columns components
   let selectedFeatureColNames = [] as string[];
-  const featuresInput = ui.columnsInput(TITLE.FEATURES, df, () => {
-    hideWidgets();
-    featuresInput.root.hidden = false;
-    selectedFeatureColNames = featuresInput.value.map((col) => col.name).filter((name) => name !== targetCol!.name);
-    featuresInput.value = featuresInput.value.filter((col) => col.name !== targetCol!.name);
+  const featuresInput = ui.columnsInput(TITLE.FEATURES, df, () => {    
+    selectedFeatureColNames = featuresInput.value.map((col) => col.name);
 
     if (selectedFeatureColNames.length > 0) {
       dlg.getButton(TITLE.RUN).hidden = false;
+      distDiv.hidden = false;
       inPlaceInput.root.hidden = false;
       neighborsInput.root.hidden = false;
+      distTypeInput.root.hidden = false;
 
-      selectedFeatureColNames.forEach((name) => {
-        const uiElem = distInfoInputs.get(name);
-        if (uiElem !== undefined)
-          uiElem.hidden = false;
-      });
+      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
     }
-  }, {available: availableColsNames});
+    else {
+      dlg.getButton(TITLE.RUN).hidden = true;
+      inPlaceInput.root.hidden = true;
+      neighborsInput.root.hidden = true;
+      distDiv.hidden = true;
+      metricsDiv.hidden = true;
+    }
+  }, {available: availableFeatureColsNames, checked: availableFeatureColsNames});
   featuresInput.setTooltip(HINT.FEATURES);
 
-  const featuresDist = new Map<string, DistanceInfo>();
-  const distInfoInputs = new Map<string, HTMLDivElement>();
-  const metricSpecificationInputs = ui.divV([]);
+  // Metrics components
+  const featuresMetrics = new Map<string, MetricInfo>();
+  const metricInfoInputs = new Map<string, HTMLDivElement>();
+  const metricsDiv = ui.divV([]);
+  metricsDiv.style.overflow = 'auto';
 
-  availableColsNames.forEach((name) => {    
+  // Create metrics UI
+  availableFeatureColsNames.forEach((name) => {    
+    // initialization
     const type = df!.col(name)!.type as DG.COLUMN_TYPE;
     const settings = getFeatureInputSettings(type);
-    featuresDist.set(name, {weight: settings.defaultWeight, type: settings.defaultDistance});
+    featuresMetrics.set(name, {weight: settings.defaultWeight, type: settings.defaultMetric});
 
-    const distTypeInput = ui.choiceInput(name, settings.defaultDistance, settings.availableDistances, () => {
-      const distInfo = featuresDist.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultDistance};
-      distInfo.type = distTypeInput.value ?? settings.defaultDistance;
-      featuresDist.set(name, distInfo);
+    // distance input
+    const distTypeInput = ui.choiceInput(name, settings.defaultMetric, settings.availableMetrics, () => {
+      const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
+      distInfo.type = distTypeInput.value ?? settings.defaultMetric;
+      featuresMetrics.set(name, distInfo);
     });
     distTypeInput.root.style.width = '50%';
-    distTypeInput.setTooltip(HINT.DISTANCE);
+    distTypeInput.setTooltip(HINT.METRIC);
 
+    // weight input
     const weightInput = ui.floatInput(TITLE.WEIGHT, settings.defaultWeight, () => {
-      const distInfo = featuresDist.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultDistance};
+      const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
       distInfo.weight = weightInput.value ?? settings.defaultWeight;
-      featuresDist.set(name, distInfo);
+      featuresMetrics.set(name, distInfo);
     });
     weightInput.root.style.width = '10%';
     weightInput.setTooltip(HINT.WEIGHT);
     
     const div = ui.divH([distTypeInput.root, weightInput.root]);
-    distInfoInputs.set(name, div);
-    metricSpecificationInputs.append(div);
+    metricInfoInputs.set(name, div);
+    metricsDiv.append(div);
   });  
 
+  // The main dialog
   const dlg = ui.dialog({title: TITLE.KNN_IMPUTER, helpUrl: LINK.KNN_IMPUTER});
   grok.shell.v.root.appendChild(dlg.root);
+
+  metricsDiv.hidden = true;
+
+  // Icon showing/hiding metrics UI
+  const settingsIcon = ui.icons.settings(() => { metricsDiv.hidden = !metricsDiv.hidden;}, HINT.METRIC_SETTINGS);
+
+  const distDiv = ui.divH([distTypeInput.root, settingsIcon]);
 
   dlg.addButton(TITLE.RUN, () => {
       dlg.close();
 
-      availableColsNames
-        .filter((name) => !selectedFeatureColNames.includes(name))
-        .forEach((name) => featuresDist.delete(name));
+      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
-      impute(df!, targetCol!, featuresDist, neighbors, inPlace);
+      impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);
     })
     .add(targetColInput)
-    .add(featuresInput)
-    .add(metricSpecificationInputs)
+    .add(featuresInput)    
+    .add(distDiv)
+    .add(metricsDiv)
     .add(neighborsInput)
     .add(inPlaceInput)
     .show();
-  
-  const hideWidgets = () => {
-    dlg.getButton(TITLE.RUN).hidden = true;
-    inPlaceInput.root.hidden = true;
-    neighborsInput.root.hidden = true;
-    featuresInput.root.hidden = true;
-    distInfoInputs.forEach((div) => div.hidden = true);
-  };
-
-  hideWidgets();
 }

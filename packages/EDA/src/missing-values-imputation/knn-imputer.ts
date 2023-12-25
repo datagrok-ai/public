@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMPUTATION_STRATEGY, ERROR_MSG, COPY_SUFFIX} from './ui-constants';
+import {ERROR_MSG, COPY_SUFFIX} from './ui-constants';
 
 /** */
 function getNullValue(col: DG.Column): number {
@@ -28,53 +28,12 @@ function getNullValue(col: DG.Column): number {
 }
 
 /** */
-function getFillValue(col: DG.Column, strategy: string): number {
-  let res: number;
-
-  switch (strategy) {
-    case IMPUTATION_STRATEGY.MEAN:        
-      res = col.stats.avg;
-      break;
-  
-    case IMPUTATION_STRATEGY.MEDIAN:
-      res = col.stats.med;
-      break;
-    
-    default:
-      throw new Error(ERROR_MSG.UNSUPPORTED_IMPUTATION_STRATEGY);
-  }
-
-  return ((col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.STRING))? Math.round(res) : res;
-}
-
-/** */
-function getTypedArrayOfTheSameSize(col: DG.Column): Int32Array | Float32Array | Float64Array {
-  const size = col.getRawData().length;
-
-  switch (col.type) {
-    case DG.COLUMN_TYPE.INT:
-    case DG.COLUMN_TYPE.STRING:  
-      return new Int32Array(size);
-
-    case DG.COLUMN_TYPE.FLOAT:
-      return new Float32Array(size);
-
-    case DG.COLUMN_TYPE.DATE_TIME:
-    case DG.COLUMN_TYPE.QNUM:
-      return new Float64Array(size);
-  
-    default:
-      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-  }
-}
-
-/** */
 export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean): DG.Column {
   if (col.stats.missingValueCount === 0)
     throw new Error(ERROR_MSG.NO_MISSING_VALUES);
 
   const nullValue = getNullValue(col);
-  const fillValue = getFillValue(col, strategy);
+  const fillValue = 0;//getFillValue(col, strategy);
 
   const len = col.length;
   const source = col.getRawData();    
@@ -106,23 +65,28 @@ export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean)
   return copy;
 }
 
+/** */
+export enum METRIC_TYPE {
+  ONE_HOT = 'One-hot',
+  DIFFERENCE = 'Difference',
+};
+
 /** Distance types. */
 export enum DISTANCE_TYPE {
   EUCLIDEAN = 'Euclidian',
   MANHATTAN = 'Manhattan',
-  ONE_HOT = 'One-hot'
 };
 
 /** Metric specification. */
-export type DistanceInfo = {
+export type MetricInfo = {
   weight: number,
-  type: DISTANCE_TYPE,
+  type: METRIC_TYPE,
 };
 
 /** */
 export enum DEFAULT {
   WEIGHT = 1,
-  NEIGHBORS = 1,
+  NEIGHBORS = 2,
   IN_PLACE = 1,
 };
 
@@ -130,5 +94,15 @@ export enum DEFAULT {
 export const MIN_NEIGHBORS = 1;
 
 /** */
-export function impute(df: DG.DataFrame, col: DG.Column, featuresDist: Map<string, DistanceInfo>, neighbors: number, inPlace: boolean) {
+export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetrics: Map<string, MetricInfo>,
+  distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean) 
+{
+  console.log(df);
+  console.log('Target');
+  console.log(targetCols);
+  console.log('Features');
+  console.log(featuresMetrics);
+  console.log(distance);
+  console.log(neighbors);
+  console.log(inPlace);
 }
