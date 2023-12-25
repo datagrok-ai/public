@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.18.0 (2023-12-25)
+
+- RFV: Added input form adaptiveness
+- RFV: Renamed validator tag to `validatorFunc`
+- RFV: Added `nullable` tag for inputs 
+
 ## 1.17.3 (2023-11-22)
 
 ### Features:
