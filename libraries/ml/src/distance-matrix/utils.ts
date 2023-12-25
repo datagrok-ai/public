@@ -4,7 +4,18 @@ export function insertSmaller(distancesAr: number[], indexes: number[], num: num
     if (num > distancesAr[distancesAr.length-1]) {
         return;
     }
-    const newPosition = distancesAr.findIndex((v) => num > v) + 1;
+    const newPosition = distancesAr.findIndex((v) => num < v);
+    distancesAr.pop();
+    distancesAr.splice(newPosition, 0, num);
+    indexes.pop();
+    indexes.splice(newPosition, 0, index);
+}
+
+export function insertLarger(distancesAr: number[], indexes: number[], num: number, index: number) {
+    if (num < distancesAr[distancesAr.length-1]) {
+        return;
+    }
+    const newPosition = distancesAr.findIndex((v) => num > v);
     distancesAr.pop();
     distancesAr.splice(newPosition, 0, num);
     indexes.pop();
