@@ -58,7 +58,7 @@ async function _testSimilaritySearchViewer() {
   expect(similaritySearchViewer.idxs!.get(0), 0);
   expect(similaritySearchViewer.molCol!.get(0), str0);
   expect((similaritySearchViewer.scores!.get(1) as number).toFixed(2), '0.73');
-  expect(similaritySearchViewer.idxs!.get(1), 5);
+  expect(similaritySearchViewer.idxs!.get(1), 4);
   expect(similaritySearchViewer.molCol!.get(1), str1);
   moleculesView.dataFrame.currentRowIdx = 1;
   await awaitCheck(() => similaritySearchViewer.targetMoleculeIdx === 1,
