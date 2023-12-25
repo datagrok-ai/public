@@ -112,8 +112,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
     }));
     indexWScore.sort((a, b) => b.score - a.score);
-    this.idxs = DG.Column.int('indexes', actualLimit).init((i) => indexWScore[i].idx);
-    this.scores = DG.Column.float('score', actualLimit).init((i) => indexWScore[i].score);
+    indexWScore.unshift({idx: this.targetMoleculeIdx, score: DG.FLOAT_NULL});
+    this.idxs = DG.Column.int('indexes', actualLimit + 1).init((i) => indexWScore[i].idx);
+    this.scores = DG.Column.float('score', actualLimit + 1).init((i) => indexWScore[i].score);
   }
 
   createPropertyPanel(resDf: DG.DataFrame) {
