@@ -49,19 +49,6 @@ class LoggerWrapper {
     this.logger = logger;
     this.componentName = componentName;
     this.debugEnabled = false;
-    // @formatter:off
-    // TODO: Observe for package settings changed event
-    // grok.events.onPackageSettingsChanged.subscribe(() => {
-    //   this.getLoggerSettings().then(() => { });
-    // });
-    this.getLoggerSettings().then(() => { });
-    // @formatter:on
-  }
-
-  async getLoggerSettings() {
-    await this.package.getProperties(); // TODO: workaround
-    const settings = await this.package.getProperties();
-    this.debugEnabled = settings['Debug'].includes(this.componentName);
   }
 
   debug(message, params) {
