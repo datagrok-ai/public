@@ -73,7 +73,8 @@
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "latest",
     "webpack-cli": "^5.1.4",
-    "@datagrok/chem": "^1.8.8"
+    "@datagrok/chem": "^1.8.8",
+    "@datagrok/samples": "^1.0.0"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
