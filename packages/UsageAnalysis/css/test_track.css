@@ -46,7 +46,8 @@
 }
 
 .tt-status-icon {
-  margin-left: 7px;
+  margin-left: 5px !important;
+  cursor: default !important;
 }
 
 .tt-ribbon-button {

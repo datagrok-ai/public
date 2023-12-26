@@ -4,6 +4,18 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 
+export const FILENAME = 'test-cases.csv';
+export const PASSED = 'passed';
+export const FAILED = 'failed';
+export const SKIPPED = 'skipped';
+export type Status = typeof PASSED | typeof FAILED | typeof SKIPPED | null;
+
+const map = {
+  [PASSED]: {name: 'check', color: 'var(--green-2)'},
+  [FAILED]: {name: 'times', color: 'var(--red-3)'},
+  [SKIPPED]: {name: 'forward', color: 'var(--orange-2)'},
+};
+
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
@@ -29,4 +41,9 @@ export function getIcon(name: string, options?: {style?: string, class?: string[
   if (options?.id)
     icon.id = options.id;
   return icon;
+}
+
+export function getStatusIcon(status: typeof PASSED | typeof FAILED | typeof SKIPPED): HTMLElement {
+  const obj = map[status];
+  return getIcon(obj.name, {class: ['tt-status-icon'], color: obj.color});
 }
