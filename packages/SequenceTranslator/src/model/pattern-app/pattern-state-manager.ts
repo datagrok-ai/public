@@ -31,7 +31,7 @@ export class PatternConfigurationManager {
   }
 
   private fetchDefaultBase(): string {
-    return AppDataManager.getInstance().fetchNucleotideBases()[0];
+    return AppDataManager.getInstance(this.eventBus).fetchNucleotideBases()[0];
   }
   
   private initializePhosphorothioate(): void {

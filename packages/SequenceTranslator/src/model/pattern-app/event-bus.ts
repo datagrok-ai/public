@@ -9,8 +9,8 @@ export class EventBus {
   private _antisenseStrandVisible$ = new rxjs.BehaviorSubject<boolean>(true);
   private _commentChange$ = new rxjs.BehaviorSubject<string>('');
   private _updatePatternList$ = new rxjs.Subject<void>();
-  private _loadPattern$ = new rxjs.BehaviorSubject<string>('');
-  private _chooseUser$ = new rxjs.BehaviorSubject<string>('');
+  private _requestLoadPattern$ = new rxjs.BehaviorSubject<string>('');
+  private _selectedUserChanged$ = new rxjs.BehaviorSubject<string>('');
   private _deletePattern$ = new rxjs.Subject<string>();
 
   get antisenseStrandVisible$(): rxjs.Observable<boolean> {
@@ -21,12 +21,12 @@ export class EventBus {
     return this._commentChange$.asObservable();
   }
 
-  get userChoice$(): rxjs.Observable<string> {
-    return this._chooseUser$.asObservable();
+  get requestLoadPattern$(): rxjs.Observable<string> {
+    return this._requestLoadPattern$.asObservable();
   }
 
-  get loadPattern$(): rxjs.Observable<string> {
-    return this._loadPattern$.asObservable();
+  get patternListUpdate$(): rxjs.Observable<void> {
+    return this._updatePatternList$.asObservable();
   }
 
   toggleAntisenseStrand(value: boolean) {
@@ -41,16 +41,12 @@ export class EventBus {
     this._updatePatternList$.next();
   }
 
-  loadPattern(patternName: string) {
-    this._loadPattern$.next(patternName);
-  }
-
-  chooseUser(userName: string) {
-    this._chooseUser$.next(userName);
+  loadNewPattern(patternName: string) {
+    this._requestLoadPattern$.next(patternName);
   }
 
   getUserNameChoice(): string {
-    return this._chooseUser$.getValue();
+    return this._selectedUserChanged$.getValue();
   }
 
   deletePattern(patternName: string) {

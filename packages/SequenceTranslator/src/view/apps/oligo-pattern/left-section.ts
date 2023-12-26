@@ -11,6 +11,7 @@ import {BooleanInput, StringInput, NumberInput} from './types';
 import {EventBus} from '../../../model/pattern-app/event-bus';
 import {AppDataManager} from '../../../model/pattern-app/external-data-manager';
 import {PatternConfigurationManager} from '../../../model/pattern-app/pattern-state-manager';
+import $ from 'cash-dom';
 
 export class LeftSection {
   constructor(private eventBus: EventBus) {
@@ -54,7 +55,7 @@ export class PatternControlsManager {
       this.strandLengthInputs[ANTISENSE_STRAND].root,
       this.sequenceBaseInput.root,
       this.patternCommentInput.root,
-      // loadPatternDiv,
+      this.selectPattentInputBlock,
       // patternNameInput.root,
       // ui.h1('Convert'),
       // tableInput.root,
@@ -106,63 +107,109 @@ export class PatternControlsManager {
     const patternCommentInput = ui.textInput('Comment', '', (value: string) => this.eventBus.changeComment(value));
     return patternCommentInput;
   }
+
+  private get selectPattentInputBlock(): HTMLDivElement {
+    const patternChoiceControls = new PatternChoiceControls(
+      this.eventBus,
+      this.dataManager,
+    );
+    return patternChoiceControls.getControlsContainer();
+  }
 }
 
 class PatternChoiceControls {
   constructor(
     private eventBus: EventBus,
-    // private patternConfiguration: PatternConfigurationManager,
     private dataManager: AppDataManager,
   ) {
-    this.eventBus.userChoice$.subscribe((value: string) => this.handleUserChoice(value));
-    this.eventBus.loadPattern$.subscribe((value: string) => this.handlePatternChoice(value));
+    this.eventBus.requestLoadPattern$.subscribe((value: string) => this.handlePatternChoice(value));
 
     const defaultUser = this.dataManager.getCurrentUserName();
     this.selectedUser = defaultUser;
 
     const defaultPattern = this.dataManager.getCurrentUserPatterns()[0];
     this.selectedPattern = defaultPattern;
+
+    this.patternChoiceInputsContainer = ui.div([]);
+    this.eventBus.patternListUpdate$.subscribe(() => this.updatePatternChoiceInputContainer()); 
   }
 
   private selectedUser: string;
   private selectedPattern: string;
+  private patternChoiceInputsContainer: HTMLDivElement;
 
-  private handleUserChoice(value: string) {
-    this.selectedUser = value;
-    grok.shell.info(`User ${value} selected`);
+  private handleUserChoice(userName: string) {
+    this.selectedUser = userName;
+    this.updatePatternChoiceInputContainer();
+    grok.shell.info(`User ${userName} selected`);
   }
 
-  private handlePatternChoice(value: string) {
-    this.selectedPattern = value;
-    grok.shell.info(`Pattern ${value} selected`);
+  private handlePatternChoice(patternName: string) {
+    this.selectedPattern = patternName;
+    grok.shell.info(`Pattern ${patternName} selected`);
   }
 
   private isCurrentUserSelected(): boolean {
     return this.selectedUser !==  OTHER_USERS;
   }
 
+  getControlsContainer(): HTMLDivElement {
+    const patternInputs = this.getPatternInputs();
+    this.patternChoiceInputsContainer.append(patternInputs.root);
+    return this.patternChoiceInputsContainer;
+  }
+
+  private getPatternInputs(): StringInput {
+    const userChoiceInput = this.userChoiceInput;
+    const patternChoiceInput = this.getPatternChoiceInput();
+    const deletePatternButton = this.deletePatternButton;
+
+    // todo: refactor this legacy solution
+    patternChoiceInput.root.append(
+      userChoiceInput.input,
+      patternChoiceInput.input,
+    );
+
+    patternChoiceInput.setTooltip('Choose and apply pattern');
+    patternChoiceInput.input.style.maxWidth = '120px';
+    patternChoiceInput.input.style.marginLeft = '12px';
+    
+    patternChoiceInput.addOptions(deletePatternButton);
+
+    return patternChoiceInput;
+  }
+
   private get userChoiceInput(): StringInput {
     const currentUser = this.dataManager.getCurrentUserName();
 
-    const values = [currentUser, OTHER_USERS];
+    const possibleValues = [currentUser, OTHER_USERS];
     const userChoiceInput = ui.choiceInput(
-      '', currentUser, values,
-      (value: string) => this.eventBus.chooseUser(value)
+      '', this.selectedUser, possibleValues,
+      (userName: string) => this.handleUserChoice(userName)
     );
     userChoiceInput.setTooltip('Choose user to load pattern from');
+    userChoiceInput.input.style.maxWidth = '142px';
 
     return userChoiceInput;
   }
 
   private getPatternChoiceInput(): StringInput {
     const patternList = this.isCurrentUserSelected() ? this.dataManager.getCurrentUserPatterns() : this.dataManager.getOtherUsersPatterns();
-    const choiceInput = ui.choiceInput('Load pattern', this.selectedPattern, patternList, (value: string) => this.eventBus.loadPattern(value));
+    this.selectedPattern = patternList[0] || '';
+    this.eventBus.loadNewPattern(this.selectedPattern);
+    const choiceInput = ui.choiceInput('Load pattern', this.selectedPattern, patternList, (value: string) => this.eventBus.loadNewPattern(value));
     return choiceInput;
   }
 
   private get deletePatternButton(): HTMLDivElement {
     const button = ui.button(ui.iconFA('trash-alt'), () => this.eventBus.deletePattern(this.selectedPattern));
 
-    return ui.div([ button, ], 'ui-input-options');
+    return ui.div([ button ], 'ui-input-options');
+  }
+
+  private updatePatternChoiceInputContainer(): void {
+    const patternInputs = this.getPatternInputs();
+    $(this.patternChoiceInputsContainer).empty();
+    this.patternChoiceInputsContainer.append(patternInputs.root);
   }
 }

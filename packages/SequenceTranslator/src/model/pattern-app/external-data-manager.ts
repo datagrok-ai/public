@@ -31,11 +31,11 @@ export class AppDataManager {
   }
 
   getCurrentUserPatterns(): string[] {
-    return this.patternListManager.getCurrentUserPatterns();
+    return this.patternListManager.getCurrentUserPatterns() || [];
   }
 
   getOtherUsersPatterns(): string[] {
-    return this.patternListManager.getOtherUsersPatterns();
+    return this.patternListManager.getOtherUsersPatterns() || [];
   }
 
   getCurrentUserName(): string {
