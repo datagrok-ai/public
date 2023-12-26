@@ -45,6 +45,7 @@ jobs:
             echo "Package $name version ${current_version} already published"
             echo "::notice title=${name}::Version ${current_version} is already published"
           else
+            echo "NPM response for ${current_version}: $npm_version"
             if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
               changed_version='true'
               job_name="Build and publish to NPM"
