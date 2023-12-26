@@ -44,7 +44,11 @@ export interface ISplash {
   close(): void;
 }
 
-export async function removeVisualsData(plugin: PluginUIContext, structureRefs: string[] | null): Promise<void> {
+export async function removeVisualsData(
+  plugin: PluginUIContext, structureRefs: string[] | null, caller?: string
+): Promise<void> {
+  _package.logger.debug(`removeVisualsData(${caller ? ` <- ${caller}, ` : ''}` +
+    `structureRefs = ${JSON.stringify(structureRefs)} )`);
   await Promise.all((structureRefs ?? []).map((ref) => {
     plugin.commands.dispatch(PluginCommands.State.RemoveObject,
       {
@@ -69,8 +73,10 @@ export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandDa
   return [_molData.ref, _molTrajectory.ref, _model.ref, _structure.ref, _component!.ref];
 }
 
-export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: BiostructureData): Promise<string[]> {
-  const logPrefix = `parseAndVisualsData()`;
+export async function parseAndVisualsData(
+  plugin: PluginUIContext, dataEff: BiostructureData, caller?: string
+): Promise<string[]> {
+  const logPrefix = `parseAndVisualsData(${caller ? ` <- ${caller} ` : ''})`;
   if (!dataEff)
     throw new Error(`Argument null exception 'dataEff'.`);
 
@@ -156,6 +162,7 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Bios
   if (unhandledParsedPartList.length > 0)
     throw new Error(`Unhandled parsed parts '${JSON.stringify(unhandledParsedPartList)}'.`);
 
+  _package.logger.debug(`${logPrefix} -> structureRefs = ${JSON.stringify(refListRes)} `);
   return refListRes;
 }
 
