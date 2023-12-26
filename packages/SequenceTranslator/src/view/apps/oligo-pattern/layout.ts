@@ -3,11 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {LeftSection} from './left-section';
+import {PatternAppLeftSection} from './left-section';
+import {PatternAppDataManager} from '../../../model/pattern-app/external-data-manager';
 import {EventBus} from '../../../model/pattern-app/event-bus';
 
-export class PatternLayoutHandler {
+export class PatternLayoutController {
   private eventBus = new EventBus();
+  private dataManager = PatternAppDataManager.getInstance(this.eventBus);
 
   get htmlDivElement(): HTMLDivElement {
     const leftSection = this.getLeftSection();
@@ -21,7 +23,8 @@ export class PatternLayoutHandler {
   }
 
   private getLeftSection(): HTMLDivElement {
-    return new LeftSection(this.eventBus).getLayout();
+    const leftSection = new PatternAppLeftSection(this.eventBus, this.dataManager);
+    return leftSection.getLayout();
   }
 
   // private getRightSection(): HTMLDivElement {

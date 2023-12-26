@@ -6,50 +6,50 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 
 export class EventBus {
-  private _antisenseStrandVisible$ = new rxjs.BehaviorSubject<boolean>(true);
-  private _commentChange$ = new rxjs.BehaviorSubject<string>('');
-  private _updatePatternList$ = new rxjs.Subject<void>();
-  private _requestLoadPattern$ = new rxjs.BehaviorSubject<string>('');
-  private _selectedUserChanged$ = new rxjs.BehaviorSubject<string>('');
-  private _deletePattern$ = new rxjs.Subject<string>();
+  private _isAntisenseStrandVisible$ = new rxjs.BehaviorSubject<boolean>(true);
+  private _commentChanged$ = new rxjs.BehaviorSubject<string>('');
+  private _patternListUpdated$ = new rxjs.Subject<void>();
+  private _patternLoadRequested$ = new rxjs.BehaviorSubject<string>('');
+  private _userSelectionChanged$ = new rxjs.BehaviorSubject<string>('');
+  private _patternDeletionRequested$ = new rxjs.Subject<string>();
 
-  get antisenseStrandVisible$(): rxjs.Observable<boolean> {
-    return this._antisenseStrandVisible$.asObservable();
+  get antisenseStrandActive$(): rxjs.Observable<boolean> {
+    return this._isAntisenseStrandVisible$.asObservable();
   }
 
   get commentChange$(): rxjs.Observable<string> {
-    return this._commentChange$.asObservable();
+    return this._commentChanged$.asObservable();
   }
 
   get requestLoadPattern$(): rxjs.Observable<string> {
-    return this._requestLoadPattern$.asObservable();
+    return this._patternLoadRequested$.asObservable();
   }
 
   get patternListUpdate$(): rxjs.Observable<void> {
-    return this._updatePatternList$.asObservable();
+    return this._patternListUpdated$.asObservable();
   }
 
-  toggleAntisenseStrand(value: boolean) {
-    this._antisenseStrandVisible$.next(value);
+  setAntisenseStrandVisibility(visible: boolean) {
+    this._isAntisenseStrandVisible$.next(visible);
   }
 
-  changeComment(value: string) {
-    this._commentChange$.next(value);
+  changeComment(newComment: string) {
+    this._commentChanged$.next(newComment);
   }
 
   updatePatternList() {
-    this._updatePatternList$.next();
+    this._patternListUpdated$.next();
   }
 
-  loadNewPattern(patternName: string) {
-    this._requestLoadPattern$.next(patternName);
+  requestPatternLoad(patternName: string) {
+    this._patternLoadRequested$.next(patternName);
   }
 
   getUserNameChoice(): string {
-    return this._selectedUserChanged$.getValue();
+    return this._userSelectionChanged$.getValue();
   }
 
   deletePattern(patternName: string) {
-    this._deletePattern$.next(patternName);
+    this._patternDeletionRequested$.next(patternName);
   }
 }

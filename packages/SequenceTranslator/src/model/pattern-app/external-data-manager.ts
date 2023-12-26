@@ -10,19 +10,19 @@ import {EventBus} from './event-bus';
 
 type PatternsRecord = {[patternName: string]: string};
 
-export class AppDataManager {
-  private static instance: AppDataManager;
+export class PatternAppDataManager {
+  private static instance: PatternAppDataManager;
   private constructor(eventBus: EventBus) {
     this.patternListManager = new PatternListManager(eventBus);
     this.patternListManager.init();
   }
   private patternListManager: PatternListManager;
 
-  static getInstance(eventBus: EventBus): AppDataManager {
-    if (!AppDataManager.instance) {
-      AppDataManager.instance = new AppDataManager(eventBus);
+  static getInstance(eventBus: EventBus): PatternAppDataManager {
+    if (!PatternAppDataManager.instance) {
+      PatternAppDataManager.instance = new PatternAppDataManager(eventBus);
     }
-    return AppDataManager.instance;
+    return PatternAppDataManager.instance;
   }
 
   fetchNucleotideBases(): string[] {
@@ -30,12 +30,12 @@ export class AppDataManager {
     return nucleotideBases;
   }
 
-  getCurrentUserPatterns(): string[] {
-    return this.patternListManager.getCurrentUserPatterns() || [];
+  getCurrentUserPatternNames(): string[] {
+    return this.patternListManager.getCurrentUserPatternNames() || [];
   }
 
-  getOtherUsersPatterns(): string[] {
-    return this.patternListManager.getOtherUsersPatterns() || [];
+  getOtherUsersPatternNames(): string[] {
+    return this.patternListManager.getOtherUsersPatternNames() || [];
   }
 
   getCurrentUserName(): string {
@@ -70,11 +70,11 @@ class PatternListManager {
     }
   }
 
-  getCurrentUserPatterns(): string[] {
+  getCurrentUserPatternNames(): string[] {
     return this.currentUserPatterns;
   }
 
-  getOtherUsersPatterns(): string[] {
+  getOtherUsersPatternNames(): string[] {
     return this.otherUsersPatterns;
   }
 

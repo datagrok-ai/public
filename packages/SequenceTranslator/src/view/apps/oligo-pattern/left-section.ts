@@ -9,17 +9,18 @@ import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType, OTHE
 import {BooleanInput, StringInput, NumberInput} from './types';
 
 import {EventBus} from '../../../model/pattern-app/event-bus';
-import {AppDataManager} from '../../../model/pattern-app/external-data-manager';
+import {PatternAppDataManager} from '../../../model/pattern-app/external-data-manager';
 import {PatternConfigurationManager} from '../../../model/pattern-app/pattern-state-manager';
 import $ from 'cash-dom';
 
-export class LeftSection {
-  constructor(private eventBus: EventBus) {
-    this.dataManager = AppDataManager.getInstance(this.eventBus);
-    this.patternConfiguration = new PatternConfigurationManager(this.eventBus);
+export class PatternAppLeftSection {
+  constructor(
+    private eventBus: EventBus,
+    private dataManager: PatternAppDataManager,
+  ) {
+    this.patternConfiguration = new PatternConfigurationManager(this.eventBus, this.dataManager);
   };
   private patternConfiguration: PatternConfigurationManager;
-  private dataManager: AppDataManager;
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
@@ -44,7 +45,7 @@ export class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
     private patternConfiguration: PatternConfigurationManager,
-    private dataManager: AppDataManager,
+    private dataManager: PatternAppDataManager,
   ) { }
 
   getUiElements(): HTMLElement[] {
@@ -68,7 +69,7 @@ export class PatternControlsManager {
 
   private get toggleAntisenseStrandControl(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
-      `${STRAND_LABEL.ANTISENSE_STRAND} strand`, true, (value: boolean) => this.eventBus.toggleAntisenseStrand(value));
+      `${STRAND_LABEL.ANTISENSE_STRAND} strand`, true, (visible: boolean) => this.eventBus.setAntisenseStrandVisibility(visible));
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     return toggleAntisenseStrand.root;
@@ -86,7 +87,7 @@ export class PatternControlsManager {
       STRANDS.map((strand) => createStrandLengthInput(strand))
     );
 
-    this.eventBus.antisenseStrandVisible$.subscribe((visible: boolean) => {
+    this.eventBus.antisenseStrandActive$.subscribe((visible: boolean) => {
       $(strandLengthInputs[ANTISENSE_STRAND].root).toggle(visible);
     })
 
@@ -120,28 +121,27 @@ export class PatternControlsManager {
 class PatternChoiceControls {
   constructor(
     private eventBus: EventBus,
-    private dataManager: AppDataManager,
+    private dataManager: PatternAppDataManager,
   ) {
     this.eventBus.requestLoadPattern$.subscribe((value: string) => this.handlePatternChoice(value));
 
     const defaultUser = this.dataManager.getCurrentUserName();
     this.selectedUser = defaultUser;
 
-    const defaultPattern = this.dataManager.getCurrentUserPatterns()[0];
+    const defaultPattern = this.dataManager.getCurrentUserPatternNames()[0];
     this.selectedPattern = defaultPattern;
 
-    this.patternChoiceInputsContainer = ui.div([]);
+    this.patternChoiceContainer = ui.div([]);
     this.eventBus.patternListUpdate$.subscribe(() => this.updatePatternChoiceInputContainer()); 
   }
 
   private selectedUser: string;
   private selectedPattern: string;
-  private patternChoiceInputsContainer: HTMLDivElement;
+  private patternChoiceContainer: HTMLDivElement;
 
   private handleUserChoice(userName: string) {
     this.selectedUser = userName;
     this.updatePatternChoiceInputContainer();
-    grok.shell.info(`User ${userName} selected`);
   }
 
   private handlePatternChoice(patternName: string) {
@@ -155,14 +155,13 @@ class PatternChoiceControls {
 
   getControlsContainer(): HTMLDivElement {
     const patternInputs = this.getPatternInputs();
-    this.patternChoiceInputsContainer.append(patternInputs.root);
-    return this.patternChoiceInputsContainer;
+    this.patternChoiceContainer.append(patternInputs.root);
+    return this.patternChoiceContainer;
   }
 
   private getPatternInputs(): StringInput {
     const userChoiceInput = this.userChoiceInput;
     const patternChoiceInput = this.getPatternChoiceInput();
-    const deletePatternButton = this.deletePatternButton;
 
     // todo: refactor this legacy solution
     patternChoiceInput.root.append(
@@ -170,34 +169,43 @@ class PatternChoiceControls {
       patternChoiceInput.input,
     );
 
-    patternChoiceInput.setTooltip('Choose and apply pattern');
-    patternChoiceInput.input.style.maxWidth = '120px';
-    patternChoiceInput.input.style.marginLeft = '12px';
-    
+    this.setPatternChoiceInputStyle(patternChoiceInput);
+
+    const deletePatternButton = this.deletePatternButton;
     patternChoiceInput.addOptions(deletePatternButton);
 
     return patternChoiceInput;
   }
 
+  private setPatternChoiceInputStyle(patternChoiceInput: StringInput): void {
+    patternChoiceInput.setTooltip('Choose and apply pattern');
+    patternChoiceInput.input.style.maxWidth = '120px';
+    patternChoiceInput.input.style.marginLeft = '12px';
+  }
+
   private get userChoiceInput(): StringInput {
     const currentUser = this.dataManager.getCurrentUserName();
-
     const possibleValues = [currentUser, OTHER_USERS];
+
     const userChoiceInput = ui.choiceInput(
       '', this.selectedUser, possibleValues,
       (userName: string) => this.handleUserChoice(userName)
     );
-    userChoiceInput.setTooltip('Choose user to load pattern from');
-    userChoiceInput.input.style.maxWidth = '142px';
+    this.setUserChoiceInputStyle(userChoiceInput);
 
     return userChoiceInput;
   }
 
+  private setUserChoiceInputStyle(userChoiceInput: StringInput): void {
+    userChoiceInput.setTooltip('Choose user to load pattern from');
+    userChoiceInput.input.style.maxWidth = '142px';
+  }
+
   private getPatternChoiceInput(): StringInput {
-    const patternList = this.isCurrentUserSelected() ? this.dataManager.getCurrentUserPatterns() : this.dataManager.getOtherUsersPatterns();
+    const patternList = this.isCurrentUserSelected() ? this.dataManager.getCurrentUserPatternNames() : this.dataManager.getOtherUsersPatternNames();
     this.selectedPattern = patternList[0] || '';
-    this.eventBus.loadNewPattern(this.selectedPattern);
-    const choiceInput = ui.choiceInput('Load pattern', this.selectedPattern, patternList, (value: string) => this.eventBus.loadNewPattern(value));
+    this.eventBus.requestPatternLoad(this.selectedPattern);
+    const choiceInput = ui.choiceInput('Load pattern', this.selectedPattern, patternList, (value: string) => this.eventBus.requestPatternLoad(value));
     return choiceInput;
   }
 
@@ -209,7 +217,7 @@ class PatternChoiceControls {
 
   private updatePatternChoiceInputContainer(): void {
     const patternInputs = this.getPatternInputs();
-    $(this.patternChoiceInputsContainer).empty();
-    this.patternChoiceInputsContainer.append(patternInputs.root);
+    $(this.patternChoiceContainer).empty();
+    this.patternChoiceContainer.append(patternInputs.root);
   }
 }

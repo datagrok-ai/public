@@ -7,16 +7,16 @@ import * as rxjs from 'rxjs';
 import {PATTERN_KEY, STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './const';
 import {PatternConfiguration} from './types';
 import {DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
-import {AppDataManager} from './external-data-manager';
+import {PatternAppDataManager} from './external-data-manager';
 import {EventBus} from './event-bus';
 
 export class PatternConfigurationManager {
   private _bases = {} as Record<StrandType, string[]>;
   private _phosphorothioate = {} as Record<StrandType, boolean[]>;
   private _terminalModification = {} as Record<StrandType, Record<TerminalType, string>>;
-  private _comment: string;
+  private _comment = '';
 
-  constructor(private eventBus: EventBus) {
+  constructor(private eventBus: EventBus, private dataManager: PatternAppDataManager) {
     this.initializeBases();
     this.initializePhosphorothioate();
     this.initializeTerminalModification();
@@ -31,7 +31,7 @@ export class PatternConfigurationManager {
   }
 
   private fetchDefaultBase(): string {
-    return AppDataManager.getInstance(this.eventBus).fetchNucleotideBases()[0];
+    return this.dataManager.fetchNucleotideBases()[0];
   }
   
   private initializePhosphorothioate(): void {
@@ -50,8 +50,6 @@ export class PatternConfigurationManager {
   }
 
   private initializeComment(): void {
-    this._comment = '';
-
     this.eventBus.commentChange$.subscribe((comment) => {
       this._comment = comment;
     });
