@@ -35,10 +35,6 @@ on:
       - 'js-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
-  workflow_run:
-    workflows: [Packages]
-    types: [completed]
-    branches: [master]
 
 jobs:
   common-check:
