@@ -24,8 +24,9 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
   });
-  const submitFunctionInput = ui.choiceInput('Submit function', null, Object.keys(submitFunctionsMap));
+  const submitFunctionInput = ui.choiceInput('Submit function', null, [null, ...Object.keys(submitFunctionsMap)]);
   submitFunctionInput.value = null;
+  submitFunctionInput.nullable = true;
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
   const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
 
