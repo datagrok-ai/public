@@ -75,8 +75,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
-  get onHoverEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-hover-event')); }
-  get onSelectEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select-event')); }
+  get onDataHovered(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-hover-event')); }
+  get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select-event')); }
+  /// current row clicked
+  get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-click-event')); }
 
   initDartObject(dart: any) {
     this.dart = dart;

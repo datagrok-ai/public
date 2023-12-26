@@ -31,6 +31,7 @@ export interface TestOptions {
   timeout?: number;
   unhandledExceptionTimeout?: number;
   skipReason?: string;
+  isAggregated?: boolean;
 }
 
 export interface CategoryOptions {
