@@ -152,7 +152,7 @@ export class Tags {
 
   static DataQueryName = 'DataQuery.name';
 
-  static DataQueryCall = '.DataQuery.query.call';
+  static DataQueryFinished = '.DataQuery.query.finished';
 
   static Presentation = '.presentation';
 

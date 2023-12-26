@@ -1343,6 +1343,8 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_DayJs_To_DateTime(milliseconds: Num): any;
+  grok_Test_GetTestDataGeneratorByType(type: String): any;
+  grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DockerImage(): any;
