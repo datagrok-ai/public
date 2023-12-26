@@ -1,5 +1,15 @@
 [
   {
+    "name": "HitTriage",
+    "date": "2023-12-26T09:21:37.656Z",
+    "version": "1.1.2",
+    "summary": "Hit Triage application improvements",
+    "dir": "packages/HitTriage",
+    "changelog": true,
+    "changelogDate": "2023-12-26",
+    "readme": true
+  },
+  {
     "name": "Bio",
     "date": "2023-12-25T12:54:59.719Z",
     "version": "2.11.21",
@@ -9988,15 +9998,5 @@
     "changelog": false,
     "changelogDate": "2022-01-25",
     "readme": true
-  },
-  {
-    "name": "Demo",
-    "date": "2022-01-25T11:56:38.389Z",
-    "version": "0.0.5",
-    "summary": "",
-    "dir": "packages/Demo",
-    "changelog": false,
-    "changelogDate": "2022-01-25",
-    "readme": false
   }
 ]
