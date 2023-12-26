@@ -125,9 +125,7 @@ category('pdbqt', () => {
 
 async function _testPdbqtParse(): Promise<void> {
   try {
-    //const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
-    const dapiFilePath = `System:AppData/${_package.name}/docking/ligand_out.pdbqt`;
-    const cnt = await grok.dapi.files.readAsText(dapiFilePath);
+    const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
     const data: Pdbqt = Pdbqt.parse(cnt);
 
     expect(data['currentModel'], null);
