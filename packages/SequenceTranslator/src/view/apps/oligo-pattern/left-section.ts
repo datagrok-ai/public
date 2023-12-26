@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType, OTHER_USERS } from '../../../model/pattern-app/const';
 
-import {BooleanInput, StringInput, NumberInput} from './types';
+import {StringInput, NumberInput} from './types';
 
 import {EventBus} from '../../../model/pattern-app/event-bus';
 import {PatternAppDataManager} from '../../../model/pattern-app/external-data-manager';
@@ -49,33 +49,38 @@ export class PatternControlsManager {
   ) { }
 
   getUiElements(): HTMLElement[] {
+    const title = ui.h1('Pattern');
+
+    const toggleAntisenseStrandControl = this.createToggleAntisenseStrandControl();
+    const strandLengthInputs = this.createStrandLengthInputs();
+
+    const senseStrandLengthInput = strandLengthInputs[SENSE_STRAND].root;
+    const antisenseStrandLengthInput = strandLengthInputs[ANTISENSE_STRAND].root;
+
+    const sequenceBaseInput = this.createSequenceBaseInput().root;
+    const patternCommentInput = this.createPatternCommentInput().root;
+    const selectPatternInputBlock = this.createSelectPattentInputBlock();
+
     return [
-      ui.h1('Pattern'),
-      this.toggleAntisenseStrandControl,
-      this.strandLengthInputs[SENSE_STRAND].root,
-      this.strandLengthInputs[ANTISENSE_STRAND].root,
-      this.sequenceBaseInput.root,
-      this.patternCommentInput.root,
-      this.selectPattentInputBlock,
-      // patternNameInput.root,
-      // ui.h1('Convert'),
-      // tableInput.root,
-      // strandColumnInput[SENSE_STRAND],
-      // strandColumnInput[ANTISENSE_STRAND],
-      // idColumnSelector.root,
-      // ui.buttonsInput([convertSequenceButton]),
-    ]
+      title,
+      toggleAntisenseStrandControl,
+      senseStrandLengthInput,
+      antisenseStrandLengthInput,
+      sequenceBaseInput,
+      patternCommentInput,
+      selectPatternInputBlock,
+    ];
   }
 
-  private get toggleAntisenseStrandControl(): HTMLElement {
+  private createToggleAntisenseStrandControl(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
-      `${STRAND_LABEL.ANTISENSE_STRAND} strand`, true, (visible: boolean) => this.eventBus.setAntisenseStrandVisibility(visible));
+      `${STRAND_LABEL.ANTISENSE_STRAND} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     return toggleAntisenseStrand.root;
   }
 
-  private get strandLengthInputs(): Record<string, NumberInput> {
+  private createStrandLengthInputs(): Record<string, NumberInput> {
     const createStrandLengthInput = (strand: StrandType) => {
       const sequenceLength = this.patternConfiguration.getBases(strand).length;
       const input = ui.intInput(`${STRAND_LABEL[strand]} length`, sequenceLength);
@@ -87,14 +92,14 @@ export class PatternControlsManager {
       STRANDS.map((strand) => createStrandLengthInput(strand))
     );
 
-    this.eventBus.antisenseStrandActive$.subscribe((visible: boolean) => {
-      $(strandLengthInputs[ANTISENSE_STRAND].root).toggle(visible);
+    this.eventBus.isAntisenseStrandActive$.subscribe((active: boolean) => {
+      $(strandLengthInputs[ANTISENSE_STRAND].root).toggle(active);
     })
 
     return strandLengthInputs;
   }
 
-  private get sequenceBaseInput(): StringInput {
+  private createSequenceBaseInput(): StringInput {
     const nucleotideBaseChoices = this.dataManager.fetchNucleotideBases();
     const defaultNucleotideBase = nucleotideBaseChoices[0];
 
@@ -104,12 +109,12 @@ export class PatternControlsManager {
     return sequenceBaseInput;
   }
 
-  private get patternCommentInput(): StringInput {
+  private createPatternCommentInput(): StringInput {
     const patternCommentInput = ui.textInput('Comment', '', (value: string) => this.eventBus.changeComment(value));
     return patternCommentInput;
   }
 
-  private get selectPattentInputBlock(): HTMLDivElement {
+  private createSelectPattentInputBlock(): HTMLDivElement {
     const patternChoiceControls = new PatternChoiceControls(
       this.eventBus,
       this.dataManager,
@@ -160,7 +165,7 @@ class PatternChoiceControls {
   }
 
   private getPatternInputs(): StringInput {
-    const userChoiceInput = this.userChoiceInput;
+    const userChoiceInput = this.createUserChoiceInput();
     const patternChoiceInput = this.getPatternChoiceInput();
 
     // todo: refactor this legacy solution
@@ -171,7 +176,7 @@ class PatternChoiceControls {
 
     this.setPatternChoiceInputStyle(patternChoiceInput);
 
-    const deletePatternButton = this.deletePatternButton;
+    const deletePatternButton = this.createDeletePatternButton();
     patternChoiceInput.addOptions(deletePatternButton);
 
     return patternChoiceInput;
@@ -183,7 +188,7 @@ class PatternChoiceControls {
     patternChoiceInput.input.style.marginLeft = '12px';
   }
 
-  private get userChoiceInput(): StringInput {
+  private createUserChoiceInput(): StringInput {
     const currentUser = this.dataManager.getCurrentUserName();
     const possibleValues = [currentUser, OTHER_USERS];
 
@@ -209,7 +214,7 @@ class PatternChoiceControls {
     return choiceInput;
   }
 
-  private get deletePatternButton(): HTMLDivElement {
+  private createDeletePatternButton(): HTMLDivElement {
     const button = ui.button(ui.iconFA('trash-alt'), () => this.eventBus.deletePattern(this.selectedPattern));
 
     return ui.div([ button ], 'ui-input-options');

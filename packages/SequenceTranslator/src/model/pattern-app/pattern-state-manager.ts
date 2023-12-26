@@ -4,8 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {PATTERN_KEY, STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './const';
-import {PatternConfiguration} from './types';
+import {STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './const';
 import {DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {PatternAppDataManager} from './external-data-manager';
 import {EventBus} from './event-bus';

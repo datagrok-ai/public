@@ -13,7 +13,7 @@ export class EventBus {
   private _userSelectionChanged$ = new rxjs.BehaviorSubject<string>('');
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
 
-  get antisenseStrandActive$(): rxjs.Observable<boolean> {
+  get isAntisenseStrandActive$(): rxjs.Observable<boolean> {
     return this._isAntisenseStrandVisible$.asObservable();
   }
 
@@ -29,8 +29,8 @@ export class EventBus {
     return this._patternListUpdated$.asObservable();
   }
 
-  setAntisenseStrandVisibility(visible: boolean) {
-    this._isAntisenseStrandVisible$.next(visible);
+  toggleAntisenseStrand(isActive: boolean) {
+    this._isAntisenseStrandVisible$.next(isActive);
   }
 
   changeComment(newComment: string) {
