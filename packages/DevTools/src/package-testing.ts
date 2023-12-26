@@ -136,10 +136,15 @@ export class TestManager extends DG.ViewBase {
       let allPackageTests: object;
       if (f.package.name === 'Core') {
         allPackageTests = {};
-        allPackageTests[DART_TESTS_CAT] = {tests: [], clear: true};
-        const testFunctions = DG.Func.find({tags: ['dartTest']});
-        for (const f of testFunctions)
-          allPackageTests[DART_TESTS_CAT].tests.push(new Test(DART_TESTS_CAT, f.name, async () => await f.apply()));
+        const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
+        for (const f of testFunctions) {
+          const isAggTest: boolean = f.outputs.length > 0;
+          const catName: string = isAggTest ? f.name : DART_TESTS_CAT;
+          if (allPackageTests[catName] == null)
+            allPackageTests[catName] = {tests: [], clear: true};
+          allPackageTests[catName].tests.push(new Test(catName, f.name,
+            async () => await f.apply(), {isAggregated: isAggTest}));
+        }
       } else {
         selectedPackage.check = true;
         await f.package.load({file: f.options.file});
@@ -405,15 +410,16 @@ export class TestManager extends DG.ViewBase {
     const res = {category: DART_TESTS_CAT, name: t.test.name,
       success: true, result: 'OK', ms: 0, skipped: false};
     const start = Date.now();
+    let result: any;
     try {
-      await t.test.test();
+      result = await t.test.test();
     } catch (e) {
       res.success = false;
       res.result = e.toString();
     }
     res.ms = Date.now() - start;
     console.log(`Finished ${DART_TESTS_CAT} ${t.test.name} for ${res.ms} ms`);
-    return DG.DataFrame.fromObjects([res]);
+    return result ?? DG.DataFrame.fromObjects([res]);
   }
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
@@ -591,6 +597,11 @@ export class TestManager extends DG.ViewBase {
       let b1: string | boolean = true;
       let b2: string | boolean = false;
       let col: string = 'success';
+      if (nodeType == NODE_TYPE.TEST && tests.test.options.isAggregated) {
+        params = {packageName: tests.packageName, category: tests.test.name};
+        query = 'CategoryHistory';
+        nodeType = null;
+      }
       switch (nodeType) {
       case NODE_TYPE.PACKAGE:
         query = 'PackageHistory';
@@ -608,6 +619,7 @@ export class TestManager extends DG.ViewBase {
         col = 'status';
         break;
       }
+
       const history = await grok.data.query(`DevTools:${query}`, params);
       const arr = history.col(col).toList();
       this.detailsTable.rows[Object.keys(params).length].cells[1].innerHTML = history.get('date', arr.indexOf(b1));
@@ -620,7 +632,8 @@ export class TestManager extends DG.ViewBase {
   resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE): object {
     return nodeType === NODE_TYPE.PACKAGE ? {package: tests.package.name} :
       nodeType === NODE_TYPE.CATEGORY ? {package: tests.packageName, category: tests.fullName} :
-        {package: tests.packageName, category: tests.test.category, name: tests.test.name};
+        tests.test.options.isAggregated ? {package: tests.packageName, category: tests.test.name} :
+          {package: tests.packageName, category: tests.test.category, name: tests.test.name};
   }
 
   testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
