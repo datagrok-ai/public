@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {merge} from 'rxjs';
 import {readDataframe, writeDataframe, getIcon} from './utils';
 
-
 const FILENAME = 'test-cases.csv';
 const PASSED = 'passed';
 const FAILED = 'failed';
@@ -86,6 +85,7 @@ export class TestTrack extends DG.ViewBase {
       this.testCaseDiv.focus();
       this.testCaseDiv.addEventListener('focusout', () => {
         this.testCaseDiv.setAttribute('contenteditable', 'false');
+        if (this.currentNode.value.testCase === this.testCaseDiv.innerText) return;
         this.currentNode.value.testCase = this.testCaseDiv.innerText;
         this.df.set('test_case', this.findRowById(this.currentNode.value.id), this.testCaseDiv.innerText);
       }, {once: true});
@@ -116,7 +116,6 @@ export class TestTrack extends DG.ViewBase {
     const status = row.get('status');
     const values: TestCaseValues = {id: row.get('id'), parentId: row.get('parent_id'),
       testCase: row.get('test_case'), status: status === '' ? null : status, icon: ui.div()};
-    // console.log(values);
     let group: DG.TreeViewGroup = this.tree;
     if (values.parentId) {
       const parentRow = this.df.row(this.findRowById(values.parentId));
@@ -143,9 +142,13 @@ export class TestTrack extends DG.ViewBase {
             this.showAddDialog(node as DG.TreeViewGroup, true);
           });
       }
-      menu.item('Remove', async () => {
-        this.showRemoveDialog(node);
-      });
+      menu
+        .item('Rename', async () => {
+          this.showRenameDialog(node);
+        })
+        .item('Delete', async () => {
+          this.showRemoveDialog(node);
+        });
       menu.show();
       e.preventDefault();
       e.stopPropagation();
@@ -186,27 +189,38 @@ export class TestTrack extends DG.ViewBase {
     dialog.show();
   }
 
-  async addNode(parent: DG.TreeViewGroup, name: string, testCase: string | null): Promise<void> {
+  showRenameDialog(node: DG.TreeViewGroup | DG.TreeViewNode) {
+    const dialog = ui.dialog(`Rename "${node.text}"`);
+    const nameInput = ui.textInput('New name', '', () => {});
+    nameInput.nullable = false;
+    dialog.add(nameInput);
+    dialog.onOK(() => this.renameNode(node, nameInput.value));
+    dialog.show({resizable: true});
+  }
+
+  addNode(parent: DG.TreeViewGroup, name: string, testCase: string | null): void {
     let node: DG.TreeViewGroup | DG.TreeViewNode;
     const values: TestCaseValues = {id: crypto.randomUUID(), parentId: parent.value.id, testCase: testCase, status: null, icon: ui.div()};
     if (testCase === null)
       node = parent.getOrCreateGroup(name, values, false);
     else
       node = parent.item(name, values);
-    // console.log(node.value);
     this.setContextMenu(node);
     this.df.rows.addNew([name, values.id, values.parentId, testCase === null, testCase, values.status]);
-    // await this.updateDf();
   }
 
-  async removeNodeAndChildren(node: DG.TreeViewGroup | DG.TreeViewNode): Promise<void> {
+  renameNode(node: DG.TreeViewGroup | DG.TreeViewNode, name: string): void {
+    node.captionLabel.innerText = name;
+    this.df.set('name', this.findRowById(node.value.id), name);
+  }
+
+  removeNodeAndChildren(node: DG.TreeViewGroup | DG.TreeViewNode): void {
     this.removeRowById(node.value.id);
     this.removeChildrenRecursive([node.value.id]);
     node.remove();
-    // await this.updateDf();
   }
 
-  async removeChildrenRecursive(id: string[]): Promise<void> {
+  removeChildrenRecursive(id: string[]): void {
     const removedIds = this.removeRowsByParentIds(id);
     if (removedIds.length)
       this.removeChildrenRecursive(removedIds);

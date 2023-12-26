@@ -59,7 +59,7 @@
 
 #tt-ribbon-save-button:enabled {
   animation-name: color;
-  animation-duration: 1s;
+  animation-duration: 1.5s;
   animation-iteration-count: infinite;
   animation-direction: alternate-reverse;
   animation-timing-function: linear;
