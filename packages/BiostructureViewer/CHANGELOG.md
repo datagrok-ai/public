@@ -42,6 +42,8 @@
 * Fix pdbqt parser to get autodock-gpu scores
 * Fix PdbGridCellRenderer, NglGlDocService to not mix cells
 * Fix MolstarViewer to handle ligandColumnName changed
+* BsV: Add test MolstarViewer for pdb_data with cell Click
+* BsV: Add test MolstarViewer for pdb_id, data provider
 
 ## 1.0.11 (2023-07-24)
 
