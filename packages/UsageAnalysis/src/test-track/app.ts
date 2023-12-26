@@ -3,18 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {merge} from 'rxjs';
-import {readDataframe, writeDataframe, getIcon} from './utils';
-
-const FILENAME = 'test-cases.csv';
-const PASSED = 'passed';
-const FAILED = 'failed';
-const SKIPPED = 'skipped';
+import {readDataframe, writeDataframe, getIcon, getStatusIcon, Status, FILENAME} from './utils';
 
 interface TestCaseValues {
   id: string;
   parentId: string;
   testCase: string | null;
-  status: typeof PASSED | typeof FAILED | typeof SKIPPED | null;
+  status: Status;
   icon: HTMLElement;
 }
 
@@ -68,7 +63,6 @@ export class TestTrack extends DG.ViewBase {
     }
     merge(this.df.onDataChanged, this.df.onRowsAdded, this.df.onRowsRemoved)
       .subscribe(() => {
-        // console.log('CHANGED');
         this.saveButton.disabled = false;
       });
 
@@ -77,7 +71,10 @@ export class TestTrack extends DG.ViewBase {
       this.showAddDialog(this.tree);
     }, 'Add root group');
     plus.classList.add('tt-ribbon-button');
-    const ribbon = ui.divH([plus, this.saveButton]);
+    const report = ui.button(getIcon('tasks', {style: 'fas'}), () => {
+    }, 'Generate report');
+    report.classList.add('tt-ribbon-button');
+    const ribbon = ui.divH([plus, this.saveButton, report]);
 
     // Test case div
     const edit = ui.button(getIcon('edit'), () => {
@@ -113,9 +110,9 @@ export class TestTrack extends DG.ViewBase {
   initNodeAndParentsRecursive(row: DG.Row): DG.TreeViewGroup | DG.TreeViewNode {
     let node: DG.TreeViewGroup | DG.TreeViewNode;
     const name = row.get('name');
-    const status = row.get('status');
+    const status: Status = row.get('status') || null;
     const values: TestCaseValues = {id: row.get('id'), parentId: row.get('parent_id'),
-      testCase: row.get('test_case'), status: status === '' ? null : status, icon: ui.div()};
+      testCase: row.get('test_case'), status, icon: status ? ui.div(getStatusIcon(status)) : ui.div()};
     let group: DG.TreeViewGroup = this.tree;
     if (values.parentId) {
       const parentRow = this.df.row(this.findRowById(values.parentId));
@@ -126,6 +123,7 @@ export class TestTrack extends DG.ViewBase {
     else
       node = group.item(name, values);
     this.setContextMenu(node);
+    node.captionLabel.after(node.value.icon);
     return node;
   }
 
@@ -141,6 +139,12 @@ export class TestTrack extends DG.ViewBase {
           .item('Add test case', async () => {
             this.showAddDialog(node as DG.TreeViewGroup, true);
           });
+      } else {
+        menu.group('Status')
+          .items(['Passed', 'Failed', 'Skipped', 'Empty'],
+            (i) => this.changeNodeStatus(node, (i === 'Empty' ? null : i.toLowerCase()) as Status),
+            {radioGroup: 'erter', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
+          .endGroup();
       }
       menu
         .item('Rename', async () => {
@@ -155,7 +159,17 @@ export class TestTrack extends DG.ViewBase {
     });
   }
 
-  showAddDialog(parent: DG.TreeViewGroup, testCase: boolean = false) {
+  changeNodeStatus(node: DG.TreeViewGroup | DG.TreeViewNode, status: Status): void {
+    if (node.value.status === status) return;
+    node.value.status = status;
+    node.value.icon.innerHTML = '';
+    this.df.set('status', this.findRowById(node.value.id), status);
+    if (!status) return;
+    const icon = getStatusIcon(status);
+    node.value.icon.append(icon);
+  }
+
+  showAddDialog(parent: DG.TreeViewGroup, testCase: boolean = false): void {
     const dialog = ui.dialog(`Add new ${testCase ? 'test case' : 'group'}`);
     dialog.root.addEventListener('keydown', (e) => {
       if (e.key == 'Enter') {
@@ -176,7 +190,7 @@ export class TestTrack extends DG.ViewBase {
     dialog.show({resizable: true});
   }
 
-  showRemoveDialog(node: DG.TreeViewGroup | DG.TreeViewNode) {
+  showRemoveDialog(node: DG.TreeViewGroup | DG.TreeViewNode): void {
     const isGroup = node.constructor.name === 'TreeViewGroup';
     const post = `"${node.text}" ${isGroup ? 'group' : 'test case'}`;
     const dialog = ui.dialog('Remove ' + post);
@@ -185,11 +199,11 @@ export class TestTrack extends DG.ViewBase {
       dialog.add(ui.divText('The following items will also be deleted:'));
       dialog.add(ui.list((node as DG.TreeViewGroup).items.map((n) => n.text)));
     }
-    dialog.onOK(async () => await this.removeNodeAndChildren(node));
+    dialog.onOK(async () => this.removeNodeAndChildren(node));
     dialog.show();
   }
 
-  showRenameDialog(node: DG.TreeViewGroup | DG.TreeViewNode) {
+  showRenameDialog(node: DG.TreeViewGroup | DG.TreeViewNode): void {
     const dialog = ui.dialog(`Rename "${node.text}"`);
     const nameInput = ui.textInput('New name', '', () => {});
     nameInput.nullable = false;
@@ -206,7 +220,8 @@ export class TestTrack extends DG.ViewBase {
     else
       node = parent.item(name, values);
     this.setContextMenu(node);
-    this.df.rows.addNew([name, values.id, values.parentId, testCase === null, testCase, values.status]);
+    node.captionLabel.after(node.value.icon);
+    this.df.rows.addNew([name, values.id, values.parentId, testCase === null, testCase, null]);
   }
 
   renameNode(node: DG.TreeViewGroup | DG.TreeViewNode, name: string): void {
@@ -253,7 +268,7 @@ export class TestTrack extends DG.ViewBase {
     return ind;
   }
 
-  async updateDf() {
+  async updateDf(): Promise<void> {
     await writeDataframe(FILENAME, this.df.toCsv());
   }
 }
