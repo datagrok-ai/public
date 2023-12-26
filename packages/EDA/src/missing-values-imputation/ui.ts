@@ -183,7 +183,10 @@ export function runKNNImputer(): void {
 
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
-      impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);
+      const start = new Date().getTime();
+      impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);      
+      const finish = new Date().getTime();
+      console.log(`Time is ${finish - start} ms.`);
     })
     .add(targetColInput)
     .add(featuresInput)    

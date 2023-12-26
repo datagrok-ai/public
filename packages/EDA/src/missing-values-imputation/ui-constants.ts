@@ -9,6 +9,7 @@ export enum ERROR_MSG {
   KNN_NO_FEATURE_COLUMNS = 'KNN imputer cannot be applied: no feature columns',
   KNN_NOT_ENOUGH_OF_ROWS = 'KNN imputer cannot be applied: not enough of rows',
   KNN_IMPOSSIBLE_IMPUTATION = 'Imputation is impossible, no features can be used',
+  INCORRECT_NEIGHBORS = 'Incorrect number of neighbors',
 };
 
 /** Suffix used for column copy */

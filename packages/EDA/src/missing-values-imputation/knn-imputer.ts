@@ -92,7 +92,7 @@ export type MetricInfo = {
 /** */
 export enum DEFAULT {
   WEIGHT = 1,
-  NEIGHBORS = 2,
+  NEIGHBORS = 4,
   IN_PLACE = 1,
 };
 
@@ -100,10 +100,19 @@ export enum DEFAULT {
 export const MIN_NEIGHBORS = 1;
 
 /** */
+type Item = {
+  index: number,
+  dist: number,
+};
+
+/** */
 export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetrics: Map<string, MetricInfo>,
   distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean) 
 {
   // 1. Check inputs completness
+
+  if (neighbors < MIN_NEIGHBORS)
+    throw new Error(ERROR_MSG.INCORRECT_NEIGHBORS);
 
   if (df.rowCount < 2)
     throw new Error(ERROR_MSG.KNN_NOT_ENOUGH_OF_ROWS);
@@ -135,6 +144,7 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
     const nullValue = getNullValue(col);
     const len = col.length;
     const source = col.getRawData();
+    const frequencies = new Uint16Array(col.categories.length);
     const columns = df.columns;
 
     const featureSource = [] as Array<Int32Array | Uint32Array | Float32Array | Float64Array>;
@@ -167,6 +177,16 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
     const bufferVector = new Float32Array(featureSource.length);
     let properIndicesCount = 0;
 
+    // closest items
+    const nearestItems = new Array<Item>(neighbors);
+    let nearestItemsCount = 0;
+
+    // auxiliry variables
+    let maxInd = 0;
+    let maxDist = 0;
+    let sum = 0;
+    let fillValue = 0;
+
     /** Obtain proper indices for KNN: features with missing vals are skipped */
     const getProperIndeces = (idx: number) => {
       properIndicesCount = 0;
@@ -178,22 +198,29 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
         }
     };
 
+    /** Compute buffer vector */
+    const computeBufferVector = (idx: number, cur: number) => {
+      properIndices.forEach((properIndex, k) => {
+        bufferVector[k] = metricFunc[properIndex](featureSource[properIndex][idx], featureSource[properIndex][cur]);
+      })
+    };
+
     /** Euclidean distance function */
-    const euclideanDistFunc = (vector: Float32Array) => {
+    const euclideanDistFunc = () => {
       let sum = 0;
 
       for (let i = 0; i < properIndicesCount; ++i)
-        sum += vector[i] * vector[i];
+        sum +=bufferVector[i] * bufferVector[i];
 
       return Math.sqrt(sum);
     };
 
     /** Manhattan distance function */
-    const manhattanDistFunc = (vector: Float32Array) => {
+    const manhattanDistFunc = () => {
       let sum = 0;
     
       for (let i = 0; i < properIndicesCount; ++i)
-        sum += Math.abs(vector[i]);
+        sum += Math.abs(bufferVector[i]);
     
       return Math.sqrt(sum);
     };
@@ -203,11 +230,35 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
 
     /** Check if the current item (i.e. table row) can be used */
     const canItemBeUsed = (cur: number) => {
-      for (let i = 0; i < properIndicesCount; ++i)
-        if (featureSource[i][cur] === featureNullVal[i])
+      if (source[cur] === nullValue)
+        return false;
+
+      for (let i = 0; i < properIndicesCount; ++i)        
+        if (featureSource[properIndices[i]][cur] === featureNullVal[properIndices[i]])
           return false;
 
       return true;
+    };
+
+    /** Return the most frequent of the nearest items (for categorial data) */
+    const mostFrequentOfTheNearestItems = () => {
+      frequencies.forEach((v, i,arr) => arr[i] = 0);
+      let i = 0;
+
+      for (i = 0; i < nearestItemsCount; ++i)
+        ++frequencies[source[nearestItems[i].index]];
+
+      let maxFreq = frequencies[0];
+      let maxFreqIdx = 0;
+      
+      frequencies.forEach((v, i) => {
+        if (v > maxFreq) {
+          maxFreq = v;
+          maxFreqIdx = i;
+        }
+      });
+
+      return maxFreqIdx;
     };
 
     /** Get imputation value */
@@ -215,32 +266,76 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
       getProperIndeces(idx);
 
       // check available features
-      if (properIndicesCount === 0) {
-        grok.shell.error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column ${col.name}, row ${idx + 1}`);
-        return;
-      }
+      if (properIndicesCount === 0)
+        throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column ${col.name}, row ${idx + 1}`);
+
+      nearestItemsCount = 0;
 
       // search for the closest items
       for (let cur = 0; cur < len; ++cur)
-        if (canItemBeUsed(cur)) {
+        if (canItemBeUsed(cur) && (cur !== idx)) {
+          // 1) compute distance between cur-th and idx-th items
+          computeBufferVector(idx, cur);
+          const curDist = dist();
 
-        }
+          // 2) insert the current item
+          if (nearestItemsCount < neighbors) {
+            nearestItems[nearestItemsCount] = {index: cur, dist: curDist};
+            ++nearestItemsCount;
+          }
+          else {
+            // 2.1) find the farest
+            maxInd = 0;
+            maxDist = nearestItems[0].dist;
+
+            for(let i = 1; i < nearestItemsCount; ++i)
+              if (maxDist < nearestItems[i].dist) {
+                maxDist = nearestItems[i].dist;
+                maxInd = i;
+              }
+            
+            // 2.2) replace
+            if (curDist < maxDist)
+              nearestItems[maxInd] = {index: cur, dist: curDist};
+          } // else
+        } // for cur
       
+      // check found nearest items
+      if (nearestItemsCount === 0)
+        throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column ${col.name}, row ${idx + 1}`);
+
       if (col.type === DG.COLUMN_TYPE.STRING)
-        return "0";
-      else 
-        return 0;
-    };
+        return mostFrequentOfTheNearestItems();
+
+      // compute fill value
+      sum = 0;
+      for (let i = 0; i < nearestItemsCount; ++i)
+        sum += source[nearestItems[i].index];        
+
+      fillValue = sum / nearestItemsCount;
+
+      if (col.type === DG.COLUMN_TYPE.INT)
+        return Math.round(fillValue);
+
+      return fillValue;      
+    }; // getFillValue
     
     if (inPlace) {
       for (let i = 0; i < len; ++i)
         if (source[i] === nullValue)
-          source[i] = 0;
+          try {
+            source[i] = getFillValue(i);
+          }  catch (err) {
+              if (err instanceof Error) 
+                grok.shell.error(err.message);
+              else
+                grok.shell.error(``);
+          }
 
       const buf = col.get(0);
       col.set(0, col.get(1));
       col.set(1, buf);
-    }
+    } // if
     else {
       //@ts-ignore
       const copy = col.clone();
@@ -259,10 +354,17 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
       const copySource = copy.getRawData();
 
       for (i = 0; i < len; ++i)
-        if (copySource[i] === nullValue)
-          copySource[i] = 0;
+        if (copySource[i] === nullValue)          
+          try {
+            copySource[i] = getFillValue(i);
+          }  catch (err) {
+              if (err instanceof Error) 
+                grok.shell.error(err.message);
+              else
+                grok.shell.error(``);
+          }
 
       df.columns.add(copy);
-    }
+    } // else
   });
 }

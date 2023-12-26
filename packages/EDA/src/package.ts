@@ -337,23 +337,9 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
   addOneWayAnovaVizualization(table, factor, feature, res);  
 }
 
-//top-menu: ML | Impute missing values | Simple...
-//name: Simple impute
-//desription: Univariate imputation of missing values with simple strategies
-//input: dataframe table
-//input: column column
-//input: string strategy = 'mean' {choices: ['mean', 'median']} [The imputation strategy]
-//input: bool inPlace = true {caption: In place} [Whether to create a new column]
-export function simpleImputationOfMissingValues(table: DG.DataFrame, column: DG.Column, strategy: string, inPlace: boolean) {
-  if (inPlace)
-    simpleImpute(column, strategy, inPlace);
-  else
-    table.columns.add(simpleImpute(column, strategy, inPlace));
-}
-
-//top-menu: ML | Impute missing values | KNN...
+//top-menu: ML | Missing values imputation ...
 //name: KNN impute
-//desription: Imputation for completing missing values using k-Nearest Neighbors
-export function kNNImputation() {
-  runKNNImputer();
+//desription: Missing values imputation using the k-nearest neighbors method
+export function kNNImputation() {  
+  runKNNImputer();  
 }
