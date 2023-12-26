@@ -560,26 +560,30 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger.debug(`${logPrefix}, end `);
   }
 
-  private async rebuildViewCurrentRow(logIndent: number, caller: string): Promise<void> {
-    const callLog = `rebuildViewCurrentRow( <- ${caller} )`;
+  /** Gets structure for the current row from the data provider and displays it. */
+  private async rebuildViewCurrentRow(
+    oldStructureRefs: string[] | null, newCurrentRowIdx: number, logIndent: number, caller: string
+  ): Promise<[BiostructureData, string[]]> {
+    const callLog = `rebuildViewCurrentRow( <- ${caller}, currentRowIdx = ${newCurrentRowIdx} )`;
     const logPrefix = `${margin(logIndent)}${this.viewerToLog()}.${callLog}`;
 
     if (!this.viewer)
       this.logger.warning(`${logPrefix}, no viewer`);
 
     const col = this.dataFrame.getCol(this.biostructureIdColumnName!);
-    const id = col.get(this.dataFrame.currentRowIdx);
+    const id = col.get(newCurrentRowIdx);
     const splash = buildSplash(this.root, `Loading data of '${id}'.`);
     try {
       // while loading the next, the previous structure is covered by splash
       const fc = await this.biostructureDataProviderFunc!.prepare({id: id}).call();
-      this.dataEff = fc.getOutputParamValue() as BiostructureData;
+      const dataEff: BiostructureData = fc.getOutputParamValue() as BiostructureData;
 
       const plugin = this.viewer!.plugin;
       await this.destroyViewLigands(0, callLog);
-      await removeVisualsData(plugin, this.dataEffStructureRefs);
-      this.dataEffStructureRefs = await parseAndVisualsData(plugin, this.dataEff);
+      await removeVisualsData(plugin, oldStructureRefs, callLog);
+      const newStructureRefs: string[] = await parseAndVisualsData(plugin, dataEff, callLog);
       await this.buildViewLigands(0, callLog);
+      return [dataEff, newStructureRefs];
     } finally {
       splash.close();
     }
@@ -617,15 +621,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (this.dataFrame && this.biostructureDataProviderFunc && this.biostructureIdColumnName) {
       this.viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
         this.dataFrameOnCurrentRowChangedDebounced.bind(this)));
-      await this.rebuildViewCurrentRow(logIndent + 1, callLog);
+      [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
+        null, this.dataFrame.currentRowIdx, logIndent + 1, callLog);
+    } else if (this.dataEff) {
+      // display a structure of this.dataEff
+      this.dataEffStructureRefs = await parseAndVisualsData(plugin, this.dataEff, callLog);
     }
 
     if (this.dataEff) {
       if (!(this.dataEff.ext in molecule3dFileExtensions))
         throw new Error(`Unsupported file extension '${this.dataEff.ext}'.`);
-
-      await parseAndVisualsData(plugin, this.dataEff);
-      // await this.viewer.loadStructureFromData(this.dataEff.data, format, binary);
 
       if (this.dataFrame && this.ligandColumnName) {
         this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(
@@ -713,10 +718,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private dataFrameOnCurrentRowChangedDebounced(_value: any): void {
     const logIndent: number = 0;
-    const callLog = `dataFrameOnCurrentRowChangedDebounced()`;
+    const oldStructureRefs: string[] | null = this.dataEffStructureRefs;
+    const newCurrentRowIdx = this.dataFrame.currentRowIdx;
+    const callLog = `dataFrameOnCurrentRowChangedDebounced( newCurrentRowIdx = ${newCurrentRowIdx} )`;
     const logPrefix = `${margin(logIndent)}${this.viewerToLog()}.${callLog}`;
     this.viewSyncer.sync(logPrefix, async () => {
-      await this.rebuildViewCurrentRow(0, callLog);
+      await this.rebuildViewCurrentRow(oldStructureRefs, newCurrentRowIdx, 0, callLog);
     });
   }
 
@@ -823,7 +830,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     for (const ligand of allLigands) {
       if (!ligand.structureRefs) continue;
-      await removeVisualsData(this.viewer!.plugin, ligand.structureRefs);
+      await removeVisualsData(this.viewer!.plugin, ligand.structureRefs, callLog);
     }
     for (const ligand of allLigands) ligand.structureRefs = null; // unbind with this.stage.compList
 
@@ -913,18 +920,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     });
   }
 
-  public async awaitRendered(timeout: number | undefined = 10000): Promise<void> {
+  public async awaitRendered(timeout: number = 10000): Promise<void> {
     const callLog = `awaitRendered( ${timeout} )`;
     const logPrefix = `${this.viewerToLog()}.${callLog}`;
     await testEvent(this._onRendered, (args) => {
       this.logger.debug(`${logPrefix}, ` + '_onRendered event caught');
     }, () => {
       this.invalidate(callLog);
-    }, timeout)
-      .catch((err: any) => {
-        this.logger.warning(`${logPrefix}, ` + `rejected with '${err.toString()}'`);
-      });
-    this.logger.debug(`${logPrefix}, end`);
+    }, timeout);
   }
 
   // -- IMolecule3DBrowser --

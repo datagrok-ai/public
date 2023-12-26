@@ -9,6 +9,7 @@ import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
@@ -35,9 +36,6 @@ export const enum Temps {
 
 export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
   private readonly logger: ILogger;
-
-  private readonly _renderComplete: Subject<void> = new Subject<void>();
-  public get renderComplete(): Observable<void> { return this._renderComplete; }
 
   private readonly taskQueueMap = new Map<number, NglGlTask>();
   private readonly imageCache = new Map<number, HTMLImageElement>();
@@ -97,7 +95,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
               g.restore();
               this.taskQueueMap.delete(rowIdx);
               if (this.taskQueueMap.size === 0)
-                this._renderComplete.next();
+                this._onRendered.next();
             }
           },
         };
@@ -121,6 +119,8 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
+    const callLog = 'onClick()';
+    const logPrefix = `PdbGridCellRenderer.${callLog}`;
     // let twin = new TwinProteinView();
     // let ligandSelection: {[key: string]: any} = {};
     // twin.init(gridCell.cell.value, grok.shell.v as DG.TableView, ligandSelection);
@@ -150,6 +150,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
       case DockingRole.target:
       default: {
         let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
+        // eslint-disable-next-line prefer-const
         viewer = wu(tview.viewers).find((v) => {
           return v.type === 'Biostructure' || v.type === 'NGL';
         }) as DG.Viewer & IBiostructureViewer;
@@ -157,11 +158,22 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
         if (!viewer) {
           df.plot.fromType('Biostructure', {pdb: value}).then(
             (value: DG.Widget) => {
-              viewer = value as DG.Viewer & IBiostructureViewer;
-              tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+              const viewer = value as DG.Viewer & IBiostructureViewer;
+              testEvent(viewer.onRendered, () => {
+                this._onClicked.next();
+              }, () => {
+                tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+                viewer.invalidate(callLog); // To trigger viewer.onRendered
+              }, 10000).then(() => {});
             }); // Ignore promise returned
-        } else
-          viewer.setOptions({pdb: value});
+        } else {
+          testEvent(viewer.onRendered, () => {
+            this._onClicked.next();
+          }, () => {
+            viewer!.setOptions({pdb: value});
+            viewer!.invalidate(callLog); // To trigger viewer.onRendered
+          }, 10000).then(() => {});
+        }
       }
     }
   }
@@ -170,6 +182,25 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
     let res: PdbGridCellRendererBack = gridCol.temp[Temps.renderer];
     if (!res) res = gridCol.temp[Temps.renderer] = new PdbGridCellRendererBack(gridCol);
     return res;
+  }
+
+  // -- IPdbGridCellRenderer --
+
+  private _onClicked: Subject<void> = new Subject<void>();
+  get onClicked(): Observable<void> { return this._onClicked; }
+
+  // -- IRenderer --
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  public get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    this.gridCol.grid.invalidate();
+  }
+
+  async awaitRendered(timeout: number = 10000): Promise<void> {
+    await testEvent(this._onRendered, () => {}, () => { this.invalidate(); }, timeout);
   }
 }
 
