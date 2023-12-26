@@ -21,24 +21,34 @@ allowing you to do the following:
 
 ## Pattern
 
-The Pattern tool applies modification patterns to a set of sequences.
-1. You specify the pattern: create it manually or load it from saved patterns. 
-   Loading patterns created by other users are also available.
-   For the pattern, you can choose the sequence basis (DNA/RNA) and pattern length
-   for sense and anti-sense strands.
-2. You upload the Excel/CSV file containing unmodified sequences — the format: sequence ID, sense, and antisense strands. 
-3. You convert it and receive the modified sequence in HELM or custom synthesizer format.  
-4. The conversion utility designed for dimers: By default, you specify patterns for sense and anti-sense strands. 
-   To disable the generation of the complementary chain, disable the checkbox below the pattern window.
+The Pattern tool applies modification patterns to a sequence of set of sequences.
+To apply modification, do the following:
+1. Create the pattern using the **Pattern** input sections.
+   * In the **Pattern** input section, choose the sequence basis (DNA/RNA) and pattern length
+     for sense and anti-sense strands.
+   * Alternatively, load the pattern from the list of saved patterns.  
+     Loading patterns created by other users are also available.
+2. Paste the nucleotide sequences (sense and/or anti-sense) in the text boxes under the pattern image, 
+   and obtain modified sequences in the Axolabs format.
+3. When you edit the pattern, OligoToolkit automatically updates the resulting sequences.
 
-**Available modifications:**
+![Oligotoolkit pattern](img/Oligotoolkit-pattern-edit.gif)
+
+### Batch conversion
+
+To apply one pattern to a list of nucleotides, use the **Batch conversion** mode.
+
+1. Upload/choose a dataframe containing unmodified sequences using the **Convert** input section.
+   The dataframe should contain at least three columns: sequence ID, sense, and anti-sense strands. 
+2. Press the **Convert** button and receive the modified sequence in HELM or custom synthesizer format.
+
+### Supported modifications
 
 * Type of the bases: Methylated, with 2’-fluorescent mark, artificial bases.
 * Additional groups at the 5’ and 3’ ends of the chain.
 * Phospho-tiole connections.
 * Nucleotide connection type (2’ instead of 3’).
 * Tio-sulfur bond between nucleotides.
-
 
 
 ## Translator
