@@ -723,7 +723,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const callLog = `dataFrameOnCurrentRowChangedDebounced( newCurrentRowIdx = ${newCurrentRowIdx} )`;
     const logPrefix = `${margin(logIndent)}${this.viewerToLog()}.${callLog}`;
     this.viewSyncer.sync(logPrefix, async () => {
-      await this.rebuildViewCurrentRow(oldStructureRefs, newCurrentRowIdx, 0, callLog);
+      [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
+        oldStructureRefs, newCurrentRowIdx, 0, callLog);
     });
   }
 
