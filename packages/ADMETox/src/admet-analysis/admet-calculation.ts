@@ -8,6 +8,9 @@ import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarati
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 const _COLUMN_NAME_STORAGE = 'column_names';
+let sliderValue = 0.5;
+let boolValue = false;
+const nonSpecific = ['Pgp-Inhibitor', 'Pgp-Substrate', 'Caco2', 'Lipophilicity', 'PPBR', 'VDss'];
 
 /**
  * Sends a POST request to the Admetox server with CSV data and specific query parameters.
@@ -16,7 +19,7 @@ const _COLUMN_NAME_STORAGE = 'column_names';
  * @param {string} queryParams - The query parameters to be included in the request URL (model names).
  * @returns {Promise<string | null | undefined>} A promise that resolves to the server response or undefined if an error occurs.
  */
-export async function runAdmetox(csvString: string, queryParams: string): Promise<string | null> {
+export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
   if (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking') {
     grok.log.warning('ADMETox container has not started yet.');
@@ -32,7 +35,7 @@ export async function runAdmetox(csvString: string, queryParams: string): Promis
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}&probability=False`;
+  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
   try {
     const response = await grok.dapi.docker.dockerContainers.request(admetoxContainer.id, path, params);
     return response;
@@ -46,11 +49,14 @@ export async function addCalculations(smilesCol: DG.Column, viewTable: DG.DataFr
   openModelsDialog(await getSelected(), smilesCol, async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
-    //const pi = DG.TaskBarProgressIndicator.create('Prediction...');
+    const pi = DG.TaskBarProgressIndicator.create('Running prediction...');
     const csvString = DG.DataFrame.fromColumns([smilesCol]).toCsv();
-    const admetoxResults = await runAdmetox(csvString, selected.join(','));
+    pi.update(10, 'Getting results from server');
+    const admetoxResults = await runAdmetox(csvString, selected.join(','), String(boolValue));
+    pi.update(80, 'Results are ready');
     const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
     table ? addResultColumns(table, viewTable) : grok.log.warning('');
+    pi.close();
   });
 }
 
@@ -64,8 +70,11 @@ export function addColorCoding(columnNames: string[]) {
   const tv = grok.shell.tv;
   for (const columnName of columnNames) {
     tv.grid.col(columnName)!.isTextColorCoded = true;
-    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#e87c79",">0.5":"#43b579"}`;
+    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+    if (nonSpecific.includes(columnName))
+      tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.red}, ${DG.Color.green}]`;
+    else
+      tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.orange}, ${DG.Color.purple}]`
   }  
 }
 
@@ -82,15 +91,13 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
     .filter(obj => obj['skip'] !== true)
     .map(obj => obj['name'])
     .join(',');
-  const csvString = await runAdmetox(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+  const csvString = await runAdmetox(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams, 'false');
   const table = csvString ? DG.DataFrame.fromCsv(csvString) : null;
   if (table)
     addResultColumns(table, viewTable);
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
-  //substitute after demo
-  //const confidenceInterval = 0.5;
   if (table.columns.length > 0) {
     const modelNames: string[] = table.columns.names();
     const updatedModelNames: string[] = [];
@@ -106,7 +113,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
-    //viewTable.rows.removeWhere((row) => row.get('Y_Pgp-Inhibitor_probability') <= 0.5);
+    //viewTable.rows.removeWhere((row) => row.get('Pgp-Inhibitor_probability') < sliderValue);
     addColorCoding(updatedModelNames);
   }
 }
@@ -136,7 +143,8 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
       runAdmetox(
         `smiles
         ${smiles.value}`,
-        queryParams.toString()
+        queryParams.toString(),
+        'false'
       ).catch((e: any) => {
         result.appendChild(ui.divText('Couldn\'t analyse properties'));
         console.log(e);
@@ -178,6 +186,8 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
  * @returns {Promise<void>} A promise that resolves when the dialog is closed.
  */
 async function openModelsDialog(selected: any, smilesColumn: DG.Column, onOK: any): Promise<void> {
+  sliderValue = 0.5;
+  boolValue = false;
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
   tree.root.style.width = '200px';
@@ -268,8 +278,8 @@ async function openModelsDialog(selected: any, smilesColumn: DG.Column, onOK: an
     //@ts-ignore
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
   molInput.root.style.marginLeft = '-70px';
-  const sliderInput = ui.sliderInput('Confidence interval', 0.6, 0, 1);
-  const boolInput = ui.boolInput('Add columns', false);
+  const sliderInput = ui.sliderInput('Confidence interval', 1, 0, 2, (value: number) => sliderValue = value/2);
+  const boolInput = ui.boolInput('Add columns', false, (value: boolean) => boolValue = value);
   sliderInput.root.style.marginLeft = '-20px';
   boolInput.root.style.marginLeft = '-55px';
   const dlg = ui.dialog('ADME/Tox');
