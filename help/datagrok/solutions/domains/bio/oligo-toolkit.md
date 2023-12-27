@@ -9,8 +9,6 @@ An example use-case is producing double-stranded RNAs for the RNA-silencing.
 
 To open the app, on the **Sidebar**, select **Functions** > **Apps** > **Oligo Toolkit**.
 
-![Run OligoToolkit](img/Oligotoolkit-run.gif)
-
 The OligoToolkit 
 application contains several independent modules, 
 allowing you to do the following:
@@ -19,10 +17,10 @@ allowing you to do the following:
 * Conversion of chemically modified sequences between several open and commercial formats: FASTA, HELM, MerMade, BioSpring.
 * Producing chemical structures for the natural and modified oligonucleotides.
 
-## Pattern
+## Chemical modification by pattern
 
-The Pattern tool applies modification patterns to a sequence of set of sequences.
-To apply modification, do the following:
+The **Pattern** tool applies a modification pattern to a sequence or set of sequences.
+To apply modification:
 1. Create the pattern using the **Pattern** input sections.
    * In the **Pattern** input section, choose the sequence basis (DNA/RNA) and pattern length
      for sense and anti-sense strands.
@@ -34,9 +32,10 @@ To apply modification, do the following:
 
 ![Oligotoolkit pattern](img/Oligotoolkit-pattern-edit.gif)
 
-### Batch conversion
+### Nucleotide batch conversion
 
-To apply one pattern to a list of nucleotides, use the **Batch conversion** mode.
+To apply one pattern to a list of nucleotides, use the **Batch conversion** mode
+of the **Pattern** tool.
 
 1. Upload/choose a dataframe containing unmodified sequences using the **Convert** input section.
    The dataframe should contain at least three columns: sequence ID, sense, and anti-sense strands. 
@@ -51,9 +50,9 @@ To apply one pattern to a list of nucleotides, use the **Batch conversion** mode
 * Tio-sulfur bond between nucleotides.
 
 
-## Translator
+## Sequence format translator
 
-A simple tool to convert oligonucleotide sequences 
+A tool to convert oligonucleotide sequences 
 between different formats and generate SDF and SMILES representations. 
 
 You specify one sequence, choose a format, and receive the set of sequences in all other supported formats. 
@@ -63,7 +62,7 @@ The most common use case is checking that the conversion is correct for a partic
 
 ![Oligotoolkit-Translator](img/Oligotoolkit-translator.gif)
 
-### Monomer library
+### Viewing and managing the monomer library
 
 Click the book icon next to the caption on the Translator tab to open the Monomer library – 
 the collection of all monomers that the Translator uses to generate chemical formulas.
@@ -75,9 +74,9 @@ Currently, the only way to add new monomers to this library and specify connecti
 is by using the custom Python script from the OligoToolkit package, which is tricky.
 This part of the code is being refactored now.
 
-### Structure
+### Chemical structure generator
 
-A simple tool to convert sequences to SDF. 
+A tool to convert nucleotide sequences to SDF. 
 It is designed especially for generating siRNA chemical structure 
 with the sense strand and one or two anti-sense strands. 
 Paste the sequences for sense and anti-sense strands and get the structure in the SDF format.
@@ -88,9 +87,11 @@ Also, you can choose the direction for strands.
 
 ## OligoBatch Calculator
 
-Separate specialized applications, calculating the properties of the oligonucleotides 
+The OligoBatch Calculator tool calculates properties of the oligonucleotides 
 (for example, obtained from sequencing machine or purchased).
-Specify the yield amount: value and units. 
+
+To use it, specify the nucleotide yield amount: value and units. 
 Then, paste oligonucleotide sequences in the FASTA or AxoLabs format.
-The tool calculates the table containing oligonucleotide properties: 
-length, molecular weight, the amount in different units (mkg, nMols), optical density, and extinction coefficient.
+The tool shows the table containing oligonucleotide properties: 
+length, molecular weight, the amount in different units (mkg, nMols), 
+optical density, and extinction coefficient.
