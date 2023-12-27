@@ -1,3 +1,5 @@
+// Tools for missing values imputation using the k-nearest neighbors method
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -13,7 +15,7 @@ export const SUPPORTED_COLUMN_TYPES = [
   DG.COLUMN_TYPE.QNUM,
 ] as string[];
 
-/** */
+/** Return null value with respect to the column type */
 function getNullValue(col: DG.Column): number {
   switch (col.type) {
     case DG.COLUMN_TYPE.INT:        
@@ -36,48 +38,13 @@ function getNullValue(col: DG.Column): number {
   }  
 }
 
-/** */
-export function simpleImpute(col: DG.Column, strategy: string, inPlace: boolean): DG.Column {
-  if (col.stats.missingValueCount === 0)
-    throw new Error(ERROR_MSG.NO_MISSING_VALUES);
-
-  const nullValue = getNullValue(col);
-  const fillValue = 0;//getFillValue(col, strategy);
-
-  const len = col.length;
-  const source = col.getRawData();    
-
-  if (inPlace) {
-    for (let i = 0; i < len; ++i)
-      if (source[i] === nullValue)
-        source[i] = fillValue;
-
-    const buf = col.get(0); 
-    col.set(0, col.get(1));
-    col.set(0, buf);
-
-    return col;
-  }
-
-  //@ts-ignore
-  const copy = col.clone();
-  copy.name = `${col.name}${COPY_SUFFIX}`;
-
-  const copyRaw = copy.getRawData();
-
-  for (let i = 0; i < len; ++i)
-    copyRaw[i] = (source[i] !== nullValue) ? source[i] : fillValue;
-
-  return copy;
-}
-
-/** */
+/** Metric types (between column elements) */
 export enum METRIC_TYPE {
   ONE_HOT = 'One-hot',
   DIFFERENCE = 'Difference',
 };
 
-/** Distance types. */
+/** Distance types (over several columns). */
 export enum DISTANCE_TYPE {
   EUCLIDEAN = 'Euclidian',
   MANHATTAN = 'Manhattan',
@@ -89,23 +56,23 @@ export type MetricInfo = {
   type: METRIC_TYPE,
 };
 
-/** */
+/** Default values */
 export enum DEFAULT {
   WEIGHT = 1,
   NEIGHBORS = 4,
   IN_PLACE = 1,
 };
 
-/** */
+/** Min number of neighbors for KNN */
 export const MIN_NEIGHBORS = 1;
 
-/** */
+/** Dataframe item: index - number of row,  dist - distance to the target element */
 type Item = {
   index: number,
   dist: number,
 };
 
-/** */
+/** Impute missing values using the KNN method */
 export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetrics: Map<string, MetricInfo>,
   distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean) 
 {
@@ -139,7 +106,7 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
       throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
   });
 
-  // 2. Missing values imputation by KNN
+  // 2. Missing values imputation in each target column
   targetCols.forEach((col) => {
     const nullValue = getNullValue(col);
     const len = col.length;
@@ -367,4 +334,4 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
       df.columns.add(copy);
     } // else
   });
-}
+} // impute

@@ -15,7 +15,6 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 
 import {oneWayAnova} from './stat-tools';
 
-import {simpleImpute} from './missing-values-imputation/knn-imputer';
 import {runKNNImputer} from './missing-values-imputation/ui';
 
 export const _package = new DG.Package();
@@ -337,7 +336,7 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
   addOneWayAnovaVizualization(table, factor, feature, res);  
 }
 
-//top-menu: ML | Missing values imputation ...
+//top-menu: ML | Missing Values Imputation ...
 //name: KNN impute
 //desription: Missing values imputation using the k-nearest neighbors method
 export function kNNImputation() {  
