@@ -2,7 +2,7 @@
 
 ## 1.1.7 (WIP)
 
-Missing Data Inputation feature is added.
+Missing Data Inputation using the KNN method is added.
 
 ## 1.1.6 (2023-10-31)
 

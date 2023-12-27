@@ -73,6 +73,11 @@ export function runKNNImputer(): void {
     return;
   }
 
+  if (availableFeatureColsNames.length === 1) {
+    grok.shell.error(ERROR_MSG.ONE_AVAILABLE_FEATURE);
+    return;
+  }
+
   // In-place components
   let inPlace = DEFAULT.IN_PLACE > 0;
   const inPlaceInput = ui.boolInput(TITLE.IN_PLACE, inPlace, () => { inPlace = inPlaceInput.value ?? false;});
@@ -104,6 +109,8 @@ export function runKNNImputer(): void {
       targetCols = targetColInput.value;
     else
       targetColInput.value = targetCols;
+
+    checkApplicability();
   }, {available: availableTargetColsNames, checked: availableTargetColsNames});
   targetColInput.setTooltip(HINT.TARGET);
 
@@ -113,23 +120,44 @@ export function runKNNImputer(): void {
     selectedFeatureColNames = featuresInput.value.map((col) => col.name);
 
     if (selectedFeatureColNames.length > 0) {
-      dlg.getButton(TITLE.RUN).hidden = false;
-      distDiv.hidden = false;
-      inPlaceInput.root.hidden = false;
-      neighborsInput.root.hidden = false;
-      distTypeInput.root.hidden = false;
-
-      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
+      checkApplicability();
+      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));      
     }
-    else {
-      dlg.getButton(TITLE.RUN).hidden = true;
-      inPlaceInput.root.hidden = true;
-      neighborsInput.root.hidden = true;
-      distDiv.hidden = true;
-      metricsDiv.hidden = true;
-    }
+    else
+      hideWidgets();
   }, {available: availableFeatureColsNames, checked: availableFeatureColsNames});
   featuresInput.setTooltip(HINT.FEATURES);
+
+  /** Hide widgets (use if run is not applicable) */
+  const hideWidgets = () => {
+    dlg.getButton(TITLE.RUN).hidden = true;
+    inPlaceInput.root.hidden = true;
+    neighborsInput.root.hidden = true;
+    distDiv.hidden = true;
+    metricsDiv.hidden = true;
+  };
+
+  /** Show widgets (use if run is applicable) */
+  const showWidgets = () => {
+    dlg.getButton(TITLE.RUN).hidden = false;
+    distDiv.hidden = false;
+    inPlaceInput.root.hidden = false;
+    neighborsInput.root.hidden = false;
+    distTypeInput.root.hidden = false;
+  };
+
+  /** Check applicability of the imputation */
+  const checkApplicability = () => {
+    showWidgets();
+    
+    if (selectedFeatureColNames.length === 1) {
+      targetCols.forEach((col) => {
+        if (selectedFeatureColNames[0] === col.name) {
+          hideWidgets();
+          grok.shell.error(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${col.name}'`);
+      }});
+    }
+  };
 
   // Metrics components
   const featuresMetrics = new Map<string, MetricInfo>();
@@ -182,11 +210,16 @@ export function runKNNImputer(): void {
       dlg.close();
 
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
-
-      const start = new Date().getTime();
-      impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);      
-      const finish = new Date().getTime();
-      console.log(`Time is ${finish - start} ms.`);
+      
+      try {
+        impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);
+      }
+      catch (err) {
+        if (err instanceof Error)
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+        else
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+      }      
     })
     .add(targetColInput)
     .add(featuresInput)    
@@ -195,4 +228,4 @@ export function runKNNImputer(): void {
     .add(neighborsInput)
     .add(inPlaceInput)
     .show();
-}
+} // runKNNImputer

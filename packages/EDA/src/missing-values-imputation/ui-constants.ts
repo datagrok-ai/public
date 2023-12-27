@@ -2,6 +2,8 @@
 export enum ERROR_MSG {
   NO_DATAFRAME = 'No dataframe is opened',
   NO_MISSING_VALUES = 'No missing values',
+  ONE_AVAILABLE_FEATURE = 'Not enough of feature columns to apply imputation using the KNN method',
+  ONE_FEATURE_SELECTED = 'Imputation cannot be applied to',
   UNSUPPORTED_COLUMN_TYPE = 'Unsupported column type',
   UNSUPPORTED_IMPUTATION_STRATEGY = 'Unsupported imputation strategy',
   KNN_CANNOT_BE_APPLIED = 'KNN imputer cannot be applied: no columns to be used as features',
@@ -10,6 +12,8 @@ export enum ERROR_MSG {
   KNN_NOT_ENOUGH_OF_ROWS = 'KNN imputer cannot be applied: not enough of rows',
   KNN_IMPOSSIBLE_IMPUTATION = 'Imputation is impossible, no features can be used',
   INCORRECT_NEIGHBORS = 'Incorrect number of neighbors',
+  KNN_FAILS = 'KNN IMPUTATION FAILS',
+  CORE_ISSUE = 'Core issue',
 };
 
 /** Suffix used for column copy */
