@@ -15,8 +15,7 @@ public class SessionManager {
 
     static void add(Session session) throws IOException {
         LOGGER.trace("add method was called with parameter: {}", session);
-        List<String> printLevels = Arrays.asList(session.getUpgradeRequest().getHeader("PrintLevels").split(", "));
-        sessions.put(session, new SessionHandler(session, new QueryLoggerImpl(printLevels)));
+        sessions.put(session, new SessionHandler(session, new QueryLoggerImpl()));
         session.getRemote().sendString("CONNECTED");
     }
 

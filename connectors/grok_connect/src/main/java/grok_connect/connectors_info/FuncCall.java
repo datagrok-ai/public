@@ -4,7 +4,7 @@ import java.util.*;
 
 
 public class FuncCall {
-    public static final String DEBUG_QUERY_KEY = "debugQuery";
+    public static final String DEBUG_QUERY_KEY = "debug";
     public String id;
     public DataQuery func;
     public Map options;

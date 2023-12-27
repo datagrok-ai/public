@@ -56,6 +56,7 @@ public class QueryManager {
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
         resultSetManager = provider.getResultSetManager();
         initParams();
+        queryLogger.writeLog(query.debugQuery);
         if (dryRun)
             initMessage = message;
     }
