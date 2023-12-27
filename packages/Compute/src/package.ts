@@ -209,3 +209,13 @@ export function HeatCapValidator(params: any) {
     });
   };
 }
+
+//name: CustomStringInput
+//input: object params
+//output: object input
+export function CustomStringInput(params: any) {
+  const defaultInput = ui.stringInput('Custom input', '');
+  defaultInput.root.style.backgroundColor = 'aqua';
+  defaultInput.input.style.backgroundColor = 'aqua';
+  return defaultInput;
+}
