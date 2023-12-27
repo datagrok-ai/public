@@ -2,20 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {AppUIFactory, CombinedAppUI} from './view/app-ui';
-import {tryCatch} from './model/helpers';
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
+import {AppUIFactory, CombinedAppUI} from './common/ui-components/combined-ui';
+import {tryCatch} from './common/model/helpers';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './common/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {getJsonData} from './model/data-loading-utils/json-loader';
-import {SequenceToMolfileConverter} from './model/structure-app/sequence-to-molfile';
-import {linkStrandsV3000} from './model/structure-app/mol-transformations';
-import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
-import {FormatDetector} from './model/parsing-validation/format-detector';
-import {SequenceValidator} from './model/parsing-validation/sequence-validator';
+import {getJsonData} from './common/data-loading-utils/json-loader';
+import {SequenceToMolfileConverter} from './structure-app/model/sequence-to-molfile';
+import {linkStrandsV3000} from './structure-app/model/mol-transformations';
+import {MonomerLibWrapper} from './common/monomer-lib/lib-wrapper';
+import {FormatDetector} from './common/model/parsing-validation/format-detector';
+import {SequenceValidator} from './common/model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
-import {FormatConverter} from './model/translator-app/format-converter';
-import {APP} from './view/const/ui';
+import {FormatConverter} from './translator-app/model/format-converter';
+import {APP} from './common/ui-components/const';
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 class StPackage extends DG.Package {

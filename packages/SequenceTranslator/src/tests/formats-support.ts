@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {DEFAULT_FORMATS} from '../model/const';
-import {getJsonData} from '../model/data-loading-utils/json-loader';
+import {DEFAULT_FORMATS} from '../common/model/const';
+import {getJsonData} from '../common/data-loading-utils/json-loader';
 import {formatsToHelm} from './const';
-import {SequenceValidator} from '../model/parsing-validation/sequence-validator';
-import {getTranslatedSequences} from '../model/translator-app/conversion-utils';
+import {SequenceValidator} from '../common/model/parsing-validation/sequence-validator';
+import {getTranslatedSequences} from '../translator-app/model/conversion-utils';
 import {_package} from '../package';
 
 function getTranslationObject(sequence: string, format: string): {[format: string]: string} {

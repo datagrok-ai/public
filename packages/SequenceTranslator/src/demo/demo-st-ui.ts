@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getJsonData} from '../model/data-loading-utils/json-loader';
+import {getJsonData} from '../common/data-loading-utils/json-loader';
 import {_package, oligoTranslatorApp, oligoPatternApp, oligoStructureApp} from '../package';
-import {tryCatch} from '../model/helpers';
+import {tryCatch} from '../common/model/helpers';
 
 export async function demoOligoTranslatorUI() {
   await tryCatch(async () => oligoTranslatorApp());
