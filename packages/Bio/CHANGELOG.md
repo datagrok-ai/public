@@ -43,6 +43,8 @@
 * Fix WebLogoViewer for empty column (annotated).
 * Fix WebLogoViewer and VdRegionsViewer deadlock.
 * Fix Activity Cliffs error on Helm dataset
+* Fix Macromolecule tooltip, context widget for detach
+* Fix WebLogo optimize with postponed update positions
 
 ## 2.10.0 (2023-09-06)
 

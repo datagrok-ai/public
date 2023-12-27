@@ -12,7 +12,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 export class MacromoleculeColumnWidget extends DG.Widget {
   private viewed: boolean = false;
 
-  private seqCol: DG.Column<string>;
+  private readonly seqCol: DG.Column<string>;
 
   private wlViewer: WebLogoViewer;
 
@@ -43,5 +43,10 @@ export class MacromoleculeColumnWidget extends DG.Widget {
       this.root.appendChild(this.wlViewer.root);
       this.root.style.width = '100%';
     }
+  }
+
+  override detach() {
+    this.wlViewer.detach();
+    super.detach();
   }
 }
