@@ -55,7 +55,7 @@ export class TestTrack extends DG.ViewBase {
 
     // Generate tree
     this.df = await readDataframe(FILENAME);
-    const order = this.df.getSortedOrder(['is_group', 'name'], [false, true]);
+    const order = [...this.df.getSortedOrder(['parent_id', 'is_group', 'name'], [true, true, false])].reverse();
     let row: DG.Row;
     for (const i of order) {
       row = this.df.row(i);

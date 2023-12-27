@@ -17,14 +17,15 @@
 }
 
 #tt-test-case-div-outer {
+  position: relative;
   margin: 10px 10px 0 10px;
 }
 
 #tt-edit-button {
   position: absolute;
   display: none;
-  right: 19px;
-  top: 18px;
+  right: 5px;
+  top: 5px;
   margin: 0;
   padding: 4px;
   height: unset;
