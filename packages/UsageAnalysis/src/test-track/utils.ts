@@ -16,6 +16,8 @@ const map = {
   [SKIPPED]: {name: 'forward', color: 'var(--orange-2)'},
 };
 
+export const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
+
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }

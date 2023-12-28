@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {merge} from 'rxjs';
-import {readDataframe, writeDataframe, getIcon, getStatusIcon, Status, FILENAME} from './utils';
+import {readDataframe, writeDataframe, getIcon, getStatusIcon, Status, FILENAME, colors} from './utils';
 
 interface TestCaseValues {
   id: string;
@@ -72,6 +72,18 @@ export class TestTrack extends DG.ViewBase {
     }, 'Add root group');
     plus.classList.add('tt-ribbon-button');
     const report = ui.button(getIcon('tasks', {style: 'fas'}), () => {
+      const df1 = this.df.clone(undefined, ['parent_id', 'name', 'is_group', 'status']);
+      const df2 = this.df.clone(undefined, ['id', 'name']);
+      df1.join(df2, ['parent_id'], ['id'], null, null, 'left', true);
+      df1.rows.removeWhere((r) => r.get('is_group'));
+      df1.columns.remove('is_group');
+      df1.getCol('test-cases.name').name = 'category';
+      df1.getCol('status').colors.setCategorical(colors);
+      const tv = grok.shell.addTableView(df1);
+      tv.grid.columns.setVisible(['category', 'name', 'status']);
+      tv.grid.columns.setOrder(['category', 'name', 'status']);
+      tv.grid.sort(['category']);
+      tv.name = 'Report';
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
     const ribbon = ui.divH([plus, this.saveButton, report]);
