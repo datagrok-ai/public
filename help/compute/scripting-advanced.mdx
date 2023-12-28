@@ -898,6 +898,34 @@ In addition to that,
 there are some capabilities specific for developers: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
 
+### Datagrok platform UI integration
+
+The [functional annotations](../datagrok/concepts/functions/func-params-annotation.md)
+provide you with several integration options that you can use with any function of script.
+Here are some useful examples.
+
+#### Top menu
+
+To add your function to the top menu, add the `top-menu` annotation tag
+and specify the element location in the menu.
+Save your script and reload the page to see the new element in the top menu.
+
+```python
+#top-menu: Bio | Generate | Sequences clusters...
+```
+![Top menu integration for a script](pics/Scripting-Integration-TopMenu.png)
+
+#### Info panel
+
+Add your function to the [info panel](../explore/data-augmentation/info-panels)
+to display custom information for your data.
+To do this, specify [semantic type](scripting-for-non-developers.mdx#semantic-types), 
+for the script input, add `panel` tag and `condition` annotation.
+Read the detailed instruction in the corresponding 
+[developer's howto sections](../develop/how-to/add-info-panel#scripts).
+
+
+
 ### REST API
 
 Once registered, each function gets assigned a REST API endpoint 
@@ -943,7 +971,7 @@ Note that you can change parameter values right in the URL.
 </div>
 </details>
 
-### JavaScript
+### JavaScript examples
 
 The set of [script examples](https://public.datagrok.ai/js/samples) is available publicly.
 Feel free to play around with them to explore different Datagrok capabilities.
