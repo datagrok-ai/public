@@ -14,6 +14,7 @@ export enum ERROR_MSG {
   INCORRECT_NEIGHBORS = 'Incorrect number of neighbors',
   KNN_FAILS = 'KNN IMPUTATION FAILS',
   CORE_ISSUE = 'Core issue',
+  FAILED_TO_IMPUTE ='Failed to impute',
 };
 
 /** Suffix used for column copy */
@@ -27,10 +28,11 @@ export enum TITLE {
   COLUMNS = 'Columns',
   FEATURES = 'Features',
   CANCEL = 'CANCEL',
-  RUN = 'RUN',  
-  WEIGHT = 'metric with the weight',
+  RUN = 'RUN',
   NEIGHBORS = 'Neighbors',
   DISTANCE = 'Distance',
+  FILL = 'Fill',
+  MARK = 'Mark',
 };
 
 /** Help links */
@@ -47,5 +49,7 @@ export enum HINT {
   WEIGHT = 'Weight of the feature',
   NEIGHBORS = 'Neighbors count used in the KNN method',
   DISTANCE = 'Type of distance between elements with the specified features',
-  METRIC_SETTINGS = 'Features metrics settings'
+  METRIC_SETTINGS = 'Features metrics settings',
+  FILL_FAILED_ITEMS = 'Impute missing values',
+  MARK_FAILED_ITEMS = 'Mark missing values with a color',
 }

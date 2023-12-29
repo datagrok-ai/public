@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { TITLE, LINK, ERROR_MSG, HINT } from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
+import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute, FailedToImpute } from "./knn-imputer";
 
 
 
@@ -180,15 +180,23 @@ export function runKNNImputer(): void {
     });
     distTypeInput.root.style.width = '50%';
     distTypeInput.setTooltip(HINT.METRIC);
+    distTypeInput.root.hidden = true; // this input will be used further
 
-    // weight input
-    const weightInput = ui.floatInput(TITLE.WEIGHT, settings.defaultWeight, () => {
+    const properties = [{ "name": "float",       "inputType": "Float", min: 0, max: 10, "showSlider": true},];
+
+    let props = properties.map((p) => DG.Property.fromOptions(p))
+    let object = { float: 4.5 };
+
+    // The following should provide a slider (see th bug https://reddata.atlassian.net/browse/GROK-14431)
+    // @ts-ignore
+    const prop = DG.Property.fromOptions({ "name": name, "inputType": "Float", min: 0, max: 10, "showSlider": true, "step": 1});
+    const weightInput = ui.input.forProperty(prop);
+    weightInput.value = settings.defaultWeight;
+    weightInput.onChanged(() => {
       const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
       distInfo.weight = weightInput.value ?? settings.defaultWeight;
       featuresMetrics.set(name, distInfo);
     });
-    weightInput.root.style.width = '10%';
-    weightInput.setTooltip(HINT.WEIGHT);
     
     const div = ui.divH([distTypeInput.root, weightInput.root]);
     metricInfoInputs.set(name, div);
@@ -208,11 +216,11 @@ export function runKNNImputer(): void {
 
   dlg.addButton(TITLE.RUN, () => {
       dlg.close();
-
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
-      
+
       try {
-        impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);
+        const failedToImpute = impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);        
+        processFailedImputations(df!, failedToImpute);
       }
       catch (err) {
         if (err instanceof Error)
@@ -229,3 +237,22 @@ export function runKNNImputer(): void {
     .add(inPlaceInput)
     .show();
 } // runKNNImputer
+
+/** Process items that are failed to be imputed */
+function processFailedImputations(df: DG.DataFrame, failedToImpute: FailedToImpute[]) {
+  const len = failedToImpute.length;
+
+  if (len > 0) {
+    const fillBtn = ui.bigButton(TITLE.FILL, () => {
+    }, HINT.FILL_FAILED_ITEMS);
+
+    const markBtn = ui.bigButton(TITLE.MARK, () => {
+
+    }, HINT.MARK_FAILED_ITEMS);
+
+    grok.shell.warning(ui.divV([
+      `${ERROR_MSG.FAILED_TO_IMPUTE} ${len} values`,
+      ui.divH([markBtn, fillBtn]),
+    ]));
+  }
+}

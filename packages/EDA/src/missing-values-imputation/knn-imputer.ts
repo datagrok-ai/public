@@ -46,7 +46,7 @@ export enum METRIC_TYPE {
 
 /** Distance types (over several columns). */
 export enum DISTANCE_TYPE {
-  EUCLIDEAN = 'Euclidian',
+  EUCLIDEAN = 'Euclidean',
   MANHATTAN = 'Manhattan',
 };
 
@@ -66,15 +66,21 @@ export enum DEFAULT {
 /** Min number of neighbors for KNN */
 export const MIN_NEIGHBORS = 1;
 
+/** */
+export type FailedToImpute = {
+  colName: string,
+  index: number,
+};
+
 /** Dataframe item: index - number of row,  dist - distance to the target element */
 type Item = {
   index: number,
   dist: number,
 };
 
-/** Impute missing values using the KNN method */
+/** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
 export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetrics: Map<string, MetricInfo>,
-  distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean) 
+  distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): FailedToImpute[] 
 {
   // 1. Check inputs completness
 
@@ -105,6 +111,9 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
     if (!SUPPORTED_COLUMN_TYPES.includes(df.getCol(name).type))
       throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
   });
+
+  /** Failed to impute items */
+  const failedToImpute = [] as FailedToImpute[];
 
   // 2. Missing values imputation in each target column
   targetCols.forEach((col) => {
@@ -234,7 +243,7 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
 
       // check available features
       if (properIndicesCount === 0)
-        throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column ${col.name}, row ${idx + 1}`);
+        throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column "${col.name}", row ${idx + 1}`);
 
       nearestItemsCount = 0;
 
@@ -269,7 +278,7 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
       
       // check found nearest items
       if (nearestItemsCount === 0)
-        throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column ${col.name}, row ${idx + 1}`);
+        throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column "${col.name}", row ${idx + 1}`);
 
       if (col.type === DG.COLUMN_TYPE.STRING)
         return mostFrequentOfTheNearestItems();
@@ -293,10 +302,10 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
           try {
             source[i] = getFillValue(i);
           }  catch (err) {
-              if (err instanceof Error) 
-                grok.shell.error(err.message);
-              else
-                grok.shell.error(``);
+              failedToImpute.push({colName: col.name, index: i});
+              
+              if (!(err instanceof Error))
+                grok.shell.error(ERROR_MSG.CORE_ISSUE);
           }
 
       const buf = col.get(0);
@@ -325,13 +334,15 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
           try {
             copySource[i] = getFillValue(i);
           }  catch (err) {
-              if (err instanceof Error) 
-                grok.shell.error(err.message);
-              else
-                grok.shell.error(``);
+              failedToImpute.push({colName: copy.name, index: i});
+              
+              if (!(err instanceof Error))
+                grok.shell.error(ERROR_MSG.CORE_ISSUE);
           }
 
       df.columns.add(copy);
     } // else
   });
+
+  return failedToImpute;
 } // impute
