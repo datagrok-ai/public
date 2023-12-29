@@ -450,6 +450,17 @@ You can assign a semantic type to output variables in the same way.
 The semantic types annotation has no benefits for simple scalar output, 
 but it is extremely helpful when you integrate your script with the Datagrok platform.
 
+#### Semantic types for columns
+
+Similarly, you can specify the sematic type for a dataframe columns.
+For example, let `column` or `column_list` selectors accept only 
+columns containing chemical molecules.
+
+```python
+#input: dataframe df {caption: Dataframe}
+#input: column mol {semType:Molecule; caption: Molecules} [Molecules to analyze]
+```
+
 ### Graphics output
 
 The script in the [previous section](#semantic-types) 
