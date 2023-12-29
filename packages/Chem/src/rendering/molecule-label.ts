@@ -23,6 +23,7 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
           if (counter == 20) {
             sp.setOptions({
               markerDefaultSize: smallMarkerSize,
+              markerType: 'circle'
             });
             if (!smallMarker) {
               smallMarker = true;
@@ -53,6 +54,7 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
             if (dist < minDistBetweenLabels) {
                 sp.setOptions({
                     markerDefaultSize: smallMarkerSize,
+                    markerType: 'circle'
                   });
                   if (!smallMarker) {
                     smallMarker = true;
@@ -90,6 +92,7 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
 
       sp.setOptions({
         markerDefaultSize: largeMarkerSize,
+        markerType: 'circle border'
       });
       if (smallMarker) {
         smallMarker = false;
