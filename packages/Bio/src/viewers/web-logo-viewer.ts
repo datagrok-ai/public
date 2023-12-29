@@ -294,6 +294,10 @@ enum WlRenderLevel {
   Freqs = 2,
 }
 
+export const Debounces = new class {
+  render: number = 20;
+}();
+
 const POSITION_LABELS_HEIGHT: number = 12;
 
 export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
@@ -507,7 +511,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView( dataFrame = ${dataFrameTxt} ) start`);
     const dpr = window.devicePixelRatio;
-    this.viewSubs.push(DG.debounce(this.renderRequest)
+    this.viewSubs.push(DG.debounce(this.renderRequest, Debounces.render)
       .subscribe(this.renderRequestOnDebounce.bind(this)));
 
     this.helpUrl = '/help/visualize/viewers/web-logo.md';
