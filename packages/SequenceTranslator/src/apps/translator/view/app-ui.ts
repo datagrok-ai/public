@@ -8,7 +8,7 @@ import './style.css';
 
 import {highlightInvalidSubsequence} from '../../common/ui-components/colored-input/input-painters';
 import {ColoredTextInput} from '../../common/ui-components/colored-input/colored-text-input';
-import {SequenceToMolfileConverter} from '../../structure-app/model/sequence-to-molfile';
+import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
 import {getTranslatedSequences} from '../model/conversion-utils';
 import {MoleculeImage} from '../../common/ui-components/molecule-img';
 import {download} from '../../common/model/helpers';

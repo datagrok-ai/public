@@ -3,10 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ExternalPluginUI} from '../common/ui-components/combined-ui';
-import {ColoredTextInput} from '../common/ui-components/colored-input/colored-text-input';
-import {highlightInvalidSubsequence} from '../common/ui-components/colored-input/input-painters';
-import {codesToSymbolsDictionary} from '../common/data-loading-utils/json-loader';
+import {ExternalPluginUI} from '../apps/common/ui-components/combined-ui';
+import {ColoredTextInput} from '../apps/common/ui-components/colored-input/colored-text-input';
+import {highlightInvalidSubsequence} from '../apps/common/ui-components/colored-input/input-painters';
+import {codesToSymbolsDictionary} from '../apps/common/data-loading-utils/json-loader';
 import {MERMADE} from './const';
 
 export async function getExternalAppViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {

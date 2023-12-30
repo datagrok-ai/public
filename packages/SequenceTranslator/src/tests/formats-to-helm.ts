@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {DEFAULT_FORMATS} from '../common/model/const';
-import {FormatConverter} from '../translator-app/model/format-converter';
-import {getJsonData} from '../common/data-loading-utils/json-loader';
+import {DEFAULT_FORMATS} from '../apps/common/model/const';
+import {FormatConverter} from '../apps/translator/model/format-converter';
+import {getJsonData} from '../apps/common/data-loading-utils/json-loader';
 import {formatsToHelm} from './const';
 import {_package} from '../package';
 

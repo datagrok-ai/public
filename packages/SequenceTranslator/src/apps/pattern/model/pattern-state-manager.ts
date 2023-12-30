@@ -4,12 +4,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {STRANDS, StrandType, TerminalType, TERMINAL_KEYS } from './const';
-import {DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
+import {STRANDS, StrandType, TerminalType, TERMINAL_KEYS,
+ DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {PatternAppDataManager} from './external-data-manager';
 import {EventBus} from './event-bus';
 
 export class PatternConfigurationManager {
+  private patternName = '';
   private _bases = {} as Record<StrandType, string[]>;
   private _phosphorothioate = {} as Record<StrandType, boolean[]>;
   private _terminalModification = {} as Record<StrandType, Record<TerminalType, string>>;
@@ -68,5 +69,10 @@ export class PatternConfigurationManager {
 
   getComment(): string {
     return this._comment;
+  }
+
+  setPatternName(patternName: string): void {
+    grok.shell.info(`Pattern name changed to ${patternName}`);
+    this.patternName = patternName;
   }
 }

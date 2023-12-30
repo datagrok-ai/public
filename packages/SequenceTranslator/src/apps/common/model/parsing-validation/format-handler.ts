@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {codesToHelmDictionary} from '../../data-loading-utils/json-loader';
 import {CodesInfo} from '../../data-loading-utils/types';
 import {DEFAULT_FORMATS} from '../const';
-import {GROUP_TYPE, PHOSPHATE_SYMBOL} from '../../../translator-app/model/const';
+import {GROUP_TYPE, PHOSPHATE_SYMBOL} from '../../../translator/model/const';
 
 const inverseLengthComparator = (a: string, b: string) => b.length - a.length;
 

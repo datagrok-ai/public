@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {getNucleotidesSequence} from '../translator-app/model/conversion-utils';
-import {getJsonData} from '../common/data-loading-utils/json-loader';
+import {getNucleotidesSequence} from '../apps/translator/model/conversion-utils';
+import {getJsonData} from '../apps/common/data-loading-utils/json-loader';
 import {helmToNucleotides} from './const';
 import {_package} from '../package';
-import {MonomerLibWrapper} from '../common/monomer-lib/lib-wrapper';
+import {MonomerLibWrapper} from '../apps/common/monomer-lib/lib-wrapper';
 
 category('HELM to Nucleotides', () => {
   before(async () => {

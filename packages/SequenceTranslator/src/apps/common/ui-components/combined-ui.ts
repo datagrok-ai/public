@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TAB, APP} from './const';
-import {TranslatorLayoutHandler} from '../../translator-app/view/app-ui';
-import {StructureLayoutHandler} from '../../structure-app/view/app-ui';
-import {PatternLayoutController} from '../../pattern-app/view/layout';
+import {TranslatorLayoutHandler} from '../../translator/view/app-ui';
+import {StructureLayoutHandler} from '../../structure/view/app-ui';
+import {PatternLayoutController} from '../../pattern/view/layout';
 import {MonomerLibViewer} from '../monomer-lib/viewer';
-import {_package} from '../../package';
+import {_package} from '../../../package';
 import {tryCatch} from '../model/helpers';
 
 type ViewFactories = {[name: string]: () => DG.View};

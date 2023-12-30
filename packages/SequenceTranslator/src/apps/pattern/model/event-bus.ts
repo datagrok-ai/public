@@ -9,6 +9,7 @@ export class EventBus {
   private _isAntisenseStrandVisible$ = new rxjs.Subject<boolean>();
   private _patternListUpdated$ = new rxjs.Subject<void>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
+  private _patternSaveRequested$ = new rxjs.Subject<string>();
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
 
   get isAntisenseStrandActive$(): rxjs.Observable<boolean> {
@@ -37,5 +38,9 @@ export class EventBus {
 
   deletePattern(patternName: string) {
     this._patternDeletionRequested$.next(patternName);
+  }
+
+  requestPatternSave(patternName: string) {
+    this._patternSaveRequested$.next(patternName);
   }
 }

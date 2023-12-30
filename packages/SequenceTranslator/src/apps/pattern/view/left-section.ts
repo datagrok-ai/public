@@ -59,6 +59,7 @@ export class PatternControlsManager {
     const sequenceBaseInput = this.createSequenceBaseInput().root;
     const patternCommentInput = this.createPatternCommentInput().root;
     const selectPatternInputBlock = this.createSelectPattentInputBlock();
+    const patternNameInputBlock = this.createPatternNameInputBlock();
 
     return [
       title,
@@ -68,6 +69,7 @@ export class PatternControlsManager {
       sequenceBaseInput,
       patternCommentInput,
       selectPatternInputBlock,
+      patternNameInputBlock,
     ];
   }
 
@@ -120,6 +122,15 @@ export class PatternControlsManager {
     );
     return patternChoiceControls.getControlsContainer();
   }
+
+  private createPatternNameInputBlock(): HTMLElement {
+    const patternNameControls = new PatternNameControls(
+      this.eventBus,
+      this.patternConfiguration,
+    );
+    return patternNameControls.createPatternNameInputBlock();
+  }
+
 }
 
 class PatternChoiceControls {
@@ -223,5 +234,44 @@ class PatternChoiceControls {
     const patternInputs = this.getPatternInputs();
     $(this.patternChoiceContainer).empty();
     this.patternChoiceContainer.append(patternInputs.root);
+  }
+}
+
+class PatternNameControls {
+  constructor(
+    private eventBus: EventBus,
+    private patternConfiguration: PatternConfigurationManager,
+  ) { }
+  private patternName = 'Pattern';
+
+  createPatternNameInputBlock(): HTMLElement {
+    const patternNameInput = ui.textInput('Save as', this.patternName, (value: string) => this.handlePatternNameChange(value));
+
+    this.handlePatternNameChange(patternNameInput.value);
+
+    const savePatternButton = this.createSavePatternButton();
+
+    patternNameInput.addOptions(savePatternButton);
+    patternNameInput.setTooltip('Name of the pattern');
+    return patternNameInput.root;
+  }
+
+  private createSavePatternButton(): HTMLElement {
+    const savePatternButton = ui.bigButton('Save', () => this.processSaveButtonClick());
+    return savePatternButton;
+  }
+
+  private handlePatternNameChange(patternName: string): void {
+    this.patternName = patternName;
+    this.patternConfiguration.setPatternName(this.patternName);
+  }
+
+  private processSaveButtonClick(): void {
+    if (this.patternName === '') {
+      grok.shell.warning(`Insert pattern name`);
+      return;
+    }
+    grok.shell.info(`Pattern ${this.patternName} saved`);
+    this.eventBus.requestPatternSave(this.patternName);
   }
 }
