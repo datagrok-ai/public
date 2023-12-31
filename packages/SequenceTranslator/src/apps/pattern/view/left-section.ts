@@ -27,10 +27,19 @@ export class PatternAppLeftSection {
       this.patternConfiguration,
       this.dataManager
     );
-    const patternConstrolsBlock = patternControlsManager.getUiElements();
+    const tableControlsManager = new TableControlsManager(
+      this.eventBus,
+      this.patternConfiguration,
+      this.dataManager
+    );
+
+    const patternConstrolsBlock = patternControlsManager.createUIComponents();
+    const tableControlsBlock = tableControlsManager.createUIComponents();
+
     const layout = ui.box(
       ui.div([
-          ...patternConstrolsBlock
+          ...patternConstrolsBlock,
+          ...tableControlsBlock
         ],
         'ui-form'
       ),
@@ -40,17 +49,17 @@ export class PatternAppLeftSection {
   }
 }
 
-export class PatternControlsManager {
+class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
     private patternConfiguration: PatternConfigurationManager,
     private dataManager: PatternAppDataManager,
   ) { }
 
-  getUiElements(): HTMLElement[] {
+  createUIComponents(): HTMLElement[] {
     const title = ui.h1('Pattern');
 
-    const toggleAntisenseStrandControl = this.createToggleAntisenseStrandControl();
+    const antisenseStrandToggle = this.createAntisenseStrandToggle();
     const strandLengthInputs = this.createStrandLengthInputs();
 
     const senseStrandLengthInput = strandLengthInputs[SENSE_STRAND].root;
@@ -58,22 +67,22 @@ export class PatternControlsManager {
 
     const sequenceBaseInput = this.createSequenceBaseInput().root;
     const patternCommentInput = this.createPatternCommentInput().root;
-    const selectPatternInputBlock = this.createSelectPattentInputBlock();
+    const patternSelectionBlock = this.createPatternSelectionBlock();
     const patternNameInputBlock = this.createPatternNameInputBlock();
 
     return [
       title,
-      toggleAntisenseStrandControl,
+      antisenseStrandToggle,
       senseStrandLengthInput,
       antisenseStrandLengthInput,
       sequenceBaseInput,
       patternCommentInput,
-      selectPatternInputBlock,
+      patternSelectionBlock,
       patternNameInputBlock,
     ];
   }
 
-  private createToggleAntisenseStrandControl(): HTMLElement {
+  private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
       `${STRAND_LABEL.ANTISENSE_STRAND} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
@@ -115,7 +124,7 @@ export class PatternControlsManager {
     return patternCommentInput;
   }
 
-  private createSelectPattentInputBlock(): HTMLDivElement {
+  private createPatternSelectionBlock(): HTMLDivElement {
     const patternChoiceControls = new PatternChoiceControls(
       this.eventBus,
       this.dataManager,
@@ -130,7 +139,6 @@ export class PatternControlsManager {
     );
     return patternNameControls.createPatternNameInputBlock();
   }
-
 }
 
 class PatternChoiceControls {
@@ -273,5 +281,71 @@ class PatternNameControls {
     }
     grok.shell.info(`Pattern ${this.patternName} saved`);
     this.eventBus.requestPatternSave(this.patternName);
+  }
+}
+
+class TableControlsManager {
+  constructor(
+    private eventBus: EventBus,
+    private patternConfiguration: PatternConfigurationManager,
+    private dataManager: PatternAppDataManager,
+  ) {
+    this.tableList = [];
+    this.subscribeToTableEvents();
+  }
+
+  private tableList: DG.DataFrame[];
+  private tableInputControlsContainer = ui.div([]);
+
+  private subscribeToTableEvents(): void {
+    const observables = [
+      grok.events.onTableAdded,
+      grok.events.onTableRemoved,
+    ];
+
+    const handlers = [
+      this.addToTableList,
+      this.removeFromTableList,
+    ];
+
+    observables.forEach((observable, idx) => {
+      const handle = handlers[idx];
+      observable.subscribe((table: DG.DataFrame) => {
+        grok.shell.info(`Table ${table.name} added`);
+        handle(table);
+        this.updateTableInputControls();
+      });
+    });
+  }
+
+  private addToTableList(table: DG.DataFrame): void {
+    this.tableList.push(table);
+  }
+
+  private removeFromTableList(table: DG.DataFrame): void {
+    this.tableList = this.tableList.filter((item) => item.name !== table.name);
+  }
+
+  createUIComponents(): HTMLElement[] {
+    const title = ui.h1('Convert');
+
+    const tableInput = this.createTableInput();
+    this.tableInputControlsContainer.append(tableInput);
+
+    return [
+      title,
+      this.tableInputControlsContainer,
+    ];
+  }
+
+  private createTableInput(): HTMLElement {
+    const tableInput = ui.tableInput('Tables', this.tableList[0], this.tableList, () => { });
+    return tableInput.root;
+  }
+
+  private updateTableInputControls(): void {
+    const newTableInput = this.createTableInput();
+    $(this.tableInputControlsContainer).empty();
+    this.tableInputControlsContainer.append(newTableInput);
   }
 }
