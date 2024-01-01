@@ -82,7 +82,7 @@ public class SessionHandler {
             }
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
             fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
-            Marker start = EventType.DATA_SEND.getMarker(dfNumber, EventType.Stage.START);
+            Marker start = EventType.SOCKET_BINARY_DATA_EXCHANGE.getMarker(dfNumber, EventType.Stage.START);
             logger.debug(start, "Sending binary dataframe with id {}", dfNumber);
             session.getRemote().sendBytesByFuture(ByteBuffer.wrap(bytes));
             return;
