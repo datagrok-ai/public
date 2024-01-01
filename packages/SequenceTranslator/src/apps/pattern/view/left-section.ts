@@ -31,7 +31,7 @@ export class PatternAppLeftSection {
       this.patternConfiguration,
       this.dataManager
     );
-    const tableControlsManager = new TableControlsManager();
+    const tableControlsManager = new TableControlsManager(this.eventBus);
 
     const patternConstrolsBlock = patternControlsManager.createUIComponents();
     const tableControlsBlock = tableControlsManager.createUIComponents();
@@ -285,8 +285,10 @@ class PatternNameControls {
 }
 
 class TableControlsManager {
-  constructor() { }
-  private tableInputManager = new TableInputManager();
+  constructor(eventBus: EventBus) {
+    this.tableInputManager = new TableInputManager(eventBus);
+  }
+  private tableInputManager: TableInputManager;
 
   createUIComponents(): HTMLElement[] {
     const tableInput = this.tableInputManager.getTableInputContainer();
@@ -298,72 +300,72 @@ class TableControlsManager {
 
 class TableInputManager {
   private availableTables: DG.DataFrame[] = [];
-  private requestTableInputUpdate$: rxjs.Subject<void>;
-  private selectedTable: DG.DataFrame | null = null;
   private tableInputContainer: HTMLDivElement = ui.div([]);
 
-  constructor() {
-    this.requestTableInputUpdate$ = new rxjs.Subject<void>();
+  constructor(private eventBus: EventBus) {
     this.subscribeToTableEvents();
-    this.initializeTableInputUpdateStream();
+    this.refreshTableInput();
   }
 
-  public getTableInputContainer(): HTMLDivElement {
+  getTableInputContainer(): HTMLDivElement {
     return this.tableInputContainer;
-  }
-
-  public getCurrentTable(): DG.DataFrame | null {
-    return this.selectedTable;
-  }
-
-  private initializeTableInputUpdateStream(): void {
-    this.requestTableInputUpdate$
-      .pipe(operators.debounceTime(100))
-      .subscribe(() => this.refreshTableInput());
-    this.requestTableInputUpdate$.next();
   }
 
   private subscribeToTableEvents(): void {
     grok.events.onTableAdded.subscribe((table: DG.DataFrame) => this.handleTableAdded(table));
     grok.events.onTableRemoved.subscribe((table: DG.DataFrame) => this.handleTableRemoved(table));
+    this.eventBus.tableSelectionChanged$.subscribe(() => this.handleTableChoice());
   }
 
   private handleTableAdded(table: DG.DataFrame): void {
+    if (this.availableTables.some((availableTable: DG.DataFrame) => availableTable.name === table.name)) {
+      return;
+    }
+
     this.availableTables.push(table);
-    this.availableTables.sort((a: DG.DataFrame, b: DG.DataFrame) => a.name.localeCompare(b.name));
-    this.requestTableInputUpdate$.next();
+
+    this.refreshTableInput();
   }
 
   private handleTableRemoved(removedTable: DG.DataFrame): void {
     this.availableTables = this.availableTables.filter((table: DG.DataFrame) => table.name !== removedTable.name);
-    this.requestTableInputUpdate$.next();
+
+    this.refreshTableInput();
   }
 
   private refreshTableInput(): void {
     const tableInput = this.createTableInput();
-    this.tableInputContainer.innerHTML = '';
+    $(this.tableInputContainer).empty();
     this.tableInputContainer.append(tableInput.root);
   }
 
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
+    const currentSelection = this.eventBus.getTableSelection();
+
     const tableInput = ui.tableInput(
       'Tables',
-      this.selectedTable,
+      currentSelection,
       this.availableTables,
-      (table: DG.DataFrame) => this.selectTable(table)
-    );
+      (table: DG.DataFrame) => this.eventBus.selectTable(table));
     return tableInput;
   }
 
-  private selectTable(table: DG.DataFrame): void {
-    this.selectedTable = table;
-
-    if (table && !grok.shell.tableNames.includes(table.name)) {
-      const previousView = grok.shell.v;
-      grok.shell.addTableView(table);
-      grok.shell.v = previousView;
-    }
+  private handleTableChoice(): void {
+    const table = this.eventBus.getTableSelection();
+    if (table === null) return;
+    if (!this.isTableDisplayed(table))
+      this.displayTable(table);
     grok.shell.info(`Table ${table?.name} selected`);
+  }
+
+  private isTableDisplayed(table: DG.DataFrame): boolean {
+    return grok.shell.tableNames.includes(table.name);
+  }
+
+  private displayTable(table: DG.DataFrame): void {
+    const previousView = grok.shell.v;
+    grok.shell.addTableView(table);
+    grok.shell.v = previousView;
   }
 }
 

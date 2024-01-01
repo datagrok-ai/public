@@ -11,6 +11,7 @@ export class EventBus {
   private _patternLoadRequested$ = new rxjs.Subject<string>();
   private _patternSaveRequested$ = new rxjs.Subject<string>();
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
+  private _tableSelectionChanged$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
 
   get isAntisenseStrandActive$(): rxjs.Observable<boolean> {
     return this._isAntisenseStrandVisible$.asObservable();
@@ -22,6 +23,14 @@ export class EventBus {
 
   get patternListUpdate$(): rxjs.Observable<void> {
     return this._patternListUpdated$.asObservable();
+  }
+
+  get tableSelectionChanged$(): rxjs.Observable<DG.DataFrame | null> {
+    return this._tableSelectionChanged$.asObservable();
+  }
+
+  getTableSelection(): DG.DataFrame | null {
+    return this._tableSelectionChanged$.getValue();
   }
 
   toggleAntisenseStrand(isActive: boolean) {
@@ -42,5 +51,9 @@ export class EventBus {
 
   requestPatternSave(patternName: string) {
     this._patternSaveRequested$.next(patternName);
+  }
+
+  selectTable(table: DG.DataFrame | null) {
+    this._tableSelectionChanged$.next(table);
   }
 }
