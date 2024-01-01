@@ -315,7 +315,7 @@ class TableControlsManager {
         console.log(`table ${table.name} added/removed`);
         handle(table);
         this.updateTableInputControls();
-        this.updateColumnControls(table);
+        // this.updateColumnControls(table);
       });
     });
   }
@@ -334,7 +334,7 @@ class TableControlsManager {
     const tableInput = this.createTableInput();
     this.tableInputControlsContainer.append(tableInput);
 
-    this.updateColumnControls(this.tableList[0]);
+    // this.updateColumnControls(this.tableList[0]);
 
     return [
       title,
@@ -345,7 +345,7 @@ class TableControlsManager {
 
   private createTableInput(): HTMLElement {
     const tableInput = ui.tableInput('Tables', this.tableList[0], this.tableList, (table: DG.DataFrame) => {
-      this.updateColumnControls(table);
+      // this.updateColumnControls(table);
     });
     return tableInput.root;
   }
@@ -356,35 +356,35 @@ class TableControlsManager {
     this.tableInputControlsContainer.append(newTableInput);
   }
 
-  private createStrandColumnInput(table: DG.DataFrame): Record<StrandType, HTMLElement> {
-    const columns = table ? table.columns.names() : [];
-    console.log(`cols:`, columns);
-    const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, (colName: string) => { });
-      return [strand, input.root];
-    })) as Record<StrandType, HTMLElement>;
-    return strandColumnInput;
-  }
+  // private createStrandColumnInput(table: DG.DataFrame): Record<StrandType, HTMLElement> {
+  //   const columns = table ? table.columns.names() : [];
+  //   console.log(`cols:`, columns);
+  //   const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
+  //     const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, (colName: string) => { });
+  //     return [strand, input.root];
+  //   })) as Record<StrandType, HTMLElement>;
+  //   return strandColumnInput;
+  // }
 
-  private createIdColumnInput(table: DG.DataFrame): HTMLElement {
-    const columns = table ? table.columns.names() : [];
-    console.log(`cols:`, columns);
-    const idColumnInput = ui.choiceInput('ID column', columns[0], columns, (colName: string) => { });
-    return idColumnInput.root;
-  }
+  // private createIdColumnInput(table: DG.DataFrame): HTMLElement {
+  //   const columns = table ? table.columns.names() : [];
+  //   console.log(`cols:`, columns);
+  //   const idColumnInput = ui.choiceInput('ID column', columns[0], columns, (colName: string) => { });
+  //   return idColumnInput.root;
+  // }
 
-  private updateColumnControls(table: DG.DataFrame): void {
-    const strandColumnInput = this.createStrandColumnInput(table);
-    const senseStrandColumnInput = strandColumnInput[SENSE_STRAND];
-    const antisenseStrandColumnInput = strandColumnInput[ANTISENSE_STRAND];
+  // private updateColumnControls(table: DG.DataFrame): void {
+  //   const strandColumnInput = this.createStrandColumnInput(table);
+  //   const senseStrandColumnInput = strandColumnInput[SENSE_STRAND];
+  //   const antisenseStrandColumnInput = strandColumnInput[ANTISENSE_STRAND];
 
-    const idColumnInput = this.createIdColumnInput(table);
+  //   const idColumnInput = this.createIdColumnInput(table);
 
-    $(this.columnControlsContainer).empty();
-    this.columnControlsContainer.append(
-      senseStrandColumnInput,
-      antisenseStrandColumnInput,
-      idColumnInput,
-    );
-  }
+  //   $(this.columnControlsContainer).empty();
+  //   this.columnControlsContainer.append(
+  //     senseStrandColumnInput,
+  //     antisenseStrandColumnInput,
+  //     idColumnInput,
+  //   );
+  // }
 }
