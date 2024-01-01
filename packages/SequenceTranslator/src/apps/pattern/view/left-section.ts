@@ -11,6 +11,10 @@ import {StringInput, NumberInput} from './types';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {PatternConfigurationManager} from '../model/pattern-state-manager';
+import * as rxjs from 'rxjs';
+// WARNING: for some reason, cannot use rxjs.operators.debounceTime, although
+// webpack.config.js is configured to use rxjs.operators as rxjs.operators
+import operators from 'rxjs/operators';
 import $ from 'cash-dom';
 
 export class PatternAppLeftSection {
@@ -27,11 +31,7 @@ export class PatternAppLeftSection {
       this.patternConfiguration,
       this.dataManager
     );
-    const tableControlsManager = new TableControlsManager(
-      this.eventBus,
-      this.patternConfiguration,
-      this.dataManager
-    );
+    const tableControlsManager = new TableControlsManager();
 
     const patternConstrolsBlock = patternControlsManager.createUIComponents();
     const tableControlsBlock = tableControlsManager.createUIComponents();
@@ -285,106 +285,89 @@ class PatternNameControls {
 }
 
 class TableControlsManager {
-  constructor(
-    private eventBus: EventBus,
-    private patternConfiguration: PatternConfigurationManager,
-    private dataManager: PatternAppDataManager,
-  ) {
-    this.tableList = [];
-    this.subscribeToTableEvents();
-  }
-
-  private tableList: DG.DataFrame[];
-  private tableInputControlsContainer = ui.div([]);
-  private columnControlsContainer = ui.div([]);
-
-  private subscribeToTableEvents(): void {
-    const observables = [
-      grok.events.onTableAdded,
-      grok.events.onTableRemoved,
-    ];
-
-    const handlers = [
-      (table: DG.DataFrame) => this.addToTableList(table),
-      (table: DG.DataFrame) => this.removeFromTableList(table),
-    ];
-
-    observables.forEach((observable, idx) => {
-      const handle = handlers[idx];
-      observable.subscribe((table: DG.DataFrame) => {
-        console.log(`table ${table.name} added/removed`);
-        handle(table);
-        this.updateTableInputControls();
-        // this.updateColumnControls(table);
-      });
-    });
-  }
-
-  private addToTableList(table: DG.DataFrame): void {
-    this.tableList.push(table);
-  }
-
-  private removeFromTableList(table: DG.DataFrame): void {
-    this.tableList = this.tableList.filter((item) => item.name !== table.name);
-  }
+  constructor() { }
+  private tableInputManager = new TableInputManager();
 
   createUIComponents(): HTMLElement[] {
-    const title = ui.h1('Convert');
-
-    const tableInput = this.createTableInput();
-    this.tableInputControlsContainer.append(tableInput);
-
-    // this.updateColumnControls(this.tableList[0]);
-
+    const tableInput = this.tableInputManager.getTableInputContainer();
     return [
-      title,
-      this.tableInputControlsContainer,
-      this.columnControlsContainer,
+      tableInput,
     ];
   }
+}
 
-  private createTableInput(): HTMLElement {
-    const tableInput = ui.tableInput('Tables', this.tableList[0], this.tableList, (table: DG.DataFrame) => {
-      // this.updateColumnControls(table);
-    });
-    return tableInput.root;
+class TableInputManager {
+  private availableTables: DG.DataFrame[] = [];
+  private requestTableInputUpdate$: rxjs.Subject<void>;
+  private selectedTable: DG.DataFrame | null = null;
+  private tableInputContainer: HTMLDivElement = ui.div([]);
+
+  constructor() {
+    this.requestTableInputUpdate$ = new rxjs.Subject<void>();
+    this.subscribeToTableEvents();
+    this.initializeTableInputUpdateStream();
   }
 
-  private updateTableInputControls(): void {
-    const newTableInput = this.createTableInput();
-    $(this.tableInputControlsContainer).empty();
-    this.tableInputControlsContainer.append(newTableInput);
+  public getTableInputContainer(): HTMLDivElement {
+    return this.tableInputContainer;
   }
 
-  // private createStrandColumnInput(table: DG.DataFrame): Record<StrandType, HTMLElement> {
-  //   const columns = table ? table.columns.names() : [];
-  //   console.log(`cols:`, columns);
-  //   const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
-  //     const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, (colName: string) => { });
-  //     return [strand, input.root];
-  //   })) as Record<StrandType, HTMLElement>;
-  //   return strandColumnInput;
-  // }
+  public getCurrentTable(): DG.DataFrame | null {
+    return this.selectedTable;
+  }
 
-  // private createIdColumnInput(table: DG.DataFrame): HTMLElement {
-  //   const columns = table ? table.columns.names() : [];
-  //   console.log(`cols:`, columns);
-  //   const idColumnInput = ui.choiceInput('ID column', columns[0], columns, (colName: string) => { });
-  //   return idColumnInput.root;
-  // }
+  private initializeTableInputUpdateStream(): void {
+    this.requestTableInputUpdate$
+      .pipe(operators.debounceTime(100))
+      .subscribe(() => this.refreshTableInput());
+    this.requestTableInputUpdate$.next();
+  }
 
-  // private updateColumnControls(table: DG.DataFrame): void {
-  //   const strandColumnInput = this.createStrandColumnInput(table);
-  //   const senseStrandColumnInput = strandColumnInput[SENSE_STRAND];
-  //   const antisenseStrandColumnInput = strandColumnInput[ANTISENSE_STRAND];
+  private subscribeToTableEvents(): void {
+    grok.events.onTableAdded.subscribe((table: DG.DataFrame) => this.handleTableAdded(table));
+    grok.events.onTableRemoved.subscribe((table: DG.DataFrame) => this.handleTableRemoved(table));
+  }
 
-  //   const idColumnInput = this.createIdColumnInput(table);
+  private handleTableAdded(table: DG.DataFrame): void {
+    this.availableTables.push(table);
+    this.availableTables.sort((a: DG.DataFrame, b: DG.DataFrame) => a.name.localeCompare(b.name));
+    this.requestTableInputUpdate$.next();
+  }
 
-  //   $(this.columnControlsContainer).empty();
-  //   this.columnControlsContainer.append(
-  //     senseStrandColumnInput,
-  //     antisenseStrandColumnInput,
-  //     idColumnInput,
-  //   );
-  // }
+  private handleTableRemoved(removedTable: DG.DataFrame): void {
+    this.availableTables = this.availableTables.filter((table: DG.DataFrame) => table.name !== removedTable.name);
+    this.requestTableInputUpdate$.next();
+  }
+
+  private refreshTableInput(): void {
+    const tableInput = this.createTableInput();
+    this.tableInputContainer.innerHTML = '';
+    this.tableInputContainer.append(tableInput.root);
+  }
+
+  private createTableInput(): DG.InputBase<DG.DataFrame | null> {
+    const tableInput = ui.tableInput(
+      'Tables',
+      this.selectedTable,
+      this.availableTables,
+      (table: DG.DataFrame) => this.selectTable(table)
+    );
+    return tableInput;
+  }
+
+  private selectTable(table: DG.DataFrame): void {
+    this.selectedTable = table;
+
+    if (table && !grok.shell.tableNames.includes(table.name)) {
+      const previousView = grok.shell.v;
+      grok.shell.addTableView(table);
+      grok.shell.v = previousView;
+    }
+    grok.shell.info(`Table ${table?.name} selected`);
+  }
+}
+
+class ColumnInputManager {
+  constructor() {
+  }
 }
