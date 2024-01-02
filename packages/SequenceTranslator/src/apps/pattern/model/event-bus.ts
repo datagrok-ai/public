@@ -23,6 +23,8 @@ export class EventBus {
   private _patternSaveRequested$ = new rxjs.Subject<string>();
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _tableSelectionChanged$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
+  private _nucleotideBaseChanged$ = new rxjs.BehaviorSubject<string>('');
+
 
   get isAntisenseStrandActive$(): rxjs.Observable<boolean> {
     return this._isAntisenseStrandVisible$.asObservable();
@@ -38,6 +40,10 @@ export class EventBus {
 
   get tableSelectionChanged$(): rxjs.Observable<DG.DataFrame | null> {
     return this._tableSelectionChanged$.asObservable();
+  }
+
+  get nucleotideBaseChanged$(): rxjs.Observable<string> {
+    return this._nucleotideBaseChanged$.asObservable();
   }
 
   getTableSelection(): DG.DataFrame | null {
@@ -66,5 +72,9 @@ export class EventBus {
 
   selectTable(table: DG.DataFrame | null) {
     this._tableSelectionChanged$.next(table);
+  }
+
+  changeNucleotideBase(base: string) {
+    this._nucleotideBaseChanged$.next(base);
   }
 }

@@ -14,7 +14,6 @@ import {PatternConfigurationManager} from '../model/pattern-state-manager';
 import * as rxjs from 'rxjs';
 // WARNING: for some reason, cannot use rxjs.operators.debounceTime, although
 // webpack.config.js is configured to use rxjs.operators as rxjs.operators
-import operators from 'rxjs/operators';
 import $ from 'cash-dom';
 
 export class PatternAppLeftSection {
@@ -22,8 +21,7 @@ export class PatternAppLeftSection {
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
     private patternConfiguration: PatternConfigurationManager,
-  ) {
-  };
+  ) { };
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
@@ -113,8 +111,8 @@ class PatternControlsManager {
     const nucleotideBaseChoices = this.dataManager.fetchNucleotideBases();
     const defaultNucleotideBase = nucleotideBaseChoices[0];
 
-    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (value: string) => {
-    });
+    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (base: string) => this.eventBus.changeNucleotideBase(base));
+
     sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
     return sequenceBaseInput;
   }
