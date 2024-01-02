@@ -979,18 +979,6 @@ export class PatternLayoutHandler {
 
     refreshUIForNewSequenceLength();
 
-    const conversionOptionsSection = ui.block50([
-      ui.h1('Convert options'),
-      tableInput.root,
-      strandColumnInput[SENSE_STRAND].root,
-      strandColumnInput[ANTISENSE_STRAND].root,
-      idColumnSelector.root,
-      ui.buttonsInput([
-        convertSequenceButton,
-      ]),
-    ]);
-    conversionOptionsSection.classList.add('ui-form');
-
     const svgDownloadLink = ui.link('Download', () => svgExport.saveSvgAsPng(document.getElementById('mySvg'), patternNameInput.value,
       {backgroundColor: 'white'}), 'Download pattern as PNG image', '');
 

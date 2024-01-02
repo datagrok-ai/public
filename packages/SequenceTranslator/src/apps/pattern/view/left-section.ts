@@ -297,11 +297,20 @@ class TableControlsManager {
     const title = ui.h1('Convert');
     const tableInput = this.tableInputManager.getTableInputContainer();
     const columnControls = this.columnInputManager.getColumnControlsContainer();
+
+    const convertSequenceButton = ui.bigButton('Convert', () => this.processConvertButtonClick());
+
     return [
       title,
       tableInput,
       columnControls,
+      ui.buttonsInput([
+        convertSequenceButton,
+      ]),
     ];
+  }
+
+  private processConvertButtonClick(): void {
   }
 }
 
