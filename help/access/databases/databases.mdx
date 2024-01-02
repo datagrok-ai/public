@@ -31,7 +31,7 @@ You can also [connect to a data source, query data, and share connections progra
 
 ### Adding connection
 
-<img alt="Add new database connection" src={require('./img/database-connection.gif').default} width="800px"/>
+![Add new database connection](img/database-connection.gif)
 
 To add a new connection, follow these steps:
 
@@ -63,7 +63,7 @@ Some connection parameters have unique characteristics, and it's important to sp
 
 Upon successful connection, the database appears in the [Database Manager](https://public.datagrok.ai/connect) 
 under the respective data source.
-By expanding the database, you can view its saved queries. [If connectors support it](./connectors/connectors.md), you can also inspect the schemas,
+By expanding the database, you can view its saved queries. [If connectors support it](connectors/connectors.md), you can also inspect the schemas,
 tables, and columns of relational databases.
 
 :::note
@@ -112,7 +112,7 @@ options. To learn more about the **Context Panel**, see
 
 :::
 
-<img alt="DB Hierarchy Browser" src={require('./img/features/db-hierarchy-browser.gif').default} width="800px"/>
+![DB Hierarchy Browser](img/features/db-hierarchy-browser.gif)
 
 ### Schema Browser
 
@@ -124,7 +124,7 @@ Similar to the **Database Manager**, clicking an object in the **Schema
 Browser** updates the **Context Panel** with object-specific properties and
 actions. To open the object's context menu, right-click it.
 
-<img alt="Schema browser" src={require('./img/browse-schema.gif').default} width="800px"/>
+![Schema browser](img/browse-schema.gif)
 
 ### Viewing schema as dataframe
 
@@ -183,7 +183,7 @@ connections) or **New SQL Query...** (for tables).
 
 The **Query Editor** has two tabs:
 
-<Tabs queryString="query-editor">
+<Tabs>
 <TabItem value="query" label="Query" default>
 
 This tab is where you write and edit queries. As you work on your query, you can
@@ -195,7 +195,7 @@ dataframe, you can view object details, perform actions on columns, and more.
 When your query is complete, give it a name and click the **Save** button. If
 you don't want to save the query, close the editor without saving.
 
-<img alt="Create a database query" src={require('./img/query-add.gif').default} width="800px"/>
+![Create a database query](img/query-add.gif)
 
 :::note
 
@@ -206,12 +206,11 @@ so, click the **Dropdown Arrow** control in the bottom left corner of the
 :::
 
 </TabItem>
-
-<TabItem value="transformations" label="Transformations" default>
+<TabItem value="transformations" label="Transformations">
 
 Use this tab to apply post-processing operations to your query:
 
-<img alt="Query transformations" src={require('./img/transformations.gif').default} width="800px"/>
+![Query transformations](img/transformations.gif)
 
 1. Select a function to apply to a query. Use checkboxes next to the operation categories to filter.
 1. Set the function parameters in the dialog that opens.
@@ -290,7 +289,7 @@ columns.
   do so, click the **Add** (**+**) icon, select the column to which you want to
   apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax).
 
-<img alt="Aggregation query" src={require('./img/aggr-query.gif').default} width="800px"/>
+![Aggregation query](img/aggr-query.gif)
 
 As you work on your query, you can preview the query output as an interactive
 dataframe. In the dataframe, you can view object details, perform actions on
@@ -429,7 +428,7 @@ applicable. Then, define the choices query using the `Query()` function and
 reference the input parameter using the `@` symbol.
 
 <details>
-<summary> Here's an example </summary>
+<summary>Here's an example</summary>
 
 ```sql
 --input: string state = "NY" {choices: Query("SELECT DISTINCT state FROM public.starbucks_us")}
@@ -480,7 +479,7 @@ Here's an example of a parameterized query with several input parameters and
 _options_:
 
 <Tabs>
-<TabItem value="patram-query" label="Parameterized query" default>
+<TabItem value="param-query" label="Parameterized query" default>
 
 ```sql
 --input: int employeeId = 5
@@ -618,7 +617,7 @@ To share:
 
 4. Click **OK** to share.
 
-<img alt="Share a database connection" src={require('./img/sharing-database-connections.gif').default} width="800px"/>
+![Share a database connection](img/sharing-database-connections.gif)
 
 If you can't share a connection or a query, you may have insufficient
 permissions. Contact your Datagrok administrator for assistance.
