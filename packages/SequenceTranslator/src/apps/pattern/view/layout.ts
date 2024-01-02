@@ -9,7 +9,7 @@ import {EventBus} from '../model/event-bus';
 import {PatternConfigurationManager} from '../model/pattern-state-manager';
 
 export class PatternLayoutController {
-  private eventBus = new EventBus();
+  private eventBus = EventBus.getInstance();
   private dataManager = PatternAppDataManager.getInstance(this.eventBus);
   private patternConfiguration = new PatternConfigurationManager(this.eventBus, this.dataManager);
 

@@ -6,6 +6,17 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 
 export class EventBus {
+  private static _instance: EventBus;
+
+  private constructor() { }
+
+  static getInstance(): EventBus {
+    if (!EventBus._instance) {
+      EventBus._instance = new EventBus();
+    }
+    return EventBus._instance;
+  }
+
   private _isAntisenseStrandVisible$ = new rxjs.Subject<boolean>();
   private _patternListUpdated$ = new rxjs.Subject<void>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();

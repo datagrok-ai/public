@@ -285,15 +285,22 @@ class PatternNameControls {
 }
 
 class TableControlsManager {
+  private tableInputManager: TableInputManager;
+  private columnInputManager: ColumnInputManager;
+
   constructor(eventBus: EventBus) {
     this.tableInputManager = new TableInputManager(eventBus);
+    this.columnInputManager = new ColumnInputManager(eventBus);
   }
-  private tableInputManager: TableInputManager;
 
   createUIComponents(): HTMLElement[] {
+    const title = ui.h1('Convert');
     const tableInput = this.tableInputManager.getTableInputContainer();
+    const columnControls = this.columnInputManager.getColumnControlsContainer();
     return [
+      title,
       tableInput,
+      columnControls,
     ];
   }
 }
@@ -352,7 +359,7 @@ class TableInputManager {
 
   private handleTableChoice(): void {
     const table = this.eventBus.getTableSelection();
-    if (table === null) return;
+    if (!table) return;
     if (!this.isTableDisplayed(table))
       this.displayTable(table);
     grok.shell.info(`Table ${table?.name} selected`);
@@ -370,6 +377,55 @@ class TableInputManager {
 }
 
 class ColumnInputManager {
-  constructor() {
+  private columnControlsContainer: HTMLDivElement = ui.div([]);
+
+  constructor(private eventBus: EventBus) {
+    this.eventBus.tableSelectionChanged$.subscribe(() => this.handleTableChoice());
+    this.refreshColumnControls();
+  }
+
+  getColumnControlsContainer(): HTMLDivElement {
+    return this.columnControlsContainer;
+  }
+
+  private get selectedTable(): DG.DataFrame | null {
+    return this.eventBus.getTableSelection();
+  }
+
+  private handleTableChoice(): void {
+    this.refreshColumnControls();
+    grok.shell.info(`Table ${this.selectedTable?.name} selection from column input manager`);
+  }
+
+  private refreshColumnControls(): void {
+    const strandColumnInput = this.createStrandColumnInput();
+    const senseStrandColumnInput = strandColumnInput[SENSE_STRAND];
+    const antisenseStrandColumnInput = strandColumnInput[ANTISENSE_STRAND];
+    // $(antisenseStrandColumnInput).toggle();
+
+    const idColumnInput = this.createIdColumnInput();
+
+    $(this.columnControlsContainer).empty();
+    this.columnControlsContainer.append(
+      senseStrandColumnInput,
+      antisenseStrandColumnInput,
+      idColumnInput,
+    );
+  }
+
+  private createStrandColumnInput(): Record<StrandType, HTMLElement> {
+    const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
+    const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
+      const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, (colName: string) => { });
+      return [strand, input.root];
+    })) as Record<StrandType, HTMLElement>;
+    return strandColumnInput;
+  }
+
+  private createIdColumnInput(): HTMLElement {
+    const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
+    console.log(`cols:`, columns);
+    const idColumnInput = ui.choiceInput('ID column', columns[0], columns, (colName: string) => { });
+    return idColumnInput.root;
   }
 }
