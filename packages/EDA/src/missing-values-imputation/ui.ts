@@ -3,15 +3,20 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { TITLE, LINK, ERROR_MSG, HINT } from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute, FailedToImpute } from "./knn-imputer";
-
-
+import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
+import { FILL_VALUE, SimpleImputTask, simpleImput } from "./simple-imputer";
 
 /** Setting of the feature metric inputs */
 type FeatureInputSettings = {
   defaultWeight: number,
   defaultMetric: METRIC_TYPE,
   availableMetrics: METRIC_TYPE[], 
+};
+
+/** Settings for simple imputation */
+type SimpleImputSettings = {
+  default: FILL_VALUE,
+  available: FILL_VALUE[]
 };
 
 /** Return default setting of the feature metric inputs */
@@ -32,6 +37,29 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
         defaultWeight: DEFAULT.WEIGHT,
         defaultMetric: METRIC_TYPE.DIFFERENCE,
         availableMetrics: [METRIC_TYPE.DIFFERENCE, METRIC_TYPE.ONE_HOT]
+      };
+
+    default:
+      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  }
+}
+
+/** */
+function getSimpleMethodSettings(type: DG.COLUMN_TYPE): SimpleImputSettings {
+  switch (type) {
+    case DG.COLUMN_TYPE.STRING:
+    case DG.COLUMN_TYPE.DATE_TIME:
+      return {
+        default: FILL_VALUE.MOST_FREQUENT,
+        available: [FILL_VALUE.MOST_FREQUENT]
+      };
+
+    case DG.COLUMN_TYPE.INT:
+    case DG.COLUMN_TYPE.FLOAT:
+    case DG.COLUMN_TYPE.QNUM:
+      return {
+        default: FILL_VALUE.MEAN,
+        available: [FILL_VALUE.MOST_FREQUENT, FILL_VALUE.MEAN, FILL_VALUE.MEDIAN]
       };
 
     default:
@@ -130,7 +158,7 @@ export function runKNNImputer(): void {
 
   /** Hide widgets (use if run is not applicable) */
   const hideWidgets = () => {
-    dlg.getButton(TITLE.RUN).hidden = true;
+    dlg.getButton(TITLE.RUN).disabled = true;
     inPlaceInput.root.hidden = true;
     neighborsInput.root.hidden = true;
     distDiv.hidden = true;
@@ -139,7 +167,7 @@ export function runKNNImputer(): void {
 
   /** Show widgets (use if run is applicable) */
   const showWidgets = () => {
-    dlg.getButton(TITLE.RUN).hidden = false;
+    dlg.getButton(TITLE.RUN).disabled = false;
     distDiv.hidden = false;
     inPlaceInput.root.hidden = false;
     neighborsInput.root.hidden = false;
@@ -181,11 +209,6 @@ export function runKNNImputer(): void {
     distTypeInput.root.style.width = '50%';
     distTypeInput.setTooltip(HINT.METRIC);
     distTypeInput.root.hidden = true; // this input will be used further
-
-    const properties = [{ "name": "float",       "inputType": "Float", min: 0, max: 10, "showSlider": true},];
-
-    let props = properties.map((p) => DG.Property.fromOptions(p))
-    let object = { float: 4.5 };
 
     // The following should provide a slider (see th bug https://reddata.atlassian.net/browse/GROK-14431)
     // @ts-ignore
@@ -238,21 +261,99 @@ export function runKNNImputer(): void {
     .show();
 } // runKNNImputer
 
+/** Run the simple missing values imputer*/
+function simpleImputation(df: DG.DataFrame, colsWithMissingVals: Map<string, number[]>): void {
+  const len = colsWithMissingVals.size;
+
+  if (len > 0) {        
+    const selected = new Map<string, boolean>();
+    const imputType = new Map<string, FILL_VALUE>();
+    const imputTypeElems = new Map<string, HTMLElement>();
+
+    const divs = [] as any[];
+
+    colsWithMissingVals.forEach((indices, name) => {
+      selected.set(name, DEFAULT.SELECTED > 0);
+
+      const settings = getSimpleMethodSettings(df.col(name)!.type as DG.COLUMN_TYPE);
+      imputType.set(name, settings.default);
+
+      const imputTypeInput = ui.choiceInput('', settings.default, settings.available, () => {
+        imputType.set(name, imputTypeInput.value ?? settings.default);        
+      });
+      imputTypeInput.root.hidden = true;
+      imputTypeElems.set(name, imputTypeInput.root);
+      imputTypeInput.setTooltip(HINT.FILL_VALUE);
+      
+      const switcher = ui.switchInput(name, DEFAULT.SELECTED > 0, () => {
+        const val = switcher.value;
+        selected.set(name, val);
+        imputTypeInput.root.hidden = !(val && toShowImputTypeElems);
+        checkSelected();
+      });
+      switcher.setTooltip(`nulls: ${df.col(name)!.stats.missingValueCount}`);
+
+      divs.push(ui.divH([switcher.root, imputTypeInput.root]));
+    });
+
+    const checkSelected = () => {
+      let toShowRunBtn = false;
+
+      selected.forEach((val) => toShowRunBtn = toShowRunBtn || val);
+
+      dlg.getButton(TITLE.OK).disabled = !toShowRunBtn;
+    };
+
+    let toShowImputTypeElems = false;
+    const settingsIcon = ui.icons.settings(() => {
+      toShowImputTypeElems = !toShowImputTypeElems;
+
+      colsWithMissingVals.forEach((val, name) => {
+        imputTypeElems.get(name)!.hidden = !(toShowImputTypeElems && selected.get(name)!);
+      });
+    }, HINT.IMPUTATION_SETTINGS);
+    
+
+    const dlg = ui.dialog({title: TITLE.SIMPLE_IMPUTER, helpUrl: LINK.SIMPLE_IMPUTER});    
+
+    dlg.onOK(() => {
+      dlg.close();
+
+      const task = new Map<string, SimpleImputTask>();
+
+      colsWithMissingVals.forEach((indeces, name) => {
+        if (selected.get(name)) {
+          task.set(name, {indeces: indeces, fillValue: imputType.get(name)!})
+      }});
+
+      simpleImput(df, task);
+
+    });
+    
+    dlg.add(ui.divV(divs));
+    dlg.add(settingsIcon);
+    grok.shell.v.root.appendChild(dlg.root);
+    dlg.show();
+    checkSelected();
+  }
+} // simpleImputation
+
 /** Process items that are failed to be imputed */
-function processFailedImputations(df: DG.DataFrame, failedToImpute: FailedToImpute[]) {
-  const len = failedToImpute.length;
+function processFailedImputations(df: DG.DataFrame, failedToImpute: Map<string, number[]>) {
+  const len = failedToImpute.size;
 
   if (len > 0) {
-    const fillBtn = ui.bigButton(TITLE.FILL, () => {
-    }, HINT.FILL_FAILED_ITEMS);
+    /*const fillBtn = ui.bigButton(TITLE.FILL, () => { simpleImputation(df, failedToImpute); }, HINT.FILL_FAILED_ITEMS);
 
     const markBtn = ui.bigButton(TITLE.MARK, () => {
-
+      alert('Hi');
     }, HINT.MARK_FAILED_ITEMS);
 
     grok.shell.warning(ui.divV([
       `${ERROR_MSG.FAILED_TO_IMPUTE} ${len} values`,
       ui.divH([markBtn, fillBtn]),
-    ]));
+    ]));*/
+
+    simpleImputation(df, failedToImpute);
   }
 }

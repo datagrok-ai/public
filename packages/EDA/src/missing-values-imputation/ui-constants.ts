@@ -29,15 +29,19 @@ export enum TITLE {
   FEATURES = 'Features',
   CANCEL = 'CANCEL',
   RUN = 'RUN',
+  OK = 'OK',
   NEIGHBORS = 'Neighbors',
   DISTANCE = 'Distance',
   FILL = 'Fill',
   MARK = 'Mark',
+  SIMPLE_IMPUTER = 'Simple impute',
+  SETTINGS = 'Settings',
 };
 
 /** Help links */
 export enum LINK {
   KNN_IMPUTER = '/help/explore', // TODO: provide correct link
+  SIMPLE_IMPUTER = '/help/explore', // TODO: provide correct link
 };
 
 /** Tooltips */ 
@@ -50,6 +54,8 @@ export enum HINT {
   NEIGHBORS = 'Neighbors count used in the KNN method',
   DISTANCE = 'Type of distance between elements with the specified features',
   METRIC_SETTINGS = 'Features metrics settings',
-  FILL_FAILED_ITEMS = 'Impute missing values',
-  MARK_FAILED_ITEMS = 'Mark missing values with a color',
+  FILL_FAILED_ITEMS = 'Impute missing values using a simple approach: mean, median or most frequent',
+  MARK_FAILED_ITEMS = 'Mark missing values cells with a color',
+  FILL_VALUE = 'Fill value',
+  IMPUTATION_SETTINGS = 'Simple imputation settings',
 }

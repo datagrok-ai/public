@@ -61,16 +61,11 @@ export enum DEFAULT {
   WEIGHT = 1,
   NEIGHBORS = 4,
   IN_PLACE = 1,
+  SELECTED = 1,
 };
 
 /** Min number of neighbors for KNN */
 export const MIN_NEIGHBORS = 1;
-
-/** */
-export type FailedToImpute = {
-  colName: string,
-  index: number,
-};
 
 /** Dataframe item: index - number of row,  dist - distance to the target element */
 type Item = {
@@ -80,7 +75,7 @@ type Item = {
 
 /** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
 export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetrics: Map<string, MetricInfo>,
-  distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): FailedToImpute[] 
+  distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): Map<string, number[]>
 {
   // 1. Check inputs completness
 
@@ -113,7 +108,7 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
   });
 
   /** Failed to impute items */
-  const failedToImpute = [] as FailedToImpute[];
+  const failedToImpute = new Map<string, number[]>();
 
   // 2. Missing values imputation in each target column
   targetCols.forEach((col) => {
@@ -126,6 +121,8 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
     const featureSource = [] as Array<Int32Array | Uint32Array | Float32Array | Float64Array>;
     const featureNullVal = [] as number[];
     const metricFunc = [] as ((a: number, b: number) => number)[];
+
+    const failedToImputeIndices = [] as number[];
 
     // create features tools
     featuresMetrics.forEach((metricInfo, name) => {
@@ -302,11 +299,14 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
           try {
             source[i] = getFillValue(i);
           }  catch (err) {
-              failedToImpute.push({colName: col.name, index: i});
+              failedToImputeIndices.push(i);
               
               if (!(err instanceof Error))
                 grok.shell.error(ERROR_MSG.CORE_ISSUE);
           }
+      
+      if (failedToImputeIndices.length > 0)
+        failedToImpute.set(col.name, failedToImputeIndices);
 
       const buf = col.get(0);
       col.set(0, col.get(1));
@@ -334,11 +334,14 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
           try {
             copySource[i] = getFillValue(i);
           }  catch (err) {
-              failedToImpute.push({colName: copy.name, index: i});
+              failedToImputeIndices.push(i);              
               
               if (!(err instanceof Error))
                 grok.shell.error(ERROR_MSG.CORE_ISSUE);
           }
+
+        if (failedToImputeIndices.length > 0)
+          failedToImpute.set(copy.name, failedToImputeIndices);
 
       df.columns.add(copy);
     } // else
