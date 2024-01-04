@@ -18,15 +18,16 @@ const SS_LEFT_TEXT = 'SENSE_STRAND: 5\'';
 const AS_LEFT_TEXT = 'ANTISENSE_STRAND: 3\'';
 const SS_RIGHT_TEXT = '3\'';
 const AS_RIGHT_TEXT = '5\'';
+const DEFAULT_FONT_FAMILY = 'Arial';
 
 const WIDTH_OF_LEFT_TEXT = Math.max(
-  textWidth(SS_LEFT_TEXT, BASE_FONT_SIZE),
-  textWidth(AS_LEFT_TEXT, BASE_FONT_SIZE),
+  textWidth(SS_LEFT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  textWidth(AS_LEFT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
 );
 
 const WIDTH_OF_RIGHT_TEXT = Math.max(
-  textWidth(SS_RIGHT_TEXT, BASE_FONT_SIZE),
-  textWidth(AS_RIGHT_TEXT, BASE_FONT_SIZE),
+  textWidth(SS_RIGHT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  textWidth(AS_RIGHT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
 );
 
 const X = {
@@ -85,13 +86,13 @@ export function drawAxolabsPattern(
   const widthOfBases = BASE_DIAMETER * (resultingNumberOfNucleotidesInStrands + widthOfRightOverhangs);
 
   const widthOfLeftModification = Math.max(
-    textWidth(ss3Modification, BASE_FONT_SIZE),
-    textWidth(as5Modification, BASE_FONT_SIZE),
+    textWidth(ss3Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+    textWidth(as5Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
   );
 
   const widthOfRightModification = Math.max(
-    textWidth(ss5Modification, BASE_FONT_SIZE),
-    textWidth(as3Modification, BASE_FONT_SIZE),
+    textWidth(ss5Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+    textWidth(as3Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
   );
 
   const uniqueBases = asExists ?

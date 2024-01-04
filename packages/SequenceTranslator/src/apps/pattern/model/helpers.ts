@@ -10,7 +10,6 @@ export function isOneDigitNumber(n: number): boolean {
   return n >= 0 && n < 10;
 }
 
-// https://uxdesign.cc/star-rating-make-svg-great-again-d4ce4731347e
 export function getPointsToDrawStar(centerX: number, centerY: number): string {
   const outerVerticesPerStar = 5;
   const innerRadius = 3;
@@ -32,19 +31,30 @@ export function getPointsToDrawStar(centerX: number, centerY: number): string {
 }
 
 export function countOverhangsOnTheRightEdge(modifications: string[]): number {
-  let i = 0;
-  while (i < modifications.length && isOverhang(modifications[i]))
-    i++;
-  return (i === modifications.length - 1) ? 0 : i;
+  const lastIdx = modifications.length - 1;
+  let count = 0;
+  while (count <= lastIdx && isOverhang(modifications[count])) {
+    count++;
+  }
+  return count === lastIdx + 1 ? 0 : count;
 }
 
-export function textWidth(text: string, font: number): number {
-  const context = document.createElement('canvas').getContext('2d');
-  // @ts-ignore
-  context.font = String(font);
-  // @ts-ignore
-  return 2 * context.measureText(text).width;
+export function textWidth(text: string, fontSize: number, fontFamily: string): number {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (context) {
+    context.font = `${fontSize}px ${fontFamily}`;
+    const metrics = context.measureText(text);
+    return 2 * metrics.width;
+  }
+  return 0;
 }
+
+// export function textWidth(text: string, font: number): number {
+//   const context = document.createElement('canvas').getContext('2d');
+//   context.font = String(font);
+//   return 2 * context.measureText(text).width;
+// }
 
 export function textInsideCircle(bases: string[], index: number): string {
   return (isOverhang(bases[index]) || !NUCLEOTIDES.includes(bases[index])) ? '' : bases[index];
