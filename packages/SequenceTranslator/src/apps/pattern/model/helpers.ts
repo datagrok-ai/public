@@ -50,20 +50,32 @@ export function textWidth(text: string, fontSize: number, fontFamily: string): n
   return 0;
 }
 
-// export function textWidth(text: string, font: number): number {
-//   const context = document.createElement('canvas').getContext('2d');
-//   context.font = String(font);
-//   return 2 * context.measureText(text).width;
-// }
-
 export function textInsideCircle(bases: string[], index: number): string {
-  return (isOverhang(bases[index]) || !NUCLEOTIDES.includes(bases[index])) ? '' : bases[index];
+  const base = bases[index];
+  const isValidBase = !isOverhang(base) && NUCLEOTIDES.includes(base);
+  
+  return isValidBase ? base : '';
 }
 
 export function fontColorVisibleOnBackground(base: string): string {
-  const AXOLABS_MAP = axolabsStyleMap;
-  const rgbIntList = AXOLABS_MAP[base].color.match(/\d+/g)!.map((e) => Number(e));
-  return (rgbIntList[0] * 0.299 + rgbIntList[1] * 0.587 + rgbIntList[2] * 0.114) > 186 ? '#33333' : '#ffffff';
+  const RED_COEFFICIENT = 0.299;
+  const GREEN_COEFFICIENT = 0.587;
+  const BLUE_COEFFICIENT = 0.114;
+  const LUMINANCE_THRESHOLD = 186;
+  const DARK_COLOR = '#333333';
+  const LIGHT_COLOR = '#ffffff';
+
+  const styleMap = axolabsStyleMap;
+  const baseColor = styleMap[base]?.color || '';
+  
+  const rgbValues = baseColor.match(/\d+/g)?.map(Number);
+  if (!rgbValues || rgbValues.length < 3) {
+    return LIGHT_COLOR;
+  }
+
+  const [r, g, b] = rgbValues;
+  const luminance = r * RED_COEFFICIENT + g * GREEN_COEFFICIENT + b * BLUE_COEFFICIENT;
+  return luminance > LUMINANCE_THRESHOLD ? DARK_COLOR : LIGHT_COLOR;
 }
 
 export function baseColor(base: string): string {
