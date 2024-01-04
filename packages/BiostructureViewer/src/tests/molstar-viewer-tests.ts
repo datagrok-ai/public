@@ -120,13 +120,47 @@ category('MolstarViewer', () => {
 2BPW`;
 
   test('pdb_id', async () => {
-    const logPrefix: string = `dataProvider.MolstarViewer test`;
+    const logPrefix: string = `Tests: MolstarViewer.pdb_id`;
     const df = DG.DataFrame.fromCsv(pdbIdCsv);
     const tv = grok.shell.addTableView(df);
     const viewer = await df.plot.fromType('Biostructure',
       {
         biostructureIdColumnName: 'pdb_id',
         biostructureDataProvider: 'BiostructureViewer:getBiostructureRcsbMmcif'
+      }) as DG.Viewer<BiostructureProps> & IBiostructureViewer;
+    tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure with data provider', 0.4);
+
+    // await delay(50); // await for debounce onRebuildViewLigands
+    // await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
+
+    df.currentRowIdx = 0;
+    _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
+    await awaitGrid(tv.grid);
+    await delay(DebounceIntervals.currentRow * 2.5);
+    await viewer.awaitRendered(15000);
+    const aViewer = viewer as any;
+    expect(aViewer.dataEff !== null, true, 'dataEff is null');
+    expect(aViewer.dataEff.options.name, '1QBS');
+    expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
+
+    df.currentRowIdx = 2;
+    _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
+    await awaitGrid(tv.grid);
+    await delay(DebounceIntervals.currentRow * 2.5);
+    await viewer.awaitRendered(15000);
+    expect(aViewer.dataEff !== null, true, 'dataEff is null');
+    expect(aViewer.dataEff.options.name, '2BDJ');
+    expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
+  }, {timeout: 40000});
+
+  test('bcif_id_binary', async () => {
+    const logPrefix: string = `Tests: MolstarViewer.bcif_id_binary`;
+    const df = DG.DataFrame.fromCsv(pdbIdCsv);
+    const tv = grok.shell.addTableView(df);
+    const viewer = await df.plot.fromType('Biostructure',
+      {
+        biostructureIdColumnName: 'pdb_id',
+        biostructureDataProvider: 'BiostructureViewer:getBiostructureRcsbBcif'
       }) as DG.Viewer<BiostructureProps> & IBiostructureViewer;
     tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure with data provider', 0.4);
 

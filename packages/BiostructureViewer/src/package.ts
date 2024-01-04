@@ -12,7 +12,7 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
-import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
@@ -636,14 +636,14 @@ export async function readAsTextDapi(file: string): Promise<string> {
 //description: Get biostructure by id as PDB
 //meta.dataProvider: Molecule3D
 //input: string id
-//output: object result
-export async function getBiostructureRcsbPdb(id: string): Promise<BiostructureData> {
+//output: string result
+export async function getBiostructureRcsbPdb(id: string): Promise<string> {
   const url = `https://files.rcsb.org/download/${id}.pdb`;
   const response = await fetch(url);
   if (!response.ok)
     throw new Error(response.statusText);
   const data: string = await response.text();
-  return {binary: false, data: data, ext: 'pdb', options: {name: id}};
+  return BiostructureDataJson.fromData({binary: false, data: data, ext: 'pdb', options: {name: id}});
 }
 
 //name: RCSB mmCIF
@@ -652,12 +652,42 @@ export async function getBiostructureRcsbPdb(id: string): Promise<BiostructureDa
 //meta.cache: client
 //meta.invalidateOn: 0 0 1 * * ?
 //input: string id
-//output: object result
-export async function getBiostructureRcsbMmcif(id: string): Promise<BiostructureData> {
+//output: string result
+export async function getBiostructureRcsbMmcif(id: string): Promise<string> {
   const url = `https://files.rcsb.org/download/${id}.cif`;
   const response = await fetch(url);
   if (!response.ok)
     throw new Error(response.statusText);
   const data: string = await response.text();
-  return {binary: false, data: data, ext: 'cif', options: {name: id}};
+  return BiostructureDataJson.fromData({binary: false, data: data, ext: 'cif', options: {name: id}});
+}
+
+//name: RCSB bCIF
+//description: Get biostructure by id as BinaryCIF
+//meta.dataProvider: Molecule3D
+//meta.cache: client
+//meta.invalidateOn: 0 0 1 * * ?
+//input: string id ='1QBS'
+//output: string result
+export async function getBiostructureRcsbBcif(id: string): Promise<string> {
+  const url = `https://models.rcsb.org/${id}.bcif`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(response.statusText);
+  const data: ArrayBuffer = await response.arrayBuffer();
+  const dataA = new Uint8Array(data, 0, data.byteLength);
+  return BiostructureDataJson.fromData({binary: true, data: dataA, ext: 'bcif', options: {name: id}});
+}
+
+//name: biostructureDataToJson
+//description: Packs BiostructureData value into JSON string
+//input: bool binary
+//input: object data
+//input: string ext
+//input: map options {optional: true}
+//output: string result
+export function biostructureDataToJson(
+  binary: boolean, data: string | Uint8Array, ext: string, options: object
+): string {
+  return BiostructureDataJson.fromData({binary, data, ext, options});
 }

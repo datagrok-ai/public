@@ -89,7 +89,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.helpUrl = '/help/visualize/viewers/ngl';
 
     // -- Data --
-    this.dataJson = this.string(PROPS.dataJson, BiostructureDataJson.null, {
+    this.dataJson = this.string(PROPS.dataJson, defaults.dataJson, {
       category: PROPS_CATS.DATA, userEditable: false,
       description: 'JSON encoded object of BiostructureData type with data value Base64 encoded data',
     });
@@ -205,7 +205,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
           this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.null)
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
 
         // -- Ligand --

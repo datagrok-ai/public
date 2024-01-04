@@ -81,7 +81,7 @@ export async function parseAndVisualsData(
     throw new Error(`Argument null exception 'dataEff'.`);
 
   const refListRes: string[] = [];
-  const {binary} = molecule3dFileExtensions[dataEff.ext];
+  const binary = dataEff.binary !== undefined ? dataEff.binary : molecule3dFileExtensions[dataEff.ext].binary;
   const data: PluginStateObject.Data.Binary | PluginStateObject.Data.String = binary ?
     new PluginStateObject.Data.Binary(dataEff.data as Uint8Array) :
     new PluginStateObject.Data.String(dataEff.data as string);
