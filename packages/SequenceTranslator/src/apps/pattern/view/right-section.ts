@@ -40,17 +40,17 @@ export class PatternAppRightSection {
     return layout;
   }
 
-  private createNumericLabelTogglesContainer(): HTMLElement {
-    const defaultNucleotideBase = this.patternConfiguration.getDefaultNucleotideBase();
-    const numericLabelTogglesContainer = ui.divH([
-      ui.boolInput(defaultNucleotideBase, true, (value: boolean) => {
-        updateListOfModificationsWithNumericLabels(value);
-        refreshSvgDisplay();
-        refreshOutputExamples();
-      }).root,
-    ]);
-    return numericLabelTogglesContainer;
-  }
+  // private createNumericLabelTogglesContainer(): HTMLElement {
+  //   const defaultNucleotideBase = this.patternConfiguration.getDefaultNucleotideBase();
+  //   const numericLabelTogglesContainer = ui.divH([
+  //     ui.boolInput(defaultNucleotideBase, true, (value: boolean) => {
+  //       updateListOfModificationsWithNumericLabels(value);
+  //       refreshSvgDisplay();
+  //       refreshOutputExamples();
+  //     }).root,
+  //   ]);
+  //   return numericLabelTogglesContainer;
+  // }
 }
 
 class SvgDisplayManager {

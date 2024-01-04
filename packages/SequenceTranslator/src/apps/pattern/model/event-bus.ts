@@ -23,7 +23,7 @@ export class EventBus {
   private _patternSaveRequested$ = new rxjs.Subject<string>();
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _tableSelectionChanged$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
-  private _nucleotideBaseChanged$ = new rxjs.BehaviorSubject<string>('');
+  private _nucleotideBaseChanged$ = new rxjs.Subject<string>();
 
 
   get isAntisenseStrandActive$(): rxjs.Observable<boolean> {

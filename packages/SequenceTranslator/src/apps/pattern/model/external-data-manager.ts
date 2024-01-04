@@ -25,9 +25,13 @@ export class PatternAppDataManager {
     return PatternAppDataManager.instance;
   }
 
-  fetchNucleotideBases(): string[] {
+  fetchAvailableNucleotideBases(): string[] {
     const nucleotideBases: string[] = Object.keys(axolabsStyleMap);
     return nucleotideBases;
+  }
+
+  getDefaultNucleotideBase(): string {
+    return this.fetchAvailableNucleotideBases()[0];
   }
 
   getCurrentUserPatternNames(): string[] {

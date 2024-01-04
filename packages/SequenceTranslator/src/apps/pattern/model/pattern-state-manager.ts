@@ -30,12 +30,8 @@ export class PatternConfigurationManager {
     });
   }
 
-  getBase(strand: StrandType, index: number): string {
-    return this._bases[strand][index];
-  }
-
   private fetchDefaultBase(): string {
-    return this.dataManager.fetchNucleotideBases()[0];
+    return this.dataManager.fetchAvailableNucleotideBases()[0];
   }
   
   private initializePhosphorothioate(): void {

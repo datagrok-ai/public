@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {TAB, APP} from './const';
 import {TranslatorLayoutHandler} from '../../translator/view/app-ui';
 import {StructureLayoutHandler} from '../../structure/view/app-ui';
+import {PatternLayoutHandler} from '../../pattern/view/app-ui';
 import {PatternLayoutController} from '../../pattern/view/layout';
 import {MonomerLibViewer} from '../monomer-lib/viewer';
 import {_package} from '../../../package';
@@ -176,7 +177,8 @@ class OligoPatternUI extends SimpleAppUIBase {
   }
   private readonly ui: PatternLayoutController;
   protected getHtml(): Promise<HTMLDivElement> {
-    return Promise.resolve(this.ui.htmlDivElement);
+    // return Promise.resolve(this.ui.htmlDivElement);
+    return Promise.resolve(new PatternLayoutHandler().htmlDivElement);
   }
 }
 

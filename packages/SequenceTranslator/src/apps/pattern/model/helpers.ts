@@ -2,31 +2,33 @@ import {NUCLEOTIDES} from '../../common/model/const';
 import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 
 export function isOverhang(modification: string): boolean {
-  return modification.slice(-3) === '(o)';
+  const overhangSuffix = '(o)';
+  return modification.endsWith(overhangSuffix);
 }
 
 export function isOneDigitNumber(n: number): boolean {
-  return n < 10;
+  return n >= 0 && n < 10;
 }
 
 // https://uxdesign.cc/star-rating-make-svg-great-again-d4ce4731347e
 export function getPointsToDrawStar(centerX: number, centerY: number): string {
-  const innerCirclePoints = 5; // a 5 point star
-  const innerRadius = 15 / innerCirclePoints;
-  const innerOuterRadiusRatio = 2; // outter circle is x2 the inner
-  const outerRadius = innerRadius * innerOuterRadiusRatio;
-  const angle = Math.PI / innerCirclePoints;
-  const angleOffsetToCenterStar = 60;
-  const totalNumberOfPoints = innerCirclePoints * 2; // 10 in a 5-points star
+  const outerVerticesPerStar = 5;
+  const innerRadius = 3;
+  const outerRadius = innerRadius * 2;
+  const radiansPerVertex = Math.PI / outerVerticesPerStar;
+  const radiansOffset = - radiansPerVertex / 2;
+  const totalNumberOfVertices = outerVerticesPerStar * 2;
 
-  let points = '';
-  for (let i = 0; i < totalNumberOfPoints; i++) {
-    const r = (i % 2 === 0) ? outerRadius : innerRadius;
-    const currentX = centerX + Math.cos(i * angle + angleOffsetToCenterStar) * r;
-    const currentY = centerY + Math.sin(i * angle + angleOffsetToCenterStar) * r;
-    points += `${currentX},${currentY} `;
-  }
-  return points;
+  const points = Array.from({ length: totalNumberOfVertices }, (_, i) => {
+    const isOuterVertex = i % 2 === 0;
+    const radius = isOuterVertex ? outerRadius : innerRadius;
+    const angle = i * radiansPerVertex + radiansOffset;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius;
+    return `${x},${y}`;
+  });
+
+  return points.join(' ');
 }
 
 export function countOverhangsOnTheRightEdge(modifications: string[]): number {

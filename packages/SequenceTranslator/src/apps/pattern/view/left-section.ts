@@ -108,10 +108,10 @@ class PatternControlsManager {
   }
 
   private createSequenceBaseInput(): StringInput {
-    const nucleotideBaseChoices = this.dataManager.fetchNucleotideBases();
-    const defaultNucleotideBase = nucleotideBaseChoices[0];
+    const availableNucleoBases = this.dataManager.fetchAvailableNucleotideBases();
+    const defaultNucleotideBase = this.dataManager.getDefaultNucleotideBase();
 
-    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (base: string) => this.eventBus.changeNucleotideBase(base));
+    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases, (base: string) => this.eventBus.changeNucleotideBase(base));
 
     sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
     return sequenceBaseInput;
