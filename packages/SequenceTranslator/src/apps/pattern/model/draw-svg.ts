@@ -58,18 +58,42 @@ export function drawAxolabsPattern(
   enumerateModifications: string[],
 ): Element {
   function equidistantXForLegend(index: number): number {
-    return Math.round((index + startFrom) * width / (uniqueBases.length + startFrom) + LEGEND_RADIUS);
+    const totalPositions = uniqueBases.length + startFrom;
+    const spacingUnit = width / totalPositions;
+    const position = (index + startFrom) * spacingUnit;
+    const adjustedPosition = position + LEGEND_RADIUS;
+    return Math.round(adjustedPosition);
   }
+
+  // function equidistantXForLegend(index: number): number {
+  //   return Math.round((index + startFrom) * width / (uniqueBases.length + startFrom) + LEGEND_RADIUS);
+  // }
 
   function xOfBaseCircles(index: number, rightOverhangs: number): number {
-    return widthOfRightModification +
-      (resultingNumberOfNucleotidesInStrands - index + rightOverhangs + 1) * BASE_DIAMETER;
+    const rightModificationOffset = widthOfRightModification;
+    const positionalIndex = resultingNumberOfNucleotidesInStrands - index + rightOverhangs + 1;
+    const xCoordinate = positionalIndex * BASE_DIAMETER;
+    const finalPosition = rightModificationOffset + xCoordinate;
+    return finalPosition;
   }
 
+  // function xOfBaseCircles(index: number, rightOverhangs: number): number {
+  //   return widthOfRightModification +
+  //     (resultingNumberOfNucleotidesInStrands - index + rightOverhangs + 1) * BASE_DIAMETER;
+  // }
+
   function shiftToAlignNumberNearCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
-    return (isOneDigitNumber(nucleotideIndex) || NUCLEOTIDES.includes(bases[generalIndex])) ?
-      shiftToAlignOneDigitNumberNearCircle : shiftToAlignTwoDigitNumberNearCircle;
+    const isSingleDigitOrValidNucleotide = isOneDigitNumber(nucleotideIndex) || NUCLEOTIDES.includes(bases[generalIndex]);
+    const shiftAmount = isSingleDigitOrValidNucleotide 
+      ? shiftToAlignOneDigitNumberNearCircle 
+      : shiftToAlignTwoDigitNumberNearCircle;
+    return shiftAmount;
   }
+
+  // function shiftToAlignNumberNearCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
+  //   return (isOneDigitNumber(nucleotideIndex) || NUCLEOTIDES.includes(bases[generalIndex])) ?
+  //     shiftToAlignOneDigitNumberNearCircle : shiftToAlignTwoDigitNumberNearCircle;
+  // }
 
   ssBases = ssBases.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();

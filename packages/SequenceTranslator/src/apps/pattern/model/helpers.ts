@@ -79,40 +79,48 @@ export function fontColorVisibleOnBackground(base: string): string {
 }
 
 export function baseColor(base: string): string {
-  const AXOLABS_MAP = axolabsStyleMap;
-  return AXOLABS_MAP[base].color;
+  const styleMap = axolabsStyleMap;
+  return styleMap[base].color;
 }
 
 export const svg = {
   xmlns: 'http://www.w3.org/2000/svg',
-  render: function(width: number, height: number): Element {
-    const e = document.createElementNS(this.xmlns, 'svg');
+  
+  createSVGElement(type: string): Element {
+    return document.createElementNS(this.xmlns, type);
+  },
+
+  render(width: number, height: number): Element {
+    const e = this.createSVGElement('svg');
     e.setAttribute('id', 'mySvg');
     e.setAttribute('width', String(width));
     e.setAttribute('height', String(height));
     return e;
   },
-  circle: function(x: number, y: number, radius: number, color: string): Element {
-    const e = document.createElementNS(this.xmlns, 'circle');
+
+  circle(x: number, y: number, radius: number, color: string): Element {
+    const e = this.createSVGElement('circle');
     e.setAttribute('cx', String(x));
     e.setAttribute('cy', String(y));
     e.setAttribute('r', String(radius));
     e.setAttribute('fill', color);
     return e;
   },
-  text: function(text: string, x: number, y: number, fontSize: number, color: string): Element {
-    const e = document.createElementNS(this.xmlns, 'text');
+
+  text(textContent: string, x: number, y: number, fontSize: number, color: string): Element {
+    const e = this.createSVGElement('text');
     e.setAttribute('x', String(x));
     e.setAttribute('y', String(y));
     e.setAttribute('font-size', String(fontSize));
     e.setAttribute('font-weight', 'normal');
     e.setAttribute('font-family', 'Arial');
     e.setAttribute('fill', color);
-    e.innerHTML = text;
+    e.textContent = textContent;
     return e;
   },
-  star: function(x: number, y: number, fill: string): Element {
-    const e = document.createElementNS(this.xmlns, 'polygon');
+
+  star(x: number, y: number, fill: string): Element {
+    const e = this.createSVGElement('polygon');
     e.setAttribute('points', getPointsToDrawStar(x, y));
     e.setAttribute('fill', fill);
     return e;
