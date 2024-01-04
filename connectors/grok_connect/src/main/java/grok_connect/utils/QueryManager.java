@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -34,7 +33,7 @@ public class QueryManager {
     public boolean dryRun = false;
     private final JdbcDataProvider provider;
     private final Logger logger;
-    private final QueryLogger<DataFrame> queryLogger;
+    private final QueryLogger queryLogger;
     private final FuncCall query;
     private final ResultSetManager resultSetManager;
     private int currentFetchSize = MIN_FETCH_SIZE;
@@ -46,30 +45,36 @@ public class QueryManager {
     private boolean supportTransactions;
     private String initMessage;
     private int columnCount;
+    public boolean isFinished = false;
 
-    public QueryManager(String message, QueryLogger<DataFrame> queryLogger) {
+    public QueryManager(String message, QueryLogger queryLogger) {
+        this.logger = queryLogger.getLogger();
+        this.queryLogger = queryLogger;
+        logger.debug("Deserializing json call and preprocessing it...");
         query = gson.fromJson(message, FuncCall.class);
         query.setParamValues();
         query.afterDeserialization();
-        this.logger = queryLogger.getLogger();
-        this.queryLogger = queryLogger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
         resultSetManager = provider.getResultSetManager();
         initParams();
-        queryLogger.writeLog(query.debugQuery);
         if (dryRun)
             initMessage = message;
+        logger.debug("Deserialized and preprocessed call");
     }
 
     public void initResultSet(FuncCall query) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to db");
+        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to {} database...", provider.descriptor.type);
         connection = provider.getConnection(query.func.connection);
-        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
+        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Received connection to {} database", provider.descriptor.type);
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
-        supportTransactions = connection.getMetaData().supportsTransactions();
-        ResultSetMetaData metaData = resultSet.getMetaData();
-        resultSetManager.init(metaData, currentFetchSize);
-        columnCount = metaData.getColumnCount();
+        if (resultSet != null) {
+            supportTransactions = connection.getMetaData().supportsTransactions();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            logger.debug("Initializing ResultSet manager...");
+            resultSetManager.init(metaData, currentFetchSize);
+            logger.debug("ResultSet manager was initialized");
+            columnCount = metaData.getColumnCount();
+        }
     }
 
     public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException, ClassNotFoundException {
@@ -78,45 +83,46 @@ public class QueryManager {
         FuncCall query = gson.fromJson(initMessage, FuncCall.class);
         query.setParamValues();
         initResultSet(query);
-        if (supportTransactions && changedFetchSize) {
+        if (supportTransactions && changedFetchSize)
             resultSet.setFetchSize(currentFetchSize);
-        }
         queryLogger.writeLog(!skipColumnFillingLog);
         provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
-        closeConnection();
+        close();
         queryLogger.writeLog(true);
     }
 
     public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
-        if (resultSet == null || resultSet.isClosed())
-            return df;
-        resultSetManager.empty();
-        if (!connection.isClosed()) {
+        if (!resultSet.isClosed() && !connection.isClosed()) {
+            if (dfNumber != 1) resultSetManager.empty();
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
             df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
+            if (df.rowCount == rowsNumber) {
+                if (dfNumber == 1 && supportTransactions && changedFetchSize)
+                    resultSet.setFetchSize(currentFetchSize);
+                else if (!changedFetchSize)
+                    changeFetchSize(df);
+            }
+            else {
+                isFinished = true;
+                logger.debug("Received all data");
+            }
+            df.tags = new LinkedHashMap<>();
+            df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
         }
-
-        if (dfNumber == 1 && supportTransactions && changedFetchSize) {
-            logger.debug(EventType.MISC.getMarker(), "Manual fetch size was set for all chunks {}", currentFetchSize);
-            resultSet.setFetchSize(currentFetchSize);
-        } else if (!changedFetchSize)
-            changeFetchSize(df, dfNumber);
-
-        df.tags = new LinkedHashMap<>();
-        df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
         return df;
     }
 
-    public void closeConnection() throws SQLException {
+    public void close() throws SQLException {
+        if (resultSet != null && !resultSet.isClosed())
+            resultSet.close();
         if (connection != null && !connection.isClosed()) {
-            logger.debug(EventType.MISC.getMarker(), "Closing DB connection");
+            logger.debug("Closing DB connection...");
             if (!connection.getAutoCommit())
                 connection.commit();
             QueryMonitor.getInstance().removeResultSet(query.id);
             connection.close();
-
-            logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
+            logger.debug("Closed DB connection");
         } else
             QueryMonitor.getInstance().removeResultSet(query.id);
     }
@@ -129,12 +135,12 @@ public class QueryManager {
         return query;
     }
 
-    private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
-        currentFetchSize = getFetchSize(df);
-        logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
+    private void changeFetchSize(DataFrame df) throws SQLException {
         if (supportTransactions && !provider.descriptor.type.equals("Virtuoso")) {
+            logger.debug("Calculating dynamically next fetch size...");
+            currentFetchSize = getFetchSize(df);
             resultSet.setFetchSize(currentFetchSize);
-            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size was changed: {}", currentFetchSize);
+            logger.debug("Calculated new fetch size. Fetch size was set to {}", currentFetchSize);
         }
     }
 
@@ -147,22 +153,12 @@ public class QueryManager {
         return Math.min(Math.max(MIN_FETCH_SIZE, fetchSize), MAX_FETCH_SIZE);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void initParams() {
-        Map<String, Object> params = new HashMap<>();
-        // add meta params of query
-        if (query.func.options != null)
-            params.putAll(query.func.options);
-        // aux params have preference over meta params
-        if (query.func.aux != null) {
-            for (String key: query.func.aux.keySet()) {
-                Object value = query.func.aux.get(key);
-                if (value != null && !value.toString().isEmpty())
-                    params.put(key, value);
-            }
-        }
-        setFetchSize(params.getOrDefault(FETCH_SIZE_KEY, "").toString());
-        setInitFetchSize(params.getOrDefault(INIT_FETCH_SIZE_KEY, "").toString());
-        dryRun = Boolean.parseBoolean(params.getOrDefault(DRY_RUN_KEY, false).toString());
+        query.options.entrySet().removeIf(e -> ((Map.Entry)e).getValue() == null);
+        setFetchSize(query.options.getOrDefault(FETCH_SIZE_KEY, "").toString());
+        setInitFetchSize(query.options.getOrDefault(INIT_FETCH_SIZE_KEY, "").toString());
+        dryRun = Boolean.parseBoolean(query.options.getOrDefault(DRY_RUN_KEY, false).toString());
     }
 
     private void setFetchSize(String optionValue) {
@@ -175,13 +171,16 @@ public class QueryManager {
         else {
             changedFetchSize = true;
             currentFetchSize = Integer.parseInt(optionValue);
+            logger.debug("Fetch was set to {} for all chunks except initial", currentFetchSize);
         }
     }
 
     private void setInitFetchSize(String optionValue) {
-        if (optionValue == null || optionValue.isEmpty())
+        if (optionValue == null || optionValue.isEmpty()) {
+            logger.debug("Default init fetch size of {} will be used", initFetchSize);
             return;
-        logger.debug(EventType.MISC.getMarker(), "Setting init fetch size {}", optionValue);
+        }
         initFetchSize = Integer.parseInt(optionValue);
+        logger.debug("Init fetch size was set to {}", initFetchSize);
     }
 }
