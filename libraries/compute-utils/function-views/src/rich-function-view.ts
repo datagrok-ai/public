@@ -1102,7 +1102,10 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
+      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING ?
+        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
+        newParam.property.defaultValue;
+      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
