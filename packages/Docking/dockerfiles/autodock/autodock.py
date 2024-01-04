@@ -36,8 +36,10 @@ def run_process(command, folder_path, shell=False):
             output = fout.read()
             ferr.seek(0)
             error = ferr.read()
-            os.remove(output_file)
-            os.remove(error_file)
+            if os.path.exists(output_file):
+                os.remove(output_file)
+            if os.path.exists(error_file):
+                os.remove(error_file)
     
     logging.debug('run_process: output\n{}'.format(output))
     logging.debug('run_process: output END\n')
@@ -220,7 +222,7 @@ def dock_list_ligands():
 
     with ThreadPoolExecutor() as executor:
         futures = [
-            executor.submit(process_ligand, i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format)
+            executor.submit(process_ligand, i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format, pose_count)
             for i, ligand_data in enumerate(ligand_value)]
 
         for future in concurrent.futures.as_completed(futures):

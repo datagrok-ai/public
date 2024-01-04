@@ -39,6 +39,12 @@ namespace Forms {
   export type dockLigandListRes = {
     /** pdbqt */ ligand_results: { [ligandIdx: number]: string; }
   }
+
+  export type LigandResults = {
+    error?: string;
+    poses?: string;
+  }
+
 }
 
 export function buildDefaultAutodockGpf(receptorName: string, npts: GridSize): string {
@@ -226,8 +232,9 @@ export class AutoDockService implements IAutoDockService {
 
     let posesAllDf: DG.DataFrame | undefined = undefined;
     for (const [ligandIdx, ligandPoses] of Object.entries(adRes.ligand_results)) {
-      const posesDf = this.ph.parsePdbqt(ligandPoses, poseColName);
-      (posesDf.columns.addNewInt('ligandIdx')).init((rowI) => ligandIdx);
+      const ligand = ligandPoses as unknown as Forms.LigandResults;
+      const poses = ligand['poses'];
+      const posesDf: DG.DataFrame | undefined = poses ? this.ph.parsePdbqt(poses, poseColName) : undefined;
 
       if (posesAllDf === undefined) {
         posesAllDf = posesDf;
