@@ -16,7 +16,7 @@ export const SUPPORTED_COLUMN_TYPES = [
 ] as string[];
 
 /** Return null value with respect to the column type */
-function getNullValue(col: DG.Column): number {
+export function getNullValue(col: DG.Column): number {
   switch (col.type) {
     case DG.COLUMN_TYPE.INT:        
       return DG.INT_NULL;
@@ -308,9 +308,8 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(col.name, failedToImputeIndices);
 
-      const buf = col.get(0);
-      col.set(0, col.get(1));
-      col.set(1, buf);
+      // to reset view      
+      col.set(0, col.get(0));
     } // if
     else {
       //@ts-ignore

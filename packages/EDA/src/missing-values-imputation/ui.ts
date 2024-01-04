@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { TITLE, LINK, ERROR_MSG, HINT } from './ui-constants';
+import { TITLE, LINK, ERROR_MSG, HINT, CONTENT } from './ui-constants';
 import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
 import { FILL_VALUE, SimpleImputTask, simpleImput } from "./simple-imputer";
 
@@ -272,12 +272,14 @@ function simpleImputation(df: DG.DataFrame, colsWithMissingVals: Map<string, num
 
     const divs = [] as any[];
 
-    colsWithMissingVals.forEach((indices, name) => {
+    // create UI for imputation specifying
+    colsWithMissingVals.forEach((ignore, name) => {
       selected.set(name, DEFAULT.SELECTED > 0);
 
       const settings = getSimpleMethodSettings(df.col(name)!.type as DG.COLUMN_TYPE);
       imputType.set(name, settings.default);
 
+      // UI for type of imputation
       const imputTypeInput = ui.choiceInput('', settings.default, settings.available, () => {
         imputType.set(name, imputTypeInput.value ?? settings.default);        
       });
@@ -285,6 +287,7 @@ function simpleImputation(df: DG.DataFrame, colsWithMissingVals: Map<string, num
       imputTypeElems.set(name, imputTypeInput.root);
       imputTypeInput.setTooltip(HINT.FILL_VALUE);
       
+      // UI for column selection
       const switcher = ui.switchInput(name, DEFAULT.SELECTED > 0, () => {
         const val = switcher.value;
         selected.set(name, val);
@@ -296,15 +299,16 @@ function simpleImputation(df: DG.DataFrame, colsWithMissingVals: Map<string, num
       divs.push(ui.divH([switcher.root, imputTypeInput.root]));
     });
 
+    /** disable OK button if nothing is selected */
     const checkSelected = () => {
-      let toShowRunBtn = false;
-
-      selected.forEach((val) => toShowRunBtn = toShowRunBtn || val);
-
-      dlg.getButton(TITLE.OK).disabled = !toShowRunBtn;
+      let toDisable = false;
+      selected.forEach((val) => toDisable = toDisable || val);
+      dlg.getButton(TITLE.OK).disabled = !toDisable;
     };
 
     let toShowImputTypeElems = false;
+
+    /* settings icon: show/hide inputs for imputation type */
     const settingsIcon = ui.icons.settings(() => {
       toShowImputTypeElems = !toShowImputTypeElems;
 
@@ -314,26 +318,38 @@ function simpleImputation(df: DG.DataFrame, colsWithMissingVals: Map<string, num
     }, HINT.IMPUTATION_SETTINGS);
     
 
-    const dlg = ui.dialog({title: TITLE.SIMPLE_IMPUTER, helpUrl: LINK.SIMPLE_IMPUTER});    
+    const dlg = ui.dialog({title: TITLE.SIMPLE_IMPUTER, helpUrl: LINK.SIMPLE_IMPUTER});
+    grok.shell.v.root.appendChild(dlg.root);
 
     dlg.onOK(() => {
       dlg.close();
 
-      const task = new Map<string, SimpleImputTask>();
+      // task for simple imputer
+      const taskMap = new Map<string, SimpleImputTask>();
 
+      // create task
       colsWithMissingVals.forEach((indeces, name) => {
         if (selected.get(name)) {
-          task.set(name, {indeces: indeces, fillValue: imputType.get(name)!})
+          taskMap.set(name, {indeces: indeces, fillValueType: imputType.get(name)!})
       }});
 
-      simpleImput(df, task);
+      // perform imputation
+      try {
+        simpleImput(df, taskMap);
+      }
+      catch (err) {
+        if (err instanceof Error)
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+        else
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+      } 
 
     });
     
-    dlg.add(ui.divV(divs));
-    dlg.add(settingsIcon);
-    grok.shell.v.root.appendChild(dlg.root);
-    dlg.show();
+    dlg.add(ui.divH([ui.divText(CONTENT.FILL_MISS_VALS), settingsIcon]))
+      .add(ui.divV(divs))
+      .show();
+
     checkSelected();
   }
 } // simpleImputation

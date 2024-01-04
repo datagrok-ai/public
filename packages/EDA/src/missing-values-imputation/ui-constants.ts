@@ -14,7 +14,9 @@ export enum ERROR_MSG {
   INCORRECT_NEIGHBORS = 'Incorrect number of neighbors',
   KNN_FAILS = 'KNN IMPUTATION FAILS',
   CORE_ISSUE = 'Core issue',
-  FAILED_TO_IMPUTE ='Failed to impute',
+  FAILED_TO_IMPUTE = 'Failed to impute',
+  UNSUPPORTED_FILL_VALUE_TYPE = 'Unsupported fill value type',
+  EMPTY_COLUMN = 'Column contains just null values',
 };
 
 /** Suffix used for column copy */
@@ -58,4 +60,9 @@ export enum HINT {
   MARK_FAILED_ITEMS = 'Mark missing values cells with a color',
   FILL_VALUE = 'Fill value',
   IMPUTATION_SETTINGS = 'Simple imputation settings',
-}
+};
+
+/** Content lines */
+export enum CONTENT {
+  FILL_MISS_VALS = 'Fill missing values in columns',
+};
