@@ -11,6 +11,7 @@ interface TestCaseValues {
   testCase: string | null;
   status: Status;
   icon: HTMLElement;
+  reason: HTMLElement;
 }
 
 export class TestTrack extends DG.ViewBase {
@@ -124,7 +125,7 @@ export class TestTrack extends DG.ViewBase {
     const name = row.get('name');
     const status: Status = row.get('status') || null;
     const values: TestCaseValues = {id: row.get('id'), parentId: row.get('parent_id'),
-      testCase: row.get('test_case'), status, icon: status ? ui.div(getStatusIcon(status)) : ui.div()};
+      testCase: row.get('test_case'), status, icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div([], 'tt-reason')};
     let group: DG.TreeViewGroup = this.tree;
     if (values.parentId) {
       const parentRow = this.df.row(this.findRowById(values.parentId));
@@ -135,6 +136,7 @@ export class TestTrack extends DG.ViewBase {
     else
       node = group.item(name, values);
     this.setContextMenu(node);
+    node.captionLabel.after(node.value.reason);
     node.captionLabel.after(node.value.icon);
     return node;
   }
@@ -154,7 +156,13 @@ export class TestTrack extends DG.ViewBase {
       } else {
         menu.group('Status')
           .items(['Passed', 'Failed', 'Skipped', 'Empty'],
-            (i) => this.changeNodeStatus(node, (i === 'Empty' ? null : i.toLowerCase()) as Status),
+            (i) => {
+              const status = (i === 'Empty' ? null : i.toLowerCase()) as Status;
+              if (status === 'failed' || status === 'skipped')
+                this.showChangeNodeStatusDialog(node, status);
+              else
+                this.changeNodeStatus(node, status);
+            },
             {radioGroup: 'erter', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
           .endGroup();
       }
@@ -163,6 +171,7 @@ export class TestTrack extends DG.ViewBase {
           this.showRenameDialog(node);
         })
         .item('Delete', async () => {
+          // TO DO?: add option to delete group without children
           this.showRemoveDialog(node);
         });
       menu.show();
@@ -171,14 +180,22 @@ export class TestTrack extends DG.ViewBase {
     });
   }
 
-  changeNodeStatus(node: DG.TreeViewGroup | DG.TreeViewNode, status: Status): void {
+  changeNodeStatus(node: DG.TreeViewGroup | DG.TreeViewNode, status: Status, reason?: string): void {
     if (node.value.status === status) return;
     node.value.status = status;
     node.value.icon.innerHTML = '';
+    node.value.reason.innerText = '';
     this.df.set('status', this.findRowById(node.value.id), status);
+    // TO DO: save category to node.value & name recursive
+    const parentRow = this.df.rows.get(this.findRowById(node.value.parentId));
     if (!status) return;
     const icon = getStatusIcon(status);
     node.value.icon.append(icon);
+    if (status === 'failed' || status === 'skipped')
+      node.value.reason.innerText = reason;
+    const params = {success: status === 'passed', result: reason ?? '', skipped: status === 'skipped',
+      type: 'manual', category: parentRow.get('name'), test: node.text};
+    grok.log.usage(node.value.id, params, `test-manual ${params.category}: ${params.test}`);
   }
 
   showAddDialog(parent: DG.TreeViewGroup, testCase: boolean = false): void {
@@ -224,14 +241,26 @@ export class TestTrack extends DG.ViewBase {
     dialog.show({resizable: true});
   }
 
+  // TO DO: improve if not gh
+  showChangeNodeStatusDialog(node: DG.TreeViewGroup | DG.TreeViewNode, status: 'failed' | 'skipped'): void {
+    const dialog = ui.dialog(status === 'failed' ? 'Specify task' : 'Specify skip reason');
+    const input = ui.textInput(status === 'failed' ? 'Key' : 'Reason', '', () => {});
+    input.nullable = false;
+    dialog.add(input);
+    dialog.onOK(() => this.changeNodeStatus(node, status, input.value));
+    dialog.show({resizable: true});
+  }
+
   addNode(parent: DG.TreeViewGroup, name: string, testCase: string | null): void {
     let node: DG.TreeViewGroup | DG.TreeViewNode;
-    const values: TestCaseValues = {id: crypto.randomUUID(), parentId: parent.value.id, testCase: testCase, status: null, icon: ui.div()};
+    const values: TestCaseValues = {id: crypto.randomUUID(), parentId: parent.value.id,
+      testCase: testCase, status: null, icon: ui.div(), reason: ui.div([], 'tt-reason')};
     if (testCase === null)
       node = parent.getOrCreateGroup(name, values, false);
     else
       node = parent.item(name, values);
     this.setContextMenu(node);
+    node.captionLabel.after(node.value.reason);
     node.captionLabel.after(node.value.icon);
     this.df.rows.addNew([name, values.id, values.parentId, testCase === null, testCase, null]);
   }
