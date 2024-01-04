@@ -13,27 +13,23 @@ export type BiostructureData = {
   options?: { name?: string, dataLabel?: string, },
 }
 
-export type BiostructureDataProviderFunc = DataProviderFunc<string, BiostructureData>;
+/** Return {@link BiostructureData} (jsonified to {@link string}) by identifier value of type {@link string}. */
+export type BiostructureDataProviderFunc = DataProviderFunc<string, string>;
 
-/**
- * Viewer does not support a property of type extending String event completely compatible
- */
-export class BiostructureDataJson extends String {
-  protected constructor(value: string) {
-    super(value);
-  }
+export namespace BiostructureDataJson {
+  /* avoid static methods */
 
-  static null = 'null';
+  export const empty: string = 'null';
 
-  static fromData(src: BiostructureData): string {
+  /** {@link DG.Viewer} does not support a property of type extending String even completely compatible */
+  export function fromData(src: BiostructureData): string {
     const dataStr = src.binary ? Base64.fromUint8Array(src.data as Uint8Array) : src.data as string;
     return JSON.stringify({data: dataStr, ext: src.ext, binary: src.binary, options: src.options});
   }
 
-  static toData(src: string): BiostructureData {
+  export function toData(src: string): BiostructureData {
     const data = JSON.parse(src as unknown as string);
     if (data) data.data = data.binary ? Base64.toUint8Array(data.data) : data.data;
     return data;
   }
 }
-
