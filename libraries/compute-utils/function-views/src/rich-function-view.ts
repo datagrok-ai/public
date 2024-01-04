@@ -270,7 +270,6 @@ export class RichFunctionView extends FunctionView {
 
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
-      if (this.runningOnInput) return;
 
       if (newValue)
         $(saveButton).show();
@@ -278,8 +277,6 @@ export class RichFunctionView extends FunctionView {
         $(saveButton).hide();
     });
     this.subs.push(uploadSub);
-
-    if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
 
     return saveButton;
   }
@@ -292,9 +289,10 @@ export class RichFunctionView extends FunctionView {
       () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
     const saveButton = this.getSaveButton();
 
-    if (this.runningOnInput) $(runButtonWrapper).hide();
-
-    return [saveButton, runButtonWrapper];
+    return [
+      ...this.isHistoryEnabled && !this.options.isTabbed ? [saveButton]:[],
+      ...!this.runningOnInput ? [runButtonWrapper]: [],
+    ];
   }
 
   /**
@@ -463,9 +461,9 @@ export class RichFunctionView extends FunctionView {
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
+        ...((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput)) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
-        sensitivityAnalysis,
+        ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ],
     ];
 
@@ -847,7 +845,9 @@ export class RichFunctionView extends FunctionView {
         if (field === SYNC_FIELD.INPUTS) {
           this.syncInput(val, input, field);
           this.checkForMapping(val, input);
-          this.disableInputsOnRun(val.property.name, input);
+          if (!this.runningOnInput)
+            this.disableInputsOnRun(val.property.name, input);
+
           this.bindOnHotkey(input);
         }
 
