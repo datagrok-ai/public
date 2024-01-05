@@ -366,9 +366,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         DataFrame dataFrame = new DataFrame();
         try {
-            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
-            if (dryRun)
-                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL;
+            EventType resultSetProcessingEventType = dryRun ? EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL
+                    : EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
+
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                     "Filling columns of DataFrame with id {}...", operationNumber);
             int rowCount = 0;

@@ -16,7 +16,10 @@ import java.util.stream.Collectors;
 public class QueryStreamAppender extends AppenderBase<ILoggingEvent> {
     private static final String COMPONENT = "Component";
     private static final String COMPONENT_NAME = "GrokConnect";
-    private static final String EVENT_DEST_GC_SERVER = "GrokConnect -> DatagrokServer";
+    private static final String DESTINATION_KEY = "DESTINATION";
+    private static final String EVENT_STAGE_KEY = "EVENT_STAGE_KEY";
+    private static final String EVENT_DF_NUMBER_KEY = "EVENT_DF_NUMBER_KEY";
+    private static final String EVENT_DEST_GC_SERVER = "GrokConnect -> Server";
     private static final String ORDER = "ORDER";
     private static final Gson GSON = new Gson();
     private final Session session;
@@ -38,12 +41,12 @@ public class QueryStreamAppender extends AppenderBase<ILoggingEvent> {
         params.put(COMPONENT, COMPONENT_NAME);
         params.put(ORDER, currentOrder++);
         if (!dfNumber.equals(" "))
-            params.put("EVENT_DF_NUMBER_KEY", Integer.parseInt(dfNumber));
+            params.put(EVENT_DF_NUMBER_KEY, Integer.parseInt(dfNumber));
         if (!stage.equals(" "))
-            params.put("EVENT_STAGE_KEY", stage);
+            params.put(EVENT_STAGE_KEY, stage);
         if (flag.equals(EventType.CHECKSUM_SEND.toString())
-                || flag.equals(EventType.SOCKET_BINARY_DATA_EXCHANGE.toString()) || flag.equals(EventType.LOG_SEND.toString()))
-            params.put("DESTINATION", EVENT_DEST_GC_SERVER);
+                || flag.equals(EventType.SOCKET_BINARY_DATA_EXCHANGE.toString()))
+            params.put(DESTINATION_KEY, EVENT_DEST_GC_SERVER);
         String stackTrace = iLoggingEvent.getLevel().equals(Level.ERROR) ?
                 Arrays.stream(iLoggingEvent.getThrowableProxy().getStackTraceElementProxyArray())
                         .map(StackTraceElementProxy::getSTEAsString)

@@ -83,10 +83,13 @@ public class QueryManager {
         FuncCall query = gson.fromJson(initMessage, FuncCall.class);
         query.setParamValues();
         initResultSet(query);
-        if (supportTransactions && changedFetchSize)
-            resultSet.setFetchSize(currentFetchSize);
         queryLogger.writeLog(!skipColumnFillingLog);
+        if (supportTransactions && changedFetchSize) {
+            resultSet.setFetchSize(currentFetchSize);
+            queryLogger.getLogger().debug("Fetch size of {} will be used for dry run", currentFetchSize);
+        }
         provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
+        queryLogger.writeLog(false);
         close();
         queryLogger.writeLog(true);
     }
@@ -170,8 +173,8 @@ public class QueryManager {
             chunkSize = Integer.parseInt(matcher.group(1)) * 1_000_000;
         else {
             changedFetchSize = true;
-            currentFetchSize = Integer.parseInt(optionValue);
-            logger.debug("Fetch was set to {} for all chunks except initial", currentFetchSize);
+            currentFetchSize = Double.valueOf(optionValue).intValue();
+            logger.debug("Fetch size was set to {} for all chunks except initial", currentFetchSize);
         }
     }
 
@@ -180,7 +183,7 @@ public class QueryManager {
             logger.debug("Default init fetch size of {} will be used", initFetchSize);
             return;
         }
-        initFetchSize = Integer.parseInt(optionValue);
+        initFetchSize = Double.valueOf(optionValue).intValue();
         logger.debug("Init fetch size was set to {}", initFetchSize);
     }
 }

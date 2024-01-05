@@ -49,11 +49,10 @@ public class SessionHandler {
             // guess it won't work because there is no memory left!
             GrokConnect.needToReboot = true;
         }
-        String message = cause.getMessage();
+        String message = cause.toString();
         String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));
-        logger.error(EventType.ERROR.getMarker(), cause.toString(), cause);
-        logger.error(EventType.ERROR.getMarker(), String.format("STACK_TRACE: %s", stackTrace));
+        logger.error(EventType.ERROR.getMarker(), message, cause);
         DataQueryRunResult result = new DataQueryRunResult();
         result.errorMessage = message;
         result.errorStackTrace = stackTrace;
@@ -68,8 +67,11 @@ public class SessionHandler {
             queryManager = new QueryManager(message, queryLogger);
             if (queryManager.dryRun) {
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.START), "Running dry run...");
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++) {
+                    logger.debug("Running #{} dry run {} logging dataframe filling times...", i + 1, i == 0 ? "without" : "with");
                     queryManager.dryRun(i == 0);
+                    logger.debug("Finished #{} dry run.", i + 1);
+                }
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.END), "Dry run finished");
             }
 
@@ -129,7 +131,7 @@ public class SessionHandler {
 
     public void onClose() throws SQLException {
         threadPool.shutdown();
-        queryManager.close();
+        if (queryManager != null) queryManager.close();
         queryLogger.closeLogger();
     }
 }
