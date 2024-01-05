@@ -18,6 +18,7 @@ export enum ERROR_MSG {
   UNSUPPORTED_FILL_VALUE_TYPE = 'Unsupported fill value type',
   EMPTY_COLUMN = 'Column contains just null values',
   FAILS_TO_PREDICT_IMPUTATION_FAILS = 'Failed to predict imputation fails',
+  WRONG_PREDICTIONS = 'wrong evaluation of KNN imputation fails',
 };
 
 /** Suffix used for column copy */

@@ -76,7 +76,7 @@ type Item = {
 
 /** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
 export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetrics: Map<string, MetricInfo>,
-  distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): Map<string, number[]>
+  missingValsIndices: Map<string, number[]>, distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): Map<string, number[]>
 {
   // 1. Check inputs completness
 
@@ -98,7 +98,14 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
         throw new Error(`${ERROR_MSG.KNN_NO_FEATURE_COLUMNS} can be used for the column '${name}'`);
       });
 
+  targetColNames.forEach((name) => {
+    if (!missingValsIndices.has(name))
+      throw new Error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.WRONG_PREDICTIONS}`);      
+  });
+
   const columns = df.columns;
+
+  // 2. Imputation
 
   targetColNames.forEach((name) => {
     if (!SUPPORTED_COLUMN_TYPES.includes(columns.byName(name).type))
@@ -297,16 +304,16 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     }; // getFillValue
     
     if (inPlace) {
-      for (let i = 0; i < len; ++i)
-        if (source[i] === nullValue)
-          try {
-            source[i] = getFillValue(i);
-          }  catch (err) {
-              failedToImputeIndices.push(i);
+      // use indices found previousely
+      for (const i of missingValsIndices.get(name)!)        
+        try {
+          source[i] = getFillValue(i);
+        }  catch (err) {
+            failedToImputeIndices.push(i);
               
-              if (!(err instanceof Error))
-                grok.shell.error(ERROR_MSG.CORE_ISSUE);
-          }
+            if (!(err instanceof Error))
+              grok.shell.error(ERROR_MSG.CORE_ISSUE);
+        }
       
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(name, failedToImputeIndices);
@@ -331,16 +338,16 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       
       const copySource = copy.getRawData();
 
-      for (i = 0; i < len; ++i)
-        if (copySource[i] === nullValue)          
-          try {
-            copySource[i] = getFillValue(i);
-          }  catch (err) {
-              failedToImputeIndices.push(i);              
+      // use indices found previousely
+      for (const i of missingValsIndices.get(name)!)        
+        try {
+          copySource[i] = getFillValue(i);
+        }  catch (err) {
+            failedToImputeIndices.push(i);              
               
-              if (!(err instanceof Error))
-                grok.shell.error(ERROR_MSG.CORE_ISSUE);
-          }
+            if (!(err instanceof Error))
+              grok.shell.error(ERROR_MSG.CORE_ISSUE);
+        }
 
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(copyName, failedToImputeIndices);

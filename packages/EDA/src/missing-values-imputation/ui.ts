@@ -220,7 +220,7 @@ export function runKNNImputer(): void {
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
       try {
-        const failedToImpute = impute(df!, targetColNames, featuresMetrics, distType, neighbors, inPlace);
+        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
 
         if (!keepEmpty)
           imputeFailed(df!, failedToImpute);
