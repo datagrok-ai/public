@@ -451,7 +451,7 @@ export class SensitivityAnalysisView {
     this.runButton = this.buildRunButton();
     const form = this.buildFormWithBtn();
     this.hideNonNumericalSwitchInputs();
-    //this.addTooltips();
+    this.addTooltips();
     this.comparisonView = baseView;
 
     this.comparisonView.dockManager.dock(
@@ -465,15 +465,15 @@ export class SensitivityAnalysisView {
     this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
   }
 
-  private isPropSupported(type: DG.TYPE): boolean {
-    return ((type === DG.TYPE.INT) || (type === DG.TYPE.FLOAT) || (type === DG.TYPE.STRING) || (type === DG.TYPE.BOOL));
+  private isPropNumerical(type: DG.TYPE): boolean {
+    return ((type === DG.TYPE.INT) || (type === DG.TYPE.FLOAT));
   }
 
   private hideNonNumericalSwitchInputs() {
     for (const name of Object.keys(this.store.inputs)) {
       const inp = this.store.inputs[name];
-      if (!this.isPropSupported(inp.prop.propertyType))
-        $(inp.isChanging.input.root).hide();
+      if (!this.isPropNumerical(inp.prop.propertyType))
+        $(inp.isChanging.input.root).hide();      
     }
   }
 
@@ -678,7 +678,7 @@ export class SensitivityAnalysisView {
       default:
         return 'Unknown method!';
       }
-    });
+    });    
 
     // run button
     ui.tooltip.bind(this.runButton, () => {
@@ -705,6 +705,13 @@ export class SensitivityAnalysisView {
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
+      const inpType = this.store.inputs[propName].prop.propertyType;
+      if (inpType === DG.TYPE.BOOL)
+        continue;
+
+      if (inpType === DG.TYPE.STRING)
+        continue;
+
       const propConfig = this.store.inputs[propName];
 
       ui.tooltip.bind(propConfig.isChanging.input.root, () => {
