@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput
+  TagsInput, ChoiceInput, InputForm
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -699,13 +699,52 @@ export function tree(): TreeViewGroup {
 }
 
 
-export interface IInputInitOptions {
-  onCreated?: (input: InputBase) => void;
-  onValueChanged?: (input: InputBase) => void;
-}
-
-
+// TODO: create a new file - inputs.ts for these inputs
 export namespace input {
+  // TODO: add label here
+  interface IInputInitOptions<T = any> {
+    value?: T;
+    property?: Property;
+    elementOptions?: ElementOptions;
+    onCreated?: (input: InputBase<T>) => void;
+    onValueChanged?: (input: InputBase<T>) => void;
+  }
+
+  interface ITextBoxInputInitOptions<T> extends IInputInitOptions<T> {
+    clearIcon?: boolean;
+    escClears?: boolean;
+    placeholder?: string;
+  }
+
+  interface INumberInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    min?: number;
+    max?: number;
+    step?: number;
+  }
+
+  interface IChoiceInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    items?: T[];
+    nullable?: boolean;
+  }
+
+  interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
+    value?: T[];
+  }
+
+  interface IStringInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    icon?: string | HTMLElement;
+    // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
+  }
+
+  interface IColumnInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    table?: DataFrame;
+    filter?: Function;
+  }
+
+  interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
+    available?: string[];
+    checked?: string[];
+  }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
   export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
@@ -730,10 +769,6 @@ export namespace input {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
-  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
-    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
-  }
-
   export function userGroups(name: string, value?: User[], onValueChanged: Function | null = null): InputBase<User[]> {
     const i = forInputType(d4.InputType.UserGroups);
     if (value)
@@ -741,27 +776,83 @@ export namespace input {
     return i;
   }
 
-  // export function bySemType(semType: string) {
-  //
+  function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
+    const input = forInputType(type);
+    input.caption = name;
+    // go through properties and set them
+    _options(input.root, options?.elementOptions);
+    return input;
+  }
+
+  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Int, name, options);
+  }
+
+  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Slider, name, options);
+  }
+
+  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T> {
+    return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
+  }
+
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[]> {
+    return _create(d4.InputType.MultiChoice, name, options);
+  }
+
+  export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Text, name, options);
+  }
+
+  export function search(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Search, name, options);
+  }
+
+  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Float, name, options);
+  }
+
+  export function date(name: string, options?: ITextBoxInputInitOptions<dayjs.Dayjs>): DateInput {
+    return _create(d4.InputType.Date, name, options);
+  }
+
+  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+    return _create(d4.InputType.Bool, name, options);
+  }
+
+  // do we need this?
+  export function toggle(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+    return _create(d4.InputType.Switch, name, options);
+  }
+
+  export function molecule(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Molecule, name, options);
+  }
+
+  // export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+    // const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
+    // return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
   // }
 
-  // function _options(inputBase: InputBase, options?: InputOptions) {
-  //   if (options == null)
-  //     return;
-  //   return inputBase;
-  // }
-  //
-  // export function int(name: string, options?: InputOptions) {
-  //   return _options(intInput(name, options?.value, options?.onValueChanged));
-  // }
-  //
-  // export function choice(name: string, choices: string[], options?: InputOptions) {
-  //   return _options(choiceInput(name, options?.value ?? choices[0], choices, options?.onValueChanged));
-  // }
-  //
-  // export function multiChoice(name: string, options?: InputOptions) {
-  //
-  // }
+  export function columns(name: string, options?: IColumnsInputInitOptions<Column[]>): InputBase<Column[]> {
+    return _create(d4.InputType.Columns, name, options);
+  }
+
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame[]>): InputBase<DataFrame> {
+    return _create(d4.InputType.Table, name, options);
+  }
+
+  export function textArea(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.TextArea, name, options);
+  }
+
+  export function color(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Color, name, options);
+  }
+
+  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Radio, name, options);
+  }
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
@@ -1566,11 +1657,13 @@ export namespace forms {
   
 }
 
-export function form(children: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLDivElement {
-  let d = document.createElement('div');
-  if (children != null) {
-    $(d).append(children.map(x => render(x)));
-  }
+export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
+  // let d = document.createElement('div');
+  // if (children != null) {
+  //   $(d).append(children.map(x => render(x)));
+  // }
+  const form = InputForm.forInputs(inputs);
+  const d = form.root;
   _options(d, options);
   $(d).addClass('ui-form');
   
@@ -1587,13 +1680,13 @@ export function form(children: InputBase[], options: {} | null = null, autosize:
   return d;
 }
 
-export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
-export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;

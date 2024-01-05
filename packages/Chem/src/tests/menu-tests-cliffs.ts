@@ -65,7 +65,8 @@ category('top menu activity cliffs', async () => {
 async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activityCol: string, numberCliffs: number) {
   await grok.data.detectSemanticTypes(df);
   const actCliffsTableView = grok.shell.addTableView(df);
-  await awaitCheck(() => actCliffsTableView.name === df.name, 'Activity cliffs table view hasn\'t been created', 1000);
+  await awaitCheck(() => actCliffsTableView.name?.toLowerCase() === df.name?.toLowerCase(),
+    'Activity cliffs table view hasn\'t been created', 1000);
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   await getActivityCliffs(df, df.col(molCol)!,
     null as any, ['Embed_X_1', 'Embed_Y_1'], 'Activity cliffs', actCliffsTableView.dataFrame.getCol(activityCol),

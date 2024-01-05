@@ -69,6 +69,7 @@ export interface IDartApi {
   grok_Dapi_Models(): any;
   grok_Dapi_Packages(): any;
   grok_Dapi_Layouts(): any;
+  grok_Dapi_Views(): any;
   grok_Dapi_Tables(): any;
   grok_Dapi_Groups(): any;
   grok_Dapi_Scripts(): any;
@@ -222,11 +223,18 @@ export interface IDartApi {
   grok_ViewLayout_Get_ViewState(layout: any): any;
   grok_ViewLayout_Set_UserDataValue(layout: any, key: String, data: String): any;
   grok_ViewLayout_Get_UserDataValue(layout: any, key: String): any;
-  grok_ViewLayout_Get_View(layout: any): any;
   grok_ViewLayout_FromJson(json: String): any;
   grok_ViewLayout_FromViewState(state: String): any;
   grok_ViewLayout_ToJson(layout: any): any;
   grok_ViewLayout_Get_Columns(layout: any): any;
+  grok_ViewInfo_Set_ViewState(info: any, state: String): any;
+  grok_ViewInfo_Get_ViewState(info: any): any;
+  grok_ViewInfo_Set_UserDataValue(info: any, key: String, data: String): any;
+  grok_ViewInfo_Get_UserDataValue(info: any, key: String): any;
+  grok_ViewInfo_Get_View(info: any): any;
+  grok_ViewInfo_FromJson(json: String): any;
+  grok_ViewInfo_FromViewState(state: String): any;
+  grok_ViewInfo_ToJson(info: any): any;
   grok_TabControlBase_Get_Header(tc: any): any;
   grok_TabControlBase_Get_Panes(tc: any): any;
   grok_TabControlBase_Clear(tc: any): any;
@@ -540,6 +548,7 @@ export interface IDartApi {
   grok_Column_Get_Tags(c: any): any;
   grok_Column_Matches(c: any, filter: String): any;
   grok_Column_Init(c: any, indexToValue: any): any;
+  grok_Column_Clone(c: any, mask: any): any;
   grok_Column_SetAllValues(c: any, value: any): any;
   grok_Column_Get_ValueComparer(c: any): any;
   grok_Column_Set_ValueComparer(c: any, valueComparer: any): any;
@@ -788,6 +797,16 @@ export interface IDartApi {
   grok_Property_Set_ShowSlider(p: any, x: any): any;
   grok_Property_Get_ShowPlusMinus(p: any): any;
   grok_Property_Set_ShowPlusMinus(p: any, x: any): any;
+  grok_Property_Get_Format(p: any): any;
+  grok_Property_Set_Format(p: any, x: any): any;
+  grok_Property_Get_UserEditable(p: any): any;
+  grok_Property_Set_UserEditable(p: any, x: any): any;
+  grok_Property_Get_Min(p: any): any;
+  grok_Property_Set_Min(p: any, x: any): any;
+  grok_Property_Get_Max(p: any): any;
+  grok_Property_Set_Max(p: any, x: any): any;
+  grok_Property_Get_Step(p: any): any;
+  grok_Property_Set_Step(p: any, x: any): any;
   grok_Property_Get_Options(p: any): any;
   grok_Property_Get(p: any, propertyName: String): any;
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
@@ -995,9 +1014,12 @@ export interface IDartApi {
   grok_InputBase_ForInputType(inputType: String): any;
   grok_InputBase_ForColumn(column: any): any;
   grok_InputBase_FromJS(jsInput: any): any;
+  grok_InputForm_ForInputs(inputs: any): any;
   grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
+  grok_InputForm_Get_Source(form: any): any;
+  grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
@@ -1211,12 +1233,16 @@ export interface IDartApi {
   grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
+  grok_Package_Get_Settings(packageName: String): Promise<any>;
+  grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
+  grok_FileInfo_FromBytes(data: any): any;
+  grok_FileInfo_FromString(data: String): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1226,7 +1252,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
-  grok_FileInfo_ReadAsString(p0: any): Promise<any>;
+  grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
   grok_Dapi_UserFiles_Exists(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Delete(fi: any): Promise<any>;
@@ -1317,6 +1343,8 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_DayJs_To_DateTime(milliseconds: Num): any;
+  grok_Test_GetTestDataGeneratorByType(type: String): any;
+  grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DockerImage(): any;

@@ -1,6 +1,12 @@
 # Chem changelog
 
-## 1.8.7 (2023-12-04)
+## 1.8.8 (2023-12-07)
+
+### Bug Fixes
+
+* Chem: Fix demos for scaffold tree, chemical databases and similarity/diversity search.
+
+## 1.8.7 (2023-12-05)
 
 ### Features
 

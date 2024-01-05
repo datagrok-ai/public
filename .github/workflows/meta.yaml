@@ -112,6 +112,7 @@ jobs:
       - name: Commit Meta package.json
         id: git
         if: steps.upgrade.outputs.changed == 'yes'
+        continue-on-error: true
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'

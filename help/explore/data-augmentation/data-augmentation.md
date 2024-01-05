@@ -25,7 +25,7 @@ the data would look like if visualized with that layout.
 
 ## Suggesting applicable predictive models
 
-Whenever a table is open, the platform [suggests predictive models](../../learn/self-learning-platform.md)
+Whenever a table is open, the platform [suggests predictive models](../../govern/catalog/self-learning-platform.md)
 that can be applied to the table. Then you can predict the outcome in one click.
 
 ## Suggesting applicable actions

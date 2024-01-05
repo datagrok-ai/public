@@ -115,8 +115,8 @@ This method checks whether all the columns the layout was originally applied to 
 specified table. The matching mechanism consists of the following steps:
 
 1. Column names and column types match
-2. Both columns have the same [layout-id](../../catalog/tags.md#layout-id)
-3. Both columns have the same [semantic type](../../catalog/tags.md#quality)
+2. Both columns have the same [layout-id](../../govern/catalog/tags.md#layout-id)
+3. Both columns have the same [semantic type](../../govern/catalog/tags.md#quality)
 
 ## Storing metadata
 

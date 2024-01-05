@@ -237,8 +237,6 @@ export interface IHistogramLookSettings {
 
   showCharts: boolean;
 
-  legendInViewerFiltering: boolean;
-
   marginLeft: number;
 
   marginTop: number;
@@ -515,8 +513,6 @@ export interface IScatterPlotLookSettings {
   /// Requires *Auto Axis Size* to be turned off.
   yAxisWidth: number;
 
-  legendInViewerFiltering: boolean;
-
   axisFont: string;
 
   labelFont: string;
@@ -715,8 +711,6 @@ export interface ILineChartLookSettings {
 
   rowGroupTooltip: string;
 
-  legendInViewerFiltering: boolean;
-
   innerChartMarginTop: number;
 
   innerChartMarginBottom: number;
@@ -807,6 +801,8 @@ export interface IBarChartLookSettings {
 
   showCategoryValues: boolean;
 
+  showValuesInsteadOfCategories: boolean;
+
   showCategorySelector: boolean;
 
   /// A categorical column to further split data on.
@@ -868,8 +864,6 @@ export interface IBarChartLookSettings {
 
   barBorderLineColor: number;
 
-  legendInViewerFiltering: boolean;
-
   outerMarginLeft: number;
 
   outerMarginRight: number;
@@ -877,6 +871,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
 
   showEmptyBars: boolean;
 
@@ -1086,8 +1084,6 @@ export interface IPieChartLookSettings {
 
   autoLayout: boolean;
 
-  legendInViewerFiltering: boolean;
-
   segmentAngleColumnName: string;
 
   segmentAngleAggrType: string;
@@ -1199,17 +1195,23 @@ export interface IMatrixPlotLookSettings {
 }
 
 export interface ISummaryLookSettings {
+  /// Column to show aggregation on
+  aggrColumnName: string;
+
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
   /// Aggregation that will be used for the columns
-  aggrType: string;
+  aggregation: string;
 
   /// List of aggregations for the columns (temporarily unavailable from UI)
   aggregations: Array<string>;
 
-  /// Normalization type (row, column or global)
-  normalizeLength: string;
+  /// Controls the source of the data comparison
+  /// * Row: shows vertical bars based on each row category
+  /// * Column: shows horizontal bars based on each column category
+  /// * Global: shows horizontal bars based on all selected categories
+  normalization: string;
 
   /// Visualization type (text, circles or bars)
   visualization: string;
@@ -1561,15 +1563,9 @@ export interface ITrellisPlotLookSettings {
 
   showGridlines: string;
 
-  legendInViewerFiltering: boolean;
-
   showXSelectors: boolean;
 
   showYSelectors: boolean;
-
-  showXAxes: boolean;
-
-  showYAxes: boolean;
 
   showXLabels: boolean;
 

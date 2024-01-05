@@ -157,7 +157,10 @@ export const dgToTsTypeMap: Indexable = {
   file: 'DG.FileInfo',
 };
 
-export const propertyTypes = ['int', 'bigint', 'double', 'num', 'bool', 'string'];
+export const propertyTypes = [
+  'bool', 'int', 'double', 'string', 'datetime', 'object',
+  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
+];
 
 export const headerTags = [
   'name', 'description', 'help-url', 'input', 'output', 'tags',

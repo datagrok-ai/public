@@ -6,6 +6,10 @@ import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import {readDataframe} from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import { chemSimilaritySearch } from '../analysis/chem-similarity-viewer';
+import { BitArrayMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import { Fingerprint } from '../utils/chem-common';
+import { SubstructureSearchType } from '../constants';
 
 const expectedResults: {[key: string]: any} = {
   'oneColumn': [737141248, 593097, 3256025153, 4],
@@ -99,7 +103,7 @@ M  END
       'terminate_substructure_search-tests/sar-small_empty_vals-smiles', 'empty', 16);
   });
 
-  test('terminatedSearch', async () => {
+  test('terminateOneSearchByAnother', async () => {
     const df = await readDataframe('tests/smi10K.csv');
     await grok.data.detectSemanticTypes(df);
     const sketcherDialogs: DG.Dialog[] = [];
@@ -190,9 +194,87 @@ M  END
     filter1.detach();
     filter2.detach();
   }, {timeout: 60000});
+
+  test('similaritySearchAfterTerminatedSearch', async () => { //#2533 (https://github.com/datagrok-ai/public/issues/2533)
+    const df = await readDataframe('tests/smi10K.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    const filter = await createFilter('smiles', df, sketcherDialogs);
+    const substr1 = 'C1CCCCC1';
+    const substr2 = DG.WHITE_MOLBLOCK;
+
+    //start filtering by 1st structure
+    filter.sketcher.setSmiles(substr1);
+    await delay(500);
+    //terminate filtering
+    filter.sketcher.setSmiles(substr2);
+    //finish filtering
+    await awaitCheck(() => df.filter.trueCount === df.rowCount, 'filter hasn\'t been reset', 10000);
+    const simResults = await chemSimilaritySearch(df, df.col('smiles')!, df.get('smiles', 0),
+      'Tanimoto' as BitArrayMetrics, 12, 0.01, 'Morgan' as Fingerprint);
+    expect(simResults?.get('indexes', 0), 0);
+    expect(simResults?.get('indexes', 5), 4002);
+    expect(simResults?.get('indexes', 11), 731);
+    sketcherDialogs.forEach((it) => it.close());
+    filter.detach();
+  });
+
+  test('filterOptionsSynchronization', async () => { //#2512 (https://github.com/datagrok-ai/public/issues/2512)
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    const filter1 = await createFilter('Structure', df, sketcherDialogs);
+    const filter2 = await createFilter('Structure', df, sketcherDialogs);
+    const substr = 'C1CCCCC1';
+    const terminateFlag = 'terminate_substructure_search-tests/spgi-100-Structure';
+
+    //filter by structure and wait for results
+    filter1.sketcher.setSmiles(substr);
+    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
+      expect(df.filter.trueCount, 5);
+    }, () => {}, 3000);
+    await delay(500);
+    //check that filter structure is synchronized in second filter
+    expect(filter2.sketcher.getSmiles(), 'C1CCCCC1', 'structure is not synchronized between filters');
+    //change filtering options in second filter and wait for results
+    filter2.searchTypeInput.value = SubstructureSearchType.NOT_CONTAINS;
+    await delay(500);
+    expect(df.filter.trueCount, 95);
+    //check that filter options are synchronized
+    expect(filter1.searchType, SubstructureSearchType.NOT_CONTAINS, 'filter options not synchronized between filters');
+    sketcherDialogs.forEach((it) => it.close());
+    filter1.detach();
+    filter2.detach();
+  });
+
+  test('properSearchFinish', async () => { //#2400 (https://github.com/datagrok-ai/public/issues/2400)
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    DG.chem.currentSketcherType = 'Ketcher';
+    const filter1 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const substr = 'C1CCCCC1';
+    const terminateFlag = 'terminate_substructure_search-tests/spgi-100-Structure';
+
+    //filter by structure and wait for results
+    filter1.sketcher.setSmiles(substr);
+    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
+      expect(df.filter.trueCount, 5);
+    }, () => {}, 3000);
+
+    //check that search is finished and loader is disabled
+    expect(filter1.calculating, false, 'search hasn\'t been finished properly, loader is active');
+    sketcherDialogs.forEach((it) => it.close());
+    filter1.detach();
+    DG.chem.currentSketcherType = 'OpenChemLib';
+  });
+
 });
 
-async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):
+async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
   Promise<SubstructureFilter> {
   const filter = new SubstructureFilter();
   filter.attach(df);
@@ -202,7 +284,7 @@ async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: 
   filter.column = df.col(colName);
   filter.columnName = colName;
   filter.tableName = df.name;
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 5000);
+  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', waitForSketcherMs ?? 5000);
   return filter;
 }
 

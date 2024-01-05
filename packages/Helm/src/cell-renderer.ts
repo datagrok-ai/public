@@ -288,6 +288,11 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           {style: {width: `${w - 2}px`, height: `${h - 2}px`, margin: `${1}px`, backgroundColor: '#FFE0E0'}});
         host.setAttribute('dataformat', 'helm');
         host.setAttribute('data', seq /* gaps skipped */);
+        // if grid has neighbour to the left, then shift host to the left
+        if (host.parentElement && (gridCell.grid?.canvas?.offsetLeft ?? 0) > 0) {
+          host.parentElement.style.left =
+            `${(gridCell.grid?.canvas?.offsetLeft ?? 0) + host.parentElement.offsetLeft}px`;
+        }
 
         // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
         const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;

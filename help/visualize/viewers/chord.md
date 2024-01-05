@@ -38,7 +38,7 @@ You can set the "Source," "Target," and "Chord length" columns,
 and customize visualization options.
 To do that, click the **Gear** icon on top of the viewer and use the **Data**
 and **Misc** info pane
-on the **Context Panel** to manage the viewer’s settings.
+on the **Context Panel** to manage the viewer's settings.
 
 For example, you can:
 

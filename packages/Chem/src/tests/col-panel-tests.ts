@@ -37,7 +37,7 @@ async function testInchiPanel(funcName: string, tableName: string, newColName: s
   const t = DG.DataFrame.fromCsv(csvForInchi);
   t.name = tableName;
   const v = grok.shell.addTableView(t);
-  await awaitCheck(() => v.name === tableName, undefined, 1000);
+  await awaitCheck(() => v.dataFrame.name === tableName, undefined, 2000);
   await grok.functions.call(`Chem:${funcName}`, {table: t, molecules: t.columns.byName('smiles')});
   await delay(1000);
   expect(t.columns.names().includes(newColName), true, `${newColName} column has not been added`);

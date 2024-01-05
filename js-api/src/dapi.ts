@@ -22,7 +22,7 @@ import {
   FileInfo, HistoryEntry, ProjectOpenOptions, Func
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
-import {ViewLayout} from "./views/view";
+import {ViewLayout, ViewInfo} from "./views/view";
 import {toJs, toDart} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
@@ -106,6 +106,12 @@ export class Dapi {
    *  @type {LayoutsDataSource} */
   get layouts(): LayoutsDataSource {
     return new LayoutsDataSource(api.grok_Dapi_Layouts());
+  }
+
+  /** View Views API endpoint
+   *  @type {LayoutsDataSource} */
+  get views(): ViewsDataSource {
+    return new ViewsDataSource(api.grok_Dapi_Views());
   }
 
   /** Data Table Infos API endpoint
@@ -633,7 +639,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
  * @extends HttpDataSource
  * */
 export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
-  /** @constructs CredentialsDataSource*/
+  /** @constructs LayoutsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -643,6 +649,18 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
    * @returns {Promise<ViewLayout[]>} */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
     return api.grok_LayoutsDataSource_Applicable(this.dart, t.dart);
+  }
+}
+
+/**
+ * Functionality for handling views information from server
+ * Allows to manage {@link ViewInfo}
+ * @extends HttpDataSource
+ * */
+export class ViewsDataSource extends HttpDataSource<ViewInfo> {
+  /** @constructs ViewInfoDataSource*/
+  constructor(s: any) {
+    super(s);
   }
 }
 
@@ -829,7 +847,7 @@ export class DockerDataSource {
   }
 }
 
-/** Functionality to work with Dockerfiles
+/** Functionality to work with Docker images. See also {@link DockerContainersDataSource}.
  * @extends HttpDataSource */
 export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
 
@@ -837,13 +855,18 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
     super(s);
   }
 
-  /* Reebuilds image */
-  rebuild(id: string): Promise<boolean> {
-    return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, id);
+  /**
+   * Rebuilds Docker image.
+   * @param imageId - ID of the {@link DockerImage} to rebuild.
+   * @returns {Promise<void>} - promise that resolves with void or throws Exception if something went wrong.
+   */
+  rebuild(imageId: string): Promise<void> {
+    return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, imageId);
   }
 }
 
-/** Functionality to work with Docker containers
+/** Functionality to work with Docker containers.
+ * See help: {@link https://datagrok.ai/help/develop/how-to/docker_containers}.
  * @extends HttpDataSource */
 export class DockerContainersDataSource extends HttpDataSource<DockerContainer> {
   constructor(s: any) {
@@ -851,35 +874,61 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 
   /**
-   * Runs container
-   * @param containerId - id of the container to be run
+   * Runs container.
+   * @param containerId - ID of the {@link DockerContainer} to be run.
    * @param awaitStart - if [true] promise will not be resolved until the container is started,
-   * otherwise, it doesn't wait for start and resolves immediately after the container is queued for start
-   * @returns {Promise<void>} or throws Exception if something went wrong
+   * otherwise, it doesn't wait for start and resolves immediately after the container is queued for start.
+   * @returns {Promise<void>} - promise that resolves with void or throws Exception if something went wrong.
    */
   run(containerId: string, awaitStart: boolean = false): Promise<void> {
     return api.grok_Dapi_DockerContainersDataSource_Run(this.dart, containerId, awaitStart);
   }
 
   /**
-   * Stops container
-   * @param containerId - id of the container to be stopped
+   * Stops container.
+   * @param containerId - ID of the {@link DockerContainer} to be stopped.
    * @param awaitStop - if [true] promise will not be resolved until the container is stopped,
-   * otherwise, it doesn't wait for a stop and resolves immediately after the container is queued for a stop
-   * @returns {Promise<void>} or throws Exception if something went wrong
+   * otherwise, it doesn't wait for a stop and resolves immediately after the container is queued for a stop.
+   * @returns {Promise<void>} or throws Exception if something went wrong.
    */
   stop(containerId: string, awaitStop: boolean = false): Promise<void> {
     return api.grok_Dapi_DockerContainersDataSource_Stop(this.dart, containerId, awaitStop);
   }
 
-  /* Makes a request to container with dockerfileId */
+  /**
+   * Proxies URL requests to docker containers via Datagrok server with the same interface as [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). Returns response
+   * from the containers as it is. If an error occurs on the server side returns a response with "application/json"
+   * Content-Type and JSON body with field "datagrok-error" that describes the cause. If container status is incorrect
+   * for performing requests returns a response with a 400 status code. If something goes wrong in the server workflow,
+   * it returns a response with a 500 status code. Any other cases are the result of direct requests to the container itself.
+   * @param containerId - ID of the {@link DockerContainer} to which the http request should be sent.
+   * @param path - URI without scheme and authority component.
+   * @param params - parameters of the request.
+   * @returns {Promise<Response>} - promise that resolves with [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
+   */
+  async fetchProxy(containerId: string, path: string, params?: RequestInit): Promise<Response> {
+    params ??= {};
+    params.method ??= 'GET';
+    params.credentials = 'include';
+    if (!path.startsWith('/')) path = `/${path}`;
+    return fetch(`${api.grok_Dapi_Root()}/docker/containers/proxy/${containerId}${path}`, params);
+  }
+
+  /**
+   * @deprecated The method will be removed soon. Use {@link fetchProxy}.
+   */
   request(id: string, path: string, params: ResponseInit): Promise<string | null> {
     return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
   }
 
-  /* Get container logs */
-  getContainerLogs(id: string, limit: number = 10000): Promise<string | null> {
-    return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, id, limit);
+  /**
+   * Returns container's logs or throws Exception with the cause.
+   * @param containerId - ID of the {@link DockerContainer} whose logs is to be obtained.
+   * @param limit - maximum line count of logs.
+   * @returns string - container logs or null if there are no logs.
+   */
+  getContainerLogs(containerId: string, limit: number = 10000): Promise<string | null> {
+    return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, containerId, limit);
   }
 }
 

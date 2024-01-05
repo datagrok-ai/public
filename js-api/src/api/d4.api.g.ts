@@ -42,6 +42,8 @@ export class InputType {
 
   static Text = 'Text';
 
+  static Search = 'Search';
+
   static Date = 'Date';
 
   static Map = 'Map';

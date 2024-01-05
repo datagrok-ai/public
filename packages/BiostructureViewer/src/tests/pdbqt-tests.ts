@@ -2,20 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import wu from 'wu';
 import * as ngl from 'NGL';
 
 import {category, expect/*, expect*/, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {IPdbAtomBase, IPdbqtAtomBase} from '@datagrok-libraries/bio/src/pdb/format/types';
+import {AtomBase, AtomCoordsBase, LineBase} from '@datagrok-libraries/bio/src/pdb/format/types-base';
+import {PdbAtomCoords} from '@datagrok-libraries/bio/src/pdb/format/types-pdb';
 
-import {Pdbqt} from '../utils/pdbqt/pdbqt-parser';
-import {errInfo} from '../utils/err-info';
-import {importPdbqt} from '../package';
-import {IPdbAtomBase, IPdbqtAtomBase} from '../utils/pdbqt/types';
-import {AtomBase, AtomCoordsBase, LineBase} from '../utils/pdbqt/types-base';
-import {PdbqtAtomCoords} from '../utils/pdbqt/types-pdbqt';
-import {PdbAtomCoords} from '../utils/pdbqt/types-pdb';
 import {IMPORT} from '../consts-import';
+import {importPdbqtUI} from '../utils/import-pdbqt';
+import {PdbqtAtomCoords} from '@datagrok-libraries/bio/src/pdb/format/types-pdbqt';
+import {Pdbqt} from '../utils/pdbqt-parser';
 
 import {_package} from '../package-test';
 
@@ -99,7 +98,11 @@ category('pdbqt', () => {
   }
 
   test('parse', async () => {
-    await _testPdbqtParser();
+    await _testPdbqtParse();
+  });
+
+  test('parse-autodock-gpu', async () => {
+    await _testPdbqtParseAutodockGpu();
   });
 
   test('import-models', async () => {
@@ -120,11 +123,9 @@ category('pdbqt', () => {
   });
 });
 
-async function _testPdbqtParser(): Promise<void> {
+async function _testPdbqtParse(): Promise<void> {
   try {
-    //const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
-    const dapiFilePath = `System:AppData/${_package.name}/docking/ligand_out.pdbqt`;
-    const cnt = await grok.dapi.files.readAsText(dapiFilePath);
+    const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
     const data: Pdbqt = Pdbqt.parse(cnt);
 
     expect(data['currentModel'], null);
@@ -153,10 +154,23 @@ async function _testPdbqtParser(): Promise<void> {
   }
 }
 
+async function _testPdbqtParseAutodockGpu(): Promise<void> {
+  const cnt = await _package.files.readAsText('samples/1bdq.autodock-gpu.pdbqt');
+  const data: Pdbqt = Pdbqt.parse(cnt);
+
+  expect(data['currentModel'], null); // last model closed
+  expect(data.models.length, 2);
+  // for (const model of data.models) {
+  //   expect(model.torsdof, 14);
+  //   expect(model.atoms.length, 19);
+  //   expect(model.children.length, 2);
+  // }
+}
+
 async function _testPdbqtImportModels(): Promise<void> {
   try {
     const cnt: string = await _package.files.readAsText('docking/ligand_out.pdbqt');
-    const df: DG.DataFrame = (await importPdbqt(cnt, true))[0];
+    const df: DG.DataFrame = (await importPdbqtUI(cnt, true))[0];
 
     const molCol = df.getCol(IMPORT.pdb.molColName);
     const uh = IMPORT.pdb.unitsHandlerClass.getOrCreate(molCol);
@@ -170,7 +184,7 @@ async function _testPdbqtImportModels(): Promise<void> {
 
 async function _testPdbqtImportTargetOnly(): Promise<void> {
   const cnt: string = await _package.files.readAsText('docking/3SWZ.pdbqt');
-  const dfList = await importPdbqt(cnt, true);
+  const dfList = await importPdbqtUI(cnt, true);
   expect(dfList.length, 0);
 
   const view = grok.shell.v;
@@ -201,4 +215,3 @@ async function _testNglPdbqtParserLigands(): Promise<void> {
   expect(pose0Val.atomCount, 30);
   expect(pose0Val.bondCount, 34);
 }
-

@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
-import {_rdKitModule, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {_rdKitModule, drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from 'datagrok-api/grok';
 import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UNITS} from 'datagrok-api/dg';
@@ -319,27 +319,20 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, smarts, FILTER_TYPES.scaffold)).buffer.buffer, molColumn.length);
 }
 
-let offscreen : OffscreenCanvas | null = null;
-let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
-
-
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false, color: string | null = null, substructure: string | null = null): HTMLDivElement {
   const r = window.devicePixelRatio;
-  if (offscreen === null || offscreen.width !== Math.floor(width*r) || offscreen.height !== Math.floor(height*r)) {
-    offscreen = new OffscreenCanvas(Math.floor(width*r), Math.floor(height*r));
-    gOffscreen = offscreen.getContext('2d', {willReadFrequently: true});
-  }
-
-  const g = gOffscreen;
-  g!.imageSmoothingEnabled = true;
-  g!.imageSmoothingQuality = 'high';
+  const resizable = viewer ? viewer.resizable : false;
+  const moleculeWidth = (resizable && !tooltip) ? (viewer!.sizesMap['large'].width) * r : width * r;
+  const moleculeHeight = (resizable && !tooltip) ? (viewer!.sizesMap['large'].height) * r : height * r;
+  const moleculeHost = ui.canvas(width, height);
   if (skipDraw) {
-    g!.font = '18px Roboto, Roboto Local';
+    const context = moleculeHost.getContext('2d');
+    context!.font = '18px Roboto, Roboto Local';
     const text = 'Loading...';
-    const tm = g!.measureText(text);
+    const tm = context!.measureText(text);
     const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent;
     const lineWidth = tm.width;
-    g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
+    context!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
     substructure = substructure !== null ? substructure : molStr;
     const mol = getQueryMolSafe(molStr, '', _rdKitModule);
@@ -347,24 +340,17 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     if (mol !== null && substrMol !== null && color !== null) {
       const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
       _addColorsToBondsAndAtoms(matchedAtomsAndBonds[0], color);
-      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0] === undefined ? null : matchedAtomsAndBonds[0]);
+      drawMoleculeToCanvas(0, 0, moleculeWidth, moleculeHeight, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, matchedAtomsAndBonds[0]);
       mol.delete();
       substrMol.delete();
     } else if (mol !== null && substrMol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, null);
+      drawMoleculeToCanvas(0, 0, width, height, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, null);
       mol.delete();
       substrMol.delete();
     }
   }
-
-  const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
-  const moleculeHost = ui.canvas(width, height);
-  const resizable = viewer ? viewer.resizable : false;
   
   $(moleculeHost).addClass('chem-canvas');
-  moleculeHost.width = (resizable && !tooltip) ? (viewer!.sizesMap['large'].width) * r : width * r;
-  moleculeHost.height = (resizable && !tooltip) ? (viewer!.sizesMap['large'].height) * r : height * r;
-  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
   moleculeHost.style.width = '100%';
   moleculeHost.style.height = '';
   return ui.divH([ui.div(moleculeHost, 'mol-host')], 'chem-mol-box');
@@ -455,6 +441,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   resizable: boolean = false;
   smartsExist: boolean = false;
   current?: DG.TreeViewNode;
+  closeAll?: boolean = false;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -1072,8 +1059,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (changeBitwise)
       this._bitOpInput!.value = BitwiseOp.OR;
     this.clearNotIcon(this.tree.children);
-    
-    this.dataFrame.rows.requestFilter();
+
+    if (!this.closeAll)
+      this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
 
@@ -1570,10 +1558,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
     divFolder.classList.add('fas', 'icon-fill');
-    divFolder.onclick = (e) => {
-      this.makeNodeActiveAndFilter(group);
-    }
-
+    
     const labelDiv = ui.divText(label);
     const iconsDiv = ui.divV([
       ui.iconFA('trash-alt', () => {
@@ -1606,6 +1591,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.updateFilters();
     });
 
+    folder.onclick = (e) => {
+      this.makeNodeActiveAndFilter(group);
+    }
+    
     value(group).labelDiv = labelDiv;
 
     return group;
@@ -1847,6 +1836,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.clearFilters();
       this.clearNotIcon(this.tree.children);
+    }));
+
+    this.subs.push(grok.events.onViewRemoving.subscribe((_) => {
+      this.closeAll = true;
     }));
 
     this.render();

@@ -17,6 +17,7 @@ import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInput
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {HistoryInputBase} from '../../shared-components/src/history-input';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -251,9 +252,9 @@ export class RichFunctionView extends FunctionView {
   public async loadInputsValidators() {
     const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
-      if (param.property.options.validator) {
-        const func: DG.Func = await grok.functions.eval(param.property.options.validator);
-        const call = func.prepare({params: JSON.parse(param.property.options.validatorOptions || '{}')});
+      if (param.property.options.validatorFunc) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
         this.validators[param.name] = call.outputs.validator;
       }
@@ -269,7 +270,6 @@ export class RichFunctionView extends FunctionView {
 
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
-      if (this.runningOnInput) return;
 
       if (newValue)
         $(saveButton).show();
@@ -277,8 +277,6 @@ export class RichFunctionView extends FunctionView {
         $(saveButton).hide();
     });
     this.subs.push(uploadSub);
-
-    if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
 
     return saveButton;
   }
@@ -291,9 +289,10 @@ export class RichFunctionView extends FunctionView {
       () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
     const saveButton = this.getSaveButton();
 
-    if (this.runningOnInput) $(runButtonWrapper).hide();
-
-    return [saveButton, runButtonWrapper];
+    return [
+      ...this.isHistoryEnabled && !this.options.isTabbed ? [saveButton]:[],
+      ...!this.runningOnInput ? [runButtonWrapper]: [],
+    ];
   }
 
   /**
@@ -331,20 +330,23 @@ export class RichFunctionView extends FunctionView {
    */
   public buildIO(): HTMLElement {
     const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
+    const inputElements = ([
+      ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
+      ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
+    ]);
 
     ui.tools.handleResize(inputBlock, () => {
-      if (([
-        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
-        ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
-      ]).some((child) => $(child).width() < 250) ||
-      $(inputBlock).width() < 350) {
+      //if (inputElements.some((child) => $(child).width() < 150) ||
+      if ($(inputBlock).width() < 300) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
         $(controlsWrapper).addClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100px'));
       } else {
         $(inputForm).removeClass('ui-form-condensed');
         $(outputForm).removeClass('ui-form-condensed');
         $(controlsWrapper).removeClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100%'));
       }
     });
 
@@ -362,7 +364,7 @@ export class RichFunctionView extends FunctionView {
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
 
-    inputBlock.style.maxWidth = '450px';
+    inputBlock.style.maxWidth = '360px';
 
     return out;
   }
@@ -385,6 +387,7 @@ export class RichFunctionView extends FunctionView {
     $(controlsForm).css({
       'padding-left': '0px',
       'padding-bottom': '0px',
+      'padding-right': '6px',
       'max-width': '100%',
       'min-height': '50px',
     });
@@ -458,9 +461,9 @@ export class RichFunctionView extends FunctionView {
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
+        ...((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput)) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
-        sensitivityAnalysis,
+        ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ],
     ];
 
@@ -482,8 +485,8 @@ export class RichFunctionView extends FunctionView {
     this.tabsLabels.forEach((tabLabel) => {
       const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
 
-      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
-      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
+      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.GRAPHICS);
+      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
@@ -575,6 +578,41 @@ export class RichFunctionView extends FunctionView {
           }}});
         });
 
+        if (dfProp.propertyType === DG.TYPE.GRAPHICS) {
+          const blockWidth = dfProp.options.block;
+          const graphics = ui.div([], {style: {
+            'width': '100%',
+            'height': '100%',
+          }});
+          graphics.classList.add('grok-scripting-image-container');
+          const graphicsWrapper = ui.divV([
+            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            graphics,
+          ], {style: {...blockWidth ? {
+            'width': `${blockWidth}%`,
+            'max-width': `${blockWidth}%`,
+            'max-height': '100%',
+          } : {
+            'flex-grow': '1',
+          }}});
+
+          const updateGraphics = () => {
+            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+          };
+
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateGraphics);
+          this.subs.push(paramSub);
+          acc.append(graphicsWrapper);
+        }
+
         acc.append(...wrappedViewers);
 
         return acc;
@@ -610,7 +648,10 @@ export class RichFunctionView extends FunctionView {
       this.subs.push(tableSub);
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
+        return ui.divV([
+          ...tabDfProps.length ? [dfBlocks]: [],
+          ...tabScalarProps.length ? [scalarsTable]: [],
+        ]);
       });
     });
 
@@ -781,6 +822,11 @@ export class RichFunctionView extends FunctionView {
     $(inputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
+      'padding-right': '12px',
+      'padding-top': '0px',
+      'padding-left': '0px',
+      'max-width': '100%',
+      'gap': '4px',
     });
 
     let prevCategory = 'Misc';
@@ -798,7 +844,10 @@ export class RichFunctionView extends FunctionView {
         this.inputsMap[val.property.name] = input;
         if (field === SYNC_FIELD.INPUTS) {
           this.syncInput(val, input, field);
-          this.disableInputsOnRun(val.property.name, input);
+          this.checkForMapping(val, input);
+          if (!this.runningOnInput)
+            this.disableInputsOnRun(val.property.name, input);
+
           this.bindOnHotkey(input);
         }
 
@@ -814,9 +863,6 @@ export class RichFunctionView extends FunctionView {
       );
 
     inputs.classList.remove('ui-panel');
-    inputs.style.paddingTop = '0px';
-    inputs.style.paddingLeft = '0px';
-    inputs.style.maxWidth = '100%';
 
     return inputs;
   }
@@ -844,6 +890,32 @@ export class RichFunctionView extends FunctionView {
       }
     });
     this.subs.push(disableOnRunSub);
+  }
+
+  private checkForMapping(val: DG.FuncCallParam, funcCallInput: InputVariants) {
+    const isHistoryInputBase = (input: InputVariants): input is HistoryInputBase => funcCallInput.hasOwnProperty('_chosenRun');
+
+    if (!isHistoryInputBase(funcCallInput)) return;
+
+    const mappingJson = val.property.options.funccallMapping;
+    if (!mappingJson) return;
+
+    const mapping = JSON.parse(mappingJson) as Record<string, string>;
+    const paramSub = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const currentParam = this.funcCall.inputParams[val.property.name];
+        return currentParam.onChanged;
+      }),
+    ).subscribe(() => {
+      const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
+      Object.entries(mapping).forEach(([input, key]) => this.setInput(
+        input,
+        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? 'restricted': 'user input',
+      ));
+    });
+    this.subs.push(paramSub);
   }
 
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
@@ -1030,7 +1102,10 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
+      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
+        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
+        newParam.property.defaultValue;
+      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
@@ -1154,7 +1229,10 @@ export class RichFunctionView extends FunctionView {
           view: this,
         });
       }
-      return [name, mergeValidationResults(standardMsgs, customMsgs)] as const;
+      return [name, mergeValidationResults(
+        ...this.funcCall.inputParams[name].property.options.nullable ? []: [standardMsgs],
+        customMsgs),
+      ] as const;
     }));
     return Object.fromEntries(validationItems);
   }

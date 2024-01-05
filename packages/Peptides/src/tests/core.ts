@@ -1,14 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {MonomerPosition} from '../viewers/sar-viewer';
 
 category('Core', () => {
   let simpleTable: DG.DataFrame;
@@ -39,7 +40,8 @@ category('Core', () => {
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    model!.mutationCliffsSelection = {'11': ['D']};
+    const MPViewer = model!.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    MPViewer!.mutationCliffsSelection = {'11': ['D']};
     await delay(3000);
   });
 
@@ -59,7 +61,8 @@ category('Core', () => {
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    model!.mutationCliffsSelection = {'13': ['-']};
+    const MPViewer = model!.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    MPViewer!.mutationCliffsSelection = {'13': ['-']};
     await delay(3000);
   });
 
@@ -74,7 +77,8 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
-    model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
+    model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol,
+      C.SCALING_METHODS.MINUS_LG);
 
     let v = grok.shell.getTableView('Peptides analysis');
 
@@ -92,7 +96,8 @@ category('Core', () => {
     const sp = await grok.dapi.projects.save(project);
 
     v.close();
-    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined', 'Table never closed', 3000);
+    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined',
+      'Table never closed', 3000);
 
     await sp.open();
     v = grok.shell.getTableView('Peptides analysis');

@@ -42,7 +42,7 @@ export async function manageFiles() {
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
   //@ts-ignore
   const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  const inputsForm: HTMLDivElement = ui.inputs([]);
+  const inputsForm: HTMLElement = ui.inputs([]);
   const libFileNameList: string[] = await getLibFileNameList();
 
   const settings = await getUserLibSettings();

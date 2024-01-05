@@ -190,7 +190,8 @@ category('UI top menu', () => {
         await delay(2000);
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() => smiles.columns.length === 5, 'rgroup columns haven\'t been added', 15000);
+        await awaitCheck(() => smiles.columns.names().filter((cname) => !cname.startsWith('~')).length === 5,
+            'rgroup columns haven\'t been added', 15000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.TRELLIS_PLOT)
@@ -220,10 +221,10 @@ category('UI top menu', () => {
         await awaitCheck(() => {
             if (smiles.columns.names().includes('Embed_X_1') && smiles.columns.names().includes('Embed_Y_1')) {
                 const xCol = smiles.col('Embed_X_1');
-                return new Array(xCol!.length).fill(0).every((it, idx) => !xCol?.isNone(idx));
+                return new Array(xCol!.length).fill(0).every((ixt, idx) => !xCol?.isNone(idx));
             }
             return false;
-        }, 'embedding columns haven\'t been added', 5000);
+        }, 'embedding columns haven\'t been added', 10000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.SCATTER_PLOT)
@@ -248,7 +249,7 @@ category('UI top menu', () => {
             smiles.columns.names().includes('Embed_X_1') &&
             smiles.columns.names().includes('Embed_Y_1') &&
             smiles.columns.names().includes('sali__1'),
-            'embedding and sali columns haven\'t been added', 5000);
+            'embedding and sali columns haven\'t been added', 10000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.SCATTER_PLOT)

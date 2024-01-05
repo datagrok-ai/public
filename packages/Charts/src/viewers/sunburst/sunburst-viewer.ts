@@ -4,12 +4,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
 import {TreeUtils, treeDataType} from '../../utils/tree-utils';
-import { StringUtils } from '@datagrok-libraries/utils/src/string-utils';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
-const MAX_ROW_NUMBER = 10;
+type onClickOptions = 'Select' | 'Filter';
+type RowPredicate = (row: any) => boolean;
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -21,6 +21,7 @@ const MAX_ROW_NUMBER = 10;
 export class SunburstViewer extends EChartViewer {
   hierarchyColumnNames: string[];
   hierarchyLevel: number;
+  onClick: onClickOptions;
 
   constructor() {
     super();
@@ -29,12 +30,14 @@ export class SunburstViewer extends EChartViewer {
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.hierarchyLevel = 3;
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
 
     this.option = {
       animation: false,
       series: [
         {
           type: 'sunburst',
+          nodeClick: false,
           label: {
             rotate: 'radial',
           }
@@ -62,6 +65,28 @@ export class SunburstViewer extends EChartViewer {
     }, event);
   }
 
+  handleDataframeFiltering(path: string[]) {
+    const rowPredicate = this.buildRowPredicate(path);
+    const filterFunction: RowPredicate = new Function('row', `return ${rowPredicate};`) as RowPredicate;
+    this.dataFrame.rows.filter(filterFunction);
+  }
+
+  buildRowPredicate(path: string[]): string {
+    const conditions = path.map((value, i) => {
+      const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
+      const formattedValue = columnType === 'string' ? `'${value}'` : value;
+      return `row.${this.hierarchyColumnNames[i]} === ${formattedValue}`;
+    });
+  
+    return conditions.join(' && ');
+  }
+
+  removeFiltering() {
+    if (this.dataFrame.filter.trueCount !== this.dataFrame.rowCount) {
+      this.dataFrame.filter.setAll(true);
+    }
+  }
+
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       const selectedSectors: string[] = [];
@@ -69,6 +94,10 @@ export class SunburstViewer extends EChartViewer {
         return;
       const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
       const pathString: string = path.join('|');
+      if (this.onClick === 'Filter') {
+        this.handleDataframeFiltering(path);
+        return;
+      }
       const isSectorSelected = selectedSectors.includes(pathString);
       if (params.event.event.shiftKey || params.event.event.ctrlKey || params.event.event.metaKey) {
         if (!isSectorSelected) {
@@ -104,6 +133,7 @@ export class SunburstViewer extends EChartViewer {
         }
         return false;
       }, params.event.event.x, params.event.event.y);
+      ui.tooltip.root.innerText += params.name;
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {
@@ -116,12 +146,14 @@ export class SunburstViewer extends EChartViewer {
       if (this.isCanvasEmpty(canvas!.getContext('2d'), clickX, clickY)) {
         this.render();
       }
+      this.removeFiltering();
     };
   }
 
   onContextMenuHandler(menu: DG.Menu): void {
     menu.item('Reset View', () => {
       this.render();
+      this.removeFiltering();
     });
   }
 
@@ -190,15 +222,6 @@ export class SunburstViewer extends EChartViewer {
   render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
-    
-    if (this.dataFrame.rowCount > MAX_ROW_NUMBER || (this.dataFrame.rowCount < MAX_ROW_NUMBER && this.hierarchyColumnNames.length > 1)) {
-      this.option.series[0].labelLayout = {
-        hideOverlap: 'true',
-        align: 'center',
-      }
-    } else {
-      delete this.option.series[0].labelLayout;
-    }
 
     this.handleStructures(this.getSeriesData()).then((data) => {
       this.option.series[0].data = data;

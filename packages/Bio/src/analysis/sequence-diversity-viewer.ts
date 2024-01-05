@@ -7,8 +7,10 @@ import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {calcMmDistanceMatrix, dmLinearIndex} from './workers/mm-distance-worker-creator';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {getEncodedSeqSpaceCol} from './sequence-space';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   diverseColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
@@ -58,7 +60,11 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByMM() {
-    const distanceMatrixData = await calcMmDistanceMatrix(this.moleculeColumn!);
+    const encodedSequences =
+        (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
+    const distanceMatrixService = new DistanceMatrixService(true, false);
+    const distanceMatrixData = await distanceMatrixService.calc(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN);
+    distanceMatrixService.terminate();
     const len = this.moleculeColumn!.length;
     const linearizeFunc = dmLinearIndex(len);
     this.renderMolIds = getDiverseSubset(len, Math.min(len, this.limit),

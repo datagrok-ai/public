@@ -1138,9 +1138,17 @@ export class InputForm extends DartWrapper {
     return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
   }
 
+  static forInputs(inputs: InputBase[]): InputForm {
+    return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
+  }
+
   get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
+
+  get source(): any { return api.grok_InputForm_Get_Source(this.dart); };
+
+  set source(source: any) { api.grok_InputForm_Set_Source(this.dart, toDart(source)); };
 
   /** Occurs when user changes any input value in a form. */
   get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }

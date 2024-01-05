@@ -15,6 +15,7 @@ import {HitBaseView} from '../base-view';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   public readmePath = _package.webRoot + 'README_HT.md';
+  private deletedCampaigns: string[] = [];
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
@@ -116,7 +117,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   private async getCampaignsTable() {
-    const campaignFolders = await _package.files.list('Hit Triage/campaigns');
+    const campaignFolders = (await _package.files.list('Hit Triage/campaigns'))
+      .filter((f) => this.deletedCampaigns.indexOf(f.name) === -1);
     const campaignNamesMap: {[name: string]: HitTriageCampaign} = {};
     for (const folder of campaignFolders) {
       const campaignJson: HitTriageCampaign = JSON.parse(await _package.files
@@ -129,8 +131,19 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
         rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
     const table = ui.table(campaignsInfo, (info) =>
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
-        info.createDate, info.rowCount, info.filtered, info.status]),
-    ['Name', 'Created', 'Total', 'Selected', 'Status']);
+        info.createDate, info.rowCount, info.filtered, info.status,
+        ui.icons.delete(async () => {
+          ui.dialog('Delete campaign')
+            .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
+            .onOK(async () => {
+              await this.deleteCampaign('Hit Triage', info.name);
+              this.deletedCampaigns.push(info.name);
+              await this.init();
+            })
+            .show();
+        }, 'Delete campaign'),
+      ]),
+    ['Name', 'Created', 'Total', 'Selected', 'Status', '']);
     table.style.color = 'var(--grey-5)';
     return table;
   }

@@ -1,40 +1,42 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas, getUncommonAtomsAndBonds} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {convertMolNotation, getRdKitModule} from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {getMCS} from '../utils/most-common-subs';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
 
+const cashedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
+
 export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
-  if (!params.cashedData[params.line.id])
-    drawMoleculesWithMcsAsync(params, hosts);
-
-  drawMolecules(params, hosts);
+  const molecule1 = params.seqCol.get(params.points[0]);
+  const molecule2 = params.seqCol.get(params.points[1]);
+  if (!cashedData.has(`${molecule1}_${molecule2}`))
+    drawMoleculesWithMcsAsync(params, hosts, [molecule1, molecule2]);
+  drawMolecules(params, hosts, [molecule1, molecule2]);
 }
 
-async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
+async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
   const mcsDf = DG.DataFrame.create(2);
-  mcsDf.columns.addNewString('smiles').init((i) => params.seqCol.get(params.line.mols[i]));
-  const mcs = await findMCS('smiles', mcsDf, true, true);
-  params.cashedData[params.line.id] = mcs;
-  drawMolecules(params, hosts);
+  mcsDf.columns.addNewString('smiles').init((i) => molecules[i]);
+  const mcs = await getMCS(mcsDf.col('smiles')!, true, true);
+  cashedData.set(`${molecules[0]}_${molecules[1]}`, mcs);
+  drawMolecules(params, hosts, molecules);
 }
 
-function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
+function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
   const rdkit = getRdKitModule();
   let mcsMol: RDMol | null = null;
-  const mcsGenerated = params.cashedData[params.line.id] !== undefined;
+  const mcsGenerated = cashedData.has(`${molecules[0]}_${molecules[1]}`);
   try {
     if (mcsGenerated)
-      mcsMol = rdkit.get_qmol(params.cashedData[params.line.id]);
-    params.line.mols.forEach((mol: number, index: number) => {
+      mcsMol = rdkit.get_qmol(cashedData.get(`${molecules[0]}_${molecules[1]}`));
+    molecules.forEach((molecule: string, index: number) => {
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
-      let molecule = params.seqCol.get(mol);
       if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
         //convert to molFile to draw in coordinates similar to dataframe cell
         molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
@@ -43,7 +45,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
       drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, '',
         { normalizeDepiction: true, straightenDepiction: true }, substruct);
       ui.empty(hosts[index]);
-      if (!params.cashedData[params.line.id])
+      if (!cashedData.has(`${molecules[0]}_${molecules[1]}`))
         hosts[index].append(ui.divText('MCS loading...'));
       hosts[index].append(imageHost);
     });
@@ -93,7 +95,7 @@ function createElementTemplate(params: ITooltipAndPanelParams,
   if (flexColNames) columnNames.style.display = 'flex';
   element.append(columnNames);
   const hosts: HTMLDivElement[] = [];
-  params.line.mols.forEach((molIdx: number, idx: number) => {
+  params.points.forEach((molIdx: number, idx: number) => {
     drawFunc(params, element, hosts, molIdx, idx);
   });
   findMcsAndUpdateDrawings(params, hosts);
@@ -119,7 +121,7 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
   const molHost = ui.div();
   if (params.df.currentRowIdx === molIdx)
     molHost.style.border = 'solid 1px lightgrey';
-
+//@ts-ignore
   ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
   molHost.onclick = () => {
     const obj = grok.shell.o;

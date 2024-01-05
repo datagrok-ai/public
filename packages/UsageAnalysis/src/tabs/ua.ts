@@ -18,6 +18,7 @@ export class UaView extends DG.ViewBase {
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
   systemId: string = '00000000-0000-0000-0000-000000000000';
+  rout?: string;
 
   constructor(uaToolbox: UaToolbox) {
     super();
@@ -34,4 +35,6 @@ export class UaView extends DG.ViewBase {
   }
 
   async initViewers(): Promise<void> {}
+
+  switchRout(): void {}
 }

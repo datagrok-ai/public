@@ -2,8 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as uuid from 'uuid';
-
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
@@ -11,28 +9,31 @@ import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ILogoSummaryTable} from '../viewers/logo-summary';
 
-/** Peptide analysis widget.
- * @param {DG.DataFrame} df Working table
- * @param {DG.Column} col Aligned sequence column
- * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {host: HTMLElement, callback: () => Promise<boolean>} {
+export type DialogParameters = { host: HTMLElement, callback: () => Promise<boolean> };
+
+/**
+ * Peptides analysis parameters UI
+ * @param df - Dataframe with peptides
+ * @param [col] - Peptides column
+ * @return - UI host and analysis start callback
+ */
+export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): DialogParameters {
   const logoHost = ui.div();
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
-    const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
-    const potentialCol = DG.Utils.firstOrNull(sequenceColumns);
+    // Building UI for starting analysis from dialog (top menu)
+    const potentialCol = DG.Utils.firstOrNull(
+      df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE));
     if (potentialCol === null)
       throw new Error('Peptides Error: table doesn\'t contain sequence columns');
     else if (potentialCol.stats.missingValueCount !== 0)
       grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
 
+
     seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
       const seqCol = seqColInput!.value;
-      if (!(seqCol.getTag(DG.TAGS.SEMTYPE) === DG.SEMTYPE.MACROMOLECULE)) {
-        grok.shell.warning('Peptides analysis only works with macromolecules');
-        seqColInput!.value = potentialCol;
-      }
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: seqCol.name});
         viewer.root.style.setProperty('height', '130px');
@@ -66,6 +67,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     };
   }
 
+  // Activity column properties
   let scaledCol: DG.Column<number>;
   const defaultActivityColumn: DG.Column<number> | null = df.col('activity') || df.col('IC50') ||
     DG.Utils.firstOrNull(df.columns.numerical);
@@ -77,13 +79,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
       scaledCol = scaleActivity(activityColumnChoice.value!, currentMethod);
 
       const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
-        filteringEnabled: false,
-        valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
-        legendVisibility: 'Never',
-        showXAxis: true,
-        showColumnSelector: false,
-        showRangeSlider: false,
-        showBinSelector: false,
+        filteringEnabled: false, valueColumnName: C.COLUMNS_NAMES.ACTIVITY, legendVisibility: 'Never', showXAxis: true,
+        showColumnSelector: false, showRangeSlider: false, showBinSelector: false,
       });
       histogramHost.lastChild?.remove();
       histogramHost.appendChild(hist.root);
@@ -96,7 +93,6 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  //TODO: add when new version of datagrok-api is available
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
   activityColumnChoice.setTooltip('Numerical activity column');
@@ -106,14 +102,10 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const targetColumnChoice = ui.columnInput('Target', df, null, null, {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
-  targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in the data. ' +
-    'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
-  targetColumnChoice.nullable = true;
-
-  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
   if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
+
 
   const bitsetChanged = df.filter.onChanged.subscribe(() => activityScalingMethodState());
 
@@ -122,7 +114,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value, {addSequenceSpace: true});
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true});
       return model !== null;
     }
     return false;
@@ -155,75 +147,78 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   return {host: mainHost, callback: startAnalysisCallback};
 }
 
-type AnalysisOptions = {addSequenceSpace?: boolean};
+type AnalysisOptions = { addSequenceSpace?: boolean };
 
+/**
+ * Creates dataframe to use in analysis, model instance and adds viewers
+ * @param activityColumn - Activity column
+ * @param peptidesCol - Peptides column
+ * @param clustersColumn - Clusters column or null
+ * @param sourceDf - Source dataframe
+ * @param scaledCol - Scaled activity column
+ * @param scaling - Activity scaling method
+ * @param options - Additional options
+ * @return - Peptides model instance or null
+ */
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
-  clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-  targetColumn: DG.Column<string> | null = null, options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
-  const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
+  clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
+  options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   let model = null;
-  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
-    //prepare new DF
-    const newDf = DG.DataFrame.create(currentDf.rowCount);
-    const newDfCols = newDf.columns;
-    newDfCols.add(scaledCol);
-    for (const col of currentDf.columns) {
-      if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
-        if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
-          col.name = currentDf.columns.getUnusedName(col.name);
-        newDfCols.add(col);
-      }
-    }
-
-    newDf.name = 'Peptides analysis';
-    const settings: type.PeptidesSettings = {
-      sequenceColumnName: peptidesCol.name,
-      activityColumnName: activityColumn.name,
-      scaling: scaling,
-      columns: {},
-      maxMutations: 1,
-      minActivityDelta: 0,
-      showDendrogram: false,
-    };
-    if (targetColumn !== null)
-      settings.targetColumnName = targetColumn.name;
-
-    if (clustersColumn) {
-      const clusterCol = newDf.getCol(clustersColumn.name);
-      if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
-        newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-      settings.clustersColumnName = clustersColumn.name;
-    }
-    newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
-
-    let monomerType: string;
-    if (peptidesCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
-      const sampleSeq = peptidesCol.get(0)!;
-      monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
-    } else {
-      const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
-      monomerType = alphabet === 'DNA' || alphabet === 'RNA' ? 'HELM_BASE' : 'HELM_AA';
-    }
-    const dfUuid = uuid.v4();
-    newDf.setTag(C.TAGS.UUID, dfUuid);
-    newDf.setTag('monomerType', monomerType);
-
-    const bitset = DG.BitSet.create(currentDf.rowCount,
-      (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && currentDf.filter.get(i));
-
-    // Cloning dataframe with applied filter. If filter is not applied, cloning is
-    // needed anyway to allow filtering on the original dataframe
-    model = PeptidesModel.getInstance(newDf.clone(bitset));
-    if (clustersColumn)
-      await model.addLogoSummaryTable();
-    await model.addMonomerPosition();
-    await model.addMostPotentResidues();
-
-    // FIXME: enable by default for tests
-    if (options.addSequenceSpace ?? false)
-      model.addSequenceSpace();
-  } else
+  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT) {
     grok.shell.error('The activity column must be of numeric type!');
+    return model;
+  }
+  const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
+
+  // Prepare new DF
+  const newDf = DG.DataFrame.create(sourceDf.rowCount);
+  newDf.name = 'Peptides analysis';
+  const newDfCols = newDf.columns;
+  newDfCols.add(scaledCol);
+  for (const col of sourceDf.columns) {
+    if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+      if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
+        col.name = sourceDf.columns.getUnusedName(col.name);
+
+
+      newDfCols.add(col);
+    }
+  }
+
+  const settings: type.PeptidesSettings = {
+    sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
+    columns: {}, showDendrogram: false, sequenceSpaceParams: new type.SequenceSpaceParams(),
+  };
+
+  if (clustersColumn) {
+    const clusterCol = newDf.getCol(clustersColumn.name);
+    if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
+      newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+  }
+  newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
+
+  const bitset = DG.BitSet.create(sourceDf.rowCount,
+    (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
+
+  // Cloning dataframe with applied filter. If filter is not applied, cloning is
+  // needed anyway to allow filtering on the original dataframe
+  model = PeptidesModel.getInstance(newDf.clone(bitset));
+  model.init(settings);
+  if (clustersColumn) {
+    const lstProps: ILogoSummaryTable = {
+      clustersColumnName: clustersColumn.name, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+      activityColumnName: activityColumn.name,
+    };
+    await model.addLogoSummaryTable(lstProps);
+  }
+  await model.addMonomerPosition();
+  await model.addMostPotentResidues();
+
+  // FIXME: enable by default for tests
+  if (options.addSequenceSpace ?? false)
+    model.addSequenceSpace();
+
+
   progress.close();
   return model;
 }

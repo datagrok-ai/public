@@ -73,14 +73,8 @@
     },
     {
       "name": "FLOAT",
-      "propertyType": "int",
+      "propertyType": "double",
       "defaultValue": 1.234,
-      "nullable": false
-    },
-    {
-      "name": "NUM",
-      "propertyType": "int",
-      "defaultValue": 1,
       "nullable": false
     },
     {

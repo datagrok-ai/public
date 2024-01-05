@@ -1,5 +1,10 @@
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
+/**
+ *
+ * @param peptidesList
+ * @param metric
+ */
 export function createDistanceMatrixWorker(peptidesList: string[], metric: StringMetrics): Promise<Float32Array> {
   return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./distance-matrix.worker', import.meta.url));

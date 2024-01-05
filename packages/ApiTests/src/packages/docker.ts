@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 
 category('Packages: Docker', () => {
   const containerName: string = 'Apitests-docker-test1';
@@ -27,10 +27,9 @@ category('Packages: Docker', () => {
 });
 
 async function testResponse(containerId: string): Promise<void> {
-  const params: RequestInit = {
-    method: 'GET',
-  };
   const path = '/square?number=4';
-  const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
-  expect(response?.trim(), '{"result":16}');
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path);
+  expect(response.status, 200, `Container response status was ${response.status}`);
+  const result = await response.json();
+  expectObject(result, {"result": 16});
 }

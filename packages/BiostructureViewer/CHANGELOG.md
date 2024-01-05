@@ -11,6 +11,13 @@
 * Pdbqt import handler
 * Context menu Download, Copy for Molecule3D grid cell
 * Add Molecule3D ligands for Biostructure viewer
+* Add PdbHelper converters parsePdbqt, molToPdb, pdbqtToMol with NGL
+* Add NgViewer support formats other than PDB
+* Add columns descriptions to Demo Docking Conformations
+* Add layout to Demo Docking Conformations
+* Add AutoDockService
+* Add Molecule3D detector for pdbqt units
+* Split to Docking package
 
 ### Bug fixes
 
@@ -22,6 +29,23 @@
 * Fix MolstarViewer usages to dispose WebGL on view closing, Could not create WebGL program
 * Fix NglViewer ensure create, waits first render
 * Fix MolstarViewer ensure creat, wait canvas3dInit
+* Fix AutoDock to support atoms of a ligand
+* Add AutoDock test
+* Fix MolstarViewer, NglViewer tests for IRenderer.awaitRendered
+* Fix MolstarViewer for retaining ligand
+* Add tests for pdbqt from autodock-gpu
+* Add pdbqt tests and sample data  
+* Add func/BiostructureViewer.autoDockApp
+* Fix Demo to check empty data
+* Fix import pdbqt to open poses with receptor
+* Fix pdbqt parser for an element and atom type
+* Fix pdbqt parser to get autodock-gpu scores
+* Fix PdbGridCellRenderer, NglGlDocService to not mix cells
+* Fix MolstarViewer to handle ligandColumnName changed
+* Add test MolstarViewer for pdb_data with cell Click
+* Add test MolstarViewer for pdb_id, data provider
+* Fix biostructure data provider to return JSON string
+* Add test biostructure provider with binary data (bcif)
 
 ## 1.0.11 (2023-07-24)
 
