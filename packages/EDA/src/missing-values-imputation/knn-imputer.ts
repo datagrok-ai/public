@@ -309,7 +309,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
           }
       
       if (failedToImputeIndices.length > 0)
-        failedToImpute.set(col.name, failedToImputeIndices);
+        failedToImpute.set(name, failedToImputeIndices);
 
       // to reset view      
       col.set(0, col.get(0));
@@ -319,15 +319,15 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       const copy = col.clone();
 
       let i = 1;
-      let name= `${col.name}(${COPY_SUFFIX})`;
+      let copyName = `${name}(${COPY_SUFFIX})`;
 
       // find an appropriate name
-      while (df.columns.contains(name)) {
-        name = `${col.name}(${COPY_SUFFIX} ${i})`;
+      while (df.columns.contains(copyName)) {
+        copyName = `${name}(${COPY_SUFFIX} ${i})`;
         ++i;
       }
 
-      copy.name = name;
+      copy.name = copyName;
       
       const copySource = copy.getRawData();
 
@@ -342,8 +342,10 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
                 grok.shell.error(ERROR_MSG.CORE_ISSUE);
           }
 
-        if (failedToImputeIndices.length > 0)
-          failedToImpute.set(copy.name, failedToImputeIndices);
+      if (failedToImputeIndices.length > 0)
+        failedToImpute.set(copyName, failedToImputeIndices);
+
+      copy.set(0, copy.get(0));
 
       df.columns.add(copy);
     } // else
@@ -413,3 +415,47 @@ export function areThereFails(targetColNames: string[], featureColNames: string[
 
   return false;
 } // predictFails
+
+/** Returns first non-null value */
+function getFirstNonNull<T>(col: DG.Column<T>): T {
+  const nullValue = getNullValue(col);
+  const raw = col.getRawData();
+  const len = raw.length;
+
+  for (let i = 0; i < len; ++i)
+    if (raw[i] !== nullValue)
+      return col.get(i)!;
+
+  throw new Error(ERROR_MSG.EMPTY_COLUMN);  
+}
+
+/** Return default fill value with respect to the column type */
+function getDefaultFillValue<T>(col: DG.Column<T>): T {
+  switch (col.type) {
+    case DG.COLUMN_TYPE.STRING:
+    case DG.COLUMN_TYPE.DATE_TIME:
+      return getFirstNonNull(col); // TODO: replace by most frequent
+
+    case DG.COLUMN_TYPE.INT:
+    case DG.COLUMN_TYPE.FLOAT:
+    case DG.COLUMN_TYPE.QNUM:
+      return col.stats.avg as T;
+
+    default:
+      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  }
+}
+
+/** Perform missing values imputation using the simple approach */
+export function imputeFailed(df: DG.DataFrame, failedToImpute: Map<string, number[]>): void {
+  failedToImpute.forEach((indices, colName) => {
+    const col = df.col(colName);
+    if (col !== null) {
+      if (!SUPPORTED_COLUMN_TYPES.includes(col.type))
+        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);        
+
+      const fillVal = getDefaultFillValue(col);
+      indices.forEach((idx) => col.set(idx, fillVal));
+    }
+  });
+}

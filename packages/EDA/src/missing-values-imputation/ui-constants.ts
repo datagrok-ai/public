@@ -64,8 +64,3 @@ export enum HINT {
   IMPUTATION_SETTINGS = 'Simple imputation settings',
   KEEP_EMPTY = 'Defines whether to keep empty missing values failed to be imputed OR fill them using simple imputation',
 };
-
-/** Content lines */
-export enum CONTENT {
-  FILL_MISS_VALS = 'Fill missing values in columns',
-};
