@@ -284,22 +284,22 @@ allowing you to create a complex full-featured interface for your script.
 
 It has all the features of the basic script view, such as
 [captions](scripting-for-non-developers.mdx#input-captions),
-[viewers for outputs](scripting-for-non-developers.mdx#adding-viewers-for-output-dataframes)
+[output viewers](scripting-for-non-developers.mdx#adding-viewers-for-output-dataframes),
+[parameters grouping](scripting-for-non-developers#grouping-inputs)
 etc.
 
-In addition to it, you can use:
+In addition to it, you can:
 
-* [Viewers for input dataframes](#adding-input-dataframes-viewers)
-* Grouping [inputs](#grouping-inputs) and [outputs](#grouping-outputs)
-* [File parsing](#file-upload)
-* [Immediate function run](#running-on-opening--on-input)
-* [Uploading experimental data](#uploading-experimental-data) 
-* [Validating inputs](#validating-inputs)
-* [Automatic export](#exporting-to-a-file)
-* Using [custom inputs](#using-custom-inputs)
-* Saving and accessing [history](#accessing-history)
+* Add [viewers for input dataframes](#adding-input-dataframe-viewers)
+* Group [outputs](#grouping-outputs)
+* [Automatically re-run calculations](#re-running-script-on-opening--on-input-change)
+* [Validate inputs](#validating-inputs)
+* [Automate export](#exporting-run-results-to-a-file) of script results.
+* Use [custom inputs](#using-custom-inputs)
+* Save and access [run history](#accessing-history)
 
-To enable it, add `editor: Compute:RichFunctionViewEditor` tag to your following code as it is shown:
+To enable **RichFunctionView**, add `editor: Compute:RichFunctionViewEditor` tag 
+to your following code as it is shown:
 
 ```mdx-code-block
 <Tabs>
@@ -335,7 +335,6 @@ To enable it, add `editor: Compute:RichFunctionViewEditor` tag to your following
 </Tabs>
 ```
 
-
 :::warning Package dependency
 
 The `RichFunctionViewEditor` is a part of `Compute` package.
@@ -350,9 +349,11 @@ Features of the RichFunctionView affect GUI only and do not affect computations.
 
 :::
 
-### Adding input dataframes viewers
+### Adding input dataframe viewers
 
-You can add viewers for input dataframes. Using them, you can review your input data before starting computations.
+You can add viewers for input dataframes to review input data before starting computations,
+same way as for 
+[output viewers](scripting-for-non-developers#adding-viewers-for-output-dataframes).
 
 ```mdx-code-block
 <Tabs>
@@ -384,16 +385,12 @@ You can add viewers for input dataframes. Using them, you can review your input 
 </Tabs>
 ```
 
-### Viewers customization
-
-You may specify viewers' properties to control their appearance. 
-Viewers' properties are listed in the braces right after the viewer's name. 
+You can specify input viewer's properties to control their appearance. 
+Viewer's properties are listed in the braces right after the viewer's name. 
 A full list of the viewer's properties may be found by right-clicking on it and selecting the `Properties...` menu item.
 
-In addition, RichFunctionView supports the `block` option. You may use it to control the viewer's width. 
-By default, any viewer takes full available space. 
-
-You may customize both input and output viewers.
+RichFunctionView supports the `block` option to control the viewer's width.
+By default, any viewer occupies all available space. 
 
 ```mdx-code-block
 <Tabs>
@@ -430,58 +427,14 @@ test2 = test.clone();
 </Tabs>
 ```
 
-### Grouping inputs
-
-You can group script inputs into categories using the `category` tag.
-RichFunctionView renders categories as separate blocks of the input form.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="short" label="Short sample">
-```
-
-```javascript
-//input: dataframe tempData { caption: Temperature data; category: Experimental data }
-//input: double desiredPressure { caption: Goal pressure; category: Goals }
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="full" label="Full sample">
-```
-
-```javascript
-//input: dataframe tempData { caption: Temperature data; category: Experimental data }
-//input: double initialPressure { caption: Initial pressure; category: Experimental data }
-//input: double desiredPressure { caption: Goal pressure; category: Goals }
-//input: double desiredHumidity { caption: Goal humidity; category: Goals }
-//editor: Compute:RichFunctionViewEditor
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![input-categories](input-categories.png)
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-:::tip
-
-Here, we also use `caption` tag to control input fields' labels.
-
-:::
 
 ### Grouping outputs
 
-You also can specify categories for output parameters.
-In the case of output parameters, the `category` tag will specify 
-the output tab used to show the output parameters value.
-The following code will generate UI with three output tabs:
+You can use `category` keyword to group output parameters,
+simular to the [input categories](scripting-for-non-developers#grouping-inputs).
+In case of output parameters the `category` tag specifies 
+the output tab used to show the output parameter values.
+The following code generates UI with three output tabs:
 
 ```mdx-code-block
 <Tabs>
@@ -522,6 +475,13 @@ IC3 = test.rowCount * 2;
 IC4 = test.rowCount;
 ```
 
+```mdx-code-block
+</TabItem>
+<TabItem value="result" label="Result">
+```
+
+![output-categories](output-categories.gif)
+
 :::tip
 
 View includes 4 tabs in total since there is a separate tab for input dataframe viewers.
@@ -530,35 +490,33 @@ View includes 4 tabs in total since there is a separate tab for input dataframe 
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="result" label="Result">
-```
-
-![output-categories](output-categories.gif)
-
-```mdx-code-block
-</TabItem>
 </Tabs>
 ```
 
 ### File upload
 
-You may use a file as an function input via RichFunctionView. To do this, specify the input type as `file`. 
-Generated input allows you to choose any local file or drag'n'drop it directly. The chosen file will be available in the
+You can use a file as a function input via RichFunctionView, 
+similar to the default [FileIO UI](scripting-for-non-developers#file-io). 
+Generated UI allows you to choose any local file or drag'n'drop it directly. 
+The chosen file will be available in the
 code as JS' [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
 
-:::caution
+:::caution Pending improvement
 
-Only JavaScript functions support `file` input type.
+Currently RichFunctionView supports the `file` input 
+only for JavaScript functions.
+This issue will be fixed in **Datagrok 1.18**.
 
 :::
 
-### Running on opening & on input
+### Re-running script on opening & on input change
 
-Scripts could be forced to run automatically on opening and/or on any input change. 
-This feature is useful for fast prototyping. We recommend using it on very fast scripts only to avoid
-accidental runs of computational-heavy code.
+You can run scripts automatically on UI opening and/or on any input change. 
+This feature is useful for fast prototyping. We recommend using it only 
+on fast `Javascript` scripts only to avoid repeatable runs of computational-heavy code.
 
-Such function calls are not saved automatically, so you must press **Save** button manually when needed.
+The automatic function calls are not saved, 
+so to save results to the run history you should press **Save** button manually.
 
 ```mdx-code-block
 <Tabs>
@@ -602,81 +560,12 @@ outputDf = inputDf.clone();
 </Tabs>
 ```
 
-### Uploading experimental data
-
-You may store your experimental data in Datagrok as you do it with simulations' data. To enable this feature,
-add `//meta.uploadMode: true` tag to your script. 
-
-This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI. Using this mode, 
-you may upload the outputs of the function in addition to the inputs. Saved historical run will have the `experimental` tag.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="short" label="Short sample">
-```
-
-```javascript
-//meta.uploadMode: true
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="full" label="Full sample">
-```
-
-```javascript
-//name: Object cooling
-//description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
-//language: javascript
-//tags: simulation, demo
-//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50; validator: Compute:AmbTempValidator; }
-//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50; validator: Compute:InitialTempValidator; }
-//input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment; validator: Compute:DesiredTempValidator; }
-//input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
-//input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties; validator: Compute:HeatCapValidator; }
-//input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
-//input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validator: Compute:SimTimeValidator; validatorOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
-//output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
-//output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
-//output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
-//output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
-//editor: Compute:RichFunctionViewEditor
-//meta.uploadMode: true
-//meta.foldedCategories: ["Object properties"]
-
-timeToCool = undefined;
-
-const tempDiff = initTemp - ambTemp;
-const coolingFactor = heatTransferCoeff * area / heatCap;
-
-const timeStamps = new Float32Array(simTime).map((_, idx) => idx);
-const simulatedTemp = timeStamps.map((timeStamp) => {
-  const currentTemp = ambTemp + (tempDiff * (Math.E ** -(coolingFactor * timeStamp)));
-
-  if (!timeToCool && currentTemp < desiredTemp) {
-    timeToCool = timeStamp;
-  }
-
-  return currentTemp;
-});
-
-simulation = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Time', timeStamps),
-  DG.Column.fromFloat32Array('Temperature', simulatedTemp),
-]);
-
-
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
 ### Validating inputs
 
-You may create functions to validate inputs. Validation functions have full access to the 
-UI and to the context of the script. For example, you may create a function to validate min-max values, 
+You can use validator functions to validate inputs, similar to the 
+[platform validators](../datagrok/concepts/functions/func-params-annotation#validation). 
+Validation functions have full access to the 
+UI and to the context of the script. For example, you can create a function to validate min-max values, 
 assuring that the minimum value is less than the maximum value.
 
 :::caution
@@ -745,18 +634,20 @@ and educational using such errors, warnings, and proposed actions.
 
 :::tip
 
-You may use package functions instead of scripts for easier code management.
+We suggest you using functions from 
+[packages](../develop/develop.md#packages)
+instead of scripts for easier code management.
 
 :::
 
 ### Using custom inputs
 
-RichFunctionView supports custom inputs usage. You can create your own input and use it via the special `input` tag.
+RichFunctionView supports custom inputs. You can create your own input and use it via the special `input` tag.
 Much like a validator function, custom input also should be returned by Datagrok function.
 
 :::caution
 
-Validation functions should be written in JavaScript.
+Custom input functions should be written in JavaScript.
 
 :::
 
@@ -801,9 +692,9 @@ export function CustomStringInput(params: any) {
 </Tabs>
 ```
 
-### Exporting to a file
+### Exporting run results to a file
 
-You may use the one-click export feature to save the entire script run data to a local file.
+You can use the one-click export feature to save the entire script run to a local file.
 To generate the export file,
 Select <i class="fas fa-arrow-to-bottom"></i> **Export** icon on the top panel.
 Automatic export saves all input and output values with their captions,
@@ -829,6 +720,82 @@ The historical runs are immutable. Thus, if you load a historical run,
 change input values, and then rerun it,
 the platform will create a new historical run.
 
+#### Uploading experimental data
+
+This specific capability is very useful when you're developing a 
+model, predicting behavior of some real-world process.
+Using this mode, 
+you can create in the run history a "fake" run by uploading data from some external source instead of 
+running script. Saved historical run with external data will have the `experimental` tag.
+
+To enable this feature,
+add `//meta.uploadMode: true` tag to your script. 
+This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI. 
+RichFunctionView automatically collects all data fields you need to proved to mimic script run,
+and creates corresponding UI elements.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="short" label="Short sample">
+```
+
+```javascript
+//meta.uploadMode: true
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript
+//name: Object cooling
+//description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
+//language: javascript
+//tags: simulation, demo
+//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50; validator: Compute:AmbTempValidator; }
+//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50; validator: Compute:InitialTempValidator; }
+//input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment; validator: Compute:DesiredTempValidator; }
+//input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
+//input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties; validator: Compute:HeatCapValidator; }
+//input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
+//input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validator: Compute:SimTimeValidator; validatorOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
+//output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
+//output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
+//output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
+//output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
+//editor: Compute:RichFunctionViewEditor
+//meta.uploadMode: true
+//meta.foldedCategories: ["Object properties"]
+
+timeToCool = undefined;
+
+const tempDiff = initTemp - ambTemp;
+const coolingFactor = heatTransferCoeff * area / heatCap;
+
+const timeStamps = new Float32Array(simTime).map((_, idx) => idx);
+const simulatedTemp = timeStamps.map((timeStamp) => {
+  const currentTemp = ambTemp + (tempDiff * (Math.E ** -(coolingFactor * timeStamp)));
+
+  if (!timeToCool && currentTemp < desiredTemp) {
+    timeToCool = timeStamp;
+  }
+
+  return currentTemp;
+});
+
+simulation = DG.DataFrame.fromColumns([
+  DG.Column.fromFloat32Array('Time', timeStamps),
+  DG.Column.fromFloat32Array('Temperature', simulatedTemp),
+]);
+
+
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 ## Converting your script to the application
 
