@@ -17,6 +17,7 @@ export enum ERROR_MSG {
   FAILED_TO_IMPUTE = 'Failed to impute',
   UNSUPPORTED_FILL_VALUE_TYPE = 'Unsupported fill value type',
   EMPTY_COLUMN = 'Column contains just null values',
+  FAILS_TO_PREDICT_IMPUTATION_FAILS = 'Failed to predict imputation fails',
 };
 
 /** Suffix used for column copy */
@@ -27,8 +28,8 @@ export enum TITLE {
   KNN_IMPUTER = 'Impute',
   TABLE = 'Table',
   IN_PLACE = 'In-place',
-  COLUMNS = 'Columns',
-  FEATURES = 'Features',
+  COLUMNS = 'Impute',
+  FEATURES = 'Using',
   CANCEL = 'CANCEL',
   RUN = 'RUN',
   OK = 'OK',
@@ -38,6 +39,7 @@ export enum TITLE {
   MARK = 'Mark',
   SIMPLE_IMPUTER = 'Simple impute',
   SETTINGS = 'Settings',
+  KEEP_EMPTY = 'Keep empty',
 };
 
 /** Help links */
@@ -50,16 +52,17 @@ export enum LINK {
 export enum HINT {
   TARGET = 'Columns with missing values that must be filled',
   FEATURES = "Columns with features to be used for determining the 'nearest' elements in the KNN method",
-  IN_PLACE = 'Defines whether to use in-place imputeation or add a new column without missing values',
+  IN_PLACE = 'Defines whether to use in-place imputation or add a new column without missing values',
   METRIC = 'Type of metric between the feature values',
   WEIGHT = 'Weight of the feature',
   NEIGHBORS = 'Neighbors count used in the KNN method',
   DISTANCE = 'Type of distance between elements with the specified features',
-  METRIC_SETTINGS = 'Features metrics settings',
+  METRIC_SETTINGS = 'Show additional options',
   FILL_FAILED_ITEMS = 'Impute missing values using a simple approach: mean, median or most frequent',
   MARK_FAILED_ITEMS = 'Mark missing values cells with a color',
   FILL_VALUE = 'Fill value',
   IMPUTATION_SETTINGS = 'Simple imputation settings',
+  KEEP_EMPTY = 'Defines whether to keep empty missing values failed to be imputed OR fill them using simple imputation',
 };
 
 /** Content lines */

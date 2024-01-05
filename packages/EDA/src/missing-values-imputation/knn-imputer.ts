@@ -62,6 +62,7 @@ export enum DEFAULT {
   NEIGHBORS = 4,
   IN_PLACE = 1,
   SELECTED = 1,
+  KEEP_EMPTY = 0,
 };
 
 /** Min number of neighbors for KNN */
@@ -74,7 +75,7 @@ type Item = {
 };
 
 /** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
-export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetrics: Map<string, MetricInfo>,
+export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetrics: Map<string, MetricInfo>,
   distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): Map<string, number[]>
 {
   // 1. Check inputs completness
@@ -85,20 +86,22 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
   if (df.rowCount < 2)
     throw new Error(ERROR_MSG.KNN_NOT_ENOUGH_OF_ROWS);
 
-  if (targetCols.length === 0)
+  if (targetColNames.length === 0)
     throw new Error(ERROR_MSG.KNN_NO_TARGET_COLUMNS);
 
   if (featuresMetrics.size === 0)
     throw new Error(ERROR_MSG.KNN_NO_FEATURE_COLUMNS);
   
   if (featuresMetrics.size === 1)
-    targetCols.forEach((col) => {
-      if (featuresMetrics.has(col.name))
-        throw new Error(`${ERROR_MSG.KNN_NO_FEATURE_COLUMNS} can be used for the column '${col.name}'`);        
+    targetColNames.forEach((name) => {
+      if (featuresMetrics.has(name))
+        throw new Error(`${ERROR_MSG.KNN_NO_FEATURE_COLUMNS} can be used for the column '${name}'`);
       });
 
-  targetCols.forEach((col) => {
-    if (!SUPPORTED_COLUMN_TYPES.includes(col.type))
+  const columns = df.columns;
+
+  targetColNames.forEach((name) => {
+    if (!SUPPORTED_COLUMN_TYPES.includes(columns.byName(name).type))
       throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
   });
 
@@ -111,12 +114,12 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
   const failedToImpute = new Map<string, number[]>();
 
   // 2. Missing values imputation in each target column
-  targetCols.forEach((col) => {
+  targetColNames.forEach((name) => {
+    const col = columns.byName(name);
     const nullValue = getNullValue(col);
     const len = col.length;
     const source = col.getRawData();
     const frequencies = new Uint16Array(col.categories.length);
-    const columns = df.columns;
 
     const featureSource = [] as Array<Int32Array | Uint32Array | Float32Array | Float64Array>;
     const featureNullVal = [] as number[];
@@ -348,3 +351,65 @@ export function impute(df: DG.DataFrame, targetCols: DG.Column[], featuresMetric
 
   return failedToImpute;
 } // impute
+
+/** Return indices of missing values for each column */
+export function getMissingValsIndices(columns: DG.Column[]): Map<string, number[]> {
+  const misValsInds = new Map<string, number[]>();
+
+  for (const col of columns) {
+    if (!SUPPORTED_COLUMN_TYPES.includes(col.type))
+      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+
+    if (col.stats.missingValueCount === 0)
+      continue;
+
+    const indices = [] as number[];
+    const nullValue = getNullValue(col);
+    
+    col.getRawData().forEach((val, idx) => {
+      if (val === nullValue)
+        indices.push(idx);
+    });
+
+    misValsInds.set(col.name, indices);
+  }
+
+  return misValsInds;
+}
+
+/** Predict existence of missing values imputation fails */
+export function areThereFails(targetColNames: string[], featureColNames: string[], misValsInds: Map<string, number[]>): boolean {
+  // check feature columns
+  for (const name of featureColNames)
+    if (!misValsInds.has(name))
+      return false;
+
+  // check target columns
+  for (const target of targetColNames) {
+    const indices = misValsInds.get(target);
+
+    if (indices === undefined)
+      throw new Error(ERROR_MSG.FAILS_TO_PREDICT_IMPUTATION_FAILS);
+    
+    for (const idx of indices) {
+      let failToImpute = true;
+
+      for (const feature of featureColNames) {
+        const featureInds = misValsInds.get(feature);
+
+        if (featureInds === undefined)
+          throw new Error(ERROR_MSG.FAILS_TO_PREDICT_IMPUTATION_FAILS);
+
+        if (!featureInds.includes(idx)) {
+          failToImpute = false;
+          break;
+        }
+      }
+
+      if (failToImpute)
+        return true;
+    }
+  }
+
+  return false;
+} // predictFails

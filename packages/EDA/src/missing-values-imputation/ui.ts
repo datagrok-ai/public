@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { TITLE, LINK, ERROR_MSG, HINT, CONTENT } from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, impute } from "./knn-imputer";
+import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, 
+  impute, getMissingValsIndices, areThereFails } from "./knn-imputer";
 import { FILL_VALUE, SimpleImputTask, simpleImput } from "./simple-imputer";
 
 /** Setting of the feature metric inputs */
@@ -96,6 +97,9 @@ export function runKNNImputer(): void {
       }
     });
 
+  // get indices of missing values: col name -> array of indices
+  const misValsInds = getMissingValsIndices(colsWithMissingVals);
+
   if (colsWithMissingVals.length === 0) {
     grok.shell.info(ERROR_MSG.NO_MISSING_VALUES);
     return;
@@ -110,6 +114,11 @@ export function runKNNImputer(): void {
   let inPlace = DEFAULT.IN_PLACE > 0;
   const inPlaceInput = ui.boolInput(TITLE.IN_PLACE, inPlace, () => { inPlace = inPlaceInput.value ?? false;});
   inPlaceInput.setTooltip(HINT.IN_PLACE);
+
+  // Keep empty feature
+  let keepEmpty = DEFAULT.KEEP_EMPTY > 0;
+  const keepEmptyInput = ui.boolInput(TITLE.KEEP_EMPTY, keepEmpty, () => { keepEmpty = keepEmptyInput.value ?? false });
+  keepEmptyInput.setTooltip(HINT.KEEP_EMPTY);
 
   // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
@@ -131,13 +140,9 @@ export function runKNNImputer(): void {
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)
-  let targetCols = colsWithMissingVals;
+  let targetColNames = colsWithMissingVals.map((col) => col.name);
   const targetColInput = ui.columnsInput(TITLE.COLUMNS, df, () => {
-    if (targetColInput.value.length !== 0)
-      targetCols = targetColInput.value;
-    else
-      targetColInput.value = targetCols;
-
+    targetColNames = targetColInput.value.map((col) => col.name);    
     checkApplicability();
   }, {available: availableTargetColsNames, checked: availableTargetColsNames});
   targetColInput.setTooltip(HINT.TARGET);
@@ -160,6 +165,7 @@ export function runKNNImputer(): void {
   const hideWidgets = () => {
     dlg.getButton(TITLE.RUN).disabled = true;
     inPlaceInput.root.hidden = true;
+    keepEmptyInput.root.hidden = true;
     neighborsInput.root.hidden = true;
     distDiv.hidden = true;
     metricsDiv.hidden = true;
@@ -172,17 +178,18 @@ export function runKNNImputer(): void {
     inPlaceInput.root.hidden = false;
     neighborsInput.root.hidden = false;
     distTypeInput.root.hidden = false;
+    keepEmptyInput.root.hidden = !areThereFails(targetColNames, selectedFeatureColNames, misValsInds);
   };
 
   /** Check applicability of the imputation */
   const checkApplicability = () => {
-    showWidgets();
+    showWidgets();    
     
     if (selectedFeatureColNames.length === 1) {
-      targetCols.forEach((col) => {
-        if (selectedFeatureColNames[0] === col.name) {
+      targetColNames.forEach((name) => {
+        if (selectedFeatureColNames[0] === name) {
           hideWidgets();
-          grok.shell.error(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${col.name}'`);
+          grok.shell.error(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
       }});
     }
   };
@@ -231,6 +238,7 @@ export function runKNNImputer(): void {
   grok.shell.v.root.appendChild(dlg.root);
 
   metricsDiv.hidden = true;
+  keepEmptyInput.root.hidden = !areThereFails(targetColNames, selectedFeatureColNames, misValsInds);
 
   // Icon showing/hiding metrics UI
   const settingsIcon = ui.icons.settings(() => { metricsDiv.hidden = !metricsDiv.hidden;}, HINT.METRIC_SETTINGS);
@@ -242,8 +250,10 @@ export function runKNNImputer(): void {
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
       try {
-        const failedToImpute = impute(df!, targetCols, featuresMetrics, distType, neighbors, inPlace);        
-        processFailedImputations(df!, failedToImpute);
+        const failedToImpute = impute(df!, targetColNames, featuresMetrics, distType, neighbors, inPlace);
+
+        if (!keepEmpty)
+          processFailedImputations(df!, failedToImpute);
       }
       catch (err) {
         if (err instanceof Error)
@@ -258,6 +268,7 @@ export function runKNNImputer(): void {
     .add(metricsDiv)
     .add(neighborsInput)
     .add(inPlaceInput)
+    .add(keepEmptyInput)
     .show();
 } // runKNNImputer
 
