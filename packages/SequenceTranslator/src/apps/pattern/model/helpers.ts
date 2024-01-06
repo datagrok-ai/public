@@ -1,7 +1,10 @@
-import {NUCLEOTIDES} from '../../common/model/const';
-import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
+const OVERHANG_SUFFIX = '(o)';
 
-export function isOverhang(modification: string): boolean {
-  const overhangSuffix = '(o)';
-  return modification.endsWith(overhangSuffix);
+export function isOverhangNucleotide(modification: string): boolean {
+  return modification.endsWith(OVERHANG_SUFFIX);
 }
+
+// export function isOverhang(modification: string): boolean {
+//   const overhangSuffix = '(o)';
+//   return modification.endsWith(overhangSuffix);
+// }

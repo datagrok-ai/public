@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
-import {isOverhang} from './helpers';
+import {isOverhangNucleotide} from './helpers';
 import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 
 export function generateExample(sequenceLength: number, sequenceBasis: string): string {
@@ -63,10 +63,10 @@ export function translateSequence(
     // const defaultBase: string = baseChoices[0];
     const indexOfSymbol = AXOLABS_MAP['RNA']['symbols'].indexOf(x);
     let symbol = AXOLABS_MAP[bases[i].value]['symbols'][indexOfSymbol];
-    if (isOverhang(bases[i].value)) {
-      if (i < sequence.length / 2 && !isOverhang(bases[i + 1].value))
+    if (isOverhangNucleotide(bases[i].value)) {
+      if (i < sequence.length / 2 && !isOverhangNucleotide(bases[i + 1].value))
         symbol = symbol + x + 'f';
-      else if (i > sequence.length / 2 && !isOverhang(bases[i - 1].value))
+      else if (i > sequence.length / 2 && !isOverhangNucleotide(bases[i - 1].value))
         symbol = x + 'f' + symbol;
     }
     return (ptoLinkages[i].value) ? symbol + 's' : symbol;

@@ -7,9 +7,9 @@ import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 import {
   DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME_END, FIVE_PRIME_END, PATTERN_KEY, StrandType, TerminalType
 } from '../model/const';
-import {isOverhang} from '../model/helpers';
+import {isOverhangNucleotide} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/oligo-pattern';
-import {renderNucleotidePattern} from '../model/draw-svg';
+import {renderNucleotidePattern} from './render-svg';
 
 import { BooleanInput, StringInput} from './types';
 import {PatternConfiguration} from '../model/types';
@@ -34,7 +34,7 @@ export class PatternLayoutHandler {
         updateSinglePhosphorothioateLinkageInput(strand, i);
         updateSingleNucleotideBaseInput(strand, i);
 
-        if (!isOverhang(getBaseInputValue(strand, i))) {
+        if (!isOverhangNucleotide(getBaseInputValue(strand, i))) {
           nucleotideCounter++;
         }
 
@@ -117,7 +117,7 @@ export class PatternLayoutHandler {
     }
 
     function generateSingleModificationControlGroup(strand: string, nucleotideCounter: number, index: number) {
-      const labelText = isOverhang(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
+      const labelText = isOverhangNucleotide(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
       const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
       const baseInputUI = ui.block75([nucleobaseInputs[strand][index].root]);
       const ptoLinkageUI = ui.div([ptoLinkageInputs[strand][index]]);
