@@ -1,218 +1,319 @@
 import {NUCLEOTIDES} from '../../common/model/const';
-import {isOverhang, svg, textWidth, countOverhangsOnTheRightEdge, baseColor, textInsideCircle,
-  fontColorVisibleOnBackground, isOneDigitNumber} from './helpers';
+import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
+import {SVGElementFactory} from '../view/svg-element-factory';
 
-const BASE_RADIUS = 15;
-const BASE_DIAMETER = 2 * BASE_RADIUS;
-const shiftToAlignTwoDigitNumberNearCircle = -10;
-const shiftToAlignOneDigitNumberNearCircle = -5;
-const LEGEND_RADIUS = 6;
-const PS_LINKAGE_RADIUS = 5;
-const BASE_FONT_SIZE = 17;
-const LEGEND_FONT_SIZE = 14;
-const PS_LINKAGE_COLOR = 'red';
-const FONT_COLOR = 'var(--grey-6)';
-const TITLE_FONT_COLOR = 'black';
-const MODIFICATIONS_COLOR = 'red';
-const SS_LEFT_TEXT = 'SENSE_STRAND: 5\'';
-const AS_LEFT_TEXT = 'ANTISENSE_STRAND: 3\'';
-const SS_RIGHT_TEXT = '3\'';
-const AS_RIGHT_TEXT = '5\'';
+// dimensions
+const NUCLEOBASE_CIRCLE_RADIUS = 15;
+const NUCLEOBASE_CIRCLE_DIAMETER = 2 * NUCLEOBASE_CIRCLE_RADIUS;
+const LEGEND_CIRCLE_RADIUS = 6;
+const LINKAGE_STAR_RADIUS = 5;
+const NUCLEOBASE_FONT_SIZE = 17;
+const COMMENT_FONT_SIZE = 14;
+
+const COLORS = {
+  LINKAGE_STAR: 'red',
+  TEXT: 'var(--grey-6)',
+  TITLE_TEXT: 'black',
+  MODIFICATION_TEXT: 'red'
+} as const;
+
+const STRAND_LABELS = {
+  LEFT: {
+    SENSE_STRAND: 'SS: 5\'',
+    ANTISENSE_STRAND: 'AS: 3\'',
+  },
+  RIGHT: {
+    SENSE_STRAND: '3\'',
+    ANTISENSE_STRAND: '5\''
+  }
+} as const;
+
+const NUMERIC_LABEL_SHIFT = {
+  ONE_DIGIT: -5,
+  TWO_DIGIT: -10,
+} as const;
+
 const DEFAULT_FONT_FAMILY = 'Arial';
 
-const WIDTH_OF_LEFT_TEXT = Math.max(
-  textWidth(SS_LEFT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-  textWidth(AS_LEFT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+const STRAND_LABEL_WIDTH = Math.max(
+  measureTextWidth(STRAND_LABELS.LEFT.SENSE_STRAND, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  measureTextWidth(STRAND_LABELS.LEFT.ANTISENSE_STRAND, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
 );
 
-const WIDTH_OF_RIGHT_TEXT = Math.max(
-  textWidth(SS_RIGHT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-  textWidth(AS_RIGHT_TEXT, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+const TERMINUS_LABEL_WIDTH = Math.max(
+  measureTextWidth(STRAND_LABELS.RIGHT.SENSE_STRAND, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  measureTextWidth(STRAND_LABELS.RIGHT.ANTISENSE_STRAND, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
 );
 
-const X = {
-  TITLE: BASE_RADIUS, // Math.round(width / 4),
-  LEFT_TEXTS: 0,
-};
-const X_OF_LEFT_MODIFICATIONS = X.LEFT_TEXTS + WIDTH_OF_LEFT_TEXT - 5;
-
-const Y = {
-  TITLE: BASE_RADIUS,
-  SS_INDICES: 2 * BASE_RADIUS,
-  SS_CIRCLES: 3.5 * BASE_RADIUS,
-  SS_TEXTS: 4 * BASE_RADIUS,
-  AS_CIRCLES: 6.5 * BASE_RADIUS,
-  AS_TEXTS: 7 * BASE_RADIUS,
-  AS_INDICES: 8.5 * BASE_RADIUS,
-  comment: (asExists: boolean) => (asExists) ? 11 * BASE_RADIUS : 8.5 * BASE_RADIUS,
-  circlesInLegends: (asExists: boolean) => (asExists) ? 9.5 * BASE_RADIUS : 6 * BASE_RADIUS,
-  textLegend: (asExists: boolean) => (asExists) ? 10 * BASE_RADIUS - 3 : Y.AS_CIRCLES - 3,
-  svgHeight: (asExists: boolean) => (asExists) ? 11 * BASE_RADIUS : 9 * BASE_RADIUS,
+const TITLE_POSITION = {
+  X: NUCLEOBASE_CIRCLE_RADIUS,
+  Y: NUCLEOBASE_CIRCLE_RADIUS,
 };
 
-export function drawAxolabsPattern(
-  patternName: string, asExists: boolean, ssBases: string[],
+const STRAND_DETAILS = {
+  SENSE: {
+    INDEX_Y: 2 * NUCLEOBASE_CIRCLE_RADIUS,
+    CIRCLE_Y: 3.5 * NUCLEOBASE_CIRCLE_RADIUS,
+    LABEL_Y: 4 * NUCLEOBASE_CIRCLE_RADIUS,
+  },
+  ANTISENSE: {
+    CIRCLE_Y: 6.5 * NUCLEOBASE_CIRCLE_RADIUS,
+    LABEL_Y: 7 * NUCLEOBASE_CIRCLE_RADIUS,
+    INDEX_Y: 8.5 * NUCLEOBASE_CIRCLE_RADIUS,
+  }
+};
+
+const SVG_X_COORDS = {
+  LEFT_LABELS: 0,
+};
+
+const X_OF_LEFT_MODIFICATIONS = SVG_X_COORDS.LEFT_LABELS + STRAND_LABEL_WIDTH - 5;
+
+const SVG_Y_COORDS = {
+  COMMENT: (asExists: boolean) => (asExists) ? 11 * NUCLEOBASE_CIRCLE_RADIUS : 8.5 * NUCLEOBASE_CIRCLE_RADIUS,
+  LEGEND_CIRCLES: (asExists: boolean) => (asExists) ? 9.5 * NUCLEOBASE_CIRCLE_RADIUS : 6 * NUCLEOBASE_CIRCLE_RADIUS,
+  LEGEND_TEXT: (asExists: boolean) => (asExists) ? 10 * NUCLEOBASE_CIRCLE_RADIUS - 3 : STRAND_DETAILS.ANTISENSE.CIRCLE_Y - 3,
+  SVG_TOTAL_HEIGHT: (asExists: boolean) => (asExists) ? 11 * NUCLEOBASE_CIRCLE_RADIUS : 9 * NUCLEOBASE_CIRCLE_RADIUS,
+};
+
+
+export function renderNucleotidePattern(
+  patternName: string, antisenseStrandExists: boolean, ssBases: string[],
   asBases: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[],
-  ss3Modification: string, ss5Modification: string,
-  as3Modification: string, as5Modification: string, comment: string,
-  enumerateModifications: string[],
+  ss3PrimeModification: string, ss5PrimeModification: string,
+  as3PrimeModification: string, as5PrimeModification: string, comment: string,
+  modifiableBases: string[],
 ): Element {
-  function equidistantXForLegend(index: number): number {
-    const totalPositions = uniqueBases.length + startFrom;
+  function calculateLegendXCoord(index: number): number {
+    const totalPositions = distinctBaseTypes.length + legendStartIndex;
     const spacingUnit = width / totalPositions;
-    const position = (index + startFrom) * spacingUnit;
-    const adjustedPosition = position + LEGEND_RADIUS;
+    const position = (index + legendStartIndex) * spacingUnit;
+    const adjustedPosition = position + LEGEND_CIRCLE_RADIUS;
     return Math.round(adjustedPosition);
   }
 
-  // function equidistantXForLegend(index: number): number {
-  //   return Math.round((index + startFrom) * width / (uniqueBases.length + startFrom) + LEGEND_RADIUS);
-  // }
-
-  function xOfBaseCircles(index: number, rightOverhangs: number): number {
+  function calculateBaseCircleXCoord(index: number, rightOverhangs: number): number {
     const rightModificationOffset = widthOfRightModification;
-    const positionalIndex = resultingNumberOfNucleotidesInStrands - index + rightOverhangs + 1;
-    const xCoordinate = positionalIndex * BASE_DIAMETER;
+    const positionalIndex = maxStrandLength - index + rightOverhangs + 1;
+    const xCoordinate = positionalIndex * NUCLEOBASE_CIRCLE_DIAMETER;
     const finalPosition = rightModificationOffset + xCoordinate;
     return finalPosition;
   }
 
-  // function xOfBaseCircles(index: number, rightOverhangs: number): number {
-  //   return widthOfRightModification +
-  //     (resultingNumberOfNucleotidesInStrands - index + rightOverhangs + 1) * BASE_DIAMETER;
-  // }
-
-  function shiftToAlignNumberNearCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
-    const isSingleDigitOrValidNucleotide = isOneDigitNumber(nucleotideIndex) || NUCLEOTIDES.includes(bases[generalIndex]);
+  function calculateNumberLabelShift(bases: string[], generalIndex: number, nucleotideIndex: number): number {
+    const isSingleDigitOrValidNucleotide = isSingleDigitNumber(nucleotideIndex) || NUCLEOTIDES.includes(bases[generalIndex]);
     const shiftAmount = isSingleDigitOrValidNucleotide 
-      ? shiftToAlignOneDigitNumberNearCircle 
-      : shiftToAlignTwoDigitNumberNearCircle;
+      ? NUMERIC_LABEL_SHIFT.ONE_DIGIT 
+      : NUMERIC_LABEL_SHIFT.TWO_DIGIT;
     return shiftAmount;
   }
-
-  // function shiftToAlignNumberNearCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
-  //   return (isOneDigitNumber(nucleotideIndex) || NUCLEOTIDES.includes(bases[generalIndex])) ?
-  //     shiftToAlignOneDigitNumberNearCircle : shiftToAlignTwoDigitNumberNearCircle;
-  // }
 
   ssBases = ssBases.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();
 
-  const ssRightOverhangs = countOverhangsOnTheRightEdge(ssBases);
-  const asRightOverhangs = countOverhangsOnTheRightEdge(asBases);
+  const ssRightOverhangs = countRightEdgeOverhangNucleotides(ssBases);
+  const asRightOverhangs = countRightEdgeOverhangNucleotides(asBases);
 
-  const resultingNumberOfNucleotidesInStrands = Math.max(
+  const maxStrandLength = Math.max(
     ssBases.length - ssRightOverhangs,
     asBases.length - asRightOverhangs,
   );
 
   const widthOfRightOverhangs = Math.max(ssRightOverhangs, asRightOverhangs);
-  const widthOfBases = BASE_DIAMETER * (resultingNumberOfNucleotidesInStrands + widthOfRightOverhangs);
+  const widthOfBases = NUCLEOBASE_CIRCLE_DIAMETER * (maxStrandLength + widthOfRightOverhangs);
 
   const widthOfLeftModification = Math.max(
-    textWidth(ss3Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-    textWidth(as5Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+    measureTextWidth(ss3PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+    measureTextWidth(as5PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
   );
 
   const widthOfRightModification = Math.max(
-    textWidth(ss5Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-    textWidth(as3Modification, BASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+    measureTextWidth(ss5PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+    measureTextWidth(as3PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
   );
 
-  const uniqueBases = asExists ?
+  const distinctBaseTypes = antisenseStrandExists ?
     [...new Set(ssBases.concat(asBases))] :
     [...new Set(ssBases)];
 
-  const isPtoExist = asExists ?
+  const ptoLinkageExists = antisenseStrandExists ?
     ssPtoStatuses.concat(asPtoStatuses).includes(true) :
     ssPtoStatuses.includes(true);
 
-  const startFrom = isPtoExist ? 1 : 0;
+  const legendStartIndex = ptoLinkageExists ? 1 : 0;
 
-  const xOfSsRightModifications = ssRightOverhangs * BASE_DIAMETER + xOfBaseCircles(-0.5, 0);
-  const xOfAsRightModifications = asRightOverhangs * BASE_DIAMETER + xOfBaseCircles(-0.5, 0);
+  const xOfSsRightModifications = ssRightOverhangs * NUCLEOBASE_CIRCLE_DIAMETER + calculateBaseCircleXCoord(-0.5, 0);
+  const xOfAsRightModifications = asRightOverhangs * NUCLEOBASE_CIRCLE_DIAMETER + calculateBaseCircleXCoord(-0.5, 0);
 
   const xOfRightTexts = Math.max(xOfSsRightModifications, xOfAsRightModifications) + widthOfLeftModification +
-    BASE_DIAMETER * widthOfRightOverhangs;
+    NUCLEOBASE_CIRCLE_DIAMETER * widthOfRightOverhangs;
 
-  const width = WIDTH_OF_LEFT_TEXT + widthOfLeftModification + widthOfBases + widthOfRightModification +
-                WIDTH_OF_RIGHT_TEXT + BASE_DIAMETER;
-  const image = svg.render(width, Y.svgHeight(asExists));
+  const width = STRAND_LABEL_WIDTH + widthOfLeftModification + widthOfBases + widthOfRightModification + TERMINUS_LABEL_WIDTH + NUCLEOBASE_CIRCLE_DIAMETER;
 
-  image.append(
-    svg.text(SS_LEFT_TEXT, X.LEFT_TEXTS, Y.SS_TEXTS, BASE_FONT_SIZE, FONT_COLOR),
-    asExists ? svg.text(AS_LEFT_TEXT, X.LEFT_TEXTS, Y.AS_TEXTS, BASE_FONT_SIZE, FONT_COLOR) : '',
-    svg.text(SS_RIGHT_TEXT, xOfRightTexts, Y.SS_TEXTS, BASE_FONT_SIZE, FONT_COLOR),
-    asExists ? svg.text(AS_RIGHT_TEXT, xOfRightTexts, Y.AS_TEXTS, BASE_FONT_SIZE, FONT_COLOR) : '',
-    svg.text(ss5Modification, X_OF_LEFT_MODIFICATIONS, Y.SS_TEXTS, BASE_FONT_SIZE, MODIFICATIONS_COLOR),
-    asExists ? svg.text(as3Modification, X_OF_LEFT_MODIFICATIONS, Y.AS_TEXTS, BASE_FONT_SIZE, MODIFICATIONS_COLOR) : '',
-    svg.text(ss3Modification, xOfSsRightModifications, Y.SS_TEXTS, BASE_FONT_SIZE, MODIFICATIONS_COLOR),
-    asExists ? svg.text(as5Modification, xOfAsRightModifications, Y.AS_TEXTS, BASE_FONT_SIZE, MODIFICATIONS_COLOR) : '',
-    svg.text(comment, X.LEFT_TEXTS, Y.comment(asExists), LEGEND_FONT_SIZE, FONT_COLOR),
-    isPtoExist ? svg.star(BASE_RADIUS, Y.circlesInLegends(asExists), PS_LINKAGE_COLOR) : '',
-    isPtoExist ? svg.text('ps linkage', 2 * BASE_RADIUS - 8, Y.textLegend(asExists), LEGEND_FONT_SIZE, FONT_COLOR) : '',
-  );
+  const svgElementFactory = new SVGElementFactory();
 
-  const numberOfSsNucleotides = ssBases.filter((value) => !isOverhang(value)).length;
+  const image = svgElementFactory.createCanvas(width, SVG_Y_COORDS.SVG_TOTAL_HEIGHT(antisenseStrandExists));
+
+  const leftSenseStrandLabel = svgElementFactory.createTextElement(STRAND_LABELS.LEFT.SENSE_STRAND, SVG_X_COORDS.LEFT_LABELS, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT);
+
+  const rightSenseStrandLabel = svgElementFactory.createTextElement(STRAND_LABELS.RIGHT.SENSE_STRAND, xOfRightTexts, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT);
+
+  const leftAntisenseStrandLabel = antisenseStrandExists ? svgElementFactory.createTextElement(STRAND_LABELS.LEFT.ANTISENSE_STRAND, SVG_X_COORDS.LEFT_LABELS, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : '';
+
+  const rightAntisenseStrandLabel = antisenseStrandExists ? svgElementFactory.createTextElement(STRAND_LABELS.RIGHT.ANTISENSE_STRAND, xOfRightTexts, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : '';
+
+  const ss5PrimeModificationLabel = svgElementFactory.createTextElement(ss5PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+
+  const as3PrimeModificationLabel = antisenseStrandExists ? svgElementFactory.createTextElement(as3PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : '';
+
+  const ss3PrimeModificationLabel = svgElementFactory.createTextElement(ss3PrimeModification, xOfSsRightModifications, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+
+  const as5PrimeModificationLabel = antisenseStrandExists ? svgElementFactory.createTextElement(as5PrimeModification, xOfAsRightModifications, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : '';
+
+  const commentLabel = svgElementFactory.createTextElement(comment, SVG_X_COORDS.LEFT_LABELS, SVG_Y_COORDS.COMMENT(antisenseStrandExists), COMMENT_FONT_SIZE, COLORS.TEXT);
+
+  const starElement = ptoLinkageExists ? svgElementFactory.createStarElement(NUCLEOBASE_CIRCLE_RADIUS, SVG_Y_COORDS.LEGEND_CIRCLES(antisenseStrandExists), COLORS.LINKAGE_STAR) : '';
+
+  const psLinkageLabel = ptoLinkageExists ? svgElementFactory.createTextElement('ps linkage', 2 * NUCLEOBASE_CIRCLE_RADIUS - 8, SVG_Y_COORDS.LEGEND_TEXT(antisenseStrandExists), COMMENT_FONT_SIZE, COLORS.TEXT) : '';
+
+  const elementsToAppend = [
+    leftSenseStrandLabel,
+    leftAntisenseStrandLabel,
+    rightSenseStrandLabel,
+    rightAntisenseStrandLabel,
+    ss5PrimeModificationLabel,
+    as3PrimeModificationLabel,
+    ss3PrimeModificationLabel,
+    as5PrimeModificationLabel,
+    commentLabel,
+    starElement,
+    psLinkageLabel
+  ]
+
+  image.append(...elementsToAppend);
+
+  const numberOfSsNucleotides = ssBases.filter((value) => !isOverhangNucleotide(value)).length;
   let nucleotideCounter = numberOfSsNucleotides;
   for (let i = ssBases.length - 1; i > -1; i--) {
-    const xOfNumbers = xOfBaseCircles(i, ssRightOverhangs) +
-      shiftToAlignNumberNearCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter);
-    if (!isOverhang(ssBases[i]))
+    const xOfNumbers = calculateBaseCircleXCoord(i, ssRightOverhangs) +
+      calculateNumberLabelShift(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter);
+    if (!isOverhangNucleotide(ssBases[i]))
       nucleotideCounter--;
-    const n = (!isOverhang(ssBases[i]) && enumerateModifications.includes(ssBases[i])) ?
+    const nucleotideLabel = (!isOverhangNucleotide(ssBases[i]) && modifiableBases.includes(ssBases[i])) ?
       String(numberOfSsNucleotides - nucleotideCounter) : '';
     image.append(
-      svg.text(n, xOfNumbers, Y.SS_INDICES, LEGEND_FONT_SIZE, FONT_COLOR),
-      svg.circle(xOfBaseCircles(i, ssRightOverhangs), Y.SS_CIRCLES, BASE_RADIUS, baseColor(ssBases[i])),
-      svg.text(textInsideCircle(ssBases, i), xOfNumbers, Y.SS_TEXTS, BASE_FONT_SIZE,
-        fontColorVisibleOnBackground(ssBases[i])),
+      svgElementFactory.createTextElement(nucleotideLabel, xOfNumbers, STRAND_DETAILS.SENSE.INDEX_Y, COMMENT_FONT_SIZE, COLORS.TEXT),
+      svgElementFactory.createCircleElement(calculateBaseCircleXCoord(i, ssRightOverhangs), STRAND_DETAILS.SENSE.CIRCLE_Y, NUCLEOBASE_CIRCLE_RADIUS, getBaseColor(ssBases[i])),
+      svgElementFactory.createTextElement(getBaseTextForCircle(ssBases, i), xOfNumbers, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE,
+        determineOptimalTextColor(ssBases[i])),
       ssPtoStatuses[i] ?
-        svg.star(xOfBaseCircles(i, ssRightOverhangs) + BASE_RADIUS, Y.SS_TEXTS + PS_LINKAGE_RADIUS, PS_LINKAGE_COLOR) :
+        svgElementFactory.createStarElement(calculateBaseCircleXCoord(i, ssRightOverhangs) + NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.SENSE.LABEL_Y + LINKAGE_STAR_RADIUS, COLORS.LINKAGE_STAR) :
         '',
     );
   }
   image.append(
     ssPtoStatuses[ssBases.length] ?
-      svg.star(xOfBaseCircles(ssBases.length, ssRightOverhangs) +
-      BASE_RADIUS, Y.SS_TEXTS + PS_LINKAGE_RADIUS, PS_LINKAGE_COLOR) : '',
+      svgElementFactory.createStarElement(calculateBaseCircleXCoord(ssBases.length, ssRightOverhangs) +
+      NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.SENSE.LABEL_Y + LINKAGE_STAR_RADIUS, COLORS.LINKAGE_STAR) : '',
   );
 
-  const numberOfAsNucleotides = asBases.filter((value) => !isOverhang(value)).length;
-  if (asExists) {
+  const numberOfAsNucleotides = asBases.filter((value) => !isOverhangNucleotide(value)).length;
+  if (antisenseStrandExists) {
     let nucleotideCounter = numberOfAsNucleotides;
     for (let i = asBases.length - 1; i > -1; i--) {
-      if (!isOverhang(asBases[i]))
+      if (!isOverhangNucleotide(asBases[i]))
         nucleotideCounter--;
-      const xOfNumbers = xOfBaseCircles(i, asRightOverhangs) +
-        shiftToAlignNumberNearCircle(asBases, i, nucleotideCounter + 1);
-      const n = (!isOverhang(asBases[i]) && enumerateModifications.includes(asBases[i])) ?
+      const xOfNumbers = calculateBaseCircleXCoord(i, asRightOverhangs) +
+        calculateNumberLabelShift(asBases, i, nucleotideCounter + 1);
+      const n = (!isOverhangNucleotide(asBases[i]) && modifiableBases.includes(asBases[i])) ?
         String(nucleotideCounter + 1) : '';
       image.append(
-        svg.text(n, xOfNumbers, Y.AS_INDICES, LEGEND_FONT_SIZE, FONT_COLOR),
-        svg.circle(xOfBaseCircles(i, asRightOverhangs), Y.AS_CIRCLES, BASE_RADIUS, baseColor(asBases[i])),
-        svg.text(textInsideCircle(asBases, i),
-          xOfBaseCircles(i, asRightOverhangs) + shiftToAlignNumberNearCircle(asBases, i, nucleotideCounter + 1),
-          Y.AS_TEXTS, BASE_FONT_SIZE, fontColorVisibleOnBackground(asBases[i])),
-        asPtoStatuses[i] ? svg.star(xOfBaseCircles(i, asRightOverhangs) +
-          BASE_RADIUS, Y.AS_TEXTS + PS_LINKAGE_RADIUS, PS_LINKAGE_COLOR) : '',
+        svgElementFactory.createTextElement(n, xOfNumbers, STRAND_DETAILS.ANTISENSE.INDEX_Y, COMMENT_FONT_SIZE, COLORS.TEXT),
+        svgElementFactory.createCircleElement(calculateBaseCircleXCoord(i, asRightOverhangs), STRAND_DETAILS.ANTISENSE.CIRCLE_Y, NUCLEOBASE_CIRCLE_RADIUS, getBaseColor(asBases[i])),
+        svgElementFactory.createTextElement(getBaseTextForCircle(asBases, i),
+          calculateBaseCircleXCoord(i, asRightOverhangs) + calculateNumberLabelShift(asBases, i, nucleotideCounter + 1),
+          STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, determineOptimalTextColor(asBases[i])),
+        asPtoStatuses[i] ? svgElementFactory.createStarElement(calculateBaseCircleXCoord(i, asRightOverhangs) +
+          NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.ANTISENSE.LABEL_Y + LINKAGE_STAR_RADIUS, COLORS.LINKAGE_STAR) : '',
       );
     }
     image.append(
       asPtoStatuses[asBases.length] ?
-        svg.star(xOfBaseCircles(asBases.length, asRightOverhangs) + BASE_RADIUS, Y.AS_TEXTS + PS_LINKAGE_RADIUS,
-          PS_LINKAGE_COLOR) : '',
+        svgElementFactory.createStarElement(calculateBaseCircleXCoord(asBases.length, asRightOverhangs) + NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.ANTISENSE.LABEL_Y + LINKAGE_STAR_RADIUS,
+          COLORS.LINKAGE_STAR) : '',
     );
   }
 
-  const title = `${patternName} for ${numberOfSsNucleotides}${(asExists ? `/${numberOfAsNucleotides}` : '')}mer`;
-  image.append(svg.text(title, X.TITLE, Y.TITLE, BASE_FONT_SIZE, TITLE_FONT_COLOR));
-  for (let i = 0; i < uniqueBases.length; i++) {
+  const title = `${patternName} for ${numberOfSsNucleotides}${(antisenseStrandExists ? `/${numberOfAsNucleotides}` : '')}mer`;
+  image.append(svgElementFactory.createTextElement(title, TITLE_POSITION.X, TITLE_POSITION.Y, NUCLEOBASE_FONT_SIZE, COLORS.TITLE_TEXT));
+  for (let i = 0; i < distinctBaseTypes.length; i++) {
     image.append(
-      svg.circle(equidistantXForLegend(i), Y.circlesInLegends(asExists), LEGEND_RADIUS, baseColor(uniqueBases[i])),
-      svg.text(uniqueBases[i], equidistantXForLegend(i) + LEGEND_RADIUS + 4, Y.textLegend(asExists), LEGEND_FONT_SIZE,
-        FONT_COLOR),
+      svgElementFactory.createCircleElement(calculateLegendXCoord(i), SVG_Y_COORDS.LEGEND_CIRCLES(antisenseStrandExists), LEGEND_CIRCLE_RADIUS, getBaseColor(distinctBaseTypes[i])),
+      svgElementFactory.createTextElement(distinctBaseTypes[i], calculateLegendXCoord(i) + LEGEND_CIRCLE_RADIUS + 4, SVG_Y_COORDS.LEGEND_TEXT(antisenseStrandExists), COMMENT_FONT_SIZE,
+        COLORS.TEXT),
     );
   }
   return image;
+}
+
+function isOverhangNucleotide(modification: string): boolean {
+  const overhangSuffix = '(o)';
+  return modification.endsWith(overhangSuffix);
+}
+
+function isSingleDigitNumber(n: number): boolean {
+  return n >= 0 && n < 10;
+}
+
+function countRightEdgeOverhangNucleotides(modifications: string[]): number {
+  const lastIdx = modifications.length - 1;
+  let count = 0;
+  while (count <= lastIdx && isOverhangNucleotide(modifications[count])) {
+    count++;
+  }
+  return count === lastIdx + 1 ? 0 : count;
+}
+
+function measureTextWidth(text: string, fontSize: number, fontFamily: string): number {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (context) {
+    context.font = `${fontSize}px ${fontFamily}`;
+    const metrics = context.measureText(text);
+    return 2 * metrics.width;
+  }
+  return 0;
+}
+
+function getBaseTextForCircle(bases: string[], index: number): string {
+  const base = bases[index];
+  const isValidBase = !isOverhangNucleotide(base) && NUCLEOTIDES.includes(base);
+  
+  return isValidBase ? base : '';
+}
+
+function determineOptimalTextColor(base: string): string {
+  const RED_COEFFICIENT = 0.299;
+  const GREEN_COEFFICIENT = 0.587;
+  const BLUE_COEFFICIENT = 0.114;
+  const LUMINANCE_THRESHOLD = 186;
+  const DARK_COLOR = '#333333';
+  const LIGHT_COLOR = '#ffffff';
+
+  const styleMap = axolabsStyleMap;
+  const baseColor = styleMap[base]?.color || '';
+  
+  const rgbValues = baseColor.match(/\d+/g)?.map(Number);
+  if (!rgbValues || rgbValues.length < 3) {
+    return LIGHT_COLOR;
+  }
+
+  const [r, g, b] = rgbValues;
+  const luminance = r * RED_COEFFICIENT + g * GREEN_COEFFICIENT + b * BLUE_COEFFICIENT;
+  return luminance > LUMINANCE_THRESHOLD ? DARK_COLOR : LIGHT_COLOR;
+}
+
+function getBaseColor(base: string): string {
+  const styleMap = axolabsStyleMap;
+  return styleMap[base].color;
 }

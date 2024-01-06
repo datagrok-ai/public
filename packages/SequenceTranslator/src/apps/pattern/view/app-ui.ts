@@ -9,7 +9,7 @@ import {
 } from '../model/const';
 import {isOverhang} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/oligo-pattern';
-import {drawAxolabsPattern} from '../model/draw-svg';
+import {renderNucleotidePattern} from '../model/draw-svg';
 
 import { BooleanInput, StringInput} from './types';
 import {PatternConfiguration} from '../model/types';
@@ -219,7 +219,7 @@ export class PatternLayoutHandler {
       svgDisplayDiv.append(
         ui.span([
           // todo: refactor the funciton, reduce # of args
-          drawAxolabsPattern(
+          renderNucleotidePattern(
             getShortName(patternNameInput.value),
             createAsStrand.value!,
 
