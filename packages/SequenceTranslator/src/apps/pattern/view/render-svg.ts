@@ -193,13 +193,27 @@ export function renderNucleotidePattern(
   strandLabel[ANTISENSE_STRAND][RIGHT_END]
     = antisenseStrandExists ? svgFactory.createTextElement(STRAND_LABELS[RIGHT_END][ANTISENSE_STRAND], rightLabelsXCoordinate, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : null;
 
-  const ss5PrimeModificationLabel = svgFactory.createTextElement(ss5PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+  const modificationLabel = {} as Record<typeof STRANDS[number], Record<typeof TERMINI[number], SVGElement | null>>;
 
-  const as3PrimeModificationLabel = antisenseStrandExists ? svgFactory.createTextElement(as3PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
+  STRANDS.forEach((strand) => {
+    modificationLabel[strand] = {} as Record<typeof TERMINI[number], SVGElement | null>;
+    TERMINI.forEach((terminus) => {
+      modificationLabel[strand][terminus] = null;
+    });
+  });
 
-  const ss3PrimeModificationLabel = svgFactory.createTextElement(ss3PrimeModification, xOfSsRightModifications, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
 
-  const as5PrimeModificationLabel = antisenseStrandExists ? svgFactory.createTextElement(as5PrimeModification, xOfAsRightModifications, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
+  modificationLabel[SENSE_STRAND][FIVE_PRIME]
+    = svgFactory.createTextElement(ss5PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+
+  modificationLabel[ANTISENSE_STRAND][THREE_PRIME]
+    = antisenseStrandExists ? svgFactory.createTextElement(as3PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
+
+  modificationLabel[SENSE_STRAND][THREE_PRIME]
+    = svgFactory.createTextElement(ss3PrimeModification, xOfSsRightModifications, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+
+  modificationLabel[ANTISENSE_STRAND][FIVE_PRIME]
+    = antisenseStrandExists ? svgFactory.createTextElement(as5PrimeModification, xOfAsRightModifications, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
 
   const commentLabel = svgFactory.createTextElement(comment, LEFT_LABELS_X_COORDINATE, SVG_Y_COORDS.COMMENT(antisenseStrandExists), COMMENT_FONT_SIZE, COLORS.TEXT);
 
@@ -212,10 +226,10 @@ export function renderNucleotidePattern(
     strandLabel[SENSE_STRAND][RIGHT_END],
     strandLabel[ANTISENSE_STRAND][LEFT_END],
     strandLabel[ANTISENSE_STRAND][RIGHT_END],
-    ss5PrimeModificationLabel,
-    as3PrimeModificationLabel,
-    ss3PrimeModificationLabel,
-    as5PrimeModificationLabel,
+    modificationLabel[SENSE_STRAND][FIVE_PRIME],
+    modificationLabel[ANTISENSE_STRAND][THREE_PRIME],
+    modificationLabel[SENSE_STRAND][THREE_PRIME],
+    modificationLabel[ANTISENSE_STRAND][FIVE_PRIME],
     commentLabel,
     starElement,
     psLinkageLabel,
