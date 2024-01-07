@@ -94,14 +94,39 @@ const SVG_Y_COORDS = {
   SVG_TOTAL_HEIGHT: (asExists: boolean) => (asExists) ? 11 * NUCLEOBASE_CIRCLE_RADIUS : 9 * NUCLEOBASE_CIRCLE_RADIUS,
 };
 
+type bases = Record<typeof STRANDS[number], string>;
+type ptoStatuses = Record<typeof STRANDS[number], boolean[]>;
+type modifications = Record<typeof STRANDS[number], Record<typeof TERMINI[number], string>>;
 
-export function renderNucleotidePattern(
-  patternName: string, antisenseStrandExists: boolean, ssBases: string[],
-  asBases: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[],
-  ss3PrimeModification: string, ss5PrimeModification: string,
-  as3PrimeModification: string, as5PrimeModification: string, comment: string,
+export function renderNucleotidePattern(options: {
+  patternName: string,
+  antisenseStrandExists: boolean,
+  ssBases: string[],
+  asBases: string[],
+  ssPtoStatuses: boolean[],
+  asPtoStatuses: boolean[],
+  ss3PrimeModification: string,
+  ss5PrimeModification: string,
+  as3PrimeModification: string,
+  as5PrimeModification: string,
+  comment: string,
   modifiableBases: string[],
-): Element {
+}): Element {
+  const {
+    patternName,
+    antisenseStrandExists,
+    ssBases,
+    asBases,
+    ssPtoStatuses,
+    asPtoStatuses,
+    ss3PrimeModification,
+    ss5PrimeModification,
+    as3PrimeModification,
+    as5PrimeModification,
+    comment,
+    modifiableBases
+  } = options;
+
   function calculateLegendXCoord(index: number): number {
     const totalPositions = distinctBaseTypes.length + legendStartIndex;
     const spacingUnit = width / totalPositions;

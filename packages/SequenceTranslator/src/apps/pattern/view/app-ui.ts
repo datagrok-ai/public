@@ -216,28 +216,30 @@ export class PatternLayoutHandler {
       const baseInputValues = Object.fromEntries(STRANDS.map((strand) => [strand, getBaseInputValues(strand)]));
       const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
 
+      const rendererOptions = {
+        patternName: getShortName(patternNameInput.value),
+        antisenseStrandExists: createAsStrand.value!,
+        ssBases: baseInputValues[SENSE_STRAND],
+        asBases: baseInputValues[ANTISENSE_STRAND],
+
+        ssPtoStatuses: ptoLinkageValues[SENSE_STRAND],
+        asPtoStatuses: ptoLinkageValues[ANTISENSE_STRAND],
+
+        terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END].value!,
+        terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END].value!,
+
+        terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME_END].value!,
+        terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME_END].value!,
+
+        patternCommentInput.value,
+        modificationsWithNumericLabels,
+
+      }
+
       svgDisplayDiv.append(
         ui.span([
           // todo: refactor the funciton, reduce # of args
-          renderNucleotidePattern(
-            getShortName(patternNameInput.value),
-            createAsStrand.value!,
-
-            baseInputValues[SENSE_STRAND],
-            baseInputValues[ANTISENSE_STRAND],
-
-            ptoLinkageValues[SENSE_STRAND],
-            ptoLinkageValues[ANTISENSE_STRAND],
-
-            terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END].value!,
-            terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END].value!,
-
-            terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME_END].value!,
-            terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME_END].value!,
-
-            patternCommentInput.value,
-            modificationsWithNumericLabels,
-          ),
+          renderNucleotidePattern(rendererOptions),
         ]),
       );
     }
