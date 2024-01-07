@@ -82,7 +82,7 @@ class PatternControlsManager {
 
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
-      `${STRAND_LABEL.ANTISENSE_STRAND} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
+      `${STRAND_LABEL[ANTISENSE_STRAND]} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     return toggleAntisenseStrand.root;

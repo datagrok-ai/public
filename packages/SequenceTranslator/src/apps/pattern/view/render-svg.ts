@@ -2,13 +2,10 @@ import {NUCLEOTIDES} from '../../common/model/const';
 import {axolabsStyleMap as styleMap} from '../../common/data-loading-utils/json-loader';
 import {SVGElementFactory} from './svg-element-factory';
 import {isOverhangNucleotide} from '../model/helpers';
+import {
+  SENSE_STRAND, ANTISENSE_STRAND, STRANDS, THREE_PRIME, FIVE_PRIME, TERMINI
+} from '../model/const';
 
-const SENSE_STRAND = 'SS';
-const ANTISENSE_STRAND = 'AS';
-const STRANDS = [SENSE_STRAND, ANTISENSE_STRAND] as const;
-const FIVE_PRIME = '5\'';
-const THREE_PRIME = '3\'';
-const TERMINI = [FIVE_PRIME, THREE_PRIME] as const;
 const LEFT_END = 'LEFT';
 const RIGHT_END = 'RIGHT';
 const ENDS = [LEFT_END, RIGHT_END] as const;
@@ -94,10 +91,6 @@ const SVG_Y_COORDS = {
   SVG_TOTAL_HEIGHT: (asExists: boolean) => (asExists) ? 11 * NUCLEOBASE_CIRCLE_RADIUS : 9 * NUCLEOBASE_CIRCLE_RADIUS,
 };
 
-type bases = Record<typeof STRANDS[number], string>;
-type ptoStatuses = Record<typeof STRANDS[number], boolean[]>;
-type modifications = Record<typeof STRANDS[number], Record<typeof TERMINI[number], string>>;
-
 export function renderNucleotidePattern(options: {
   patternName: string,
   isAsStrandActive: boolean,
@@ -107,7 +100,7 @@ export function renderNucleotidePattern(options: {
   comment: string,
   modificationsWithNumericLabels: string[],
 }): Element {
-  const {
+  let {
     patternName,
     isAsStrandActive,
     baseInputValues: {SS: ssBases, AS: asBases},

@@ -17,24 +17,25 @@ export const enum PATTERN_KEY {
   COMMENT = 'comment',
 };
 
-export const SENSE_STRAND = 'SENSE_STRAND' as const;
-export const ANTISENSE_STRAND = 'ANTISENSE_STRAND' as const;
-export type StrandType = typeof SENSE_STRAND | typeof ANTISENSE_STRAND;
+export const SENSE_STRAND = 'SS' as const;
+export const ANTISENSE_STRAND = 'AS' as const;
+export const STRANDS = [SENSE_STRAND, ANTISENSE_STRAND];
+export type StrandType = typeof STRANDS[number];
 
-export const STRANDS: StrandType[] = [SENSE_STRAND, ANTISENSE_STRAND];
 export const STRAND_LABEL: Record<StrandType, string> = {
   [SENSE_STRAND]: 'Sense strand',
   [ANTISENSE_STRAND]: 'Anti sense',
 };
 
-export const THREE_PRIME_END = 'THREE_PRIME_END' as const;
-export const FIVE_PRIME_END = 'FIVE_PRIME_END' as const;
-export type TerminalType = typeof THREE_PRIME_END | typeof FIVE_PRIME_END;
+export const FIVE_PRIME = '5\'';
+export const THREE_PRIME = '3\'';
+export const TERMINI = [FIVE_PRIME, THREE_PRIME] as const;
+export type TerminalType = typeof TERMINI[number];
 
-export const TERMINAL_KEYS: TerminalType[] = [THREE_PRIME_END, FIVE_PRIME_END];
+export const TERMINAL_KEYS: TerminalType[] = [THREE_PRIME, FIVE_PRIME];
 export const TERMINAL: Record<TerminalType, number> = {
-  [THREE_PRIME_END]: 3,
-  [FIVE_PRIME_END]: 5,
+  [THREE_PRIME]: 3,
+  [FIVE_PRIME]: 5,
 };
 
 export const OTHER_USERS = 'Other users';

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 import {
-  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME_END, FIVE_PRIME_END, PATTERN_KEY, StrandType, TerminalType
+  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME, FIVE_PRIME, PATTERN_KEY, StrandType, TerminalType, TERMINI
 } from '../model/const';
 import {isOverhangNucleotide} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/oligo-pattern';
@@ -17,6 +17,20 @@ import {PatternConfiguration} from '../model/types';
 //@ts-ignore
 import * as svgExport from 'save-svg-as-png';
 import $ from 'cash-dom';
+
+type Bases = Record<typeof STRANDS[number], string>;
+type PtoLinkageActive = Record<typeof STRANDS[number], boolean[]>;
+type TerminalModifications = Record<typeof STRANDS[number], Record<typeof TERMINI[number], string>>;
+
+type RenderNucleotidePatternOptions = {
+  patternName: string,
+  isAsStrandActive: boolean,
+  baseInputValues: Bases,
+  ptoLinkageValues: PtoLinkageActive,
+  terminalModificationValues: TerminalModifications,
+  comment: string,
+  modificationsWithNumericLabels: string[],
+};
 
 const enum MODIFICATION_CATEGORY {
   PTO,
@@ -195,8 +209,8 @@ export class PatternLayoutHandler {
             inputExample[strand].value,
             nucleobaseInputs[strand],
             ptoLinkageInputs[strand],
-            terminalModificationInputs[strand][FIVE_PRIME_END],
-            terminalModificationInputs[strand][THREE_PRIME_END],
+            terminalModificationInputs[strand][FIVE_PRIME],
+            terminalModificationInputs[strand][THREE_PRIME],
             firstPto[strand].value!
           );
         }
@@ -217,8 +231,8 @@ export class PatternLayoutHandler {
       const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
 
       const terminalModificationValues = Object.fromEntries(STRANDS.map((strand) => [strand, {
-        [THREE_PRIME_END]: terminalModificationInputs[strand][THREE_PRIME_END].value!,
-        [FIVE_PRIME_END]: terminalModificationInputs[strand][FIVE_PRIME_END].value!,
+        [THREE_PRIME]: terminalModificationInputs[strand][THREE_PRIME].value!,
+        [FIVE_PRIME]: terminalModificationInputs[strand][FIVE_PRIME].value!,
       }]));
 
       const rendererOptions = {
@@ -229,12 +243,12 @@ export class PatternLayoutHandler {
         terminalModificationValues,
         comment: patternCommentInput.value,
         modificationsWithNumericLabels,
-      }
+      };
 
       svgDisplayDiv.append(
         ui.span([
           // todo: refactor the funciton, reduce # of args
-          renderNucleotidePattern(rendererOptions),
+          renderNucleotidePattern(rendererOptions as any),
         ]),
       );
     }
@@ -387,10 +401,10 @@ export class PatternLayoutHandler {
         [PATTERN_KEY.AS_BASES]: createBasesArray(ANTISENSE_STRAND),
         [PATTERN_KEY.SS_PTO]: createPtoArray(SENSE_STRAND),
         [PATTERN_KEY.AS_PTO]: createPtoArray(ANTISENSE_STRAND),
-        [PATTERN_KEY.SS_3]: terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END].value!,
-        [PATTERN_KEY.SS_5]: terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END].value!,
-        [PATTERN_KEY.AS_3]: terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME_END].value!,
-        [PATTERN_KEY.AS_5]: terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME_END].value!,
+        [PATTERN_KEY.SS_3]: terminalModificationInputs[SENSE_STRAND][THREE_PRIME].value!,
+        [PATTERN_KEY.SS_5]: terminalModificationInputs[SENSE_STRAND][FIVE_PRIME].value!,
+        [PATTERN_KEY.AS_3]: terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME].value!,
+        [PATTERN_KEY.AS_5]: terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME].value!,
         [PATTERN_KEY.COMMENT]: patternCommentInput.value,
       };
     }
@@ -701,8 +715,8 @@ export class PatternLayoutHandler {
         inputExample[strand].value,
         nucleobaseInputs[strand],
         ptoLinkageInputs[strand],
-        terminalModificationInputs[strand][THREE_PRIME_END],
-        terminalModificationInputs[strand][FIVE_PRIME_END],
+        terminalModificationInputs[strand][THREE_PRIME],
+        terminalModificationInputs[strand][FIVE_PRIME],
         firstPto[strand].value!
       );
 
@@ -936,7 +950,7 @@ export class PatternLayoutHandler {
         if (condition[i]) {
           addColumnWithTranslatedSequences(
             tableInput.value!.name, selectedStrandColumn[strand], nucleobaseInputs[strand], ptoLinkageInputs[strand],
-            terminalModificationInputs[strand][FIVE_PRIME_END], terminalModificationInputs[strand][THREE_PRIME_END], firstPto[strand].value!
+            terminalModificationInputs[strand][FIVE_PRIME], terminalModificationInputs[strand][THREE_PRIME], firstPto[strand].value!
           );
         }
       });
@@ -1029,8 +1043,8 @@ export class PatternLayoutHandler {
         generateStrandSectionDisplays(),
         ui.h1('Additional modifications'),
         ui.form([
-          terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END],
-          terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END],
+          terminalModificationInputs[SENSE_STRAND][FIVE_PRIME],
+          terminalModificationInputs[SENSE_STRAND][THREE_PRIME],
         ]),
         asModificationDiv,
       ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
