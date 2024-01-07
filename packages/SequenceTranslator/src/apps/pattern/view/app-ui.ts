@@ -216,24 +216,19 @@ export class PatternLayoutHandler {
       const baseInputValues = Object.fromEntries(STRANDS.map((strand) => [strand, getBaseInputValues(strand)]));
       const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
 
+      const terminalModificationValues = Object.fromEntries(STRANDS.map((strand) => [strand, {
+        [THREE_PRIME_END]: terminalModificationInputs[strand][THREE_PRIME_END].value!,
+        [FIVE_PRIME_END]: terminalModificationInputs[strand][FIVE_PRIME_END].value!,
+      }]));
+
       const rendererOptions = {
         patternName: getShortName(patternNameInput.value),
-        antisenseStrandExists: createAsStrand.value!,
-        ssBases: baseInputValues[SENSE_STRAND],
-        asBases: baseInputValues[ANTISENSE_STRAND],
-
-        ssPtoStatuses: ptoLinkageValues[SENSE_STRAND],
-        asPtoStatuses: ptoLinkageValues[ANTISENSE_STRAND],
-
-        terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END].value!,
-        terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END].value!,
-
-        terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME_END].value!,
-        terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME_END].value!,
-
-        patternCommentInput.value,
+        isAsStrandActive: createAsStrand.value!,
+        baseInputValues,
+        ptoLinkageValues,
+        terminalModificationValues,
+        comment: patternCommentInput.value,
         modificationsWithNumericLabels,
-
       }
 
       svgDisplayDiv.append(
