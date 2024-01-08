@@ -457,15 +457,14 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
-    const newRibbonPanels = [
-      ...this.getRibbonPanels(),
-      [
-        ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput)) ? [save] : [],
-        ...this.hasUploadMode ? [toggleUploadMode]: [],
-        ...this.isSaEnabled ? [sensitivityAnalysis]: [],
-      ],
-    ];
+    const newRibbonPanels = [[
+      ...this.getRibbonPanels().flat().map((elem) => elem.firstChild as HTMLElement),
+      ...this.runningOnInput || this.options.isTabbed ? []: [play],
+      ...(!this.options.isTabbed &&
+        ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
+      ...this.hasUploadMode ? [toggleUploadMode]: [],
+      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+    ]];
 
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;

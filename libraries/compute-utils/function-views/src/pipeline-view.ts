@@ -511,7 +511,22 @@ export class PipelineView extends FunctionView {
       }
     };
 
-    this.stepTabs.onTabChanged.subscribe(async () => updateHelpPanel());
+    const updateRibbonPanels = () => {
+      const currentStep = Object.values(this.steps)
+        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+
+      if (currentStep) {
+        this.setRibbonPanels([
+          ...this.buildRibbonPanels(),
+          ...currentStep.view.buildRibbonPanels(),
+        ]);
+      }
+    };
+
+    this.stepTabs.onTabChanged.subscribe(async () => {
+      updateHelpPanel();
+      updateRibbonPanels();
+    });
     grok.shell.windows.help.visible = true;
     updateHelpPanel();
 
