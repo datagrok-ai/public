@@ -661,7 +661,7 @@ export abstract class FunctionView extends DG.ViewBase {
       this.lastCall = deepCopy(this.funcCall);
       // If a view is incapuslated into a tab (e.g. in PipelineView),
       // there is no need to save run till an entire pipeline is over.
-      if (!(this.options.isTabbed || this.runningOnInput || this.runningOnStart) && this.isHistoryEnabled)
+      if (!(this.options.isTabbed || this.runningOnInput) && this.isHistoryEnabled)
         await this.saveRun(this.funcCall);
     } catch (err: any) {
       grok.shell.error(err.toString());
@@ -748,23 +748,33 @@ export abstract class FunctionView extends DG.ViewBase {
     return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
   }
 
-  protected get features(): string[] {
-    return JSON.parse(this.func.options['features'] ?? '[]');
+  protected get features(): Record<string, boolean> | string[] {
+    return JSON.parse(this.func.options['features'] ?? '{}');
+  }
+
+  private getFeature(featureName: string, defaultValue: boolean) {
+    if (this.features instanceof Array)
+      return this.features.includes(featureName);
+
+    if (this.features instanceof Object)
+      return this.features[featureName] ?? defaultValue;
+
+    return defaultValue;
   }
 
   protected get isExportEnabled() {
-    return this.features.includes('export');
-  }
-
-  protected get isSaEnabled() {
-    return this.features.includes('sens-analysis');
+    return this.getFeature('export', true);
   }
 
   protected get isHistoryEnabled() {
-    return this.features.includes('history');
+    return this.getFeature('history', true);
+  }
+
+  protected get isSaEnabled() {
+    return this.getFeature('sens-analysis', false);
   }
 
   protected get hasUploadMode() {
-    return this.features.includes('upload');
+    return this.getFeature('upload', false);
   }
 }
