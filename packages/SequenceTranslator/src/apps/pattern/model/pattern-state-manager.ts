@@ -4,17 +4,20 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {STRANDS, StrandType, TerminalType, TERMINAL_KEYS,
+import {STRANDS, TERMINAL_KEYS,
  DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {PatternAppDataManager} from './external-data-manager';
 import {EventBus} from './event-bus';
+import {StrandType, TerminalType} from './types';
 
 export class PatternConfigurationManager {
-  private patternName = '';
+  private _patternName = '';
+  private _isAntisenseStrandActive = true;
   private _bases = {} as Record<StrandType, string[]>;
-  private _phosphorothioate = {} as Record<StrandType, boolean[]>;
-  private _terminalModification = {} as Record<StrandType, Record<TerminalType, string>>;
+  private _phosphorothioateLinkages = {} as Record<StrandType, boolean[]>;
+  private _terminalModifications = {} as Record<StrandType, Record<TerminalType, string>>;
   private _comment = '';
+  private _modificationsWithNumericLabels = [] as string[];
 
   constructor(private eventBus: EventBus, private dataManager: PatternAppDataManager) {
     this.initializeBases();
@@ -36,15 +39,15 @@ export class PatternConfigurationManager {
   
   private initializePhosphorothioate(): void {
     STRANDS.forEach((strand) => {
-      this._phosphorothioate[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(DEFAULT_PHOSPHOROTHIOATE);
+      this._phosphorothioateLinkages[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(DEFAULT_PHOSPHOROTHIOATE);
     });
   }
   
   private initializeTerminalModification(): void {
     STRANDS.forEach((strand) => {
-      this._terminalModification[strand] = {} as Record<TerminalType, string>;
+      this._terminalModifications[strand] = {} as Record<TerminalType, string>;
       TERMINAL_KEYS.forEach((terminal) => {
-        this._terminalModification[strand][terminal] = '';
+        this._terminalModifications[strand][terminal] = '';
       });
     });
   }
@@ -60,11 +63,11 @@ export class PatternConfigurationManager {
   }
 
   getPhosphorothioate(strand: StrandType): boolean[] {
-    return [...this._phosphorothioate[strand]];
+    return [...this._phosphorothioateLinkages[strand]];
   }
 
   getTerminalModification(strand: StrandType, terminal: TerminalType): string {
-    return this._terminalModification[strand][terminal];
+    return this._terminalModifications[strand][terminal];
   }
 
   getComment(): string {
@@ -73,6 +76,6 @@ export class PatternConfigurationManager {
 
   setPatternName(patternName: string): void {
     grok.shell.info(`Pattern name changed to ${patternName}`);
-    this.patternName = patternName;
+    this._patternName = patternName;
   }
 }

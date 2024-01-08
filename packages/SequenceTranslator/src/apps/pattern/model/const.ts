@@ -1,3 +1,5 @@
+import {StrandType, TerminalType} from './types';
+
 export const DEFAULT_PHOSPHOROTHIOATE: boolean = true;
 export const DEFAULT_SEQUENCE_LENGTH: number = 23;
 export const MAX_SEQUENCE_LENGTH: number = 35;
@@ -20,7 +22,6 @@ export const enum PATTERN_KEY {
 export const SENSE_STRAND = 'SS' as const;
 export const ANTISENSE_STRAND = 'AS' as const;
 export const STRANDS = [SENSE_STRAND, ANTISENSE_STRAND];
-export type StrandType = typeof STRANDS[number];
 
 export const STRAND_LABEL: Record<StrandType, string> = {
   [SENSE_STRAND]: 'Sense strand',
@@ -30,7 +31,6 @@ export const STRAND_LABEL: Record<StrandType, string> = {
 export const FIVE_PRIME = '5\'';
 export const THREE_PRIME = '3\'';
 export const TERMINI = [FIVE_PRIME, THREE_PRIME] as const;
-export type TerminalType = typeof TERMINI[number];
 
 export const TERMINAL_KEYS: TerminalType[] = [THREE_PRIME, FIVE_PRIME];
 export const TERMINAL: Record<TerminalType, number> = {

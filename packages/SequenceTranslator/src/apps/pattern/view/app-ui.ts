@@ -5,8 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 import {
-  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME, FIVE_PRIME, PATTERN_KEY, StrandType, TerminalType, TERMINI
+  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME, FIVE_PRIME, PATTERN_KEY, TERMINI
 } from '../model/const';
+import {PatternSettings, StrandType, TerminalType} from '../model/types';
 import {isOverhangNucleotide} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/oligo-pattern';
 import {renderNucleotidePattern} from './render-svg';
@@ -235,22 +236,19 @@ export class PatternLayoutHandler {
         [FIVE_PRIME]: terminalModificationInputs[strand][FIVE_PRIME].value!,
       }]));
 
-      const rendererOptions = {
+      const patternSettings = {
         patternName: getShortName(patternNameInput.value),
-        isAsStrandActive: createAsStrand.value!,
-        baseInputValues,
-        ptoLinkageValues,
-        terminalModificationValues,
+        isAntisenseStrandActive: createAsStrand.value!,
+        bases: baseInputValues,
+        phosphorothioateLinkages: ptoLinkageValues,
+        terminalModifications: terminalModificationValues,
         comment: patternCommentInput.value,
         modificationsWithNumericLabels,
-      };
+      } as PatternSettings;
 
-      svgDisplayDiv.append(
-        ui.span([
-          // todo: refactor the funciton, reduce # of args
-          renderNucleotidePattern(rendererOptions as any),
-        ]),
-      );
+      const svg = renderNucleotidePattern(patternSettings);
+
+      svgDisplayDiv.append(ui.span([svg]));
     }
 
     function detectMostFrequentBase(array: string[]): string {

@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, StrandType, OTHER_USERS } from '../model/const';
+import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
+import { StrandType } from '../model/types';
 
 import {StringInput, NumberInput} from './types';
 

@@ -5,6 +5,7 @@ import {isOverhangNucleotide} from '../model/helpers';
 import {
   SENSE_STRAND, ANTISENSE_STRAND, STRANDS, THREE_PRIME, FIVE_PRIME, TERMINI
 } from '../model/const';
+import {PatternSettings, StrandType, TerminalType} from '../model/types';
 
 const LEFT_END = 'LEFT';
 const RIGHT_END = 'RIGHT';
@@ -91,24 +92,31 @@ const SVG_Y_COORDS = {
   SVG_TOTAL_HEIGHT: (asExists: boolean) => (asExists) ? 11 * NUCLEOBASE_CIRCLE_RADIUS : 9 * NUCLEOBASE_CIRCLE_RADIUS,
 };
 
-export function renderNucleotidePattern(options: {
-  patternName: string,
-  isAsStrandActive: boolean,
-  baseInputValues: Record<typeof STRANDS[number], string[]>,
-  ptoLinkageValues: Record<typeof STRANDS[number], boolean[]>,
-  terminalModificationValues: Record<typeof STRANDS[number], Record<typeof TERMINI[number], string>>,
-  comment: string,
-  modificationsWithNumericLabels: string[],
-}): Element {
+export function renderNucleotidePattern(patternConfiguration: PatternSettings): Element {
   let {
     patternName,
-    isAsStrandActive,
-    baseInputValues: {SS: ssBases, AS: asBases},
-    ptoLinkageValues: {SS: ssPtoStatuses, AS: asPtoStatuses},
-    terminalModificationValues: {[SENSE_STRAND]: {[FIVE_PRIME]: ss5PrimeModification, [THREE_PRIME]: ss3PrimeModification}, [ANTISENSE_STRAND]: {[FIVE_PRIME]: as5PrimeModification, [THREE_PRIME]: as3PrimeModification}},
+    isAntisenseStrandActive: isAsStrandActive,
+    bases: {
+      [SENSE_STRAND]: ssBases, 
+      [ANTISENSE_STRAND]: asBases
+    },
+    phosphorothioateLinkages: {
+      [SENSE_STRAND]: ssPtoStatuses, 
+      [ANTISENSE_STRAND]: asPtoStatuses
+    },
+    terminalModifications: {
+      [SENSE_STRAND]: {
+        [FIVE_PRIME]: ss5PrimeModification, 
+        [THREE_PRIME]: ss3PrimeModification
+      },
+      [ANTISENSE_STRAND]: {
+        [FIVE_PRIME]: as5PrimeModification, 
+        [THREE_PRIME]: as3PrimeModification
+      }
+    },
     comment,
     modificationsWithNumericLabels
-  } = options;
+  } = patternConfiguration;
 
   function calculateLegendXCoord(index: number): number {
     const totalPositions = distinctBaseTypes.length + legendStartIndex;
