@@ -14,6 +14,7 @@ import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {RunAutodockFuncEditor} from './utils/run-autodock-func-editor';
 import {DockingPackage} from './package-utils';
+import { AutodockBaseFuncEditor } from './utils/autodock-func-editor';
 
 export const _package = new DockingPackage();
 
@@ -100,7 +101,6 @@ export function getRunAutodockFuncEditor(call: DG.FuncCall): void {
   }
 }
 
-//top-menu: Chem | AutoDock
 //name: runAutodock4
 //input: file receptor { caption: 'Receptor structure file' }
 //input: file gridParams { nullable: true, caption: 'Grid parameters file' }
@@ -134,5 +134,36 @@ export async function runAutodock4(
 }
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
+
+//name: AutodockEditor
+//tags: editor
+//input: funccall call
+export function AutodockEditor(call: DG.FuncCall): void {
+  const funcEditor = new AutodockBaseFuncEditor(DG.SEMTYPE.MOLECULE);
+  ui.dialog({title: 'Autodock'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {
+      const params = funcEditor.funcParams;
+      if (params.activities)
+        call.func.prepare(funcEditor.funcParams).call(true);
+      else
+        grok.shell.error(`Column with activities has not been selected. Table contains no numeric columns.`);
+    })
+    .show();
+}
+
+//top-menu: Chem | Autodock...
+//name: Autodock
+//description: Autodock plugin UI
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+//input: string macromolecules
+//editor: Docking:AutodockEditor
+export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, macromolecules: string): Promise<void> {
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+}
 
 // -- Demo --
