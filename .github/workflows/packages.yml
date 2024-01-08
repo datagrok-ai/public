@@ -204,6 +204,7 @@ jobs:
             DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
+            export GROK_SPAWNER_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
@@ -335,41 +336,57 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Wait for published docker to become available
         if: matrix.build_docker == 'true'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
           do
             sleep 1
-            docker ps
+            echo -e "\nContainer for ${{ matrix.package }} did not start..."
+            echo -e "\n"
+            docker ps -a
+            echo -e "\n"
+            echo -e "\ngrok_spawner logs:"
             docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+            echo -e "\ndatagrok logs:"
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            echo -e "\ncurrent memory resources:"
+            free -m
+            echo -e "\n"
             echo -e "\nRetrying..."
           done
 
-          echo -e "\n"
+          echo -e "\nGet admin session token...\n"
           token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+          echo -e "\nGet containers for ${{ matrix.package }} from datlas API...\n"
           curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'
-          echo -e "\n"
+          echo -e "\nGet ALL containers from datlas API...\n"
           curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-          echo -e "\n"
+          echo -e "\nSelect ALL containers in DB...\n"
           docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
-          
-          
+
+          echo -e "\nSet log level to debug...\n"
           docker exec datagrok-datagrok-1 sed -i 's/"userGroupSettings": {}/"userGroupSettings": {"a4b45840-9a50-11e6-9cc9-8546b8bf62e6": {"#type": "LoggerSettings","printLevels": ["error", "warning", "info", "debug"], "postLevels": ["error", "warning", "info", "audit", "usage"], "saveLevels": ["error", "warning", "audit", "usage"], "debugFlags": ["db"], "printDetails": false, "printDateTime": true, "printStackTraces": true, "printClientMessages": false}}/g' cfg/prod/logger.settings.json
           docker restart datagrok-datagrok-1
           until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
           do
             sleep 1
+            echo -e "\nServer did not start yet..."
             echo -e "\nRetrying..."
           done
+          echo -e "\nGet admin session token...\n"
           token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+          echo -e "\nGet containers for ${{ matrix.package }} from datlas API...\n"
           curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'
-          echo -e "\n"
+          echo -e "\nGet ALL containers from datlas API...\n"
           curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-          echo -e "\n"
+          echo -e "\nSelect ALL containers in DB...\n"
           docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
+          echo -e "\nSelect ALL containers in DB as datlas API does...\n"
           docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'SELECT docker_containers_e.namespace as "entity_docker_containers_namespace" , "docker_containers"."id" as "docker_containers_id", "docker_containers"."dockerfile_id" as "docker_containers_dockerfile_id", "docker_containers"."docker_image" as "docker_containers_docker_image", "docker_containers"."service_name" as "docker_containers_service_name", "docker_containers"."status" as "docker_containers_status", "docker_containers"."desired_instances" as "docker_containers_desired_instances", "docker_containers"."address" as "docker_containers_address", "docker_containers"."port" as "docker_containers_port", "docker_containers"."name" as "docker_containers_name", "docker_containers"."friendly_name" as "docker_containers_friendly_name", "docker_containers_author"."id" as "docker_containers_author_id", "docker_containers_author"."is_service" as "docker_containers_author_is_service", "docker_containers_author"."login" as "docker_containers_author_login", "docker_containers_author"."first_name" as "docker_containers_author_first_name", "docker_containers_author"."last_name" as "docker_containers_author_last_name", "docker_containers_author"."email_confirmed" as "docker_containers_author_email_confirmed", "docker_containers_author"."picture" as "docker_containers_author_picture", "docker_containers_author"."agreement_accept_date" as "docker_containers_author_agreement_accept_date", "docker_containers_author"."default_tag" as "docker_containers_author_default_tag", "docker_containers_author"."group_id" as "docker_containers_author_group_id", "docker_containers_author"."project_id" as "docker_containers_author_project_id", "docker_containers_author"."storage_connection_id" as "docker_containers_author_storage_id", "docker_containers_author"."status" as "docker_containers_author_status", "docker_containers_author"."joined" as "docker_containers_author_joined", "docker_containers_author"."has_password" as "docker_containers_author_has_password", "docker_containers_author"."name" as "docker_containers_author_name", "docker_containers_author"."friendly_name" as "docker_containers_author_friendly_name", "docker_containers_author"."picture_id" as "docker_containers_author_picture_id", "docker_containers"."created_on" as "docker_containers_created_on", "docker_containers"."updated_on" as "docker_containers_updated_on", "docker_containers_e"."package_id" as "docker_containers_package_id" FROM "docker_containers" as "docker_containers"  INNER JOIN entities docker_containers_e ON docker_containers_e.id = docker_containers.id and not docker_containers_e.is_deleted  LEFT JOIN "users" as "docker_containers_author"  INNER JOIN entities docker_containers_author_e ON docker_containers_author_e.id = docker_containers_author.id and not docker_containers_author_e.is_deleted  ON "docker_containers"."author_id"="docker_containers_author"."id";'
-          echo -e "\n"
+          echo -e "\nDatagrok logs...\n"
           docker logs datagrok-datagrok-1
+          echo -e "\Grok Spawner logs...\n"
+          docker logs datagrok-grok_spawner-1
 
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
