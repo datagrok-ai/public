@@ -52,7 +52,7 @@ export enum HINT {
   FEATURES = "Columns with features to be used for determining the 'nearest' elements in the KNN method",
   IN_PLACE = 'Defines whether to use in-place imputation or add a new column without missing values',
   METRIC = 'Type of metric between the feature values',
-  WEIGHT = 'Weight of the feature',
+  WEIGHT = 'Weight',
   NEIGHBORS = 'Neighbors count used in the KNN method',
   DISTANCE = 'Type of distance between elements with the specified features',
   METRIC_SETTINGS = 'Show additional options',

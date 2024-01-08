@@ -197,6 +197,7 @@ export function runKNNImputer(): void {
       distInfo.weight = weightInput.value ?? settings.defaultWeight;
       featuresMetrics.set(name, distInfo);
     });
+    weightInput.setTooltip(HINT.WEIGHT);
     
     const div = ui.divH([distTypeInput.root, weightInput.root]);
     metricInfoInputs.set(name, div);
