@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { TITLE, LINK, ERROR_MSG, HINT } from './ui-constants';
+import { TITLE, KNN_IMPUTER, ERROR_MSG, HINT } from './ui-constants';
 import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, 
   impute, getMissingValsIndices, areThereFails, imputeFailed } from "./knn-imputer";
 
@@ -159,7 +159,7 @@ export function runKNNImputer(): void {
       targetColNames.forEach((name) => {
         if (selectedFeatureColNames[0] === name) {
           hideWidgets();
-          grok.shell.error(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
+          grok.shell.warning(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
       }});
     }
   };
@@ -204,7 +204,7 @@ export function runKNNImputer(): void {
   });
 
   // The main dialog
-  const dlg = ui.dialog({title: TITLE.KNN_IMPUTER, helpUrl: LINK.KNN_IMPUTER});
+  const dlg = ui.dialog({title: TITLE.KNN_IMPUTER, helpUrl: KNN_IMPUTER});
   grok.shell.v.root.appendChild(dlg.root);
 
   metricsDiv.hidden = true;

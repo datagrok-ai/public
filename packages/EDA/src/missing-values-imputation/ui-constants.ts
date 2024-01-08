@@ -44,10 +44,7 @@ export enum TITLE {
 };
 
 /** Help links */
-export enum LINK {
-  KNN_IMPUTER = '/help/explore', // TODO: provide correct link
-  SIMPLE_IMPUTER = '/help/explore', // TODO: provide correct link
-};
+export const KNN_IMPUTER = '/help/transform/missing-values-imputation';
 
 /** Tooltips */ 
 export enum HINT {
