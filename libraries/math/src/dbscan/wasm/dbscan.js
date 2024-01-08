@@ -5,10 +5,10 @@ export async function dbscan(embedX, embedY, epsilon, minPts) {
     const wasmPath = wasmUrl.substring(0, wasmUrl.lastIndexOf('/') + 1) + 'wasmDbscan.wasm';
     let wasmInstance;
     try {
-        wasmInstance = await exportCppDbscanLib({locateFile: () => wasmUrl});
+        wasmInstance = await exportCppDbscanLib({locateFile: () => wasmUrl, printErr: (_) => {}});
     } catch (e) {
         try {
-            wasmInstance = await exportCppDbscanLib({locateFile: () => wasmPath});
+            wasmInstance = await exportCppDbscanLib({locateFile: () => wasmPath, printErr: (_) => {}});
         }
         catch (e) {
             console.error(e);
