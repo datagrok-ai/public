@@ -234,20 +234,23 @@ services:
     image: datagrok/mlflow:2.9.2
     command: >-
       mlflow server
-        --backend-store-uri postgresql://postgres:postgres@database:5432/mlflow
+        --backend-store-uri file:/data/mlruns
         --default-artifact-root mlflow-artifacts:/
         --artifacts-destination /data/mlartifacts
         --host 0.0.0.0 --port 5000
         --expose-prometheus /data/mlflow_metrics
         --serve-artifacts
     volumes:
-      - datagrok_mlflow:/data/mlartifacts
+      - datagrok_mlflow_artifact:/data/mlartifacts
+      - datagrok_mlflow_backend:/data/mlruns
+      - datagrok_mlflow_prom:/data/mlflow_metrics
     ports:
       - "${DATAGROK_MLFLOW_PORT:-5555}:5000/tcp"
-    depends_on:
-      db:
-        condition: service_healthy
-        restart: false
+    #    --backend-store-uri postgresql://postgres:postgres@database:5432/mlflow
+    #    depends_on:
+    #      db:
+    #        condition: service_healthy
+    #        restart: false
     networks:
       datagrok:
         aliases:
@@ -266,7 +269,9 @@ volumes:
   datagrok_demo_postgres_world:
   datagrok_demo_postgres_unichem:
   datagrok_postgres_rdkit:
-  datagrok_mlflow:
+  datagrok_mlflow_artifact:
+  datagrok_mlflow_backend:
+  datagrok_mlflow_prom:
 
 networks:
   datagrok:
