@@ -2,31 +2,22 @@
 title: "Missing values imputation"
 ---
 
-Imputation is the process of replacing missing data with substituted values.
+[Imputation](https://en.wikipedia.org/wiki/Imputation_\(statistics\)) is the process of replacing missing data with substituted values.
 
-## Algorithm
-
-Missing values imputation algorithm is based on **k-nearest neighbors algorithm (k-NN)**. This algorithm is a
-non-parametric method used for classification and regression. Both for classification and regression, it can be useful
-to assign weight to the contributions of the neighbors, so that the nearer neighbors contribute more to the average than
-the more distant ones. For example, a common weighting scheme consists in giving each neighbor a weight of **1/d**,
-where **d** is the distance to the neighbor.
+Datagrok imputes missing values using the k-nearest neighbors method ([k-NN](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)).
 
 ## Run
 
-* Open table
-* Run from menu: **Tools** | **Data Science** | **Missing Values Imputation...**
-* Select source table
-* Select columns that contains missing values **"impute"**
-* Select data rows **"data"**
-* Set **"Number of nearest neighbors"**
-* Run missing values imputation. Result will replace all missing values in all columns and rows.
+* Open a table
+* Run **Top Menu > ML > Missing Values Imputation...**
+* Select `Impute` and `Using` columns
+* Set `Distance` and `Neighbors`
+* Specify whether to use in-place imputation
+* Press **RUN**
+
+![add-to-workspace](missing-values-imputation.gif)
 
 See also:
 
 * [Imputation](https://en.wikipedia.org/wiki/Imputation_\(statistics\))
 * [k-nearest neighbors algorithm](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm)
-
-Sample:
-
-* [Missing values imputation](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)
