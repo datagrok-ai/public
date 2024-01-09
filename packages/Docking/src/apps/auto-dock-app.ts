@@ -138,8 +138,8 @@ export class AutoDockApp {
     const pi = DG.TaskBarProgressIndicator.create('AutoDock running...');
     try {
       // TODO: Convert receptor data to PDB string
-      if (this.data.receptor.ext !== 'pdb' || typeof this.data.receptor.data !== 'string')
-        throw new Error('Unsupported receptor data');
+      //if (this.data.receptor.ext !== 'pdb' || typeof this.data.receptor.data !== 'string')
+        //throw new Error('Unsupported receptor data');
 
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
 
@@ -199,6 +199,7 @@ async function runAutoDock(
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
 
     const npts: GridSize = {x: 40, y: 40, z: 40};
+    //TODO: use config that is provided by user
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
     const posesDf = await adSvc.dockLigand(
       receptorData, ligandData, autodockGpf, 10, poseColName);
