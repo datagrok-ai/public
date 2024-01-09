@@ -111,18 +111,18 @@ jobs:
                   echo "::notice title=${PACKAGE}::It is an actions for PR. Publish will be skipped."
               fi
           
-              build_docker=false
-              if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
-                  build_docker=true
-              else
-                if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
-                  build_docker=true
+              if [[ -d "${DIR}/dockerfiles" ]]; then
+                build_docker=false
+                if [[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]; then
+                    build_docker=true
+                else
+                  if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
+                    build_docker=true
+                  fi
                 fi
-              fi
 
-              MATRIX_PUBLISH_JSON+=", \"build_docker\": \"$build_docker\""
-              if [[ "$build_docker" == "true" ]]; then
-                MATRIX_PUBLISH_JSON+=", \"docker\": \"$(find packages/*/dockerfiles -type f -name Dockerfile | tr '\n' ' ')\""
+                MATRIX_PUBLISH_JSON+=", \"build_docker\": \"$build_docker\""
+                MATRIX_PUBLISH_JSON+=", \"docker\": \"$(find ${DIR}/dockerfiles -type f -name Dockerfile | tr '\n' ' ')\""
               fi
 
               MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
@@ -336,7 +336,7 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: Wait for published docker to become available
-        if: matrix.build_docker == 'true' && steps.datagrok-image.outcome == 'success'
+        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
         timeout-minutes: 10
         run: |
           until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
