@@ -205,6 +205,7 @@ jobs:
           else
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
+            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
