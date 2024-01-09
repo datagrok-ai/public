@@ -424,6 +424,7 @@ jobs:
               --load
             image_tars+=" /tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
             images+=" datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }}"
+            echo $image_tars
           done
           echo $image_tars
           echo "images=$images" >> $GITHUB_OUTPUT
