@@ -425,6 +425,7 @@ jobs:
             image_tars+=" /tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
             images+=" datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
+          echo $image_tars
           echo "images=$images" >> $GITHUB_OUTPUT
           echo "image_tars=$image_tars" >> $GITHUB_OUTPUT
 
@@ -518,6 +519,9 @@ jobs:
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         with:
           path: ${{ steps.build-docker.outputs.image_tars }}
+          name: ${{ matrix.package }}.image_tars
+          retention-days: 14
+          if-no-files-found: warn
 
 #      - name: Build and push package Docker image
 #        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
