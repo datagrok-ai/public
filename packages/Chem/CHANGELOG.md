@@ -5,7 +5,7 @@
 ### Features
 
 * Update MinimalLib to 1.2.15 featuring support for RGroups (support for R-group decomposition)
-* Chem: Add dimensionality reduction
+* Chem: Add ability to specify fingerprint types and cluster embeddings for chemical space
 
 ### Bug Fixes
 
