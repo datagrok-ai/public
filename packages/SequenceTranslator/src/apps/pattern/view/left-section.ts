@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
+import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
 import { StrandType } from '../model/types';
 
 import {StringInput, NumberInput} from './types';
@@ -61,8 +61,8 @@ class PatternControlsManager {
     const antisenseStrandToggle = this.createAntisenseStrandToggle();
     const strandLengthInputs = this.createStrandLengthInputs();
 
-    const senseStrandLengthInput = strandLengthInputs[SENSE_STRAND].root;
-    const antisenseStrandLengthInput = strandLengthInputs[ANTISENSE_STRAND].root;
+    const senseStrandLengthInput = strandLengthInputs[STRAND.SENSE].root;
+    const antisenseStrandLengthInput = strandLengthInputs[STRAND.ANTISENSE].root;
 
     const sequenceBaseInput = this.createSequenceBaseInput().root;
     const patternCommentInput = this.createPatternCommentInput().root;
@@ -83,7 +83,7 @@ class PatternControlsManager {
 
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
-      `${STRAND_LABEL[ANTISENSE_STRAND]} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
+      `${STRAND_LABEL[STRAND.ANTISENSE]} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     return toggleAntisenseStrand.root;
@@ -102,7 +102,7 @@ class PatternControlsManager {
     );
 
     this.eventBus.isAntisenseStrandActive$.subscribe((active: boolean) => {
-      $(strandLengthInputs[ANTISENSE_STRAND].root).toggle(active);
+      $(strandLengthInputs[STRAND.ANTISENSE].root).toggle(active);
     })
 
     return strandLengthInputs;
@@ -154,7 +154,7 @@ class PatternChoiceControls {
     this.selectedPattern = defaultPattern;
 
     this.patternChoiceContainer = ui.div([]);
-    this.eventBus.patternListUpdate$.subscribe(() => this.updatePatternChoiceInputContainer()); 
+    this.eventBus.patternListUpdate$.subscribe(() => this.updatePatternChoiceInputContainer());
   }
 
   private selectedUser: string;
@@ -407,8 +407,8 @@ class ColumnInputManager {
 
   private refreshColumnControls(): void {
     const strandColumnInput = this.createStrandColumnInput();
-    const senseStrandColumnInput = strandColumnInput[SENSE_STRAND];
-    const antisenseStrandColumnInput = strandColumnInput[ANTISENSE_STRAND];
+    const senseStrandColumnInput = strandColumnInput[STRAND.SENSE];
+    const antisenseStrandColumnInput = strandColumnInput[STRAND.ANTISENSE];
     // $(antisenseStrandColumnInput).toggle();
 
     const idColumnInput = this.createIdColumnInput();

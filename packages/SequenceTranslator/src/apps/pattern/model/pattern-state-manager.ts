@@ -4,8 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {STRANDS, TERMINAL_KEYS,
- DEFAULT_SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
+import {STRANDS, TERMINI, SEQUENCE_LENGTH, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {PatternAppDataManager} from './external-data-manager';
 import {EventBus} from './event-bus';
 import {StrandType, TerminalType} from './types';
@@ -29,7 +28,7 @@ export class PatternConfigurationManager {
   private initializeBases(): void {
     const defaultBase = this.fetchDefaultBase();
     STRANDS.forEach((strand) => {
-      this._bases[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(defaultBase);
+      this._bases[strand] = new Array(SEQUENCE_LENGTH.DEFAULT).fill(defaultBase);
     });
   }
 
@@ -39,15 +38,15 @@ export class PatternConfigurationManager {
   
   private initializePhosphorothioate(): void {
     STRANDS.forEach((strand) => {
-      this._phosphorothioateLinkages[strand] = new Array(DEFAULT_SEQUENCE_LENGTH).fill(DEFAULT_PHOSPHOROTHIOATE);
+      this._phosphorothioateLinkages[strand] = new Array(SEQUENCE_LENGTH.DEFAULT).fill(DEFAULT_PHOSPHOROTHIOATE);
     });
   }
   
   private initializeTerminalModification(): void {
     STRANDS.forEach((strand) => {
       this._terminalModifications[strand] = {} as Record<TerminalType, string>;
-      TERMINAL_KEYS.forEach((terminal) => {
-        this._terminalModifications[strand][terminal] = '';
+      TERMINI.forEach((terminus) => {
+        this._terminalModifications[strand][terminus] = '';
       });
     });
   }

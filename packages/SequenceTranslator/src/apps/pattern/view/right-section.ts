@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
+import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
 import { StrandType } from '../model/types';
 
 import {StringInput, NumberInput} from './types';
@@ -33,8 +33,8 @@ export class PatternAppRightSection {
       // generateStrandSectionDisplays(),
       // ui.h1('Additional modifications'),
       // ui.form([
-      //   terminalModificationInputs[SENSE_STRAND][FIVE_PRIME_END],
-      //   terminalModificationInputs[SENSE_STRAND][THREE_PRIME_END],
+      //   terminalModificationInputs[STRAND.SENSE][FIVE_PRIME_END],
+      //   terminalModificationInputs[STRAND.SENSE][THREE_PRIME_END],
       // ]),
       // asModificationDiv,
       ], {style: {overflowX: 'scroll', padding: '12px 24px'}});

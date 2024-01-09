@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 import {
-  DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME, FIVE_PRIME, PATTERN_KEY, TERMINI
+  DEFAULT_PHOSPHOROTHIOATE, SEQUENCE_LENGTH, USER_STORAGE_KEY, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
 } from '../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 import {isOverhangNucleotide} from '../model/helpers';
@@ -82,7 +82,7 @@ export class PatternLayoutHandler {
     function updateSingleNucleotideBaseInput(strand: string, index: number) {
       nucleobaseInputs[strand][index] = ui.choiceInput('', getBaseInputValue(strand, index), nucleotideBaseChoices, (value: string) => {
         handleBaseInputChange(value);
-        updateStrandModificationControls(ANTISENSE_STRAND);
+        updateStrandModificationControls(STRAND.ANTISENSE);
         refreshSvgDisplay();
         refreshOutputExamples();
       });
@@ -150,7 +150,7 @@ export class PatternLayoutHandler {
     }
 
     function checkSequenceLengthValidity() {
-      return Object.values(strandLengthInputs).every(input => input.value! < MAX_SEQUENCE_LENGTH);
+      return Object.values(strandLengthInputs).every(input => input.value! < SEQUENCE_LENGTH.MAX);
     }
 
     function extendStrandsToNewLength() {
@@ -170,14 +170,14 @@ export class PatternLayoutHandler {
 
     function displayOutOfRangeDialog() {
       ui.dialog('Out of range')
-        .add(ui.divText(`Sequence length should be less than ${MAX_SEQUENCE_LENGTH} due to UI constraints.`))
+        .add(ui.divText(`Sequence length should be less than ${SEQUENCE_LENGTH.MAX} due to UI constraints.`))
         .onOK(() => resetAllStrandLengthsToMax())
         .onCancel(() => resetAllStrandLengthsToMax())
         .showModal(false);
     }
 
     function resetAllStrandLengthsToMax() {
-      Object.values(strandLengthInputs).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
+      Object.values(strandLengthInputs).forEach(input => input.value = SEQUENCE_LENGTH.MAX);
     }
 
     function updateInputValues(category: MODIFICATION_CATEGORY, newValue: boolean | string): void {
@@ -210,8 +210,8 @@ export class PatternLayoutHandler {
             inputExample[strand].value,
             nucleobaseInputs[strand],
             ptoLinkageInputs[strand],
-            terminalModificationInputs[strand][FIVE_PRIME],
-            terminalModificationInputs[strand][THREE_PRIME],
+            terminalModificationInputs[strand][TERMINUS.FIVE_PRIME],
+            terminalModificationInputs[strand][TERMINUS.THREE_PRIME],
             firstPto[strand].value!
           );
         }
@@ -232,8 +232,8 @@ export class PatternLayoutHandler {
       const ptoLinkageValues = Object.fromEntries(STRANDS.map((strand) => [strand, getPtoLinkageValues(strand)]));
 
       const terminalModificationValues = Object.fromEntries(STRANDS.map((strand) => [strand, {
-        [THREE_PRIME]: terminalModificationInputs[strand][THREE_PRIME].value!,
-        [FIVE_PRIME]: terminalModificationInputs[strand][FIVE_PRIME].value!,
+        [TERMINUS.THREE_PRIME]: terminalModificationInputs[strand][TERMINUS.THREE_PRIME].value!,
+        [TERMINUS.FIVE_PRIME]: terminalModificationInputs[strand][TERMINUS.FIVE_PRIME].value!,
       }]));
 
       const patternSettings = {
@@ -323,7 +323,7 @@ export class PatternLayoutHandler {
     function refreshTerminalModificationsFromPattern(obj: LegacyPatternConfig): void {
       const field = [[PATTERN_KEY.SS_3, PATTERN_KEY.SS_5], [PATTERN_KEY.AS_3, PATTERN_KEY.AS_5]];
       STRANDS.forEach((strand, i) => {
-        TERMINAL_KEYS.forEach((terminal, j) => {
+        TERMINI.forEach((terminal, j) => {
           terminalModificationInputs[strand][terminal].value = obj[field[i][j]] as string;
         });
       });
@@ -336,7 +336,7 @@ export class PatternLayoutHandler {
 
       if (!areLengthsUniform) {
         displayLengthMismatchDialog(colName);
-      } else if (col.get(0).length !== strandLengthInputs[SENSE_STRAND].value) {
+      } else if (col.get(0).length !== strandLengthInputs[STRAND.SENSE].value) {
         displayLengthUpdatedDialog();
       }
 
@@ -395,14 +395,14 @@ export class PatternLayoutHandler {
       const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkageInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value)] as boolean[];
 
       return {
-        [PATTERN_KEY.SS_BASES]: createBasesArray(SENSE_STRAND),
-        [PATTERN_KEY.AS_BASES]: createBasesArray(ANTISENSE_STRAND),
-        [PATTERN_KEY.SS_PTO]: createPtoArray(SENSE_STRAND),
-        [PATTERN_KEY.AS_PTO]: createPtoArray(ANTISENSE_STRAND),
-        [PATTERN_KEY.SS_3]: terminalModificationInputs[SENSE_STRAND][THREE_PRIME].value!,
-        [PATTERN_KEY.SS_5]: terminalModificationInputs[SENSE_STRAND][FIVE_PRIME].value!,
-        [PATTERN_KEY.AS_3]: terminalModificationInputs[ANTISENSE_STRAND][THREE_PRIME].value!,
-        [PATTERN_KEY.AS_5]: terminalModificationInputs[ANTISENSE_STRAND][FIVE_PRIME].value!,
+        [PATTERN_KEY.SS_BASES]: createBasesArray(STRAND.SENSE),
+        [PATTERN_KEY.AS_BASES]: createBasesArray(STRAND.ANTISENSE),
+        [PATTERN_KEY.SS_PTO]: createPtoArray(STRAND.SENSE),
+        [PATTERN_KEY.AS_PTO]: createPtoArray(STRAND.ANTISENSE),
+        [PATTERN_KEY.SS_3]: terminalModificationInputs[STRAND.SENSE][TERMINUS.THREE_PRIME].value!,
+        [PATTERN_KEY.SS_5]: terminalModificationInputs[STRAND.SENSE][TERMINUS.FIVE_PRIME].value!,
+        [PATTERN_KEY.AS_3]: terminalModificationInputs[STRAND.ANTISENSE][TERMINUS.THREE_PRIME].value!,
+        [PATTERN_KEY.AS_5]: terminalModificationInputs[STRAND.ANTISENSE][TERMINUS.FIVE_PRIME].value!,
         [PATTERN_KEY.COMMENT]: patternCommentInput.value,
       };
     }
@@ -625,25 +625,25 @@ export class PatternLayoutHandler {
     const isFullyPtoInput = createFullyPtoInput();
 
     const maxStrandLength = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, DEFAULT_SEQUENCE_LENGTH]
+      (strand) => [strand, SEQUENCE_LENGTH.DEFAULT]
     ));
     const modificationControls = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.div([])]
     ));
     const ptoLinkageInputs = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, Array<BooleanInput>(DEFAULT_SEQUENCE_LENGTH)
+      (strand) => [strand, Array<BooleanInput>(SEQUENCE_LENGTH.DEFAULT)
         .fill(ui.boolInput('', DEFAULT_PHOSPHOROTHIOATE))]
     ));
     const nucleobaseInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const choiceInputs = Array<StringInput>(DEFAULT_SEQUENCE_LENGTH)
+        const choiceInputs = Array<StringInput>(SEQUENCE_LENGTH.DEFAULT)
           .fill(ui.choiceInput('', defaultNucleotideBase, nucleotideBaseChoices));
         return [strand, choiceInputs];
       }
     ));
     const strandLengthInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const input = ui.intInput(`${STRAND_LABEL[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => refreshUIForNewSequenceLength());
+        const input = ui.intInput(`${STRAND_LABEL[strand]} length`, SEQUENCE_LENGTH.DEFAULT, () => refreshUIForNewSequenceLength());
         input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
       }));
@@ -689,12 +689,12 @@ export class PatternLayoutHandler {
     }
 
     function createStrandInputs(strand: StrandType) {
-      return Object.fromEntries(TERMINAL_KEYS.map((key: TerminalType) => [key, createTerminalModificationInput(strand, key)]));
+      return Object.fromEntries(TERMINI.map((terminus: TerminalType) => [terminus, createTerminalModificationInput(strand, terminus)]));
     }
 
-    function createTerminalModificationInput(strand: StrandType, key: TerminalType): StringInput {
-      const label = `${strand} ${TERMINAL[key]}\' Modification`;
-      const tooltip = `Additional ${strand} ${TERMINAL[key]}\' Modification`;
+    function createTerminalModificationInput(strand: StrandType, terminus: TerminalType): StringInput {
+      const label = `${strand} ${terminus} Modification`;
+      const tooltip = `Additional ${strand} ${terminus} Modification`;
       const input = ui.stringInput(label, '', handleTerminalModificationInputChange);
 
       input.setTooltip(tooltip);
@@ -713,8 +713,8 @@ export class PatternLayoutHandler {
         inputExample[strand].value,
         nucleobaseInputs[strand],
         ptoLinkageInputs[strand],
-        terminalModificationInputs[strand][THREE_PRIME],
-        terminalModificationInputs[strand][FIVE_PRIME],
+        terminalModificationInputs[strand][TERMINUS.THREE_PRIME],
+        terminalModificationInputs[strand][TERMINUS.FIVE_PRIME],
         firstPto[strand].value!
       );
 
@@ -808,7 +808,7 @@ export class PatternLayoutHandler {
       }).root,
     ]);
 
-    const asLengthDiv = ui.div([strandLengthInputs[ANTISENSE_STRAND].root]);
+    const asLengthDiv = ui.div([strandLengthInputs[STRAND.ANTISENSE].root]);
 
     function getTableInput(tableList: DG.DataFrame[]): DG.InputBase<DG.DataFrame | null> {
       function updateStrandColumns(table: DG.DataFrame) {
@@ -870,13 +870,13 @@ export class PatternLayoutHandler {
 
     function toggleUiElementsBasedOnAsStrand(value: boolean) {
       const elementsToToggle = [
-        modificationSection[ANTISENSE_STRAND],
-        // strandColumnInputDiv[ANTISENSE_STRAND],
-        strandColumnInput[ANTISENSE_STRAND].root,
+        modificationSection[STRAND.ANTISENSE],
+        // strandColumnInputDiv[STRAND.ANTISENSE],
+        strandColumnInput[STRAND.ANTISENSE].root,
         asLengthDiv,
         asModificationDiv,
         asExampleDiv,
-        firstPto[ANTISENSE_STRAND].root
+        firstPto[STRAND.ANTISENSE].root
       ];
 
       elementsToToggle.forEach(element => {
@@ -894,8 +894,8 @@ export class PatternLayoutHandler {
     patternNameInput.setTooltip('Name Of New Pattern');
 
 
-    TERMINAL_KEYS.forEach((terminal) => {
-      asModificationDiv.append(terminalModificationInputs[ANTISENSE_STRAND][terminal].root);
+    TERMINI.forEach((terminal) => {
+      asModificationDiv.append(terminalModificationInputs[STRAND.ANTISENSE][terminal].root);
     })
 
     const patternCommentInput = ui.textInput('Comment', '', () => refreshSvgDisplay());
@@ -948,7 +948,7 @@ export class PatternLayoutHandler {
         if (condition[i]) {
           addColumnWithTranslatedSequences(
             tableInput.value!.name, selectedStrandColumn[strand], nucleobaseInputs[strand], ptoLinkageInputs[strand],
-            terminalModificationInputs[strand][FIVE_PRIME], terminalModificationInputs[strand][THREE_PRIME], firstPto[strand].value!
+            terminalModificationInputs[strand][TERMINUS.FIVE_PRIME], terminalModificationInputs[strand][TERMINUS.THREE_PRIME], firstPto[strand].value!
           );
         }
       });
@@ -983,8 +983,8 @@ export class PatternLayoutHandler {
     const convertSequenceButton = ui.bigButton('Convert', processConvertButtonClick);
 
 
-    asExampleDiv.append(inputExample[ANTISENSE_STRAND].root);
-    asExampleDiv.append(outputExample[ANTISENSE_STRAND].root);
+    asExampleDiv.append(inputExample[STRAND.ANTISENSE].root);
+    asExampleDiv.append(outputExample[STRAND.ANTISENSE].root);
 
     refreshUIForNewSequenceLength();
 
@@ -997,35 +997,35 @@ export class PatternLayoutHandler {
           ui.h1('PTO'),
           ui.divH([
             isFullyPtoInput.root,
-            firstPto[SENSE_STRAND].root,
-            firstPto[ANTISENSE_STRAND].root,
+            firstPto[STRAND.SENSE].root,
+            firstPto[STRAND.ANTISENSE].root,
           ], {style:{gap:'12px'}})
         ]))
         .add(ui.divH([
-          modificationSection[SENSE_STRAND],
-          modificationSection[ANTISENSE_STRAND],
+          modificationSection[STRAND.SENSE],
+          modificationSection[STRAND.ANTISENSE],
         ], {style:{gap:'24px'}}))
         .onOK(()=>{grok.shell.info('Saved')})
         .show()
     }, 'Edit pattern', '');
 
-    strandLengthInputs[SENSE_STRAND].addCaption('Length');
+    strandLengthInputs[STRAND.SENSE].addCaption('Length');
 
     function createLeftPanelLayout() {
       return ui.box(
         ui.div([
           ui.h1('Pattern'),
           createAsStrand.root,
-          strandLengthInputs[SENSE_STRAND],
-          strandLengthInputs[ANTISENSE_STRAND],
+          strandLengthInputs[STRAND.SENSE],
+          strandLengthInputs[STRAND.ANTISENSE],
           sequenceBase.root,
           patternCommentInput.root,
           loadPatternDiv,
           patternNameInput.root,
           ui.h1('Convert'),
           tableInput.root,
-          strandColumnInput[SENSE_STRAND],
-          strandColumnInput[ANTISENSE_STRAND],
+          strandColumnInput[STRAND.SENSE],
+          strandColumnInput[STRAND.ANTISENSE],
           idColumnSelector.root,
           ui.buttonsInput([convertSequenceButton]),
         ], 'ui-form'),
@@ -1041,8 +1041,8 @@ export class PatternLayoutHandler {
         generateStrandSectionDisplays(),
         ui.h1('Additional modifications'),
         ui.form([
-          terminalModificationInputs[SENSE_STRAND][FIVE_PRIME],
-          terminalModificationInputs[SENSE_STRAND][THREE_PRIME],
+          terminalModificationInputs[STRAND.SENSE][TERMINUS.FIVE_PRIME],
+          terminalModificationInputs[STRAND.SENSE][TERMINUS.THREE_PRIME],
         ]),
         asModificationDiv,
       ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
@@ -1059,13 +1059,13 @@ export class PatternLayoutHandler {
       return ui.divH([
         ui.divV([
           ui.h1('Sense strand'),
-          inputExample[SENSE_STRAND].root,
-          outputExample[SENSE_STRAND].root,
+          inputExample[STRAND.SENSE].root,
+          outputExample[STRAND.SENSE].root,
         ], 'ui-block'),
         ui.divV([
           ui.h1('Anti sense'),
-          inputExample[ANTISENSE_STRAND].root,
-          outputExample[ANTISENSE_STRAND].root,
+          inputExample[STRAND.ANTISENSE].root,
+          outputExample[STRAND.ANTISENSE].root,
         ], 'ui-block'),
       ], {style: {gap: '24px', marginTop: '24px'}});
     }
