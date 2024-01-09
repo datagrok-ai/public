@@ -406,17 +406,18 @@ jobs:
               image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
             fi
             echo $dockerfile
-            docker buildx build \
+            echo $image_name
+            docker buildx build $dockerfile \
               --tag datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }} \
               --cache-from type=registry,ref="datagrok/$image_name:cache" \
               --cache-to type=registry,ref="datagrok/$image_name:cache" \
               --output type=docker,dest=/tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar
-              --load $dockerfile
+              --load
             image_tars+=" /tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
             images+=" datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
           echo "images=$images" >> $GITHUB_OUTPUT
-          echo "image_tars=image_tars" >> $GITHUB_OUTPUT
+          echo "image_tars=$image_tars" >> $GITHUB_OUTPUT
 
       - name: General checks
         run: |
