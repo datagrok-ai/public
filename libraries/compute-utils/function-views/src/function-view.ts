@@ -439,13 +439,13 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const newRibbonPanels: HTMLElement[][] =
       [[
-        ...this.isHistoryEnabled && this.options.historyEnabled ? [
+        ...!this.options.isTabbed && this.isHistoryEnabled && this.options.historyEnabled ? [
           historyButton,
         ]: [],
-        ...(this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
+        ...!this.options.isTabbed && this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0 ? [
           exportBtn,
         ]: [],
-        editBtn,
+        ...!this.options.isTabbed ? [editBtn]: [],
       ]];
 
     this.setRibbonPanels(newRibbonPanels);

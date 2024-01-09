@@ -2,6 +2,7 @@ export enum StringMetricsNames {
     Levenshtein = 'Levenshtein',
     JaroWinkler = 'Jaro-Winkler',
     Manhattan = 'Manhattan',
+    Onehot = 'One-Hot',
   }
 
 export enum VectorMetricsNames {
