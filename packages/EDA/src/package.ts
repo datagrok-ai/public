@@ -16,6 +16,8 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 import {oneWayAnova} from './stat-tools';
 import { getDbscanWorker } from '@datagrok-libraries/math';
 
+import {runKNNImputer} from './missing-values-imputation/ui';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -65,13 +67,13 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //top-menu: ML | Dimensionality Reduction | UMAP...
 //name: UMAP
 //description: Uniform Manifold Approximation and Projection (UMAP)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; min: 1; max: 20; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
-//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
-//input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
-//input: double minDist = 0.1 {caption: Minimum distance; min: 0; max: 1; category: Hyperparameters} [The effective minimum distance between embedded points.]
-//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2 {caption: Components; min: 1; max: 20} [The number of components (dimensions) to project the data to.]
+//input: int epochs = 100 {caption: Epochs} [The number of epochs to optimize embeddings.]
+//input: int neighbors = 15 {caption: Neighbors} [The number of nearest neighbors to construct the fuzzy manifold.]
+//input: double minDist = 0.1 {caption: Minimum distance; min: 0; max: 1} [The effective minimum distance between embedded points.]
+//input: double spread = 1.0 {caption: Spread} [The effective scale of embedded points.]
 //output: dataframe result {action:join(table)}
 export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
   epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
@@ -82,12 +84,12 @@ export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, compone
 //top-menu: ML | Dimensionality Reduction | t-SNE...
 //name: t-SNE
 //description: t-distributed stochastic neighbor embedding (t-SNE)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
-//input: double learningRate = 10 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter. Should be in the range 10...1000.]
-//input: int perplexity = 30 {caption: Perplexity; category: Hyperparameters} [The number of nearest neighbors. Should be less than the number of samples.]
-//input: int iterations = 500 {caption: Iterations; category: Hyperparameters} [Maximum number of iterations for the optimization. Should be at least 250.]
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2 {caption: Components} [Dimension of the embedded space.]
+//input: double learningRate = 10 {caption: Learning rate} [Optimization tuning parameter. Should be in the range 10...1000.]
+//input: int perplexity = 30 {caption: Perplexity} [The number of nearest neighbors. Should be less than the number of samples.]
+//input: int iterations = 500 {caption: Iterations} [Maximum number of iterations for the optimization. Should be at least 250.]
 //output: dataframe result {action:join(table)}
 export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, components: number,
   learningRate: number, perplexity: number, iterations: number): Promise<DG.DataFrame> 
@@ -98,13 +100,13 @@ export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, compone
 //top-menu: ML | Dimensionality Reduction | SPE...
 //name: SPE
 //description: Stochastic proximity embedding (SPE)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
-//input: int steps = 0 {caption: Steps; category: Hyperparameters} [Number of random selections of point pairs and distance computations between them.]
-//input: int cycles = 1000000 {caption: Cycles; category: Hyperparameters} [Number of the method cycles.]
-//input: double cutoff = 0.0 {caption: Cutoff; category: Hyperparameters} [Cutoff distance between points.]
-//input: double lambda = 2.0 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter.]
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int dimension = 2 {caption: Dimension} [Dimension of the embedded space.]
+//input: int steps = 0 {caption: Steps} [Number of random selections of point pairs and distance computations between them.]
+//input: int cycles = 1000000 {caption: Cycles} [Number of the method cycles.]
+//input: double cutoff = 0.0 {caption: Cutoff} [Cutoff distance between points.]
+//input: double lambda = 2.0 {caption: Learning rate} [Optimization tuning parameter.]
 //output: dataframe result {action:join(table)}
 export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimension: number,
   steps: number, cycles: number, cutoff: number, lambda: number): Promise<DG.DataFrame> 
@@ -350,4 +352,11 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
   addOneWayAnovaVizualization(table, factor, feature, res);  
+}
+
+//top-menu: ML | Missing Values Imputation ...
+//name: KNN impute
+//desription: Missing values imputation using the k-nearest neighbors method
+export function kNNImputation() {  
+  runKNNImputer();  
 }
