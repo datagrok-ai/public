@@ -211,7 +211,7 @@ You will see the following output:
 :::tip Pro tip
 
 Depending on the metadata associated with the parameters, the editor can be
-enriched by [validators](scripting-advanced#parameter-validators), [choices](scripting-advanced#parameter-choices),
+enriched by [validators](./scripting-advanced#parameter-validators), [choices](scripting-advanced#parameter-choices),
 and [suggestions](scripting-advanced#parameter-suggestions). Validators, choices, and suggestions are
 [functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways 
 (db query, script, etc), and reused.
@@ -228,8 +228,6 @@ For additional capabilities of the Datagrok script editor, see the
 [Working with Datagrok script editor](#working-with-datagrok-script-editor) section.
 
 
-
-
 ## Datagrok scripting in details
 
 ### Parameters: scalars and dataframes
@@ -244,7 +242,7 @@ is a [Pandas](https://pandas.pydata.org/)
 [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html).
 [R](https://www.r-project.org/) supports dataframes natively.
 
-Let's modify the default example accept and return both dataframes and scalars.
+Let's modify the default example to accept and return both dataframes and scalars.
 We copy the original dataframe and add a new ID column to it.
 Also, we return the number of rows in the table.
 
@@ -303,20 +301,19 @@ When you run the script, you will see the following dialog:
 Datagrok created the script UI,
 populated default values, and created popups with help text.
 
-After running this script, 
-Datagrok automatically catches and opens the new dataframe.
+After running this script, Datagrok automatically opens the new dataframe.
 It will contain an additional column **ID** with the generated row ID.
 
 ### Using column inputs
 
-For the dataframe, Datagrok provides you special data input to select one or multiple columns.
-* The `column` input parameter allows you to select one column from the dataframe. 
-  In the script it will be a string variable containing column ID
-* The `column_list` input parameter allows you to select multiple columns.
-  In the script it will be a list of strings, containing column IDs
+Datagrok provides you with data inputs to select one or multiple columns from a dataframe.
+* The `column` input parameter allows you to select one column from the dataframe.
+  In the script the `column` parameters is string variable containing header name of the selected columns.
+* The `column_list` input parameter allows you to select multiple columns from the dataframe.
+  In the script the `column_list` parameters is a list of strings containing header names of the selected columns.
 
 Both of these selectors require at least one **Dataframe** input 
-to choose a dataframe for column selection.
+to choose a dataframe.
 
 ```python
 #name: ColumnSelectorDemo
@@ -338,10 +335,10 @@ new_table = new_table[ [id_column] + data_columns ]
 
 ### File I/O
 
-You can exchange raw files between a Datagrok script and your computer
+You can use files as input or output parameters
 using `file` and `blob` annotations.
 
-The `file` annotation allows you to load and save any binary file.
+The `file` parameter type allows you to read and write a file.
 Inside the `Python`/`R` script this parameter will be a string variable 
 containing path to the local file.
 
@@ -358,7 +355,7 @@ For example, let's save a dataframe to a JSON file:
 df.to_json(json_file)
 ```
 
-When you run this script, Datagrok will return to you the `FileInfo` object in the scalar variables panel.
+When you run this script, Datagrok will return the `FileInfo` object in the scalar variables panel.
 To save the file, right-click on the highlighted file link and choose the **Download** option.
 The file name always matches the output variable name.
 Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
