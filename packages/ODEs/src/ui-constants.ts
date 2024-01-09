@@ -59,6 +59,10 @@ export enum ERROR_MSG {
   APP_CREATING_FAILS = 'Application creating fails',
   EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
   CORE_ISSUE = 'Core issue',
+  MISSING_CLOSING_BRACKET = 'ANNOTATION: "]" is missing',
+  INCORRECT_BRACES_USE = 'ANNOTATION: incorrect use of "{}"',
+  MISSING_COLON = 'ANNOTATION: ":" is missing',
+  CHECK_ARGUMENTS = ' (check the "argument" section)'
 };
 
 /** Warning dialog lines */
@@ -112,3 +116,6 @@ Press **JS** button and export model to JavaScript script.
 # Learn more
 * [Compute](https://datagrok.ai/help/compute)
 * [Diff Studio](${LINK.DIF_STUDIO})`;
+
+/** */
+export const FLOAT = 'Float';

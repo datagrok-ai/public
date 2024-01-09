@@ -12,8 +12,9 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo as demoAppInfo} from './ui-constants';
-import {getIVP, getScriptLines, getScriptParams} from './scripting-tools';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo as demoAppInfo, FLOAT} from './ui-constants';
+import {getIVP, getScriptLines, getScriptParams, IVP, Input,
+  BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP} from './scripting-tools';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -136,7 +137,10 @@ export async function runSolverApp() {
   /** Solve the current IVP */
   const solve = async () => {  
     try {  
-      const ivp = getIVP(editorView.state.doc.toString());
+      const ivp = getIVP(editorView.state.doc.toString());    
+
+      solverView.dockManager.dock(ui.form(getInputs(ivp)), 'left');
+
       const scriptText = getScriptLines(ivp).join('\n');    
       const script = DG.Script.create(scriptText);
       const params = getScriptParams(ivp);    
@@ -652,3 +656,100 @@ export async function runSolverDemoApp() {
 
   solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, appButton], [playIcon]]);
 } // runSolverDemoApp
+
+/** */
+function getInputs(ivp: IVP): DG.InputBase[] {
+
+  const strToVal = (s: string) => {
+    let num = Number(s);
+  
+    if (!isNaN(num))
+      return num;
+    
+    if (s === 'true')
+      return true;
+  
+    if (s === 'false')
+      return false;
+  
+    return s;
+  };
+
+  const getPropery = (name: string, modelInput: Input) => {
+    let options = {name: name, defaultValue: modelInput.value, inputType: FLOAT};
+
+    if (modelInput.annot === null)
+      return DG.Property.fromOptions(options);  
+
+    let annot = modelInput.annot;
+    let descr: string | null = null;
+
+    let posOpen = annot.indexOf(BRACKET_OPEN);
+    let posClose = annot.indexOf(BRACKET_CLOSE);
+
+    if (posOpen !== -1) {    
+      if (posClose === -1)
+        throw new Error(ERROR_MSG.MISSING_CLOSING_BRACKET);
+    
+      descr = annot.slice(posOpen + 1, posClose);
+    
+      annot = annot.slice(0, posOpen);
+    }
+
+    posOpen = annot.indexOf(BRACE_OPEN);
+    posClose = annot.indexOf(BRACE_CLOSE);
+
+    if (posOpen >= posClose)
+      throw new Error(ERROR_MSG.INCORRECT_BRACES_USE);
+    
+    let pos: number;
+    let key: string;
+    let val;
+
+    annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
+      pos = str.indexOf(CONTROL_SEP);
+      
+      if (pos === -1)
+        throw new Error(ERROR_MSG.MISSING_COLON);
+      
+      key = str.slice(0, pos).trim();
+      val = str.slice(pos + 1).trim();
+
+      // @ts-ignore
+      options[key] = strToVal(val);
+    });
+
+    if (descr !== null)
+      //@ts-ignore
+      options['description'] = descr;
+
+    return DG.Property.fromOptions(options);
+  };
+
+  let prop: DG.Property;
+  const inputs = [] as DG.InputBase[];
+
+  try {
+    prop = getPropery('start', ivp.arg.start);
+    //console.log(prop);
+    inputs.push(ui.input.forProperty(prop))
+
+    prop = getPropery('finish', ivp.arg.finish);
+    inputs.push(ui.input.forProperty(prop))
+    //console.log(prop);
+
+    prop = getPropery('step', ivp.arg.step);
+    inputs.push(ui.input.forProperty(prop))
+    //console.log(prop);
+  }
+  catch (err) {
+    if (err instanceof Error) 
+      grok.shell.error(`${err.message}${ERROR_MSG.CHECK_ARGUMENTS}`);
+    else
+      grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+  }
+
+  console.log(inputs);
+
+  return inputs;
+}

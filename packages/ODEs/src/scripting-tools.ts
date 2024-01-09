@@ -10,12 +10,15 @@
 import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART} from './constants';
 
 // Scripting specific constants
-const CONTROL_SEP = ':';
+export const CONTROL_SEP = ':';
 const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
 const SERVICE = '_';
-const BRACE_OPEN = '{';
-const BRACE_CLOSE = '}';
+export const BRACE_OPEN = '{';
+export const BRACE_CLOSE = '}';
+export const BRACKET_OPEN = '[';
+export const BRACKET_CLOSE = ']';
+export const ANNOT_SEPAR = ';';
 const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
 
@@ -31,7 +34,7 @@ const POW_IDX = MATH_FUNCS.indexOf('pow');
 const MATH_CONSTS = ['PI', 'E', ];
 
 /** Numerical input specification */
-type Input = {
+export type Input = {
   value: number,
   annot: string | null,
 };
