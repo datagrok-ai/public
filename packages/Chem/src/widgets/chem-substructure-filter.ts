@@ -207,7 +207,7 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
 
     this.subs.push(DG.debounce(this.dataFrame!.onFilterChanged, 10).subscribe(async (_) => {
-      if (this.isFiltering && this.bitset?.length !== this.dataFrame?.rowCount) {
+      if (this.bitset?.length !== this.dataFrame?.rowCount) {
         const bitArray = await this.getFilterBitset();
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
         this.batchResultObservable?.unsubscribe();
