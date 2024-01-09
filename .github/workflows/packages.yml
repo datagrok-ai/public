@@ -271,7 +271,9 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+        run: |
+          npm install -g datagrok-tools@latest
+          echo ${{ matrix.docker_build }}
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
