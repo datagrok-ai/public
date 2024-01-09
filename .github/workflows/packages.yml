@@ -422,8 +422,8 @@ jobs:
                $cache_args \
               --output type=docker,dest=/tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar \
               --load
-            image_tars+=" /tmp/" + "$image_name" + "_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
-            images+=" datagrok/" + "$image_name" + ":${{ steps.docker_name_ver.outputs.image_ver }}"
+            image_tars+=" /tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
+            images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
           echo $image_tars
           echo "images=$images" >> $GITHUB_OUTPUT
