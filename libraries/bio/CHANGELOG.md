@@ -12,6 +12,7 @@
 * Move pdb, pdbqt parser to bio lib
 * Add IAutoDockService checkOpenCl, dockLigandColumn
 * Add Molecule, Molecule3D units handler getAsPdb
+* Add IHelmWebEditor
 
 ### Bug fixes
 
