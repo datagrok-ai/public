@@ -335,7 +335,7 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: Wait for published docker to become available
-        if: matrix.build_docker == 'true'
+        if: matrix.build_docker == 'true' && steps.datagrok-image.outcome == 'success'
         timeout-minutes: 10
         run: |
           until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
