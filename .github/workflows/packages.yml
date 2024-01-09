@@ -273,7 +273,6 @@ jobs:
         id: datagrok-tools
         run: |
           npm install -g datagrok-tools@latest
-          echo ${{ matrix.docker_build }}
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -423,7 +422,7 @@ jobs:
           docker system prune -af --volumes
 
       - name: Get docker image version
-        if: matrix.docker_build == 'true'
+        if: matrix.build_docker == 'true'
         id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
