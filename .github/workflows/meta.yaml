@@ -92,6 +92,7 @@ jobs:
         if: steps.packages.outputs.bump == 'yes'
         id: upgrade
         working-directory: packages/Meta
+        continue-on-error: true
         run: |
           git pull
           if [ -n "$(git status -s package.json)" ]; then
