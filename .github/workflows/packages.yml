@@ -396,6 +396,13 @@ jobs:
           echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: steps.docker_name_ver.outcome == 'success'
+
       - name: Build package Docker image
         if: steps.docker_name_ver.outcome == 'success'
         id: build-docker
@@ -405,14 +412,14 @@ jobs:
             if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
               image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
             fi
+            cache_args="--cache-from type=registry,ref=\"datagrok/$image_name:cache\""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              cache_args+=" --cache-to type=registry,ref=\"datagrok/$image_name:cache\""
+            fi
             docker buildx create --use
-            ls -lah $dockerfile
-            ls -lah
-            echo $(pwd)
             docker buildx build $(dirname $dockerfile) \
               --tag datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }} \
-              --cache-from type=registry,ref="datagrok/$image_name:cache" \
-              --cache-to type=registry,ref="datagrok/$image_name:cache" \
+               $cache_args \
               --output type=docker,dest=/tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar \
               --load
             image_tars+=" /tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
@@ -511,13 +518,6 @@ jobs:
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         with:
           path: ${{ steps.build-docker.outputs.image_tars }}
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
 
 #      - name: Build and push package Docker image
 #        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
