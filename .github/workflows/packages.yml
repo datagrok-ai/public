@@ -412,20 +412,19 @@ jobs:
             if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
               image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
             fi
-            cache_args="--cache-from type=registry,ref=datagrok/$image_name:cache"
+            cache_args="--cache-from type=registry,ref=datagrok/${image_name}:cache"
             if [ '${{ github.ref }}' == 'refs/heads/master' ]; then
-              cache_args+=" --cache-to type=registry,ref=datagrok/$image_name:cache"
+              cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
             fi
             docker buildx create --use
             docker buildx build $(dirname $dockerfile) \
-              --tag datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }} \
+              --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} \
                $cache_args \
-              --output type=docker,dest=/tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar \
+              --output type=docker,dest=/tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar \
               --load
             image_tars+=" /tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
             images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
-          echo $image_tars
           echo "images=$images" >> $GITHUB_OUTPUT
           echo "image_tars=$image_tars" >> $GITHUB_OUTPUT
 
