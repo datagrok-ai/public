@@ -7,13 +7,13 @@ import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
 import {
   DEFAULT_PHOSPHOROTHIOATE, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, SENSE_STRAND, ANTISENSE_STRAND, STRAND_LABEL, STRANDS, TERMINAL_KEYS, TERMINAL, THREE_PRIME, FIVE_PRIME, PATTERN_KEY, TERMINI
 } from '../model/const';
-import {PatternSettings, StrandType, TerminalType} from '../model/types';
+import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 import {isOverhangNucleotide} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/oligo-pattern';
 import {renderNucleotidePattern} from './render-svg';
 
 import { BooleanInput, StringInput} from './types';
-import {PatternConfiguration} from '../model/types';
+import {LegacyPatternConfig} from '../model/types';
 // todo: remove ts-ignore
 //@ts-ignore
 import * as svgExport from 'save-svg-as-png';
@@ -244,7 +244,7 @@ export class PatternLayoutHandler {
         terminalModifications: terminalModificationValues,
         comment: patternCommentInput.value,
         modificationsWithNumericLabels,
-      } as PatternSettings;
+      } as PatternConfiguration;
 
       const svg = renderNucleotidePattern(patternSettings);
 
@@ -267,12 +267,12 @@ export class PatternLayoutHandler {
       return mostFrequentElement;
     }
 
-    async function fetchPatternFromStorage(newName: string): Promise<PatternConfiguration> {
+    async function fetchPatternFromStorage(newName: string): Promise<LegacyPatternConfig> {
       const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
       return JSON.parse(entities[newName]);
     }
 
-    async function applyPatternDataToUI(newName: string, patternConfig: PatternConfiguration): Promise<void> {
+    async function applyPatternDataToUI(newName: string, patternConfig: LegacyPatternConfig): Promise<void> {
       sequenceBase.value = detectMostFrequentBase([...patternConfig[PATTERN_KEY.AS_BASES], ...patternConfig[PATTERN_KEY.SS_BASES]]);
       createAsStrand.value = (patternConfig[PATTERN_KEY.AS_BASES].length > 0);
       patternNameInput.value = newName;
@@ -297,14 +297,14 @@ export class PatternLayoutHandler {
       }
     }
 
-    function refreshBaseInputsFromPattern(obj: PatternConfiguration): void {
+    function refreshBaseInputsFromPattern(obj: LegacyPatternConfig): void {
       const fields = [PATTERN_KEY.SS_BASES, PATTERN_KEY.AS_BASES];
       STRANDS.forEach((strand, i) => {
         nucleobaseInputs[strand] = (obj[fields[i]] as string[]).map((base: string) => ui.choiceInput('', base, nucleotideBaseChoices));
       });
     }
 
-    function refreshPtoLinkagesFromPattern(obj: PatternConfiguration): void {
+    function refreshPtoLinkagesFromPattern(obj: LegacyPatternConfig): void {
       const fields = [PATTERN_KEY.SS_PTO, PATTERN_KEY.AS_PTO];
       STRANDS.forEach((strand, i) => {
         const ptoValues = obj[fields[i]] as boolean[];
@@ -313,14 +313,14 @@ export class PatternLayoutHandler {
       });
     }
 
-    function adjustStrandLengthsFromPattern(obj: PatternConfiguration): void {
+    function adjustStrandLengthsFromPattern(obj: LegacyPatternConfig): void {
       const fields = [PATTERN_KEY.SS_BASES, PATTERN_KEY.AS_BASES];
       STRANDS.forEach((strand, i) => {
         strandLengthInputs[strand].value = obj[fields[i]].length;
       });
     }
 
-    function refreshTerminalModificationsFromPattern(obj: PatternConfiguration): void {
+    function refreshTerminalModificationsFromPattern(obj: LegacyPatternConfig): void {
       const field = [[PATTERN_KEY.SS_3, PATTERN_KEY.SS_5], [PATTERN_KEY.AS_3, PATTERN_KEY.AS_5]];
       STRANDS.forEach((strand, i) => {
         TERMINAL_KEYS.forEach((terminal, j) => {
@@ -390,7 +390,7 @@ export class PatternLayoutHandler {
         `${patternNameInput.stringValue}${currUserName}`;
     }
 
-    function assemblePatternData(): PatternConfiguration {
+    function assemblePatternData(): LegacyPatternConfig {
       const createBasesArray = (strand: string) => nucleobaseInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value) as string[];
       const createPtoArray = (strand: string) => [firstPto[strand].value, ...ptoLinkageInputs[strand].slice(0, strandLengthInputs[strand].value!).map(e => e.value)] as boolean[];
 
@@ -407,7 +407,7 @@ export class PatternLayoutHandler {
       };
     }
 
-    async function sortPatternsByUserOwnership(patternsData: PatternConfiguration): Promise<{ ownPatterns: string[], otherUsersPatterns: string[] }> {
+    async function sortPatternsByUserOwnership(patternsData: LegacyPatternConfig): Promise<{ ownPatterns: string[], otherUsersPatterns: string[] }> {
       const ownPatterns: string[] = [];
       const otherUsersPatterns: string[] = [];
 
@@ -484,7 +484,7 @@ export class PatternLayoutHandler {
       }
     }
 
-    async function checkIfPatternExistsInStorage(patternData: PatternConfiguration, patternName: string) {
+    async function checkIfPatternExistsInStorage(patternData: LegacyPatternConfig, patternName: string) {
       return Object.keys(patternData).includes(patternName);
     }
 

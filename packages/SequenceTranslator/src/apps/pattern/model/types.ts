@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {PATTERN_KEY, TERMINI, STRANDS} from './const';
 
 // todo: remove after full refactoring
-export interface PatternConfiguration {
+export interface LegacyPatternConfig {
   [PATTERN_KEY.SS_BASES]: string[];
   [PATTERN_KEY.AS_BASES]: string[];
   [PATTERN_KEY.SS_PTO]:  boolean[];
@@ -21,7 +21,7 @@ export interface PatternConfiguration {
 export type StrandType = typeof STRANDS[number];
 export type TerminalType = typeof TERMINI[number];
 
-export type PatternSettings = {
+export type PatternConfiguration = {
   patternName: string,
   isAntisenseStrandActive: boolean,
   bases: Record<StrandType, string[]>,

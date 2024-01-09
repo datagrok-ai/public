@@ -5,7 +5,7 @@ import {isOverhangNucleotide} from '../model/helpers';
 import {
   SENSE_STRAND, ANTISENSE_STRAND, STRANDS, THREE_PRIME, FIVE_PRIME, TERMINI
 } from '../model/const';
-import {PatternSettings, StrandType, TerminalType} from '../model/types';
+import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 
 const LEFT_END = 'LEFT';
 const RIGHT_END = 'RIGHT';
@@ -92,28 +92,13 @@ const SVG_Y_COORDS = {
   SVG_TOTAL_HEIGHT: (asExists: boolean) => (asExists) ? 11 * NUCLEOBASE_CIRCLE_RADIUS : 9 * NUCLEOBASE_CIRCLE_RADIUS,
 };
 
-export function renderNucleotidePattern(patternConfiguration: PatternSettings): Element {
+export function renderNucleotidePattern(patternConfiguration: PatternConfiguration): Element {
   let {
     patternName,
-    isAntisenseStrandActive: isAsStrandActive,
-    bases: {
-      [SENSE_STRAND]: ssBases, 
-      [ANTISENSE_STRAND]: asBases
-    },
-    phosphorothioateLinkages: {
-      [SENSE_STRAND]: ssPtoStatuses, 
-      [ANTISENSE_STRAND]: asPtoStatuses
-    },
-    terminalModifications: {
-      [SENSE_STRAND]: {
-        [FIVE_PRIME]: ss5PrimeModification, 
-        [THREE_PRIME]: ss3PrimeModification
-      },
-      [ANTISENSE_STRAND]: {
-        [FIVE_PRIME]: as5PrimeModification, 
-        [THREE_PRIME]: as3PrimeModification
-      }
-    },
+    isAntisenseStrandActive,
+    bases,
+    phosphorothioateLinkages,
+    terminalModifications,
     comment,
     modificationsWithNumericLabels
   } = patternConfiguration;
@@ -127,7 +112,7 @@ export function renderNucleotidePattern(patternConfiguration: PatternSettings): 
   }
 
   function calculateBaseCircleXCoord(index: number, rightOverhangs: number): number {
-    const rightModificationOffset = widthOfRightModification;
+    const rightModificationOffset = maxWidthOfTerminalLabelsByEnd[RIGHT_END];
     const positionalIndex = maxStrandLength - index + rightOverhangs + 1;
     const xCoordinate = positionalIndex * NUCLEOBASE_CIRCLE_DIAMETER;
     const finalPosition = rightModificationOffset + xCoordinate;
@@ -142,51 +127,84 @@ export function renderNucleotidePattern(patternConfiguration: PatternSettings): 
     return shiftAmount;
   }
 
-  ssBases = ssBases.reverse();
-  ssPtoStatuses = ssPtoStatuses.reverse();
+  bases[SENSE_STRAND] = bases[SENSE_STRAND].reverse();
+  phosphorothioateLinkages[SENSE_STRAND] = phosphorothioateLinkages[SENSE_STRAND].reverse();
 
-  const ssRightOverhangs = countRightEdgeOverhangNucleotides(ssBases);
-  const asRightOverhangs = countRightEdgeOverhangNucleotides(asBases);
+  const rightOverhangs = STRANDS.reduce((acc, strand) => {
+    acc[strand] = countRightEdgeOverhangNucleotides(bases[strand]);
+    return acc;
+  }, {} as Record<typeof STRANDS[number], number>);
 
-  const maxStrandLength = Math.max(
-    ssBases.length - ssRightOverhangs,
-    asBases.length - asRightOverhangs,
-  );
+  const maxStrandLength = Math.max(...STRANDS.map(strand => bases[strand].length - rightOverhangs[strand]));
 
-  const widthOfRightOverhangs = Math.max(ssRightOverhangs, asRightOverhangs);
+  const widthOfRightOverhangs = Math.max(rightOverhangs[SENSE_STRAND], rightOverhangs[ANTISENSE_STRAND]);
   const widthOfBases = NUCLEOBASE_CIRCLE_DIAMETER * (maxStrandLength + widthOfRightOverhangs);
 
-  const widthOfLeftModification = Math.max(
-    measureTextWidth(ss3PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-    measureTextWidth(as5PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-  );
+  // const widthOfTerminalModification = {} as Record<typeof ENDS[number], number>;
+  // widthOfTerminalModification[LEFT_END] = Math.max(
+  //   measureTextWidth(terminalModifications[SENSE_STRAND][THREE_PRIME], NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  //   measureTextWidth(terminalModifications[ANTISENSE_STRAND][FIVE_PRIME], NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  // );
+  // widthOfTerminalModification[RIGHT_END] = Math.max(
+  //   measureTextWidth(terminalModifications[ANTISENSE_STRAND][THREE_PRIME], NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  //   measureTextWidth(terminalModifications[SENSE_STRAND][FIVE_PRIME], NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
+  // );
 
-  const widthOfRightModification = Math.max(
-    measureTextWidth(ss5PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-    measureTextWidth(as3PrimeModification, NUCLEOBASE_FONT_SIZE, DEFAULT_FONT_FAMILY),
-  );
 
-  const distinctBaseTypes = isAsStrandActive ?
-    [...new Set(ssBases.concat(asBases))] :
-    [...new Set(ssBases)];
+  const strandEndToTerminusMapping = {
+    [SENSE_STRAND]: {
+      [LEFT_END]: THREE_PRIME,
+      [RIGHT_END]: FIVE_PRIME
+    },
+    [ANTISENSE_STRAND]: {
+      [LEFT_END]: FIVE_PRIME,
+      [RIGHT_END]: THREE_PRIME
+    }
+  } as const;
 
-  const ptoLinkageExists = isAsStrandActive ?
-    ssPtoStatuses.concat(asPtoStatuses).includes(true) :
-    ssPtoStatuses.includes(true);
+  function calculateMaxWidthOfTerminalLabels(end: typeof ENDS[number]) {
+    return Math.max(
+      ...STRANDS.map(strand => 
+        measureTextWidth(
+          terminalModifications[strand][strandEndToTerminusMapping[strand][end]],
+          NUCLEOBASE_FONT_SIZE, 
+          DEFAULT_FONT_FAMILY
+        )
+      )
+    );
+  };
+
+  const maxWidthOfTerminalLabelsByEnd = ENDS.reduce((acc, end) => {
+    acc[end] = calculateMaxWidthOfTerminalLabels(end);
+    return acc;
+  }, {} as Record<typeof ENDS[number], number>);
+
+  const distinctBaseTypes = [...new Set(
+    bases[SENSE_STRAND].concat(
+      isAntisenseStrandActive ? bases[ANTISENSE_STRAND] : []
+    )
+  )];
+
+  const ptoLinkageExists = isAntisenseStrandActive
+    ? [
+        ...phosphorothioateLinkages[SENSE_STRAND],
+        ...phosphorothioateLinkages[ANTISENSE_STRAND]
+      ].some(linkage => linkage)
+    : phosphorothioateLinkages[SENSE_STRAND].some(linkage => linkage);
 
   const legendStartIndex = ptoLinkageExists ? 1 : 0;
 
-  const xOfSsRightModifications = ssRightOverhangs * NUCLEOBASE_CIRCLE_DIAMETER + calculateBaseCircleXCoord(-0.5, 0);
-  const xOfAsRightModifications = asRightOverhangs * NUCLEOBASE_CIRCLE_DIAMETER + calculateBaseCircleXCoord(-0.5, 0);
+  const xOfSsRightModifications = rightOverhangs[SENSE_STRAND] * NUCLEOBASE_CIRCLE_DIAMETER + calculateBaseCircleXCoord(-0.5, 0);
+  const xOfAsRightModifications = rightOverhangs[ANTISENSE_STRAND] * NUCLEOBASE_CIRCLE_DIAMETER + calculateBaseCircleXCoord(-0.5, 0);
 
-  const rightLabelsXCoordinate = Math.max(xOfSsRightModifications, xOfAsRightModifications) + widthOfLeftModification +
+  const rightLabelsXCoordinate = Math.max(xOfSsRightModifications, xOfAsRightModifications) + maxWidthOfTerminalLabelsByEnd[LEFT_END] +
     NUCLEOBASE_CIRCLE_DIAMETER * widthOfRightOverhangs;
 
-  const width = STRAND_LABEL_WIDTH + widthOfLeftModification + widthOfBases + widthOfRightModification + TERMINUS_LABEL_WIDTH + NUCLEOBASE_CIRCLE_DIAMETER;
+  const width = STRAND_LABEL_WIDTH + maxWidthOfTerminalLabelsByEnd[LEFT_END] + widthOfBases + maxWidthOfTerminalLabelsByEnd[RIGHT_END] + TERMINUS_LABEL_WIDTH + NUCLEOBASE_CIRCLE_DIAMETER;
 
   const svgFactory = new SVGElementFactory();
 
-  const image = svgFactory.createCanvas(width, SVG_Y_COORDS.SVG_TOTAL_HEIGHT(isAsStrandActive));
+  const image = svgFactory.createCanvas(width, SVG_Y_COORDS.SVG_TOTAL_HEIGHT(isAntisenseStrandActive));
 
   const strandLabel = {} as Record<typeof STRANDS[number], Record<typeof ENDS[number], SVGElement | null>>;
 
@@ -204,10 +222,10 @@ export function renderNucleotidePattern(patternConfiguration: PatternSettings): 
     = svgFactory.createTextElement(STRAND_LABELS[RIGHT_END][SENSE_STRAND], rightLabelsXCoordinate, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT);
 
   strandLabel[ANTISENSE_STRAND][LEFT_END]
-    = isAsStrandActive ? svgFactory.createTextElement(STRAND_LABELS[LEFT_END][ANTISENSE_STRAND], LEFT_LABELS_X_COORDINATE, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : null;
+    = isAntisenseStrandActive ? svgFactory.createTextElement(STRAND_LABELS[LEFT_END][ANTISENSE_STRAND], LEFT_LABELS_X_COORDINATE, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : null;
 
   strandLabel[ANTISENSE_STRAND][RIGHT_END]
-    = isAsStrandActive ? svgFactory.createTextElement(STRAND_LABELS[RIGHT_END][ANTISENSE_STRAND], rightLabelsXCoordinate, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : null;
+    = isAntisenseStrandActive ? svgFactory.createTextElement(STRAND_LABELS[RIGHT_END][ANTISENSE_STRAND], rightLabelsXCoordinate, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.TEXT) : null;
 
   const modificationLabel = {} as Record<typeof STRANDS[number], Record<typeof TERMINI[number], SVGElement | null>>;
 
@@ -220,22 +238,22 @@ export function renderNucleotidePattern(patternConfiguration: PatternSettings): 
 
 
   modificationLabel[SENSE_STRAND][FIVE_PRIME]
-    = svgFactory.createTextElement(ss5PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+    = svgFactory.createTextElement(terminalModifications[SENSE_STRAND][FIVE_PRIME], X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
 
   modificationLabel[ANTISENSE_STRAND][THREE_PRIME]
-    = isAsStrandActive ? svgFactory.createTextElement(as3PrimeModification, X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
+    = isAntisenseStrandActive ? svgFactory.createTextElement(terminalModifications[ANTISENSE_STRAND][THREE_PRIME], X_OF_LEFT_MODIFICATIONS, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
 
   modificationLabel[SENSE_STRAND][THREE_PRIME]
-    = svgFactory.createTextElement(ss3PrimeModification, xOfSsRightModifications, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
+    = svgFactory.createTextElement(terminalModifications[SENSE_STRAND][THREE_PRIME], xOfSsRightModifications, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT);
 
   modificationLabel[ANTISENSE_STRAND][FIVE_PRIME]
-    = isAsStrandActive ? svgFactory.createTextElement(as5PrimeModification, xOfAsRightModifications, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
+    = isAntisenseStrandActive ? svgFactory.createTextElement(terminalModifications[ANTISENSE_STRAND][FIVE_PRIME], xOfAsRightModifications, STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, COLORS.MODIFICATION_TEXT) : null;
 
-  const commentLabel = svgFactory.createTextElement(comment, LEFT_LABELS_X_COORDINATE, SVG_Y_COORDS.COMMENT(isAsStrandActive), COMMENT_FONT_SIZE, COLORS.TEXT);
+  const commentLabel = svgFactory.createTextElement(comment, LEFT_LABELS_X_COORDINATE, SVG_Y_COORDS.COMMENT(isAntisenseStrandActive), COMMENT_FONT_SIZE, COLORS.TEXT);
 
-  const starElement = ptoLinkageExists ? svgFactory.createStarElement(NUCLEOBASE_CIRCLE_RADIUS, SVG_Y_COORDS.LEGEND_CIRCLES(isAsStrandActive), COLORS.LINKAGE_STAR) : null;
+  const starElement = ptoLinkageExists ? svgFactory.createStarElement(NUCLEOBASE_CIRCLE_RADIUS, SVG_Y_COORDS.LEGEND_CIRCLES(isAntisenseStrandActive), COLORS.LINKAGE_STAR) : null;
 
-  const psLinkageLabel = ptoLinkageExists ? svgFactory.createTextElement('ps linkage', 2 * NUCLEOBASE_CIRCLE_RADIUS - 8, SVG_Y_COORDS.LEGEND_TEXT(isAsStrandActive), COMMENT_FONT_SIZE, COLORS.TEXT) : null;
+  const psLinkageLabel = ptoLinkageExists ? svgFactory.createTextElement('ps linkage', 2 * NUCLEOBASE_CIRCLE_RADIUS - 8, SVG_Y_COORDS.LEGEND_TEXT(isAntisenseStrandActive), COMMENT_FONT_SIZE, COLORS.TEXT) : null;
 
   const elementsToAppend = [
     strandLabel[SENSE_STRAND][LEFT_END],
@@ -253,31 +271,31 @@ export function renderNucleotidePattern(patternConfiguration: PatternSettings): 
 
   image.append(...elementsToAppend);
 
-  const numberOfSsNucleotides = ssBases.filter((value) => !isOverhangNucleotide(value)).length;
+  const numberOfSsNucleotides = bases[SENSE_STRAND].filter((value) => !isOverhangNucleotide(value)).length;
   let nucleotideCounter = numberOfSsNucleotides;
-  for (let i = ssBases.length - 1; i > -1; i--) {
-    const xOfNumbers = calculateBaseCircleXCoord(i, ssRightOverhangs) +
-      calculateNumberLabelShift(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter);
-    if (!isOverhangNucleotide(ssBases[i]))
+  for (let i = bases[SENSE_STRAND].length - 1; i > -1; i--) {
+    const xOfNumbers = calculateBaseCircleXCoord(i, rightOverhangs[SENSE_STRAND]) +
+      calculateNumberLabelShift(bases[SENSE_STRAND], bases[SENSE_STRAND].length - i, numberOfSsNucleotides - nucleotideCounter);
+    if (!isOverhangNucleotide(bases[SENSE_STRAND][i]))
       nucleotideCounter--;
-    const nucleotideLabel = (!isOverhangNucleotide(ssBases[i]) && modificationsWithNumericLabels.includes(ssBases[i])) ?
+    const nucleotideLabel = (!isOverhangNucleotide(bases[SENSE_STRAND][i]) && modificationsWithNumericLabels.includes(bases[SENSE_STRAND][i])) ?
       String(numberOfSsNucleotides - nucleotideCounter) : '';
 
-    const baseCircleXCoord = calculateBaseCircleXCoord(i, ssRightOverhangs);
+    const baseCircleXCoord = calculateBaseCircleXCoord(i, rightOverhangs[SENSE_STRAND]);
 
     const nucleotideTextLabel = svgFactory.createTextElement(
       nucleotideLabel, xOfNumbers, STRAND_DETAILS.SENSE.INDEX_Y, COMMENT_FONT_SIZE, COLORS.TEXT
     );
 
     const nucleotideCircle = svgFactory.createCircleElement(
-      baseCircleXCoord, STRAND_DETAILS.SENSE.CIRCLE_Y, NUCLEOBASE_CIRCLE_RADIUS, getBaseColor(ssBases[i])
+      baseCircleXCoord, STRAND_DETAILS.SENSE.CIRCLE_Y, NUCLEOBASE_CIRCLE_RADIUS, getBaseColor(bases[SENSE_STRAND][i])
     );
 
     const nucleotideBaseLabel = svgFactory.createTextElement(
-      getBaseTextForCircle(ssBases, i), xOfNumbers, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, getTextColorForBaseBackground(ssBases[i])
+      getBaseTextForCircle(bases[SENSE_STRAND], i), xOfNumbers, STRAND_DETAILS.SENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, getTextColorForBaseBackground(bases[SENSE_STRAND][i])
     );
 
-    const linkageStar = ssPtoStatuses[i] ? svgFactory.createStarElement(
+    const linkageStar = phosphorothioateLinkages[SENSE_STRAND][i] ? svgFactory.createStarElement(
       baseCircleXCoord + NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.SENSE.LABEL_Y + LINKAGE_STAR_RADIUS, COLORS.LINKAGE_STAR
     ) : null;
 
@@ -292,44 +310,44 @@ export function renderNucleotidePattern(patternConfiguration: PatternSettings): 
   }
 
   image.append(
-    ssPtoStatuses[ssBases.length] ?
-      svgFactory.createStarElement(calculateBaseCircleXCoord(ssBases.length, ssRightOverhangs) +
+    phosphorothioateLinkages[SENSE_STRAND][bases[SENSE_STRAND].length] ?
+      svgFactory.createStarElement(calculateBaseCircleXCoord(bases[SENSE_STRAND].length, rightOverhangs[SENSE_STRAND]) +
       NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.SENSE.LABEL_Y + LINKAGE_STAR_RADIUS, COLORS.LINKAGE_STAR) : '',
   );
 
-  const numberOfAsNucleotides = asBases.filter((value) => !isOverhangNucleotide(value)).length;
-  if (isAsStrandActive) {
+  const numberOfAsNucleotides = bases[ANTISENSE_STRAND].filter((value) => !isOverhangNucleotide(value)).length;
+  if (isAntisenseStrandActive) {
     let nucleotideCounter = numberOfAsNucleotides;
-    for (let i = asBases.length - 1; i > -1; i--) {
-      if (!isOverhangNucleotide(asBases[i]))
+    for (let i = bases[ANTISENSE_STRAND].length - 1; i > -1; i--) {
+      if (!isOverhangNucleotide(bases[ANTISENSE_STRAND][i]))
         nucleotideCounter--;
-      const xOfNumbers = calculateBaseCircleXCoord(i, asRightOverhangs) +
-        calculateNumberLabelShift(asBases, i, nucleotideCounter + 1);
-      const n = (!isOverhangNucleotide(asBases[i]) && modificationsWithNumericLabels.includes(asBases[i])) ?
+      const xOfNumbers = calculateBaseCircleXCoord(i, rightOverhangs[ANTISENSE_STRAND]) +
+        calculateNumberLabelShift(bases[ANTISENSE_STRAND], i, nucleotideCounter + 1);
+      const n = (!isOverhangNucleotide(bases[ANTISENSE_STRAND][i]) && modificationsWithNumericLabels.includes(bases[ANTISENSE_STRAND][i])) ?
         String(nucleotideCounter + 1) : '';
       image.append(
         svgFactory.createTextElement(n, xOfNumbers, STRAND_DETAILS.ANTISENSE.INDEX_Y, COMMENT_FONT_SIZE, COLORS.TEXT),
-        svgFactory.createCircleElement(calculateBaseCircleXCoord(i, asRightOverhangs), STRAND_DETAILS.ANTISENSE.CIRCLE_Y, NUCLEOBASE_CIRCLE_RADIUS, getBaseColor(asBases[i])),
-        svgFactory.createTextElement(getBaseTextForCircle(asBases, i),
-          calculateBaseCircleXCoord(i, asRightOverhangs) + calculateNumberLabelShift(asBases, i, nucleotideCounter + 1),
-          STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, getTextColorForBaseBackground(asBases[i])),
-        asPtoStatuses[i] ? svgFactory.createStarElement(calculateBaseCircleXCoord(i, asRightOverhangs) +
+        svgFactory.createCircleElement(calculateBaseCircleXCoord(i, rightOverhangs[ANTISENSE_STRAND]), STRAND_DETAILS.ANTISENSE.CIRCLE_Y, NUCLEOBASE_CIRCLE_RADIUS, getBaseColor(bases[ANTISENSE_STRAND][i])),
+        svgFactory.createTextElement(getBaseTextForCircle(bases[ANTISENSE_STRAND], i),
+          calculateBaseCircleXCoord(i, rightOverhangs[ANTISENSE_STRAND]) + calculateNumberLabelShift(bases[ANTISENSE_STRAND], i, nucleotideCounter + 1),
+          STRAND_DETAILS.ANTISENSE.LABEL_Y, NUCLEOBASE_FONT_SIZE, getTextColorForBaseBackground(bases[ANTISENSE_STRAND][i])),
+        phosphorothioateLinkages[ANTISENSE_STRAND][i] ? svgFactory.createStarElement(calculateBaseCircleXCoord(i, rightOverhangs[ANTISENSE_STRAND]) +
           NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.ANTISENSE.LABEL_Y + LINKAGE_STAR_RADIUS, COLORS.LINKAGE_STAR) : '',
       );
     }
     image.append(
-      asPtoStatuses[asBases.length] ?
-        svgFactory.createStarElement(calculateBaseCircleXCoord(asBases.length, asRightOverhangs) + NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.ANTISENSE.LABEL_Y + LINKAGE_STAR_RADIUS,
+      phosphorothioateLinkages[ANTISENSE_STRAND][bases[ANTISENSE_STRAND].length] ?
+        svgFactory.createStarElement(calculateBaseCircleXCoord(bases[ANTISENSE_STRAND].length, rightOverhangs[ANTISENSE_STRAND]) + NUCLEOBASE_CIRCLE_RADIUS, STRAND_DETAILS.ANTISENSE.LABEL_Y + LINKAGE_STAR_RADIUS,
           COLORS.LINKAGE_STAR) : '',
     );
   }
 
-  const title = `${patternName} for ${numberOfSsNucleotides}${(isAsStrandActive ? `/${numberOfAsNucleotides}` : '')}mer`;
+  const title = `${patternName} for ${numberOfSsNucleotides}${(isAntisenseStrandActive ? `/${numberOfAsNucleotides}` : '')}mer`;
   image.append(svgFactory.createTextElement(title, TITLE_POSITION.X, TITLE_POSITION.Y, NUCLEOBASE_FONT_SIZE, COLORS.TITLE_TEXT));
   for (let i = 0; i < distinctBaseTypes.length; i++) {
     image.append(
-      svgFactory.createCircleElement(calculateLegendXCoord(i), SVG_Y_COORDS.LEGEND_CIRCLES(isAsStrandActive), LEGEND_CIRCLE_RADIUS, getBaseColor(distinctBaseTypes[i])),
-      svgFactory.createTextElement(distinctBaseTypes[i], calculateLegendXCoord(i) + LEGEND_CIRCLE_RADIUS + 4, SVG_Y_COORDS.LEGEND_TEXT(isAsStrandActive), COMMENT_FONT_SIZE,
+      svgFactory.createCircleElement(calculateLegendXCoord(i), SVG_Y_COORDS.LEGEND_CIRCLES(isAntisenseStrandActive), LEGEND_CIRCLE_RADIUS, getBaseColor(distinctBaseTypes[i])),
+      svgFactory.createTextElement(distinctBaseTypes[i], calculateLegendXCoord(i) + LEGEND_CIRCLE_RADIUS + 4, SVG_Y_COORDS.LEGEND_TEXT(isAntisenseStrandActive), COMMENT_FONT_SIZE,
         COLORS.TEXT),
     );
   }
