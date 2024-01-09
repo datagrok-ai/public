@@ -1,17 +1,17 @@
-
-
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DimReductionMethods, IReduceDimensionalityResult, ITSNEOptions, IUMAPOptions} from '../reduce-dimensionality';
+import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '../reduce-dimensionality';
 import {KnownMetrics} from '../typed-metrics';
-import {PreprocessFunctionReturnType} from './dimensionality-reduction-editor';
-import {reduceDimensinalityWithNormalization} from '../sequence-space';
-import {SHOW_SCATTERPLOT_PROGRESS} from './seq-space-base-editor';
-import {BYPASS_LARGE_DATA_WARNING} from './consts';
-import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT} from '../workers/dimensionality-reducing-worker-creator';
+import {SHOW_SCATTERPLOT_PROGRESS} from '../functionEditors/seq-space-base-editor';
+import {BYPASS_LARGE_DATA_WARNING} from '../functionEditors/consts';
+import {Matrix, Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {IDBScanOptions, getDbscanWorker} from '@datagrok-libraries/math';
-import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {getEmbeddingColsNames} from '../functionEditors/dimensionality-reducer';
+import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT} from './consts';
+import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
+import {getNormalizedEmbeddings} from './embeddings-space';
+import {DistanceAggregationMethod} from '../distance-matrix/types';
 
 export type DimRedUiOptions = {
     [BYPASS_LARGE_DATA_WARNING]?: boolean,
@@ -20,22 +20,24 @@ export type DimRedUiOptions = {
     scatterPlotName?: string,
 }
 
-export function getEmbeddingColsNames(df: DG.DataFrame) {
-  const axes = ['Embed_X', 'Embed_Y'];
-  const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
-  return axes.map((it) => `${it}_${colNameInd}`);
-}
-
-export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, method: DimReductionMethods,
-  metric: KnownMetrics, preprocessingFunction: DG.Func, plotEmbeddings: boolean = true,
-  clusterEmbeddings: boolean = false, dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> &
-  {preprocessingFuncArgs?: Options} & Options = {}, uiOptions: DimRedUiOptions = {}) {
+export async function multiColReduceDimensionality(table: DG.DataFrame, columns: DG.Column[],
+  method: DimReductionMethods, metrics: KnownMetrics[], weights: number[],
+  preprocessingFunctions: (DG.Func | null | undefined)[],
+  aggregationMethod: DistanceAggregationMethod, plotEmbeddings: boolean = true, clusterEmbeddings: boolean = false,
+  dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & {preprocessingFuncArgs: Options[]} &
+    Options = {preprocessingFuncArgs: []}, uiOptions: DimRedUiOptions = {}) {
   const scatterPlotProps = {
     showXAxis: false,
     showYAxis: false,
     showXSelector: false,
     showYSelector: false,
   };
+  if (columns.length !== metrics.length || columns.length !== preprocessingFunctions.length ||
+        columns.length !== weights.length || columns.length !== dimRedOptions.preprocessingFuncArgs.length) {
+    throw new Error('columns, metrics and preprocessing functions, weights and function arguments' +
+      'must have the same length');
+  }
+
   const doReduce = async () => {
     const pg = DG.TaskBarProgressIndicator.create(
       `Initializing ${uiOptions.scatterPlotName ?? 'dimensionality reduction'} ...`);
@@ -68,7 +70,6 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
         pg.update(progress,
           `Running ${uiOptions.scatterPlotName ?? 'dimensionality reduction'}... ${progress.toFixed(0)}%`);
       }
-
       async function getDimRed() {
         table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
         table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
@@ -84,24 +85,39 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
         const sub = grok.events.onViewerClosed.subscribe((args) => {
           const v = args.args.viewer as unknown as DG.Viewer<any>;
           if (v?.getOptions()?.look?.title && scatterPlot?.getOptions()?.look?.title &&
-                    v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
+                      v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
             grok.events.fireCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT, {});
             sub.unsubscribe();
             resolveF?.();
             pg.close();
           }
         });
-        const dimRedResPromise = new Promise<IReduceDimensionalityResult | undefined>(async (resolve, reject) => {
+
+        const dimRedResPromise = new Promise<Matrix | undefined>(async (resolve, reject) => {
           try {
             resolveF = resolve;
-            const colInputName = preprocessingFunction.inputs[0].name;
-            const metricInputName = preprocessingFunction.inputs[1].name;
-            const {entries, options}: PreprocessFunctionReturnType =
-                        await preprocessingFunction.apply({[colInputName]: col,
-                          [metricInputName]: metric, ...(dimRedOptions.preprocessingFuncArgs ?? {})});
-            dimRedOptions = dimRedOptions ?? {};
-            dimRedOptions.distanceFnArgs = options;
-            const res = await reduceDimensinalityWithNormalization(entries, method, metric, dimRedOptions, true,
+            const encodedColEntries: PreprocessFunctionReturnType[] = [];
+            for (let i = 0; i < preprocessingFunctions.length; ++i) {
+              const pf = preprocessingFunctions[i];
+              if (!dimRedOptions.distanceFnArgs)
+                dimRedOptions.distanceFnArgs = [];
+              if (pf) {
+                const colInputName = pf.inputs[0].name;
+                const metricInputName = pf.inputs[1].name;
+                const {entries, options}: PreprocessFunctionReturnType =
+                await pf.apply({[colInputName]: columns[i], [metricInputName]: metrics[i],
+                  ...(dimRedOptions.preprocessingFuncArgs[i] ?? {})});
+                encodedColEntries.push({entries, options});
+                dimRedOptions.distanceFnArgs.push(options);
+              } else {
+                const entries = columns[i].toList();
+                const options = {};
+                encodedColEntries.push({entries, options});
+                dimRedOptions.distanceFnArgs.push(options);
+              }
+            }
+            const res = await getNormalizedEmbeddings(encodedColEntries.map((it) => it.entries), method,
+              metrics, weights, aggregationMethod, dimRedOptions,
               uiOptions[BYPASS_LARGE_DATA_WARNING] ? undefined : progressFunc);
             resolve(res);
           } catch (e) {
@@ -109,17 +125,16 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
           }
         });
         const res = await dimRedResPromise;
-
         pg.close();
         sub.unsubscribe();
         return res;
       }
       const res = await getDimRed();
 
-      if (clusterEmbeddings && res && res.embedding) {
+      if (clusterEmbeddings && res) {
         const clusterPg = DG.TaskBarProgressIndicator.create(`Clustering embeddings ...`);
         try {
-          const clusterRes = await getDbscanWorker(res.embedding[0], res.embedding[1],
+          const clusterRes = await getDbscanWorker(res[0], res[1],
             dimRedOptions.dbScanEpsilon ?? 0.01, dimRedOptions.dbScanMinPts ?? 4);
           const clusterColName = table.columns.getUnusedName('Cluster');
           const clusterCol = table.columns.addNewString(clusterColName);
@@ -133,13 +148,12 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
           clusterPg.close();
         }
       }
-
       if (res && plotEmbeddings && scatterPlot) {
         ui.setUpdateIndicator((scatterPlot as DG.ScatterPlotViewer).root, false);
         const embedXCol = table.columns.byName(embedColsNames[0]);
         const embedYCol = table.columns.byName(embedColsNames[1]);
-        embedXCol.init((i) => res.embedding[0][i]);
-        embedYCol.init((i) => res.embedding[1][i]);
+        embedXCol.init((i) => res[0][i]);
+        embedYCol.init((i) => res[1][i]);
         return scatterPlot as DG.ScatterPlotViewer;
       }
     } catch (e) {
@@ -150,7 +164,6 @@ export async function reduceDimensionality(table: DG.DataFrame, col: DG.Column, 
         ui.setUpdateIndicator((scatterPlot as DG.ScatterPlotViewer).root, false);
     }
   };
-
   return new Promise<DG.ScatterPlotViewer | undefined>(async (resolve, reject) => {
     try {
       if (uiOptions.fastRowCount && table.rowCount > uiOptions.fastRowCount && !uiOptions[BYPASS_LARGE_DATA_WARNING]) {

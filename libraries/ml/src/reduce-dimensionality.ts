@@ -18,7 +18,6 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters, UMAP} from './umap';
 import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
 import {SparseMatrixService} from './distance-matrix/sparse-matrix-service';
-import {getKnnGraph, getKnnGraphFromDM} from './umap/knnGraph';
 
 export type SparseMatrixTransferType = {
   i: Int32Array,
@@ -62,6 +61,9 @@ export interface IDimReductionParam {
   value: number | null;
   tooltip: string;
   placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 /** Umap uses precalculated distance matrix to save time. though for too much data, memory becomes constraint.
@@ -193,7 +195,7 @@ class UMAPReducer extends Reducer {
     this.vectors = new Array(this.data.length).fill(0).map((_, i) => i);
 
     options.distanceFn = this._encodedDistance.bind(this);
-    
+
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
     this.reducer = new UMAP(options);
@@ -242,7 +244,7 @@ class UMAPReducer extends Reducer {
         resolve();
       }, 500);
     });
-    
+
     const embedding = await this.reducer.fitAsync(this.vectors, (epoc) => {
       if (this.progressFunc)
         this.progressFunc(epoc, this.reducer.getNEpochs(), this.reducer.getEmbedding());
