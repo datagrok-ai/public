@@ -406,6 +406,9 @@ jobs:
               image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
             fi
             docker buildx create --use
+            ls -lah $dockerfile
+            ls -lah
+            echo $(pwd)
             docker buildx build $dockerfile \
               --tag datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }} \
               --cache-from type=registry,ref="datagrok/$image_name:cache" \
