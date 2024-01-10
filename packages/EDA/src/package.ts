@@ -16,6 +16,14 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 import {oneWayAnova} from './stat-tools';
 import { getDbscanWorker } from '@datagrok-libraries/math';
 
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+import {MultiColumnDimReductionEditor} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
+import {multiColReduceDimensionality} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import { KnownMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -45,7 +53,7 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
   df.columns.add(cluster);
 }
 
-//top-menu: ML | Dimensionality Reduction | PCA...
+//top-menu: ML | Analyze | PCA...
 //name: PCA
 //description: Principal component analysis (PCA)
 //input: dataframe table
@@ -62,54 +70,46 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return pcaTable;
 }
 
-//top-menu: ML | Dimensionality Reduction | UMAP...
-//name: UMAP
-//description: Uniform Manifold Approximation and Projection (UMAP)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; min: 1; max: 20; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
-//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
-//input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
-//input: double minDist = 0.1 {caption: Minimum distance; min: 0; max: 1; category: Hyperparameters} [The effective minimum distance between embedded points.]
-//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
-//output: dataframe result {action:join(table)}
-export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
-{
-  return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
+
+//name: None (number)
+//tags: dim-red-preprocessing-function
+//meta.supportedTypes: int,float,double,qnum
+//meta.supportedDistanceFunctions: Difference
+//input: column col
+//input: string _metric {optional: true}
+//output: object result
+export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
+  const entries = col.toList();
+  return {entries, options: {}};
 }
 
-//top-menu: ML | Dimensionality Reduction | t-SNE...
-//name: t-SNE
-//description: t-distributed stochastic neighbor embedding (t-SNE)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
-//input: double learningRate = 10 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter. Should be in the range 10...1000.]
-//input: int perplexity = 30 {caption: Perplexity; category: Hyperparameters} [The number of nearest neighbors. Should be less than the number of samples.]
-//input: int iterations = 500 {caption: Iterations; category: Hyperparameters} [Maximum number of iterations for the optimization. Should be at least 250.]
-//output: dataframe result {action:join(table)}
-export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  learningRate: number, perplexity: number, iterations: number): Promise<DG.DataFrame> 
-{
-  return await computeTSNE(features, components, learningRate, perplexity, iterations);
+//name: None (string)
+//tags: dim-red-preprocessing-function
+//meta.supportedTypes: string
+//meta.supportedDistanceFunctions: Levenshtein,Hamming,One-Hot
+//input: column col
+//input: string _metric {optional: true}
+//output: object result
+export function stringPreprocessingFunction(col: DG.Column, _metric: string) {
+  const entries = col.toList();
+  return {entries, options: {}};
 }
 
-//top-menu: ML | Dimensionality Reduction | SPE...
-//name: SPE
-//description: Stochastic proximity embedding (SPE)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
-//input: int steps = 0 {caption: Steps; category: Hyperparameters} [Number of random selections of point pairs and distance computations between them.]
-//input: int cycles = 1000000 {caption: Cycles; category: Hyperparameters} [Number of the method cycles.]
-//input: double cutoff = 0.0 {caption: Cutoff; category: Hyperparameters} [Cutoff distance between points.]
-//input: double lambda = 2.0 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter.]
-//output: dataframe result {action:join(table)}
-export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimension: number,
-  steps: number, cycles: number, cutoff: number, lambda: number): Promise<DG.DataFrame> 
-{
-  return await computeSPE(features, dimension, steps, cycles, cutoff, lambda);
+//top-menu: ML | Reduce Dimensionality...
+//name: Multi Column Dimensionality Reduction
+export async function reduceDimensionality(): Promise<void> {
+  const editor = new MultiColumnDimReductionEditor();
+  ui.dialog('Dimensionality reduction').add(editor.getEditor()).onOK(async () => {
+    const params = editor.getParams();
+    if (params.columns.length === 0)
+      return;
+    await multiColReduceDimensionality(params.table, params.columns, params.methodName as DimReductionMethods,
+      params.distanceMetrics as KnownMetrics[],
+      params.weights, params.preprocessingFunctions, params.aggreaggregationMethod as DistanceAggregationMethods,
+      !!params.plotEmbeddings, !!params.clusterEmbeddings, params.options, {
+        fastRowCount: 10000,
+      });
+  }).show();
 }
 
 //top-menu: ML | Analyze | Multivariate Analysis...
