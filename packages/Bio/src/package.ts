@@ -80,9 +80,6 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 
-import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
-import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
-  from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export const _package = new BioPackage();
@@ -430,7 +427,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
   let sequenceSpaceFunc: SequenceSpaceFunc = getSequenceSpace;
   if (ncUH.isHelm()) {
     sequenceSpaceFunc = sequenceSpaceByFingerprints;
-    cliffsEncodeFunction = async (seqCol: DG.Column, similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics) => {
+    cliffsEncodeFunction = async (seqCol: DG.Column, _similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics) => {
       await invalidateMols(seqCol, false);
       const molecularCol = seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS];
       const fingerPrints: DG.Column =
@@ -495,7 +492,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedUnits: fasta,separator,helm
-//meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
+//meta.supportedDistanceFunctions: Levenshtein,Hamming,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
@@ -506,6 +503,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 export async function macromoleculePreprocessingFunction(
   col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
   fingerprintType = 'Morgan'): Promise<PreprocessFunctionReturnType> {
+  if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
+    return {entries: col.toList(), options: {}};
   const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType);
   return {entries: seqList, options: {...options, gapOpen, gapExtend}};
 }
