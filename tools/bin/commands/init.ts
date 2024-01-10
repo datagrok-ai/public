@@ -2,10 +2,10 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
-import { exec } from 'child_process';
+import {exec} from 'child_process';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-import { validateConf } from '../validators/config-validator';
+import {validateConf} from '../validators/config-validator';
 
 
 const curDir = process.cwd();
@@ -47,15 +47,15 @@ export function init(args: InitArgs) {
       'git config --global branch.master.rebase true && ' +
       'git config --global branch.main.rebase true && ' +
       'git config --global rebase.autostash true',
-      (err, stdout, stderr) => {
-        color.info('Configuring rebase pull strategy...');
-        console.log('Read more: https://datagrok.ai/help/develop/advanced/git-policy');
-        if (err) throw err;
-        else {
-          console.log(stderr, stdout);
-          color.success('GIT successfully configured\n');
-        }
-      });
+    (err, stdout, stderr) => {
+      color.info('Configuring rebase pull strategy...');
+      console.log('Read more: https://datagrok.ai/help/develop/advanced/git-policy');
+      if (err) throw err;
+      else {
+        console.log(stderr, stdout);
+        color.success('GIT successfully configured\n');
+      }
+    });
 
     exec('npm install --location=global @commitlint/config-conventional @commitlint/cli',
       (err, stdout, stderr) => {
@@ -90,18 +90,19 @@ export function init(args: InitArgs) {
     fs.writeFileSync(path.join(curDir, 'src', 'package.ts'), fs.existsSync(packageJsPath) ?
       fs.readFileSync(packageJsPath) : fs.readFileSync(path.join(templateDir, 'src', 'package.ts')));
     const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-    Object.assign(packageData.devDependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
-    if ('eslint' in packageData.devDependencies)
+    Object.assign(packageData.devDependencies, {'ts-loader': 'latest', 'typescript': 'latest'});
+    if ('eslint' in packageData.devDependencies) {
       Object.assign(packageData.devDependencies, {
         '@typescript-eslint/eslint-plugin': 'latest',
         '@typescript-eslint/parser': 'latest',
       });
+    }
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageData, null, 2), 'utf-8');
     color.success('TypeScript support has been added.');
   }
 
   if (args.ide) {
-    const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
+    const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
     const confTest = validateConf(config);
     if (!confTest.value) {
       color.warn('Invalid configuration. Skipping `ide`...');
@@ -120,8 +121,8 @@ export function init(args: InitArgs) {
           contents = contents.replace(/(?<="command": ").*(?=")/, 'webpack && grok publish #{GROK_HOST_ALIAS}');
         contents = contents.replace(/#{GROK_HOST_ALIAS}/g, config.default);
         contents = contents.replace(/#{GROK_HOST}/g, /localhost|127\.0\.0\.1/.test(
-          config['servers'][config.default]['url']) ? 'http://localhost:63343/login.html'
-          : (new URL(config['servers'][config.default]['url'])).origin);
+          config['servers'][config.default]['url']) ? 'http://localhost:63343/login.html' :
+          (new URL(config['servers'][config.default]['url'])).origin);
         fs.writeFileSync(path.join(ideConfPath, file), contents, 'utf-8');
       }
       color.success('IDE configuration has been added.');
@@ -163,19 +164,19 @@ export function init(args: InitArgs) {
   if (args.test) {
     const tsPath = path.join(curDir, 'src', 'package.ts');
 
-    if (!fs.existsSync(tsPath)) {
+    if (!fs.existsSync(tsPath)) 
       color.warn('Tests can only be added to TypeScript packages. Skipping `test`...');
-    } else if (!fs.existsSync(webpackConfigPath)) {
+    else if (!fs.existsSync(webpackConfigPath)) 
       color.warn('Webpack configuration not found. Skipping `test`...');
-    } else {
+    else {
       const config = fs.readFileSync(webpackConfigPath, 'utf-8');
       if (!/(?<=entry:\s*{\s*(\r\n|\r|\n))[^}]*test:/.test(config)) {
         const entryIdx = config.search(/(?<=entry:\s*{\s*(\r\n|\r|\n)).*/);
         if (entryIdx === -1)
           color.error('Entry point not found during webpack config parsing');
         else {
-          const testEntry = "    test: {filename: 'package-test.js', library: " +
-            "{type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},";
+          const testEntry = '    test: {filename: \'package-test.js\', library: ' +
+            '{type: \'var\', name:`${packageName}_test`}, import: \'./src/package-test.ts\'},';
           fs.writeFileSync(webpackConfigPath, config.slice(0, entryIdx) + testEntry +
             config.slice(entryIdx), 'utf-8');
         }

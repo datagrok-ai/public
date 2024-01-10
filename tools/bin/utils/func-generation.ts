@@ -1,6 +1,9 @@
-import { FuncMetadata } from './interfaces';
+/* eslint-disable no-unused-vars */
+/* eslint-disable valid-jsdoc */
+import {FuncMetadata} from './interfaces';
 
 export const headerParams = ['name', 'description', 'tags', 'inputs', 'outputs'];
+
 export enum pseudoParams {
   EXTENSION = 'extension',
   EXTENSIONS = 'extensions',
@@ -28,10 +31,11 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     s += `${comment}description: Save as ${data[pseudoParams.EXTENSION]}${sep}`;
   else if (data.description)
     s += `${comment}description: ${data.description}${sep}`;
-  if (data.tags)
+  if (data.tags) {
     s += `${comment}tags: ${isFileViewer && data[pseudoParams.EXTENSIONS] ?
-      data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join()
-      : data.tags.join()}${sep}`;
+      data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join() :
+      data.tags.join()}${sep}`;
+  }
   if (data.inputs) {
     for (const input of data.inputs) {
       s += comment + 'input: ' + (isFileImporter && data[pseudoParams.INPUT_TYPE] ?
@@ -39,9 +43,9 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     }
   }
   if (data.outputs) {
-    for (const output of data.outputs) {
+    for (const output of data.outputs) 
       s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}` : '') + sep;
-    }
+    
   }
   for (const parameter in data) {
     if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE)
@@ -50,9 +54,9 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       if (isFileViewer)
         continue;
       s += `${comment}meta.ext: ${data[parameter]}${sep}`;
-    } else if (!headerParams.includes(parameter)) {
+    } else if (!headerParams.includes(parameter)) 
       s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
-    }
+    
   }
   return s;
 }

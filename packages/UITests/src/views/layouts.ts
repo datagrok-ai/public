@@ -59,7 +59,7 @@ category('Layouts', () => {
     await delay(1000);
     try {
       list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
-      await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null);
+      await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null, 'Cannot find context menu');
       (document.querySelector('[d4-name="Delete"]') as HTMLElement).click();
       let d: DG.Dialog;
       await awaitCheck(() => {
