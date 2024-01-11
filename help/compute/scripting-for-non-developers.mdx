@@ -18,7 +18,7 @@ import BrowserWindow from '@site/src/components/browser-window';
 ## Datagrok scripting essentials
 
 This section explains the basic concepts of scripting in Datagrok.
-Code examples are provided in **Python**, **R** and **JavaScript**.
+Code examples are provided in **Python**, **R**, and **JavaScript**.
 
 :::tip Consider JavaScript
 
@@ -148,7 +148,7 @@ Let's explore how it works.
 
 ### Script header
 
-Each Datagrok script has the **header**. Header contains **header parameters** \-
+Each Datagrok script has a **header**. A header contains **header parameters** \-
 special comment strings used by Datagrok to determine script name and language,
 pass to the script input parameters, and capture script output.  
 
@@ -277,7 +277,7 @@ When you run a script,
 Datagrok analyzes header parameters
 to create an input form and show the outputs.
 
-Provide a dataframe for the script and press **Ok** to run it.
+Provide a dataframe for the script and press **OK** to run it.
 You can choose an already opened dataframe,
 open a dataframe from a file, or retrieve it via SQL query.
 
@@ -458,9 +458,9 @@ It will contain an additional column **ID** with the generated row ID.
 
 Datagrok provides you with data inputs to select one or multiple columns from a dataframe.
 * The `column` input parameter allows you to select one column from the dataframe.
-  In the script the `column` parameters is string variable containing header name of the selected columns.
+  In the script, the `column` parameter is a string variable containing header name of the selected column.
 * The `column_list` input parameter allows you to select multiple columns from the dataframe.
-  In the script the `column_list` parameters is a list of strings containing header names of the selected columns.
+  In the script, the `column_list` parameter is a list of strings containing header names of the selected columns.
 
 Both of these selectors require at least one **Dataframe** input 
 to choose a dataframe.
@@ -572,6 +572,25 @@ df = pd.read_json(json_file)
 
 ```mdx-code-block
 </TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: DfFromJSON
+//description: Loads a file and returns first sheet name
+//language: javascript
+//tags: template, demo, FileIo
+//input: file uploadedFile {caption:Excel file}
+//output: string first_sheet_name 
+
+const importWb = new ExcelJS.Workbook();
+await importWb.xlsx.load(uploadedFile.data);
+
+first_sheet_name = importWb.worksheets[0].name;
+```
+
+```mdx-code-block
+</TabItem>
 </Tabs>
 ```
 
@@ -623,7 +642,7 @@ using `file` and `blob` annotations.
 
 The `file` parameter type allows you to read and write a file.
 Inside the `Python`/`R` script this parameter will be a string variable 
-containing path to the local file.
+containing a path to the local file.
 
 For example, let's save a dataframe to a JSON file:
 
@@ -677,10 +696,10 @@ Therefore, for scripts, there is no possibility to provide a custom name or exte
 The Datagrok [semantic types](../govern/catalog/semantic-types) is a very powerful concept,
 allowing you to define the _meaning_ of your data,
 For example, you can specify that a particular string contains a chemical molecule in SMILES format, 
-E-mail, or URL-address. 
+E-mail, or URL address. 
 
 For example, let's explore the **Gasteiger partial charges** script, 
-that takes a molecule in SMILES format as input
+which takes a molecule in SMILES format as input
 and calculates the Gasteiger charges distribution.
 The script is provided with the `Chem` package.
 
@@ -736,11 +755,11 @@ if mol is not None:
 </Tabs>
 ```
 
-Datagrok recognised the `Molecule` semantic types and created the custom UI displaying molecule formula.
+Datagrok recognized the `Molecule` semantic types and created the custom UI displaying molecule formula.
 Click on it to open 
 [chemical sketcher](../datagrok/solutions/domains/chem/chem.md#sketching)
 and draw your own molecule.
-Datagrok has outstanding [chemoinforamtics support](../datagrok/solutions/domains/chem/chem.md),
+Datagrok has outstanding [chemoinformatics support](../datagrok/solutions/domains/chem/chem.md),
 so almost all UI elements provide you special viewing and editing options for chemical structures.
 
 You can assign a semantic type to output variables in the same way.
@@ -749,7 +768,7 @@ but it is extremely helpful when you integrate your script with the Datagrok pla
 
 #### Semantic types for columns
 
-Similarly, you can specify the sematic type for a dataframe columns.
+Similarly, you can specify the semantic type for dataframe columns.
 For example, let `column` or `column_list` selectors accept only 
 columns containing chemical molecules.
 
@@ -757,10 +776,6 @@ columns containing chemical molecules.
 #input: dataframe df {caption: Dataframe}
 #input: column mol {semType:Molecule; caption: Molecules} [Molecules to analyze]
 ```
-
-At the moment, there is no way to specify semantic types for the column in the output dataframe.
-However, Datagrok sematic type detectors work excellent and assign the correct semantic types 
-in the most part of cases. 
 
 ### Graphics output
 
@@ -1067,8 +1082,8 @@ If the script throws an unhandled exception, Datagrok catches it and displays an
 
 Now, there is no convenient way to access regular script output.
 
-For big and complicated scripts, we recommend you develop it locally in your IDE,
-and then integrate it into Datagrok.
+For big and complicated scripts, we recommend you develop them locally in your IDE,
+and then integrate them into Datagrok.
 
 </div>
 

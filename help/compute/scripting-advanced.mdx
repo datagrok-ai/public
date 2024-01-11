@@ -13,7 +13,7 @@ import BrowserWindow from '@site/src/components/browser-window';
 ## Output values validation
 
 Datagrok functions return zero, one or more typed variables.
-Datagrok expects that all variables are defined in the script code and have proper values by the end of script run.
+Datagrok expects that all variables are defined in the script code and have proper values by the end of the script run.
 If this doesn't happen, the two things will follow:
 
 1. The unset output values will be returned as `null`-s.
@@ -62,8 +62,8 @@ Datagrok uses [Conda](https://docs.Conda.io/en/latest/)
 as the environment management system. 
 A Conda environment:
 - isolates each script run,
-- controls dependencies,
-- and takes time to be created before script run.
+- resolves dependencies,
+- and takes time to be created before a script run.
 
 Later, the script uses the pre-created environment with *no delay* for resolving dependencies.
 
@@ -73,7 +73,7 @@ or as [part of a package](#specify-the-environment-in-a-package).
 #### Specify environment in-place
 
 Set an `environment` parameter of the script 
-to an one-liner YAML following the standard Conda YAML config (omit it's name). 
+to a one-liner YAML following the standard Conda YAML config (omit it's name). 
 
 For example, we need to use the following Conda config:
 
@@ -114,7 +114,7 @@ For all next script runs, Datagrok will reuse this environment.
 :::
 
 Datagrok distinguishes in-place environments using *MD5 hashes* of their body strings.
-If there is a ready-to-use environment with the same environment config, Datagrok will pick it up and reuse it. 
+If there is a ready-to-use environment with the same environment config, Datagrok will reuse it. 
 
 #### Specify the environment in a package
 
@@ -151,21 +151,10 @@ Datagrok distinguishes package environments by their *names*.
 Datagrok will reuse a previously created environment for all subsequent runs 
 with no delay.
 
-#### Reference an environment from another package
-
-An environment `SomeEnv` specified in a package `SomePackage` 
-is available from all scripts in the platform for
-referencing as `SomePackage:SomeEnv`. 
-If the package `SomePackage` is available to the current user, the reference will
-be resolved.
-
-Environment references are supported in both package and ad-hoc scripts.
-
 #### Sharing environments
 
-Environment referencing is a handy way to share and manage environments. 
-You share common environments through a dedicated package, 
-and one Conda environment will be re-used by many users, which is more space- and time-efficient.
+You may share environments by referencing them in your scripts. 
+Conda environment will be re-used by many users, which is more space- and time-efficient.
 
 To achieve it, do the following steps:
 
@@ -184,7 +173,6 @@ In the future, Datagrok script editor will show all available environments in a 
 #### Conda and Pip custom repositories
 
 By default, Conda uses [Conda-forge](https://Conda-forge.org/) and [PyPI](https://pypi.org/) repositories to install packages. 
-It is possible to specify custom Conda and pip repositories in environments. 
 You may specify your own package repositories in the environment specification.
 
 For example, to use `http://my-repo/custom/` as Conda repository 
@@ -199,7 +187,7 @@ and `https://mirrors.sustech.edu.cn/pypi/simple` as PIP repository use the follo
 There is a [known](https://github.com/Conda/Conda/issues/8051#issuecomment-464199791)
 [issue](https://github.com/Conda/Conda/issues/8051#issuecomment-631862928)
 [of Conda](https://github.com/Conda/Conda/issues/8051#issuecomment-808789923) 
-that sometimes it takes a large time to resolve dependencies. 
+that sometimes it takes a long time to resolve dependencies. 
 Datagrok will interrupt Conda environment creation if it takes more than 5 minutes.
 
 If you encounter a timing problem, try to find an equivalent set of packages from PIP repositories.
@@ -251,7 +239,6 @@ shipped with packages similar to how it works now for Conda configs.
 First of all, a script can be executed right from the script editor,
 as described in [run script section](scripting-for-non-developers#how-to-run-a-script).
 
-Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). 
 In this case, it gets registered in the platform as a
 [function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
 
@@ -272,7 +259,7 @@ const result = grok.functions.call(
 );
 ```
 
-Single output will be assigned to `result` directly. Multiple outputs will be united into single object.
+The single output will be assigned to `result` directly. Multiple outputs will be united into a single object.
 You can retrieve any output value by accessing `result` object fields (e.g. `result['<MY_OUTPUT>']`).
 
 To see it in action, open this
@@ -344,8 +331,8 @@ to your following code as it is shown:
 
 :::warning Package dependency
 
-The `RichFunctionViewEditor` is a part of `Compute` package.
-Ensure that `Compute` package is installed before working with `RichFunctionViewEditor`
+The `RichFunctionViewEditor` is a part of the `Compute` package.
+Ensure that the `Compute` package is installed before working with `RichFunctionViewEditor`
 
 :::
 
@@ -429,7 +416,7 @@ By default, any viewer occupies all available space.
 
 :::tip
 
-View includes 4 tabs in total since there is a separate tab for input dataframe viewers.
+The view includes 4 tabs in total since there is a separate tab for input dataframe viewers.
 
 :::
 
@@ -464,9 +451,9 @@ test2 = test.clone();
 
 ### Grouping outputs
 
-You can use `category` keyword to group output parameters,
-simular to the [input categories](scripting-for-non-developers#grouping-inputs).
-In case of output parameters the `category` tag specifies 
+You can use the `category` keyword to group output parameters,
+similar to the [input categories](scripting-for-non-developers#grouping-inputs).
+In the case of output parameters, the `category` tag specifies 
 the output tab used to show the output parameter values.
 The following code generates UI with three output tabs:
 
@@ -475,7 +462,7 @@ The following code generates UI with three output tabs:
 <TabItem value="short" label="Short sample">
 ```
 
-```javascript
+```javascript title="Your script header"
 //output: dataframe tempOnTime4 { viewer: Line chart; category: Experimental data }
 //output: dataframe tempOnTime5 { viewer: Line chart | Line chart; category: Simulation data }
 //output: double IC3 { category: Tab #3}
@@ -487,7 +474,7 @@ The following code generates UI with three output tabs:
 <TabItem value="full" label="Full sample">
 ```
 
-```javascript
+```javascript title="https://public.datagrok.ai/scripts"
 //name: Grouping outputs
 //language: javascript
 //input: dataframe test { viewer: Line chart }
@@ -524,7 +511,7 @@ code as JS [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
 
 :::caution Pending improvement
 
-Currently RichFunctionView supports the `file` input 
+Currently, RichFunctionView supports the `file` input 
 only for JavaScript functions.
 This issue will be fixed in **Datagrok 1.18**.
 
@@ -775,7 +762,7 @@ This feature is available for all scripts using the RichFunctionView.
 
 Enabled by default. 
 
-When enabled, server saves each script run. The saved script run includes both the input and output values of the run.
+When enabled, the server saves each script run. The saved script run includes both the input and output values of the run.
 To review the history of runs, click on the <i class="fas fa-history"></i> **History** button on the top panel.
 
 The history panel appears on the right side. To load the run into the UI, click on the corresponding card.
@@ -824,7 +811,7 @@ Enable this feature and click **<i class="fas fa-analytics"></i> SA** icon on th
 <TabItem value="short" label="Short sample">
 ```
 
-```javascript
+```javascript title="Your script header"
 //meta.features: {"sens-analysis": true}
 ```
 
@@ -833,7 +820,7 @@ Enable this feature and click **<i class="fas fa-analytics"></i> SA** icon on th
 <TabItem value="full" label="Full sample">
 ```
 
-```javascript
+```javascript title="https://public.datagrok.ai/scripts"
 //name: Object cooling
 //description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
 //language: javascript
@@ -886,16 +873,17 @@ simulation = DG.DataFrame.fromColumns([
 
 Disabled by default. 
 
-This specific capability is very useful when you're developing a 
-model, predicting behavior of some real-world process.
 Using this mode, 
 you can create in the run history a "fake" run by uploading data from some external source instead of 
 running script. Saved historical run with external data will have the `experimental` tag.
 
+This specific capability is very useful when you're developing a 
+model, predicting behavior of some real-world process.
+
 To enable this feature,
 add `//meta.features: {"upload": true}` tag to your script. 
 This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI. 
-RichFunctionView automatically collects all data fields you need to proved to mimic script run,
+RichFunctionView automatically collects all data fields you need to mimic script run,
 and creates corresponding UI elements.
 
 ```mdx-code-block
@@ -903,7 +891,7 @@ and creates corresponding UI elements.
 <TabItem value="short" label="Short sample">
 ```
 
-```javascript
+```javascript title="Your script header"
 //meta.features: {"upload": true}
 ```
 
@@ -912,7 +900,7 @@ and creates corresponding UI elements.
 <TabItem value="full" label="Full sample">
 ```
 
-```javascript
+```javascript title="https://public.datagrok.ai/scripts"
 //name: Object cooling
 //description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
 //language: javascript
@@ -952,8 +940,6 @@ simulation = DG.DataFrame.fromColumns([
   DG.Column.fromFloat32Array('Time', timeStamps),
   DG.Column.fromFloat32Array('Temperature', simulatedTemp),
 ]);
-
-
 ```
 
 ```mdx-code-block
@@ -1125,9 +1111,6 @@ In addition, you can use the built-in Inspector to see what's happening "under t
 To open Inspector, use the `Alt+I` hotkey.
 For example, the Inspector provides information about triggered events.
 
-This block is mostly a copy of the [params annotation](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation) page
-need to move this code to it.
-
 ## Parameters
 
 ### Parameter validators
@@ -1175,7 +1158,7 @@ grok.functions.register({
 <TabItem value="usage" label="Use valdiators">
 ```
 
-```python
+```python title="https://public.datagrok.ai/scripts"
 #name: Numbers
 #language: python title="Use registered validators"
 #input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
@@ -1217,7 +1200,7 @@ The following example demonstrates two ways of defining choices:
 <TabItem value="creation" label="Register choices">
 ```
 
-```javascript
+```js title="Run this code once"
 grok.functions.register({
     signature: 'List<String> jsVeggies()',
     run: () => ["Cucumber", "Cauliflower"]});
@@ -1228,7 +1211,7 @@ grok.functions.register({
 <TabItem value="usage" label="Use choices">
 ```
 
-```python
+```python title="https://public.datagrok.ai/scripts"
 #input: string fruit {choices: ["apple", "banana"]}
 #input: string vegetable {choices: jsveggies}
 ```
@@ -1285,7 +1268,7 @@ grok.functions.register({
 <TabItem value="usage" label="Use suggestions">
 ```
 
-```python
+```python title="https://public.datagrok.ai/scripts"
 #name: Sales by country
 #language: python
 #input: string country = uk {suggestions: jsSuggestCountryName}
