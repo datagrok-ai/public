@@ -45,6 +45,9 @@ export enum TITLE {
   CLEAR = 'Clear',
   TO_JS = 'js',
   APP = 'app',
+  MISC = 'Misc',
+  SOLVE = 'Solve',
+  VARY = 'Vary inputs',
 };
 
 /** Help links */
@@ -62,7 +65,8 @@ export enum ERROR_MSG {
   MISSING_CLOSING_BRACKET = 'ANNOTATION: "]" is missing',
   INCORRECT_BRACES_USE = 'ANNOTATION: incorrect use of "{}"',
   MISSING_COLON = 'ANNOTATION: ":" is missing',
-  CHECK_ARGUMENTS = ' (check the "argument" section)'
+  CHECK_ARGUMENTS = ' (check the "argument" section)',
+  INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',
 };
 
 /** Warning dialog lines */
@@ -117,5 +121,8 @@ Press **JS** button and export model to JavaScript script.
 * [Compute](https://datagrok.ai/help/compute)
 * [Diff Studio](${LINK.DIF_STUDIO})`;
 
-/** */
-export const FLOAT = 'Float';
+/** Inputs types */
+export enum INPUT_TYPE {
+  FLOAT = 'Float',
+  INT = 'Int',
+};

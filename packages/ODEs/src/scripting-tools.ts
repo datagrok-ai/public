@@ -47,6 +47,13 @@ type Arg = {
   step: Input
 };
 
+/** Scripting specific constants */
+export enum SCRIPTING {
+  ARG_NAME = 'name',
+  COUNT = 'count',
+  DURATION = 'duration',
+};
+
 /** Differential equations specification */
 type DifEqs = {
   equations: Map<string, string>,

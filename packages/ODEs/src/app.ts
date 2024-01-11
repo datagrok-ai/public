@@ -12,8 +12,8 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo as demoAppInfo, FLOAT} from './ui-constants';
-import {getIVP, getScriptLines, getScriptParams, IVP, Input,
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE} from './ui-constants';
+import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP} from './scripting-tools';
 
 /** State of IVP code editor */
@@ -134,41 +134,50 @@ export async function runSolverApp() {
         grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
   }};
 
-  /** Solve the current IVP */
-  const solve = async () => {  
-    try {  
-      const ivp = getIVP(editorView.state.doc.toString());    
+  /** Solve IVP */
+  const solve = async (ivp: IVP) => {
+    if (ivp.arg.start.value >= ivp.arg.finish.value)
+      return;
 
-      solverView.dockManager.dock(ui.form(getInputs(ivp)), 'left');
+    const scriptText = getScriptLines(ivp).join('\n');    
+    const script = DG.Script.create(scriptText);
+    const params = getScriptParams(ivp);    
+    const call = script.prepare(params);
 
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);
-      const params = getScriptParams(ivp);    
-      const call = script.prepare(params);
-
-      await call.call();
+    await call.call();
       
-      solutionTable = call.outputs[DF_NAME];
-      solverView.dataFrame = call.outputs[DF_NAME];
-      solverView.name = solutionTable.name;
+    solutionTable = call.outputs[DF_NAME];
+    solverView.dataFrame = call.outputs[DF_NAME];
+    solverView.name = solutionTable.name;
 
-      if (!solutionViewer) {
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
-        viewerDockNode = grok.shell.dockManager.dock(
-          solutionViewer, 
-          DG.DOCK_TYPE.TOP, 
-          solverView.dockManager.
-          findNode(solverView.grid.root
-        ));
-      }
-      else {
-        solutionViewer.dataFrame = solutionTable;
+    if (!solutionViewer) {
+      solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+      viewerDockNode = grok.shell.dockManager.dock(
+        solutionViewer, 
+        DG.DOCK_TYPE.TOP, 
+        solverView.dockManager.
+        findNode(solverView.grid.root
+      ));
+    }
+    else {
+      solutionViewer.dataFrame = solutionTable;
 
-        if (toChangeSolutionViewerProps) {
-          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
-          toChangeSolutionViewerProps = false;
-        }
+      if (toChangeSolutionViewerProps) {
+        solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+        toChangeSolutionViewerProps = false;
       }
+    }
+  };
+
+  /** Run solving the current IVP */
+  const runSolving = async () => {  
+    try {  
+      const ivp = getIVP(editorView.state.doc.toString());
+      playIcon.hidden = true;      
+      dialogWithInputs = await getDialogWithInputs(ivp, solve);
+      solverView.append(dialogWithInputs);
+
+      dialogWithInputs.onCancel(() => {playIcon.hidden = false});
 
     } catch (err) {
         if (err instanceof Error) 
@@ -206,7 +215,12 @@ export async function runSolverApp() {
   let viewerDockNode: DG.DockNode | null = null;
   let toChangeSolutionViewerProps = false;
   solverView.name = MISC.VIEW_DEFAULT_NAME;
-  let div = ui.divV([]);   
+  let div = ui.divV([]);
+  let dialogWithInputs: DG.Dialog;
+
+  const playIcon = ui.iconFA('play', runSolving, HINT.RUN);  
+  playIcon.style.color = "var(--green-2)";
+  playIcon.classList.add("fas");
 
   /** Code editor for IVP specifying */
   let editorView = new EditorView({
@@ -220,8 +234,11 @@ export async function runSolverApp() {
   let isChanged = false;
 
   editorView.dom.addEventListener('keydown', async (e) => {
-    if (e.key !== HOT_KEY.RUN)
-      isChanged = true;    
+    if (e.key !== HOT_KEY.RUN) {
+      isChanged = true;
+      playIcon.hidden = false;
+      dialogWithInputs.close();
+    }
   });
 
   /** Load IVP from file */
@@ -274,7 +291,7 @@ export async function runSolverApp() {
     editorView.setState(newState);
 
     if (state != EDITOR_STATE.CLEAR)
-      await solve();
+      await runSolving();
     else
       if (solutionViewer && viewerDockNode) {
         grok.shell.dockManager.close(viewerDockNode);
@@ -284,6 +301,8 @@ export async function runSolverApp() {
 
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
+    dialogWithInputs.close();
+
     if (toShowWarning && isChanged) {      
       const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
@@ -337,15 +356,11 @@ export async function runSolverApp() {
 
   solverView.dockManager.dock(div, 'left');  
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
-  await solve();
+  await runSolving();
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
-  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);
-
-  const playIcon = ui.iconFA('play', solve, HINT.RUN);  
-  playIcon.style.color = "var(--green-2)";
-  playIcon.classList.add("fas");
+  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);  
 
   const appButton = ui.bigButton(TITLE.APP, runModelApp, HINT.APP);
   
@@ -353,7 +368,7 @@ export async function runSolverApp() {
     if (e.key === HOT_KEY.RUN) {
       e.stopImmediatePropagation();
       e.preventDefault();
-      await solve();
+      await runSolving();
     }
   });
 
@@ -376,7 +391,7 @@ export async function runSolverApp() {
   const openIcon = ui.iconFA('folder-open', () => openMenu.show(), HINT.OPEN);
   const saveIcon = ui.iconFA('save', async () => {await saveFn()}, HINT.SAVE);
 
-  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, appButton], [playIcon]]);
+  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, playIcon]]);
 } // runSolverApp
 
 /** Run solver demo application */
@@ -603,7 +618,7 @@ export async function runSolverDemoApp() {
   grok.shell.windows.help.visible = false;
   grok.shell.windows.help.syncCurrentObject = true;
 
-  const helpMD = ui.markdown(demoAppInfo);
+  const helpMD = ui.markdown(demoInfo);
   const divHelp = ui.div([helpMD]);  
   divHelp.style.padding = '10px';
   divHelp.style.overflow = 'auto';
@@ -658,7 +673,8 @@ export async function runSolverDemoApp() {
 } // runSolverDemoApp
 
 /** */
-function getInputs(ivp: IVP): DG.InputBase[] {
+async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Promise<DG.Dialog> {
+  await solveFn(ivp);
 
   const strToVal = (s: string) => {
     let num = Number(s);
@@ -675,21 +691,26 @@ function getInputs(ivp: IVP): DG.InputBase[] {
     return s;
   };
 
-  const getPropery = (name: string, modelInput: Input) => {
-    let options = {name: name, defaultValue: modelInput.value, inputType: FLOAT};
+  const getOptions = (name: string, modelInput: Input) => {
+    let options: DG.PropertyOptions = { 
+      name: name,
+      defaultValue: modelInput.value,
+      type: DG.TYPE.FLOAT,
+      inputType: INPUT_TYPE.FLOAT,
+    };
 
     if (modelInput.annot === null)
-      return DG.Property.fromOptions(options);  
+      return options;  
 
     let annot = modelInput.annot;
-    let descr: string | null = null;
+    let descr: string | undefined = undefined;
 
     let posOpen = annot.indexOf(BRACKET_OPEN);
     let posClose = annot.indexOf(BRACKET_CLOSE);
 
     if (posOpen !== -1) {    
       if (posClose === -1)
-        throw new Error(ERROR_MSG.MISSING_CLOSING_BRACKET);
+        throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, check ${name}`);
     
       descr = annot.slice(posOpen + 1, posClose);
     
@@ -700,7 +721,7 @@ function getInputs(ivp: IVP): DG.InputBase[] {
     posClose = annot.indexOf(BRACE_CLOSE);
 
     if (posOpen >= posClose)
-      throw new Error(ERROR_MSG.INCORRECT_BRACES_USE);
+      throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, check ${name}`);
     
     let pos: number;
     let key: string;
@@ -710,7 +731,7 @@ function getInputs(ivp: IVP): DG.InputBase[] {
       pos = str.indexOf(CONTROL_SEP);
       
       if (pos === -1)
-        throw new Error(ERROR_MSG.MISSING_COLON);
+        throw new Error(`${ERROR_MSG.MISSING_COLON}, check ${name}`);
       
       key = str.slice(0, pos).trim();
       val = str.slice(pos + 1).trim();
@@ -719,37 +740,133 @@ function getInputs(ivp: IVP): DG.InputBase[] {
       options[key] = strToVal(val);
     });
 
-    if (descr !== null)
-      //@ts-ignore
-      options['description'] = descr;
+    options.description = descr ?? '';
 
-    return DG.Property.fromOptions(options);
+    options.name = options.caption ?? options.name;
+
+    return options;
+  };
+  
+  const inputsByCategories = new Map<string, DG.InputBase[]>();
+  inputsByCategories.set(TITLE.MISC, []);
+
+  let options: DG.PropertyOptions;
+
+  const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
+    let category = options.category;
+
+    if (category === undefined)
+      inputsByCategories.get(TITLE.MISC)?.push(input);
+    else if (inputsByCategories.has(category))
+      inputsByCategories.get(category)!.push(input)
+    else
+      inputsByCategories.set(category, [input]);
+
+    input.setTooltip(options.description!);
   };
 
-  let prop: DG.Property;
-  const inputs = [] as DG.InputBase[];
+  // Inputs for argument
+  for (const key in ivp.arg)
+    if (key !== SCRIPTING.ARG_NAME) {
+      //@ts-ignore
+      options = getOptions(key, ivp.arg[key]);
+      const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.onChanged(async () => {
+        if (input.value !== null) {
+          //@ts-ignore
+          ivp.arg[key].value = input.value;
+          await solveFn(ivp);
+        }
+      });
 
-  try {
-    prop = getPropery('start', ivp.arg.start);
-    //console.log(prop);
-    inputs.push(ui.input.forProperty(prop))
+      categorizeInput(options, input);
+    }
 
-    prop = getPropery('finish', ivp.arg.finish);
-    inputs.push(ui.input.forProperty(prop))
-    //console.log(prop);
+  // Inputs for initial values
+  ivp.inits.forEach((val, key, map) => {
+    options = getOptions(key, val);
+    const input = ui.input.forProperty(DG.Property.fromOptions(options));
+    input.onChanged(async () => {
+      if (input.value !== null) {
+        ivp.inits.get(key)!.value = input.value;
+        await solveFn(ivp);
+      }
+    });
 
-    prop = getPropery('step', ivp.arg.step);
-    inputs.push(ui.input.forProperty(prop))
-    //console.log(prop);
+    categorizeInput(options, input);
+  });
+
+  // Inputs for parameters
+  if (ivp.params !== null)
+    ivp.params.forEach((val, key, map) => {
+      options = getOptions(key, val);
+      const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.onChanged(async () => {
+        if (input.value !== null) {
+          ivp.params!.get(key)!.value = input.value;
+          await solveFn(ivp);
+        }
+      });
+
+      categorizeInput(options, input);
+    });
+
+  // Inputs for loop
+  if (ivp.loop !== null) {
+    options = getOptions(SCRIPTING.COUNT, ivp.loop.count);
+    options.inputType = INPUT_TYPE.INT; // since it's an integer
+    options.type = DG.TYPE.INT; // since it's an integer
+    const input = ui.input.forProperty(DG.Property.fromOptions(options));
+    input.onChanged(async () => {
+      if (input.value !== null) {
+        ivp.loop!.count.value = input.value;
+        await solveFn(ivp);
+      }
+    });
+
+    categorizeInput(options, input);    
   }
-  catch (err) {
-    if (err instanceof Error) 
-      grok.shell.error(`${err.message}${ERROR_MSG.CHECK_ARGUMENTS}`);
-    else
-      grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+
+  // Inputs for updates
+  if (ivp.updates !== null)
+    ivp.updates.forEach((val, idx, updates) => {
+      options = getOptions(`${SCRIPTING.DURATION} ${idx + 1}`, val.duration);
+      const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.onChanged(async () => {
+        if (input.value !== null) {
+          ivp.updates![idx].duration.value = input.value;
+          await solveFn(ivp);
+        }
+      });
+
+      categorizeInput(options, input);
+    });
+
+  const forms = new Map<string, HTMLElement>();
+
+  inputsByCategories.forEach((inputs, category) => {forms.set(category, ui.form(inputs))});
+
+  const elems = [] as HTMLElement[];
+
+  if (forms.size === 1)
+    elems.push(forms.get(TITLE.MISC)!);
+  else {
+    forms.forEach((form, cat) => {
+      if (cat !== TITLE.MISC) {
+        elems.push(ui.h2(cat));
+        elems.push(form);
+      }
+    });
+
+    if (inputsByCategories.get(TITLE.MISC)!.length > 0) {
+      elems.push(ui.h2(TITLE.MISC));
+      elems.push(forms.get(TITLE.MISC)!);      
+    }        
   }
 
-  console.log(inputs);
+  const dlg = ui.dialog({title: TITLE.VARY, helpUrl: LINK.DIF_STUDIO_MD})
+    .add(ui.divV(elems))    
+    .show();
 
-  return inputs;
+  return dlg;
 }

@@ -105,7 +105,7 @@ ${CONTROL_EXPR.EXPR}:
   C3 = peri / V3
 
 ${CONTROL_EXPR.LOOP}:
-  count = 10 {category: Dosing} [Number of doses]
+  count = 10 {category: Dosing; min: 1; max: 20} [Number of doses]
   depot += dose
 
 ${CONTROL_EXPR.ARG}: t
@@ -120,12 +120,12 @@ ${CONTROL_EXPR.INITS}:
   eff = 0.2 {category: Initial values} [Effective compartment rate]
 
 ${CONTROL_EXPR.PARAMS}:  
-  dose = 10000 {category: Dosing} [Dosage]
+  dose = 10000 {category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
   KA = 0.3 {caption: rate constant; category: Paramters}
   CL = 2 {caption: clearance; category: Paramters}
   V2 = 4 {caption: central volume; category: Paramters} [Central compartment volume]
-  Q = 1 {caption: intercompartmental rate; category: Paramters}
-  V3 = 30 {caption: peripheral volume; category: Paramters} [Peripheral compartment volume]
+  Q = 1 {caption: inter rate; category: Paramters} [Intercompartmental rate]
+  V3 = 30 {caption: peri volume; category: Paramters} [Peripheral compartment volume]
   EC50 = 8 {caption: effect; category: Paramters}
   Kin = 0.2 {caption: Kin; category: Paramters} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Paramters} [The first-order dissipation rate constant]
