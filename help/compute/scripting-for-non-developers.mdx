@@ -253,20 +253,6 @@ import * as html2canvas from 'html2canvas';
 </Tabs>
 ```
 
-### Input and output parameters
-
-The script header's most important part is the specification of input and output parameters (variables).
-Datagrok automatically injects _input_ parameters' values before the script starts
-and captures _output_ parameters' values when the script finishes.
-
-Datagrok supports all standard types of scalar parameters (namely, `int`, `float`, `bool`, `string`).
-In addition, Datagrok offers high-level parameters designed to interact with dataframes.
-You can pass to the script the whole dataframe (`datarframe` type), dataframe column (`column`), list of columns (`column_list`),
-or a binary file (`blob`).
-
-Find the full list and description of supported parameters in the
-[Input and output parameters](../datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) section.
-
 ### How to run a script
 
 Let's save the script and see how it works.
@@ -342,17 +328,29 @@ For additional capabilities of the Datagrok script editor, see the
 
 ## Datagrok scripting in details
 
-### Parameters: scalars and dataframes
+### Input and output parameters
+
+Each script should specify its' input and output parameters.
+Datagrok automatically injects _input_ parameters' values before the script starts
+and captures _output_ parameters' values when the script finishes.
 
 Datagrok natively supports standard scalar data types: 
 `int`, `double`, `bool`, `string`.
-Also, Datagrok supports `datetime` as a specific parameter type.
 
 For table data, Datagrok supports **Dataframe** as input/output parameters.
-For [Python](https://www.python.org/) this parameter
-is a [Pandas](https://pandas.pydata.org/)
-[dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html).
-[R](https://www.r-project.org/) supports dataframes natively.
+You can pass to the script the whole dataframe (`dataframe` type), dataframe column (`column`), list of columns (`column_list`),
+or a binary file (`blob`).
+
+:::note 
+
+Datagrok's dataframe converts to:
+- Pandas [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) for Python,
+- Native [data frames](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame) for R,
+- [Cell arrays](https://docs.octave.org/v8.4.0/Cell-Arrays.html) for Octave
+- [DataFrame](https://dataframes.juliadata.org/stable/man/getting_started/#The-DataFrame-Type) for Julia
+- [DG.DataFrame](https://datagrok.ai/help/develop/advanced/data-frame) for JavaScript
+
+:::
 
 Let's modify the default example to accept and return both dataframes and scalars.
 We copy the original dataframe and add a new ID column to it.
@@ -424,6 +422,29 @@ last_row = len(new_table)
 
 ```mdx-code-block
 </TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: DataframeIdDemo
+//description: Adding ID column to a dataframe
+//language: javascript
+//tags: demo, dataframe
+//sample: cars.csv
+//input: dataframe table [Data table]
+//input: string id_column = 'model' [Name of ID column]
+//input: string id_prefix = 'id_' [Prefix for ID column]
+//output: dataframe new_table [New table with additional column]
+//output: int last_row [number of last row]
+
+const new_table = table.clone();
+const last_row = new_table.rowCount;
+new_table.col(id_column).init((i) => `${id_prefix}${i}`);
+```
+
+
+```mdx-code-block
+</TabItem>
 </Tabs>
 ```
 
@@ -482,6 +503,26 @@ new_table = table.copy()
 l = len(new_table)
 new_table[id_column] = [f"id_{n:04}" for n in range(l)]
 new_table = new_table[ [id_column] + data_columns ]
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: ColumnSelectorDemo
+//description: Using column selectors
+//language: javascript
+//tags: demo, dataframe, column_selector
+//input: dataframe table [Data table]
+//input: column id_column [Fill this column with auto-d=generated ID]
+//input: column_list data_columns [Keep this column and drom all others]
+//output: dataframe new_table [New table with additional column]
+
+const new_table = table.clone();
+const l = new_table.rowCount;
+new_table.col('model').init((i) => `${id_column.get(i)}_${i}`);
 ```
 
 ```mdx-code-block
@@ -741,15 +782,6 @@ Proper caption helps the user to understand the meaning of the parameter.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="input" label="Input" default>
-```
-
-```python
-# input: double V1 { caption: Initial volume of liquid }
-```
-
-```mdx-code-block
-</TabItem>
 <TabItem value="result" label="Result">
 ```
 
@@ -765,6 +797,15 @@ Proper caption helps the user to understand the meaning of the parameter.
 
 ```mdx-code-block
 </TabItem>
+<TabItem value="input" label="Input" default>
+```
+
+```python
+#input: double V1 { caption: Initial volume of liquid }
+```
+
+```mdx-code-block
+</TabItem>
 </Tabs>
 ```
 
@@ -775,15 +816,6 @@ The unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="input" label="Input" default>
-```
-
-```python
-# input: double initialTemp { units: °С }
-```
-
-```mdx-code-block
-</TabItem>
 <TabItem value="result" label="Result">
 ```
 
@@ -795,6 +827,15 @@ The unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
 </BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="input" label="Input" default>
+```
+
+```python
+#input: double initialTemp { units: °С }
 ```
 
 ```mdx-code-block
@@ -832,21 +873,6 @@ and opening the toolbox on the left.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="input" label="Input">
-```
-
-```python
-# name: Adding viewer on output dataframe
-# language: python
-# input: dataframe inputDF
-# output: dataframe outputDF { viewer: Line chart | Scatter plot }
-
-outputDF = inputDF
-outputDF.name = "DF with linechart"
-```
-
-```mdx-code-block
-</TabItem>
 <TabItem value="result" label="Result">
 ```
 
@@ -858,6 +884,21 @@ outputDF.name = "DF with linechart"
 
 ```mdx-code-block
 </BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="input" label="Input">
+```
+
+```python
+#name: Adding viewer on output dataframe
+#language: python
+#input: dataframe inputDF
+#output: dataframe outputDF { viewer: Line chart | Scatter plot }
+
+outputDF = inputDF
+outputDF.name = "DF with linechart"
 ```
 
 ```mdx-code-block
@@ -897,18 +938,6 @@ of the scatterplot becomes `showRegressionLine`.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="input" label="Input">
-```
-
-```python
-# name: Viewers customization
-# language: python
-# input: dataframe tempData
-# output: dataframe dummyData { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
-```
-
-```mdx-code-block
-</TabItem>
 <TabItem value="result" label="Result">
 ```
 
@@ -920,6 +949,18 @@ of the scatterplot becomes `showRegressionLine`.
 
 ```mdx-code-block
 </BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="input" label="Input">
+```
+
+```python
+#name: Viewers customization
+#language: python
+#input: dataframe tempData
+#output: dataframe dummyData { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
 ```
 
 ```mdx-code-block
@@ -937,6 +978,26 @@ RichFunctionView renders categories as separate blocks of the input form.
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+
+<img src={require('./pics/input-categories.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+</div>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="short" label="Short sample">
 ```
 
@@ -959,26 +1020,6 @@ RichFunctionView renders categories as separate blocks of the input form.
 #input: double desiredHumidity { caption: Goal humidity; category: Goals }
 ```
 
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/input-categories.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
 
 ```mdx-code-block
 </TabItem>
