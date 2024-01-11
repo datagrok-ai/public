@@ -684,6 +684,33 @@ that takes a molecule in SMILES format as input
 and calculates the Gasteiger charges distribution.
 The script is provided with the `Chem` package.
 
+The script takes as an input the string variable `mol` with the semantic annotation `Molecule`.
+When you run the script, you will see the following:
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+
+<img src={require('./pics/Scripting-Semtypes-support-UI.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+</div>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
 ```python
 #name: GasteigerCharges Demo
 #description: Calculates Gasteiger charge distribution
@@ -704,21 +731,9 @@ if mol is not None:
     charges = SimilarityMaps.GetSimilarityMapFromWeights(mol, contribs, contourLines=contours)
 ```
 
-The script takes as an input the string variable `mol` with the semantic annotation `Molecule`.
-When you run the script, you will see the following:
-
 ```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/Scripting-Semtypes-support-UI.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
+</TabItem>
+</Tabs>
 ```
 
 Datagrok recognised the `Molecule` semantic types and created the custom UI displaying molecule formula.
@@ -837,6 +852,61 @@ The unit label will appear in the input form next to the input field.
 ```python
 #input: double initialTemp { units: °С }
 ```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Grouping inputs
+
+You can group script inputs into categories using the `category` tag.
+RichFunctionView renders categories as separate blocks of the input form.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
+```
+
+
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+
+<img src={require('./pics/input-categories.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+</div>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="short" label="Short sample">
+```
+
+```python
+#input: double initialPressure { caption: Initial pressure; category: Experimental data }
+#input: double desiredPressure { caption: Goal pressure; category: Goals }
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```python
+#name: InputGroupingDemo
+#language: python
+#input: dataframe tempData { caption: Temperature data; category: Experimental data }
+#input: double initialPressure { caption: Initial pressure; category: Experimental data }
+#input: double desiredPressure { caption: Goal pressure; category: Goals }
+#input: double desiredHumidity { caption: Goal humidity; category: Goals }
+```
+
 
 ```mdx-code-block
 </TabItem>
@@ -971,66 +1041,9 @@ of the scatterplot becomes `showRegressionLine`.
 The [RichFunctionView](scripting-advanced.mdx#using-richfunctionview-input-control)
 control allows you to create much more complex
 
-### Grouping inputs
-
-You can group script inputs into categories using the `category` tag.
-RichFunctionView renders categories as separate blocks of the input form.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="result" label="Result">
-```
-
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/input-categories.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="short" label="Short sample">
-```
-
-```python
-#input: double initialPressure { caption: Initial pressure; category: Experimental data }
-#input: double desiredPressure { caption: Goal pressure; category: Goals }
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="full" label="Full sample">
-```
-
-```python
-#name: InputGroupingDemo
-#language: python
-#input: dataframe tempData { caption: Temperature data; category: Experimental data }
-#input: double initialPressure { caption: Initial pressure; category: Experimental data }
-#input: double desiredPressure { caption: Goal pressure; category: Goals }
-#input: double desiredHumidity { caption: Goal humidity; category: Goals }
-```
-
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-
-
 ## Working with Datagrok script editor
 
-### How to open and edit a script
+### How to find and edit a script
 
 To edit an existing script:
 
