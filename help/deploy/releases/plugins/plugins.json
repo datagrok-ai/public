@@ -1,5 +1,115 @@
 [
   {
+    "name": "Peptides",
+    "date": "2024-01-11T09:06:13.982Z",
+    "version": "1.17.1",
+    "summary": "",
+    "dir": "packages/Peptides",
+    "changelog": false,
+    "changelogDate": "2024-01-11",
+    "readme": true
+  },
+  {
+    "name": "EDA",
+    "date": "2024-01-10T11:16:36.097Z",
+    "version": "1.1.8",
+    "summary": "",
+    "dir": "packages/EDA",
+    "changelog": false,
+    "changelogDate": "2024-01-10",
+    "readme": true
+  },
+  {
+    "name": "SimPKPD",
+    "date": "2024-01-10T10:18:22.350Z",
+    "version": "1.0.6",
+    "summary": "",
+    "dir": "packages/SimPKPD",
+    "changelog": false,
+    "changelogDate": "2024-01-10",
+    "readme": true
+  },
+  {
+    "name": "Chem",
+    "date": "2024-01-09T14:51:53.267Z",
+    "version": "1.8.9",
+    "summary": "",
+    "dir": "packages/Chem",
+    "changelog": false,
+    "changelogDate": "2024-01-09",
+    "readme": true
+  },
+  {
+    "name": "Bio",
+    "date": "2024-01-09T09:13:46.488Z",
+    "version": "2.11.24",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2024-01-09",
+    "readme": true
+  },
+  {
+    "name": "Helm",
+    "date": "2024-01-09T08:44:54.009Z",
+    "version": "2.1.24",
+    "summary": "",
+    "dir": "packages/Helm",
+    "changelog": false,
+    "changelogDate": "2024-01-09",
+    "readme": true
+  },
+  {
+    "name": "Bio",
+    "date": "2024-01-08T21:38:32.190Z",
+    "version": "2.11.23",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2024-01-08",
+    "readme": true
+  },
+  {
+    "name": "Compute",
+    "date": "2024-01-08T16:00:21.465Z",
+    "version": "1.19.0",
+    "summary": "",
+    "dir": "packages/Compute",
+    "changelog": false,
+    "changelogDate": "2024-01-08",
+    "readme": true
+  },
+  {
+    "name": "Sequence Translator",
+    "date": "2024-01-08T13:46:38.814Z",
+    "version": "1.2.5",
+    "summary": "",
+    "dir": "packages/SequenceTranslator",
+    "changelog": false,
+    "changelogDate": "2024-01-08",
+    "readme": false
+  },
+  {
+    "name": "Biostructure Viewer",
+    "date": "2024-01-04T10:54:26.706Z",
+    "version": "1.0.22",
+    "summary": "",
+    "dir": "packages/BiostructureViewer",
+    "changelog": false,
+    "changelogDate": "2024-01-04",
+    "readme": true
+  },
+  {
+    "name": "Bio",
+    "date": "2023-12-27T17:38:44.483Z",
+    "version": "2.11.22",
+    "summary": "",
+    "dir": "packages/Bio",
+    "changelog": false,
+    "changelogDate": "2023-12-27",
+    "readme": true
+  },
+  {
     "name": "HitTriage",
     "date": "2023-12-27T06:04:42.112Z",
     "version": "1.1.3",
@@ -9888,115 +9998,5 @@
     "changelog": false,
     "changelogDate": "2022-02-08",
     "readme": true
-  },
-  {
-    "name": "PowerPack",
-    "date": "2022-02-07T13:50:55.015Z",
-    "version": "0.0.5",
-    "summary": "",
-    "dir": "packages/PowerPack",
-    "changelog": false,
-    "changelogDate": "2022-02-07",
-    "readme": true
-  },
-  {
-    "name": "Demo",
-    "date": "2022-02-03T21:13:13.419Z",
-    "version": "0.0.6",
-    "summary": "",
-    "dir": "packages/Demo",
-    "changelog": false,
-    "changelogDate": "2022-02-03",
-    "readme": false
-  },
-  {
-    "name": "Peptides",
-    "date": "2022-01-31T20:09:34.068Z",
-    "version": "0.8.8",
-    "summary": "",
-    "dir": "packages/Peptides",
-    "changelog": false,
-    "changelogDate": "2022-01-31",
-    "readme": true
-  },
-  {
-    "name": "SQLite",
-    "date": "2022-01-31T15:07:14.409Z",
-    "version": "0.1.1",
-    "summary": "",
-    "dir": "packages/SQLite",
-    "changelog": false,
-    "changelogDate": "2022-01-31",
-    "readme": true
-  },
-  {
-    "name": "Chem",
-    "date": "2022-01-31T14:01:22.586Z",
-    "version": "0.49.2",
-    "summary": "",
-    "dir": "packages/Chem",
-    "changelog": false,
-    "changelogDate": "2022-01-31",
-    "readme": true
-  },
-  {
-    "name": "SQLite",
-    "date": "2022-01-31T11:10:17.504Z",
-    "version": "0.1.0",
-    "summary": "",
-    "dir": "packages/SQLite",
-    "changelog": false,
-    "changelogDate": "2022-01-31",
-    "readme": true
-  },
-  {
-    "name": "Peptides",
-    "date": "2022-01-31T10:08:33.350Z",
-    "version": "0.8.7",
-    "summary": "",
-    "dir": "packages/Peptides",
-    "changelog": false,
-    "changelogDate": "2022-01-31",
-    "readme": true
-  },
-  {
-    "name": "Clinical Case",
-    "date": "2022-01-25T19:08:34.484Z",
-    "version": "0.1.0",
-    "summary": "",
-    "dir": "packages/ClinicalCase",
-    "changelog": false,
-    "changelogDate": "2022-01-25",
-    "readme": true
-  },
-  {
-    "name": "Usage Analysis",
-    "date": "2022-01-25T16:21:01.251Z",
-    "version": "0.0.3",
-    "summary": "",
-    "dir": "packages/UsageAnalysis",
-    "changelog": false,
-    "changelogDate": "2022-01-25",
-    "readme": true
-  },
-  {
-    "name": "Chem",
-    "date": "2022-01-25T14:16:34.174Z",
-    "version": "0.49.1",
-    "summary": "",
-    "dir": "packages/Chem",
-    "changelog": false,
-    "changelogDate": "2022-01-25",
-    "readme": true
-  },
-  {
-    "name": "Demo",
-    "date": "2022-01-25T11:56:38.389Z",
-    "version": "0.0.5",
-    "summary": "",
-    "dir": "packages/Demo",
-    "changelog": false,
-    "changelogDate": "2022-01-25",
-    "readme": false
   }
 ]
