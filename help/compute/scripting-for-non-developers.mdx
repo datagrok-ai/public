@@ -148,7 +148,7 @@ Let's explore how it works.
 
 ### Script header
 
-Each Datagrok script has the **header** that contains **header parameters** \-
+Each Datagrok script has the **header**. Header contains **header parameters** \-
 special comment strings used by Datagrok to determine script name and language,
 pass to the script input parameters, and capture script output.  
 
@@ -157,11 +157,11 @@ The template script has the following ones:
 * `name: Template`: The short name of the script.
 * `description: Calculates the number of cells in the table`: The human-readable description.
 * `language: python`: The script language. Supported: *R*, *Python*, *Octave*, *Julia*, *JavaScript*.
-* `tags: template, demo`: The list of tags used to organize and search scripts.
-* `input: dataframe table [Data table]`: Specification of the input parameter.
+* `tags: template, demo`: The list of the tags used to organize and search scripts.
+* `input: dataframe table [Data table]`: The input parameter specification.
    The `table` is the parameter name, and `dataframe` is the parameter type.
    See the [supported parameter types](../datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) for details.
-* `output: int count [Number of cells in the table]`: Specification of the output parameter:
+* `output: int count [Number of cells in the table]`: The output parameter specification:
    The `int` variable with the name `count`.
 
 For more details, refer to the [functions parameter annotation](../datagrok/concepts/functions/func-params-annotation).
@@ -214,6 +214,22 @@ Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are 
 ```mdx-code-block
 </TabItem>
 
+<TabItem value="julia" label="Julia">
+```
+
+```julia
+using HTTP
+using DataFrames
+using CSV
+using Compat
+using MbedTLS
+using Dates
+using JSON
+```
+
+```mdx-code-block
+</TabItem>
+
 <TabItem value="javascript" label="JavaScript">
 ```
 
@@ -240,14 +256,13 @@ import * as html2canvas from 'html2canvas';
 ### Input and output parameters
 
 The script header's most important part is the specification of input and output parameters (variables).
-Each parameter is specified either as input or output.
-Datagrok automatically injects _input_ parameters before the script starts
-and captures _output_ parameters when the script finishes.
+Datagrok automatically injects _input_ parameters' values before the script starts
+and captures _output_ parameters' values when the script finishes.
 
-Datagrok supports all standard types of scalar parameters (integer, float, boolean, string)
+Datagrok supports all standard types of scalar parameters (namely, `int`, `float`, `bool`, `string`).
 In addition, Datagrok offers high-level parameters designed to interact with dataframes.
-You can pass to the script the whole dataframe, dataframe column, list of columns,
-or a binary file.
+You can pass to the script the whole dataframe (`datarframe` type), dataframe column (`column`), list of columns (`column_list`),
+or a binary file (`blob`).
 
 Find the full list and description of supported parameters in the
 [Input and output parameters](../datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) section.
@@ -255,7 +270,7 @@ Find the full list and description of supported parameters in the
 ### How to run a script
 
 Let's save the script and see how it works.
-The built-in editor has the **Run** button on the top panel.
+The built-in editor has the **Run** <i class="fas fa-play"></i> button on the top panel.
 Press it to run a script. You will see the following window:
 
 ```mdx-code-block
@@ -345,24 +360,23 @@ Also, we return the number of rows in the table.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="python" label="Python" default>
+<TabItem value="result" label="Result" default>
 ```
 
-```python
-#name: DataframeIdDemo
-#description: Adding ID column to a dataframe
-#language: python
-#tags: demo, dataframe
-#input: dataframe table [Data table]
-#input: string id_column = 'ID' [Name of ID column]
-#input: string id_prefix = 'id_' [Prefix for ID column]
-#output: dataframe new_table [New table with additional column]
-#output: int last_row [number of last row]
+When you run the script, you will see the following dialog:
 
-new_table = table.copy()
-l = len(new_table)
-new_table[id_column] = [f"{id_prefix}{n:04}" for n in range(l)]
-last_row = len(new_table)
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+
+<img src={require('./pics/dataframeiddemo-input.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+</div>
+
+```mdx-code-block
+</BrowserWindow>
 ```
 
 ```mdx-code-block
@@ -388,23 +402,29 @@ last_row <- nrow(new_table)
 
 ```mdx-code-block
 </TabItem>
+<TabItem value="python" label="Python">
+```
+
+```python
+#name: DataframeIdDemo
+#description: Adding ID column to a dataframe
+#language: python
+#tags: demo, dataframe
+#input: dataframe table [Data table]
+#input: string id_column = 'ID' [Name of ID column]
+#input: string id_prefix = 'id_' [Prefix for ID column]
+#output: dataframe new_table [New table with additional column]
+#output: int last_row [number of last row]
+
+new_table = table.copy()
+l = len(new_table)
+new_table[id_column] = [f"{id_prefix}{n:04}" for n in range(l)]
+last_row = len(new_table)
+```
+
+```mdx-code-block
+</TabItem>
 </Tabs>
-```
-
-When you run the script, you will see the following dialog:
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/dataframeiddemo-input.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
 ```
 
 Datagrok created the script UI,
@@ -424,6 +444,30 @@ Datagrok provides you with data inputs to select one or multiple columns from a 
 Both of these selectors require at least one **Dataframe** input 
 to choose a dataframe.
 
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+
+<img src={require('./pics/ColumnSelectorDemo.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+</div>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
 ```python
 #name: ColumnSelectorDemo
 #description: Using column selectors
@@ -441,74 +485,19 @@ new_table = new_table[ [id_column] + data_columns ]
 ```
 
 ```mdx-code-block
-<BrowserWindow url=''>
+</TabItem>
+</Tabs>
 ```
 
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/ColumnSelectorDemo.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-### File I/O
-
-You can use files as input or output parameters
-using `file` and `blob` annotations.
-
-The `file` parameter type allows you to read and write a file.
-Inside the `Python`/`R` script this parameter will be a string variable 
-containing path to the local file.
-
-For example, let's save a dataframe to a JSON file:
-
-```python
-#name: DfToJSON
-#description: Saves a dataframe to JSON file
-#language: python
-#tags: template, demo, FileIo
-#input: dataframe df [Dataframe to convert to JSON]
-#output: file json_file
-
-df.to_json(json_file)
-```
-
-When you run this script, Datagrok will return the `FileInfo` object in the scalar variables panel.
-To save the file, right-click on the highlighted file link and choose the **Download** option.
-The file name always matches the output variable name.
-Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/Scripting-FileIO-save.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
+### File input
 
 When you use the `file` annotation for the input parameter,
 Datagrok creates an interface to load file.
 
-```python
-#name: DfFromJSON
-#description: Loads a dataframe from JSON file
-#language: python
-#tags: template, demo, FileIo
-#input: file json_file {caption:JSON file} [A JSON file to load a dataframe]
-#output: dataframe df 
-
-df = pd.read_json(json_file)
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
 ```
-
 
 ```mdx-code-block
 <BrowserWindow url=''>
@@ -522,6 +511,27 @@ df = pd.read_json(json_file)
 
 ```mdx-code-block
 </BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
+```python
+#name: DfFromJSON
+#description: Loads a dataframe from JSON file
+#language: python
+#tags: template, demo, FileIo
+#input: file json_file {caption:JSON file} [A JSON file to load a dataframe]
+#output: dataframe df 
+
+df = pd.read_json(json_file)
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
 ```
 
 <div style = {{ display: 'flex' }}>
@@ -564,6 +574,62 @@ typeofblob = type(array_blob)
 
 You can use this capability to effectively transfer a large set of data 
 from one Datagrok function/script to another. 
+
+### File output
+
+You can use files as input or output parameters
+using `file` and `blob` annotations.
+
+The `file` parameter type allows you to read and write a file.
+Inside the `Python`/`R` script this parameter will be a string variable 
+containing path to the local file.
+
+For example, let's save a dataframe to a JSON file:
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+
+<img src={require('./pics/Scripting-FileIO-save.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+</div>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
+```python
+#name: DfToJSON
+#description: Saves a dataframe to JSON file
+#language: python
+#tags: template, demo, FileIo
+#input: dataframe df [Dataframe to convert to JSON]
+#output: file json_file
+
+df.to_json(json_file)
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+When you run this script, Datagrok will return the `FileInfo` object in the scalar variables panel.
+To save the file, right-click on the highlighted file link and choose the **Download** option.
+The file name always matches the output variable name.
+Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
 
 ### Semantic types
 

@@ -5,22 +5,26 @@ title: "Advanced scripting in Datagrok"
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
 ```
+
+<div style = {{maxWidth: '680px'}}>
 
 ## Output values validation
 
-Datagrok functions return zero, one or more typed arguments.
-Datagrok expects that all output values are assigned in the script code
- so that they are defined by the end of the script.
+Datagrok functions return zero, one or more typed variables.
+Datagrok expects that all variables are defined in the script code and have proper values by the end of script run.
 If this doesn't happen, the two things will follow:
 
 1. The unset output values will be returned as `null`-s.
 2. A warning `Output value ${output.param.name} was not set` will be printed in the 
-   [Datagrok Console](../datagrok/navigation/navigation.md#console) (open it with `Ctrl-~`).
+   [Datagrok Console](../datagrok/navigation/navigation.md#console). 
+   Open it pressing `~` key or clicking **Console** <i class="fas fa-terminal"></i> button 
+   in the right bottom corner of the screen.
 
 In this script, the value `c3` is missed to be set:
 
-```R
+```r title="R script with missing output value"
 #name: TestMissingInputsR
 #language: r
 #output: int c1
@@ -32,45 +36,51 @@ c2 <- 15
 
 Running the script produces the following output to the console:
 
-```R
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+```
 Output value c3 was not set
   c1: 12
   c2: 15
   c3: null
 ```
 
-We recommend using the Datagrok Console while validating your scripts.
+```mdx-code-block
+</BrowserWindow>
+```
 
 ## Environments
 
-### Conda environments
+### Python (using Conda)
 
-Each script can use a specific environment configuration under which it will run, 
+You can specify an environment for the script to use, 
 including the language version and a set of libraries. 
 
-Datagrok uses [Conda](https://docs.conda.io/en/latest/)
+Datagrok uses [Conda](https://docs.Conda.io/en/latest/)
 as the environment management system. 
-A Conda environment gives a sandboxed, controlled area for running scripts,
-and only takes time to be pre-created.  
-Later, the script uses the pre-created environment with no delay for resolving dependencies
-and installing language versions.
+A Conda environment:
+- isolates each script run,
+- controls dependencies,
+- and takes time to be created before script run.
 
-In Datagrok, Conda environment configuration can be specified either right inside the script, 
-or as part of
-a [package](../develop/develop.md#packages). 
-The package can be both the one containing the script or any other deployed
-package available under your current user with a specified environment.
+Later, the script uses the pre-created environment with *no delay* for resolving dependencies.
+
+In Datagrok, Conda environment configuration can be specified either [right inside the script](#specify-environment-in-place), 
+or as [part of a package](#specify-the-environment-in-a-package). 
 
 #### Specify environment in-place
 
-Set an `environment` parameter of the script to a one-liner YAML 
-following the standard Conda YAML config, but omitting
-its name and enclosing braces `{}`. For example, we need to use the following Conda yaml config:
+Set an `environment` parameter of the script 
+to an one-liner YAML following the standard Conda YAML config (omit it's name). 
+
+For example, we need to use the following Conda config:
 
 ```yaml
 name: envtest01
 channels:
-  - conda-forge
+  - Conda-forge
 dependencies:
   - python=3.8
   - glom
@@ -78,13 +88,13 @@ dependencies:
       - requests
 ```
 
-To use it in any script, specify it as follows:
+To use it in a script, specify it as follows:
 
 ```python
-# name: EnvTestInline
-# environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
-# language: python
-# output: string result
+#name: EnvTestInline
+#environment: channels: [Conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+#language: python
+#output: string result
 
 import re, requests
 from glom import glom
@@ -94,33 +104,39 @@ target = {'a': {'b': {'c': 'd'}}}
 result = glom(target, 'a.b.c')  # returns 'd'
 ```
 
+:::tip First launch may take time
+
 When the script runs the first time, Datagrok creates the environment on
 the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components), 
-which may take some time, up to several minutes. 
+which may take up to several minutes. 
 For all next script runs, Datagrok will reuse this environment. 
 
-Datagrok handles in-pace environments using MD5 hashes of their body strings.
-Therefore, if you change the environment string to another previously created environment 
-(even in some other script), 
-Datagrok will pick it up and reuse it. 
+:::
+
+Datagrok distinguishes in-place environments using *MD5 hashes* of their body strings.
+If there is a ready-to-use environment with the same environment config, Datagrok will pick it up and reuse it. 
 
 #### Specify the environment in a package
 
-Configurations are stored in conda YAML format in the same repository with the script 
-in the folder `environments` under the repository root. 
+You may store your configurations in a package's `environment` folder. They should use Conda YAML format.
 You can create an environment YAML
-[manually](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually)
+[manually](https://docs.Conda.io/projects/Conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually)
 or
-[export it](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
+[export it](https://docs.Conda.io/projects/Conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
 form your existing Conda environment.
-If the `#environment` tag in the script header is not specified, the script uses the configuration defined in
-[`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
+
+If the `environment` tag in the script header is not specified, the script uses 
+[the default configuration](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
+
+:::tip
 
 Here is an
 [example of configuration](https://github.com/datagrok-ai/public/tree/master/environments)
-for the [Datagrok public repository](https://github.com/datagrok-ai/public). 
+for the Datagrok public repository. 
 Also, a package can define its own
 configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts)).
+
+:::
 
 This is how to define the "Chemprop" environment in the script header:
 
@@ -131,11 +147,7 @@ This is how to define the "Chemprop" environment in the script header:
 In this case, the environment `Chemprop` should be specified in a file
 `environments/Chemprop.yaml` inside the package where this script belongs.
 
-Datagrok identifies and resolves environments by their names. 
-If an environment referred in a script wasn't previously
-used, Datagrok will create it on the
-[Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components). 
-This operation can take up to several minutes.
+Datagrok distinguishes package environments by their *names*. 
 Datagrok will reuse a previously created environment for all subsequent runs 
 with no delay.
 
@@ -145,65 +157,60 @@ An environment `SomeEnv` specified in a package `SomePackage`
 is available from all scripts in the platform for
 referencing as `SomePackage:SomeEnv`. 
 If the package `SomePackage` is available to the current user, the reference will
-work. 
+be resolved.
 
-Such environment reference is available in both package and ad-hoc scripts.
+Environment references are supported in both package and ad-hoc scripts.
 
-#### Global environments
+#### Sharing environments
 
-Environment referencing is a handy way to organize global (organization-wide) environments. 
-You can version such common environments through a dedicated package, 
-and one physical environment will be re-used by many users, which is more space- and time-efficient.
+Environment referencing is a handy way to share and manage environments. 
+You share common environments through a dedicated package, 
+and one Conda environment will be re-used by many users, which is more space- and time-efficient.
 
 To achieve it, do the following steps:
 
-1. Choose one package, say, `GlobalEnvs`, which will contain global environments.
-2. Choose a common prefix to name these global environments with, say, `Global`
-3. Name all global environments in this package with the chosen prefix: `Global<ENVIRONMENT_NAME>`
-4. Publish `GlobalEnvs` package as `--release` to the platform and share it with the `All Users` group 
-   or with the specific group of users you want to have access to these environments
-5. Let other users know these environments are now available as
-   `GlobalEnvs:Global<ENVIRONMENT_NAME>`
+1. Create one package to contain global environments (say, `GlobalEnvs`).
+2. Create an environment to share inside of this package (let it be `GlobalEnvDataAnalysis`).
+3. Publish `GlobalEnvs` package with `--release` option to the platform.
+4. Share it with the specific group of users you want to have access to these environments.
+5. Environment will be available as `GlobalEnvs:GlobalEnvDataAnalysis`
 
-In the future, for the `# environment:` property, the Datagrok script editor will
-show all available environments for the current user and the current script in a dropdown list.
+:::note Future plans
+
+In the future, Datagrok script editor will show all available environments in a dropdown list.
+
+:::
 
 #### Conda and Pip custom repositories
 
-By default, conda uses conda-forge and pypi repositories to install packages. 
-It is possible to specify custom conda and pip repositories in environments. 
+By default, Conda uses [Conda-forge](https://Conda-forge.org/) and [PyPI](https://pypi.org/) repositories to install packages. 
+It is possible to specify custom Conda and pip repositories in environments. 
+You may specify your own package repositories in the environment specification.
+
 For example, to use `http://my-repo/custom/` as Conda repository 
 and `https://mirrors.sustech.edu.cn/pypi/simple` as PIP repository use the following code:
 
 ```python
-# environment: channels: [http://my-repo/custom/], dependencies: [python=3.8, glom, {pip: [--index-url https://mirrors.sustech.edu.cn/pypi/simple, requests]}]
+#environment: channels: [http://my-repo/custom/], dependencies: [python=3.8, glom, {pip: [--index-url https://mirrors.sustech.edu.cn/pypi/simple, requests]}]
 ```
 
 #### Common issues with Conda environments
 
-It is a [known](https://github.com/conda/conda/issues/8051#issuecomment-464199791)
-[issue](https://github.com/conda/conda/issues/8051#issuecomment-631862928)
-[of Conda](https://github.com/conda/conda/issues/8051#issuecomment-808789923) 
-that sometimes it takes a large
-time to resolve (set up) an environment. 
-Datagrok will interrupt Conda environment creation if it takes more than 5
-minutes.
+There is a [known](https://github.com/Conda/Conda/issues/8051#issuecomment-464199791)
+[issue](https://github.com/Conda/Conda/issues/8051#issuecomment-631862928)
+[of Conda](https://github.com/Conda/Conda/issues/8051#issuecomment-808789923) 
+that sometimes it takes a large time to resolve dependencies. 
+Datagrok will interrupt Conda environment creation if it takes more than 5 minutes.
 
-We can recommend a way forward if you encounter a timing
-problem with your Conda environment. 
-It is often possible to find an equivalent set of packages from `pip` repositories.
-Using `pip` via Conda environments doesn't have timing issues, 
-and we advise you to use the `pip` section of Conda YAML spec
-to set up your libraries of interest.
+If you encounter a timing problem, try to find an equivalent set of packages from PIP repositories.
 
-### Renv environments
+### R (using Renv)
 
-[_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. 
-Datagrok runs each R
-script in a temporary folder with a unique name. This folder becomes an
-_renv_ project folder for the current run of the script.
+Datagrok supports [Renv](https://rstudio.github.io/renv/articles/renv.html) environments. Each R
+script has a temporary folder with a unique name. This folder becomes an
+Renv project folder for the current run of the script.
 
-Start using _renv_ by initializing it and installing packages (see a
+Start using Renv by initializing it and installing packages (see a
 [full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/r/renv_spelling.R)):
 
 ```R
@@ -213,16 +220,16 @@ renv::init()
 renv::install("hunspell@3.0.1")
 ```
 
-An _renv_ session only impacts the R environment for this one single run.
+Renv session only impacts the R environment for this one single run.
 No other R scripts are aware of this local script environment.
 
-_Renv_ uses a global package cache. 
+Renv uses a global package cache. 
 It caches a package requested once with `renv::install` and re-uses it whenever it is
 requested. 
 
-However, in case the latest package version is requested, 
+In case the latest package version is requested, 
 such as in `renv::install("hunspell")`, 
-_renv_ connects to remote R package repositories 
+Renv connects to remote R package repositories 
 assuring if the cached package needs to be updated to the newer version.
 This may introduce a significant delay in the script run, several seconds in practice. 
 To avoid this, we recommend
@@ -230,12 +237,14 @@ installing a specific version of the package, such as in `renv::install("hunspel
 
 _Note_. At the R script's start and finish, 
 Datagrok calls `renv::deactivate()` to assure the script's body isolation.
-Therefore, the script's author doesn't need to call
-`renv::deactivate()` manually.
+You don't have to call `renv::deactivate()` manually.
 
-We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/articles/lockfile.html)
-shipped with packages similar to how it works now for Conda `yaml` files.
+:::note Future plans
 
+We are planning to support [Renv lockfiles](https://rstudio.github.io/renv/articles/lockfile.html)
+shipped with packages similar to how it works now for Conda configs.
+
+:::
 
 ## Advanced ways to execute scripts
 
@@ -246,7 +255,7 @@ Other ways involve saving the script as a part of a [package](../develop/develop
 In this case, it gets registered in the platform as a
 [function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
 
-* From the [console](../datagrok/navigation/navigation.md#console)
+* From the [Datagrok console](../datagrok/navigation/navigation.md#console)
 * From the data job
 * From the [transformations editor](../transform/recipe-editor.md)
 * From the [function browser](https://public.datagrok.ai/functions)
@@ -254,32 +263,26 @@ In this case, it gets registered in the platform as a
 Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
 
 ```javascript
-grok.functions.call(`${packageName}:${scriptName}`, { params });
+const result = grok.functions.call(
+  "<PACKAGE_NAME>:<SCRIPT_NAME>", 
+  { 
+    <INPUT_NAME>: <INPUT_VALUE>,
+    <INPUT_NAME_2>: <INPUT_VALUE_2>
+  }
+);
 ```
+
+Single output will be assigned to `result` directly. Multiple outputs will be united into single object.
+You can retrieve any output value by accessing `result` object fields (e.g. `result['<MY_OUTPUT>']`).
 
 To see it in action, open this
 [code snippet](https://public.datagrok.ai/js/samples/scripting/scripting) from our samples gallery. 
 There, you can find more examples, such as
 [adding a progress indicator](https://public.datagrok.ai/js/samples/functions/progress) to the user interface.
 
-Scripts that have multiple output parameters may require a different approach. The
-`grok.functions.call` method returns only the first output value. 
-To get all values, you should work with a function call:
+## Running scripts with RichFunctionView
 
-```javascript
-let f = await grok.functions.eval(`${packageName}:${scriptName}`);
-let call = f.prepare({ params });
-await call.call();
-call.getParamValue('paramName');
-```
-
-In the first line we evaluate an expression and get the function that corresponds to our script. 
-After passing the input parameters and executing the script, 
-we can retrieve any output value by the parameter's name.
-
-## Using RichFunctionView input control
-
-The **RichFunctionView** is an advanced input control,
+The **RichFunctionView** is an advanced UI editor,
 allowing you to create a complex full-featured interface for your script.
 
 It has all the features of the basic script view, such as
@@ -303,13 +306,26 @@ to your following code as it is shown:
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./rich-function-demo.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="python" label="Python" default>
 ```
 
-```python
-# name: RichFunctionView Demo
-# language: python
-# editor: Compute:RichFunctionViewEditor
+```python title="Your script header"
+#editor: Compute:RichFunctionViewEditor
 ```
 
 ```mdx-code-block
@@ -317,18 +333,9 @@ to your following code as it is shown:
 <TabItem value="js" label="Javascript">
 ```
 
-```javascript
-//name: RichFunctionView Demo
-//language: javascript
+```javascript title="Your script header"
 //editor: Compute:RichFunctionViewEditor
 ```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![rich-function-demo](rich-function-demo.gif)
 
 ```mdx-code-block
 </TabItem>
@@ -342,7 +349,7 @@ Ensure that `Compute` package is installed before working with `RichFunctionView
 
 :::
 
-:::tip
+:::tip Ensure computations are correct
 
 Use the RichFunctionView only when you are sure that the script works as expected.
 Features of the RichFunctionView affect GUI only and do not affect computations.
@@ -357,10 +364,25 @@ same way as for
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./input-viewers.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="short" label="Short sample">
 ```
 
-```javascript
+```javascript title="Your script header"
 //input: dataframe test { viewer: Line chart | Grid }
 ```
 
@@ -369,16 +391,14 @@ same way as for
 <TabItem value="full" label="Full sample">
 ```
 
-```javascript
+```javascript title="https://public.datagrok.ai/scripts"
+//name: Viewer properties demo
+//language: javascript
 //input: dataframe test { viewer: Line chart | Grid }
+//output: dataframe test2
+//editor: Compute:RichFunctionViewEditor
+test2 = test.clone();
 ```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![input-viewers](input-viewers.gif)
 
 ```mdx-code-block
 </TabItem>
@@ -394,10 +414,31 @@ By default, any viewer occupies all available space.
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./output-categories.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+:::tip
+
+View includes 4 tabs in total since there is a separate tab for input dataframe viewers.
+
+:::
+
+```mdx-code-block
+</TabItem>
 <TabItem value="short" label="Short sample">
 ```
 
-```javascript
+```javascript title="Your script header"
 //input: dataframe test { viewer: Line chart(block: 75) | Filters(block: 25) }
 ```
 
@@ -406,21 +447,14 @@ By default, any viewer occupies all available space.
 <TabItem value="full" label="Full sample">
 ```
 
-```javascript
+```javascript title="https://public.datagrok.ai/scripts"
 //name: Viewer properties demo
 //language: javascript
 //input: dataframe test { viewer: Line chart(block: 75) | Filters(block: 25) }
-//output: dataframe test2 { viewer: ScatterPlot(x: "age", y: "weight", showRegressionLine: true) | ScatterPlot(x: "height", y: "weight", showRegressionLine: true) }
+//output: dataframe test2
 //editor: Compute:RichFunctionViewEditor
 test2 = test.clone();
 ```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![input-viewers-props](input-viewers-props.png)
 
 ```mdx-code-block
 </TabItem>
@@ -477,29 +511,16 @@ IC4 = test.rowCount;
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="result" label="Result">
-```
-
-![output-categories](output-categories.gif)
-
-:::tip
-
-View includes 4 tabs in total since there is a separate tab for input dataframe viewers.
-
-:::
-
-```mdx-code-block
-</TabItem>
 </Tabs>
 ```
 
 ### File upload
 
 You can use a file as a function input via RichFunctionView, 
-similar to the default [FileIO UI](scripting-for-non-developers#file-io). 
+similar to the default [FileIO UI](scripting-for-non-developers#file-input). 
 Generated UI allows you to choose any local file or drag'n'drop it directly. 
 The chosen file will be available in the
-code as JS' [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
+code as JS [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
 
 :::caution Pending improvement
 
@@ -516,14 +537,29 @@ This feature is useful for fast prototyping. We recommend using it only
 on fast `Javascript` scripts only to avoid repeatable runs of computational-heavy code.
 
 The automatic function calls are not saved, 
-so to save results to the run history you should press **Save** button manually.
+so to save results to the [run history](#accessing-history) you should press **Save** button manually.
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./run-on-input.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="short" label="Short sample">
 ```
 
-```javascript
+```javascript title="Your script header"
 //meta.runOnOpen: true
 //meta.runOnInput: true 
 ```
@@ -533,7 +569,7 @@ so to save results to the run history you should press **Save** button manually.
 <TabItem value="full" label="Full sample">
 ```
 
-```javascript
+```javascript title="https://public.datagrok.ai/scripts"
 //name: Data stats
 //language: javascript
 //tags: demo
@@ -543,17 +579,8 @@ so to save results to the run history you should press **Save** button manually.
 //meta.runOnOpen: true
 //meta.runOnInput: true
 
-
 outputDf = inputDf.clone();
-
 ```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![run-on-input](run-on-input.gif)
 
 ```mdx-code-block
 </TabItem>
@@ -570,7 +597,7 @@ assuring that the minimum value is less than the maximum value.
 
 :::caution
 
-Validation functions should be written in JavaScript. It is the best choice for performance reasons.
+Validation functions should be written in JavaScript to avoid client-server communication delays.
 
 :::
 
@@ -582,10 +609,25 @@ Here is an example used in the default [Object cooling](https://public.datagrok.
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./validator.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="validator" label="Validator function">
 ```
 
-```javascript
+```javascript title="package.ts"
 //name: DesiredTempValidator
 //input: object params
 //output: object validator
@@ -610,16 +652,9 @@ export function DesiredTempValidator(params: any) {
 <TabItem value="usage" label="Assigning validator to an input">
 ```
 
-```javascript
+```javascript title="Your script header"
 //input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment; validator: Compute:DesiredTempValidator; }
 ```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![validator](validator.png)
 
 ```mdx-code-block
 </TabItem>
@@ -656,10 +691,25 @@ but has `aqua` background color.
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./custom-input.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="validator" label="Custom input">
 ```
 
-```javascript
+```javascript title="package.ts"
 //name: CustomStringInput
 //input: object params
 //output: object input
@@ -676,16 +726,9 @@ export function CustomStringInput(params: any) {
 <TabItem value="usage" label="Using a custom input">
 ```
 
-```javascript
+```javascript title="Your script header"
 //input: string test {input: Compute:CustomStringInput }
 ```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![custom-input](custom-input.png)
 
 ```mdx-code-block
 </TabItem>
@@ -694,6 +737,8 @@ export function CustomStringInput(params: any) {
 
 ### Exporting run results to a file
 
+Enabled by default. 
+
 You can use the one-click export feature to save the entire script run to a local file.
 To generate the export file,
 Select <i class="fas fa-arrow-to-bottom"></i> **Export** icon on the top panel.
@@ -701,18 +746,36 @@ Automatic export saves all input and output values with their captions,
 units, and even viewers' screenshots.
 This feature is available for all scripts using the RichFunctionView.
 
-<details>
-<summary> Export file example </summary>
-<div>
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
+```
 
 ![export-demo](export-demo.gif)
 
-</div>
-</details>
+```mdx-code-block
+</TabItem>
+<TabItem value="javascript" label="Disable export">
+```
 
-### Accessing history
+```javascript title="Your script header"
+//meta.features: {"export": false}
+```
 
-Each script run is saved on the server. The saved script run includes both the input and output values of the run.
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### History
+
+<div style = {{ display: 'flex' }}>
+
+<div style = {{ width: '60%' }}>
+
+Enabled by default. 
+
+When enabled, server saves each script run. The saved script run includes both the input and output values of the run.
 To review the history of runs, click on the <i class="fas fa-history"></i> **History** button on the top panel.
 
 The history panel appears on the right side. To load the run into the UI, click on the corresponding card.
@@ -720,19 +783,41 @@ The historical runs are immutable. Thus, if you load a historical run,
 change input values, and then rerun it,
 the platform will create a new historical run.
 
-#### Uploading experimental data
+</div>
 
-This specific capability is very useful when you're developing a 
-model, predicting behavior of some real-world process.
-Using this mode, 
-you can create in the run history a "fake" run by uploading data from some external source instead of 
-running script. Saved historical run with external data will have the `experimental` tag.
+<div style = {{ width: '40%', marginLeft: '15px' }}>
 
-To enable this feature,
-add `//meta.uploadMode: true` tag to your script. 
-This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI. 
-RichFunctionView automatically collects all data fields you need to proved to mimic script run,
-and creates corresponding UI elements.
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./history.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+</div>
+
+</div>
+
+<details>
+<summary> How to disable history </summary>
+<div>
+
+```javascript title="Your script header"
+//meta.features: {"history": false}
+```
+
+</div>
+</details>
+
+### Sensitivity analysis
+
+Disabled by default. 
+
+You may use sensitivity analysis (SA) to explore function behavior when inputs are varied in predefined ranges.
+Enable this feature and click **<i class="fas fa-analytics"></i> SA** icon on the top panel.
 
 ```mdx-code-block
 <Tabs>
@@ -740,7 +825,7 @@ and creates corresponding UI elements.
 ```
 
 ```javascript
-//meta.uploadMode: true
+//meta.features: {"sens-analysis": true}
 ```
 
 ```mdx-code-block
@@ -765,7 +850,7 @@ and creates corresponding UI elements.
 //output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
 //editor: Compute:RichFunctionViewEditor
-//meta.uploadMode: true
+//meta.features: {"sens-analysis": true}
 //meta.foldedCategories: ["Object properties"]
 
 timeToCool = undefined;
@@ -797,7 +882,86 @@ simulation = DG.DataFrame.fromColumns([
 </Tabs>
 ```
 
-## Converting your script to the application
+### Uploading experimental data
+
+Disabled by default. 
+
+This specific capability is very useful when you're developing a 
+model, predicting behavior of some real-world process.
+Using this mode, 
+you can create in the run history a "fake" run by uploading data from some external source instead of 
+running script. Saved historical run with external data will have the `experimental` tag.
+
+To enable this feature,
+add `//meta.features: {"upload": true}` tag to your script. 
+This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI. 
+RichFunctionView automatically collects all data fields you need to proved to mimic script run,
+and creates corresponding UI elements.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="short" label="Short sample">
+```
+
+```javascript
+//meta.features: {"upload": true}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript
+//name: Object cooling
+//description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
+//language: javascript
+//tags: simulation, demo
+//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50; validator: Compute:AmbTempValidator; }
+//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50; validator: Compute:InitialTempValidator; }
+//input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment; validator: Compute:DesiredTempValidator; }
+//input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
+//input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties; validator: Compute:HeatCapValidator; }
+//input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
+//input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validator: Compute:SimTimeValidator; validatorOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
+//output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
+//output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
+//output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
+//output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
+//editor: Compute:RichFunctionViewEditor
+//meta.features: {"upload": true}
+//meta.foldedCategories: ["Object properties"]
+
+timeToCool = undefined;
+
+const tempDiff = initTemp - ambTemp;
+const coolingFactor = heatTransferCoeff * area / heatCap;
+
+const timeStamps = new Float32Array(simTime).map((_, idx) => idx);
+const simulatedTemp = timeStamps.map((timeStamp) => {
+  const currentTemp = ambTemp + (tempDiff * (Math.E ** -(coolingFactor * timeStamp)));
+
+  if (!timeToCool && currentTemp < desiredTemp) {
+    timeToCool = timeStamp;
+  }
+
+  return currentTemp;
+});
+
+simulation = DG.DataFrame.fromColumns([
+  DG.Column.fromFloat32Array('Time', timeStamps),
+  DG.Column.fromFloat32Array('Temperature', simulatedTemp),
+]);
+
+
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+## Converting your script to an application
 
 A [Datagrok application](../develop/how-to/build-an-app.md)
 is a fit-for-purpose solution build on top of the Datagrok platform.
@@ -877,10 +1041,19 @@ To add your function to the top menu, add the `top-menu` annotation tag
 and specify the element location in the menu.
 Save your script and reload the page to see the new element in the top menu.
 
-```python
+```python title="Your function header"
 #top-menu: Bio | Generate | Sequences clusters...
 ```
-![Top menu integration for a script](pics/Scripting-Integration-TopMenu.png)
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./pics/Scripting-Integration-TopMenu.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
 
 #### Info panel
 
@@ -952,12 +1125,8 @@ In addition, you can use the built-in Inspector to see what's happening "under t
 To open Inspector, use the `Alt+I` hotkey.
 For example, the Inspector provides information about triggered events.
 
-
-<!---
-
 This block is mostly a copy of the https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation page
 need to move this code to it.
-
 
 ## Parameters
 
@@ -970,14 +1139,28 @@ A null indicates that the value is valid, anything else indicates an error which
 A validator is a function that accepts one parameter of any type and returns a string. Choice providers are applicable
 only to string parameters.
 
-The following example adds a "containsLettersOnly" function to the "col" parameter:
 
-```
-#input: string s {validators: ["containslettersonly"]}
-#input: column col {validators: ["containsmissingvalues"]}
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
 ```
 
-```js
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<img src={require('../uploads/features/script-param-validators.gif').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="creation" label="Register validators">
+```
+
+```js title="Run this code once"
 grok.functions.register({
     signature: 'List<String> jsVal1(int input)',
     run: (input) => input < 11 ? null : "Error val1" });
@@ -987,15 +1170,23 @@ grok.functions.register({
     run: (input) => input > 9 ? null : "Error val2" });
 ```
 
-```python
-# name: Numbers
-# language: python
-# input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
-# input: int count2 {validators: ["jsval1"]} [Number of cells in table]
-# input: int count3 {validators: ["jsval2"]} [Number of cells in table]
+```mdx-code-block
+</TabItem>
+<TabItem value="usage" label="Use valdiators">
 ```
 
-![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators")
+```python
+#name: Numbers
+#language: python title="Use registered validators"
+#input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
+#input: int count2 {validators: ["jsval1"]} [Number of cells in table]
+#input: int count3 {validators: ["jsval2"]} [Number of cells in table]
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 ### Parameter choices
 
@@ -1006,12 +1197,25 @@ A choice provider is a function with no parameters that returns a list of string
 
 The following example demonstrates two ways of defining choices:
 
-```
-#input: string fruit {choices: ["apple", "banana"]}
-#input: string vegetable {choices: jsveggies}
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
 ```
 
-Here is a possible implementation of the "jsTypes" function used in the example:
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<img src={require('../uploads/features/script-param-choices.gif').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="creation" label="Register choices">
+```
 
 ```javascript
 grok.functions.register({
@@ -1019,7 +1223,20 @@ grok.functions.register({
     run: () => ["Cucumber", "Cauliflower"]});
 ```
 
-![Script Parameter Choices](../uploads/features/script-param-choices.gif "Script Parameter Choices")
+```mdx-code-block
+</TabItem>
+<TabItem value="usage" label="Use choices">
+```
+
+```
+#input: string fruit {choices: ["apple", "banana"]}
+#input: string vegetable {choices: jsveggies}
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 ### Parameter suggestions
 
@@ -1032,13 +1249,27 @@ Suggestions work only for string parameters.
 
 The following example helps user enter a country name by dynamically retrieving a list of names from a web service:
 
-```python
-# name: Sales by country
-# language: python
-# input: string country = uk {suggestions: jsSuggestCountryName}
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
 ```
 
-```js
+```mdx-code-block
+<BrowserWindow url=''>
+```
+
+<img src={require('../uploads/features/script-param-suggestions.gif').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="creation" label="Register suggestions">
+```
+
+```js title="Run this code once"
 grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
@@ -1049,20 +1280,42 @@ grok.functions.register({
 });
 ```
 
-![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions")
+```mdx-code-block
+</TabItem>
+<TabItem value="usage" label="Use suggestions">
+```
+
+```python
+# name: Sales by country
+# language: python
+# input: string country = uk {suggestions: jsSuggestCountryName}
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 #### Auto-complete via SQL
 
 The same concept could be used for SQL queries:
 
-![auto-complete-sql](auto-complete-sql.png)
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./auto-complete-sql.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
 
 ### Parameter editors
 
 Use parameter editor to set the output of another function to the parameter value. All function parameters will be
 seamlessly integrated to the function call form.
 
-```
+```javascript
 //input: dataframe table {editor: Package:DataQuery}
 //input: dataframe table {editor: Package:DataQuery(1, "France")}
 ```
@@ -1070,7 +1323,7 @@ seamlessly integrated to the function call form.
 Here, Datagrok will execute the `Package:DataQuery` function right before your script and pass the output table to the
 script as an input parameter.
 
-```
+```javascript
 //input: dataframe table {editor: PowerPack:DataQuery; editor-button: Outliers...}
 ```
 
@@ -1079,7 +1332,9 @@ check the output before starting the script.
 
 ### Examples
 
-```
+The list of parameter examples can be used:
+
+```python
 #input: dataframe t1 {columns:numerical} [first input data table]
 #input: dataframe t2 {columns:numerical} [second input data table]
 #input: column x {type:numerical; table:t1} [x axis column name]
@@ -1093,5 +1348,6 @@ check the output before starting the script.
 #output: graphics scatter [scatter plot]
 ```
 
---->
+
+</div>
 
