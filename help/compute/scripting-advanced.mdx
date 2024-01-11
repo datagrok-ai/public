@@ -1228,7 +1228,7 @@ grok.functions.register({
 <TabItem value="usage" label="Use choices">
 ```
 
-```
+```python
 #input: string fruit {choices: ["apple", "banana"]}
 #input: string vegetable {choices: jsveggies}
 ```
@@ -1286,9 +1286,9 @@ grok.functions.register({
 ```
 
 ```python
-# name: Sales by country
-# language: python
-# input: string country = uk {suggestions: jsSuggestCountryName}
+#name: Sales by country
+#language: python
+#input: string country = uk {suggestions: jsSuggestCountryName}
 ```
 
 ```mdx-code-block
