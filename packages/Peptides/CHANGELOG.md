@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.2 (2023-10-26)
+
+* Improved dimensionality reduction (sequence space).
+
 ## 1.17.0 (2023-11-29)
 
 ### Features

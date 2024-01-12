@@ -45,7 +45,8 @@ import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
@@ -1042,6 +1043,7 @@ export class PeptidesModel {
 
       grok.log.debug(`Peptides: view ${view.name} removed`);
     }));
+    //@ts-ignore
     this.subs.push(grok.events.onTableRemoved.subscribe((table: DG.DataFrame) => {
       if (table.id === this.df.id) {
         this.subs.forEach((v) => v.unsubscribe());
