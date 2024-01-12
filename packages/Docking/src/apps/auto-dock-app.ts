@@ -18,6 +18,8 @@ export type AutoDockDataType = {
   ligandDf: DG.DataFrame,
   ligandMolColName: string,
   receptor: BiostructureData,
+  gpfFile?: string,
+  confirmationNum?: number,
 };
 type TargetViewerType = DG.Viewer<BiostructureProps> & IBiostructureViewer;
 
@@ -29,14 +31,14 @@ export class AutoDockApp {
     this.appFuncName = appFuncName;
   }
 
-  async init(data?: AutoDockDataType): Promise<void> {
+  async init(data?: AutoDockDataType): Promise<DG.DataFrame | undefined> {
     let v = data;
     if (!v)
       v = await AutoDockApp.loadData();
 
     await this.setData(v);
     if (!!data)
-      await this.runBtnOnClick();
+      return await this.getAutodockResults();
   }
 
   static async loadData(): Promise<AutoDockDataType> {
@@ -72,28 +74,11 @@ export class AutoDockApp {
   // -- View --
 
   private view!: DG.TableView;
-  private targetViewer!: TargetViewerType;
+  //private targetViewer!: TargetViewerType;
   private posesGrid!: DG.Grid;
 
   async buildView(): Promise<void> {
-    this.view = grok.shell.addTableView(this.data.ligandDf);
-    this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
-
-    const poseDf: DG.DataFrame = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('pose', []),
-      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'ligand0', []) /* ligand row index */,
-    ]);
-
-    this.posesGrid = await poseDf.plot.fromType(DG.VIEWER.GRID, {}) as DG.Grid;
-    this.targetViewer = await poseDf.plot.fromType('Biostructure', {
-      dataJson: BiostructureDataJson.fromData(this.data.receptor),
-      ligandColumnName: this.poseColName,
-    }) as unknown as TargetViewerType;
-    const k = 42;
-
-    const posesNode = this.view.dockManager.dock(this.posesGrid, DG.DOCK_TYPE.RIGHT, null, 'Poses', 0.5);
-    this.view.dockManager.dock(this.targetViewer, DG.DOCK_TYPE.LEFT, posesNode, 'Target', 0.35);
-
+    this.view = grok.shell.tv;
     this.setRibbonPanels();
 
     const adSvc: IAutoDockService = await getAutoDockService();
@@ -116,7 +101,7 @@ export class AutoDockApp {
   setRibbonPanels(): void {
     const runIcon = ui.iconFA('play');
     runIcon.classList.add('fas');
-    this.runBtn = ui.button(runIcon, this.runBtnOnClick.bind(this));
+    this.runBtn = ui.button(runIcon, this.getAutodockResults.bind(this));
     ui.tooltip.bind(this.runBtn, 'Run AutoDock');
 
     const downloadPosesIcon = ui.iconFA('download');
@@ -133,29 +118,15 @@ export class AutoDockApp {
   // -- Handle controls' events --
 
   /** Handles {@link runBtn} click */
-  async runBtnOnClick(): Promise<void> {
+  async getAutodockResults(): Promise<DG.DataFrame | undefined> {
     this.runBtn.disabled = true;
     const pi = DG.TaskBarProgressIndicator.create('AutoDock running...');
     try {
-      // TODO: Convert receptor data to PDB string
-      //if (this.data.receptor.ext !== 'pdb' || typeof this.data.receptor.data !== 'string')
-        //throw new Error('Unsupported receptor data');
-
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
-
-      const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.poseColName, pi);
+      const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
       if (posesAllDf !== undefined) {
-        // posesAllDf.getCol(this.poseColName).setTag('cell.renderer', 'xray');
-
-        this.posesGrid.dataFrame = posesAllDf!;
-        this.posesGrid.props.rowHeight = 150;
-        this.posesGrid.columns.byName(this.poseColName)!.width = 150;
-
-        this.targetViewer.dataFrame = posesAllDf!;
-        // @ts-ignore
-        this.targetViewer.setData('AutoDock app crutch');
-
         this.downloadPosesBtn.disabled = false;
+        return posesAllDf;
       }
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
@@ -177,7 +148,7 @@ export class AutoDockApp {
 
 // -- Routines --
 async function runAutoDock(
-  receptorData: BiostructureData, ligandCol: DG.Column<string>, poseColName: string, pi: DG.ProgressIndicator
+  receptorData: BiostructureData, ligandCol: DG.Column<string>, gpfFile: string, confirmationNum: number, poseColName: string, pi: DG.ProgressIndicator
 ): Promise<DG.DataFrame | undefined> {
   let adSvc!: IAutoDockService;
   try {
@@ -202,8 +173,9 @@ async function runAutoDock(
     //TODO: use config that is provided by user
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
     const posesDf = await adSvc.dockLigand(
-      receptorData, ligandData, autodockGpf, 10, poseColName);
-
+      receptorData, ligandData, gpfFile ?? autodockGpf, confirmationNum ?? 10, poseColName);
+    
+    posesDf.rows.removeWhere((row) => row.get('affinity') !== posesDf.col('affinity')?.min);
     // region: add extra columns to AutoDock output
 
     const pdbqtCol = posesDf.getCol(poseColName);
