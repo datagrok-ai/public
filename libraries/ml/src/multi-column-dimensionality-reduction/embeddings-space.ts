@@ -1,9 +1,9 @@
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {KnownMetrics} from '../typed-metrics';
 import {createMultiDimRedWorker} from './multi-dim-red-worker-creator';
-import {DimReductionMethods} from '../reduce-dimensionality';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {normalize} from '@datagrok-libraries/utils/src/vector-operations';
+import {DimReductionMethods} from './types';
 
 
 export async function getNormalizedEmbeddings(

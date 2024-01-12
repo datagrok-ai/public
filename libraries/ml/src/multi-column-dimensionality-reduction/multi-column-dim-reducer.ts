@@ -1,7 +1,7 @@
 import {Coordinates, DistanceMetric, Matrix, Options, Vector, Vectors}
   from '@datagrok-libraries/utils/src/type-declarations';
 import {TSNE} from '@keckelt/tsne';
-import {KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
+import {AvailableDataTypes, AvailableMetrics, KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
 import {DistanceMatrixService, distanceMatrixProxy} from '../distance-matrix';
 import {getAggregationFunction} from '../distance-matrix/utils';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
@@ -31,6 +31,9 @@ export interface IDimReductionParam {
     value: number | null;
     tooltip: string;
     placeholder?: string;
+    min?: number;
+    max?: number;
+    step?: number;
 }
 
 abstract class MultiColumnReducer {
@@ -165,6 +168,13 @@ class MultiUMAPReducer extends MultiColumnReducer {
     }
 }
 
+const AvailableReducers = {
+  'UMAP': MultiUMAPReducer,
+  't-SNE': MultiTSNEReducer,
+};
+
+export type KnownMethods = keyof typeof AvailableReducers;
+
 export class MultiColDimReducer {
     private reducer: MultiColumnReducer | undefined;
     /**
@@ -240,5 +250,41 @@ export class MultiColDimReducer {
         embedding = transposeMatrix(embedding);
 
       return embedding;
+    }
+
+    /**
+   * Returns metrics available by type.
+   *
+   * @param {AvailableDataTypes} typeName type name
+   * @return {string[]} Metric names which expects the given data type
+   * @memberof DimensionalityReducer
+   */
+    static availableMetricsByType(typeName: AvailableDataTypes) {
+      return Object.keys(AvailableMetrics[typeName]);
+    }
+
+    /**
+   * Returns dimensionality reduction methods available.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+    static get availableMethods() {
+      return Object.keys(AvailableReducers);
+    }
+
+    /**
+   * Returns metrics available.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+    static get availableMetrics() {
+      let ans: string[] = [];
+      Object.values(AvailableMetrics).forEach((obj) => {
+        const array = Object.values(obj);
+        ans = [...ans, ...array];
+      });
+      return ans;
     }
 }

@@ -4,3 +4,4 @@ export const SUPPORTED_TYPES_TAG = 'supportedTypes';
 export const SUPPORTED_UNITS_TAG = 'supportedUnits';
 export const SUPPORTED_DISTANCE_FUNCTIONS_TAG = 'supportedDistanceFunctions';
 export const BYPASS_LARGE_DATA_WARNING = 'bypassLargeDataWarning';
+export const SHOW_SCATTERPLOT_PROGRESS = 'show-scatterplot-progress';

@@ -1,6 +1,6 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {BitArrayMetricsNames, IntArrayMetricsNames} from './typed-metrics/consts';
-import { MmDistanceFunctionsNames } from './macromolecule-distance-functions';
+import {BitArrayMetricsNames} from './typed-metrics/consts';
+import {MmDistanceFunctionsNames} from './macromolecule-distance-functions';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
   [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,

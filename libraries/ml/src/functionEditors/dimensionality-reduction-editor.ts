@@ -1,12 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DimReductionMethods, IDimReductionParam, ITSNEOptions,
-  IUMAPOptions, TSNEOptions, UMAPOptions} from '../reduce-dimensionality';
 import {DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG,
   SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG} from './consts';
 import {IDBScanOptions} from '@datagrok-libraries/math';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {TSNEOptions, UMAPOptions} from '../multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
+import {IDimReductionParam, ITSNEOptions, IUMAPOptions}
+  from '../multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
 
 export const SEQ_COL_NAMES = {
   [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -128,10 +130,11 @@ export class DimReductionBaseEditor {
       this.onColumnInputChanged();
       let settingsOpened = false;
       let dbScanSettingsOpened = false;
-      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
-        if (settingsOpened)
-          this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
-      });
+      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP,
+        [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
+          if (settingsOpened)
+            this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
+        });
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
         if (!settingsOpened)
@@ -163,15 +166,16 @@ export class DimReductionBaseEditor {
       }
       if (!flagPfi) {
         ui.empty(this.preprocessingFunctionInputRoot);
-        Array.from(this.preprocessingFunctionInput.root.children).forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
+        Array.from(this.preprocessingFunctionInput.root.children)
+          .forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
       }
       this.preprocessingFunctionInputRoot.classList.add('ml-dim-reduction-settings-input');
       let preprocessingSettingsOpened = false;
       this.preprocessingFuncSettingsIcon = ui.icons.settings(async ()=> {
-        if (!preprocessingSettingsOpened)
-          await this.createPreprocessingFuncParamsDiv(this.preprocessingFuncSettingsDiv, this.supportedFunctions[this.preprocessingFunctionInput.value!].func);
-        else
-          ui.empty(this.preprocessingFuncSettingsDiv);
+        if (!preprocessingSettingsOpened) {
+          await this.createPreprocessingFuncParamsDiv(
+            this.preprocessingFuncSettingsDiv, this.supportedFunctions[this.preprocessingFunctionInput.value!].func);
+        } else { ui.empty(this.preprocessingFuncSettingsDiv); }
         preprocessingSettingsOpened = !preprocessingSettingsOpened;
       }, 'Modify encoding function parameters');
       this.preprocessingFunctionInputRoot.prepend(this.preprocessingFuncSettingsIcon);
@@ -184,8 +188,10 @@ export class DimReductionBaseEditor {
     }
 
     private getColInput() {
-      const firstSupportedColumn = this.tableInput.value?.columns.toList().find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
-      const input = ui.columnInput('Column', this.tableInput.value!, firstSupportedColumn, () => this.onColumnInputChanged(), {filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
+      const firstSupportedColumn = this.tableInput.value?.columns.toList()
+        .find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
+      const input = ui.columnInput('Column', this.tableInput.value!, firstSupportedColumn,
+        () => this.onColumnInputChanged(), {filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
       if (!this.colInputRoot)
         this.colInputRoot = input.root;
       return input;
@@ -216,7 +222,8 @@ export class DimReductionBaseEditor {
           const units = this.supportedFunctions[funcName].units;
           const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
           const typeSuported = !types.length || types.includes(col.type);
-          const unitsSupported = !units.length || (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
+          const unitsSupported = !units.length ||
+            (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
           if (semTypeSupported && typeSuported && unitsSupported) {
             if (!this.columnFunctionsMap[col.name])
               this.columnFunctionsMap[col.name] = [];
@@ -232,9 +239,10 @@ export class DimReductionBaseEditor {
       if (!col)
         return;
       const supportedPreprocessingFunctions = this.columnFunctionsMap[col.name];
-      this.preprocessingFunctionInput = ui.choiceInput('Preprocessing function', supportedPreprocessingFunctions[0], supportedPreprocessingFunctions, () => {
-        this.onPreprocessingFunctionChanged();
-      });
+      this.preprocessingFunctionInput = ui.choiceInput('Preprocessing function',
+        supportedPreprocessingFunctions[0], supportedPreprocessingFunctions, () => {
+          this.onPreprocessingFunctionChanged();
+        });
       let flag = false;
       if (!this.preprocessingFunctionInputRoot) {
         this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
@@ -242,7 +250,8 @@ export class DimReductionBaseEditor {
       }
       if (!flag) {
         ui.empty(this.preprocessingFunctionInputRoot);
-        Array.from(this.preprocessingFunctionInput.root.children).forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
+        Array.from(this.preprocessingFunctionInput.root.children)
+          .forEach((child) => this.preprocessingFunctionInputRoot!.append(child));
       }
       this.onPreprocessingFunctionChanged();
     }
@@ -259,7 +268,8 @@ export class DimReductionBaseEditor {
         this.similarityMetricInputRoot = this.similarityMetricInput.root;
 
       ui.empty(this.similarityMetricInputRoot);
-      Array.from(this.similarityMetricInput.root.children).forEach((child) => this.similarityMetricInputRoot.append(child));
+      Array.from(this.similarityMetricInput.root.children)
+        .forEach((child) => this.similarityMetricInputRoot.append(child));
       if (this.preprocessingFuncSettingsIcon) {
         if (this.supportedFunctions[fName].func.inputs.length < 3)
           this.preprocessingFuncSettingsIcon.style.display = 'none';
@@ -268,7 +278,9 @@ export class DimReductionBaseEditor {
       }
     }
 
-    private createAlgorithmSettingsDiv(paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions | DBScanOptions): HTMLElement {
+    private createAlgorithmSettingsDiv(
+      paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions | DBScanOptions
+    ): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam = (params as any)[it];
@@ -289,12 +301,16 @@ export class DimReductionBaseEditor {
       const inputs = await fc.buildEditor(ui.div());
       for (let i = 2; i < func.inputs.length; i++) {
         const fInput = func.inputs[i];
-        if (this.preprocessingFunctionSettings[fInput.name] || fc.inputParams[func.inputs[i].name].value || fInput.defaultValue)
-          this.preprocessingFunctionSettings[fInput.name] = this.preprocessingFunctionSettings[fInput.name] ?? fc.inputParams[fInput.name].value ?? fInput.defaultValue;
+        if (this.preprocessingFunctionSettings[fInput.name] || fc.inputParams[func.inputs[i].name].value ||
+           fInput.defaultValue) {
+          this.preprocessingFunctionSettings[fInput.name] =
+            this.preprocessingFunctionSettings[fInput.name] ?? fc.inputParams[fInput.name].value ?? fInput.defaultValue;
+        }
         const input = inputs.find((inp) => inp.property.name === fInput.name);
         if (!input)
           continue;
-        if (this.preprocessingFunctionSettings[fInput.name] !== null && this.preprocessingFunctionSettings[fInput.name] !== undefined)
+        if (this.preprocessingFunctionSettings[fInput.name] !== null &&
+          this.preprocessingFunctionSettings[fInput.name] !== undefined)
           input.value = this.preprocessingFunctionSettings[fInput.name];
         input.onChanged(() => { this.preprocessingFunctionSettings[fInput.name] = input.value; });
         paramsForm.append(input.root);
@@ -326,7 +342,8 @@ export class DimReductionBaseEditor {
         similarityMetric: this.similarityMetricInput.value!,
         plotEmbeddings: this.plotEmbeddingsInput.value!,
         clusterEmbeddings: this.clusterEmbeddingsInput.value!,
-        options: {...this.algorithmOptions, ...this.dbScanOptions, preprocessingFuncArgs: (this.preprocessingFunctionSettings ?? {})}
+        options: {...this.algorithmOptions, ...this.dbScanOptions,
+          preprocessingFuncArgs: (this.preprocessingFunctionSettings ?? {})}
       };
     }
 }

@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {IDimReductionParam, ITSNEOptions,
-  IUMAPOptions, TSNEOptions, UMAPOptions} from '../reduce-dimensionality';
 import {DimReductionMethods} from './types';
 import {DimReductionEditorOptions, DBScanOptions} from '../functionEditors/dimensionality-reduction-editor';
 import {IDBScanOptions} from '@datagrok-libraries/math';
@@ -10,6 +8,40 @@ import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG,
   SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG} from '../functionEditors/consts';
 import {DistanceAggregationMethods} from '../distance-matrix/types';
+import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim-reducer';
+
+export class UMAPOptions {
+  learningRate: IDimReductionParam =
+  {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
+  nComponents: IDimReductionParam =
+  {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
+  nEpochs: IDimReductionParam =
+    {uiName: 'Epochs', value: 0,
+      tooltip: 'The number of epochs to optimize embeddings via SGD. Computed automatically if set to 0'};
+  nNeighbors: IDimReductionParam =
+  {uiName: 'Neighbors', value: 15, tooltip: 'The number of nearest neighbors to construct the fuzzy manifold'};
+  spread: IDimReductionParam =
+  {uiName: 'Spread', value: 1,
+    tooltip:
+    `The effective scale of embedded points, used with min distance to control 
+    the clumped/dispersed nature of the embedding`};
+  minDist: IDimReductionParam =
+  {uiName: 'Min distance', value: 0.1,
+    tooltip: `The effective minimum distance between embedded points, 
+  used with spread to control the clumped/dispersed nature of the embedding`};
+
+  constructor() {};
+}
+
+export class TSNEOptions {
+  epsilon: IDimReductionParam =
+  {uiName: 'Epsilon', value: 10, tooltip: 'Epsilon is learning rate'};
+  perplexity: IDimReductionParam =
+  {uiName: 'Perplexity', value: 30, tooltip: 'Roughly how many neighbors each point influences'};
+  dim: IDimReductionParam = {uiName: 'Dimensionality', value: 2, tooltip: 'Dimensionality of the embedding'};
+
+  constructor() {};
+}
 
 export type DimRedSupportedFunctions = {
     func: DG.Func,
@@ -244,7 +276,7 @@ export class MultiColumnDimReductionEditor {
 
 
 class DimReductionColumnEditor {
-    preprocessingFuncSettingsDiv = ui.inputs([]);
+    preprocessingFuncSettingsDiv = ui.div([]);
     preprocessingFunctionInput: DG.InputBase<string | null>;
     preprocessingFuncSettingsIcon: HTMLElement;
     similarityMetricInput!: DG.InputBase<string | null>;
@@ -253,7 +285,7 @@ class DimReductionColumnEditor {
     accordionDiv: HTMLElement;
     column: DG.Column;
     supportedFunctions: DimRedSupportedFunctions[];
-    editorDiv: HTMLElement = ui.inputs([]);
+    editorDiv: HTMLElement = ui.div([]);
     hasExtraSettings: boolean = true;
     functionsMap: {[_: string]: DG.Func} = {};
     needsConfiguration: boolean = false;
