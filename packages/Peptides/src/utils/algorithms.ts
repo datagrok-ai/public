@@ -31,9 +31,8 @@ export type MutationCliffsOptions = {
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
-  if (nCols === 0) {
+  if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
-  }
 
 
   options.minActivityDelta ??= 0;
@@ -68,9 +67,8 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
     sourceDfLen = filter.trueCount;
     const tempActivityData = new Float64Array(sourceDfLen);
     const selectedIndexes = filter.getSelectedIndexes();
-    for (let i = 0; i < sourceDfLen; ++i) {
+    for (let i = 0; i < sourceDfLen; ++i)
       tempActivityData[i] = activityColData[selectedIndexes[i]];
-    }
 
 
     activityColData = tempActivityData;
@@ -79,9 +77,8 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   options.columns ??= positionColumns.map((col) => col.name);
 
   for (const posCol of positionColumns) {
-    if (!options.columns.includes(posCol.name)) {
+    if (!options.columns.includes(posCol.name))
       continue;
-    }
 
 
     const posColData = posCol.getRawData();
@@ -90,16 +87,14 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
 
     for (let categoryIndex = 0; categoryIndex < posColCateogries.length; ++categoryIndex) {
       const monomer = posColCateogries[categoryIndex];
-      if (monomer === '') {
+      if (monomer === '')
         continue;
-      }
 
 
       const boolArray: boolean[] = new Array(sourceDfLen).fill(false);
       for (let i = 0; i < sourceDfLen; ++i) {
-        if (posColData[i] === categoryIndex) {
+        if (posColData[i] === categoryIndex)
           boolArray[i] = true;
-        }
       }
       const bitArray = BitArray.fromValues(boolArray);
       const stats = bitArray.allFalse || bitArray.allTrue ?
@@ -123,66 +118,57 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
  */
 export function getSummaryStats(genObj: SummaryStats, stats: StatsItem | null = null,
   summaryStats: SummaryStats | null = null): void {
-  if (stats === null && summaryStats === null) {
+  if (stats === null && summaryStats === null)
     throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
-  }
 
 
   const possibleMaxCount = stats?.count ?? summaryStats!.maxCount;
   genObj.maxCount ??= possibleMaxCount;
-  if (genObj.maxCount < possibleMaxCount) {
+  if (genObj.maxCount < possibleMaxCount)
     genObj.maxCount = possibleMaxCount;
-  }
 
 
   const possibleMinCount = stats?.count ?? summaryStats!.minCount;
   genObj.minCount ??= possibleMinCount;
-  if (genObj.minCount > possibleMinCount) {
+  if (genObj.minCount > possibleMinCount)
     genObj.minCount = possibleMinCount;
-  }
 
 
   const possibleMaxMeanDifference = stats?.meanDifference ?? summaryStats!.maxMeanDifference;
   genObj.maxMeanDifference ??= possibleMaxMeanDifference;
-  if (genObj.maxMeanDifference < possibleMaxMeanDifference) {
+  if (genObj.maxMeanDifference < possibleMaxMeanDifference)
     genObj.maxMeanDifference = possibleMaxMeanDifference;
-  }
 
 
   const possibleMinMeanDifference = stats?.meanDifference ?? summaryStats!.minMeanDifference;
   genObj.minMeanDifference ??= possibleMinMeanDifference;
-  if (genObj.minMeanDifference > possibleMinMeanDifference) {
+  if (genObj.minMeanDifference > possibleMinMeanDifference)
     genObj.minMeanDifference = possibleMinMeanDifference;
-  }
 
 
   if (!isNaN(stats?.pValue ?? NaN)) {
     const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
     genObj.maxPValue ??= possibleMaxPValue;
-    if (genObj.maxPValue < possibleMaxPValue) {
+    if (genObj.maxPValue < possibleMaxPValue)
       genObj.maxPValue = possibleMaxPValue;
-    }
 
 
     const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
     genObj.minPValue ??= possibleMinPValue;
-    if (genObj.minPValue > possibleMinPValue) {
+    if (genObj.minPValue > possibleMinPValue)
       genObj.minPValue = possibleMinPValue;
-    }
   }
 
   const possibleMaxRatio = stats?.ratio ?? summaryStats!.maxRatio;
   genObj.maxRatio ??= possibleMaxRatio;
-  if (genObj.maxRatio < possibleMaxRatio) {
+  if (genObj.maxRatio < possibleMaxRatio)
     genObj.maxRatio = possibleMaxRatio;
-  }
 
 
   const possibleMinRatio = stats?.ratio ?? summaryStats!.minRatio;
   genObj.minRatio ??= possibleMinRatio;
-  if (genObj.minRatio > possibleMinRatio) {
+  if (genObj.minRatio > possibleMinRatio)
     genObj.minRatio = possibleMinRatio;
-  }
 }
 
 /**
@@ -201,9 +187,8 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
   const origClustColCat = origClustCol.categories;
   const origClustMasks: BitArray[] = Array.from({length: origClustColCat.length},
     () => new BitArray(rowCount, false));
-  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx)
     origClustMasks[origClustColData[rowIdx]].setTrue(rowIdx);
-  }
 
 
   const customClustMasks = customClusters.map(

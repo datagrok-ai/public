@@ -210,9 +210,8 @@ export function setGridProps(grid: DG.Grid, autosize: boolean = true): void {
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
   grid.root.style.maxWidth = '100%';
-  if (autosize) {
+  if (autosize)
     grid.autoSize(1000, 175, 0, 0, true);
-  }
 }
 
 /**

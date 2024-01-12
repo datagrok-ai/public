@@ -9,7 +9,7 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
-import { MmDistanceFunctionsNames as distFNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {MmDistanceFunctionsNames as distFNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 type PaneInputs = { [paneName: string]: DG.InputBase[] };
 type SettingsElements = { dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs };
@@ -156,7 +156,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
 
   // Sequence space pane options
   const modifiedSeqSpaceParams: Partial<type.SequenceSpaceParams> = {};
-  function onSeqSpaceParamsChange(fieldName: keyof type.SequenceSpaceParams, value: any) {
+  function onSeqSpaceParamsChange(fieldName: keyof type.SequenceSpaceParams, value: any): void {
     correctSeqSpaceInputs();
     if (value === null || value === undefined || value === '')
       return;
@@ -174,7 +174,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       result.sequenceSpaceParams = {...seqSpaceParams, ...modifiedSeqSpaceParams};
   }
 
-  function toggleInputs(nwInputs: DG.InputBase[], condition: boolean) {
+  function toggleInputs(nwInputs: DG.InputBase[], condition: boolean): void {
     nwInputs.forEach((input) => {
       if (condition)
         input.root.style.display = 'flex';
@@ -184,29 +184,37 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   }
 
   const distanceFunctionInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION, seqSpaceParams.distanceF,
-  [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
-   () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value));
+    [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
+    () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value));
   distanceFunctionInput.setTooltip('Distance function');
-  const gapOpenInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_OPEN, seqSpaceParams.gapOpen, () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value));
-  const gapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, seqSpaceParams.gapExtend, () => onSeqSpaceParamsChange('gapExtend', gapExtendInput.value));
-  const clusterEmbeddingsInput = ui.boolInput(SEQUENCE_SPACE_INPUTS.CLUSTER_EMBEDDINGS, seqSpaceParams.clusterEmbeddings ?? false,
-    () => onSeqSpaceParamsChange('clusterEmbeddings', clusterEmbeddingsInput.value));
+  const gapOpenInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_OPEN, seqSpaceParams.gapOpen,
+    () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value));
+  const gapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, seqSpaceParams.gapExtend,
+    () => onSeqSpaceParamsChange('gapExtend', gapExtendInput.value));
+  const clusterEmbeddingsInput =
+    ui.boolInput(SEQUENCE_SPACE_INPUTS.CLUSTER_EMBEDDINGS, seqSpaceParams.clusterEmbeddings ?? false,
+      () => onSeqSpaceParamsChange('clusterEmbeddings', clusterEmbeddingsInput.value));
   clusterEmbeddingsInput.setTooltip('Cluster embeddings using DBSCAN algorithm');
-  const epsilonInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.EPSILON, seqSpaceParams.epsilon, () => onSeqSpaceParamsChange('epsilon', epsilonInput.value));
-  epsilonInput.setTooltip('Epsilon parameter for DBSCAN. Minimum distance between two points to be considered as a cluster');
-  const minPtsInput = ui.intInput(SEQUENCE_SPACE_INPUTS.MIN_PTS, seqSpaceParams.minPts, () => onSeqSpaceParamsChange('minPts', minPtsInput.value));
+  const epsilonInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.EPSILON, seqSpaceParams.epsilon,
+    () => onSeqSpaceParamsChange('epsilon', epsilonInput.value));
+  epsilonInput.setTooltip(
+    'Epsilon parameter for DBSCAN. Minimum distance between two points to be considered as a cluster');
+  const minPtsInput = ui.intInput(SEQUENCE_SPACE_INPUTS.MIN_PTS, seqSpaceParams.minPts,
+    () => onSeqSpaceParamsChange('minPts', minPtsInput.value));
   minPtsInput.setTooltip('Minimum number of points in a cluster');
-  const fingerprintTypesInput = ui.choiceInput('Fingerprint type', seqSpaceParams.fingerprintType, ['Morgan', 'RDKit', 'Pattern'],
-    () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value));
-  function correctSeqSpaceInputs() {
+  const fingerprintTypesInput = ui.choiceInput('Fingerprint type', seqSpaceParams.fingerprintType,
+    ['Morgan', 'RDKit', 'Pattern'], () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value));
+  function correctSeqSpaceInputs(): void {
     toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
     toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
     toggleInputs([fingerprintTypesInput],
-      distanceFunctionInput.value === distFNames.MONOMER_CHEMICAL_DISTANCE || distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
+      distanceFunctionInput.value === distFNames.MONOMER_CHEMICAL_DISTANCE ||
+      distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
   }
   correctSeqSpaceInputs();
 
-  const seqSpaceInputs = [distanceFunctionInput, fingerprintTypesInput, gapOpenInput, gapExtendInput, clusterEmbeddingsInput, epsilonInput, minPtsInput];
+  const seqSpaceInputs = [distanceFunctionInput, fingerprintTypesInput, gapOpenInput,
+    gapExtendInput, clusterEmbeddingsInput, epsilonInput, minPtsInput];
   accordion.addPane(SETTINGS_PANES.SEQUENCE_SPACE, () => ui.inputs(seqSpaceInputs), true);
   inputs[SETTINGS_PANES.SEQUENCE_SPACE] = seqSpaceInputs;
   const dialog = ui.dialog('Peptides settings').add(accordion);

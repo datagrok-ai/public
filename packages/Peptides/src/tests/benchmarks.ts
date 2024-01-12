@@ -15,25 +15,23 @@ import * as C from '../utils/constants';
 const benchmarkDatasetSizes = [5, 50, 100, 200];
 
 category('Benchmarks: Mutation Cliffs', () => {
-  for (const size of benchmarkDatasetSizes) {
+  for (const size of benchmarkDatasetSizes)
     test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 150000});
-  }
 });
 
 category('Benchmarks: Cluster stats', () => {
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
-      if (!DG.Test.isInBenchmark) {
+      if (!DG.Test.isInBenchmark)
         return null;
-      }
 
 
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
       const clustersColumnName = 'cluster';
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
-      if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase())) {
+      if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase()))
         df.columns.remove(scaledActivity.name);
-      }
+
 
       df.columns.add(scaledActivity);
       DG.time(`Cluster stats benchmark - ${size}k`,
@@ -45,9 +43,8 @@ category('Benchmarks: Cluster stats', () => {
 category('Benchmarks: Monomer-Position stats', () => {
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
-      if (!DG.Test.isInBenchmark) {
+      if (!DG.Test.isInBenchmark)
         return null;
-      }
 
 
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
@@ -58,9 +55,9 @@ category('Benchmarks: Monomer-Position stats', () => {
         ++i;
       }
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
-      if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase())) {
+      if (df.columns.names().map((s) => s.toLowerCase()).includes(scaledActivity.name.toLowerCase()))
         df.columns.remove(scaledActivity.name);
-      }
+
 
       df.columns.add(scaledActivity);
       DG.time(`Monomer-Position stats benchmark - ${size}k`,
@@ -72,9 +69,8 @@ category('Benchmarks: Monomer-Position stats', () => {
 category('Benchmarks: Analysis start', () => {
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
-      if (!DG.Test.isInBenchmark) {
+      if (!DG.Test.isInBenchmark)
         return;
-      }
 
 
       const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
@@ -88,18 +84,16 @@ category('Benchmarks: Analysis start', () => {
       await DG.timeAsync('Analysis start', async () => {
         const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol,
           C.SCALING_METHODS.NONE);
-        if (model) {
+        if (model)
           grok.shell.closeTable(model.df);
-        }
       });
     }, {timeout: 100000});
   }
 });
 
 async function mutationCliffsBenchmark(size: number): Promise<void> {
-  if (!DG.Test.isInBenchmark) {
+  if (!DG.Test.isInBenchmark)
     return;
-  }
 
 
   const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
