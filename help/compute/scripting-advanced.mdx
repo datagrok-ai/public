@@ -10,47 +10,6 @@ import BrowserWindow from '@site/src/components/browser-window';
 
 <div style = {{maxWidth: '680px'}}>
 
-## Output values validation
-
-Datagrok functions return zero, one or more typed variables.
-Datagrok expects that all variables are defined in the script code and have proper values by the end of the script run.
-If this doesn't happen, the two things will follow:
-
-1. The unset output values will be returned as `null`-s.
-2. A warning `Output value ${output.param.name} was not set` will be printed in the 
-   [Datagrok Console](../datagrok/navigation/navigation.md#console). 
-   Open it pressing `~` key or clicking **Console** <i class="fas fa-terminal"></i> button 
-   in the right bottom corner of the screen.
-
-In this script, the value `c3` is missed to be set:
-
-```r title="R script with missing output value"
-#name: TestMissingInputsR
-#language: r
-#output: int c1
-#output: int c2
-#output: int c3
-c1 <- 12
-c2 <- 15
-```
-
-Running the script produces the following output to the console:
-
-```mdx-code-block
-<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
-```
-
-```
-Output value c3 was not set
-  c1: 12
-  c2: 15
-  c3: null
-```
-
-```mdx-code-block
-</BrowserWindow>
-```
-
 ## Environments
 
 ### Python (using Conda)
@@ -875,10 +834,13 @@ Disabled by default.
 
 Using this mode, 
 you can create in the run history a "fake" run by uploading data from some external source instead of 
-running script. Saved historical run with external data will have the `experimental` tag.
+running the script.
+Saved historical run with external data will have the `experimental` tag.
 
-This specific capability is very useful when you're developing a 
-model, predicting behavior of some real-world process.
+After uploading experimental data to the history, you can compare it with other history records 
+using build-in **Compare runs** capability.
+This specific capability is beneficial when you're developing a 
+model, predicting the behavior of some real-world process.
 
 To enable this feature,
 add `//meta.features: {"upload": true}` tag to your script. 
@@ -1111,6 +1073,9 @@ In addition, you can use the built-in Inspector to see what's happening "under t
 To open Inspector, use the `Alt+I` hotkey.
 For example, the Inspector provides information about triggered events.
 
+
+
+
 ## Parameters
 
 ### Parameter validators
@@ -1334,3 +1299,43 @@ The list of parameter examples can be used:
 
 </div>
 
+## Output values validation
+
+Datagrok functions return zero, one or more typed variables.
+Datagrok expects that all variables are defined in the script code and have proper values by the end of the script run.
+If this doesn't happen, the two things will follow:
+
+1. The unset output values will be returned as `null`-s.
+2. A warning `Output value ${output.param.name} was not set` will be printed in the 
+   [Datagrok Console](../datagrok/navigation/navigation.md#console). 
+   Open it pressing `~` key or clicking **Console** <i class="fas fa-terminal"></i> button 
+   in the right bottom corner of the screen.
+
+In this script, the value `c3` is missed to be set:
+
+```r title="R script with missing output value"
+#name: TestMissingInputsR
+#language: r
+#output: int c1
+#output: int c2
+#output: int c3
+c1 <- 12
+c2 <- 15
+```
+
+Running the script produces the following output to the console:
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+```
+Output value c3 was not set
+  c1: 12
+  c2: 15
+  c3: null
+```
+
+```mdx-code-block
+</BrowserWindow>
+```
