@@ -7,8 +7,7 @@ import {PackageUsageWidget} from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
-import {TestTrack as TestTrack1} from './test-track/app';
-import {TestTrack} from './test-track/app_old';
+import {TestTrack} from './test-track/app';
 
 export const _package = new DG.Package();
 
@@ -19,18 +18,11 @@ export function usageAnalysisApp(): void {
   if (!grok.shell.view(ViewHandler.UAname)) ViewHandler.getInstance().init();
 }
 
-//name: Test Track Old
+//name: Test Track
 //tags: app
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
-}
-
-//name: Test Track
-//tags: app
-export function testTrackApp1(): void {
-  if (!grok.shell.dockManager.findNode(TestTrack1.getInstance().root))
-    TestTrack1.getInstance().init();
 }
 
 //output: widget result
