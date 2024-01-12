@@ -136,7 +136,14 @@ export async function runSolverApp() {
 
   /** Solve IVP */
   const solve = async (ivp: IVP) => {
-    if (ivp.arg.start.value >= ivp.arg.finish.value)
+    const start = ivp.arg.start.value;
+    const finish = ivp.arg.finish.value;
+    const step = ivp.arg.step.value;
+
+    if (start >= finish)
+      return;
+
+    if ((step <= 0) || (step > finish - start))
       return;
 
     const scriptText = getScriptLines(ivp).join('\n');    
@@ -672,10 +679,11 @@ export async function runSolverDemoApp() {
   solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, appButton], [playIcon]]);
 } // runSolverDemoApp
 
-/** */
+/** Return dialog with model inputs UI */
 async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Promise<DG.Dialog> {
   await solveFn(ivp);
 
+  /**  String to value */
   const strToVal = (s: string) => {
     let num = Number(s);
   
@@ -691,6 +699,7 @@ async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void
     return s;
   };
 
+  /** Return options with respect to the model input specification */
   const getOptions = (name: string, modelInput: Input) => {
     let options: DG.PropertyOptions = { 
       name: name,
@@ -749,9 +758,9 @@ async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void
   
   const inputsByCategories = new Map<string, DG.InputBase[]>();
   inputsByCategories.set(TITLE.MISC, []);
-
   let options: DG.PropertyOptions;
 
+  /** Pull input to appropriate category & add tooltip */
   const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
     let category = options.category;
 
@@ -851,9 +860,9 @@ async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void
   if (forms.size === 1)
     elems.push(forms.get(TITLE.MISC)!);
   else {
-    forms.forEach((form, cat) => {
-      if (cat !== TITLE.MISC) {
-        elems.push(ui.h2(cat));
+    forms.forEach((form, category) => {
+      if (category !== TITLE.MISC) {
+        elems.push(ui.h2(category));
         elems.push(form);
       }
     });
@@ -869,4 +878,4 @@ async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void
     .show();
 
   return dlg;
-}
+} // getDialogWithInputs
