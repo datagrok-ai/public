@@ -174,46 +174,27 @@ export async function runSolverApp() {
         toChangeSolutionViewerProps = false;
       }
     }
-  };
+  }; // solve
 
   /** Run solving the current IVP */
-  const runSolving = async () => {  
+  const runSolving = async (showApp: boolean) => {  
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
-      playIcon.hidden = true;      
-      dialogWithInputs = await getDialogWithInputs(ivp, solve);
-      solverView.append(dialogWithInputs);
+      inputsDiv = await getInputsUI(ivp, solve);
+      tabControl.clear();
+      tabControl.currentPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
+            
+      if (showApp)
+        tabControl.currentPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+      else
+        tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
 
-      dialogWithInputs.onCancel(() => {playIcon.hidden = false});
-
+      playIcon.hidden = true;
     } catch (err) {
         if (err instanceof Error) 
           grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${err.message}`);
         else
           grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-  }};
-
-  /** Run model application */
-  const runModelApp = async () => {
-    try {
-      const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);
-      const savedScript = await grok.dapi.scripts.save(script);
-      const params = getScriptParams(ivp);
-
-      // try to call computations - correctness check
-      const testCall = script.prepare(params);
-      await testCall.call();
-
-      const call = savedScript.prepare(params);
-      call.edit();
-    } 
-    catch (err) {
-      if (err instanceof Error) 
-        grok.shell.error(`${ERROR_MSG.APP_CREATING_FAILS}: ${err.message}`);        
-      else
-        grok.shell.error(`${ERROR_MSG.APP_CREATING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
   }};
    
   let solutionTable = DG.DataFrame.create();
@@ -222,10 +203,11 @@ export async function runSolverApp() {
   let viewerDockNode: DG.DockNode | null = null;
   let toChangeSolutionViewerProps = false;
   solverView.name = MISC.VIEW_DEFAULT_NAME;
-  let div = ui.divV([]);
-  let dialogWithInputs: DG.Dialog;
+  let modelDiv = ui.divV([]);
+  let inputsDiv = ui.divV([]);
+  const tabControl = ui.tabControl();
 
-  const playIcon = ui.iconFA('play', runSolving, HINT.RUN);  
+  const playIcon = ui.iconFA('play', async () => {await runSolving(true)}, HINT.RUN);  
   playIcon.style.color = "var(--green-2)";
   playIcon.classList.add("fas");
 
@@ -233,7 +215,7 @@ export async function runSolverApp() {
   let editorView = new EditorView({
     doc: TEMPLATES.BASIC,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-    parent: div
+    parent: modelDiv
   });
   
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
@@ -244,7 +226,6 @@ export async function runSolverApp() {
     if (e.key !== HOT_KEY.RUN) {
       isChanged = true;
       playIcon.hidden = false;
-      dialogWithInputs.close();
     }
   });
 
@@ -270,7 +251,7 @@ export async function runSolverApp() {
 
     dlg.add(fileInp);        
     fileInp.click();
-  };
+  }; // loadFn
 
   /** Save the current IVP to file */
   const saveFn = async () => {
@@ -297,19 +278,28 @@ export async function runSolverApp() {
 
     editorView.setState(newState);
 
-    if (state != EDITOR_STATE.CLEAR)
-      await runSolving();
-    else
-      if (solutionViewer && viewerDockNode) {
-        grok.shell.dockManager.close(viewerDockNode);
-        solutionViewer = null;
-      }
-  };
+    switch(state) {
+      case EDITOR_STATE.CLEAR:
+        if (solutionViewer && viewerDockNode) {
+          grok.shell.dockManager.close(viewerDockNode);
+          solutionViewer = null;
+        }
+        break;
+
+      case EDITOR_STATE.BASIC_TEMPLATE:
+      case EDITOR_STATE.ADVANCED_TEMPLATE:
+      case EDITOR_STATE.EXTENDED_TEMPLATE:
+        await runSolving(false);
+        break;
+      
+      default:
+        await runSolving(true);
+        break;
+    }
+  }; // setState
 
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
-    dialogWithInputs.close();
-
     if (toShowWarning && isChanged) {      
       const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
@@ -332,7 +322,7 @@ export async function runSolverApp() {
       await fn();
     else
       setState(state ?? EDITOR_STATE.CLEAR);
-  };
+  }; // overwrite
 
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
     event.preventDefault();
@@ -360,22 +350,21 @@ export async function runSolverApp() {
   
   editorView.dom.style.overflow = 'auto';
   editorView.dom.style.height = '100%';
+  const node = solverView.dockManager.dock(tabControl.root, 'left');
+  node.container.dart.elementTitle.hidden = true;
 
-  solverView.dockManager.dock(div, 'left');  
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
-  await runSolving();
+  await runSolving(false);
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
-  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);  
-
-  const appButton = ui.bigButton(TITLE.APP, runModelApp, HINT.APP);
+  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS); 
   
   solverView.root.addEventListener('keydown', async (e) => {
     if (e.key === HOT_KEY.RUN) {
       e.stopImmediatePropagation();
       e.preventDefault();
-      await runSolving();
+      await runSolving(true);
     }
   });
 
@@ -679,8 +668,8 @@ export async function runSolverDemoApp() {
   solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, appButton], [playIcon]]);
 } // runSolverDemoApp
 
-/** Return dialog with model inputs UI */
-async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Promise<DG.Dialog> {
+/** Return model inputs UI */
+async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Promise<HTMLDivElement> {
   await solveFn(ivp);
 
   /**  String to value */
@@ -872,10 +861,6 @@ async function getDialogWithInputs(ivp: IVP, solveFn: (ivp: IVP) => Promise<void
       elems.push(forms.get(TITLE.MISC)!);      
     }        
   }
-
-  const dlg = ui.dialog({title: TITLE.VARY, helpUrl: LINK.DIF_STUDIO_MD})
-    .add(ui.divV(elems))    
-    .show();
-
-  return dlg;
-} // getDialogWithInputs
+  
+  return ui.divV(elems)
+} // getInputsUI
