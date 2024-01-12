@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS, computeUMAP, computeTSNE, computeSPE} from './eda-tools';
+import {computePCA, computePLS} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
   scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
@@ -21,8 +21,8 @@ import {MultiColumnDimReductionEditor} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
 import {multiColReduceDimensionality} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
-import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import { KnownMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 export const _package = new DG.Package();
 
