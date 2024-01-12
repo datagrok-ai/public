@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {v4 as uuidv4} from 'uuid';
 
-import {FileInfo as msFileInfo} from 'molstar/lib/mol-util/file-info';
+import {FileInfo as MolScriptBuilderFileInfo} from 'molstar/lib/mol-util/file-info';
 import {Color as msColor} from 'molstar/lib/mol-util/color';
 import {StateObjectSelector} from 'molstar/lib/mol-state';
 import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
@@ -19,6 +19,13 @@ import {molecule3dFileExtensions} from './consts';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 import {_package} from '../../package';
+import { MolScriptBuilder } from 'molstar/lib/mol-script/language/builder';
+import { StructureSelectionCategory, StructureSelectionQuery } from 'molstar/lib/mol-plugin-state/helpers/structure-selection-query';
+import { SetUtils } from 'molstar/lib/mol-util/set';
+import { PolymerNames } from 'molstar/lib/mol-model/structure/model/types';
+import { Script } from 'molstar/lib/mol-script/script';
+import { StructureSelection } from 'molstar/lib/mol-model/structure';
+import { components } from 'react-select';
 
 export type LigandData = {
   data: string,
@@ -70,6 +77,13 @@ export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandDa
     _structure, 'ligand', {label: ligandLabel});
   await plugin.builders.structure.hierarchy.applyPreset(_molTrajectory, 'default',
     {representationPreset: 'polymer-and-ligand'});
+  
+  /**Performs zooming */
+  const polymer = MolScriptBuilder.struct.generator.all();
+  const sel = Script.getStructureSelection(polymer, _structure.data!);
+  const loci = StructureSelection.toLociWithSourceUnits(sel);
+  plugin.managers.structure.focus.addFromLoci(loci);
+  plugin.managers.camera.focusLoci(loci);
   return [_molData.ref, _molTrajectory.ref, _model.ref, _structure.ref, _component!.ref];
 }
 
@@ -87,7 +101,7 @@ export async function parseAndVisualsData(
     new PluginStateObject.Data.String(dataEff.data as string);
 
   //await plugin.dataTransaction(async () => {
-  const dataProvider = plugin.dataFormats.auto({ext: dataEff.ext} as msFileInfo, data)!;
+  const dataProvider = plugin.dataFormats.auto({ext: dataEff.ext} as MolScriptBuilderFileInfo, data)!;
   if (!dataProvider)
     throw new Error(`Can not find data provider for file ext '${dataEff.ext}'.`);
 
@@ -163,6 +177,7 @@ export async function parseAndVisualsData(
     throw new Error(`Unhandled parsed parts '${JSON.stringify(unhandledParsedPartList)}'.`);
 
   _package.logger.debug(`${logPrefix} -> structureRefs = ${JSON.stringify(refListRes)} `);
+  
   return refListRes;
 }
 
