@@ -5,14 +5,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {getNucleotidesSequence} from '../apps/translator/model/conversion-utils';
-import {getJsonData} from '../apps/common/data-loading-utils/json-loader';
+import {loadJsonData} from '../apps/common/data-loader/json-loader';
 import {helmToNucleotides} from './const';
 import {_package} from '../package';
 import {MonomerLibWrapper} from '../apps/common/monomer-lib/lib-wrapper';
 
 category('HELM to Nucleotides', () => {
   before(async () => {
-    await getJsonData();
+    await loadJsonData();
     await _package.initMonomerLib();
   });
 

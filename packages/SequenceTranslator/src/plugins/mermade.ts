@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {ExternalPluginUI} from '../apps/common/ui-components/combined-ui';
 import {ColoredTextInput} from '../apps/common/ui-components/colored-input/colored-text-input';
 import {highlightInvalidSubsequence} from '../apps/common/ui-components/colored-input/input-painters';
-import {codesToSymbolsDictionary} from '../apps/common/data-loading-utils/json-loader';
+import {CODES_TO_SYMBOLS_DICT} from '../apps/common/data-loader/json-loader';
 import {MERMADE} from './const';
 
 export async function getExternalAppViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
@@ -43,6 +43,6 @@ function getMerMadeParameters(): {[name: string]: any} {
 
   return {
     coloredInput: input,
-    codes: codesToSymbolsDictionary
+    codes: CODES_TO_SYMBOLS_DICT
   }
 }

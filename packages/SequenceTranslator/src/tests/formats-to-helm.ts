@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {DEFAULT_FORMATS} from '../apps/common/model/const';
 import {FormatConverter} from '../apps/translator/model/format-converter';
-import {getJsonData} from '../apps/common/data-loading-utils/json-loader';
+import {loadJsonData} from '../apps/common/data-loader/json-loader';
 import {formatsToHelm} from './const';
 import {_package} from '../package';
 
@@ -20,7 +20,7 @@ function getFromat(helm: string, format: string): string {
 
 category('Formats to HELM', () => {
   before(async () => {
-    await getJsonData();
+    await loadJsonData();
     await _package.initMonomerLib();
   });
 
@@ -37,7 +37,7 @@ category('Formats to HELM', () => {
 
 category('HELM to Formats', () => {
   before(async () => {
-    await getJsonData();
+    await loadJsonData();
     await _package.initMonomerLib();
   });
 

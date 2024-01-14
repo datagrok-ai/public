@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {codesToHelmDictionary} from '../../data-loading-utils/json-loader';
-import {CodesInfo} from '../../data-loading-utils/types';
+import {CODES_TO_HELM_DICT} from '../../data-loader/json-loader';
+import {CodesInfo} from '../../data-loader/types';
 import {DEFAULT_FORMATS} from '../const';
 import {GROUP_TYPE, PHOSPHATE_SYMBOL} from '../../../translator/model/const';
 
@@ -34,7 +34,7 @@ export class FormatHandler {
   getHelmToFormatDict(format: string): {[key: string]: string} {
     this.validateFormat(format);
 
-    const codesInfoObject = codesToHelmDictionary[format] as CodesInfo;
+    const codesInfoObject = CODES_TO_HELM_DICT[format] as CodesInfo;
     const dict = getHelmToCodeDict(codesInfoObject);
     return dict;
   }
@@ -42,7 +42,7 @@ export class FormatHandler {
   getFormatToHelmDict(format: string): {[key: string]: string} {
     this.validateFormat(format);
 
-    const codesInfoObject = codesToHelmDictionary[format] as CodesInfo;
+    const codesInfoObject = CODES_TO_HELM_DICT[format] as CodesInfo;
     const dict = Object.assign({}, ...Object.values(codesInfoObject)) as {[code: string]: string};
     return dict;
   }
@@ -75,7 +75,7 @@ export class FormatHandler {
   getPhosphateHelmCodesRegExp(format: string): RegExp {
     this.validateFormat(format);
 
-    const codesInfoObject = codesToHelmDictionary[format] as CodesInfo;
+    const codesInfoObject = CODES_TO_HELM_DICT[format] as CodesInfo;
     const phosphateHELMCodes = Array.from(
       new Set(Object.values(codesInfoObject[GROUP_TYPE.LINKAGE]))
     ).sort(inverseLengthComparator);
@@ -89,7 +89,7 @@ export class FormatHandler {
   }
 
   private getFormats(): string[] {
-    return Object.keys(codesToHelmDictionary);
+    return Object.keys(CODES_TO_HELM_DICT);
   }
 
   private validateFormat(format: string) {

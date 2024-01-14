@@ -192,7 +192,7 @@ export class StructureLayoutHandler {
       const errStr = errorToConsole(err);
       console.error(errStr);
     }
-    // todo: calculate relative numbers
+    // todo: compute relative numbers
     const canvasWidth = 650;
     const canvasHeight = 150;
     const molImgObj = new MoleculeImage(molfile);

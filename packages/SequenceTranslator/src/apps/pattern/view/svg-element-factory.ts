@@ -48,7 +48,7 @@ export class SVGElementFactory {
 
   public createStarElement(x: number, y: number, color: string): SVGPolygonElement {
     const star = this.createElement('polygon') as SVGPolygonElement;
-    const points = this.calculateStarVertexCoordinates(x, y);
+    const points = this.computeStarVertexCoordinates(x, y);
     const pointsAttribute = points.map(point => point.join(',')).join(' ');
 
     this.setAttributes(star, {
@@ -58,7 +58,7 @@ export class SVGElementFactory {
     return star;
   }
 
-  private calculateStarVertexCoordinates(centerX: number, centerY: number): [number, number][] {
+  private computeStarVertexCoordinates(centerX: number, centerY: number): [number, number][] {
     const outerVerticesPerStar = 5;
     const innerVertexRadius = 3;
     const outerVertexRadius = innerVertexRadius * 2;

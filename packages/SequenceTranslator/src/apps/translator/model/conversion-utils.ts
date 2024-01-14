@@ -1,11 +1,11 @@
 import {DEFAULT_FORMATS, NUCLEOTIDES} from '../../common/model/const';
 import {UNKNOWN_SYMBOL} from './const';
 import {FormatConverter} from './format-converter';
-import {codesToHelmDictionary} from '../../common/data-loading-utils/json-loader';
+import {CODES_TO_HELM_DICT} from '../../common/data-loader/json-loader';
 import {MonomerLibWrapper} from '../../common/monomer-lib/lib-wrapper';
 
 export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: string): {[key: string]: string} {
-  const supportedFormats = Object.keys(codesToHelmDictionary).concat([DEFAULT_FORMATS.HELM]) as string[];
+  const supportedFormats = Object.keys(CODES_TO_HELM_DICT).concat([DEFAULT_FORMATS.HELM]) as string[];
 
   if (!sequence || (indexOfFirstInvalidChar !== -1 && sourceFormat !== DEFAULT_FORMATS.HELM))
     return {};

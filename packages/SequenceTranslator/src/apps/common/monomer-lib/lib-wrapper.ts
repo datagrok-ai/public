@@ -10,7 +10,7 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 import {META_FIELDS as MET} from './const';
-import {codesToSymbolsDictionary} from '../data-loading-utils/json-loader';
+import {CODES_TO_SYMBOLS_DICT} from '../data-loader/json-loader';
 
 export class MonomerLibWrapper {
   private constructor() {
@@ -34,7 +34,7 @@ export class MonomerLibWrapper {
     formats.forEach((format) => {
       if (format === DEFAULT_FORMATS.HELM)
         return;
-      const map = codesToSymbolsDictionary[format];
+      const map = CODES_TO_SYMBOLS_DICT[format];
       const codes = Object.keys(map).filter((code) => map[code] === sourceObj.symbol);
       formattedObject[format] = codes.join(', ');
     })
@@ -88,15 +88,15 @@ export class MonomerLibWrapper {
   }
 
   getCodeToSymbolMap(format: string): Map<string, string> {
-    return new Map<string, string>(Object.entries(codesToSymbolsDictionary[format]));
+    return new Map<string, string>(Object.entries(CODES_TO_SYMBOLS_DICT[format]));
   }
 
   getCodesByFormat(format: string): string[] {
-    return Object.keys(codesToSymbolsDictionary[format]);
+    return Object.keys(CODES_TO_SYMBOLS_DICT[format]);
   }
 
   getAllFormats(): string[] {
-    return Object.keys(codesToSymbolsDictionary);
+    return Object.keys(CODES_TO_SYMBOLS_DICT);
   }
 
   getTableForViewer(): DG.DataFrame {
@@ -107,7 +107,7 @@ export class MonomerLibWrapper {
 
   getCodesToWeightsMap(): Map<string, number> {
     const codesToWeightsMap = new Map<string, number>();
-    Object.entries(codesToSymbolsDictionary).forEach(([_, dict]) => {
+    Object.entries(CODES_TO_SYMBOLS_DICT).forEach(([_, dict]) => {
       Object.entries(dict).forEach(([code, monomerSymbol]) => {
         const monomer = this.getMonomer(monomerSymbol);
         const weight = monomer[OPT.META]?.[MET.MOLWEIGHT];

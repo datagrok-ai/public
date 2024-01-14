@@ -6,10 +6,10 @@ import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
 import {isOverhangNucleotide} from './helpers';
-import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
+import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 
 export function generateExample(sequenceLength: number, sequenceBasis: string): string {
-  const AXOLABS_MAP = axolabsStyleMap;
+  const AXOLABS_MAP = AXOLABS_STYLE_MAP;
   const uniqueSymbols = AXOLABS_MAP[sequenceBasis].symbols.join('');
   return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
@@ -57,7 +57,7 @@ export function translateSequence(
   let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     i++;
-    const AXOLABS_MAP = axolabsStyleMap;
+    const AXOLABS_MAP = AXOLABS_STYLE_MAP;
 
     const baseChoices: string[] = Object.keys(AXOLABS_MAP);
     // const defaultBase: string = baseChoices[0];

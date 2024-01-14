@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {AppUIFactory, CombinedAppUI} from './apps/common/ui-components/combined-ui';
 import {tryCatch} from './apps/common/model/helpers';
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from './apps/common/data-loading-utils/const';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './apps/common/data-loader/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {getJsonData} from './apps/common/data-loading-utils/json-loader';
+import {loadJsonData} from './apps/common/data-loader/json-loader';
 import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-molfile';
 import {linkStrandsV3000} from './apps/structure/model/mol-transformations';
 import {MonomerLibWrapper} from './apps/common/monomer-lib/lib-wrapper';
@@ -88,7 +88,7 @@ export async function oligoStructureApp(): Promise<void> {
 
 //name: initSequenceTranslatorLibData
 export async function initSequenceTranslatorLibData(): Promise<void> {
-  await getJsonData();
+  await loadJsonData();
   await _package.initMonomerLib();
 }
 

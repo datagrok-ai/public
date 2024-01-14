@@ -6,13 +6,13 @@ import * as DG from 'datagrok-api/dg';
 import {sortByReverseLength} from '../helpers';
 import {DEFAULT_FORMATS} from '../const';
 import {MonomerLibWrapper} from '../../monomer-lib/lib-wrapper';
-import {codesToHelmDictionary} from '../../data-loading-utils/json-loader';
+import {CODES_TO_HELM_DICT} from '../../data-loader/json-loader';
 import {SequenceValidator} from './sequence-validator';
 
 export class FormatDetector {
   constructor (private sequence: string) {
     this.libWrapper = MonomerLibWrapper.getInstance();
-    this.formats = Object.keys(codesToHelmDictionary);
+    this.formats = Object.keys(CODES_TO_HELM_DICT);
   };
 
   private libWrapper: MonomerLibWrapper;

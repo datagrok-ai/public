@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {axolabsStyleMap} from '../../common/data-loading-utils/json-loader';
+import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 import {
   DEFAULT_PHOSPHOROTHIOATE, SEQUENCE_LENGTH, USER_STORAGE_KEY, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
 } from '../model/const';
@@ -590,7 +590,7 @@ export class PatternLayoutHandler {
     }
 
 
-    const nucleotideBaseChoices: string[] = Object.keys(axolabsStyleMap);
+    const nucleotideBaseChoices: string[] = Object.keys(AXOLABS_STYLE_MAP);
     const defaultNucleotideBase: string = nucleotideBaseChoices[0];
     const modificationsWithNumericLabels = [defaultNucleotideBase];
     const sequenceBase = ui.choiceInput('Sequence basis', defaultNucleotideBase, nucleotideBaseChoices, (value: string) => {

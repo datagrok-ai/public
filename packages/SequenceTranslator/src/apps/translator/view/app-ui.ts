@@ -17,12 +17,12 @@ import {DEFAULT_AXOLABS_INPUT} from '../../common/ui-components/const';
 import {FormatDetector} from '../../common/model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../common/model/parsing-validation/sequence-validator';
 import {FormatConverter} from '../model/format-converter';
-import {codesToHelmDictionary} from '../../common/data-loading-utils/json-loader';
+import {CODES_TO_HELM_DICT} from '../../common/data-loader/json-loader';
 import {DEFAULT_FORMATS} from '../../common/model/const';
 
 export class TranslatorLayoutHandler {
   constructor() {
-    const INPUT_FORMATS = Object.keys(codesToHelmDictionary).concat(DEFAULT_FORMATS.HELM);
+    const INPUT_FORMATS = Object.keys(CODES_TO_HELM_DICT).concat(DEFAULT_FORMATS.HELM);
     this.moleculeImgDiv = ui.div([]);
     this.moleculeImgDiv.className = 'mol-host';
     this.moleculeImgDiv.style.border = '1px solid var(--grey-2)';

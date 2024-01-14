@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {PHOSPHATE_SYMBOL} from './const';
 import {sortByReverseLength} from '../../common/model/helpers';
 import {MonomerLibWrapper} from '../../common/monomer-lib/lib-wrapper';
-import {monomersWithPhosphateLinkers} from '../../common/data-loading-utils/json-loader';
+import {MONOMERS_WITH_PHOSPHATE} from '../../common/data-loader/json-loader';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */
@@ -77,13 +77,13 @@ export class MonomerSequenceParser {
 
 // todo: to be eliminated after full helm support
 function monomerHasLeftPhosphateLinker(monomerSymbol: string): boolean {
-  return monomersWithPhosphateLinkers['left'].includes(monomerSymbol);
+  return MONOMERS_WITH_PHOSPHATE['left'].includes(monomerSymbol);
 }
 
 function monomerHasRightPhosphateLinker(monomerSymbol: string): boolean {
-  return monomersWithPhosphateLinkers['right'].includes(monomerSymbol);
+  return MONOMERS_WITH_PHOSPHATE['right'].includes(monomerSymbol);
 }
 
 function monomerIsPhosphateLinker(monomerSymbol: string): boolean {
-  return monomersWithPhosphateLinkers['phosphate'].includes(monomerSymbol);
+  return MONOMERS_WITH_PHOSPHATE['phosphate'].includes(monomerSymbol);
 }
