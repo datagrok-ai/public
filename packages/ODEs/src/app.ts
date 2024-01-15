@@ -307,8 +307,7 @@ export async function runSolverApp() {
 
       dlg
         .add(ui.label(WARNING.MES))
-        .add(ui.label(WARNING.QUE))
-        .add(ui.divH([boolInput.root]))
+        .add(boolInput.root)
         .onCancel(() => dlg.close())
         .onOK(async () => {
           if (fn)
@@ -569,8 +568,7 @@ export async function runSolverDemoApp() {
 
       dlg
         .add(ui.label(WARNING.MES))
-        .add(ui.label(WARNING.QUE))
-        .add(ui.divH([boolInput.root]))
+        .add(boolInput.root)
         .onCancel(() => dlg.close())
         .onOK(async () => {
           if (fn)

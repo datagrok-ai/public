@@ -73,10 +73,9 @@ export enum ERROR_MSG {
 
 /** Warning dialog lines */
 export enum WARNING {
-  TITLE = 'Overwrite?',
+  TITLE = 'WARNING',
   CHECK = 'Show this warning',
-  MES = 'This will overwrite the current project.',
-  QUE = 'Do you want to go on?',
+  MES = 'Overwrite the current model?',
 };
 
 /** Other UI constants */
