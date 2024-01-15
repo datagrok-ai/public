@@ -109,8 +109,8 @@ Modify formulas and press <i class="fas fa-play"></i> **Run** button.
 # No-code
 Define equations in a declarative form.
 
-# UI
-Press **APP** button and get Datagrok application.
+# Interactivity
+Play with model inputs on the **App** tab.
 
 # Examples
 Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
@@ -119,8 +119,8 @@ Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
 Press **JS** button and export model to JavaScript script.
 
 # Learn more
-* [Compute](https://datagrok.ai/help/compute)
-* [Diff Studio](${LINK.DIF_STUDIO})`;
+* [Diff Studio](${LINK.DIF_STUDIO})
+* [Compute](https://datagrok.ai/help/compute)`;
 
 /** Inputs types */
 export enum INPUT_TYPE {

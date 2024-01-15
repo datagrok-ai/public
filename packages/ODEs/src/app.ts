@@ -414,68 +414,67 @@ export async function runSolverDemoApp() {
         grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
   }};
 
-  /** Solve the current IVP */
-  const solve = async () => {  
+  /** Solve IVP */
+  const solve = async (ivp: IVP) => {
+    const start = ivp.arg.start.value;
+    const finish = ivp.arg.finish.value;
+    const step = ivp.arg.step.value;
+
+    if (start >= finish)
+      return;
+
+    if ((step <= 0) || (step > finish - start))
+      return;
+
+    const scriptText = getScriptLines(ivp).join('\n');    
+    const script = DG.Script.create(scriptText);
+    const params = getScriptParams(ivp);    
+    const call = script.prepare(params);
+
+    await call.call();
+      
+    solutionTable = call.outputs[DF_NAME];
+    solverView.dataFrame = call.outputs[DF_NAME];
+    solverView.name = solutionTable.name;
+
+    if (!solutionViewer) {
+      solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+      viewerDockNode = grok.shell.dockManager.dock(
+        solutionViewer, 
+        DG.DOCK_TYPE.TOP, 
+        solverView.dockManager.
+        findNode(solverView.grid.root
+      ));
+    }
+    else {
+      solutionViewer.dataFrame = solutionTable;
+
+      if (toChangeSolutionViewerProps) {
+        solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+        toChangeSolutionViewerProps = false;
+      }
+    }
+  }; // solve
+
+  /** Run solving the current IVP */
+  const runSolving = async (showApp: boolean) => {  
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);
-      const params = getScriptParams(ivp);    
-      const call = script.prepare(params);
-
-      await call.call();
-      
-      solutionTable = call.outputs[DF_NAME];
-      solverView.dataFrame = call.outputs[DF_NAME];
-      solverView.name = solutionTable.name;
-
-      if (!solutionViewer) {
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
-        viewerDockNode = grok.shell.dockManager.dock(
-          solutionViewer, 
-          DG.DOCK_TYPE.TOP, 
-          solverView.dockManager.
-          findNode(solverView.grid.root
-        ));
-      }
-      else {
-        solutionViewer.dataFrame = solutionTable;
-
-        if (toChangeSolutionViewerProps) {
-          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
-          toChangeSolutionViewerProps = false;
-        }
-      }
+      inputsDiv = await getInputsUI(ivp, solve);
+      tabControl.clear();
+      tabControl.currentPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
+            
+      if (showApp)
+        tabControl.currentPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+      else
+        tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
 
     } catch (err) {
         if (err instanceof Error) 
           grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${err.message}`);
         else
           grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-  }};
-
-  /** Run model application */
-  const runModelApp = async () => {
-    try {
-      const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);
-      const savedScript = await grok.dapi.scripts.save(script);
-      const params = getScriptParams(ivp);
-
-      // try to call computations - correctness check
-      const testCall = script.prepare(params);
-      await testCall.call();
-
-      const call = savedScript.prepare(params);
-      call.edit();
-    } 
-    catch (err) {
-      if (err instanceof Error) 
-        grok.shell.error(`${ERROR_MSG.APP_CREATING_FAILS}: ${err.message}`);        
-      else
-        grok.shell.error(`${ERROR_MSG.APP_CREATING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-  }};
+  }};  
    
   let solutionTable = DG.DataFrame.create();
   let solverView = grok.shell.addTableView(solutionTable);
@@ -483,13 +482,15 @@ export async function runSolverDemoApp() {
   let viewerDockNode: DG.DockNode | null = null;
   let toChangeSolutionViewerProps = false;
   solverView.name = MISC.VIEW_DEFAULT_NAME;
-  let div = ui.divV([]);
+  let modelDiv = ui.divV([]);
+  let inputsDiv = ui.divV([]);
+  const tabControl = ui.tabControl();
 
   /** Code editor for IVP specifying */
   let editorView = new EditorView({
     doc: DEMO_TEMPLATE,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-    parent: div
+    parent: modelDiv
   });
   
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
@@ -498,7 +499,7 @@ export async function runSolverDemoApp() {
 
   editorView.dom.addEventListener('keydown', async (e) => {
     if (e.key !== HOT_KEY.RUN)
-      isChanged = true;    
+      isChanged = true;
   });
 
   /** Load IVP from file */
@@ -536,6 +537,7 @@ export async function runSolverDemoApp() {
   };
 
   /** Set IVP code editor state */
+  /** Set IVP code editor state */
   const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
     toChangeSolutionViewerProps = true;
     isChanged = false;
@@ -550,14 +552,25 @@ export async function runSolverDemoApp() {
 
     editorView.setState(newState);
 
-    if (state != EDITOR_STATE.CLEAR)
-      await solve();
-    else
-      if (solutionViewer && viewerDockNode) {
-        grok.shell.dockManager.close(viewerDockNode);
-        solutionViewer = null;
-      }
-  };
+    switch(state) {
+      case EDITOR_STATE.CLEAR:
+        if (solutionViewer && viewerDockNode) {
+          grok.shell.dockManager.close(viewerDockNode);
+          solutionViewer = null;
+        }
+        break;
+
+      case EDITOR_STATE.BASIC_TEMPLATE:
+      case EDITOR_STATE.ADVANCED_TEMPLATE:
+      case EDITOR_STATE.EXTENDED_TEMPLATE:
+        await runSolving(false);
+        break;
+      
+      default:
+        await runSolving(true);
+        break;
+    }
+  }; // setState
 
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
@@ -621,26 +634,27 @@ export async function runSolverDemoApp() {
   editorView.dom.style.overflow = 'auto';
   editorView.dom.style.height = '100%';
 
-  solverView.dockManager.dock(div, 'left');
+  const node = solverView.dockManager.dock(tabControl.root, 'left');
+  node.container.dart.elementTitle.hidden = true;
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
-  await solve();
+
+  const playIcon = ui.iconFA('play', async () => {await runSolving(true)}, HINT.RUN);  
+  playIcon.style.color = "var(--green-2)";
+  playIcon.classList.add("fas");
+
+  await runSolving(false);
+
   solverView.dockManager.dock(divHelp, 'right', undefined, undefined, 0.3);
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
-  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);
-
-  const playIcon = ui.iconFA('play', solve, HINT.RUN);  
-  playIcon.style.color = "var(--green-2)";
-  playIcon.classList.add("fas");
-
-  const appButton = ui.bigButton(TITLE.APP, runModelApp, HINT.APP);
+  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);  
   
   solverView.root.addEventListener('keydown', async (e) => {
     if (e.key === HOT_KEY.RUN) {
       e.stopImmediatePropagation();
       e.preventDefault();
-      await solve();
+      await runSolving(true);
     }
   });
 
@@ -663,7 +677,7 @@ export async function runSolverDemoApp() {
   const openIcon = ui.iconFA('folder-open', () => openMenu.show(), HINT.OPEN);
   const saveIcon = ui.iconFA('save', async () => {await saveFn()}, HINT.SAVE);
 
-  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, appButton], [playIcon]]);
+  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, playIcon]]);
 } // runSolverDemoApp
 
 /** Return model inputs UI */
@@ -858,6 +872,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
   }
 
   form.style.overflowY = 'auto';
+  form.style.padding = '5px';
   
   return form;
 } // getInputsUI

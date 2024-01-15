@@ -92,14 +92,18 @@ export enum TEMPLATES {
 /** Demo template */
 export const DEMO_TEMPLATE = `${CONTROL_EXPR.NAME}: My model
 ${CONTROL_EXPR.DIF_EQ}:
-  dx/dt = y + sin(t)
-  dy/dt = x - exp(t)
+  dx/dt = y * cos(p * t) + sin(t)
+  dy/dt = x * sin(q * t) - exp(-t)
 
 ${CONTROL_EXPR.ARG}: t
-  initial = 0
-  final = 4
-  step = 0.01
+  initial = 0 {min: 0; max: 3}
+  final = 8 {min: 4; max: 20}
+  step = 0.01 {min: 0.01; max: 0.1}
 
 ${CONTROL_EXPR.INITS}:
-  x = 2
-  y = 1`;
+  x = 0 {min: 0; max: 5}
+  y = 1 {min: 1; max: 7}
+
+${CONTROL_EXPR.PARAMS}:
+  p = -2 {min: -2; max: 2}
+  q = -1 {min: -1; max: 1}`;
