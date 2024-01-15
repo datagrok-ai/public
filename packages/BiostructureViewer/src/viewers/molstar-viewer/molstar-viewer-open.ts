@@ -66,7 +66,7 @@ export async function removeVisualsData(
 }
 
 /** Adds ligand and returns component keys. single component has multiple refs when created manually */
-export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandData, _color: DG.Color | null
+export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandData, _color: DG.Color | null, zoom: boolean
 ): Promise<string[]> {
   const ligandLabel: string = `<Ligand at row ${ligand.rowIdx}>`;
   const _molData = await plugin.builders.data.rawData({data: ligand.data, label: LIGAND_LABEL});
@@ -78,12 +78,13 @@ export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandDa
   await plugin.builders.structure.hierarchy.applyPreset(_molTrajectory, 'default',
     {representationPreset: 'polymer-and-ligand'});
   
-  /**Performs zooming */
-  const polymer = MolScriptBuilder.struct.generator.all();
-  const sel = Script.getStructureSelection(polymer, _structure.data!);
-  const loci = StructureSelection.toLociWithSourceUnits(sel);
-  plugin.managers.structure.focus.addFromLoci(loci);
-  plugin.managers.camera.focusLoci(loci);
+  if (zoom) {
+    const polymer = MolScriptBuilder.struct.generator.all();
+    const sel = Script.getStructureSelection(polymer, _structure.data!);
+    const loci = StructureSelection.toLociWithSourceUnits(sel);
+    plugin.managers.structure.focus.addFromLoci(loci);
+    plugin.managers.camera.focusLoci(loci);
+  }
   return [_molData.ref, _molTrajectory.ref, _model.ref, _structure.ref, _component!.ref];
 }
 

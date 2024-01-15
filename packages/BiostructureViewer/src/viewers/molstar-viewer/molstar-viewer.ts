@@ -103,6 +103,7 @@ export enum PROPS {
   showSelectedRowsLigands = 'showSelectedRowsLigands',
   showCurrentRowLigand = 'showCurrentRowLigand',
   showMouseOverRowLigand = 'showMouseOverRowLigand',
+  zoom = 'zoom',
 }
 
 const pdbDefault: string = '';
@@ -171,6 +172,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   // propsEngine = new class {
   //
   // }(this);
+  [PROPS.zoom]: boolean;
 
   constructor() {
     super();
@@ -254,6 +256,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       {category: PROPS_CATS.BEHAVIOUR});
 
     // --
+    this.zoom = this.bool(PROPS.zoom, false, {userEditable: false})
     this.root.style.textAlign = 'center';
 
     this.logger = _package.logger;
@@ -870,7 +873,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
       const selectedLigandData = this.getLigandStrOfRow(selectedLigand.rowIdx);
       ligandTaskList.push(async () => {
-        selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color);
+        selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color, this.zoom);
       });
     }
     if (newLigands.current) {
@@ -879,7 +882,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const currentLigandData = this.getLigandStrOfRow(newLigands.current.rowIdx);
       const currentLigand = newLigands.current;
       ligandTaskList.push(async () => {
-        currentLigand.structureRefs = await addLigandOnStage(plugin, currentLigandData, color);
+        currentLigand.structureRefs = await addLigandOnStage(plugin, currentLigandData, color, this.zoom);
       });
     }
     if (newLigands.hovered) {
@@ -890,7 +893,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const hoveredLigandData = this.getLigandStrOfRow(newLigands.hovered.rowIdx);
       const hoveredLigand = newLigands.hovered;
       ligandTaskList.push(async () => {
-        hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color);
+        hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);
       });
     }
     this.logger.debug(`${logPrefix},\nnewLigands = ${JSON.stringify(newLigands)}`);
