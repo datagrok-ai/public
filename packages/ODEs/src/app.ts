@@ -840,27 +840,26 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
       categorizeInput(options, input);
     });
 
-  const forms = new Map<string, HTMLElement>();
+  // Inputs form
+  const form = ui.form([]);
 
-  inputsByCategories.forEach((inputs, category) => {forms.set(category, ui.form(inputs))});
-
-  const elems = [] as HTMLElement[];
-
-  if (forms.size === 1)
-    elems.push(forms.get(TITLE.MISC)!);
+  if (inputsByCategories.size === 1)
+    inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
   else {
-    forms.forEach((form, category) => {
+    inputsByCategories.forEach((inputs, category) => {
       if (category !== TITLE.MISC) {
-        elems.push(ui.h2(category));
-        elems.push(form);
+        form.append(ui.h2(category));
+        inputs.forEach((inp) => form.append(inp.root));
       }
     });
 
     if (inputsByCategories.get(TITLE.MISC)!.length > 0) {
-      elems.push(ui.h2(TITLE.MISC));
-      elems.push(forms.get(TITLE.MISC)!);      
-    }        
+      form.append(ui.h2(TITLE.MISC));
+      inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));     
+    }
   }
+
+  form.style.overflowY = 'auto';
   
-  return ui.divV(elems)
+  return form;
 } // getInputsUI
