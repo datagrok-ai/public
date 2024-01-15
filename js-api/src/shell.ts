@@ -10,10 +10,16 @@ import {_toIterable} from "./utils";
 import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
 import {IDartApi} from "./api/grok_api.g";
+import {ComponentBuildInfo} from "./dapi";
 
 declare let ui: any;
 declare let grok: { shell: Shell };
 const api: IDartApi = <any>window;
+
+class AppBuildInfo {
+  get client(): ComponentBuildInfo { return api.grok_Shell_GetClientBuildInfo(); }
+  server: ComponentBuildInfo = new ComponentBuildInfo();
+}
 
 /**
  * Grok visual shell, use it to get access to top-level views, tables, methods, etc.
@@ -23,8 +29,7 @@ const api: IDartApi = <any>window;
 export class Shell {
   windows: Windows = new Windows();
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
-
-
+  build: AppBuildInfo = new AppBuildInfo();
 
   testError(s: String): void {
     return api.grok_Test_Error(s);

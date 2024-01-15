@@ -1,5 +1,16 @@
 # Compute changelog
 
+## 1.19.0 (2024-01-08)
+
+### Features
+
+- RFV: Added `graphics` type support
+- RFV: Exposed feature-flags
+
+### Bug fixes
+
+- RFV: Fixed bug for string default values
+
 ## 1.18.0 (2023-12-25)
 
 - RFV: Added input form adaptiveness

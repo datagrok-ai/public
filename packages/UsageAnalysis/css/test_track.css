@@ -74,3 +74,12 @@
     color: #c9e7ff;
     }
 }
+
+.tt-reason {
+  position: absolute;
+  right: 10px;
+  max-width: 100px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: var(--grey-4);
+}

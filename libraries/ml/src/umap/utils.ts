@@ -17,7 +17,7 @@
  * ==============================================================================
  */
 
-import { RandomFn } from './umap';
+import {RandomFn} from './umap';
 
 /**
  * Simple random integer function
@@ -37,9 +37,9 @@ export function tauRand(random: RandomFn) {
  */
 export function norm(vec: number[]) {
   let result = 0;
-  for (let item of vec) {
+  for (const item of vec)
     result += item ** 2;
-  }
+
   return Math.sqrt(result);
 }
 
@@ -48,9 +48,9 @@ export function norm(vec: number[]) {
  */
 export function empty(n: number): undefined[] {
   const output: undefined[] = [];
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i++)
     output.push(undefined);
-  }
+
   return output;
 }
 
@@ -110,9 +110,9 @@ export function mean(input: number[]): number {
  */
 export function max(input: number[]): number {
   let max = 0;
-  for (let i = 0; i < input.length; i++) {
+  for (let i = 0; i < input.length; i++)
     max = input[i] > max ? input[i] : max;
-  }
+
   return max;
 }
 
@@ -122,9 +122,8 @@ export function max(input: number[]): number {
 export function max2d(input: number[][]): number {
   let max = 0;
   for (let i = 0; i < input.length; i++) {
-    for (let j = 0; j < input[i].length; j++) {
+    for (let j = 0; j < input[i].length; j++)
       max = input[i][j] > max ? input[i][j] : max;
-    }
   }
   return max;
 }
@@ -151,9 +150,9 @@ export function rejectionSample(
           break;
         }
       }
-      if (!broken) {
+      if (!broken)
         rejectSample = false;
-      }
+
       result[i] = j;
     }
   }
@@ -165,12 +164,12 @@ export function rejectionSample(
  */
 export function reshape2d<T>(x: T[], a: number, b: number): T[][] {
   const rows: T[][] = [];
-  let count = 0;
+  // let count = 0;
   let index = 0;
 
-  if (x.length !== a * b) {
+  if (x.length !== a * b)
     throw new Error('Array dimensions must match input length.');
-  }
+
 
   for (let i = 0; i < a; i++) {
     const col: T[] = [];
@@ -179,7 +178,7 @@ export function reshape2d<T>(x: T[], a: number, b: number): T[][] {
       index += 1;
     }
     rows.push(col);
-    count += 1;
+    // count += 1;
   }
   return rows;
 }

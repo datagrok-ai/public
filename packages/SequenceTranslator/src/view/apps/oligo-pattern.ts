@@ -107,7 +107,7 @@ export class PatternLayoutHandler {
 
     function updateInputExamples() {
       STRANDS.forEach((s) => {
-        if (inputStrandColumn[s].value === '')
+        if (strandColumnInput[s].value === '')
           inputExample[s].value = generateExample(strandLengthInput[s].value!, sequenceBase.value!);
       });
     }
@@ -211,7 +211,7 @@ export class PatternLayoutHandler {
     }
 
     function allColumnValuesOfEqualLength(colName: string): boolean {
-      const col = tables.value!.getCol(colName);
+      const col = tableInput.value!.getCol(colName);
       let allLengthsAreTheSame = true;
       for (let i = 1; i < col.length; i++) {
         if (col.get(i - 1).length !== col.get(i).length && col.get(i).length !== 0) {
@@ -226,14 +226,14 @@ export class PatternLayoutHandler {
           .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
           .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
           .addButton('ADD COLUMN', () => {
-            tables.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-            grok.shell.info('Column with lengths added to \'' + tables.value!.name + '\'');
+            tableInput.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
+            grok.shell.info('Column with lengths added to \'' + tableInput.value!.name + '\'');
             dialog.close();
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
+            grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
           })
           .show();
       }
-      if (col.get(0) !== strandLengthInput[SS].value) {
+      if (col.get(0).length !== strandLengthInput[SS].value) {
         const d = ui.dialog('Length was updated by value to from imported file');
         d.add(ui.divText('Latest modifications may not take effect during translation'))
           .onOK(() => grok.shell.info('Lengths changed')).show();
@@ -367,25 +367,26 @@ export class PatternLayoutHandler {
 
     function validateStrandColumn(colName: string, strand: string): void {
       const allLengthsAreTheSame: boolean = allColumnValuesOfEqualLength(colName);
-      const firstSequence = tables.value!.getCol(colName).get(0);
+      const firstSequence = tableInput.value!.getCol(colName).get(0);
       if (allLengthsAreTheSame && firstSequence.length !== strandLengthInput[strand].value)
-      strandLengthInput[strand].value = tables.value!.getCol(colName).get(0).length;
+      strandLengthInput[strand].value = tableInput.value!.getCol(colName).get(0).length;
       inputExample[strand].value = firstSequence;
     }
 
     function validateIdsColumn(colName: string) {
-      const col = tables.value!.getCol(colName);
+      const col = tableInput.value!.getCol(colName);
       if (col.type !== DG.TYPE.INT)
         grok.shell.error('Column should contain integers only');
+      //@ts-ignore
       else if (col.categories.filter((e) => e !== '').length < col.toList().filter((e) => e !== '').length) {
         const duplicates = findDuplicates(col.getRawData());
         ui.dialog('Non-unique IDs')
           .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
           .onOK(() => {
-            const selection = tables.value!.selection;
+            const selection = tableInput.value!.selection;
             selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
-            grok.shell.info('Rows are selected in table \'' + tables.value!.name + '\'');
+            grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
+            grok.shell.info('Rows are selected in table \'' + tableInput.value!.name + '\'');
           })
           .show();
       }
@@ -435,23 +436,16 @@ export class PatternLayoutHandler {
         return [strand, input];
     }));
     const strandVar = Object.fromEntries(STRANDS.map((strand) => [strand, '']));
-    // todo: rename to strandColumnInputDiv
-    const inputStrandColumnDiv = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, ui.div([])]
-    ));
     const inputExample = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.textInput(
         ``, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
       ]));
 
-    // todo: rename to strandColumnInput
-    const inputStrandColumn = Object.fromEntries(STRANDS.map((strand) => {
-      const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
+    const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
+      const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
         validateStrandColumn(colName, strand);
         strandVar[strand] = colName;
       });
-      inputStrandColumnDiv[strand].append(input.root);
-      //input.addPostfix(``);
       return [strand, input];
     }));
 
@@ -464,8 +458,6 @@ export class PatternLayoutHandler {
       input.captionLabel.style.maxWidth = '100px';
       input.captionLabel.style.minWidth = '40px';
       input.captionLabel.style.width = 'auto';
-      
-    
 
       return [strand, input];
     }));
@@ -508,9 +500,7 @@ export class PatternLayoutHandler {
     STRANDS.forEach((s) => {
       
       inputExample[s].input.style.resize = 'none';
-      //inputExample[s].input.style.minWidth = EXAMPLE_MIN_WIDTH;
       outputExample[s].input.style.resize = 'none';
-      //outputExample[s].input.styl
       inputExample[s].input.style.minWidth = 'none';
       inputExample[s].input.style.flexGrow = '1';
       outputExample[s].input.style.minWidth = 'none';
@@ -527,7 +517,7 @@ export class PatternLayoutHandler {
       );
     })
 
-    const inputIdColumnDiv = ui.div([]);
+    // const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
     const loadPatternDiv = ui.div([]);
@@ -549,25 +539,45 @@ export class PatternLayoutHandler {
 
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
 
-    const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
-      STRANDS.forEach((strand) => {
-        inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', t.columns.names(), (colName: string) => {
-          validateStrandColumn(colName, strand);
-          strandVar[strand] = colName;
+    function getTableInput(tableList: DG.DataFrame[]): DG.InputBase {
+      const tableInput = ui.tableInput('Tables', tableList[0], tableList, () => {
+        const table = tableInput.value;
+        if (table === null) {
+          console.warn('Table is null');
+          return;
+        }
+        const tableName = table!.name;
+        if (!grok.shell.tableNames.includes(tableName)) {
+          const view = grok.shell.v;
+          grok.shell.addTableView(table!);
+          grok.shell.v = view;
+        }
+        const columnNames = table.columns.names();
+
+        STRANDS.forEach((strand) => {
+          const defaultColumn = columnNames[0];
+          validateStrandColumn(defaultColumn, strand);
+          strandVar[strand] = defaultColumn;
+          const input = ui.choiceInput(`${STRAND_NAME[strand]} column`, defaultColumn, columnNames, (colName: string) => {
+            validateStrandColumn(colName, strand);
+            strandVar[strand] = colName;
+            console.log(`clicked ${strand} var:`, strandVar[strand]);
+          });
+          $(strandColumnInput[strand].root).replaceWith(input.root);
+        })
+
+        idVar = columnNames[0];
+        // todo: unify with inputStrandColumn
+        const idInput = ui.choiceInput('ID column', columnNames[0], columnNames, (colName: string) => {
+          validateIdsColumn(colName);
+          idVar = colName;
         });
-        inputStrandColumnDiv[strand].innerHTML = '';
-        inputStrandColumnDiv[strand].append(inputStrandColumn[strand].root);
-      })
-
-      // todo: unify with inputStrandColumn
-      const inputIdColumn = ui.choiceInput('ID column', '', t.columns.names(), (colName: string) => {
-        validateIdsColumn(colName);
-        idVar = colName;
+        $(inputIdColumn.root).replaceWith(idInput.root);
       });
-      inputIdColumnDiv.innerHTML = '';
-      inputIdColumnDiv.append(inputIdColumn.root);
-    });
+      return tableInput;
+    }
 
+    const tableInput = getTableInput([]);
 
     // todo: unify with strandVar
     let idVar = '';
@@ -575,13 +585,13 @@ export class PatternLayoutHandler {
       validateIdsColumn(colName);
       idVar = colName;
     });
-    inputIdColumnDiv.append(inputIdColumn.root);
+    // inputIdColumnDiv.append(inputIdColumn.root);
 
     updatePatternsList();
 
     const createAsStrand = ui.boolInput('Anti sense strand', true, (v: boolean) => {
       modificationSection[AS].hidden = !v;
-      inputStrandColumnDiv[AS].hidden = !v;
+      strandColumnInput[AS].root.hidden = !v;
       asLengthDiv.hidden = !v;
       asModificationDiv.hidden = !v;
       asExampleDiv.hidden = !v;
@@ -618,6 +628,7 @@ export class PatternLayoutHandler {
 
     const convertSequenceButton = ui.bigButton('Convert', () => {
       const condition = [true, createAsStrand.value];
+      console.log(`strand vars:`, Object.values(strandVar));
       if (STRANDS.some((s, i) => condition[i] && strandVar[s] === ''))
         grok.shell.info('Please select table and columns on which to apply pattern');
       else if (STRANDS.some((s) => strandLengthInput[s].value !== inputExample[s].value.length)) {
@@ -627,24 +638,24 @@ export class PatternLayoutHandler {
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
             STRANDS.forEach((s) => {
-              strandLengthInput[s].value = tables.value!.getCol(inputStrandColumn[s].value!).getString(0).length;
+              strandLengthInput[s].value = tableInput.value!.getCol(strandColumnInput[s].value!).getString(0).length;
             })
             dialog.close();
           })
           .show();
       } else {
         if (idVar !== '')
-          addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
+          addColumnWithIds(tableInput.value!.name, idVar, getShortName(saveAs.value));
         const condition = [true, createAsStrand.value];
         STRANDS.forEach((strand, i) => {
           if (condition[i])
             addColumnWithTranslatedSequences(
-              tables.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
+              tableInput.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
               terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
         })
-        grok.shell.v = grok.shell.getTableView(tables.value!.name);
+        grok.shell.v = grok.shell.getTableView(tableInput.value!.name);
         grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
-          ' added to table \'' + tables.value!.name + '\'');
+          ' added to table \'' + tableInput.value!.name + '\'');
         updateOutputExamples();
       }
     });
@@ -663,10 +674,10 @@ export class PatternLayoutHandler {
 
     const inputsSection = ui.block50([
       ui.h1('Convert options'),
-      tables.root,
-      inputStrandColumnDiv[SS],
-      inputStrandColumnDiv[AS],
-      inputIdColumnDiv,
+      tableInput.root,
+      strandColumnInput[SS].root,
+      strandColumnInput[AS].root,
+      inputIdColumn.root,
       ui.buttonsInput([
         convertSequenceButton,
       ]),
@@ -708,9 +719,9 @@ export class PatternLayoutHandler {
           loadPatternDiv,
           saveAs.root,
           ui.h1('Convert'),
-          tables.root,
-          inputStrandColumn[SS],
-          inputStrandColumn[AS],
+          tableInput.root,
+          strandColumnInput[SS],
+          strandColumnInput[AS],
           inputIdColumn.root,
           ui.buttonsInput([
             convertSequenceButton,

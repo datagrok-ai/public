@@ -225,7 +225,7 @@ export class TestManager extends DG.ViewBase {
       this.setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
       ui.tooltip.bind(item.root,
         () => this.getTestsInfoGrid({package: t.packageName, category: t.test.category, name: t.test.name},
-          NODE_TYPE.TEST, true));
+          NODE_TYPE.TEST, true)?.info);
       if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name)
         this.selectedNode = item;
     });
@@ -588,9 +588,16 @@ export class TestManager extends DG.ViewBase {
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
-    const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
+    const obj = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType),
+      nodeType, false, unhandled);
+    const grid = obj.info;
+    const testInfo = obj.testInfo;
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
+    if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
+      const logs: string = testInfo.get('logs', 0);
+      acc.addPane('Logs', () => ui.divText(logs), logs !== '');
+    }
     acc.addPane('History', () => ui.waitBox(async () => {
       let query: string;
       let params: object;
@@ -656,8 +663,9 @@ export class TestManager extends DG.ViewBase {
 
   getTestsInfoGrid(condition: object, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
     let info = ui.divText('No tests have been run');
+    let testInfo: DG.DataFrame;
     if (this.testsResultsDf) {
-      const testInfo = this.testsResultsDf
+      testInfo = this.testsResultsDf
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
@@ -668,7 +676,7 @@ export class TestManager extends DG.ViewBase {
           'exceptions', testInfo.get('package', 0)]);
       }
       if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
-        return info;
+        return {info, testInfo};
       const cat = testInfo.get('category', 0);
       if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
         const time = testInfo.get('ms', 0);
@@ -696,6 +704,6 @@ export class TestManager extends DG.ViewBase {
         } else return null;
       }
     }
-    return info;
+    return {info, testInfo};
   };
 }

@@ -2,25 +2,43 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {merge} from 'rxjs';
-import {readDataframe, writeDataframe, getIcon, getStatusIcon, Status, FILENAME} from './utils';
+import {Octokit} from 'octokit';
+import {getIcon} from './utils';
+import {decode} from 'js-base64';
 
-interface TestCaseValues {
-  id: string;
-  parentId: string;
-  testCase: string | null;
-  status: Status;
-  icon: HTMLElement;
+const octokit = new Octokit();
+
+interface TestCase {
+  name: string;
+  text: string;
+}
+
+interface Category {
+  name: string;
+  children: (TestCase | Category)[];
+}
+
+interface OctokitResponse {
+  // size: number;
+  name: string;
+  path: string;
+  type: 'dir' | 'file' | 'submodule' | 'symlink';
+  content?: string;
+  // sha: string;
+  // url: string;
+  // git_url: string | null;
+  // html_url: string | null;
+  // download_url: string | null;
+  // _links: {};
 }
 
 export class TestTrack extends DG.ViewBase {
   private static instance: TestTrack;
   tree: DG.TreeViewGroup;
-  testCaseDiv: HTMLDivElement;
   inited: boolean = false;
-  df: DG.DataFrame = DG.DataFrame.create(0);
+  testCaseDiv: HTMLDivElement;
   currentNode: DG.TreeViewNode | DG.TreeViewGroup;
-  saveButton: HTMLButtonElement;
+  objTree: Category[] = [];
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -33,18 +51,10 @@ export class TestTrack extends DG.ViewBase {
     this.name = 'Test Track';
     this.path = '/TestTrack';
     this.tree = ui.tree();
-    this.tree.value = {id: null, parent_id: null, test_case: null};
     this.tree.root.id = 'tt-tree';
     this.testCaseDiv = ui.div();
     this.testCaseDiv.id = 'tt-test-case-div';
     this.currentNode = this.tree;
-    this.saveButton = ui.button(getIcon('save', {style: 'fas'}), async () => {
-      this.saveButton.disabled = true;
-      await this.updateDf();
-    }, 'Save changes');
-    this.saveButton.classList.add('tt-ribbon-button');
-    this.saveButton.id = 'tt-ribbon-save-button';
-    this.saveButton.disabled = true;
   }
 
   async init() {
@@ -54,52 +64,33 @@ export class TestTrack extends DG.ViewBase {
     }
 
     // Generate tree
-    this.df = await readDataframe(FILENAME);
-    const order = [...this.df.getSortedOrder(['parent_id', 'is_group', 'name'], [true, true, false])].reverse();
-    let row: DG.Row;
-    for (const i of order) {
-      row = this.df.row(i);
-      this.initNodeAndParentsRecursive(row);
-    }
-    merge(this.df.onDataChanged, this.df.onRowsAdded, this.df.onRowsRemoved)
-      .subscribe(() => {
-        this.saveButton.disabled = false;
-      });
+    const response = await octokit.rest.repos.getContent({
+      owner: 'datagrok-ai',
+      repo: 'public',
+      path: 'packages/UsageAnalysis/files',
+    });
+    const dirs = (response.data as OctokitResponse[]).filter((f) => f.type === 'dir');
+    for (const dir of dirs)
+      this.objTree.push(await this.processDirRecursive(dir));
+    this.objTree.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
 
     // Ribbon
     const plus = ui.button(getIcon('plus', {style: 'fas'}), () => {
-      this.showAddDialog(this.tree);
-    }, 'Add root group');
+    }, 'Add test case');
     plus.classList.add('tt-ribbon-button');
     const report = ui.button(getIcon('tasks', {style: 'fas'}), () => {
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
-    const ribbon = ui.divH([plus, this.saveButton, report]);
+    const ribbon = ui.divH([plus, report]);
 
     // Test case div
-    const edit = ui.button(getIcon('edit'), () => {
-      this.testCaseDiv.setAttribute('contenteditable', 'true');
-      this.testCaseDiv.focus();
-      this.testCaseDiv.addEventListener('focusout', () => {
-        this.testCaseDiv.setAttribute('contenteditable', 'false');
-        if (this.currentNode.value.testCase === this.testCaseDiv.innerText) return;
-        this.currentNode.value.testCase = this.testCaseDiv.innerText;
-        this.df.set('test_case', this.findRowById(this.currentNode.value.id), this.testCaseDiv.innerText);
-      }, {once: true});
-    }, 'Edit test case');
-    edit.id = 'tt-edit-button';
-    edit.disabled = true;
     this.tree.onSelectedNodeChanged.subscribe((node) => {
       this.currentNode = node;
-      this.testCaseDiv.innerText = node.value.testCase;
-      if (node.constructor.name === 'TreeViewGroup')
-        edit.disabled = true;
-      else
-        edit.disabled = false;
+      this.testCaseDiv.innerText = node.value.text ?? '';
     });
 
     // UI
-    this.append(ui.div([this.testCaseDiv, edit], {id: 'tt-test-case-div-outer'}));
+    this.append(ui.div([this.testCaseDiv], {id: 'tt-test-case-div-outer'}));
     this.append(ribbon);
     this.append(this.tree.root);
     this.root.style.padding = '0';
@@ -107,168 +98,44 @@ export class TestTrack extends DG.ViewBase {
     this.inited = true;
   }
 
-  initNodeAndParentsRecursive(row: DG.Row): DG.TreeViewGroup | DG.TreeViewNode {
-    let node: DG.TreeViewGroup | DG.TreeViewNode;
-    const name = row.get('name');
-    const status: Status = row.get('status') || null;
-    const values: TestCaseValues = {id: row.get('id'), parentId: row.get('parent_id'),
-      testCase: row.get('test_case'), status, icon: status ? ui.div(getStatusIcon(status)) : ui.div()};
-    let group: DG.TreeViewGroup = this.tree;
-    if (values.parentId) {
-      const parentRow = this.df.row(this.findRowById(values.parentId));
-      group = this.initNodeAndParentsRecursive(parentRow) as DG.TreeViewGroup;
+  async processDirRecursive(dir: OctokitResponse): Promise<Category> {
+    const c: Category = {name: dir.name, children: []};
+    const data = (await octokit.rest.repos.getContent({
+      owner: 'datagrok-ai',
+      repo: 'public',
+      path: dir.path,
+    })).data as OctokitResponse[];
+    for (const child of data) {
+      let res: Category | TestCase;
+      if (child.type === 'dir')
+        res = await this.processDirRecursive(child);
+      else if (child.type === 'file')
+        res = await this.processFile(child);
+      else continue;
+      c.children.push(res);
     }
-    if (row.get('is_group'))
-      node = group.getOrCreateGroup(name, values, false);
-    else
-      node = group.item(name, values);
-    this.setContextMenu(node);
-    node.captionLabel.after(node.value.icon);
-    return node;
+    return c;
   }
 
-  setContextMenu(node: DG.TreeViewGroup | DG.TreeViewNode) {
-    const type = node.constructor.name;
-    node.captionLabel.addEventListener('contextmenu', (e) => {
-      const menu = DG.Menu.popup();
-      if (type === 'TreeViewGroup') {
-        menu
-          .item('Add group', async () => {
-            this.showAddDialog(node as DG.TreeViewGroup);
-          })
-          .item('Add test case', async () => {
-            this.showAddDialog(node as DG.TreeViewGroup, true);
-          });
-      } else {
-        menu.group('Status')
-          .items(['Passed', 'Failed', 'Skipped', 'Empty'],
-            (i) => this.changeNodeStatus(node, (i === 'Empty' ? null : i.toLowerCase()) as Status),
-            {radioGroup: 'erter', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
-          .endGroup();
-      }
-      menu
-        .item('Rename', async () => {
-          this.showRenameDialog(node);
-        })
-        .item('Delete', async () => {
-          this.showRemoveDialog(node);
-        });
-      menu.show();
-      e.preventDefault();
-      e.stopPropagation();
-    });
+  async processFile(file: OctokitResponse): Promise<TestCase> {
+    const tc: TestCase = {name: file.name.replace(/\.[^/.]+$/, ''), text: ''};
+    const data = (await octokit.rest.repos.getContent({
+      owner: 'datagrok-ai',
+      repo: 'public',
+      path: file.path,
+    })).data as OctokitResponse;
+    if (data.content)
+      tc.text = decode(data.content);
+    return tc;
   }
 
-  changeNodeStatus(node: DG.TreeViewGroup | DG.TreeViewNode, status: Status): void {
-    if (node.value.status === status) return;
-    node.value.status = status;
-    node.value.icon.innerHTML = '';
-    this.df.set('status', this.findRowById(node.value.id), status);
-    if (!status) return;
-    const icon = getStatusIcon(status);
-    node.value.icon.append(icon);
-  }
-
-  showAddDialog(parent: DG.TreeViewGroup, testCase: boolean = false): void {
-    const dialog = ui.dialog(`Add new ${testCase ? 'test case' : 'group'}`);
-    dialog.root.addEventListener('keydown', (e) => {
-      if (e.key == 'Enter') {
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-      }
-    });
-    const nameInput = ui.textInput('Name', '', () => {});
-    const testCaseInput = ui.textInput('Test case', '', () => {});
-    nameInput.nullable = false;
-    dialog.add(nameInput);
-    if (testCase) {
-      dialog.add(testCaseInput);
-      testCaseInput.input.classList.add('tt-new-test-case-input');
-      testCaseInput.root.style.maxWidth = 'unset';
+  initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {
+    if ('text' in obj) {
+      parent.item(obj.name, obj);
+      return;
     }
-    dialog.onOK(() => this.addNode(parent, nameInput.value, testCase ? testCaseInput.value : null));
-    dialog.show({resizable: true});
+    const group = parent.getOrCreateGroup(obj.name, obj, false);
+    for (const child of obj.children)
+      this.initTreeGroupRecursive(child, group);
   }
-
-  showRemoveDialog(node: DG.TreeViewGroup | DG.TreeViewNode): void {
-    const isGroup = node.constructor.name === 'TreeViewGroup';
-    const post = `"${node.text}" ${isGroup ? 'group' : 'test case'}`;
-    const dialog = ui.dialog('Remove ' + post);
-    dialog.add(ui.divText('Are you sure you want to remove ' + post + '?'));
-    if (isGroup) {
-      dialog.add(ui.divText('The following items will also be deleted:'));
-      dialog.add(ui.list((node as DG.TreeViewGroup).items.map((n) => n.text)));
-    }
-    dialog.onOK(async () => this.removeNodeAndChildren(node));
-    dialog.show();
-  }
-
-  showRenameDialog(node: DG.TreeViewGroup | DG.TreeViewNode): void {
-    const dialog = ui.dialog(`Rename "${node.text}"`);
-    const nameInput = ui.textInput('New name', '', () => {});
-    nameInput.nullable = false;
-    dialog.add(nameInput);
-    dialog.onOK(() => this.renameNode(node, nameInput.value));
-    dialog.show({resizable: true});
-  }
-
-  addNode(parent: DG.TreeViewGroup, name: string, testCase: string | null): void {
-    let node: DG.TreeViewGroup | DG.TreeViewNode;
-    const values: TestCaseValues = {id: crypto.randomUUID(), parentId: parent.value.id, testCase: testCase, status: null, icon: ui.div()};
-    if (testCase === null)
-      node = parent.getOrCreateGroup(name, values, false);
-    else
-      node = parent.item(name, values);
-    this.setContextMenu(node);
-    node.captionLabel.after(node.value.icon);
-    this.df.rows.addNew([name, values.id, values.parentId, testCase === null, testCase, null]);
-  }
-
-  renameNode(node: DG.TreeViewGroup | DG.TreeViewNode, name: string): void {
-    node.captionLabel.innerText = name;
-    this.df.set('name', this.findRowById(node.value.id), name);
-  }
-
-  removeNodeAndChildren(node: DG.TreeViewGroup | DG.TreeViewNode): void {
-    this.removeRowById(node.value.id);
-    this.removeChildrenRecursive([node.value.id]);
-    node.remove();
-  }
-
-  removeChildrenRecursive(id: string[]): void {
-    const removedIds = this.removeRowsByParentIds(id);
-    if (removedIds.length)
-      this.removeChildrenRecursive(removedIds);
-  }
-
-  findRowById(id: string): number {
-    this.df.rows.match(`id = ${id}`).select();
-    const idxs = [...this.df.selection.getSelectedIndexes()];
-    if (idxs.length > 1)
-      grok.shell.error(id);
-    return idxs[0];
-  }
-
-  // findRowsByParentId(id: string): number[] {
-  //   this.df.rows.match(`parent_id = ${id}`).select();
-  //   return [...this.df.selection.getSelectedIndexes()];
-  // }
-
-  removeRowById(id: string): void {
-    this.df.rows.removeAt(this.findRowById(id));
-  }
-
-  removeRowsByParentIds(id: string[]): string[] {
-    const ind: string[] = [];
-    this.df.rows.removeWhere((r) => {
-      const b = id.includes(r.get('parent_id'));
-      if (b) ind.push(r.get('id'));
-      return b;
-    });
-    return ind;
-  }
-
-  async updateDf(): Promise<void> {
-    await writeDataframe(FILENAME, this.df.toCsv());
-  }
-}
+};

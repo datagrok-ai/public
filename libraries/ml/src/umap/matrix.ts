@@ -50,7 +50,7 @@ export class SparseMatrix {
       const col = cols[i];
       this.checkDims(row, col);
       const key = this.makeKey(row, col);
-      this.entries.set(key, { value: values[i], row, col });
+      this.entries.set(key, {value: values[i], row, col});
     }
   }
 
@@ -60,45 +60,41 @@ export class SparseMatrix {
 
   private checkDims(row: number, col: number) {
     const withinBounds = row < this.nRows && col < this.nCols;
-    if (!withinBounds) {
+    if (!withinBounds)
       throw new Error('row and/or col specified outside of matrix dimensions');
-    }
   }
 
   set(row: number, col: number, value: number) {
     this.checkDims(row, col);
     const key = this.makeKey(row, col);
-    if (!this.entries.has(key)) {
-      this.entries.set(key, { value, row, col });
-    } else {
+    if (!this.entries.has(key))
+      this.entries.set(key, {value, row, col});
+    else
       this.entries.get(key)!.value = value;
-    }
   }
 
   get(row: number, col: number, defaultValue = 0) {
     //this.checkDims(row, col);
     const key = this.makeKey(row, col);
-    if (this.entries.has(key)) {
+    if (this.entries.has(key))
       return this.entries.get(key)!.value;
-    } else {
+    else
       return defaultValue;
-    }
   }
 
   getAll(ordered = true): { value: number; row: number; col: number }[] {
     const rowColValues: Entry[] = new Array(this.entries.size).fill(null);
     let i = 0;
-    this.entries.forEach(value => {
+    this.entries.forEach((value) => {
       rowColValues[i++] = value;
     });
     if (ordered) {
       // Ordering the result isn't required for processing but it does make it easier to write tests
       rowColValues.sort((a, b) => {
-        if (a.row === b.row) {
+        if (a.row === b.row)
           return a.col - b.col;
-        } else {
+        else
           return a.row - b.row;
-        }
       });
     }
     return rowColValues;
@@ -109,28 +105,28 @@ export class SparseMatrix {
   }
 
   getRows(): number[] {
-   return Array.from(this.entries, ([key, value]) => value.row);
-   // return this.rows as unknown as number[];
+    return Array.from(this.entries, ([_key, value]) => value.row);
+    // return this.rows as unknown as number[];
   }
 
-  getCols(): number[]{
-   return Array.from(this.entries, ([key, value]) => value.col);
-   // return this.cols as unknown as number[];
+  getCols(): number[] {
+    return Array.from(this.entries, ([_key, value]) => value.col);
+    // return this.cols as unknown as number[];
   }
 
   getValues(): number[] {
-  return Array.from(this.entries, ([key, value]) => value.value);
+    return Array.from(this.entries, ([_key, value]) => value.value);
   //return this.values as unknown as number[];
   }
 
   forEach(fn: (value: number, row: number, col: number) => void): void {
-    this.entries.forEach(value => fn(value.value, value.row, value.col));
+    this.entries.forEach((value) => fn(value.value, value.row, value.col));
   }
 
   map(fn: (value: number, row: number, col: number) => number): SparseMatrix {
     const vals = new Float32Array(this.entries.size);
-    let i = 0
-    this.entries.forEach(value => {
+    let i = 0;
+    this.entries.forEach((value) => {
       vals[i++] = fn(value.value, value.row, value.col);
     });
     const dims = [this.nRows, this.nCols];
@@ -142,7 +138,7 @@ export class SparseMatrix {
     const output = rows.map(() => {
       return utils.zeros(this.nCols);
     });
-    this.entries.forEach(value => {
+    this.entries.forEach((value) => {
       output[value.row][value.col] = value.value;
     });
     return output;
@@ -174,9 +170,9 @@ export function transpose(matrix: SparseMatrix): SparseMatrix {
 export function identity(size: number[]): SparseMatrix {
   const [rows] = size;
   const matrix = new SparseMatrix([], [], [], size);
-  for (let i = 0; i < rows; i++) {
+  for (let i = 0; i < rows; i++)
     matrix.set(i, i, 1);
-  }
+
   return matrix;
 }
 
@@ -229,9 +225,8 @@ export function eliminateZeros(m: SparseMatrix) {
   const rows = m.getRows();
   const cols = m.getCols();
   for (let i = 0; i < values.length; i++) {
-    if (values[i] === 0) {
+    if (values[i] === 0)
       zeroIndices.add(i);
-    }
   }
   const removeByZeroIndex = (_: any, index: number) => !zeroIndices.has(index);
   const nextValues = values.filter(removeByZeroIndex);
@@ -256,14 +251,13 @@ export function normalize(m: SparseMatrix, normType = NormType.l2) {
 
   const nextMatrix = new SparseMatrix([], [], [], m.getDims());
 
-  for (let row of colsByRow.keys()) {
+  for (const row of colsByRow.keys()) {
     const cols = colsByRow.get(row)!.sort();
 
-    const vals = cols.map(col => m.get(row, col));
+    const vals = cols.map((col) => m.get(row, col));
     const norm = normFn(vals);
-    for (let i = 0; i < norm.length; i++) {
+    for (let i = 0; i < norm.length; i++)
       nextMatrix.set(row, cols[i], norm[i]);
-    }
   }
 
   return nextMatrix;
@@ -276,24 +270,24 @@ type NormFns = { [key in NormType]: (v: number[]) => number[] };
 const normFns: NormFns = {
   [NormType.max]: (xs: number[]) => {
     let max = -Infinity;
-    for (let i = 0; i < xs.length; i++) {
+    for (let i = 0; i < xs.length; i++)
       max = xs[i] > max ? xs[i] : max;
-    }
-    return xs.map(x => x / max);
+
+    return xs.map((x) => x / max);
   },
   [NormType.l1]: (xs: number[]) => {
     let sum = 0;
-    for (let i = 0; i < xs.length; i++) {
+    for (let i = 0; i < xs.length; i++)
       sum += xs[i];
-    }
-    return xs.map(x => x / sum);
+
+    return xs.map((x) => x / sum);
   },
   [NormType.l2]: (xs: number[]) => {
     let sum = 0;
-    for (let i = 0; i < xs.length; i++) {
+    for (let i = 0; i < xs.length; i++)
       sum += xs[i] ** 2;
-    }
-    return xs.map(x => Math.sqrt(x ** 2 / sum));
+
+    return xs.map((x) => Math.sqrt(x ** 2 / sum));
   },
 };
 
@@ -358,15 +352,14 @@ export function getCSR(x: SparseMatrix) {
   const entries: Entry[] = [];
 
   x.forEach((value, row, col) => {
-    entries.push({ value, row, col });
+    entries.push({value, row, col});
   });
 
   entries.sort((a, b) => {
-    if (a.row === b.row) {
+    if (a.row === b.row)
       return a.col - b.col;
-    } else {
+    else
       return a.row - b.row;
-    }
   });
 
   const indices: number[] = [];
@@ -375,7 +368,7 @@ export function getCSR(x: SparseMatrix) {
 
   let currentRow = -1;
   for (let i = 0; i < entries.length; i++) {
-    const { row, col, value } = entries[i];
+    const {row, col, value} = entries[i];
     if (row !== currentRow) {
       currentRow = row;
       indptr.push(i);
@@ -384,5 +377,5 @@ export function getCSR(x: SparseMatrix) {
     values.push(value);
   }
 
-  return { indices, values, indptr };
+  return {indices, values, indptr};
 }

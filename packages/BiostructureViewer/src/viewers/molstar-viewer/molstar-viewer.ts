@@ -178,7 +178,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
-    this.dataJson = this.string(PROPS.dataJson, BiostructureDataJson.null, {
+    this.dataJson = this.string(PROPS.dataJson, defaults.dataJson, {
       category: PROPS_CATS.DATA, userEditable: false,
       description: 'JSON encoded object of BiostructureData type with data value Base64 encoded data',
     });
@@ -473,7 +473,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
           this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.null)
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
         if (this.biostructureDataProvider) {
           if (!this.biostructureDataProviderFunc) {
@@ -576,7 +576,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     try {
       // while loading the next, the previous structure is covered by splash
       const fc = await this.biostructureDataProviderFunc!.prepare({id: id}).call();
-      const dataEff: BiostructureData = fc.getOutputParamValue() as BiostructureData;
+      const dataStr = fc.getOutputParamValue() as string;
+      const dataEff = BiostructureDataJson.toData(dataStr);
 
       const plugin = this.viewer!.plugin;
       await this.destroyViewLigands(0, callLog);

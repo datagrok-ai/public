@@ -1,10 +1,11 @@
-import { exec } from 'child_process';
+/* eslint-disable max-len */
+import {exec} from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
-import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
+import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -21,7 +22,7 @@ export function test(args: TestArgs): boolean {
   const confPath = path.join(grokDir, 'config.yaml');
 
   if (nArgs > 1 || options.length > commandOptions.length || (options.length > 0 &&
-    !options.every(op => commandOptions.includes(op))))
+    !options.every((op) => commandOptions.includes(op))))
     return false;
 
   if (!utils.isPackageDir(curDir)) {
@@ -34,7 +35,7 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
-  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
+  const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   if (args.host) {
     if (args.host in config.servers) {
@@ -49,7 +50,7 @@ export function test(args: TestArgs): boolean {
     console.log('Environment variable `HOST` is set to', config.default);
   }
 
-  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), {encoding: 'utf-8'}));
   if (packageData.name) {
     process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
     console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
@@ -63,9 +64,9 @@ export function test(args: TestArgs): boolean {
       test();
     else
       publish(test);
-  } else {
+  } else 
     build(args['skip-publish'] ? test : () => publish(test));
-  }
+  
 
   function build(callback: Function): void {
     exec('npm run build', (err, stdout, stderr) => {
@@ -109,14 +110,14 @@ export function test(args: TestArgs): boolean {
         params['headless'] = false;
       return testUtils.runWithTimeout(timeout, async () => {
         try {
-          let out = await testUtils.getBrowserPage(puppeteer, params);
+          const out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
           page = out.page;
           recorder = new PuppeteerScreenRecorder(page, testUtils.recorderConfig);
         } catch (e) {
           throw e;
         }
-      })
+      });
     }
 
     function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
@@ -125,18 +126,18 @@ export function test(args: TestArgs): boolean {
         let consoleLog: string = '';
         if (options.record) {
           await recorder.start('./test-record.mp4');
-          page.on('console', msg => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
-          page.on('pageerror', error => {
+          page.on('console', (msg) => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
+          page.on('pageerror', (error) => {
             consoleLog += `CONSOLE LOG ERROR: ${error.message}\n`;
           });
-          page.on('response', response => {
+          page.on('response', (response) => {
             consoleLog += `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`;
           });
         }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
 
-        let r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
+        const r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
           if (options.benchmark)
             (<any>window).DG.Test.isInBenchmark = true;
           return new Promise<resultObject>((resolve, reject) => {        
@@ -148,7 +149,7 @@ export function test(args: TestArgs): boolean {
               let skipReport = '';
               let passReport = '';
               let failReport = '';
-              let countReport = {skip: 0, pass: 0};
+              const countReport = {skip: 0, pass: 0};
 
               if (df == null) {
                 failed = true;
@@ -182,7 +183,7 @@ export function test(args: TestArgs): boolean {
               const csv = df.toCsv();
               resolve({failReport, skipReport, passReport, failed, csv, countReport});
             }).catch((e: any) => {
-              let stack = (<any>window).DG.Logger.translateStackTrace(e.stack);
+              const stack = (<any>window).DG.Logger.translateStackTrace(e.stack);
               resolve({failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: {skip: 0, pass: 0}});
             });
           });
@@ -190,7 +191,7 @@ export function test(args: TestArgs): boolean {
 
         if (options.record) {
           await recorder.stop();
-          fs.writeFileSync('./test-console-output.log', consoleLog)
+          fs.writeFileSync('./test-console-output.log', consoleLog);
         }
         return r;
       });
@@ -216,12 +217,12 @@ export function test(args: TestArgs): boolean {
       if (r.passReport && args.verbose)
         console.log(r.passReport);
       else
-        console.log('Passed tests: ' + r.countReport.pass)
+        console.log('Passed tests: ' + r.countReport.pass);
 
       if (r.skipReport && args.verbose)
         console.log(r.skipReport);
       else
-        console.log('Skipped tests: ' + r.countReport.skip)
+        console.log('Skipped tests: ' + r.countReport.skip);
 
       if (r.failed) {
         console.log(r.failReport);

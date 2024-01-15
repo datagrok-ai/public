@@ -7,6 +7,11 @@ import Timeout = NodeJS.Timeout;
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
 
+const stdLog = console.log.bind(console);
+const stdInfo = console.info.bind(console);
+const stdWarn = console.warn.bind(console);
+const stdError = console.error.bind(console);
+
 export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
@@ -289,6 +294,34 @@ export async function initAutoTests(packageId: string, module?: any) {
     moduleTests[detectorsCatName] = {tests: moduleDetectors, clear: false};
 }
 
+function redefineConsole(): any[] {
+  const logs: any[] = [];
+  console.log = (...args) => {
+    logs.push(...args);
+    stdLog(...args);
+  };
+  console.info = (...args) => {
+    logs.push(...args);
+    stdInfo(...args);
+  };
+  console.warn = (...args) => {
+    logs.push(...args);
+    stdWarn(...args);
+  };
+  console.error = (...args) => {
+    logs.push(...args);
+    stdError(...args);
+  };
+  return logs;
+}
+
+function resetConsole(): void {
+  console.log = stdLog;
+  console.info = stdInfo;
+  console.warn = stdWarn;
+  console.error = stdError;
+}
+
 export async function runTests(options?:
   {category?: string, test?: string, testContext?: TestContext}, exclude?: string[]) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
@@ -300,11 +333,12 @@ export async function runTests(options?:
   options!.testContext ??= new TestContext();
   grok.shell.lastError = '';
   const categories = [];
+  const logs = redefineConsole();
   for (const [key, value] of Object.entries(tests)) {
     if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
       exclude?.some((c) => key.startsWith(c)))
       continue;
-    console.log(`Started ${key} category`);
+    stdLog(`Started ${key} category`);
     categories.push(key);
     const skipped = value.tests?.every((t) => t.options?.skipReason);
     try {
@@ -317,13 +351,13 @@ export async function runTests(options?:
     const res = [];
     if (value.clear) {
       for (let i = 0; i < t.length; i++) {
-        res.push(await execTest(t[i], options?.test, value.timeout, package_.name));
+        res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name));
         grok.shell.closeAll();
         DG.Balloon.closeAll();
       }
     } else {
       for (let i = 0; i < t.length; i++)
-        res.push(await execTest(t[i], options?.test, value.timeout, package_.name));
+        res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name));
     }
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
@@ -341,6 +375,7 @@ export async function runTests(options?:
       data.push({category: key, name: 'init', result: value.beforeStatus, success: false, ms: 0, skipped: false});
     results.push(...data);
   }
+  resetConsole();
   if (options.testContext.catchUnhandled) {
     await delay(1000);
     if (grok.shell.lastError.length > 0) {
@@ -392,13 +427,15 @@ function getResult(x: any) {
   return `${x.toString()}\n${x.stack ? DG.Logger.translateStackTrace(x.stack) : ''}`;
 }
 
-async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
-  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean };
+async function execTest(t: Test, predicate: string | undefined, logs: any[],
+  categoryTimeout?: number, packageName?: string) {
+  logs.length = 0;
+  let r: {category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string};
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
   const skipReason = filter ? 'skipped' : t.options?.skipReason;
   if (!skip)
-    console.log(`Started ${t.category} ${t.name}`);
+    stdLog(`Started ${t.category} ${t.name}`);
   const start = Date.now();
   try {
     if (skip) {
@@ -412,14 +449,15 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   } catch (x: any) {
     r = {success: false, result: getResult(x), ms: 0, skipped: false};
   }
+  r.logs = logs.join('\n');
   r.ms = Date.now() - start;
   if (!skip)
-    console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
+    stdLog(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
   r.name = t.name;
   if (!filter) {
     let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
-      'type': 'package', packageName, 'category': t.category, 'test': t.name};
+      'type': 'package', packageName, 'category': t.category, 'test': t.name, 'logs': r.logs};
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
       params = {...params, ...res};

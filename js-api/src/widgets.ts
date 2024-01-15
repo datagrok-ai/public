@@ -238,6 +238,8 @@ export class Widget<TSettings = any> {
     return this.getProperties().map((p) => p.dart);
   }
 
+  sourceRowsChanged(): void {};
+
   onFrameAttached(dataFrame: DataFrame): void {
     if (this.props.hasProperty('dataFrame'))
       this.props.set('dataFrame', dataFrame);

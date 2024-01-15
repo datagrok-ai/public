@@ -31,6 +31,7 @@ export class SunburstViewer extends EChartViewer {
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
+    this.addRowSourceAndFormula();
 
     this.option = {
       animation: false,
@@ -46,6 +47,11 @@ export class SunburstViewer extends EChartViewer {
     };
 
     this.onPropertyChanged(null);
+  }
+
+  override sourceRowsChanged() {
+    super.sourceRowsChanged();
+    console.log(this.filter?.trueCount);
   }
 
   isCanvasEmpty(ctx: any, x: any, y: any) {

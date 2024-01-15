@@ -12,6 +12,7 @@
 * Move pdb, pdbqt parser to bio lib
 * Add IAutoDockService checkOpenCl, dockLigandColumn
 * Add Molecule, Molecule3D units handler getAsPdb
+* Add IHelmWebEditor
 
 ### Bug fixes
 
@@ -26,6 +27,7 @@
 * Fix monomer lib handler for PolyTool
 * Fix splitter with separator for quoted gaps
 * Fix default value for pdbTag prop of Biostructure
+* Fix biostructure data provider to return JSON string
 
 ## 5.38.0 (2023-09-06)
 

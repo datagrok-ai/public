@@ -270,7 +270,6 @@ export class RichFunctionView extends FunctionView {
 
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
-      if (this.runningOnInput) return;
 
       if (newValue)
         $(saveButton).show();
@@ -278,8 +277,6 @@ export class RichFunctionView extends FunctionView {
         $(saveButton).hide();
     });
     this.subs.push(uploadSub);
-
-    if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
 
     return saveButton;
   }
@@ -292,9 +289,10 @@ export class RichFunctionView extends FunctionView {
       () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
     const saveButton = this.getSaveButton();
 
-    if (this.runningOnInput) $(runButtonWrapper).hide();
-
-    return [saveButton, runButtonWrapper];
+    return [
+      ...this.isHistoryEnabled && !this.options.isTabbed ? [saveButton]:[],
+      ...!this.runningOnInput ? [runButtonWrapper]: [],
+    ];
   }
 
   /**
@@ -459,15 +457,14 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
-    const newRibbonPanels = [
-      ...this.getRibbonPanels(),
-      [
-        ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
-        ...this.hasUploadMode ? [toggleUploadMode]: [],
-        sensitivityAnalysis,
-      ],
-    ];
+    const newRibbonPanels = [[
+      ...this.getRibbonPanels().flat().map((elem) => elem.firstChild as HTMLElement),
+      ...this.runningOnInput || this.options.isTabbed ? []: [play],
+      ...(!this.options.isTabbed &&
+        ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
+      ...this.hasUploadMode ? [toggleUploadMode]: [],
+      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+    ]];
 
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
@@ -487,8 +484,8 @@ export class RichFunctionView extends FunctionView {
     this.tabsLabels.forEach((tabLabel) => {
       const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
 
-      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
-      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
+      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.GRAPHICS);
+      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
@@ -580,6 +577,41 @@ export class RichFunctionView extends FunctionView {
           }}});
         });
 
+        if (dfProp.propertyType === DG.TYPE.GRAPHICS) {
+          const blockWidth = dfProp.options.block;
+          const graphics = ui.div([], {style: {
+            'width': '100%',
+            'height': '100%',
+          }});
+          graphics.classList.add('grok-scripting-image-container');
+          const graphicsWrapper = ui.divV([
+            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            graphics,
+          ], {style: {...blockWidth ? {
+            'width': `${blockWidth}%`,
+            'max-width': `${blockWidth}%`,
+            'max-height': '100%',
+          } : {
+            'flex-grow': '1',
+          }}});
+
+          const updateGraphics = () => {
+            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+          };
+
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateGraphics);
+          this.subs.push(paramSub);
+          acc.append(graphicsWrapper);
+        }
+
         acc.append(...wrappedViewers);
 
         return acc;
@@ -615,7 +647,10 @@ export class RichFunctionView extends FunctionView {
       this.subs.push(tableSub);
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
+        return ui.divV([
+          ...tabDfProps.length ? [dfBlocks]: [],
+          ...tabScalarProps.length ? [scalarsTable]: [],
+        ]);
       });
     });
 
@@ -809,7 +844,9 @@ export class RichFunctionView extends FunctionView {
         if (field === SYNC_FIELD.INPUTS) {
           this.syncInput(val, input, field);
           this.checkForMapping(val, input);
-          this.disableInputsOnRun(val.property.name, input);
+          if (!this.runningOnInput)
+            this.disableInputsOnRun(val.property.name, input);
+
           this.bindOnHotkey(input);
         }
 
@@ -1064,7 +1101,10 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
+      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
+        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
+        newParam.property.defaultValue;
+      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;

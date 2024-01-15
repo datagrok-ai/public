@@ -37,7 +37,6 @@ export async function simulatePKPD(dose: number, dosesCount: number, doseInterva
 
 //name: PKPD Demo
 //description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation
-//input: string compartments = 2 compartment PK {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]}
 //input: double dose = 10000.0 {units: um; caption: dose; category: Dosing; min: 1; max: 1000000} [Dosage]
 //input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 1000} [Number of doses]
 //input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 1200} [Dosing interval]
@@ -52,8 +51,8 @@ export async function simulatePKPD(dose: number, dosesCount: number, doseInterva
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
-export async function simulatePkPdDemo(compartments: string, dose: number, dosesCount: number, doseInterval: number, KA: number, CL: number, V2: number, Q: number, V3: number, eff: number, EC50: number): Promise<DG.DataFrame> {
-  return await simPKPD(compartments, dose, dosesCount, doseInterval, KA, CL, V2, Q, V3, eff, eff, EC50);
+export async function simulatePkPdDemo(dose: number, dosesCount: number, doseInterval: number, KA: number, CL: number, V2: number, Q: number, V3: number, eff: number, EC50: number): Promise<DG.DataFrame> {
+  return await simPKPD('2 compartment PK', dose, dosesCount, doseInterval, KA, CL, V2, Q, V3, eff, eff, EC50);
 }
 
 //name: PK-PD Simulation Demo

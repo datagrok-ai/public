@@ -36,7 +36,7 @@ export enum PluginLayoutControlsDisplayType {
 
 export const BiostructurePropsDefault = new class {
   // -- Data --
-  dataJson: BiostructureDataJson = BiostructureDataJson.null;
+  dataJson: string = BiostructureDataJson.empty;
   pdb: string | null = null;
   pdbTag: string | null = pdbTAGS.PDB;
 

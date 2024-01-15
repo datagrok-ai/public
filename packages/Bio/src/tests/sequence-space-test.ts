@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import {readDataframe} from './utils';
 import {_testSequenceSpaceReturnsResult} from './sequence-space-utils';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 category('sequenceSpace', async () => {
   let testFastaDf: DG.DataFrame;

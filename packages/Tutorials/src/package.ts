@@ -363,7 +363,7 @@ export async function _filtersDemo() {
 export async function _tableLinkingDemo() {
   const TABLE1_PATH = 'files/demog-types.csv';
   const TABLE2_PATH = 'files/demog.csv';
-  const HELP_URL = '/help/explore/link-tables';
+  const HELP_URL = '/help/transform/link-tables';
 
 	const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
   const demog = await grok.data.loadTable(`${_package.webRoot}/${TABLE2_PATH}`);
