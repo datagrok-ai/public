@@ -39,7 +39,7 @@ of the **Pattern** tool.
 
 1. Upload/choose a dataframe containing unmodified sequences using the **Convert** input section.
    The dataframe should contain at least three columns: sequence ID, sense, and anti-sense strands. 
-2. Press the **Convert** button and receive the modified sequence in HELM or custom synthesizer format.
+2. Press the **Convert** button and receive the modified sequence in Axolabs format.
 
 ### Supported modifications
 
