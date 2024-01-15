@@ -10,7 +10,7 @@ import {
 import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 import {isOverhangNucleotide} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/oligo-pattern';
-import {renderNucleotidePattern} from './render-svg';
+import {renderNucleotidePattern} from './svg-utils/render-svg';
 
 import { BooleanInput, StringInput} from './types';
 import {LegacyPatternConfig} from '../model/types';
