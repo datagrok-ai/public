@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+
 export class DbTable {
   schema: string = '';
   name: string = '';
@@ -134,10 +135,5 @@ values (${entity.entityType.columns.map(c => entity.values[c.name] ?? 'null')})`
 
 
 export abstract class EntityView<TEntity extends DbEntityType> extends DG.View {
-
-}
-
-
-export class App {
 
 }

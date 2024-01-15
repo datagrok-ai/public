@@ -1,3 +1,3 @@
 # cruddy changelog
 
-## 6.3.36 (WIP)
+## 0.0.1: The beginning
