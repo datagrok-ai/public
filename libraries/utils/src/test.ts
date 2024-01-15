@@ -22,6 +22,7 @@ export const tests: {
 const autoTestsCatName = 'Auto Tests';
 const demoCatName = 'Demo';
 const detectorsCatName = 'Detectors';
+const coreCatName = 'Core';
 const wasRegistered: {[key: string]: boolean} = {};
 export let currentCategory: string;
 
@@ -228,6 +229,14 @@ export async function initAutoTests(packageId: string, module?: any) {
     wasRegistered[packageId] = true;
     return;
   }
+  if (!!module && module._package.name === 'DevTools') {
+    moduleTests[coreCatName] = {tests: [], clear: true};
+    const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
+    for (const f of testFunctions) {
+      moduleTests[coreCatName].tests.push(new Test(coreCatName, f.name,
+        async () => await f.apply(), {isAggregated: f.outputs.length > 0}));
+    }
+  }
   const moduleAutoTests = [];
   const moduleDemo = [];
   const moduleDetectors = [];
@@ -359,7 +368,7 @@ export async function runTests(options?:
       for (let i = 0; i < t.length; i++)
         res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name));
     }
-    const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
+    const data = res.filter((d) => d.result != 'skipped');
     try {
       if (value.after && !skipped)
         await value.after();
@@ -370,9 +379,9 @@ export async function runTests(options?:
     // grok.shell.closeAll();
     // DG.Balloon.closeAll();
     if (value.afterStatus)
-      data.push({category: key, name: 'init', result: value.afterStatus, success: false, ms: 0, skipped: false});
+      data.push({category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false});
     if (value.beforeStatus)
-      data.push({category: key, name: 'init', result: value.beforeStatus, success: false, ms: 0, skipped: false});
+      data.push({category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false});
     results.push(...data);
   }
   resetConsole();
@@ -449,6 +458,8 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   } catch (x: any) {
     r = {success: false, result: getResult(x), ms: 0, skipped: false};
   }
+  if (t.options?.isAggregated && r.result.constructor === DG.DataFrame)
+    r.result = r.result.toCsv();
   r.logs = logs.join('\n');
   r.ms = Date.now() - start;
   if (!skip)

@@ -67,7 +67,6 @@ enum NODE_TYPE {
 }
 
 const APP_PREFIX: string = `/TestManager/`;
-const DART_TESTS_CAT = 'Dart Tests';
 
 export class TestManager extends DG.ViewBase {
   packagesTests: IPackageTests[] = [];
@@ -101,9 +100,6 @@ export class TestManager extends DG.ViewBase {
       TMStateB = true;
     }
     this.testFunctions = await this.collectPackages();
-    this.testFunctions.push({package: {name: 'Core', friendlyName: 'Core'}});
-    this.testFunctions = this.testFunctions.sort((a, b) =>
-      a.package.friendlyName.localeCompare(b.package.friendlyName));
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
       {packName: pathSegments[4], catName: pathSegments.slice(5, -1).join(': '),
@@ -133,27 +129,13 @@ export class TestManager extends DG.ViewBase {
     const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
     if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
     selectedPackage.categories === null && selectedPackage.check === false) {
-      let allPackageTests: object;
-      if (f.package.name === 'Core') {
-        allPackageTests = {};
-        const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
-        for (const f of testFunctions) {
-          const isAggTest: boolean = f.outputs.length > 0;
-          const catName: string = isAggTest ? f.name : DART_TESTS_CAT;
-          if (allPackageTests[catName] == null)
-            allPackageTests[catName] = {tests: [], clear: true};
-          allPackageTests[catName].tests.push(new Test(catName, f.name,
-            async () => await f.apply(), {isAggregated: isAggTest}));
-        }
-      } else {
-        selectedPackage.check = true;
-        await f.package.load({file: f.options.file});
-        const testModule = f.package.getModule(f.options.file);
-        if (!testModule)
-          console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-        await initAutoTests(f.package.id, testModule);
-        allPackageTests = testModule ? testModule.tests : undefined;
-      }
+      selectedPackage.check = true;
+      await f.package.load({file: f.options.file});
+      const testModule = f.package.getModule(f.options.file);
+      if (!testModule)
+        console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
+      await initAutoTests(f.package.id, testModule);
+      const allPackageTests = testModule ? testModule.tests : undefined;
       const packageTestsFinal: { [cat: string]: ICategory } = {};
       if (allPackageTests) {
         Object.keys(allPackageTests).forEach((cat) => {
@@ -405,23 +387,6 @@ export class TestManager extends DG.ViewBase {
     icon.style.color = 'var(--orange-2)';
   }
 
-  async runDartTest(t: IPackageTest): Promise<DG.DataFrame> {
-    console.log(`Started ${DART_TESTS_CAT} ${t.test.name}`);
-    const res = {category: DART_TESTS_CAT, name: t.test.name,
-      success: true, result: 'OK', ms: 0, skipped: false};
-    const start = Date.now();
-    let result: any;
-    try {
-      result = await t.test.test();
-    } catch (e) {
-      res.success = false;
-      res.result = e.toString();
-    }
-    res.ms = Date.now() - start;
-    console.log(`Finished ${DART_TESTS_CAT} ${t.test.name} for ${res.ms} ms`);
-    return result ?? DG.DataFrame.fromObjects([res]);
-  }
-
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
     const skipReason = t.test.options?.skipReason;
@@ -432,17 +397,12 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    let res: DG.DataFrame;
-    if (t.packageName === 'Core')
-      res = await this.runDartTest(t);
-    else {
-      res = await grok.functions.call(
-        `${t.packageName}:test`, {
-          'category': t.test.category,
-          'test': t.test.name,
-          'testContext': new TestContext(false),
-        });
-    }
+    const res: DG.DataFrame = await grok.functions.call(
+      `${t.packageName}:test`, {
+        'category': t.test.category,
+        'test': t.test.name,
+        'testContext': new TestContext(false),
+      });
     if (res.getCol('result').type !== 'string')
       res.changeColumnType('result', 'string');
     const testSucceeded = res.get('success', 0);
@@ -604,11 +564,6 @@ export class TestManager extends DG.ViewBase {
       let b1: string | boolean = true;
       let b2: string | boolean = false;
       let col: string = 'success';
-      if (nodeType == NODE_TYPE.TEST && tests.test.options.isAggregated) {
-        params = {packageName: tests.packageName, category: tests.test.name};
-        query = 'CategoryHistory';
-        nodeType = null;
-      }
       switch (nodeType) {
       case NODE_TYPE.PACKAGE:
         query = 'PackageHistory';
@@ -639,8 +594,7 @@ export class TestManager extends DG.ViewBase {
   resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE): object {
     return nodeType === NODE_TYPE.PACKAGE ? {package: tests.package.name} :
       nodeType === NODE_TYPE.CATEGORY ? {package: tests.packageName, category: tests.fullName} :
-        tests.test.options.isAggregated ? {package: tests.packageName, category: tests.test.name} :
-          {package: tests.packageName, category: tests.test.category, name: tests.test.name};
+        {package: tests.packageName, category: tests.test.category, name: tests.test.name};
   }
 
   testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
