@@ -74,13 +74,13 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
 2. Add MarkdownLint as [External Tool](https://www.jetbrains.com/help/idea/configuring-third-party-tools.html#local-ext-tools). `Preferences > Tools > External Tools > + (Add)`
    1. Name: `MarkdownLint`
    2. Description: `MarkdownLint CLI with the enabled fix.`
-   3. Program: `markdownlint-cli2-fix`
+   3. Program: `markdownlint-cli2 --fix`
    4. Arguments: `$FilePath$`
    5. Working Directory: `$Projectpath$`
    6. Output filters: `$FILE_PATH$:$LINE$:$COLUMN$ .*`
    7. Enable `Make console active on message in stderr`
 
-   ![idea-markdownlint.png](idea-markdownlint.png)
+   ![idea-markdownlint.png](img/idea-markdownlint.png)
 
 3. To run MarkdownLint on the current file, click `Tools > External Tools > MarkdownLint`.
 
@@ -104,7 +104,7 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
 2. Run MarkdownLint using the following command
 
    ```bash
-   markdownlint-cli2-fix "help/**/*.{md,mdx}"
+   markdownlint-cli2 --fix "help/**/*.{md,mdx}"
    ```
 
 ```mdx-code-block
@@ -115,7 +115,7 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
 1. Pull the Docker image
 
    ```bash
-   docker pull davidanson/markdownlint-cli2:v0.6.0
+   docker pull davidanson/markdownlint-cli2:v0.12.1
    ```
 
 2. Run MarkdownLint using Docker
@@ -126,7 +126,7 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
    ```
 
    ```cmd
-   docker run -v %cd%:/workdir --entrypoint="markdownlint-cli2-fix" davidanson/markdownlint-cli2:v0.6.0 "help/**/*.{md,mdx}"
+   docker run -v %cd%:/workdir --entrypoint="markdownlint-cli2 --fix" davidanson/markdownlint-cli2:v0.12.1 "help/**/*.{md,mdx}"
    ```
 
    ```mdx-code-block
@@ -135,7 +135,7 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
    ```
 
    ```bash
-   docker run -v "$(pwd):/workdir" --entrypoint="markdownlint-cli2-fix" davidanson/markdownlint-cli2:v0.6.0 "help/**/*.{md,mdx}"
+   docker run -v "$(pwd):/workdir" --entrypoint="markdownlint-cli2 --fix" davidanson/markdownlint-cli2:v0.12.1 "help/**/*.{md,mdx}"
    ```
 
    ```mdx-code-block
