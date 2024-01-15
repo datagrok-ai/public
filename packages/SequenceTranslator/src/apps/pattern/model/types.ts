@@ -23,10 +23,10 @@ export type TerminalType = typeof TERMINI[number];
 
 export type PatternConfiguration = {
   patternName: string,
-  isAntisenseStrandActive: boolean,
-  bases: Record<StrandType, string[]>,
-  phosphorothioateLinkages: Record<StrandType, boolean[]>,
-  terminalModifications: Record<StrandType, Record<TerminalType, string>>,
-  comment: string,
-  modificationsWithNumericLabels: string[],
+  isAntisenseStrandIncluded: boolean,
+  nucleotideSequences: Record<StrandType, string[]>,
+  phosphorothioateLinkageFlags: Record<StrandType, boolean[]>,
+  strandTerminusModifications: Record<StrandType, Record<TerminalType, string>>,
+  patternComment: string,
+  nucleotidesWithNumericLabels: string[],
 }

@@ -1,10 +1,8 @@
 import {NUCLEOTIDES} from '../../../common/model/const';
 import {AXOLABS_STYLE_MAP as styleMap} from '../../../common/data-loader/json-loader';
-import {SVGElementFactory} from './svg-element-factory';
 import {isOverhangNucleotide} from '../../model/helpers';
-import { STRAND, STRANDS, TERMINUS, TERMINI } from '../../model/const';
-import {PatternConfiguration, StrandType, TerminalType} from '../../model/types';
-import {STRAND_END, STRAND_ENDS, LUMINANCE_COEFFICIENTS, TEXT_COLOR, SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, SVG_ELEMENT_COLORS, STRAND_END_LABEL_TEXT, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS} from './const';
+import { STRAND, STRANDS, STRAND_END, STRAND_ENDS } from '../../model/const';
+import {LUMINANCE_COEFFICIENTS, TEXT_COLOR, SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, SVG_ELEMENT_COLORS, STRAND_END_LABEL_TEXT, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS} from './const';
 
 export function computeCommentYPosition(isAntisenseStrandActive: boolean): number {
   return (isAntisenseStrandActive ? 11 : 8.5) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;

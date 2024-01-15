@@ -1,3 +1,5 @@
+import {Position} from '../types';
+
 export class SVGElementFactory {
   private readonly xmlNamespace = 'http://www.w3.org/2000/svg';
 
@@ -21,22 +23,22 @@ export class SVGElementFactory {
     return svgElement;
   }
 
-  public createCircleElement(x: number, y: number, radius: number, color: string): SVGCircleElement {
+  public createCircleElement(centerPosition: Position, radius: number, color: string): SVGCircleElement {
     const circle = this.createElement('circle') as SVGCircleElement;
     this.setAttributes(circle, {
-      cx: x,
-      cy: y,
+      cx: centerPosition.x,
+      cy: centerPosition.y,
       r: radius,
       fill: color,
     });
     return circle;
   }
 
-  public createTextElement(textContent: string, x: number, y: number, fontSize: number, color: string): SVGTextElement {
+  public createTextElement(textContent: string, position: Position, fontSize: number, color: string): SVGTextElement {
     const textElement = this.createElement('text') as SVGTextElement;
     this.setAttributes(textElement, {
-      x,
-      y,
+      x: position.x,
+      y: position.y,
       'font-size': fontSize,
       'font-weight': 'normal',
       'font-family': 'Arial',
@@ -46,9 +48,9 @@ export class SVGElementFactory {
     return textElement;
   }
 
-  public createStarElement(x: number, y: number, color: string): SVGPolygonElement {
+  public createStarElement(centerPosition: Position, color: string): SVGPolygonElement {
     const star = this.createElement('polygon') as SVGPolygonElement;
-    const points = this.computeStarVertexCoordinates(x, y);
+    const points = this.computeStarVertexCoordinates(centerPosition);
     const pointsAttribute = points.map(point => point.join(',')).join(' ');
 
     this.setAttributes(star, {
@@ -58,7 +60,7 @@ export class SVGElementFactory {
     return star;
   }
 
-  private computeStarVertexCoordinates(centerX: number, centerY: number): [number, number][] {
+  private computeStarVertexCoordinates(centerPosition: Position): [number, number][] {
     const outerVerticesPerStar = 5;
     const innerVertexRadius = 3;
     const outerVertexRadius = innerVertexRadius * 2;
@@ -70,8 +72,8 @@ export class SVGElementFactory {
       const isOuterVertex = i % 2 === 0;
       const radius = isOuterVertex ? outerVertexRadius : innerVertexRadius;
       const angle = i * radiansPerVertex + radiansOffset;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
+      const x = centerPosition.x + Math.cos(angle) * radius;
+      const y = centerPosition.y + Math.sin(angle) * radius;
       return [x, y];
     });
 

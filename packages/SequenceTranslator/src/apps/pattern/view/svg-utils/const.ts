@@ -1,17 +1,4 @@
-import {NUCLEOTIDES} from '../../../common/model/const';
-import {AXOLABS_STYLE_MAP as styleMap} from '../../../common/data-loader/json-loader';
-import {SVGElementFactory} from './svg-element-factory';
-import {isOverhangNucleotide} from '../../model/helpers';
-import { STRAND, STRANDS, TERMINUS, TERMINI } from '../../model/const';
-import {PatternConfiguration, StrandType, TerminalType} from '../../model/types';
-
-
-export const enum STRAND_END {
-  LEFT,
-  RIGHT,
-};
-
-export const STRAND_ENDS = [STRAND_END.LEFT, STRAND_END.RIGHT] as const;
+import { STRAND, TERMINUS, STRAND_END } from '../../model/const';
 
 export const enum LUMINANCE_COEFFICIENTS {
   RED = 0.299,
@@ -74,14 +61,3 @@ export const Y_POSITIONS_FOR_STRAND_ELEMENTS = {
     NUCLEOBASE_LABEL: 7 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
   }
 };
-
-export const STRAND_TO_END_TERMINUS = {
-  [STRAND.SENSE]: {
-    [STRAND_END.LEFT]: TERMINUS.THREE_PRIME,
-    [STRAND_END.RIGHT]: TERMINUS.FIVE_PRIME
-  },
-  [STRAND.ANTISENSE]: {
-    [STRAND_END.LEFT]: TERMINUS.FIVE_PRIME,
-    [STRAND_END.RIGHT]: TERMINUS.THREE_PRIME
-  }
-} as const;

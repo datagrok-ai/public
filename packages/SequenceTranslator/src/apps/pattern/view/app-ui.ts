@@ -238,12 +238,12 @@ export class PatternLayoutHandler {
 
       const patternSettings = {
         patternName: getShortName(patternNameInput.value),
-        isAntisenseStrandActive: createAsStrand.value!,
-        bases: baseInputValues,
-        phosphorothioateLinkages: ptoLinkageValues,
-        terminalModifications: terminalModificationValues,
-        comment: patternCommentInput.value,
-        modificationsWithNumericLabels,
+        isAntisenseStrandIncluded: createAsStrand.value!,
+        nucleotideSequences: baseInputValues,
+        phosphorothioateLinkageFlags: ptoLinkageValues,
+        strandTerminusModifications: terminalModificationValues,
+        patternComment: patternCommentInput.value,
+        nucleotidesWithNumericLabels: modificationsWithNumericLabels,
       } as PatternConfiguration;
 
       const svg = renderNucleotidePattern(patternSettings);

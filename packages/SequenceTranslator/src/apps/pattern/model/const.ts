@@ -10,12 +10,29 @@ export const STRAND_LABEL: Record<StrandType, string> = {
   [STRAND.ANTISENSE]: 'Anti sense',
 };
 
+export const enum STRAND_END {
+  LEFT,
+  RIGHT,
+};
+
+export const STRAND_ENDS = [STRAND_END.LEFT, STRAND_END.RIGHT] as const;
+
 export const enum TERMINUS {
   FIVE_PRIME = '5\'',
   THREE_PRIME = '3\'',
 };
 export const TERMINI = [TERMINUS.THREE_PRIME, TERMINUS.FIVE_PRIME] as const;
 
+export const STRAND_TO_END_TERMINUS_MAP = {
+  [STRAND.SENSE]: {
+    [STRAND_END.LEFT]: TERMINUS.THREE_PRIME,
+    [STRAND_END.RIGHT]: TERMINUS.FIVE_PRIME
+  },
+  [STRAND.ANTISENSE]: {
+    [STRAND_END.LEFT]: TERMINUS.FIVE_PRIME,
+    [STRAND_END.RIGHT]: TERMINUS.THREE_PRIME
+  }
+} as const;
 
 export const enum SEQUENCE_LENGTH {
   DEFAULT = 23,
