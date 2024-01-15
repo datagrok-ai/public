@@ -25,5 +25,5 @@ Provides access to the
 
 See also:
 
-* [Data connection](../../access.md#data-connection)
-* [CoreWeave](https://docs.coreweave.com/storage/object-storage)
+* [File shares](../files.mdx)
+* [Azure](https://azure.microsoft.com/en-us)

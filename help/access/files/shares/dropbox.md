@@ -21,6 +21,5 @@ Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](fi
 
 See also:
 
-* [Data connection](../../access.md#data-connection)
+* [File shares](../files.mdx)
 * [Dropbox](https://www.dropbox.com)
-* [Files](files.md)
