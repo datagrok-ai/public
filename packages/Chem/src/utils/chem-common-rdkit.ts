@@ -17,7 +17,7 @@ export let _rdKitService: RdKitService;
 export let _webRoot: string | null;
 export let moduleInitialized = false;
 
-const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
+export const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
   clearBackground: false,
   offsetx: 0,
   offsety: 0,

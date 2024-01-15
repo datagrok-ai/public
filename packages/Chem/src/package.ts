@@ -70,7 +70,7 @@ import {getEmbeddingColsNames}
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-
+import { drawMoleculeLabels } from './rendering/molecule-label';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -522,8 +522,10 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
 ): Promise<DG.Viewer | undefined> {
-  return runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options,
+  const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options,
     preprocessingFunction, clusterEmbeddings);
+  drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
+  return res;
 }
 
 
@@ -699,9 +701,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   }
 
   const runActCliffs = async (): Promise<void> => {
-    await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs', activities, similarity,
+    const sp = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs', activities, similarity,
       similarityMetric, methodName, options, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']},
       preprocessingFunction, createTooltipElement, createPropPanelElement, undefined);
+    const size = sp.getOptions().look['sizeColumnName'];
+    drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, -1, 100, 105, size);
   };
 
   const axesNames = getEmbeddingColsNames(table);
