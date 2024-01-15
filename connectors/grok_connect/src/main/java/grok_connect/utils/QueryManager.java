@@ -26,11 +26,10 @@ public class QueryManager {
             .create();
     public static final String FETCH_SIZE_KEY = "connectFetchSize";
     public static final String INIT_FETCH_SIZE_KEY = "initConnectFetchSize";
-    public static final String DRY_RUN_KEY = "dryRun";
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
     private static final int MAX_FETCH_SIZE = 100000;
     private static final int MIN_FETCH_SIZE = 100;
-    public boolean dryRun = false;
+    public boolean isDebug;
     private final JdbcDataProvider provider;
     private final Logger logger;
     private final QueryLogger queryLogger;
@@ -54,10 +53,11 @@ public class QueryManager {
         query = gson.fromJson(message, FuncCall.class);
         query.setParamValues();
         query.afterDeserialization();
+        isDebug = query.debugQuery;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
         resultSetManager = provider.getResultSetManager();
         initParams();
-        if (dryRun)
+        if (isDebug)
             initMessage = message;
         logger.debug("Deserialized and preprocessed call");
     }
@@ -161,7 +161,6 @@ public class QueryManager {
         query.options.entrySet().removeIf(e -> ((Map.Entry)e).getValue() == null);
         setFetchSize(query.options.getOrDefault(FETCH_SIZE_KEY, "").toString());
         setInitFetchSize(query.options.getOrDefault(INIT_FETCH_SIZE_KEY, "").toString());
-        dryRun = Boolean.parseBoolean(query.options.getOrDefault(DRY_RUN_KEY, false).toString());
     }
 
     private void setFetchSize(String optionValue) {

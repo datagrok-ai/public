@@ -22,7 +22,7 @@ public class SessionHandler {
     private static final String MESSAGE_START = "QUERY";
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
     private static final String END_MESSAGE = "EOF";
-    private static final String SIZE_RECIEVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
+    private static final String SIZE_RECEIVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
     private final Session session;
     private final ExecutorService threadPool;
     private final QueryLogger queryLogger;
@@ -65,7 +65,7 @@ public class SessionHandler {
             logger.debug("Received message with json call from the server");
             message = message.substring(6);
             queryManager = new QueryManager(message, queryLogger);
-            if (queryManager.dryRun) {
+            if (queryManager.isDebug) {
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.START), "Running dry run...");
                 for (int i = 0; i < 2; i++) {
                     logger.debug("Running #{} dry run {} logging dataframe filling times...", i + 1, i == 0 ? "without" : "with");
@@ -76,14 +76,9 @@ public class SessionHandler {
             }
 
             queryManager.initResultSet(queryManager.getQuery());
-
-            if (queryManager.isResultSetInitialized())
-                dataFrame = queryManager.getSubDF(dfNumber);
-            else
-                dataFrame = new DataFrame();
-
+            dataFrame = queryManager.isResultSetInitialized() ? queryManager.getSubDF(dfNumber) : new DataFrame();
         }
-        else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
+        else if (message.startsWith(SIZE_RECEIVED_MESSAGE)) {
             if (!queryManager.isFinished)
                 fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
             Marker start = EventType.SOCKET_BINARY_DATA_EXCHANGE.getMarker(dfNumber, EventType.Stage.START);
@@ -107,7 +102,7 @@ public class SessionHandler {
                 firstTry = true;
                 oneDfSent = true;
                 if (queryManager.isResultSetInitialized() && !queryManager.isFinished) {
-                    logger.debug("-- GrokConnect thread is doing nothing. Blocking thread to receive next dataframe --");
+                    logger.debug("-- GrokConnect thread is doing nothing. Blocking to receive next dataframe --");
                     dataFrame = fdf.get();
                     logger.debug("-- Received next dataframe from executing thread --");
                     if (dataFrame.rowCount != 0) dfNumber++;

@@ -24,8 +24,7 @@ public class FuncCall {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void afterDeserialization() {
-        this.debugQuery = Boolean.parseBoolean(options.getOrDefault(DEBUG_QUERY_KEY, Boolean.FALSE).toString()) ;
+        this.debugQuery = options.get(DEBUG_QUERY_KEY) != null && options.get(DEBUG_QUERY_KEY).equals(Boolean.TRUE);
     }
 }
