@@ -283,10 +283,14 @@ export class DimReductionBaseEditor {
     ): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
-        const param: IDimReductionParam = (params as any)[it];
-        const input = ui.floatInput(param.uiName, param.value, () => {
-          param.value = input.value;
-        });
+        const param: IDimReductionParam | IDimReductionParam<string> = (params as any)[it];
+        const input = param.type === 'string' ?
+          ui.stringInput(param.uiName, param.value ?? '', () => {
+            param.value = (input as DG.InputBase<string>).value;
+          }) :
+          ui.floatInput(param.uiName, param.value as any, () => {
+            param.value = input.value;
+          });
         ui.tooltip.bind(input.root, param.tooltip);
         paramsForm.append(input.root);
       });

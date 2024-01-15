@@ -57,7 +57,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { RandomFn } from './umap';
+import {RandomFn} from './umap';
 import * as utils from './utils';
 
 export type Heap = number[][][];
@@ -133,17 +133,16 @@ export function heapPush(
   row = Math.floor(row);
   const indices = heap[0][row];
   const weights = heap[1][row];
-  const isNew = heap[2][row];
+  //const isNew = heap[2][row];
 
-  if (weight >= weights[0]) {
+  if (weight >= weights[0])
     return 0;
-  }
+
 
   // Break if we already have this element.
   for (let i = 0; i < indices.length; i++) {
-    if (index === indices[i]) {
+    if (index === indices[i])
       return 0;
-    }
   }
 
   return uncheckedHeapPush(heap, row, weight, index, flag);
@@ -167,9 +166,9 @@ export function uncheckedHeapPush(
   const weights = heap[1][row];
   const isNew = heap[2][row];
 
-  if (weight >= weights[0]) {
+  if (weight >= weights[0])
     return 0;
-  }
+
 
   // Insert val at position zero
   weights[0] = weight;
@@ -187,23 +186,20 @@ export function uncheckedHeapPush(
     if (ic1 >= heapShape2) {
       break;
     } else if (ic2 >= heapShape2) {
-      if (weights[ic1] > weight) {
+      if (weights[ic1] > weight)
         iSwap = ic1;
-      } else {
+      else
         break;
-      }
     } else if (weights[ic1] >= weights[ic2]) {
-      if (weight < weights[ic1]) {
+      if (weight < weights[ic1])
         iSwap = ic1;
-      } else {
+      else
         break;
-      }
     } else {
-      if (weight < weights[ic2]) {
+      if (weight < weights[ic2])
         iSwap = ic2;
-      } else {
+      else
         break;
-      }
     }
 
     weights[i] = weights[iSwap];
@@ -234,9 +230,9 @@ export function buildCandidates(
   const candidateNeighbors = makeHeap(nVertices, maxCandidates);
   for (let i = 0; i < nVertices; i++) {
     for (let j = 0; j < nNeighbors; j++) {
-      if (currentGraph[0][i][j] < 0) {
+      if (currentGraph[0][i][j] < 0)
         continue;
-      }
+
       const idx = currentGraph[0][i][j];
       const isn = currentGraph[2][i][j];
       const d = utils.tauRand(random);
@@ -277,7 +273,7 @@ export function deheapSort(heap: Heap) {
       siftDown(distHeap, indHeap, distHeapIndex, 0);
     }
   }
-  return { indices, weights };
+  return {indices, weights};
 }
 
 /**
@@ -296,12 +292,12 @@ function siftDown(
     const rightChild = leftChild + 1;
     let swap = elt;
 
-    if (heap1[swap] < heap1[leftChild]) {
+    if (heap1[swap] < heap1[leftChild])
       swap = leftChild;
-    }
-    if (rightChild < ceiling && heap1[swap] < heap1[rightChild]) {
+
+    if (rightChild < ceiling && heap1[swap] < heap1[rightChild])
       swap = rightChild;
-    }
+
 
     if (swap === elt) {
       break;
