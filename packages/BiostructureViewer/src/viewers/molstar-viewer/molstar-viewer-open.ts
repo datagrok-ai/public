@@ -16,6 +16,18 @@ import {VolumeIsovalueInfo} from 'molstar/lib/apps/viewer';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {molecule3dFileExtensions} from './consts';
+import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {_package} from '../../package';
+
+export type LigandData = {
+  data: string,
+  format: BuiltInTrajectoryFormat | TrajectoryFormatProvider,
+  rowIdx: number
+};
+
+/** For molstar entities */
+const LIGAND_LABEL: string = 'ligand';
 
 enum ParsedParts {
   format = 'format', // No specific treatment
@@ -28,10 +40,48 @@ enum ParsedParts {
   // density = 'density',
 }
 
-export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: BiostructureData): Promise<void> {
-  if (!dataEff) return;
+export interface ISplash {
+  close(): void;
+}
 
-  const {binary} = molecule3dFileExtensions[dataEff.ext];
+export async function removeVisualsData(
+  plugin: PluginUIContext, structureRefs: string[] | null, caller?: string
+): Promise<void> {
+  _package.logger.debug(`removeVisualsData(${caller ? ` <- ${caller}, ` : ''}` +
+    `structureRefs = ${JSON.stringify(structureRefs)} )`);
+  await Promise.all((structureRefs ?? []).map((ref) => {
+    plugin.commands.dispatch(PluginCommands.State.RemoveObject,
+      {
+        state: plugin.state.data,
+        ref: ref,
+      });
+  }));
+}
+
+/** Adds ligand and returns component keys. single component has multiple refs when created manually */
+export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandData, _color: DG.Color | null
+): Promise<string[]> {
+  const ligandLabel: string = `<Ligand at row ${ligand.rowIdx}>`;
+  const _molData = await plugin.builders.data.rawData({data: ligand.data, label: LIGAND_LABEL});
+  const _molTrajectory = await plugin.builders.structure.parseTrajectory(_molData, ligand.format);
+  const _model = await plugin.builders.structure.createModel(_molTrajectory);
+  const _structure = await plugin.builders.structure.createStructure(_model);
+  const _component = await plugin.builders.structure.tryCreateComponentStatic(
+    _structure, 'ligand', {label: ligandLabel});
+  await plugin.builders.structure.hierarchy.applyPreset(_molTrajectory, 'default',
+    {representationPreset: 'polymer-and-ligand'});
+  return [_molData.ref, _molTrajectory.ref, _model.ref, _structure.ref, _component!.ref];
+}
+
+export async function parseAndVisualsData(
+  plugin: PluginUIContext, dataEff: BiostructureData, caller?: string
+): Promise<string[]> {
+  const logPrefix = `parseAndVisualsData(${caller ? ` <- ${caller} ` : ''})`;
+  if (!dataEff)
+    throw new Error(`Argument null exception 'dataEff'.`);
+
+  const refListRes: string[] = [];
+  const binary = dataEff.binary !== undefined ? dataEff.binary : molecule3dFileExtensions[dataEff.ext].binary;
   const data: PluginStateObject.Data.Binary | PluginStateObject.Data.String = binary ?
     new PluginStateObject.Data.Binary(dataEff.data as Uint8Array) :
     new PluginStateObject.Data.String(dataEff.data as string);
@@ -43,7 +93,7 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Bios
 
   const entryId = uuidv4();
   let dataVal: BiostructureData;
-  if (dataEff.ext === 'pdb' && dataEff.binary) {
+  if (dataEff.binary && (dataEff.ext === 'pdb' || dataEff.ext === 'pdbqt')) {
     dataVal = {
       binary: false, ext: dataEff.ext, options: dataEff.options,
       data: (new TextDecoder()).decode(dataEff.data as Uint8Array)
@@ -53,7 +103,9 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Bios
 
   const _data = await plugin.builders.data.rawData(
     {data: dataVal.data, label: dataVal.options?.dataLabel});
+  refListRes.push(_data.ref);
   const parsed = await dataProvider.parse(plugin, _data, {entryId: entryId});
+  // refListRes.push(parsed.ref);
 
   if (parsed.hasOwnProperty(ParsedParts.trajectory) || parsed.hasOwnProperty(ParsedParts.structure) ||
     parsed.hasOwnProperty(ParsedParts.topology) || parsed.hasOwnProperty(ParsedParts.shape) ||
@@ -61,7 +113,13 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Bios
   ) {
     if (dataProvider.visuals) {
       const visualsPromise = dataProvider.visuals(plugin, parsed);
-      if (visualsPromise) await visualsPromise;
+      if (visualsPromise) {
+        const visuals = await visualsPromise;
+        if (!visuals || !('structure' in visuals) || !('ref' in visuals['structure']))
+          _package.logger.warning(`${logPrefix}, unexpected visuals without .structure.ref`);
+        else
+          refListRes.push(visuals.structure.ref);
+      }
     }
   }
 
@@ -77,7 +135,7 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Bios
     }];
 
     for (const iso of isovalues) {
-      repr
+      const reprRes = repr
         .to(parsed.volumes?.[iso.volumeIndex ?? 0] ?? parsed.volume)
         .apply(
           StateTransforms.Representation.VolumeRepresentation3D,
@@ -96,10 +154,37 @@ export async function parseAndVisualsData(plugin: PluginUIContext, dataEff: Bios
     }
 
     await repr.commit();
+    const k = 42;
   }
 
   const unhandledParsedPartList = Object.getOwnPropertyNames(parsed)
     .filter((propName) => !(Object.values(ParsedParts) as string[]).includes(propName));
   if (unhandledParsedPartList.length > 0)
     throw new Error(`Unhandled parsed parts '${JSON.stringify(unhandledParsedPartList)}'.`);
+
+  _package.logger.debug(`${logPrefix} -> structureRefs = ${JSON.stringify(refListRes)} `);
+  return refListRes;
+}
+
+export function buildSplash(root: HTMLElement, description: string): ISplash {
+  const indicator = ui.loader();
+  indicator.style.cssText = 'margin: 0 auto; padding-right:50px;';
+
+  const panel = ui.divV([
+    indicator,
+    ui.p(description),
+  ], {style: {textAlign: 'center'}});
+
+  const loaderEl = ui.div([panel], 'bsv-modal-background');
+  loaderEl.style.cssText = 'display:flex; justify-content:center; align-items:center; color:white';
+
+  root.append(loaderEl);
+
+  return new class implements ISplash {
+    constructor(
+      private readonly el: HTMLElement,
+    ) {};
+
+    close(): void { this.el.remove(); }
+  }(loaderEl);
 }

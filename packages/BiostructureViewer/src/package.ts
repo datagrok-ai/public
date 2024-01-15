@@ -12,7 +12,7 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
-import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
@@ -40,6 +40,7 @@ import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {Pdbqt} from './utils/pdbqt-parser';
 import {viewMolstarUI} from './viewers/molstar-viewer/utils';
+import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -306,6 +307,17 @@ export async function ligandsWithBiostructureApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Ligands with Biostructure app');
   try {
     const app = new LigandsWithBiostructureApp('ligandsWithBiostructureApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: biostructureDataProviderApp
+export async function biostructureDataProviderApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Biostructure data provider app');
+  try {
+    const app = new BiostructureDataProviderApp();
     await app.init();
   } finally {
     pi.close();
@@ -616,4 +628,66 @@ export async function readAsTextDapi(file: string): Promise<string> {
   if (!exists)
     throw new Error(`File not found '${file}'.`);
   return resStr;
+}
+
+// -- Data provider --
+
+//name: RCSB PDB
+//description: Get biostructure by id as PDB
+//meta.dataProvider: Molecule3D
+//input: string id
+//output: string result
+export async function getBiostructureRcsbPdb(id: string): Promise<string> {
+  const url = `https://files.rcsb.org/download/${id}.pdb`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(response.statusText);
+  const data: string = await response.text();
+  return BiostructureDataJson.fromData({binary: false, data: data, ext: 'pdb', options: {name: id}});
+}
+
+//name: RCSB mmCIF
+//description: Get biostructure by id as mmCIF
+//meta.dataProvider: Molecule3D
+//meta.cache: client
+//meta.invalidateOn: 0 0 1 * * ?
+//input: string id
+//output: string result
+export async function getBiostructureRcsbMmcif(id: string): Promise<string> {
+  const url = `https://files.rcsb.org/download/${id}.cif`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(response.statusText);
+  const data: string = await response.text();
+  return BiostructureDataJson.fromData({binary: false, data: data, ext: 'cif', options: {name: id}});
+}
+
+//name: RCSB bCIF
+//description: Get biostructure by id as BinaryCIF
+//meta.dataProvider: Molecule3D
+//meta.cache: client
+//meta.invalidateOn: 0 0 1 * * ?
+//input: string id ='1QBS'
+//output: string result
+export async function getBiostructureRcsbBcif(id: string): Promise<string> {
+  const url = `https://models.rcsb.org/${id}.bcif`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(response.statusText);
+  const data: ArrayBuffer = await response.arrayBuffer();
+  const dataA = new Uint8Array(data, 0, data.byteLength);
+  return BiostructureDataJson.fromData({binary: true, data: dataA, ext: 'bcif', options: {name: id}});
+}
+
+//name: biostructureDataToJson
+//description: Packs BiostructureData value into JSON string
+//input: bool binary
+//input: object data
+//input: string ext
+//input: map options {optional: true}
+//output: string result
+export function biostructureDataToJson(
+  binary: boolean, data: string | Uint8Array, ext: string, options: object
+): string {
+  return BiostructureDataJson.fromData({binary, data, ext, options});
 }

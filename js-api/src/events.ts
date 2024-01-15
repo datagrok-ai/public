@@ -7,7 +7,7 @@ import {FileInfo, Package} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
 import {View, ViewInfo, ViewLayout} from './views/view';
 import {Viewer} from "./viewer";
-import {Column} from "./dataframe";
+import {Column, DataFrame} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 
@@ -109,9 +109,9 @@ export class Events {
   get onDialogShown(): rxjs.Observable<Dialog> { return __obs('d4-dialog-showed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/global-events} */
-  get onTableAdded(): rxjs.Observable<any> { return __obs('d4-table-added'); }
+  get onTableAdded(): rxjs.Observable<EventData<DataFrameArgs>> { return __obs('d4-table-added'); }
 
-  get onTableRemoved(): rxjs.Observable<any> { return __obs('d4-table-removed'); }
+  get onTableRemoved(): rxjs.Observable<EventData<DataFrameArgs>> { return __obs('d4-table-removed'); }
 
   get onQueryStarted(): rxjs.Observable<any> { return __obs('d4-query-started'); }
 
@@ -332,4 +332,8 @@ export class ColumnsArgs extends EventData {
 export interface GridCellArgs {
   gridCell: GridCell;
   link: string;
+}
+
+export interface DataFrameArgs {
+  dataFrame: DataFrame;
 }

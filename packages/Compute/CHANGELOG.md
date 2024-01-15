@@ -1,5 +1,22 @@
 # Compute changelog
 
+## 1.19.0 (2024-01-08)
+
+### Features
+
+- RFV: Added `graphics` type support
+- RFV: Exposed feature-flags
+
+### Bug fixes
+
+- RFV: Fixed bug for string default values
+
+## 1.18.0 (2023-12-25)
+
+- RFV: Added input form adaptiveness
+- RFV: Renamed validator tag to `validatorFunc`
+- RFV: Added `nullable` tag for inputs 
+
 ## 1.17.3 (2023-11-22)
 
 ### Features:

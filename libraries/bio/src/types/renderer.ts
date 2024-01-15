@@ -7,7 +7,7 @@ import {Observable} from 'rxjs';
 export interface IRenderer {
   get onRendered(): Observable<void>;
 
-  invalidate(): void;
+  invalidate(caller?: string): void;
 
   /** @param timeout  Default 5000 ms */
   awaitRendered(timeout?: number): Promise<void>;

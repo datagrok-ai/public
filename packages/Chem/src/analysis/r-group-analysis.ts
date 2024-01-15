@@ -110,8 +110,9 @@ export function rGroupAnalysis(col: DG.Column): void {
                 mol?.delete();
               }
             }
-            const rCol = DG.Column.fromStrings(prefixIdx ? `${resCol.name}_${prefixIdx}` : resCol.name, molsArray);
-
+            const rColName = prefixIdx ? `${resCol.name}_${prefixIdx}` : resCol.name;
+            resCol.name = rColName;
+            const rCol = DG.Column.fromStrings(rColName, molsArray);
             rCol.semType = DG.SEMTYPE.MOLECULE;
             rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
             col.dataFrame.columns.add(rCol);

@@ -34,7 +34,7 @@ const JSONTable = () => (<table>
     <thead>
     <tr>
         {['Name', 'Date', 'Version', 'Summary'].map((header, index) => (<th key={'header' + index} style={{
-            width: index === 1 ? 110 : "auto",
+            width: index === 1 ? 112 : "auto",
         }}>{header}</th>))}
     </tr>
     </thead>

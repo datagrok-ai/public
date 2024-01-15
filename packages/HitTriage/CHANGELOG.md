@@ -1,5 +1,13 @@
 # HitTriage changelog
 
+## 1.1.3 (2023-12-27)
+
+Fix incompatibility with old api version
+
+## 1.1.2 (2023-12-26)
+
+Hit Triage application improvements
+
 ## 1.1.1 (2023-11-20)
 
 Hit Design application improvements

@@ -30,6 +30,13 @@ import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = <any>window;
 
+export class ComponentBuildInfo {
+  branch: string = '';
+  commit: string = '';
+  date: string = '';
+  version: string = '';
+}
+
 /**
  * Exposes Datagrok's server-side functionality.
  *

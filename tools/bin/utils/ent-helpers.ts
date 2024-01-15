@@ -19,7 +19,7 @@ const func = (funcName: string, isPanel: boolean = false) => {
   (isPanel ? ',\nhttps://datagrok.ai/help/develop/how-to/add-info-panel\n' : '\n') +
   'See examples at https://public.datagrok.ai/functions' +
   (isPanel ? ',\nhttps://public.datagrok.ai/js/samples/functions/info-panels/info-panels' : '');
-}
+};
 
 const query = (queryName: string) => `
 The query ${queryName} has been added successfully
@@ -48,7 +48,7 @@ See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewe
 https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers`;
 
 const _package = (ts: boolean) =>
-ts ? '' : 'Consider TypeScript as a language for package development, to start over, run `grok create` with the `--ts` flag\n' +
+  ts ? '' : 'Consider TypeScript as a language for package development, to start over, run `grok create` with the `--ts` flag\n' +
 'Likely next steps: `grok add` to add functionality, `grok publish` to upload the package';
 
 const test = (dir: string) => `Tests have been added successfully to ${dir}

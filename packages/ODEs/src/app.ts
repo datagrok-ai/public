@@ -331,8 +331,9 @@ export async function runSolverApp() {
   editorView.dom.style.overflow = 'auto';
   editorView.dom.style.height = '100%';
 
-  solverView.dockManager.dock(div, 'left');
+  solverView.dockManager.dock(div, 'left');  
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
+  await solve();
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 

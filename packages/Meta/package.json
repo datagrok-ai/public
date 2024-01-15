@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.5",
+  "version": "3.7.24",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -673,6 +673,9 @@
         },
         "1.8.8": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.8.9": {
+          "datagrok-api": "^1.17.3"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -840,6 +843,9 @@
           "datagrok-api": "^1.15.2"
         },
         "1.2.4": {
+          "datagrok-api": "^1.15.2"
+        },
+        "1.2.5": {
           "datagrok-api": "^1.15.2"
         }
       },
@@ -1212,6 +1218,9 @@
         },
         "1.17.0": {
           "datagrok-api": "^1.16.4"
+        },
+        "1.17.1": {
+          "datagrok-api": "^1.17.9"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1793,6 +1802,12 @@
           "datagrok-api": "^1.17.0"
         },
         "1.17.4": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.18.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.19.0": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -2632,6 +2647,21 @@
         },
         "2.11.19": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.20": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.21": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.22": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.23": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.24": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3057,6 +3087,12 @@
         },
         "2.1.22": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.23": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.24": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -3120,6 +3156,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.0.5": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.0.6": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -3327,6 +3366,12 @@
         },
         "1.0.18": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.0.21": {
+          "datagrok-api": "^1.17.9"
+        },
+        "1.0.22": {
+          "datagrok-api": "^1.17.9"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
@@ -3395,6 +3440,9 @@
           "datagrok-api": "^1.16.0"
         },
         "1.1.7": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.1.8": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -3664,6 +3712,12 @@
         },
         "1.1.1": {
           "datagrok-api": "^1.16.2"
+        },
+        "1.1.2": {
+          "datagrok-api": "^1.16.2"
+        },
+        "1.1.3": {
+          "datagrok-api": "^1.16.2"
         }
       },
       "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
@@ -3704,6 +3758,9 @@
     "diff-studio": {
       "dependencies": {
         "1.0.1": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.0.2": {
           "datagrok-api": "^1.16.0"
         }
       },

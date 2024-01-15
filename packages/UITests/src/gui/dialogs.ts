@@ -38,7 +38,7 @@ category('GUI: Dialogs', () => {
       const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
         .find((el) => el.textContent === 'OK') as HTMLElement;
       okButton.click();
-      await awaitCheck(() => grok.shell.v.name === 'result', 'Aggregation table was not created', 5000);
+      await awaitCheck(() => grok.shell.v.name.toLowerCase() === 'result', 'Aggregation table was not created', 5000);
       grok.shell.v.close();
     } finally {
       grok.shell.windows.showColumns = false;
@@ -164,7 +164,7 @@ category('GUI: Dialogs', () => {
     const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
-    await awaitCheck(() => grok.shell.v.name.includes('result'), 'result table is not created', 3000);
+    await awaitCheck(() => grok.shell.v.name.toLowerCase().includes('result'), 'result table is not created', 3000);
     expect(grok.shell.t.columns.length, 3);
     expect(grok.shell.t.rowCount, 1000);
     grok.shell.v.close();

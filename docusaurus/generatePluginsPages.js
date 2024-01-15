@@ -4,6 +4,7 @@ const path = require('path');
 const exclude = ['meta', '.*tests']
 
 const useLatest = (process.argv[2] === 'latest' || false);
+const createFile = (process.argv[2] === 'create' || false);
 
 const getDirectories = async source => (fs.readdirSync(source, {withFileTypes: true}))
     .filter(dirent => dirent.isDirectory())
@@ -49,17 +50,12 @@ async function getChangelog(filename, version) {
                 summary = matches.join('\n');
             }
         }
-        const dateMatcher = new RegExp(`## ${version} \\((?<date>\\d{4}-\\d{2}-\\d{2}|WIP)\\)`, "g");
+        const dateMatcher = new RegExp(`## ${version} \\((?<date>\\d{4}-\\d{2}-\\d{2})\\)`, "g");
         matches = Array.from(content.matchAll(dateMatcher), x => x[1].trim());
         changelogDate = matches[0];
     }
 
     return [changelog, summary, changelogDate];
-}
-
-function string_between_strings(startStr, endStr, str) {
-    const pos = str.indexOf(startStr) + startStr.length;
-    return str.toString().substring(pos, str.indexOf(endStr, pos));
 }
 
 const rootDir = path.resolve('../');
@@ -70,7 +66,11 @@ async function getPackages() {
     let packagesList = [];
     let jsonContent = [];
     if (useLatest) {
-        jsonContent = JSON.parse(fs.readFileSync(jsonTemplateLoc, 'utf8'));
+        try {
+            jsonContent = JSON.parse(fs.readFileSync(jsonTemplateLoc, 'utf8'));
+        } catch (err) {
+            console.log(err);
+        }
     }
     if (useLatest) {
         const packagesDirs = await getDirectories('../packages');
@@ -82,7 +82,7 @@ async function getPackages() {
                         name: packageJsonContent.name,
                         version: packageJsonContent.version,
                         displayName: packageJsonContent.friendlyName || packageJsonContent.fullName,
-                        sourceDir: `packages/${d}`
+                        dir: `packages/${d}`
                     })
                 }
             } catch (e) {
@@ -199,45 +199,51 @@ async function getPackages() {
     return jsonContent;
 }
 
-getPackages().then((packages) => {
-    fs.writeFileSync(jsonTemplateLoc, JSON.stringify(packages.slice(0, 1000), null, 2) + '\n');
-    for (const p of packages.reduce(function (acc, cur) {
-        return acc.filter(function (obj) {
-            return obj.name !== cur.name
-        }).concat([cur])
-    }, [])) {
-        const source = `${rootDir}/${p.dir}/CHANGELOG.md`
-        const dest = `${helpDirLoc}/${p.name.replaceAll(' ', '_')}.md`
-        if (fs.existsSync(source)) {
-            fs.copyFile(source, dest, async function (err) {
-                if (err) {
-                    console.log(err);
-                } else {
-                    fs.readFile(dest, 'utf-8', async function (err, data) {
-                        if (err) {
-                            return console.log(err);
-                        }
-                        const exist = await fileContainsContent(dest, `title: ${p.name}`)
-                        if (!exist) {
-                            fs.open(dest, 'w+', function (err, fd) {
-                                if (err) throw err;
-                                const buffer = Buffer.from(`---\ntitle: ${p.name}\n---\n\n`);
-                                fs.write(fd, buffer, 0, buffer.length, 0, function (err) {
+if (createFile) {
+    if (!fs.existsSync(jsonTemplateLoc)) {
+        fs.writeFileSync(jsonTemplateLoc, JSON.stringify([], null, 2) + '\n');
+    }
+} else {
+    getPackages().then((packages) => {
+        fs.writeFileSync(jsonTemplateLoc, JSON.stringify(packages.slice(0, 1000), null, 2) + '\n');
+        for (const p of packages.reduce(function (acc, cur) {
+            return acc.filter(function (obj) {
+                return obj.name !== cur.name
+            }).concat([cur])
+        }, [])) {
+            const source = `${rootDir}/${p.dir}/CHANGELOG.md`
+            const dest = `${helpDirLoc}/${p.name.replaceAll(' ', '_')}.md`
+            if (fs.existsSync(source)) {
+                fs.copyFile(source, dest, async function (err) {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        fs.readFile(dest, 'utf-8', async function (err, data) {
+                            if (err) {
+                                return console.log(err);
+                            }
+                            const exist = await fileContainsContent(dest, `title: ${p.name}`)
+                            if (!exist) {
+                                fs.open(dest, 'w+', function (err, fd) {
                                     if (err) throw err;
-                                });
-                                const dataBuffer = Buffer.from(data.replaceAll(/(\.\.\/)+help/g, '/help').replaceAll(/\.md/g, ''))
-                                fs.write(fd, dataBuffer, 0, dataBuffer.length, buffer.length, function (err) {
-                                    if (err) throw err;
-                                    fs.close(fd, function (err) {
+                                    const buffer = Buffer.from(`---\ntitle: ${p.name}\n---\n\n`);
+                                    fs.write(fd, buffer, 0, buffer.length, 0, function (err) {
                                         if (err) throw err;
                                     });
+                                    const dataBuffer = Buffer.from(data.replaceAll(/(\.\.\/)+help/g, '/help').replaceAll(/\.md/g, ''))
+                                    fs.write(fd, dataBuffer, 0, dataBuffer.length, buffer.length, function (err) {
+                                        if (err) throw err;
+                                        fs.close(fd, function (err) {
+                                            if (err) throw err;
+                                        });
+                                    });
                                 });
-                            });
-                        }
-                    });
-                    console.log(`Added plugin ${p.name} changelog to help`)
-                }
-            });
+                            }
+                        });
+                        console.log(`Added plugin ${p.name} changelog to help`)
+                    }
+                });
+            }
         }
-    }
-})
+    })
+}

@@ -11,12 +11,12 @@ export function isPackageDir(dir: string): boolean {
 }
 
 export function kebabToCamelCase(s: string, firstUpper: boolean = true): string {
-  s = s.replace(/-./g, x => x.toUpperCase()[1]);
+  s = s.replace(/-./g, (x) => x.toUpperCase()[1]);
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
 }
 
 export function spaceToCamelCase(s: string, firstUpper: boolean = true): string {
-  s = s.replace(/\s+./g, x => x[x.length - 1].toUpperCase());
+  s = s.replace(/\s+./g, (x) => x[x.length - 1].toUpperCase());
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
 }
 
@@ -36,10 +36,10 @@ export function removeScope(name: string): string {
 }
 
 export function mapURL(conf: Config): Indexable {
-  let urls: Indexable = {};
-  for (let server in conf['servers']) {
+  const urls: Indexable = {};
+  for (const server in conf['servers']) 
     urls[conf['servers'][server]['url']] = server;
-  }
+  
   return urls;
 }
 
@@ -76,9 +76,11 @@ export const replacers: Indexable = {
   PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, kebabToCamelCase(removeScope(name))),
   FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, friendlyNameToName(name)),
   FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, friendlyNameToName(name, false)),
-  PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ? `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
+  PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
+    `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s: string, type: string) => s.replace(/#{OUTPUT_TYPE}/g, type),
-  TYPED_PARAMS: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{TYPED_PARAMS}/g, params.map((p) => `${p.name}: ${p.type}`).join(', '))
+  TYPED_PARAMS: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{TYPED_PARAMS}/g,
+    params.map((p) => `${p.name}: ${p.type}`).join(', ')),
 };
 
 export class TemplateBuilder {
@@ -127,9 +129,9 @@ export const queryExtension = '.sql';
 export const scriptExtensions = ['.jl', '.m', '.py', '.R'];
 export function checkScriptLocation(filepath: string): boolean {
   if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/')) &&
-    scriptExtensions.some((ext: any) => filepath.endsWith(ext))) {
+    scriptExtensions.some((ext: any) => filepath.endsWith(ext))) 
     return false;
-  }
+  
   return true;
 };
 
@@ -187,10 +189,10 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
   const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)\\s+(\\w+)`, 'g');
   const inputs = [];
-  for (let match of script.matchAll(regex)) {
+  for (const match of script.matchAll(regex)) {
     const type = dgToTsTypeMap[match[1]] || 'any';
     const name = match[2];
-    inputs.push({ type, name });
+    inputs.push({type, name});
   }
   return inputs;
 };

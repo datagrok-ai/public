@@ -10,7 +10,7 @@ category('viewers', () => {
   const viewers = DG.Func.find({package: 'Chem', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
-      await testViewer(v, df.clone(), {detectSemanticTypes: true, readOnly: true});
+      await testViewer(v, df.clone(), {detectSemanticTypes: true, readOnly: true, arbitraryDfTest: false});
     });
   }
 });

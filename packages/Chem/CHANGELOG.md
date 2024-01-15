@@ -1,5 +1,20 @@
 # Chem changelog
 
+## 1.8.9 (2023-01-09)
+
+### Features
+
+* Update MinimalLib to 1.2.15 featuring support for RGroups (support for R-group decomposition)
+* Chem: Add ability to specify fingerprint types and cluster embeddings for chemical space
+
+### Bug Fixes
+
+* GROK-14383: Chem | Scaffold Tree: The selection doesn't change on folder node click
+* GROK-14411: Demo: Exception while closing Scaffold Tree
+* GROK-14409: Chem | R-Group Analysis: Error with prefix
+* GROK-14375: Chem | Activity cliffs: Implement scatter plot lines renderer
+* [#2612](https://github.com/datagrok-ai/public/issues/2612): Chem | Scaffold tree: Structure part containing H atom is replaced with '?' in some cases
+
 ## 1.8.8 (2023-12-07)
 
 ### Bug Fixes

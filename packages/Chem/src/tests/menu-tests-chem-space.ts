@@ -8,9 +8,9 @@ import {chemSpace, runChemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import { MALFORMED_DATA_WARNING_CLASS } from '../constants';
+import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 const {jStat} = require('jstat');
 
@@ -55,7 +55,7 @@ category('top menu chem space', async () => {
     try {
       await awaitCheck(() => {
         return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis'
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis';
       },
       'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}

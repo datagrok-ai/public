@@ -18,12 +18,14 @@ import {
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {awaitNgl} from './ngl-viewer-utils';
 import {TwinPviewer} from './twin-p-viewer';
 
 import {_package} from '../package';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -59,6 +61,7 @@ export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | nu
  * https://nglviewer.org/ngl/api/manual/usage/file-formats.html
  */
 export class NglViewer extends DG.JsViewer implements INglViewer {
+  private readonly logger: ILogger;
   private viewed: boolean = false;
   private _onAfterBuildView = new Subject<void>();
 
@@ -86,7 +89,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.helpUrl = '/help/visualize/viewers/ngl';
 
     // -- Data --
-    this.dataJson = this.string(PROPS.dataJson, BiostructureDataJson.null, {
+    this.dataJson = this.string(PROPS.dataJson, defaults.dataJson, {
       category: PROPS_CATS.DATA, userEditable: false,
       description: 'JSON encoded object of BiostructureData type with data value Base64 encoded data',
     });
@@ -113,7 +116,8 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.root.style.textAlign = 'center';
     this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
-    this.viewSyncer = new PromiseSyncer(_package.logger);
+    this.logger = _package.logger;
+    this.viewSyncer = new PromiseSyncer(this.logger);
   }
 
   private static viewerCounter: number = -1;
@@ -201,7 +205,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
           this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.null)
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
 
         // -- Ligand --
@@ -220,7 +224,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         const errMsg = err instanceof Error ? err.message : err.toString();
         const stack = err instanceof Error ? err.stack : undefined;
         grok.shell.error(errMsg);
-        _package.logger.error(errMsg, undefined, stack);
+        this.logger.error(errMsg, undefined, stack);
       } finally {
         this.setDataInProgress = false;
       }
@@ -242,7 +246,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   private async destroyView(caller: string): Promise<void> {
     const callLog = `destroyView( ${caller} )`;
     const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
-    _package.logger.debug(`${callLogPrefix}, start`);
+    this.logger.debug(`${callLogPrefix}, start`);
     if (this.nglDiv && this.stage) {
       await this.destroyViewLigands();
       this.stage.removeAllComponents();
@@ -258,32 +262,32 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     }
 
     if (this.nglDiv) {
-      _package.logger.debug(`${callLogPrefix}, stage removing`);
+      this.logger.debug(`${callLogPrefix}, stage removing`);
       this.stage!.dispose();
       delete this.stage;
       $(this.nglDiv).empty();
       this.nglDiv.remove();
       delete this.nglDiv;
-      _package.logger.debug(`${callLogPrefix}, stage removed`);
+      this.logger.debug(`${callLogPrefix}, stage removed`);
     }
-    _package.logger.debug(`${callLogPrefix}, end`);
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
   private async buildView(caller: string): Promise<void> {
     const callLog = `buildView( ${caller} )`;
     const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
-    _package.logger.debug(`${callLogPrefix}, start`);
+    this.logger.debug(`${callLogPrefix}, start`);
     if (this.dataEff)
       await this.buildViewWithPdb(callLog);
     else
       await this.buildViewWithoutPdb(callLog);
-    _package.logger.debug(`${callLogPrefix}, end`);
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
   private async buildViewWithPdb(caller: string) {
     const callLog = `buildViewWithPdb( ${caller} )`;
     const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
-    _package.logger.debug(`${callLogPrefix}, start`);
+    this.logger.debug(`${callLogPrefix}, start`);
     if (!this.dataEff) throw new Error(`${callLogPrefix}, ` + 'pdbStr is empty');
 
     if (!this.nglDiv) {
@@ -293,10 +297,10 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       });
       this.root.appendChild(this.nglDiv);
 
-      _package.logger.debug(`${callLogPrefix}, stage creating`);
+      this.logger.debug(`${callLogPrefix}, stage creating`);
       this.stage = new ngl.Stage(this.nglDiv);
       await awaitNgl(this.stage, callLogPrefix);
-      _package.logger.debug(`${callLogPrefix}, stage created`);
+      this.logger.debug(`${callLogPrefix}, stage created`);
     }
 
     const stage: ngl.Stage = this.stage!;
@@ -333,21 +337,21 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       this.viewSubs.push(df.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
       await this.buildViewLigands(callLog);
     }
-    _package.logger.debug(`${callLogPrefix}, end`);
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
   private async buildViewWithoutPdb(caller: string) {
     const callLog = `buildViewWithoutPdb( ${caller} )`;
     const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
-    _package.logger.debug(`${callLogPrefix}, start`);
+    this.logger.debug(`${callLogPrefix}, start`);
     // preventing recreate nglDiv once again because of GL nature
     if (this.nglDiv) {
-      _package.logger.debug(`${callLogPrefix}, stage removing`);
+      this.logger.debug(`${callLogPrefix}, stage removing`);
       this.stage!.dispose();
       delete this.stage;
       $(this.nglDiv).empty();
       delete this.nglDiv;
-      _package.logger.debug(`${callLogPrefix}, stage removed`);
+      this.logger.debug(`${callLogPrefix}, stage removed`);
     }
 
     const fileEl: HTMLInputElement = ui.element('input');
@@ -374,7 +378,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
     this.root.appendChild(this.splashDiv);
 
-    _package.logger.debug(`${callLogPrefix}, end`);
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
   private updateView() {
@@ -389,7 +393,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   private handleError(err: any): void {
     const [errMsg, errStack] = errInfo(err);
     grok.shell.error(errMsg);
-    _package.logger.error(errMsg, undefined, errStack);
+    this.logger.error(errMsg, undefined, errStack);
   }
 
   private rootOnSizeChanged(_value: any): void {
@@ -410,17 +414,17 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   private dataFrameOnSelectionChanged(_value: any): void {
-    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
+    this.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
     if (this.showSelectedRowsLigands) this.rebuildViewLigands('dataFrameSelectionChanged()');
   }
 
   private dataFrameOnCurrentRowChanged(_value: any): void {
-    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
+    this.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
     if (this.showCurrentRowLigand) this.rebuildViewLigands('dataFrameOnCurrentRowChanged()');
   }
 
   private dataFrameOnMouseOverRowChanged(_value: any) {
-    _package.logger.debug(`${this.viewerToLog()}.dataFrameOnMouseOverRowChanged() `);
+    this.logger.debug(`${this.viewerToLog()}.dataFrameOnMouseOverRowChanged() `);
 
     if (this.showMouseOverRowLigand) this.rebuildViewLigands('dataFrameOnMouseOverRowChanged()');
   }
@@ -467,7 +471,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   private async buildViewLigands(caller: string): Promise<void> {
     const callLog = `buildViewLigands( ${caller} )`;
     const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
-    _package.logger.debug(`${callLogPrefix}, start`);
+    this.logger.debug(`${callLogPrefix}, start`);
     try {
       if (!this.stage) throw new Error('The stage is not created'); // return; // There is not PDB data
       if (!this.dataFrame || !this.ligandColumnName) return;
@@ -523,7 +527,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       const [errMsg, errStack] = errInfo(err);
       throw new Error(`NglViewer.buildViewLigands() error: ${errMsg}`, {cause: err});
     } finally {
-      _package.logger.debug(`${callLogPrefix}, end`);
+      this.logger.debug(`${callLogPrefix}, end`);
     }
   }
 
