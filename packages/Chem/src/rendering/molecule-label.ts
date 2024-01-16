@@ -3,9 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import { getRdKitModule } from '../package';
 import { RDKIT_COMMON_RENDER_OPTS } from '../utils/chem-common-rdkit';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { getFirstNSymbols } from '../utils/chem-common';
 
 export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column, sp: DG.ScatterPlotViewer, maxPoints: number,
-    smallMarkerSize: number, largeMarkerSize: number, minDistBetweenLabels: number): Promise<void> {
+    smallMarkerSize: number = -1, largeMarkerSize: number, minDistBetweenLabels: number, sizeCol: string = ''): Promise<void> {
 
     let smallMarker = true;
   
@@ -23,13 +24,14 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
           if (counter == 20) {
             sp.setOptions({
               markerDefaultSize: smallMarkerSize,
-              markerType: 'circle'
+              markerType: 'circle',
+              sizeColumnName: sizeCol,
             });
             if (!smallMarker) {
               smallMarker = true;
               setTimeout(() => sp.render(sp.getInfo()['canvas'].getContext('2d')), 10);
             }
-            return; // returning if there are more than max allowed points in total on the screen
+            return; // return if there are more than max allowed points in total on the screen
           }
           else {
             pointsOnScreen[counter] = point;
@@ -54,19 +56,24 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
             if (dist < minDistBetweenLabels) {
                 sp.setOptions({
                     markerDefaultSize: smallMarkerSize,
-                    markerType: 'circle'
-                  });
+                    markerType: 'circle',
+                    sizeColumnName: sizeCol,
+                });
                   if (!smallMarker) {
                     smallMarker = true;
                     setTimeout(() => sp.render(sp.getInfo()['canvas'].getContext('2d')), 10);
                   }
-                  return; // returning if distance between points is less than min allowed
+                  return; // return if distance between points is less than min allowed
             }
           }
         }
       }
   
       const ctxMain = sp.getInfo()['canvas'].getContext('2d') as CanvasRenderingContext2D;
+      //const sizeColName = sizeCol ? sizeCol.startsWith('sali') ? 'sali' : sizeCol : '';
+      ctxMain.textAlign = 'left';
+      //ctxMain.textBaseline = 'top';
+      const textOffset = 20;
       const rdkitModule = getRdKitModule();
    
       for (let i = 0; i < counter; i++) {
@@ -83,7 +90,13 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
           mol.draw_to_canvas_with_highlights(imageHost, JSON.stringify(RDKIT_COMMON_RENDER_OPTS));
           ctxMain.arc(pointsOnScreen[i].x, pointsOnScreen[i].y, Math.floor(largeMarkerSize/2), 0, 2 * Math.PI);
           ctxMain.fill();
-          ctxMain.drawImage(imageHost, pointsOnScreen[i].x - Math.floor(canwasWidth / 2), pointsOnScreen[i].y - Math.floor(canvasHeight / 2));
+          const leftX = pointsOnScreen[i].x - Math.floor(canwasWidth / 2);
+          ctxMain.drawImage(imageHost, leftX, pointsOnScreen[i].y - Math.floor(canvasHeight / 2));
+          if (sizeCol) {
+            ctxMain.fillStyle = `black`;
+            ctxMain.fillText(`${sizeCol}: ${getFirstNSymbols(table.get(sizeCol, pointsOnScreenIdxs[i]), 4)}`, 
+                leftX + textOffset, pointsOnScreen[i].y + Math.floor(canvasHeight / 2));
+          }
           ctxMain.closePath();
         } finally {
           mol?.delete();
@@ -91,6 +104,7 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
       }
 
       sp.setOptions({
+        sizeColumnName: '',
         markerDefaultSize: largeMarkerSize,
         markerType: 'circle border'
       });

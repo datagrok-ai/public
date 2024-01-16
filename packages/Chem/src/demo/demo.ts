@@ -9,15 +9,12 @@ import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {_importSdf} from '../open-chem/sdf-importer';
 import {_package} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
-import {chemSpace, getEmbeddingColsNames} from '../analysis/chem-space';
 import {CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {getSimilaritiesMarix} from '../utils/similarity-utils';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-
-import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
-import {TreeViewGroup} from 'datagrok-api/dg';
+import {getEmbeddingColsNames} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -181,7 +178,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
   _package.files.readAsText('demo_files/similarity_diversity.layout').then((layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
-  })
+  });
   grok.shell.windows.showHelp = true;
   //@ts-ignore
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
@@ -283,10 +280,11 @@ export async function _demoActivityCliffs(): Promise<void> {
       const molecules = table.col('smiles')!;
       const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
       const axesNames = getEmbeddingColsNames(table);
-      scatterPlot = await getActivityCliffs(table, molecules, null as any, axesNames, 'Activity cliffs',
-        table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE,
-        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-        createTooltipElement, createPropPanelElement, undefined, undefined, 0.5);
+      const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+      scatterPlot = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs',
+        table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
+        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
+        createTooltipElement, createPropPanelElement, undefined, 0.5);
       progressBar.close();
       await delay(1000);
     }, {description: 'Results are shown on a scatter plot', delay: 2000})

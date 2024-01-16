@@ -1,23 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '../reduce-dimensionality';
 import {KnownMetrics} from '../typed-metrics';
-import {SHOW_SCATTERPLOT_PROGRESS} from '../functionEditors/seq-space-base-editor';
-import {BYPASS_LARGE_DATA_WARNING} from '../functionEditors/consts';
+import {BYPASS_LARGE_DATA_WARNING, SHOW_SCATTERPLOT_PROGRESS} from '../functionEditors/consts';
 import {Matrix, Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {IDBScanOptions, getDbscanWorker} from '@datagrok-libraries/math';
-import {getEmbeddingColsNames} from '../functionEditors/dimensionality-reducer';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT} from './consts';
 import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
 import {getNormalizedEmbeddings} from './embeddings-space';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
+import {ITSNEOptions, IUMAPOptions} from './multi-column-dim-reducer';
+import {DimReductionMethods} from './types';
 
 export type DimRedUiOptions = {
     [BYPASS_LARGE_DATA_WARNING]?: boolean,
     [SHOW_SCATTERPLOT_PROGRESS]?: boolean,
     fastRowCount?: number,
     scatterPlotName?: string,
+}
+
+export function getEmbeddingColsNames(df: DG.DataFrame) {
+  const axes = ['Embed_X', 'Embed_Y'];
+  const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
+  return axes.map((it) => `${it}_${colNameInd}`);
 }
 
 export async function multiColReduceDimensionality(table: DG.DataFrame, columns: DG.Column[],

@@ -61,7 +61,7 @@ jobs:
       - name: Lint-Fix Markdown
         id: check
         run: |
-          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+          markdownlint-cli2 --fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
 #      - name: Commit package-lock.json

@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {DataFrame} from "./dataframe.js";
+import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
@@ -67,6 +67,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
+  filter: BitSet | undefined;
 
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
@@ -339,6 +340,8 @@ export class JsViewer extends Viewer {
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
   props: ObjectPropertyBag;
+  rowSource: string | undefined;
+  formulaFilter: string | undefined;
 
   /** @constructs JsViewer */
   constructor() {
@@ -358,8 +361,18 @@ export class JsViewer extends Viewer {
     this.props = new ObjectPropertyBag(this);
   }
 
+  addRowSourceAndFormula() {
+    this.rowSource = this.string('rowSource', 'Filtered',
+        { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
+    this.formulaFilter = this.string('formulaFilter', '');
+  }
+
   onFrameAttached(dataFrame: DataFrame): void {
     this.onTableAttached();
+  }
+
+  sourceRowsChanged(): void {
+    this.filter = toJs(api.grok_Viewer_Get_Filter(this.dart));
   }
 
   get root(): HTMLElement { return this._root; }

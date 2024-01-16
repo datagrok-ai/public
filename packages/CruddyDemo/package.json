@@ -1,0 +1,41 @@
+{
+  "name": "cruddydemo",
+  "friendlyName": "CruddyDemo",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-cruddydemo": "webpack && grok publish",
+    "release-cruddydemo": "webpack && grok publish --release",
+    "build-cruddydemo": "webpack",
+    "build": "webpack",
+    "debug-cruddydemo-dev": "webpack && grok publish dev",
+    "release-cruddydemo-dev": "webpack && grok publish dev --release",
+    "debug-cruddydemo-public": "webpack && grok publish public",
+    "release-cruddydemo-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/CruddyDemo"
+  }
+}

@@ -35,7 +35,7 @@ export class SurfacePlot extends EChartViewer {
     const y = this.switch(a, b, 1, this.YArr.type);
     return y || x;
   };
-  filter = () => {
+  plotFilter = () => {
     const ind = Array.from(this.dataFrame.filter.getSelectedIndexes());
     return ind.map((id) => this.rawData[id]);
   };
@@ -270,7 +270,7 @@ export class SurfacePlot extends EChartViewer {
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 
-    if (filter) this.option.series[0].data = this.filter().sort(this.sort);
+    if (filter) this.option.series[0].data = this.plotFilter().sort(this.sort);
     else this.option.series[0].data = this.rawData.sort(this.sort);
     this.chart.setOption(this.option);
   }

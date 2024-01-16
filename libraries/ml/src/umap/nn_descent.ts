@@ -61,7 +61,7 @@ import * as heap from './heap';
 import * as matrix from './matrix';
 import * as tree from './tree';
 import * as utils from './utils';
-import { RandomFn, Vectors, DistanceFn, Vector } from './umap';
+import {RandomFn, Vectors, DistanceFn, Vector} from './umap';
 
 /**
  * Create a version of nearest neighbor descent.
@@ -92,13 +92,13 @@ export function makeNNDescent(distanceFn: DistanceFn, random: RandomFn) {
     if (rpTreeInit) {
       for (let n = 0; n < leafArray.length; n++) {
         for (let i = 0; i < leafArray[n].length; i++) {
-          if (leafArray[n][i] < 0) {
+          if (leafArray[n][i] < 0)
             break;
-          }
+
           for (let j = i + 1; j < leafArray[n].length; j++) {
-            if (leafArray[n][j] < 0) {
+            if (leafArray[n][j] < 0)
               break;
-            }
+
             const d = distanceFn(data[leafArray[n][i]], data[leafArray[n][j]]);
             heap.heapPush(currentGraph, leafArray[n][i], d, leafArray[n][j], 1);
             heap.heapPush(currentGraph, leafArray[n][j], d, leafArray[n][i], 1);
@@ -119,17 +119,17 @@ export function makeNNDescent(distanceFn: DistanceFn, random: RandomFn) {
       let c = 0;
       for (let i = 0; i < nVertices; i++) {
         for (let j = 0; j < maxCandidates; j++) {
-          let p = Math.floor(candidateNeighbors[0][i][j]);
-          if (p < 0 || utils.tauRand(random) < rho) {
+          const p = Math.floor(candidateNeighbors[0][i][j]);
+          if (p < 0 || utils.tauRand(random) < rho)
             continue;
-          }
+
           for (let k = 0; k < maxCandidates; k++) {
             const q = Math.floor(candidateNeighbors[0][i][k]);
             const cj = candidateNeighbors[2][i][j];
             const ck = candidateNeighbors[2][i][k];
-            if (q < 0 || (!cj && !ck)) {
+            if (q < 0 || (!cj && !ck))
               continue;
-            }
+
 
             const d = distanceFn(data[p], data[q]);
             c += heap.heapPush(currentGraph, p, d, q, 1);
@@ -137,9 +137,8 @@ export function makeNNDescent(distanceFn: DistanceFn, random: RandomFn) {
           }
         }
       }
-      if (c <= delta * nNeighbors * data.length) {
+      if (c <= delta * nNeighbors * data.length)
         break;
-      }
     }
     const sorted = heap.deheapSort(currentGraph);
     return sorted;
@@ -173,9 +172,9 @@ export function makeInitializations(distanceFn: DistanceFn) {
     for (let i = 0; i < queryPoints.length; i++) {
       const indices = utils.rejectionSample(nNeighbors, data.length, random);
       for (let j = 0; j < indices.length; j++) {
-        if (indices[j] < 0) {
+        if (indices[j] < 0)
           continue;
-        }
+
         const d = distanceFn(data[indices[j]], queryPoints[i]);
         heap.heapPush(_heap, i, d, indices[j], 1);
       }
@@ -193,9 +192,9 @@ export function makeInitializations(distanceFn: DistanceFn) {
       const indices = tree.searchFlatTree(queryPoints[i], _tree, random);
 
       for (let j = 0; j < indices.length; j++) {
-        if (indices[j] < 0) {
+        if (indices[j] < 0)
           return;
-        }
+
         const d = distanceFn(data[indices[j]], queryPoints[i]);
         heap.heapPush(_heap, i, d, indices[j], 1);
       }
@@ -203,7 +202,7 @@ export function makeInitializations(distanceFn: DistanceFn) {
     return;
   }
 
-  return { initFromRandom, initFromTree };
+  return {initFromRandom, initFromTree};
 }
 
 export type SearchFn = (
@@ -220,7 +219,7 @@ export function makeInitializedNNSearch(distanceFn: DistanceFn) {
     initialization: heap.Heap,
     queryPoints: Vector
   ) {
-    const { indices, indptr } = matrix.getCSR(graph);
+    const {indices, indptr} = matrix.getCSR(graph);
 
     for (let i = 0; i < queryPoints.length; i++) {
       const tried = new Set(initialization[0][i]);
@@ -228,18 +227,18 @@ export function makeInitializedNNSearch(distanceFn: DistanceFn) {
         // Find smallest flagged vertex
         const vertex = heap.smallestFlagged(initialization, i);
 
-        if (vertex === -1) {
+        if (vertex === -1)
           break;
-        }
+
         const candidates = indices.slice(indptr[vertex], indptr[vertex + 1]);
         for (const candidate of candidates) {
           if (
             candidate === vertex ||
             candidate === -1 ||
             tried.has(candidate)
-          ) {
+          )
             continue;
-          }
+
           const d = distanceFn(data[candidate], queryPoints[i]);
           heap.uncheckedHeapPush(initialization, i, d, candidate, 1);
           tried.add(candidate);
@@ -262,9 +261,8 @@ export function initializeSearch(
   const results = heap.makeHeap(queryPoints.length, nNeighbors);
   initFromRandom(nNeighbors, data, queryPoints, results, random);
   if (forest) {
-    for (let tree of forest) {
+    for (const tree of forest)
       initFromTree(tree, data, queryPoints, results, random);
-    }
   }
   return results;
 }

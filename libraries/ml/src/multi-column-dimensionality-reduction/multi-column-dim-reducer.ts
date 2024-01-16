@@ -1,7 +1,7 @@
 import {Coordinates, DistanceMetric, Matrix, Options, Vector, Vectors}
   from '@datagrok-libraries/utils/src/type-declarations';
 import {TSNE} from '@keckelt/tsne';
-import {KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
+import {AvailableDataTypes, AvailableMetrics, KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
 import {DistanceMatrixService, distanceMatrixProxy} from '../distance-matrix';
 import {getAggregationFunction} from '../distance-matrix/utils';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
@@ -10,6 +10,8 @@ import {assert, transposeMatrix} from '@datagrok-libraries/utils/src/vector-oper
 import {SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {DimReductionMethods} from './types';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import seedRandom from 'seedrandom';
+
 export interface IUMAPOptions {
     learningRate?: number;
     nComponents?: number;
@@ -18,6 +20,7 @@ export interface IUMAPOptions {
     spread?: number;
     minDist?: number;
     progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
+    randomSeed?: string;
 }
 
 export interface ITSNEOptions {
@@ -26,11 +29,15 @@ export interface ITSNEOptions {
     dim?: number;
 }
 
-export interface IDimReductionParam {
+export interface IDimReductionParam<T extends number | string = number> {
     uiName: string;
-    value: number | null;
+    value: (T extends number ? number : string) | null;
     tooltip: string;
+    type?: T extends number ? 'number' : 'string';
     placeholder?: string;
+    min?: number;
+    max?: number;
+    step?: number;
 }
 
 abstract class MultiColumnReducer {
@@ -48,7 +55,7 @@ abstract class MultiColumnReducer {
     abstract transform(): Promise<Matrix>;
 }
 
-class MultiTSNEReducer extends MultiColumnReducer {
+class TSNEReducer extends MultiColumnReducer {
     protected reducer: TSNE;
     protected iterations: number;
     protected distanceFnames: KnownMetrics[];
@@ -102,7 +109,7 @@ class MultiTSNEReducer extends MultiColumnReducer {
     }
 }
 
-class MultiUMAPReducer extends MultiColumnReducer {
+class UMAPReducer extends MultiColumnReducer {
     protected reducer: UMAP;
     protected distanceFnames: KnownMetrics[];
     protected distanceFns: Function[];
@@ -115,6 +122,10 @@ class MultiUMAPReducer extends MultiColumnReducer {
      * @memberof UMAPReducer
      */
     constructor(options: Options) {
+      const randomSeed: string = options.randomSeed ?? Date();
+      const randomFn = seedRandom(randomSeed);
+      console.log(randomSeed);
+      console.log(randomFn(), randomFn(), randomFn());
       super(options);
       assert('distanceFnames' in options);
       assert('distanceFns' in options);
@@ -128,6 +139,7 @@ class MultiUMAPReducer extends MultiColumnReducer {
 
       if (this.data[0].length < 15)
         options.nNeighbors = this.data[0].length - 1;
+      options.random = randomFn;
       this.reducer = new UMAP(options);
       // this.reducer.distanceFn = this._encodedDistance.bind(this);
     }
@@ -165,6 +177,13 @@ class MultiUMAPReducer extends MultiColumnReducer {
     }
 }
 
+const AvailableReducers = {
+  'UMAP': UMAPReducer,
+  't-SNE': TSNEReducer,
+};
+
+export type KnownMethods = keyof typeof AvailableReducers;
+
 export class MultiColDimReducer {
     private reducer: MultiColumnReducer | undefined;
     /**
@@ -199,7 +218,7 @@ export class MultiColDimReducer {
       }
 
       if (method == 'UMAP') {
-        this.reducer = new MultiUMAPReducer({
+        this.reducer = new UMAPReducer({
           data: data,
           distanceFnames: metrics,
           distanceFns: measures,
@@ -209,7 +228,7 @@ export class MultiColDimReducer {
           ...options
         });
       } else if (method == 't-SNE') {
-        this.reducer = new MultiTSNEReducer({
+        this.reducer = new TSNEReducer({
           data: data,
           distanceFnames: metrics,
           distanceFns: measures,
@@ -240,5 +259,41 @@ export class MultiColDimReducer {
         embedding = transposeMatrix(embedding);
 
       return embedding;
+    }
+
+    /**
+   * Returns metrics available by type.
+   *
+   * @param {AvailableDataTypes} typeName type name
+   * @return {string[]} Metric names which expects the given data type
+   * @memberof DimensionalityReducer
+   */
+    static availableMetricsByType(typeName: AvailableDataTypes) {
+      return Object.keys(AvailableMetrics[typeName]);
+    }
+
+    /**
+   * Returns dimensionality reduction methods available.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+    static get availableMethods() {
+      return Object.keys(AvailableReducers);
+    }
+
+    /**
+   * Returns metrics available.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+    static get availableMetrics() {
+      let ans: string[] = [];
+      Object.values(AvailableMetrics).forEach((obj) => {
+        const array = Object.values(obj);
+        ans = [...ans, ...array];
+      });
+      return ans;
     }
 }

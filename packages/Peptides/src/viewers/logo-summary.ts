@@ -206,24 +206,21 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    * @return - position columns.
    */
   get positionColumns(): DG.Column<string>[] {
-    if (this._positionColumns != null) {
+    if (this._positionColumns != null)
       return this._positionColumns;
-    }
 
 
     const getSharedPositionColumns = (viewerType: VIEWER_TYPE): DG.Column<string>[] | null => {
       const viewer = this.model.findViewer(viewerType) as SARViewer | null;
-      if (this.sequenceColumnName === viewer?.sequenceColumnName) {
+      if (this.sequenceColumnName === viewer?.sequenceColumnName)
         return viewer._positionColumns;
-      }
 
 
       return null;
     };
 
-    if (this.model.positionColumns != null && this.sequenceColumnName === this.model.settings?.sequenceColumnName) {
+    if (this.model.positionColumns != null && this.sequenceColumnName === this.model.settings?.sequenceColumnName)
       this._positionColumns = this.model.positionColumns;
-    }
 
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION) ??
@@ -261,9 +258,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   getScaledActivityColumn(isFiltered: boolean = false): DG.Column<number> {
     if (this.model.settings?.activityColumnName === this.activityColumnName &&
-      this.model.settings?.activityScaling === this.activityScaling) {
+      this.model.settings?.activityScaling === this.activityScaling)
       this._scaledActivityColumn = this.model.getScaledActivityColumn(isFiltered);
-    }
 
 
     this._scaledActivityColumn ??= scaleActivity(this.dataFrame.getCol(this.activityColumnName),
@@ -380,9 +376,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       doRender = true;
       break;
     }
-    if (doRender) {
+    if (doRender)
       this.render();
-    }
   }
 
   /**
@@ -399,11 +394,10 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const newClusterSelection = {} as type.Selection;
     newClusterSelection[CLUSTER_TYPE.ORIGINAL] = [];
     newClusterSelection[CLUSTER_TYPE.CUSTOM] = [];
-    if (options.notify) {
+    if (options.notify)
       this.clusterSelection = newClusterSelection;
-    } else {
+    else
       this._clusterSelection = newClusterSelection;
-    }
 
 
     return this.clusterSelection;
@@ -473,9 +467,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       const customClustCol = customClustColList[rowIdx];
       customLSTClustCol.set(rowIdx, customClustCol.name);
       const bitArray = BitArray.fromUint32Array(filteredDfRowCount, customClustCol.getRawData() as Uint32Array);
-      if (bitArray.allFalse || bitArray.allTrue) {
+      if (bitArray.allFalse || bitArray.allTrue)
         continue;
-      }
 
 
       const bsMask = DG.BitSet.fromBytes(bitArray.buffer.buffer, filteredDfRowCount);
@@ -504,9 +497,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const origLSTCols = origLST.columns;
     const origLSTClustCol: DG.Column<string> = origLST.getCol(clustersColName);
     origLSTClustCol.name = C.LST_COLUMN_NAMES.CLUSTER;
-    if (origLSTClustCol.type !== DG.COLUMN_TYPE.STRING) {
+    if (origLSTClustCol.type !== DG.COLUMN_TYPE.STRING)
       origLST.columns.replace(origLSTClustCol, origLSTClustCol.convertTo(DG.COLUMN_TYPE.STRING));
-    }
 
 
     const origLSTClustColCat = origLSTClustCol.categories;
@@ -528,9 +520,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
     for (let rowIdx = 0; rowIdx < origLSTLen; ++rowIdx) {
       const mask = origClustMasks[rowIdx];
-      if (mask.allFalse || mask.allTrue) {
+      if (mask.allFalse || mask.allTrue)
         continue;
-      }
 
 
       const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
@@ -586,9 +577,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     grid.onCellRender.subscribe(async (gridCellArgs) => {
       const gridCell = gridCellArgs.cell;
       const currentRowIdx = gridCell.tableRowIndex;
-      if (!gridCell.isTableCell || currentRowIdx === null || currentRowIdx === -1) {
+      if (!gridCell.isTableCell || currentRowIdx === null || currentRowIdx === -1)
         return;
-      }
 
 
       const canvasContext = gridCellArgs.g;
@@ -613,13 +603,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
             const viewerProps = viewer.getProperties();
 
             for (const prop of viewerProps) {
-              if (prop.name === 'positionHeight' && prop.get(viewer) !== this.webLogoMode) {
+              if (prop.name === 'positionHeight' && prop.get(viewer) !== this.webLogoMode)
                 prop.set(viewer, this.webLogoMode);
-              } else if (prop.name === 'positionWidth' && prop.get(viewer) !== positionWidth) {
+              else if (prop.name === 'positionWidth' && prop.get(viewer) !== positionWidth)
                 prop.set(viewer, positionWidth);
-              } else if (prop.name === 'minHeight' && prop.get(viewer) !== height) {
+              else if (prop.name === 'minHeight' && prop.get(viewer) !== height)
                 prop.set(viewer, height);
-              }
             }
             const viewerRoot = $(viewer.root).css('height', `${height}px`);//;
             viewerRoot.children().first().css('overflow-y', 'hidden !important');
@@ -667,15 +656,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     });
     grid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell) => {
-      if (!gridCell.isTableCell) {
+      if (!gridCell.isTableCell)
         return;
-      }
 
 
       try {
-        if (!this.keyPress || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER) {
+        if (!this.keyPress || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
           return;
-        }
 
 
         if (this.currentRowIndex !== null && this.currentRowIndex !== -1) {
@@ -698,14 +685,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     });
     grid.root.addEventListener('keydown', (ev) => {
       this.keyPress = ev.key.startsWith('Arrow');
-      if (this.keyPress) {
+      if (this.keyPress)
         return;
-      }
 
 
-      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.shiftKey && ev.ctrlKey)) {
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.shiftKey && ev.ctrlKey))
         this.initClusterSelection({notify: false});
-      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+      else if (ev.code === 'KeyA' && ev.ctrlKey) {
         for (let rowIdx = 0; rowIdx < this.logoSummaryTable.rowCount; ++rowIdx) {
           this.modifyClusterSelection(this.getCluster(grid.cell(C.LST_COLUMN_NAMES.CLUSTER, rowIdx)),
             {
@@ -719,9 +705,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     });
     grid.root.addEventListener('click', (ev) => {
       const gridCell = grid.hitTest(ev.offsetX, ev.offsetY);
-      if (!gridCell || !gridCell.isTableCell || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER) {
+      if (!gridCell || !gridCell.isTableCell || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
         return;
-      }
 
 
       const selection = this.getCluster(gridCell);
@@ -743,9 +728,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
       const cluster = this.getCluster(gridCell);
       this.highlightCluster(cluster);
-      if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.CLUSTER) {
+      if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.CLUSTER)
         this.showTooltip(cluster, x, y);
-      }
 
 
       return true;
@@ -829,9 +813,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
                   col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio :
                     col.name in aggregatedValues ? aggregatedValues[col.name] :
                       undefined;
-      if (typeof newClusterVals[i] === 'undefined') {
+      if (typeof newClusterVals[i] === 'undefined')
         _package.logger.warning(`PeptidesLSTWarn: value for column ${col.name} is undefined`);
-      }
     }
     this.logoSummaryTable.rows.addNew(newClusterVals);
 
@@ -893,11 +876,10 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     shiftPressed: false,
     ctrlPressed: false,
   }, notify: boolean = true): void {
-    if (notify) {
+    if (notify)
       this.clusterSelection = modifySelection(this.clusterSelection, cluster, options);
-    } else {
+    else
       this._clusterSelection = modifySelection(this.clusterSelection, cluster, options);
-    }
   }
 
   /**
@@ -922,9 +904,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       const seekValue = origClustColCategories.indexOf(cluster.monomerOrCluster);
 
       for (let i = 0; i < rowCount; ++i) {
-        if (origClustColData[i] === seekValue) {
+        if (origClustColData[i] === seekValue)
           bitArray.setTrue(i);
-        }
       }
       bitArray.incrementVersion();
     } else {
@@ -935,9 +916,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const stats = bs.anyFalse ? getStats(activityColData, bitArray) :
       this.clusterStats[cluster.positionOrClusterType as ClusterType][cluster.monomerOrCluster];
 
-    if (!stats.count) {
+    if (!stats.count)
       return null;
-    }
 
 
     const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer, rowCount);

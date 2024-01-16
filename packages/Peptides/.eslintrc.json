@@ -10,15 +10,14 @@
   "parserOptions": {
     "ecmaVersion": 12,
     "sourceType": "module",
-    "project": [
-      "tsconfig.json"
-    ]
+    "project" : "./packages/Peptides/tsconfig.json"
   },
   "plugins": [
     "@typescript-eslint"
   ],
   "rules": {
     "require-jsdoc": "off",
+    "valid-jsdoc": "off",
     "indent": [
       "error",
       2

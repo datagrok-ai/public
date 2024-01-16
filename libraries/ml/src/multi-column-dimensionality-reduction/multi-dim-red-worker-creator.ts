@@ -9,6 +9,8 @@ export async function createMultiDimRedWorker(data: Array<any[]>, metrics: Known
   weights: number[], aggregationMethod: DistanceAggregationMethod,
   options: any, progressFunc?: (epoch: number, epochsLength: number, embedding: number[][]) => void
 ): Promise<Matrix> {
+  if (!options.distanceFnArgs)
+    throw new Error('options.distanceFnArgs must be defined');
   if (data.length !== metrics.length || data.length !== options.distanceFnArgs.length || data.length !== weights.length)
     throw new Error('data, metrics and options and weights must have the same length');
   return new Promise(function(resolve, reject) {

@@ -10,9 +10,9 @@ import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
@@ -51,9 +51,10 @@ export async function demoBio01bUI() {
         delay: 2000,
       })
       .step('Find activity cliffs', async () => {
+        const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN)) as DG.ScatterPlotViewer;
+          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {})) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs
