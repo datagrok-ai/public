@@ -15,9 +15,6 @@ export class PatternSVGDimensionsCalculator {
 
   constructor(
     private config: PatternConfiguration,
-    //todo: remove from constructor, used by only one method
-    // private distinctNucleobaseTypes: string[],
-    private isPhosphorothioateLinkageActive: boolean,
   ) {
     this.strandLabelWidth = this.getStrandLabelWidth();
     this.maxTerminusWidthByEnd = this.getMaxWidthOfTerminusLabels();
@@ -146,17 +143,17 @@ export class PatternSVGDimensionsCalculator {
     };
   }
 
-  getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[]): Position {
+  getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
     const centerPosition = {
-      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes),
+      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages),
       y: this.getLegendVerticalPosition(),
     };
     return centerPosition;
   }
 
-  getLegendTextPosition(index: number, distinctNucleobaseTypes: string[]): Position {
+  getLegendTextPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
     const legendPosition = {
-      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
+      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
       y: this.getLegendTextVerticalPosition(),
     };
     return legendPosition;
@@ -194,8 +191,8 @@ export class PatternSVGDimensionsCalculator {
     );
   };
 
-  private computeLegendCircleXPosition(index: number, distinctNucleobaseTypes: string[]): number {
-    const legendStartIndex = this.isPhosphorothioateLinkageActive ? 1 : 0;
+  private computeLegendCircleXPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): number {
+    const legendStartIndex = containsPhosphorothioateLinkages ? 1 : 0;
     const totalPositions = distinctNucleobaseTypes.length + legendStartIndex;
     const width = this.getCanvasWidth();
     const spacingUnit = width / totalPositions;

@@ -13,7 +13,6 @@ import {PatternSVGDimensionsCalculator} from './dimensions-calculator';
 
 export class NucleotidePatternSVGRenderer {
   private config: PatternConfiguration;
-  private containsPhosphorothioateLinkages: boolean;
   private patternDimensionsCalculator: PatternSVGDimensionsCalculator;
   private svgFactory: SVGElementFactoryWrapper;
   private strandElementManager: StrandElementBuilder;
@@ -22,9 +21,7 @@ export class NucleotidePatternSVGRenderer {
   constructor(patternConfig: PatternConfiguration) {
     this.setupPatternConfig(patternConfig);
 
-    this.containsPhosphorothioateLinkages = this.checkAnyPhosphorothioateLinkages();
-
-    this.patternDimensionsCalculator = new PatternSVGDimensionsCalculator(this.config, this.containsPhosphorothioateLinkages);
+    this.patternDimensionsCalculator = new PatternSVGDimensionsCalculator(this.config);
 
     this.svgFactory = new SVGElementFactoryWrapper(new SVGElementFactory(), this.config, this.patternDimensionsCalculator);
 
@@ -39,7 +36,7 @@ export class NucleotidePatternSVGRenderer {
     const strandElements = this.strandElementManager.createStrandElements(countOfNucleotidesExcludingOverhangs);
     const titleElement = this.svgFactory.createTitleElement(this.config.patternName, countOfNucleotidesExcludingOverhangs, this.config.isAntisenseStrandIncluded);
 
-    const legend = this.legendBuilder.getLegendItems(this.containsPhosphorothioateLinkages);
+    const legend = this.legendBuilder.getLegendItems();
 
     const patternSVGCanvas = this.svgFactory.createCanvas();
     patternSVGCanvas.append(...labelElements, ...strandElements, titleElement, ...legend);
@@ -66,12 +63,6 @@ export class NucleotidePatternSVGRenderer {
     ].filter(element => element !== null) as SVGElement[];
 
     return labelElements;
-  }
-
-  private checkAnyPhosphorothioateLinkages(): boolean {
-    return [...this.config.phosphorothioateLinkageFlags[STRAND.SENSE],
-      ...(this.config.isAntisenseStrandIncluded ? this.config.phosphorothioateLinkageFlags[STRAND.ANTISENSE] : [])
-    ].some(linkage => linkage);
   }
 
   private setupPatternConfig(patternConfig: PatternConfiguration): void {
@@ -108,15 +99,18 @@ export class NucleotidePatternSVGRenderer {
 }
 
 class LegendBuilder {
+  private containsPhosphorothioateLinkages: boolean;
   constructor(
     private svgFactory: SVGElementFactoryWrapper,
     private config: PatternConfiguration,
-  ) { }
+  ) {
+    this.containsPhosphorothioateLinkages = this.checkAnyPhosphorothioateLinkages();
+  }
 
-  getLegendItems(containsPhosphorothioateLinkages: boolean): SVGElement[] {
+  getLegendItems(): SVGElement[] {
     const commentLabel = this.svgFactory.createCommentLabel();
     const nucleotideLegendItems = this.createLegendItemsForNucleotideTypes();
-    const phosphorothioateLinkageLegendItem = this.createLegendItemForPhosphorothioateLinkage(containsPhosphorothioateLinkages);
+    const phosphorothioateLinkageLegendItem = this.createLegendItemForPhosphorothioateLinkage(this.containsPhosphorothioateLinkages);
 
     return [commentLabel, ...nucleotideLegendItems, ...phosphorothioateLinkageLegendItem];
   }
@@ -125,8 +119,8 @@ class LegendBuilder {
     const distinctNucleobaseTypes = this.extractNucleotideTypes();
     const svgElements = [] as SVGElement[];
     distinctNucleobaseTypes.forEach((nucleobaseType, index) => {
-      const legendCircle = this.svgFactory.createLegendCircle(nucleobaseType, index, distinctNucleobaseTypes);
-      const legendText = this.svgFactory.createLegendText(nucleobaseType, index, distinctNucleobaseTypes);
+      const legendCircle = this.svgFactory.createLegendCircle(nucleobaseType, index, distinctNucleobaseTypes, this.containsPhosphorothioateLinkages);
+      const legendText = this.svgFactory.createLegendText(nucleobaseType, index, distinctNucleobaseTypes, this.containsPhosphorothioateLinkages);
       svgElements.push(legendCircle, legendText);
     });
     return svgElements;
@@ -150,6 +144,11 @@ class LegendBuilder {
     return distinctNucleotides;
   }
 
+  private checkAnyPhosphorothioateLinkages(): boolean {
+    return [...this.config.phosphorothioateLinkageFlags[STRAND.SENSE],
+      ...(this.config.isAntisenseStrandIncluded ? this.config.phosphorothioateLinkageFlags[STRAND.ANTISENSE] : [])
+    ].some(linkage => linkage);
+  }
 }
 
 class NucleotideCountTracker {
@@ -309,16 +308,16 @@ class SVGElementFactoryWrapper {
     return this.svgElementFactory.createTextElement(labelText, labelPosition, SVG_TEXT_FONT_SIZES.NUCLEOBASE, SVG_ELEMENT_COLORS.MODIFICATION_TEXT);
   }
 
-  createLegendCircle(nucleobaseType: string, index: number, distinctNucleobaseTypes: string[]): SVGCircleElement {
+  createLegendCircle(nucleobaseType: string, index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): SVGCircleElement {
     const radius = SVG_CIRCLE_SIZES.LEGEND_RADIUS;
     const color = getNucleobaseColorFromStyleMap(nucleobaseType);
 
-    const centerPosition = this.dimensionsCalculator.getLegendCirclePosition(index, distinctNucleobaseTypes);
+    const centerPosition = this.dimensionsCalculator.getLegendCirclePosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages);
     return this.svgElementFactory.createCircleElement(centerPosition, radius, color);
   }
 
-  createLegendText(nucleobaseType: string, index: number, distinctNucleobaseTypes: string[]): SVGTextElement {
-    const legendPosition = this.dimensionsCalculator.getLegendTextPosition(index, distinctNucleobaseTypes);
+  createLegendText(nucleobaseType: string, index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): SVGTextElement {
+    const legendPosition = this.dimensionsCalculator.getLegendTextPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages);
     return this.svgElementFactory.createTextElement(nucleobaseType, legendPosition, SVG_TEXT_FONT_SIZES.COMMENT, SVG_ELEMENT_COLORS.TEXT);
   }
 }
