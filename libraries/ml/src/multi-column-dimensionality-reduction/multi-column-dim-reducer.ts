@@ -124,8 +124,6 @@ class UMAPReducer extends MultiColumnReducer {
     constructor(options: Options) {
       const randomSeed: string = options.randomSeed ?? Date();
       const randomFn = seedRandom(randomSeed);
-      console.log(randomSeed);
-      console.log(randomFn(), randomFn(), randomFn());
       super(options);
       assert('distanceFnames' in options);
       assert('distanceFns' in options);
