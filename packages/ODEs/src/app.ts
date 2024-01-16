@@ -192,9 +192,9 @@ export async function runSolverApp() {
       playIcon.hidden = true;
     } catch (err) {
         if (err instanceof Error) 
-          grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${err.message}`);
+          grok.shell.error(err.message);
         else
-          grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+          grok.shell.error(ERROR_MSG.CORE_ISSUE);
   }};
    
   let solutionTable = DG.DataFrame.create();
@@ -471,9 +471,9 @@ export async function runSolverDemoApp() {
 
     } catch (err) {
         if (err instanceof Error) 
-          grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${err.message}`);
+          grok.shell.error(err.message);
         else
-          grok.shell.error(`${ERROR_MSG.SOLVING_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+          grok.shell.error(ERROR_MSG.CORE_ISSUE);
   }};  
    
   let solutionTable = DG.DataFrame.create();

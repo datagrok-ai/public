@@ -101,9 +101,8 @@ export type IVP = {
 /** Specific error messages */
 enum ERROR_MSG {
   ODES = 'Incorrect definition of the system of ordinary differential equations',
-  CONTROL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
+  CTRL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
   ARG = 'Incorrect argument specification',
-  INITS = 'Incorrect initial values specification',
   LOOP = 'Incorrect loop specification',
   COUNT = 'Incorrect loop count',
   LOOP_VS_UPDATE = 'Loop- & update-blocks cannot be used together',
@@ -111,6 +110,12 @@ enum ERROR_MSG {
   DURATION = 'Incorrect update duration',
   BRACES = 'One of the braces ({, }) is missing',
   COLON = 'Incorrect use of ":"',
+  CASE_INSENS = 'Non-unique name (case-insensitive): use other caption for ',
+  MISSING_INIT = 'Missing initial value for ',
+  UNDEF_NAME = `Undefined name: use ${CONTROL_EXPR.NAME}-block`,
+  UNDEF_DEQS = `No differential equations: use ${CONTROL_EXPR.DIF_EQ}-block`,
+  UNDEF_INITS = `No initial values: use ${CONTROL_EXPR.INITS}-block`,
+  UNDEF_ARG = `Undefined argument: use ${CONTROL_EXPR.ARG}-block`,
 }
 
 /** Datagrok annatations */
@@ -397,7 +402,7 @@ function getOutput(lines: string[], begin: number, end: number): Map<string, Out
       else { // there is an annotation
         token = line.slice(0, openIdx).trim();
         res.set(token, {
-          caption: line.slice(colonIdx + 1, closeIdx), 
+          caption: line.slice(colonIdx + 1, closeIdx).trim(), 
           formula: null
         });
       }
@@ -498,15 +503,12 @@ export function getIVP(text: string): IVP {
       metas.push(firstLine.slice(CONTROL_TAG_LEN));
   } // for
 
-  // check initial
-  if (inits!.size !== deqs!.solutionNames.length)
-    throw new Error(ERROR_MSG.INITS);
-
   // check loop- & update-features: just one is supported
   if( (loop !== null) && (updates.length > 0))
     throw new Error(ERROR_MSG.LOOP_VS_UPDATE);   
 
-  return {
+  // obtained model
+  const ivp = {
     name: name!,
     tags: tags,
     descr: descr,
@@ -524,6 +526,10 @@ export function getIVP(text: string): IVP {
     metas: metas,
     outputs: outputs,
   };
+
+  checkCorrectness(ivp);
+
+  return ivp;
 } // getIVP
 
 /** Return input specification, required for annotation generating */
@@ -927,3 +933,52 @@ function getSolutionDfColsNames(ivp: IVP): string[] {
 
   return res;
 }
+
+/** Check IVP correctness */
+function checkCorrectness(ivp: IVP): void {
+  // 0. Check basic elements
+  if (ivp.name === undefined)
+    throw new Error(ERROR_MSG.UNDEF_NAME);
+
+  if ((ivp.deqs === undefined) || (ivp.deqs.equations.size === 0))
+    throw new Error(ERROR_MSG.UNDEF_DEQS);
+
+  if ((ivp.inits === undefined) || (ivp.inits.size === 0))
+    throw new Error(ERROR_MSG.UNDEF_INITS);
+
+  if (ivp.arg === undefined)
+    throw new Error(ERROR_MSG.UNDEF_ARG);
+    
+  // 1. Check initial values
+  ivp.deqs.equations.forEach((ignore, name) => {
+    if (!ivp.inits.has(name))
+      throw new Error(`${ERROR_MSG.MISSING_INIT} "${name}"`);
+  });
+
+  // 2. Check names of output columns
+  const usedNames = [] as string[];
+  let lowCase: string;
+
+  if (ivp.outputs !== null) {
+    ivp.outputs.forEach((val) => {
+      lowCase = val.caption.toLowerCase();
+
+      if (usedNames.includes(lowCase))
+        throw new Error(`${ERROR_MSG.CASE_INSENS}"${val.caption}"`);
+      else
+        usedNames.push(lowCase);
+    });
+  }
+  else {
+    const usedNames = [ivp.arg.name];
+
+    ivp.deqs.solutionNames.forEach((name) => {
+      lowCase = name.toLowerCase();
+
+      if (usedNames.includes(lowCase))
+        throw new Error(`${ERROR_MSG.CASE_INSENS}"${name}"`);
+      else
+        usedNames.push(lowCase);
+    });
+  }
+} // checkCorrectness
