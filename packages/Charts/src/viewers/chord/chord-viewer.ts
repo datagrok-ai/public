@@ -77,6 +77,7 @@ export class ChordViewer extends DG.JsViewer {
     this.sortBy = this.string('sortBy', 'topology', {choices: ['alphabet', 'frequency', 'topology']});
     this.direction = this.string('direction', 'clockwise', {choices: ['clockwise', 'counterclockwise']});
     this.includeNulls = this.bool('includeNulls', true);
+    this.addRowSourceAndFormula();
 
     this.initialized = false;
     this.data = [];
@@ -135,7 +136,6 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
 
     this.render();
@@ -168,7 +168,7 @@ export class ChordViewer extends DG.JsViewer {
   _aggregate() {
     let aggregatedTable = this.dataFrame
       .groupBy([this.fromColumnName!, (this.distinctCols) ? this.toColumnName! : ''])
-      .whereRowMask(this.dataFrame.filter)
+      .whereRowMask(this.filter)
       .add(this.aggType as DG.AggregationType, this.chordLengthColumnName, 'result')
       .aggregate();
 
@@ -209,7 +209,7 @@ export class ChordViewer extends DG.JsViewer {
     this.data.length = 0;
     this.distinctCols = this.fromColumnName !== this.toColumnName;
 
-    const indexes = this.dataFrame.filter.getSelectedIndexes();
+    const indexes = this.filter.getSelectedIndexes();
     this.freqMap = this._getFrequencies(this.fromColumn!, this.toColumn!, indexes);
 
     this.conf.events = {
@@ -217,7 +217,7 @@ export class ChordViewer extends DG.JsViewer {
         //@ts-ignore
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label))!.darker());
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.dataFrame.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
+          return this.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
             this.toColumn!.get(i) === datum.label);
         }, event.x, event.y);
       },
@@ -227,7 +227,7 @@ export class ChordViewer extends DG.JsViewer {
       },
       mousedown: (datum: any, index: number, nodes: any, event: MouseEvent) => {
         this.dataFrame.selection.handleClick((i) => {
-          return this.dataFrame.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
+          return this.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
             this.toColumn!.get(i) === datum.label);
         }, event);
       },
@@ -306,7 +306,7 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum: any, index: number, nodes: any, event: MouseEvent) => {
         select(nodes[index]).attr('opacity', this.highlightedChordOpacity!);
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.dataFrame.filter.get(i) &&
+          return this.filter.get(i) &&
             this.fromColumn!.get(i) === datum.source.label &&
             this.toColumn!.get(i) === datum.target.label;
         }, event.x, event.y);
@@ -317,7 +317,7 @@ export class ChordViewer extends DG.JsViewer {
       },
       mousedown: (datum: any, index: number, nodes: any, event: MouseEvent) => {
         this.dataFrame.selection.handleClick((i) => {
-          return this.dataFrame.filter.get(i) &&
+          return this.filter.get(i) &&
             this.fromColumn!.get(i) === datum.source.label &&
             this.toColumn!.get(i) === datum.target.label;
         }, event);

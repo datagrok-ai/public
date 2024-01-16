@@ -21,7 +21,7 @@ export class EChartViewer extends DG.JsViewer {
 
     //common properties
     this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
-
+    this.addRowSourceAndFormula();
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
@@ -39,11 +39,18 @@ export class EChartViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
+    this.addSelectionOrDataSubs();
 
     this.render();
+  }
+
+  onSourceRowsChanged() {
+    this.render();
+  }
+
+  addSelectionOrDataSubs() {
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
   }
 
   prepareOption() {}

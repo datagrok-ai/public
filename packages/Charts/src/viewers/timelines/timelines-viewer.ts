@@ -523,7 +523,7 @@ export class TimelinesViewer extends EChartViewer {
     else
       this.removeTimeOptions();
 
-    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
+    for (const i of this.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName!, i);
       const color = this.colorByColumnName ? colorCategories![colorBuf![i]] : this.defaultColor;
       let start = startColumn ? this.getSafeValue(this.columnData.startColumnName!, i) : null;

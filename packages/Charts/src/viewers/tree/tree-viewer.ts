@@ -150,7 +150,7 @@ export class TreeViewer extends EChartViewer {
         columnName: this.colorColumnName, propertyName: 'color' });
     }
 
-    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
+    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
   }
 
   render() {
