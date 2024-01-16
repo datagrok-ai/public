@@ -477,6 +477,10 @@ export class FilterGroup extends Viewer {
   updateOrAdd<T extends FilterState>(state: T, requestFilter?: boolean) {
     api.grok_FilterGroup_UpdateOrAdd(this.dart, state, requestFilter);
   }
+
+  getFilterSummary(): Element {
+    return api.grok_FilterGroup_GetFilterSummary(this.dart);
+  }
 }
 
 export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {
