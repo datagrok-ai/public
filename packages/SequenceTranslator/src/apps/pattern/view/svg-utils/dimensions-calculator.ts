@@ -6,11 +6,11 @@ import {Position, StrandToNumberMap, StrandEndToNumberMap} from '../types';
 import {isOverhangNucleotide} from '../../model/helpers';
 
 export class PatternSVGDimensionsCalculator {
-  private widthOfStrandLabel: StrandEndToNumberMap;
-  private maxWidthOfTerminusLabelsByEnd: StrandEndToNumberMap;
-  private rightOverhangs: StrandToNumberMap;
-  private maxStrandLength: number;
-  private widthOfRightOverhangs: number;
+  private strandLabelWidth: StrandEndToNumberMap;
+  private maxTerminusWidthByEnd: StrandEndToNumberMap;
+  private strandRightOverhangCounts: StrandToNumberMap;
+  private maxLengthOfStrands: number;
+  private maxWidthOfRightOverhangs: number;
   private xPositionOfTerminusModifications: Record<typeof STRAND_ENDS[number], StrandToNumberMap>;
 
   constructor(
@@ -18,28 +18,28 @@ export class PatternSVGDimensionsCalculator {
     private distinctNucleobaseTypes: string[],
     private isPhosphorothioateLinkageActive: boolean,
   ) {
-    this.widthOfStrandLabel = this.getWidthOfStrandLabel();
-    this.maxWidthOfTerminusLabelsByEnd = this.getMaxWidthOfTerminusLabels();
+    this.strandLabelWidth = this.getStrandLabelWidth();
+    this.maxTerminusWidthByEnd = this.getMaxWidthOfTerminusLabels();
 
 
-    this.rightOverhangs = STRANDS.reduce((acc, strand) => {
+    this.strandRightOverhangCounts = STRANDS.reduce((acc, strand) => {
       acc[strand] = this.countOverhangNucleotidesAtStartOfStrand(strand);
       return acc;
     }, {} as StrandToNumberMap);
 
-    this.maxStrandLength = Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - this.rightOverhangs[strand]));
+    this.maxLengthOfStrands = Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - this.strandRightOverhangCounts[strand]));
 
-    this.widthOfRightOverhangs = Math.max(this.rightOverhangs[STRAND.SENSE], this.rightOverhangs[STRAND.ANTISENSE]);
+    this.maxWidthOfRightOverhangs = Math.max(this.strandRightOverhangCounts[STRAND.SENSE], this.strandRightOverhangCounts[STRAND.ANTISENSE]);
 
     this.xPositionOfTerminusModifications = this.computeXPositionOfTerminusModifications();
   }
 
   // todo: more descriptive name
   getCanvasWidth(): number {
-    const widthOfNucleobases = SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * (this.maxStrandLength + this.widthOfRightOverhangs);
+    const widthOfNucleobases = SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * (this.maxLengthOfStrands + this.maxWidthOfRightOverhangs);
 
     const canvasWidth = STRAND_ENDS.reduce((acc, end) => {
-      acc += this.widthOfStrandLabel[end] + this.maxWidthOfTerminusLabelsByEnd[end];
+      acc += this.strandLabelWidth[end] + this.maxTerminusWidthByEnd[end];
       return acc;
     }, 0) + widthOfNucleobases + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
 
@@ -64,7 +64,7 @@ export class PatternSVGDimensionsCalculator {
     return { x, y };
   }
 
-  getStarElementLabelPosition(): Position {
+  getStarLabelPosition(): Position {
     return {
       x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
       y: this.getLegendVerticalPosition(),
@@ -87,7 +87,7 @@ export class PatternSVGDimensionsCalculator {
     };
   }
 
-  getTerminalModificationLabelPosition(strand: STRAND, end: STRAND_END): Position {
+  getTerminusLabelPosition(strand: STRAND, end: STRAND_END): Position {
     return {
       x: this.xPositionOfTerminusModifications[end][strand],
       y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
@@ -161,7 +161,7 @@ export class PatternSVGDimensionsCalculator {
     return legendPosition;
   }
 
-  private getWidthOfStrandLabel(): StrandEndToNumberMap {
+  private getStrandLabelWidth(): StrandEndToNumberMap {
     const widthOfStrandLabel = Object.fromEntries(
       STRAND_ENDS.map(
         strandEnd => [strandEnd, this.computeMaxWidthForStrandEnd(strandEnd)]
@@ -173,14 +173,14 @@ export class PatternSVGDimensionsCalculator {
 
   private getMaxWidthOfTerminusLabels(): StrandEndToNumberMap {
     const maxWidthOfTerminusLabelsByEnd = STRAND_ENDS.reduce((acc, end) => {
-      acc[end] = this.computeMaxWidthOfTerminalLabels(end);
+      acc[end] = this.getMaxWidthOfTerminusLabelsByEnd(end);
       return acc;
     }, {} as StrandEndToNumberMap);
 
     return maxWidthOfTerminusLabelsByEnd;
   }
 
-  private computeMaxWidthOfTerminalLabels(end: typeof STRAND_ENDS[number]) {
+  private getMaxWidthOfTerminusLabelsByEnd(end: typeof STRAND_ENDS[number]) {
     const textWidthCalculator = TextWidthCalculator.getInstance();
     return Math.max(
       ...STRANDS.map(strand =>
@@ -205,13 +205,13 @@ export class PatternSVGDimensionsCalculator {
 
   // todo: cleanup legacy logic
   private computeNucleotideCircleXPosition(index: number, strand: STRAND): number {
-    const rightOverhangs = this.rightOverhangs[strand];
+    const rightOverhangs = this.strandRightOverhangCounts[strand];
     return this._computeNucleobaseCircleXPosition(index, rightOverhangs);
   }
 
   private _computeNucleobaseCircleXPosition(index: number, rightOverhangs: number): number {
-    const rightModificationOffset = this.maxWidthOfTerminusLabelsByEnd[STRAND_END.RIGHT];
-    const positionalIndex = this.maxStrandLength - index + rightOverhangs + 1;
+    const rightModificationOffset = this.maxTerminusWidthByEnd[STRAND_END.RIGHT];
+    const positionalIndex = this.maxLengthOfStrands - index + rightOverhangs + 1;
     const xPosition = positionalIndex * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
     const finalPosition = rightModificationOffset + xPosition;
     return finalPosition;
@@ -225,8 +225,8 @@ export class PatternSVGDimensionsCalculator {
           STRANDS.map(strand => [
             strand,
             end === STRAND_END.LEFT
-            ? this.widthOfStrandLabel[STRAND_END.LEFT] - 5
-            : this.rightOverhangs[strand] * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + this._computeNucleobaseCircleXPosition(-0.5, 0)
+            ? this.strandLabelWidth[STRAND_END.LEFT] - 5
+            : this.strandRightOverhangCounts[strand] * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + this._computeNucleobaseCircleXPosition(-0.5, 0)
           ])
         )
       ])
@@ -241,8 +241,8 @@ export class PatternSVGDimensionsCalculator {
     );
 
     const rightEndXPosition = maxRightTerminusModificationShift
-      + this.maxWidthOfTerminusLabelsByEnd[STRAND_END.LEFT]
-      + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * this.widthOfRightOverhangs;
+      + this.maxTerminusWidthByEnd[STRAND_END.LEFT]
+      + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * this.maxWidthOfRightOverhangs;
 
     return {
       [STRAND_END.LEFT]: 0,
@@ -262,7 +262,7 @@ export class PatternSVGDimensionsCalculator {
 
   // todo: remove legacy division of x-y coordinates throughout the code
   private getXPositionOfLinkageStar(index: number, strand: STRAND): number {
-    return this._computeNucleobaseCircleXPosition(index, this.rightOverhangs[strand]) + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+    return this._computeNucleobaseCircleXPosition(index, this.strandRightOverhangCounts[strand]) + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
   }
 
   private getYPositionOfLinkageStar(strand: STRAND): number {
