@@ -220,7 +220,8 @@ function addNamespace(s: string, f: DG.Func): string {
   return s.replace(new RegExp(f.name, 'gi'), f.nqName);
 }
 
-export async function initAutoTests(packageId: string, module?: any) {
+export async function initAutoTests(package_: DG.Package, module?: any) {
+  const packageId = package_.id;
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
   if (moduleTests[autoTestsCatName] !== undefined ||
@@ -229,12 +230,12 @@ export async function initAutoTests(packageId: string, module?: any) {
     wasRegistered[packageId] = true;
     return;
   }
-  if (!!module && module._package.name === 'DevTools') {
+  if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
     moduleTests[coreCatName] = {tests: [], clear: true};
     const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
     for (const f of testFunctions) {
       moduleTests[coreCatName].tests.push(new Test(coreCatName, f.name,
-        async () => await f.apply(), {isAggregated: f.outputs.length > 0}));
+        async () => await f.apply(), {isAggregated: f.outputs.length > 0, timeout: 300000}));
     }
   }
   const moduleAutoTests = [];
@@ -334,7 +335,7 @@ function resetConsole(): void {
 export async function runTests(options?:
   {category?: string, test?: string, testContext?: TestContext}, exclude?: string[]) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
-  await initAutoTests(package_.id);
+  await initAutoTests(package_);
   const results: { category?: string, name?: string, success: boolean,
                    result: string, ms: number, skipped: boolean }[] = [];
   console.log(`Running tests`);
@@ -440,6 +441,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   categoryTimeout?: number, packageName?: string) {
   logs.length = 0;
   let r: {category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string};
+  let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
   const skipReason = filter ? 'skipped' : t.options?.skipReason;
@@ -458,8 +460,13 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   } catch (x: any) {
     r = {success: false, result: getResult(x), ms: 0, skipped: false};
   }
-  if (t.options?.isAggregated && r.result.constructor === DG.DataFrame)
+  if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
+    const col = r.result.col('success');
     r.result = r.result.toCsv();
+    type = 'core';
+    if (col)
+      r.success = col.stats.sum === col.length;
+  }
   r.logs = logs.join('\n');
   r.ms = Date.now() - start;
   if (!skip)
@@ -468,13 +475,13 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   r.name = t.name;
   if (!filter) {
     let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
-      'type': 'package', packageName, 'category': t.category, 'test': t.name, 'logs': r.logs};
+      'type': type, packageName, 'category': t.category, 'test': t.name, 'logs': r.logs};
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
       params = {...params, ...res};
     }
     grok.log.usage(`${packageName}: ${t.category}: ${t.name}`,
-      params, `test-package ${packageName}: ${t.category}: ${t.name}`);
+      params, `test-${type} ${packageName}: ${t.category}: ${t.name}`);
   }
   return r;
 }
