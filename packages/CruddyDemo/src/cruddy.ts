@@ -1,46 +1,58 @@
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {debounceTime} from 'rxjs/operators';
 
 
 export class DbTable {
   schema: string = '';
   name: string = '';
+  columns: DbColumn[] = [];
 
-  constructor(schema: string, name: string) {
-    this.schema = schema;
-    this.name = name;
+  getColumn(name: string): DbColumn {
+    return this.columns.find((c) => c.name == name)!;
+  }
+
+  constructor(init?: Partial<DbTable>) {
+    Object.assign(this, init);
+    for (let col of this.columns)
+      col.table = this;
   }
 }
 
 
 /** Column belongs to a table. */
 export class DbColumn {
-  table: DbTable;
-  name: string;
-  type: string;
+  table: DbTable = new DbTable;
+  name: string = '';
+  type: string = '';
   isKey: boolean = false;
+  ref: string = '';
+  references?: DbColumn;
+  referencedBy: DbColumn[] = [];
   prop?: DG.Property;  // additional properties such as semantic type, editor, formatting, etc.
 
-  constructor(table: DbTable, name: string, type: string, isKey: boolean = false) {
-    this.table = table;
-    this.name = name;
-    this.type = type;
-    this.isKey = isKey;
+  constructor(init?: Partial<DbColumn>) {
+    Object.assign(this, init);
   }
 }
 
 
 /** DbEntity is defined by a list of columns */
 export class DbEntityType {
-  type: string;
-  columns: DbColumn[];
+  type: string = '';
+  table: DbTable = new DbTable();
+  behaviors: string[] = [];
 
-  constructor(type: string, columns: DbColumn[]) {
-    this.type = type;
-    this.columns = columns;
+  constructor(init?: Partial<DbEntityType>) {
+    Object.assign(this, init);
   }
 
-  get table(): DbTable { return this.columns[0].table };
+  rowToEntity(row: DG.Row): DbEntity {
+    return new DbEntity(this, Object.fromEntries(this.columns.map(c => [c.name, row.get(c.name)])));
+  }
+
+  get columns(): DbColumn[] { return this.table.columns; };
   getColumn(name: string): DbColumn { return this.columns.find(c => c.name === name)!; };
 }
 
@@ -81,7 +93,7 @@ export abstract class EntityCrud<TEntity extends DbEntity> {
 
 
 // currently works with columns from one table only
-export class DbQueryEntityCrud<TEntity extends DbEntity> extends EntityCrud<TEntity> {
+export class DbQueryEntityCrud<TEntity extends DbEntity = DbEntity> extends EntityCrud<TEntity> {
   connectionId: string;
   entityType: DbEntityType;
 
@@ -91,11 +103,26 @@ export class DbQueryEntityCrud<TEntity extends DbEntity> extends EntityCrud<TEnt
     this.entityType = entityType;
   }
 
+  sqlValue(x: any): string {
+    if (x == null)
+      return 'null';
+    if (typeof x === 'string')
+      return "'" + x + "'";
+    return `${x}`;
+  }
+
   sql(entity: TEntity, column: DbColumn): string {
     const value = entity.values[column.name]
     if (!value)
       return 'null';
     return column.type == 'string' ? "'" + value + "'" : `${value}`;
+  }
+
+  getWhereSql(filter: {[name: string]: string}): string {
+    return Object
+      .keys(filter)
+      .map((columnName) => columnName + ' = ' + this.sqlValue(filter[columnName]))
+      .join(' AND ');
   }
 
   getWhereKeySql(entity: TEntity): string {
@@ -115,7 +142,9 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
   }
 
   getReadSql(filter?: {[name: string]: string}): string {
-    return `select ${this.entityType.columns.map(c => c.name).join(', ')} from ${this.entityType.table.name}`;
+    return `select ${this.entityType.columns.map(c => c.name).join(', ')} ` +
+           `from ${this.entityType.table.name}` +
+            (filter ? ` where ${this.getWhereSql(filter)}` : '');
   }
 
   getDeleteSql(entity: TEntity) {
@@ -128,7 +157,7 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
   }
 
   async read(filter?: {[name: string]: string}): Promise<DG.DataFrame> {
-    return await grok.data.db.query(this.connectionId, this.getReadSql());
+    return await grok.data.db.query(this.connectionId, this.getReadSql(filter));
   }
 
   async update(entity: TEntity): Promise<TEntity> {
@@ -143,6 +172,131 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
 }
 
 
-export abstract class EntityView<TEntity extends DbEntityType> extends DG.View {
+export class CruddyViewConfig {
+  entityType: DbEntityType;
 
+  constructor(entityType: DbEntityType) {
+    this.entityType = entityType;
+  }
+}
+
+
+export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> extends DG.ViewBase {
+  app: CruddyApp;
+  entityType: DbEntityType;
+  crud: DbQueryEntityCrud;
+  grid?: DG.Grid;
+
+  constructor(app: CruddyApp, entityType: DbEntityType) {
+    super();
+    this.app = app;
+    this.entityType = entityType;
+    this.name = entityType.type;
+    this.crud = new DbQueryEntityCrud(app.config.connection, entityType);
+
+    this.crud.read().then((df) => {
+      this.grid = df.plot.grid();
+      this.append(this.grid.root);
+      this.grid.root.style.width = '100%';
+      this.grid.root.style.height = '100%';
+      this.initBehaviors();
+    });
+  }
+
+  initBehaviors() {
+    CruddyViewFeature.contextDetails().attach(this);
+    CruddyViewFeature.editable().attach(this);
+  }
+}
+
+
+export class CruddyViewFeature {
+  name: string;
+  attach: (view: CruddyEntityView) => void;
+
+  constructor(name: string, attach: (view: CruddyEntityView) => void) {
+    this.name = name;
+    this.attach = attach;
+  }
+
+  static contextDetails(): CruddyViewFeature {
+    return new CruddyViewFeature('context details', (v) => {
+      v.grid!.onCurrentCellChanged.pipe(debounceTime(500)).subscribe((gridCell: DG.GridCell) => {
+        let referenced = v.entityType.table.columns.filter((c) => c.referencedBy.length > 0);
+        if (referenced.length == 0)
+          return;
+
+        let acc = ui.accordion(`entity-details-${this.name}`);
+        for (let col of referenced)
+          for (let c2 of col.referencedBy) {
+            let host = ui.div();
+            acc.addPane(c2.table.name, () => host);
+
+            let detailsEntityType = v.app.config.getEntityType(c2.table);
+            new DbQueryEntityCrud(v.app.config.connection, detailsEntityType)
+              .read({[col.name]: gridCell.tableRow!.get(col.name)})
+              .then((df) => host.appendChild(df.plot.grid().root));
+          }
+        acc.end();
+        grok.shell.o = acc.root;
+      });
+    });
+  }
+
+  static editable(): CruddyViewFeature {
+    return new CruddyViewFeature('editable', (v) => {
+      v.grid!.onCellValueEdited.subscribe((gridCell: DG.GridCell) => {
+        let crud = new DbQueryEntityCrud(v.app.config.connection, v.entityType);
+        crud.update(v.entityType.rowToEntity(gridCell.tableRow!))
+          .then((_) => grok.shell.info('Saved'));
+      });
+    });
+  }
+}
+
+
+export class CruddyConfig {
+  connection: string = '';
+  tables: DbTable[] = [];
+  entityTypes: DbEntityType[] = [];
+
+  getTable(name: string): DbTable {
+    return this.tables.find((t) => t.name == name)!;
+  }
+
+  getEntityType(table: DbTable): DbEntityType {
+    return this.entityTypes.find((et) => et.table == table)!;
+  }
+
+  constructor(init?: Partial<CruddyConfig>) {
+    Object.assign(this, init);
+    for (let e of this.entityTypes)
+      for (let c of e.table.columns)
+        if (c.ref) {
+          const [table, column] = c.ref.split('.');
+          c.references = this.getTable(table).getColumn(column);
+          c.references.referencedBy.push(c);
+        }
+  }
+}
+
+
+export class CruddyApp {
+  config: CruddyConfig;
+  views: CruddyEntityView[] = [];
+
+  constructor(config: CruddyConfig, views?: CruddyEntityView[]) {
+    this.config = config;
+    this.views = views ?? this.views;
+  }
+
+  run(): void {
+    // let v = new DG.MultiView({viewFactories: })
+
+    for (let entityType of this.config.entityTypes) {
+      let view = new CruddyEntityView(this, entityType);
+      grok.shell.addView(view);
+      this.views.push(view);
+    }
+  }
 }
