@@ -3,16 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ISubstruct} from '../../rendering/rdkit-cell-renderer';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {convertMolNotation} from '../../package';
 import {drawMoleculeToCanvas} from '../../utils/chem-common-rdkit';
 import {getSigFigs} from '../../utils/chem-common';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {chemSpace} from '../chem-space';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO, MMP_COLNAME_CHEMSPACE_X,

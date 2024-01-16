@@ -15,7 +15,6 @@ export interface RDModule {
   set_log_capture(logName: string): RDLog;
   MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
-  get_matched_fragments(mol: RDMol, minCuts: number, maxCuts: number, maxCutsBonds: number): {first: MolList, second: MolList};
 }
 
 export interface RDMol {
@@ -55,6 +54,7 @@ export interface RDMol {
       fragsMolAtomMapping: Array<Array<number>>,
     },
   };
+  get_mmpa_frags(minCuts: number, maxCuts: number, maxCutsBonds: number): {cores: MolList, sidechains: MolList};
   get_avalon_fp_as_uint8array(details?: string): Uint8Array;
 
   get_substruct_match(qmol: RDMol) : string;

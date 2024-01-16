@@ -269,7 +269,8 @@ export class MmpAnalysis {
         }
       });
 
-    const generationsGrid: DG.Grid = getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
+    const generationsGrid: DG.Grid =
+      getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
 
     return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid,

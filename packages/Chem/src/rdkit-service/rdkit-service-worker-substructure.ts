@@ -281,13 +281,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       try {
         mol = this._rdKitModule.get_mol(molecules[i]);
         if (mol) {
-          const res = this._rdKitModule.get_matched_fragments(mol, 1, 1, 20);
-          const length = res.second.size();
+          const res = mol.get_mmpa_frags(1, 1, 20);
+          const length = res.sidechains.size();
           frags[i] = new Array<[string, string]>(length);
 
           for (let j = 0; j < length; j++) {
             try {
-              const frag = res.second.next();
+              const frag = res.sidechains.next();
               const fffSplit = frag.get_smiles().split('.');
               const firstIsFirst = fffSplit[0].length >= fffSplit[1].length;
               frags[i][j] = [firstIsFirst ? fffSplit[0] : fffSplit[1], firstIsFirst ? fffSplit[1] : fffSplit[0]];
@@ -299,8 +299,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             }
           }
 
-          res.first.delete();
-          res.second.delete();
+          res.cores.delete();
+          res.sidechains.delete();
         } else
           frags[i] = new Array<[string, string]>(0);
       } catch (e: any) {
@@ -329,7 +329,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           res[i] = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
             AtomCompare: 'Elements',
             BondCompare: 'OrderExact',
-            RingMatchesRingOnly: true
+            RingMatchesRingOnly: true,
           }));
         } else
           res[i] = '';
