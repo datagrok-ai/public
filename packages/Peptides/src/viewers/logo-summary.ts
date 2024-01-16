@@ -109,7 +109,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         choices: [PositionHeight.full, PositionHeight.Entropy],
         category: LST_CATEGORIES.STYLE,
       });
-    this.membersRatioThreshold = this.float(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD, 0.3,
+    this.membersRatioThreshold = this.float(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD, 0.1,
       {
         min: 0,
         max: 1.0,

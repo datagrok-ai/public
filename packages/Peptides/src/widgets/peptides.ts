@@ -96,13 +96,29 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
   activityColumnChoice.setTooltip('Numerical activity column');
-  const clustersColumnChoice = ui.columnInput('Clusters', df, null, null);
+  const clustersColumnChoice = ui.columnInput('Clusters', df, null, () => {
+    if (clustersColumnChoice.value) {
+      generateClustersInput.value = false;
+      generateClustersInput.fireChanged();
+    }
+  });
   clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
+  // clustering input
+  const generateClustersInput = ui.boolInput('Generate clusters', true, () => {
+    if (generateClustersInput.value) {
+      clustersColumnChoice.value = null;
+      clustersColumnChoice.fireChanged();
+    }
+  });
+  generateClustersInput
+    .setTooltip('Generate clusters column based on sequence space embeddings for Logo Summary Table');
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
+  generateClustersInput.fireChanged();
 
-  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
+
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, generateClustersInput];
   if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
 
@@ -114,7 +130,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true});
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true,
+          useEmbeddingsClusters: generateClustersInput.value ?? false});
       return model !== null;
     }
     return false;
@@ -147,7 +164,10 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   return {host: mainHost, callback: startAnalysisCallback};
 }
 
-type AnalysisOptions = { addSequenceSpace?: boolean };
+type AnalysisOptions = {
+  addSequenceSpace?: boolean,
+  useEmbeddingsClusters?: boolean,
+};
 
 /**
  * Creates dataframe to use in analysis, model instance and adds viewers
@@ -163,7 +183,7 @@ type AnalysisOptions = { addSequenceSpace?: boolean };
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
   options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
-  let model = null;
+  let model: PeptidesModel | null = null;
   if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT) {
     grok.shell.error('The activity column must be of numeric type!');
     return model;
@@ -187,7 +207,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
 
   const settings: type.PeptidesSettings = {
     sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
-    columns: {}, showDendrogram: false, sequenceSpaceParams: new type.SequenceSpaceParams(),
+    columns: {}, showDendrogram: false,
+    sequenceSpaceParams: new type.SequenceSpaceParams(!!options.useEmbeddingsClusters && !clustersColumn),
   };
 
   if (clustersColumn) {
@@ -215,8 +236,20 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   await model.addMostPotentResidues();
 
   // FIXME: enable by default for tests
-  if (options.addSequenceSpace ?? false)
-    model.addSequenceSpace();
+  if (options.addSequenceSpace ?? false) {
+    await model.addSequenceSpace({clusterCol: clustersColumn, clusterEmbeddings: options.useEmbeddingsClusters});
+    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+      const clusterCol = model._sequenceSpaceCols
+        .find((col) => model!.df.col(col) && model!.df.col(col)?.type === DG.COLUMN_TYPE.STRING);
+      if (clusterCol) {
+        const lstProps: ILogoSummaryTable = {
+          clustersColumnName: clusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+          activityColumnName: activityColumn.name,
+        };
+        await model.addLogoSummaryTable(lstProps);
+      }
+    }
+  }
 
 
   progress.close();
