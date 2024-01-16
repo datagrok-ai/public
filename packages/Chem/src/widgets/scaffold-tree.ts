@@ -536,6 +536,24 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._initMenu();
   }
 
+  getFilterSum(): string {
+    const view = grok.shell.tv;
+    const filtersGroup = view.getFiltersGroup({ createDefaultFilters: true }).dart.filters;
+    const filterSummary = filtersGroup
+      .filter((f: any) => {
+        const isFiltering = f.jsFilter ? f.jsFilter.isFiltering : f.look.active;
+        return isFiltering !== false;
+      })
+      .map((f: any) => {
+        const columnName = f.jsFilter ? f.jsFilter.columnName : f.look.valueColumnName;
+        const filterSummary = f.jsFilter ? f.jsFilter.filterSummary : f.FilterControl_filterSummary;
+        return `${columnName}:${filterSummary}`;
+      })
+      .join('\n');
+    return filterSummary;
+  }
+  
+
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
     const thisViewer = this;
     const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
