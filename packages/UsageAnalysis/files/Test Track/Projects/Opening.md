@@ -5,3 +5,7 @@
 5. Press F7 to exit from presentation mode
 6. Open “Sharing” section on sidebar to see open project
 7. Call context menu on sidebar and Close All
+
+{
+  "order": 3
+}

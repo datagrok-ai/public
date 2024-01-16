@@ -2,34 +2,23 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Octokit} from 'octokit';
 import {getIcon} from './utils';
-import {decode} from 'js-base64';
-
-const octokit = new Octokit();
+import {_package} from '../package';
 
 interface TestCase {
   name: string;
   text: string;
+  order?: number;
 }
 
 interface Category {
   name: string;
   children: (TestCase | Category)[];
+  order?: number;
 }
 
-interface OctokitResponse {
-  // size: number;
-  name: string;
-  path: string;
-  type: 'dir' | 'file' | 'submodule' | 'symlink';
-  content?: string;
-  // sha: string;
-  // url: string;
-  // git_url: string | null;
-  // html_url: string | null;
-  // download_url: string | null;
-  // _links: {};
+interface Options {
+  order?: number;
 }
 
 export class TestTrack extends DG.ViewBase {
@@ -38,7 +27,8 @@ export class TestTrack extends DG.ViewBase {
   inited: boolean = false;
   testCaseDiv: HTMLDivElement;
   currentNode: DG.TreeViewNode | DG.TreeViewGroup;
-  objTree: Category[] = [];
+  map: {[key: string]: (Category | TestCase)} = {};
+  list: Category[] = [];
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -64,15 +54,15 @@ export class TestTrack extends DG.ViewBase {
     }
 
     // Generate tree
-    const response = await octokit.rest.repos.getContent({
-      owner: 'datagrok-ai',
-      repo: 'public',
-      path: 'packages/UsageAnalysis/files',
-    });
-    const dirs = (response.data as OctokitResponse[]).filter((f) => f.type === 'dir');
-    for (const dir of dirs)
-      this.objTree.push(await this.processDirRecursive(dir));
-    this.objTree.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
+    const files = await _package.files.list('Test Track', true);
+    for (const file of files) {
+      if (file.isDirectory)
+        this.processDir(file);
+      else
+        await this.processFile(file);
+    }
+    this.list.forEach((c) => this.sortCategoryRecursive(c));
+    this.list.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
 
     // Ribbon
     const plus = ui.button(getIcon('plus', {style: 'fas'}), () => {
@@ -98,35 +88,42 @@ export class TestTrack extends DG.ViewBase {
     this.inited = true;
   }
 
-  async processDirRecursive(dir: OctokitResponse): Promise<Category> {
-    const c: Category = {name: dir.name, children: []};
-    const data = (await octokit.rest.repos.getContent({
-      owner: 'datagrok-ai',
-      repo: 'public',
-      path: dir.path,
-    })).data as OctokitResponse[];
-    for (const child of data) {
-      let res: Category | TestCase;
-      if (child.type === 'dir')
-        res = await this.processDirRecursive(child);
-      else if (child.type === 'file')
-        res = await this.processFile(child);
-      else continue;
-      c.children.push(res);
-    }
-    return c;
+  processDir(dir: DG.FileInfo): void {
+    const el: Category = {name: dir.name, children: []};
+    const pathL = dir.path.split('/').slice(2);
+    if (pathL.length > 1) {
+      const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
+      parent.children.push(el);
+    } else
+      this.list.push(el);
+    this.map[pathL.join(': ')] = el;
   }
 
-  async processFile(file: OctokitResponse): Promise<TestCase> {
-    const tc: TestCase = {name: file.name.replace(/\.[^/.]+$/, ''), text: ''};
-    const data = (await octokit.rest.repos.getContent({
-      owner: 'datagrok-ai',
-      repo: 'public',
-      path: file.path,
-    })).data as OctokitResponse;
-    if (data.content)
-      tc.text = decode(data.content);
-    return tc;
+  async processFile(file: DG.FileInfo): Promise<void> {
+    const pathL = file.path.replace(/\.[^/.]+$/, '').split('/').slice(2);
+    if (pathL.length < 2)
+      grok.shell.error('Root test case');
+    const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
+    const [text, jsonS] = (await _package.files.readAsText(file)).split('\n{', 2);
+    let el: TestCase = {name: file.name.replace(/\.[^/.]+$/, ''), text};
+    if (jsonS) {
+      const json: Options = JSON.parse('{' + jsonS);
+      el = {...el, ...json};
+    }
+    parent.children.push(el);
+    this.map[pathL.join(': ')] = el;
+  }
+
+  sortCategoryRecursive(cat: Category): void {
+    if (!cat.children.length) return;
+    const cats = cat.children.filter((c) => 'children' in c) as Category[];
+    cat.children.sort((a, b) => {
+      if (a.order === undefined && b.order === undefined) return 0;
+      if (a.order === undefined) return 1;
+      if (b.order === undefined) return -1;
+      return a.order > b.order ? 1 : -1;
+    });
+    cats.forEach((c) => this.sortCategoryRecursive(c));
   }
 
   initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {

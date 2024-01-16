@@ -5,3 +5,7 @@
 5. Check all tabs on Property Panel for "demog" project
 
 * it is possible to use any other project that currently exists on the tested instance for testing
+
+{
+  "order": 1
+}
