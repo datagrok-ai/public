@@ -1,23 +1,9 @@
 import {NUCLEOTIDES} from '../../../common/model/const';
-import {SVGElementFactory} from './svg-element-factory';
+import { STRAND, STRANDS, STRAND_END, STRAND_TO_END_TERMINUS_MAP, STRAND_ENDS } from '../../model/const';
+import {PatternConfiguration} from '../../model/types';
+import { SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS, STRAND_END_LABEL_TEXT} from './const';
+import {Position, StrandToNumberMap, StrandEndToNumberMap} from '../types';
 import {isOverhangNucleotide} from '../../model/helpers';
-import { STRAND, STRANDS, STRAND_END, STRAND_TO_END_TERMINUS_MAP, STRAND_ENDS, TERMINUS, TERMINI } from '../../model/const';
-import {PatternConfiguration, StrandType, TerminalType} from '../../model/types';
-import { SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, SVG_ELEMENT_COLORS, STRAND_END_LABEL_TEXT, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS} from './const';
-import {Position, StrandToNumberMap, StrandEndToNumberMap, StrandEndToSVGElementsMap, TerminusToSVGElementMap} from '../types';
-import {
-  computeCommentYPosition,
-  computeLegendCircleYPosition,
-  computeLegendTextYPosition,
-  computeTotalSVGHeight,
-  isSingleDigitNumber,
-  countOverhangNucleotidesAtStrandEnd,
-  computeTextWidthInPixels,
-  getNucleobaseLabelForCircle,
-  computeTextColorForNucleobaseLabel,
-  getNucleobaseColorFromStyleMap,
-  computeMaxWidthForStrandEnd,
-} from './utils';
 
 export class PatternSVGDimensionsCalculator {
   private widthOfStrandLabel: StrandEndToNumberMap;
@@ -37,7 +23,7 @@ export class PatternSVGDimensionsCalculator {
 
 
     this.rightOverhangs = STRANDS.reduce((acc, strand) => {
-      acc[strand] = countOverhangNucleotidesAtStrandEnd(this.config.nucleotideSequences[strand]);
+      acc[strand] = this.countOverhangNucleotidesAtStartOfStrand(strand);
       return acc;
     }, {} as StrandToNumberMap);
 
@@ -61,7 +47,7 @@ export class PatternSVGDimensionsCalculator {
   }
 
   getCanvasHeight(): number {
-    return computeTotalSVGHeight(this.config.isAntisenseStrandIncluded);
+    return (this.config.isAntisenseStrandIncluded ? 11 : 9) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
   }
 
   getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {
@@ -72,24 +58,32 @@ export class PatternSVGDimensionsCalculator {
   }
 
   getCommentLabelPosition(): Position {
-    const xPositionOfStrandLabels = this.getXPositionOfStrandLabels();
-    return {
-      x: xPositionOfStrandLabels[STRAND_END.LEFT],
-      y: computeCommentYPosition(this.config.isAntisenseStrandIncluded),
-    };
+    const y = (this.config.isAntisenseStrandIncluded ? 11 : 8.5) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+
+    const x = this.getXPositionOfStrandLabels()[STRAND_END.LEFT];
+    return { x, y };
   }
 
   getStarElementLabelPosition(): Position {
     return {
       x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
-      y: computeLegendCircleYPosition(this.config.isAntisenseStrandIncluded),
+      y: this.getLegendVerticalPosition(),
     };
+  }
+
+  private getLegendVerticalPosition(): number {
+    return (this.config.isAntisenseStrandIncluded ? 9.5 : 6) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+  }
+
+  private getLegendTextVerticalPosition(): number {
+    const position = this.config.isAntisenseStrandIncluded ? 10 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS : Y_POSITIONS_FOR_STRAND_ELEMENTS[STRAND.ANTISENSE].NUCLEOBASE_CIRCLE;
+    return position - 3;
   }
 
   getPhosphorothioateLinkageLabelPosition(): Position {
     return {
       x: 2 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS - 8,
-      y: computeLegendTextYPosition(this.config.isAntisenseStrandIncluded),
+      y: this.getLegendTextVerticalPosition(),
     };
   }
 
@@ -154,7 +148,7 @@ export class PatternSVGDimensionsCalculator {
   getLegendCirclePosition(index: number): Position {
     const centerPosition = {
       x: this.computeLegendCircleXPosition(index),
-      y: computeLegendCircleYPosition(this.config.isAntisenseStrandIncluded),
+      y: this.getLegendVerticalPosition(),
     };
     return centerPosition;
   }
@@ -162,15 +156,15 @@ export class PatternSVGDimensionsCalculator {
   getLegendTextPosition(index: number): Position {
     const legendPosition = {
       x: this.computeLegendCircleXPosition(index) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
-      y: computeLegendTextYPosition(this.config.isAntisenseStrandIncluded),
+      y: this.getLegendTextVerticalPosition(),
     };
     return legendPosition;
   }
-  // todo: types to aliases
+
   private getWidthOfStrandLabel(): StrandEndToNumberMap {
     const widthOfStrandLabel = Object.fromEntries(
       STRAND_ENDS.map(
-        strandEnd => [strandEnd, computeMaxWidthForStrandEnd(strandEnd)]
+        strandEnd => [strandEnd, this.computeMaxWidthForStrandEnd(strandEnd)]
       )
     ) as StrandEndToNumberMap;
 
@@ -187,9 +181,10 @@ export class PatternSVGDimensionsCalculator {
   }
 
   private computeMaxWidthOfTerminalLabels(end: typeof STRAND_ENDS[number]) {
+    const textWidthCalculator = TextWidthCalculator.getInstance();
     return Math.max(
       ...STRANDS.map(strand =>
-        computeTextWidthInPixels(
+        textWidthCalculator.computeTextWidth(
           this.config.strandTerminusModifications[strand][STRAND_TO_END_TERMINUS_MAP[strand][end]],
           SVG_TEXT_FONT_SIZES.NUCLEOBASE,
           DEFAULT_FONT_FAMILY
@@ -256,7 +251,10 @@ export class PatternSVGDimensionsCalculator {
   }
 
   private computeNumericLabelXOffset(bases: string[], nucleobaseIndex: number, nucleotideNumericLabel: number): number {
-    const criterion = isSingleDigitNumber(nucleotideNumericLabel) || NUCLEOTIDES.includes(bases[nucleobaseIndex]);
+    const isSingleDigitLabel = nucleotideNumericLabel >= 0 && nucleotideNumericLabel < 10;
+
+    const criterion = isSingleDigitLabel || NUCLEOTIDES.includes(bases[nucleobaseIndex]);
+
     return criterion ?
       NUMERIC_LABEL_POSITION_OFFSET.ONE_DIGIT :
       NUMERIC_LABEL_POSITION_OFFSET.TWO_DIGIT;
@@ -276,5 +274,64 @@ export class PatternSVGDimensionsCalculator {
     return strand === STRAND.SENSE ?
       indexOfNucleotide :
       this.config.nucleotideSequences[strand].length - indexOfNucleotide;
+  }
+
+  private countOverhangNucleotidesAtStartOfStrand(strand: STRAND): number {
+    const nucleotides = this.config.nucleotideSequences[strand];
+
+    let overhangCount = 0;
+    for (const nucleotide of nucleotides) {
+      if (!isOverhangNucleotide(nucleotide))
+        break;
+      overhangCount++;
+    }
+
+    return overhangCount;
+  }
+
+  private computeMaxWidthForStrandEnd(strandEnd: STRAND_END): number {
+    const textWidthCalculator = TextWidthCalculator.getInstance();
+    return Math.max(
+      ...STRANDS.map(strand =>
+        textWidthCalculator.computeTextWidth(
+          STRAND_END_LABEL_TEXT[strandEnd][strand],
+          SVG_TEXT_FONT_SIZES.NUCLEOBASE,
+          DEFAULT_FONT_FAMILY
+        )
+      )
+    );
+  }
+}
+
+export class TextWidthCalculator {
+  private static instance: TextWidthCalculator;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D | null;
+  private pixelRatio: number;
+
+  private constructor() {
+    this.canvas = document.createElement('canvas');
+    this.context = this.canvas.getContext('2d');
+    this.pixelRatio = window.devicePixelRatio || 1;
+
+    this.canvas.width *= this.pixelRatio;
+    this.canvas.height *= this.pixelRatio;
+  }
+
+  public static getInstance(): TextWidthCalculator {
+    if (!TextWidthCalculator.instance)
+      TextWidthCalculator.instance = new TextWidthCalculator();
+
+    return TextWidthCalculator.instance;
+  }
+
+  public computeTextWidth(text: string, fontSize: number, fontFamily: string): number {
+    if (this.context) {
+      this.context.font = `${fontSize * this.pixelRatio}px ${fontFamily}`;
+      const metrics = this.context.measureText(text);
+      return metrics.width / this.pixelRatio;
+    }
+
+    return 0;
   }
 }
