@@ -65,6 +65,7 @@ public class QueryManager {
         connection = provider.getConnection(query.func.connection);
         logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
+        if (resultSet == null) return;
         supportTransactions = connection.getMetaData().supportsTransactions();
         ResultSetMetaData metaData = resultSet.getMetaData();
         resultSetManager.init(metaData, currentFetchSize);
