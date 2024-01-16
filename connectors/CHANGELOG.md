@@ -1,6 +1,13 @@
 # Grok Connect changelog
 
-## 2.1.9 (WIP)
+## 2.1.10 - 2.1.11 (WIP)
+
+* Fix categorize()
+* Fix NullPointer when update query executed
+* Fix Snowflake connection building
+* Fix bit type support in columns
+
+## 2.1.9
 
 * Update of Neptune driver version
 
