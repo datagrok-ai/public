@@ -48,7 +48,7 @@ type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 
 type InputValues = {
   isChanging: InputWithValue<BehaviorSubject<boolean>>,
-  const: InputWithValue<boolean | number>,
+  const: InputWithValue<boolean | number | string>,
   constForm: HTMLElement,
   saForm: HTMLElement,
 }
@@ -67,12 +67,17 @@ type SensitivityBoolStore = {
   type: DG.TYPE.BOOL,
 } & InputValues;
 
-type SensitivityConstStore = {
+type SensitivityStrStore = {
   prop: DG.Property,
-  type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL>,
+  type: DG.TYPE.STRING,
 } & InputValues;
 
-type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
+type SensitivityConstStore = {
+  prop: DG.Property,
+  type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL | DG.TYPE.STRING>,
+} & InputValues;
+
+type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore | SensitivityStrStore;
 
 export class SensitivityAnalysisView {
   generateInputFields = (func: DG.Func) => {
@@ -118,8 +123,8 @@ export class SensitivityAnalysisView {
             input:
               (() => {
                 const inp = inputProp.propertyType === DG.TYPE.FLOAT ?
-                  ui.floatInput(`${inputProp.caption ?? inputProp.name}`, getInputValue(inputProp, 'min'), (v: number) => ref.min.value = v):
-                  ui.intInput(`${inputProp.caption ?? inputProp.name}`, getInputValue(inputProp, 'min'), (v: number) => ref.min.value = v);
+                  ui.floatInput(`${inputProp.caption ?? inputProp.name}`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v):
+                  ui.intInput(`${inputProp.caption ?? inputProp.name}`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
 
                 (inp.input as HTMLInputElement).placeholder = 'Min';
                 $(inp.input).css({'padding-right': '0px', 'margin-right': '4px'});
@@ -131,8 +136,8 @@ export class SensitivityAnalysisView {
             input:
               (() => {
                 const inp = inputProp.propertyType === DG.TYPE.FLOAT ?
-                  ui.floatInput(` `, getInputValue(inputProp, 'max'), (v: number) => ref.max.value = v):
-                  ui.intInput(` `, getInputValue(inputProp, 'max'), (v: number) => ref.max.value = v);
+                  ui.floatInput(` `, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v):
+                  ui.intInput(` `, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
 
                 (inp.input as HTMLInputElement).placeholder = 'Max';
                 $(inp.input).css({'padding-left': '0px', 'margin-left': '4px'});
@@ -142,13 +147,13 @@ export class SensitivityAnalysisView {
           },
           lvl: {
             input: ui.intInput('Samples', 3, (v: number) => {
-              ref.lvl.value = v;
+              (ref as SensitivityNumericStore).lvl.value = v;
               this.updateRunButtonText();
             }),
             value: 3,
           },
           distrib: {
-            input: ui.choiceInput('Grid', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => ref.distrib.value = v),
+            input: ui.choiceInput('Grid', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => (ref as SensitivityNumericStore).distrib.value = v),
             value: inputProp.defaultValue,
           },
           isChanging: {
@@ -195,16 +200,29 @@ export class SensitivityAnalysisView {
           }
         });
         break;
+
       case DG.TYPE.BOOL:
         const tempBool = {
           type: inputProp.propertyType,
           prop: inputProp,
           const: {
-            input: ui.boolInput(' ', false, (v: boolean) => ref.const.value = v),
+            input: ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v),
+            value: false,
+          } as InputWithValue<boolean>,
+          changing: {
+            input: ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v),
             value: false,
           } as InputWithValue<boolean>,
           isChanging: {
-            input: ui.switchInput('Is changing', false, (v: boolean) => ref.isChanging.value.next(v)),
+            input: (() => {
+              const input = ui.switchInput(' ', false, (v: boolean) => {
+                boolRef.isChanging.value.next(v);
+                this.updateRunButtonText();
+              });
+              $(input.root).css({'min-width': '50px', 'width': '50px'});
+              $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
+              return input;
+            })(),
             value: new BehaviorSubject<boolean>(false),
           },
         };
@@ -212,9 +230,81 @@ export class SensitivityAnalysisView {
         acc[inputProp.name] = {
           ...tempBool,
           constForm: ui.form([tempBool.const.input], {style: {flexGrow: '1'}}),
-          saForm: ui.form([tempBool.const.input], {style: {flexGrow: '1'}}),
+          saForm: ui.form([tempBool.changing.input], {style: {flexGrow: '1'}}),
         } as SensitivityBoolStore;
+
+        const boolRef = acc[inputProp.name] as SensitivityBoolStore;
+        combineLatest([
+          tempBool.isChanging.value, analysisInputs.analysisType.value,
+        ]).subscribe(([isChanging, analysisType]) => {
+          if (isChanging) {
+            $(boolRef.constForm).hide();
+            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
+              $(boolRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).show());
+            } else {
+              $(boolRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).hide());
+            }
+          } else {
+            $(boolRef.constForm).show();
+            $(boolRef.saForm).hide();
+          }
+        });
         break;
+
+      case DG.TYPE.STRING:
+        const tempStr = {
+          type: inputProp.propertyType,
+          prop: inputProp,
+          const: {
+            input: ui.stringInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? '', (v: string) => (strRef as SensitivityStrStore).const.value = v),
+            value: inputProp.defaultValue,
+          } as InputWithValue<string>,
+          changing: {
+            input: ui.stringInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? '', (v: string) => (strRef as SensitivityStrStore).const.value = v),
+            value: inputProp.defaultValue,
+          } as InputWithValue<string>,
+          isChanging: {
+            input: (() => {
+              const input = ui.switchInput(' ', false, (v: boolean) => {
+                strRef.isChanging.value.next(v);
+                this.updateRunButtonText();
+              });
+              $(input.root).css({'min-width': '50px', 'width': '50px'});
+              $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
+              return input;
+            })(),
+            value: new BehaviorSubject<boolean>(false),
+          },
+        };
+
+        acc[inputProp.name] = {
+          ...tempStr,
+          constForm: ui.form([tempStr.const.input], {style: {flexGrow: '1'}}),
+          saForm: ui.form([tempStr.changing.input], {style: {flexGrow: '1'}}),
+        } as SensitivityStrStore;
+
+        const strRef = acc[inputProp.name] as SensitivityStrStore;
+        combineLatest([
+          tempStr.isChanging.value, analysisInputs.analysisType.value,
+        ]).subscribe(([isChanging, analysisType]) => {
+          if (isChanging) {
+            $(strRef.constForm).hide();
+            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
+              $(strRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).show());
+            } else {
+              $(strRef.saForm).show();
+              simpleSa.forEach((input) => $(input.root).hide());
+            }
+          } else {
+            $(strRef.constForm).show();
+            $(strRef.saForm).hide();
+          }
+        });
+        break;
+
       default:
         acc[inputProp.name] = {
           const: {
@@ -360,6 +450,7 @@ export class SensitivityAnalysisView {
   ) {
     this.runButton = this.buildRunButton();
     const form = this.buildFormWithBtn();
+    this.hideNonNumericalSwitchInputs();
     this.addTooltips();
     this.comparisonView = baseView;
 
@@ -372,6 +463,18 @@ export class SensitivityAnalysisView {
     );
 
     this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
+  }
+
+  private isPropNumerical(type: DG.TYPE): boolean {
+    return ((type === DG.TYPE.INT) || (type === DG.TYPE.FLOAT));
+  }
+
+  private hideNonNumericalSwitchInputs() {
+    for (const name of Object.keys(this.store.inputs)) {
+      const inp = this.store.inputs[name];
+      if (!this.isPropNumerical(inp.prop.propertyType))
+        $(inp.isChanging.input.root).hide();      
+    }
   }
 
   private closeOpenedViewers() {
@@ -575,7 +678,7 @@ export class SensitivityAnalysisView {
       default:
         return 'Unknown method!';
       }
-    });
+    });    
 
     // run button
     ui.tooltip.bind(this.runButton, () => {
@@ -602,6 +705,13 @@ export class SensitivityAnalysisView {
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
+      const inpType = this.store.inputs[propName].prop.propertyType;
+      if (inpType === DG.TYPE.BOOL)
+        continue;
+
+      if (inpType === DG.TYPE.STRING)
+        continue;
+
       const propConfig = this.store.inputs[propName];
 
       ui.tooltip.bind(propConfig.isChanging.input.root, () => {

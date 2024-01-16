@@ -74,7 +74,7 @@ title: "Grid"
 
 See also:
 
-* [Formatting notation](../../catalog/tags.md#format) for dates and numbers
+* [Formatting notation](../../govern/catalog/tags.md#format) for dates and numbers
 * [Formatting via JS API](../../develop/how-to/customize-grid.md#formatting)
 
 ## Color coding
@@ -120,7 +120,7 @@ layout serialization).
 
 By default, color coding is applied to the column background. Optionaly you can apply it to the text:
 
-1. Right-click the column’s header and select **Color coding > Edit**. A dialog opens.
+1. Right-click the column's header and select **Color coding > Edit**. A dialog opens.
 2. In the dialog, set the **Apply to** setting to `text`.
 
 This option is available for all linear, categorical, and conditional schemas.

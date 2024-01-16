@@ -5,7 +5,7 @@ import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {mmDistanceFunctionArgs} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {calculateMonomerSimilarity} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerSubstitutionMatrix} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import * as grok from 'datagrok-api/grok';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
@@ -56,7 +56,7 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
 }
 
 export async function getEncodedSeqSpaceCol(
-  seqCol: DG.Column, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames
+  seqCol: DG.Column, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, fingerprintType: string = 'Morgan'
 ): Promise<{seqList:string[], options: {[_:string]: any}}> {
 // encodes sequences using utf charachters to also support multichar and non fasta sequences
   const ncUH = UnitsHandler.getOrCreate(seqCol);
@@ -85,7 +85,7 @@ export async function getEncodedSeqSpaceCol(
   let options = {};
   if (similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE) {
     const monomers = Array.from(charCodeMap.keys());
-    const monomerRes = await calculateMonomerSimilarity(monomers);
+    const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
     // the susbstitution matrix contains similarity, but we need distances
     monomerRes.scoringMatrix.forEach((row, i) => {
       row.forEach((val, j) => {
@@ -101,7 +101,7 @@ export async function getEncodedSeqSpaceCol(
       alphabetIndexes: monomerHashToMatrixMap} satisfies mmDistanceFunctionArgs;
   } else if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
     const monomers = Array.from(charCodeMap.keys());
-    const monomerRes = await calculateMonomerSimilarity(monomers);
+    const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
     // the susbstitution matrix contains similarity, but we need distances
     // monomerRes.scoringMatrix.forEach((row, i) => {
     //   row.forEach((val, j) => {

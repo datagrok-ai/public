@@ -23,7 +23,7 @@ File indexing is a recurring _data job_<!--add link when ready--> that runs ever
 * Filename
 * File size, in bytes
 * Number of rows and columns
-* Column-level information such as name, data type, and [semantic type](../catalog/semantic-types.md).
+* Column-level information such as name, data type, and [semantic type](../govern/catalog/semantic-types.md).
 
 For example, thanks to indexing, you can browse columns within a CSV file residing within a ZIP file.
 

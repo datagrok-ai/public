@@ -30,6 +30,13 @@ import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = <any>window;
 
+export class ComponentBuildInfo {
+  branch: string = '';
+  commit: string = '';
+  date: string = '';
+  version: string = '';
+}
+
 /**
  * Exposes Datagrok's server-side functionality.
  *
@@ -910,6 +917,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
     params ??= {};
     params.method ??= 'GET';
     params.credentials = 'include';
+    if (!path.startsWith('/')) path = `/${path}`;
     return fetch(`${api.grok_Dapi_Root()}/docker/containers/proxy/${containerId}${path}`, params);
   }
 

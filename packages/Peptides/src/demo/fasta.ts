@@ -7,12 +7,15 @@ import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {PeptidesModel} from '../model';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   const alignedSequenceCol = 'AlignedSequence';
   const simpleActivityColName = 'IC50';
   const simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
+  grok.shell.addTableView(simpleTable);
+  await delay(0);
   const simpleActivityCol = simpleTable.getCol(simpleActivityColName);
   const simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
   simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;

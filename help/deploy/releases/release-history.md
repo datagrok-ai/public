@@ -71,7 +71,7 @@ See also:
 * (Improvement) [#2467](https://github.com/datagrok-ai/public/issues/2467): Allow to set tab label for stacked viewers programmatically 
 * GROK-14215: Tiles Viewer: Ability to specify custom lane categories 
 * (Bug) [#2489](https://github.com/datagrok-ai/public/issues/2489): Colour selector opened from the 'style' section in properties panel cannot be closed 
-* (Bug) [#2503](https://github.com/datagrok-ai/public/issues/2503): Order and Hide: Tooltip with null category shouldn’t be that big 
+* (Bug) [#2503](https://github.com/datagrok-ai/public/issues/2503): Order and Hide: Tooltip with null category shouldn't be that big 
 * (Bug) GROK-14221: ChoiceInputs are not refreshing in FRAC classification query 
 * (Improvement) GROK-14235: JS API: Utils.loadJsCss(files): dynamically load dependencies (WIP)
 
@@ -536,7 +536,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
    * Added **Substructure Search** to the **Top Menu** ( **Chem** > **Search**)
    * Modified the tooltip for dialog and drag-n-drop to prevent it from overlapping with the data.
    * Implemented RDKit rendering for Chembl, ChemblAPI, PubChem, and DrugBank databases if OCL is used currently.
-   * Performed UI polishing. We’ve adjusted input field names, repositioned elements in certain dialogs, added tooltips, and organized the top menu items into groups: Calculate, ADME/Tox, Search, Analyze, and Transform.  
+   * Performed UI polishing. We've adjusted input field names, repositioned elements in certain dialogs, added tooltips, and organized the top menu items into groups: Calculate, ADME/Tox, Search, Analyze, and Transform.  
 * Fixed:
    * [#1492](https://github.com/datagrok-ai/public/issues/1492): Elemental analysis: malformed data handling.
   * GROK-11898: Orientation for smiles in Structural Alerts.
@@ -549,19 +549,19 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 
 #### [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis#readme)
 
-We’ve released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
 
 #### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
 
-We’ve implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis/pls).
+We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis/pls).
 
 #### [Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors#readme)
 
-We’ve created the Bioreactors package for the simulation of the mechanism of [Controlled Fab-Arm Exchange](https://www.jbc.org/article/S0021-9258(20)40445-4/fulltext). The unique Datagrok WebAutosolver tool provides an in-browser solution for implementing simulations of the considered phenomena. To ensure high performance, we utilize wasm-computations.
+We've created the Bioreactors package for the simulation of the mechanism of [Controlled Fab-Arm Exchange](https://www.jbc.org/article/S0021-9258(20)40445-4/fulltext). The unique Datagrok WebAutosolver tool provides an in-browser solution for implementing simulations of the considered phenomena. To ensure high performance, we utilize wasm-computations.
 
 #### [PhyloTreeViewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer#readme)
 
-* We’ve retired the PhyloTree viewer and removed it from the PhylotreeViewer package.
+* We've retired the PhyloTree viewer and removed it from the PhylotreeViewer package.
 * Added the ability to reset zoom for PhylocanvasGL viewer.
 
 #### [BiostructureViewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme)
@@ -688,7 +688,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 * Added a scroll bar in the context menu to handle options that do not fit on the screen.
 * For all dialogs that require selecting a molecular column, it is now set as the initial option.
 * Ability to select and import multiple files at once using the **Open local file** dialog.
-* Consistently reorganized viewers’ properties in the **Context pane**:
+* Consistently reorganized viewers' properties in the **Context pane**:
 	 * Moved **Label orientation** to the **Style** tab for PC plot and the other viewers with this property.
    * Moved **Segments Font** to the **Style** tab for line chart.
    * Moved tooltip properties from **Misc** to **Tooltip** and column properties from **Misc** to **Columns** for heatmap and grid.
@@ -697,7 +697,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 * [Grid](../../visualize/viewers/grid.md):
   * Ability to add info panels as columns in the grid.
   * Implemented the column-based edit permissions. Now you can set different editing permissions for each column based on user roles or other criteria.
-  * Implemented the ability to view the column’s private tags by clicking the **Show private** button (**Context Pane** > **Details**).
+  * Implemented the ability to view the column's private tags by clicking the **Show private** button (**Context Pane** > **Details**).
   * Added the capability for users to design their own tooltips specific to each column.
   * Implemented a warning that displays the reason why a read-only cell cannot be edited when a user attempts to start editing it.
   *  Implemented the ability to specify columns for in-grid [Default Forms](../../visualize/viewers/grid.md#forms) (**Context Menu** > **Add** > **Forms** > **Default HTML**).
@@ -757,7 +757,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
     * Incorrect legend for **Split by** when **Row Source** is set to `Selected`
     * Formula lines error
     * Change columns bug.
-* For [PC Plot](../../visualize/viewers/pc-plot.md) we’ve fixed:
+* For [PC Plot](../../visualize/viewers/pc-plot.md) we've fixed:
    * Density recalculation on normalization or switching columns to log scale
    * Adding Measures in PC plot transformation.
 * [Box Plot](../../visualize/viewers/box-plot.md)
@@ -825,7 +825,7 @@ The package provides the functionality of two viewers  that enable the visualiza
 
 * Improvements:
    * Renamed the dialogs and the items in **Top Menu** > **Chem**. Specifically, we've removed the **Sketcher** item and added [**ADME/Tox**](https://community.datagrok.ai/t/cheminformatics-updates/457/23?u=oahadzhanian.datagrok.ai).
-   * Updated the column and cell properties and now all chemical information on the **Context Pane** is located under the **Chemistry** info panel. Also, we’ve removed the diversity Search widget from the **Context Pane** > **Details**.
+   * Updated the column and cell properties and now all chemical information on the **Context Pane** is located under the **Chemistry** info panel. Also, we've removed the diversity Search widget from the **Context Pane** > **Details**.
    * Made tooltip modifications for molecular data. Now, the tooltip in dialogs no longer covers the data and shrinks during drag-n-drop.
    * Improved the handling of malformed and empty data. Now a warning appears with the indexes of the failed molecules in chem analyses.
   * Customization of dimensionality reduction algorithms is now possible, especially in the context of **Chemical Space** and **Activity Cliffs** functions. For details, see [Dimensionality reduction algorithms](https://community.datagrok.ai/t/cheminformatics-updates/457/21).
@@ -859,9 +859,9 @@ The package provides the functionality of two viewers  that enable the visualiza
    * Sketcher popup clipping in the dialog.
    * Empty values handling in **Descriptors** and **Map Identifiers**.
    * Sketcher duplicating in the **Filter Panel**.
-   * Browser tab freezing on hovering a molecule column’s header after data was removed.
+   * Browser tab freezing on hovering a molecule column's header after data was removed.
    * Sketcher tooltip after opening a molecule in Marvin.
-   * The molblock native wedging usage. Now it’s used where available.
+   * The molblock native wedging usage. Now it's used where available.
 
 #### [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme)
 
@@ -873,11 +873,11 @@ We've significantly improved the Peptides package, including a new feature integ
 
 #### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts#readme)
 
-We’ve added routing to the viewers' demo.
+We've added routing to the viewers' demo.
 
 #### [GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS#readme)
 
-We’ve reduced the aggressiveness of detectors and added a column name check.
+We've reduced the aggressiveness of detectors and added a column name check.
 
 #### [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials#readme)
 
@@ -885,17 +885,17 @@ We’ve reduced the aggressiveness of detectors and added a column name check.
 
 #### [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid#readme)
 
-We’ve now exposed the pinned columns functionality in the PowerGrid package and fixed the following issues:
+We've now exposed the pinned columns functionality in the PowerGrid package and fixed the following issues:
   * Unclickable Id link on pinned columns
   * Incorrect displaying after applying the layout with the viewer stacked over the table.
 
 ### Improvements for developers
 
-We’ve separated **Images** and **Docker Containers** in the platform.
+We've separated **Images** and **Docker Containers** in the platform.
 
 #### [PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack#readme)
 
-We’ve added `Qnum` to supported column types and fixed the issue with the execution of some functions in the **Add new column** dialog.
+We've added `Qnum` to supported column types and fixed the issue with the execution of some functions in the **Add new column** dialog.
 
 #### [Viewers](../../develop/how-to/develop-custom-viewer.md)
 
@@ -906,9 +906,9 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 * Improvements:
   * Introduced a new feature for application developers. Now you can [place hints](https://community.datagrok.ai/t/javascript-api-updates/526/21) for users in the form of indicators, and popups, as well as describe a series of visual components in the wizard.  UI methods now come equipped with interactive hints, similar to those found in tutorials, that can be attached to various elements. With the addition of these methods, application authors are able to incorporate interactive hints in their app code, allowing them to introduce new features to their users, among other things.
-  * To work with custom filters, we’ve added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../../visualize/viewers/filters#column-tags) to learn more.
+  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../../visualize/viewers/filters#column-tags) to learn more.
   * Provided `typeAhead`, `dropDown` and `breadcrumbs` controls for the platform.
-  * Implemented the capability to export graphics of scatter plot to JS API. You can now render scatter plot viewer to an arbitrary graphics context using JS API. Basically, we’ve made a viewer that works directly with the cell renderer. This means you can now show cells as viewers and manipulate them in other ways too.
+  * Implemented the capability to export graphics of scatter plot to JS API. You can now render scatter plot viewer to an arbitrary graphics context using JS API. Basically, we've made a viewer that works directly with the cell renderer. This means you can now show cells as viewers and manipulate them in other ways too.
   * Added classes for form viewers in the API: `Form` and `FormViewer`.
   * Added the `onViewRemoving` event.
   * Improved the table join feature by adding the option to merge "all columns" without having to list each individual column.
@@ -1526,16 +1526,16 @@ Here are some of the biggest improvements:
   * When inheriting the color coding from the grid, adjustments to the min/max made in the plot are reflected in the
     grid. However, if the original column is not color-coded and selected for the color column in the scatter plot, the
     configuration isn't applied to the column in the grid.
-  * Fixed changing the linear color scheme issue. Now the null values don’t get colored.
+  * Fixed changing the linear color scheme issue. Now the null values don't get colored.
   * Fixed inconsistent behavior of color coding checkboxes in the columns context menu.
 * [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
   * Added the exact min/max of the column on the axes' ticks.
-  * Context menu: marker section doesn’t close on click.
+  * Context menu: marker section doesn't close on click.
   * Fixed axis buffer and filters interaction.
 * [Bar chart](../../visualize/viewers/bar-chart.md): reordered properties under the Order and Data submenus.
 * Formula lines: regarding the line labels, the line title is on the plot, and both title and description are in the
   tooltip.
-* We’ve added radio group identification to menu options where relevant.
+* We've added radio group identification to menu options where relevant.
 * Linked tables:
   * Added the UI to specify multiple columns as key columns.
   * Fixed saving linked tables to the project.
@@ -1549,7 +1549,7 @@ hierarchy based on their scaffolds. For details, see [Scaffold tree](../../datag
 
 * Improvements:
   * Added the package property to [set the default **Sketcher
-    **](https://github.com/datagrok-ai/public/tree/master/packages/Chem#sketcher) so that users won’t have to switch on
+    **](https://github.com/datagrok-ai/public/tree/master/packages/Chem#sketcher) so that users won't have to switch on
     the first use manually.
   * Changed the result output for **Chem | Find MCS**. Now it returns a variable instead of a column.
   * Improved the handling of invalid molecules and empty inputs.
@@ -1569,7 +1569,7 @@ hierarchy based on their scaffolds. For details, see [Scaffold tree](../../datag
 #### [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme)
 
 We've separated **Dendrogram** from [**PhyloTreeViewer
-**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it’s
+**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it's
 a [package](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram) for the Datagrok platform for
 phylogenetic tree visualization.
 
@@ -2339,7 +2339,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * #1155: substituent analysis viewer \- fixing bugs
 * #1155: substituent analysis \- fixing bugs
 * (Bug) Charts | Radar viewer: the wrong axis occurs
-* (Bug) Charts | Radar viewer: doesn’t respond to the column deletion in the grid
+* (Bug) Charts | Radar viewer: doesn't respond to the column deletion in the grid
 * (Bug) JS: check permissions method always returns true
 * JS API Tests: connections: create, edit, delete, share
 * Summary columns don't show after refreshing the page #930

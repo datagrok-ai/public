@@ -45,7 +45,6 @@ async function openDemoData(chosenFile: string): Promise<void> {
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
   grok.shell.windows.showProperties = true;
-
   pi.close();
 }
 
@@ -89,8 +88,9 @@ export function peptidesDialog(): DG.Dialog {
   const analyzeObject = analyzePeptidesUI(grok.shell.t);
   const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(async () => {
     const startSuccess = analyzeObject.callback();
-    if (!startSuccess)
+    if (!startSuccess) {
       dialog.show();
+    }
   });
   return dialog.show();
 }
@@ -138,8 +138,10 @@ export function manualAlignment(_monomer: string): DG.Widget {
   //TODO: recalculate Molfile and Molecule panels on sequence update
   const df = grok.shell.t;
   const model: PeptidesModel | null = df?.temp[PeptidesModel.modelName];
-  if (!model)
+  if (!model) {
     return new DG.Widget(ui.divText('Manual alignment works with peptides analysis'));
+  }
+
 
   const col = df.getCol(model.settings!.sequenceColumnName!);
   return manualAlignmentWidget(col, df);

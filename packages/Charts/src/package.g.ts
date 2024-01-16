@@ -85,7 +85,7 @@ export function _TimelinesViewer() {
 //description: Creates a tree viewer
 //tags: viewer
 //output: viewer result
-//meta.trellisable: true
+//meta.trellisable: false
 //meta.icon: icons/tree-viewer.svg
 export function _TreeViewer() {
   return new TreeViewer();

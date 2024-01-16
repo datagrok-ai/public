@@ -2,10 +2,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
-import {MutationCliffsOptions, findMutations} from '../utils/algorithms';
+import {findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {extractColInfo} from '../utils/misc';
-
 
 category('Algorithms', () => {
   let activityCol: type.RawData;

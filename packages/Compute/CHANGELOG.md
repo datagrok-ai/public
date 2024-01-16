@@ -1,5 +1,22 @@
 # Compute changelog
 
+## 1.19.0 (2024-01-08)
+
+### Features
+
+- RFV: Added `graphics` type support
+- RFV: Exposed feature-flags
+
+### Bug fixes
+
+- RFV: Fixed bug for string default values
+
+## 1.18.0 (2023-12-25)
+
+- RFV: Added input form adaptiveness
+- RFV: Renamed validator tag to `validatorFunc`
+- RFV: Added `nullable` tag for inputs 
+
 ## 1.17.3 (2023-11-22)
 
 ### Features:
@@ -7,7 +24,7 @@
 - RFV: New styles for huge viewers
 - PLV: Added input resetting from locked state
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed error on getting pacakge of newly created script
 - RFV: Disabled scripts caching for newly created scripts
@@ -35,7 +52,7 @@
 - RFV: Added input lock-states
 - RFV: Added `keepOutput` tag to control output hiding
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed losing focus on input disabling
 - RFV: Fixed empty tooltip appearing
@@ -43,20 +60,20 @@
 
 ## 1.15.2 (WIP)
 
-### Fixed bugs
+### Bug Fixes
 
 - Removed idle pkpd.R and pop-pk.R scripts
 
 ## 1.15.1 (2023-10-21)
 
-### Fixed bugs
+### Bug Fixes
 
 - PLV: Fixed load run bug logic
 - RFV: Fixed load run bug logic
 
 ## 1.15.0 (2023-09-25)
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed inputs layout inside of foldable categories
 
@@ -66,7 +83,7 @@
 
 ## 1.14.3 (2023-09-08)
 
-### Fixed bugs
+### Bug Fixes
 
 - PLV: Fixed options logic on funcCall copy
 
@@ -76,7 +93,7 @@
 
 ## 1.14.2 (2023-09-07)
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed tabs reappearance after recalculation
 
@@ -87,20 +104,20 @@
 
 ## 1.14.1 (2023-09-06)
 
-### Fixed bugs
+### Bug Fixes
 
 - Fixed color and numeric values parsing in RFV
 
 ## 1.13.12 (2023-08-25)
 
-### Fixed bugs
+### Bug Fixes
 
 - Fixed rare bug with historical runs in PLV
 - Fixed bug with viewers' captions duplication
 
 ## 1.13.9 (2023-08-23)
 
-### Fixed bugs
+### Bug Fixes
 
 - Fixed bug with empty captions in RFV blocks
 

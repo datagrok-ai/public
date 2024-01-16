@@ -65,37 +65,38 @@ category('Table view', () => {
   test('Mutation Cliffs selection', async () => {
     const selection = model.df.selection;
 
-    const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
-    await awaitCheck(() => sarViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
+    const mpViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    await awaitCheck(() => mpViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
 
-    for (const [position, selectedMonomers] of Object.entries(sarViewer.mutationCliffsSelection))
+    for (const [position, selectedMonomers] of Object.entries(mpViewer.mutationCliffsSelection))
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after initialization`);
 
     // Select first monomer-position pair
-    sarViewer.modifyMutationCliffsSelection(firstPair);
-    expect(sarViewer.mutationCliffsSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
+    mpViewer.modifyMutationCliffsSelection(firstPair);
+    expect(mpViewer.mutationCliffsSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not selected at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, firstPair.mcCount, `Selection count is not equal to ${firstPair.mcCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Select second monomer-position pair
-    sarViewer.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: false});
-    expect(sarViewer.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
-      `Monomer ${secondPair.monomerOrCluster} is not selected at position ${secondPair.positionOrClusterType}`);
+    mpViewer.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: false});
+    expect(mpViewer.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster),
+      true, `Monomer ${secondPair.monomerOrCluster} is not selected at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.mcCount + firstPair.mcCount, `Selection count is not equal ` +
       `to ${secondPair.mcCount + firstPair.mcCount} for monomer ${secondPair.monomerOrCluster} at ` +
       `position ${secondPair.positionOrClusterType}`);
 
     // Deselect second monomer-position pair
-    sarViewer.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
-    expect(sarViewer.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
-      `Monomer ${secondPair.monomerOrCluster} is still selected at position ${secondPair.positionOrClusterType} after deselection`);
+    mpViewer.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    expect(mpViewer.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster),
+      false, `Monomer ${secondPair.monomerOrCluster} is still selected at position ` +
+      `${secondPair.positionOrClusterType} after deselection`);
     expect(selection.trueCount, firstPair.mcCount, `Selection count is not equal to ${firstPair.mcCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType}`);
 
     // Clear monomer-position selection
-    sarViewer.mutationCliffsSelection = initSelection(sarViewer.positionColumns);
-    for (const [position, selectedMonomers] of Object.entries(sarViewer.mutationCliffsSelection)) {
+    mpViewer.mutationCliffsSelection = initSelection(mpViewer.positionColumns);
+    for (const [position, selectedMonomers] of Object.entries(mpViewer.mutationCliffsSelection)) {
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after clearing ` +
         `monomer-position selection`);
     }
@@ -105,22 +106,23 @@ category('Table view', () => {
     expect(lstViewer !== null, true, `Couldn't find Logo Summary Table viewer`);
     // Select first cluster
     lstViewer!.modifyClusterSelection(firstCluster);
-    expect(lstViewer!.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), true,
-      `Cluster ${firstCluster.monomerOrCluster} is not selected`);
+    expect(lstViewer!.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster),
+      true, `Cluster ${firstCluster.monomerOrCluster} is not selected`);
     expect(selection.trueCount, firstCluster.count, `Selection count is not equal to ${firstCluster.count} for ` +
       `cluster ${firstCluster.monomerOrCluster}`);
 
     // Select second cluster
     lstViewer!.modifyClusterSelection(secondCluster, {shiftPressed: true, ctrlPressed: false});
-    expect(lstViewer!.clusterSelection[secondCluster.positionOrClusterType].includes(secondCluster.monomerOrCluster), true,
-      `Cluster ${secondCluster.monomerOrCluster} is not selected`);
+    expect(lstViewer!.clusterSelection[secondCluster.positionOrClusterType].includes(secondCluster.monomerOrCluster),
+      true, `Cluster ${secondCluster.monomerOrCluster} is not selected`);
     expect(selection.trueCount, firstCluster.count + secondCluster.count, `Selection count is not equal to ` +
-      `${firstCluster.count + secondCluster.count} for cluster ${firstCluster.monomerOrCluster} and cluster ${secondCluster.monomerOrCluster}`);
+      `${firstCluster.count + secondCluster.count} for cluster ${firstCluster.monomerOrCluster} and cluster 
+      ${secondCluster.monomerOrCluster}`);
 
     // Deselect first cluster
     lstViewer!.modifyClusterSelection(firstCluster, {shiftPressed: true, ctrlPressed: true});
-    expect(lstViewer!.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), false,
-      `Cluster ${firstCluster.monomerOrCluster} is still selected after deselection`);
+    expect(lstViewer!.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster),
+      false, `Cluster ${firstCluster.monomerOrCluster} is still selected after deselection`);
     expect(selection.trueCount, secondCluster.count, `Selection count is not equal to ${secondCluster.count} for ` +
       `cluster ${secondCluster.monomerOrCluster} after deselection of cluster ${firstCluster.monomerOrCluster}`);
 
@@ -152,9 +154,9 @@ category('Table view', () => {
 
     // Deselect filter for second monomer-position pair
     model.modifyWebLogoSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
-    expect(model.webLogoSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
-      `Monomer ${secondPair.monomerOrCluster} is still filtered at position ${secondPair.positionOrClusterType} after ` +
-      `deselection`);
+    expect(model.webLogoSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster),
+      false, `Monomer ${secondPair.monomerOrCluster} is still filtered at position 
+      ${secondPair.positionOrClusterType} after deselection`);
     expect(selection.trueCount, firstPair.imCount, `Filter count is not equal to ${firstPair.imCount} ` +
       `for monomer ${firstPair.monomerOrCluster} at position ${firstPair.positionOrClusterType} after deselection of ` +
       `monomer ${secondPair.monomerOrCluster} at position ${secondPair.positionOrClusterType}`);

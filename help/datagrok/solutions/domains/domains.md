@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 Datagrok offers a broad range of general data analysis features
 and provides excellent support for specific data analysis areas.
 
-The [semantic data types](../../../catalog/semantic-types.md) system
+The [semantic data types](../../../govern/catalog/semantic-types.md) system
 and powerful [scripting capabilities](../../../compute/compute.md)
 allows to easily customize Datagrok for any domain of knowledge.
 
@@ -18,7 +18,7 @@ This includes:
 
 * Automatic recognition of domain-specific data types
 * Highly customized data rendering
-* Fast data-aware spreadsheets and visualizations
+* Fast, data-aware spreadsheets and visualizations
 * Specialized data editing and filtering interfaces
 * Domain-specific calculation and data processing functions
 * Custom applications built on top of Datagrok platform
@@ -47,4 +47,4 @@ Visit corresponding pages to explore domain-specific Datagrok capabilities:
 
 To build support of your own domain of knowledge, review the Datagrok
 [scripting capabilities](../../../compute/compute.md)
-and [semantic data types](../../../catalog/semantic-types.md).
+and [semantic data types](../../../govern/catalog/semantic-types.md).

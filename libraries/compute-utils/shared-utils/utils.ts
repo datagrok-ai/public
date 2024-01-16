@@ -114,7 +114,7 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
   const prop = val.property;
 
   $(t.root).css({
-    'width': `${prop.options['block'] ?? '100'}%`,
+    'width': `calc(${prop.options['block'] ?? '100'}% - ${prop.options['block'] ? '2': '0'}px)`,
     'box-sizing': 'border-box',
   });
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004

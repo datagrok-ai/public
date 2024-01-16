@@ -111,17 +111,18 @@ jobs:
                   echo "::notice title=${PACKAGE}::It is an actions for PR. Publish will be skipped."
               fi
           
-              if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
-                  build_docker=true
-              else
-                if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
-                  build_docker=true
+              if [[ -d "${DIR}/dockerfiles" ]]; then
+                build_docker=false
+                if [[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]; then
+                    build_docker=true
+                else
+                  if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
+                    build_docker=true
+                  fi
                 fi
-              fi
 
-              MATRIX_PUBLISH_JSON+=", \"build_docker\": \"true\""
-              if [[ "$build_docker" == "true" ]]; then
-                MATRIX_PUBLISH_JSON+=", \"docker\": \"$(find packages/*/dockerfiles -type f -name Dockerfile | tr '\n' ' ')\""
+                MATRIX_PUBLISH_JSON+=", \"build_docker\": \"$build_docker\""
+                MATRIX_PUBLISH_JSON+=", \"docker\": \"$(find ${DIR}/dockerfiles -type f -name Dockerfile | tr '\n' ' ')\""
               fi
 
               MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
@@ -159,18 +160,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
-    outputs:
-      push: ${{ steps.info.outputs.push }}
     steps:
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
+      - name: Get build info
+        id: info
+        run: |
+          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'test' }}
         run: |
-          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
-          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
           profiles='--profile datagrok --profile db --profile grok_connect'
@@ -199,10 +201,12 @@ jobs:
           fi
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
+          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
             DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
+            export GROK_SPAWNER_VERSION='bleeding-edge'
+            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
@@ -268,7 +272,8 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+        run: |
+          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -332,35 +337,28 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
-      #      - name: Wait for published docker to become available
-      #        if: matrix.docker == 'build_docker'
-      #        timeout-minutes: 5
-      #        run: |
-      #          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-      #          do
-      #            sleep 1
-      #            docker ps
-      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-      #            echo -e "\nRetrying..."
-      #          done
-      #          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
-      #
-      #          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'" '${{ matrix.package }}'
-      #          do
-      #            sleep 1
-      #            curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-      #            docker ps
-      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
-      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-      #            docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
-      #            echo -e "\nRetrying..."
-      #          done
+      - name: Wait for published docker to become available
+        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+          do
+            sleep 1
+            echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+            echo -e "\nRetrying..."
+          done
+
+          echo -e "\nGet admin session token...\n"
+          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+          echo -e "\nGet ALL containers from datlas API...\n"
+          curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 30
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --csv --verbose
+        run: npm run test -- --skip-build --skip-publish --record --csv
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
@@ -387,16 +385,23 @@ jobs:
           docker system prune -af --volumes
 
       - name: Get docker image version
-        if: matrix.docker_build == 'true'
+        if: matrix.build_docker == 'true'
         id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
           image_ver=$(jq -r .version package.json)
           if [[ "${{ matrix.publish }}" != "publish" ]]; then
-            image_ver+="-${{ steps.datagrok-image.outputs.commit_sha }}"
+            image_ver+="-${{ steps.info.outputs.commit_sha }}"
           fi
           echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: steps.docker_name_ver.outcome == 'success'
 
       - name: Build package Docker image
         if: steps.docker_name_ver.outcome == 'success'
@@ -407,17 +412,21 @@ jobs:
             if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
               image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
             fi
-            docker buildx build \
-              --tag datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }} \
-              --cache-from type=registry,ref="datagrok/$image_name:cache" \
-              --cache-to type=registry,ref="datagrok/$image_name:cache" \
-              --output type=docker,dest=/tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar
-              --load $dockerfile
-            image_tars+=" /tmp/$image_name_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
-            images+=" datagrok/$image_name:${{ steps.docker_name_ver.outputs.image_ver }}"
+            cache_args="--cache-from type=registry,ref=datagrok/${image_name}:cache"
+            if [ '${{ github.ref }}' == 'refs/heads/master' ]; then
+              cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
+            fi
+            docker buildx create --use
+            docker buildx build $(dirname $dockerfile) \
+              --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} \
+               $cache_args \
+              --output type=docker,dest=/tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar \
+              --load
+            image_tars+=" /tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
+            images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
           echo "images=$images" >> $GITHUB_OUTPUT
-          echo "image_tars=image_tars" >> $GITHUB_OUTPUT
+          echo "image_tars=$image_tars" >> $GITHUB_OUTPUT
 
       - name: General checks
         run: |
@@ -509,13 +518,9 @@ jobs:
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         with:
           path: ${{ steps.build-docker.outputs.image_tars }}
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
+          name: ${{ matrix.package }}.image_tars
+          retention-days: 14
+          if-no-files-found: warn
 
 #      - name: Build and push package Docker image
 #        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
@@ -571,3 +576,10 @@ jobs:
               fi
             done
           fi
+
+      - name: Trigger help update
+        continue-on-error: true
+        if: steps.publish.outcome == 'success'
+        run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
+        env:
+          GH_TOKEN: ${{ github.token }}

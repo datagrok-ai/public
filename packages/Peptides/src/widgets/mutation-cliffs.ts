@@ -10,12 +10,20 @@ export type MutationCliffsOptions = {
   positionColumns: DG.Column<string>[], gridColumns: DG.GridColumnList, activityCol: DG.Column<number>,
 };
 
+/**
+ * Creates mutation cliffs widget that shows grid of sequences that form mutation cliffs pairs as well as
+ * grid of mutation cliffs pairs themselves.
+ * @param table - table with sequences.
+ * @param options - options for mutation cliffs widget.
+ * @return - mutation cliffs widget.
+ */
 export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliffsOptions): DG.Widget {
   const filteredIndexes = table.filter.getSelectedIndexes();
   const positions = Object.keys(options.mutationCliffsSelection);
 
   if (!positions.length || options.mutationCliffs === null)
     return new DG.Widget(ui.label('No mutations table generated'));
+
 
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
@@ -43,9 +51,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
       if (typeof substitutionsMap === 'undefined')
         continue;
 
+
       for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
         if (!filteredIndexes.includes(referenceIdx))
           continue;
+
 
         const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
         const baseSequence = alignedSeqColCategories[alignedSeqColData[referenceIdx]];
@@ -55,8 +65,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
           if (forbiddentIndexes.includes(subIdx) || !filteredIndexes.includes(subIdx))
             continue;
 
+
           if (!seenIndexes.has(subIdx))
             seenIndexes.set(subIdx, []);
+
+
           const subSeq = alignedSeqColCategories[alignedSeqColData[subIdx]];
 
           seenIndexes.get(subIdx)!.push(referenceIdx);
@@ -74,6 +87,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
 
   if (substitutionsArray.length === 0)
     return new DG.Widget(ui.label('No mutations table generated'));
+
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
   const activityDeltaCol = DG.Column.fromList('double', 'Delta', deltaArray);
@@ -107,10 +121,15 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
       const rowIdx = gridCell.tableRowIndex;
       if (!keyPress)
         return;
+
+
       if (rowIdx === null)
         return;
+
+
       if (lastSelectedIndex !== null)
         pairsSelectedIndexes.splice(pairsSelectedIndexes.indexOf(lastSelectedIndex), 1);
+
 
       if (!pairsSelectedIndexes.includes(rowIdx)) {
         pairsSelectedIndexes.push(rowIdx);
@@ -127,6 +146,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
     const gridCell = pairsGrid.hitTest(event.offsetX, event.offsetY);
     if (!gridCell || gridCell.tableRowIndex === null)
       return;
+
 
     const rowIdx = gridCell.tableRowIndex;
     if (!event.shiftKey) {
@@ -146,14 +166,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
     if (gcArgs.cell.tableColumn?.name !== substCol.name || !pairsSelectedIndexes.includes(gcArgs.cell.tableRowIndex!))
       return;
 
+
     renderCellSelection(gcArgs.g, gcArgs.bounds);
   });
 
   const originalGridColCount = options.gridColumns.length;
-  // const positionColumns = options.positionColumns?.map((col) => col.name) ?? null;
-  // if (positionColumns == null)
-  //   throw new Error('PeptidesError: Could not create mutation cliffs table: Position columns are not initialized');
-
   const columnNames: string[] = [];
   for (let colIdx = 1; colIdx < originalGridColCount; colIdx++) {
     const gridCol = options.gridColumns.byIndex(colIdx);

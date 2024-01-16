@@ -10,4 +10,4 @@ See also:
 * [Data Connection](https://datagrok.ai/help/access/#data-connection)
 * [Data Query](https://datagrok.ai/help/access/#data-query)
 * [Info Panels](https://datagrok.ai/help/explore/data-augmentation/info-panels)
-* [Semantic Types](https://datagrok.ai/help/catalog/semantic-types)
+* [Semantic Types](https://datagrok.ai/help/govern/catalog/semantic-types)

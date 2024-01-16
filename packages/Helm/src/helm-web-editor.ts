@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export class HelmWebEditor {
+import {IHelmWebEditor} from '@datagrok-libraries/bio/src/types/editor';
+
+export class HelmWebEditor implements IHelmWebEditor {
   host: any;
   editor: any;
   w = 200;
@@ -44,7 +46,7 @@ export class HelmWebEditor {
     scil.apply(webEditor.properties.parent.style, s);
     webEditor.structureview.resize(sizes.rightwidth, sizes.bottomheight + webEditor.toolbarheight);
     webEditor.mex.resize(sizes.topheight - 80);
-    setTimeout(function() {
+    setTimeout(() => {
       webEditor.canvas.helm.setSequence(value, 'HELM');
     }, 200);
     return {editorDiv: editorView, webEditor: webEditor};

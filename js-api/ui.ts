@@ -699,13 +699,52 @@ export function tree(): TreeViewGroup {
 }
 
 
-export interface IInputInitOptions {
-  onCreated?: (input: InputBase) => void;
-  onValueChanged?: (input: InputBase) => void;
-}
-
-
+// TODO: create a new file - inputs.ts for these inputs
 export namespace input {
+  // TODO: add label here
+  interface IInputInitOptions<T = any> {
+    value?: T;
+    property?: Property;
+    elementOptions?: ElementOptions;
+    onCreated?: (input: InputBase<T>) => void;
+    onValueChanged?: (input: InputBase<T>) => void;
+  }
+
+  interface ITextBoxInputInitOptions<T> extends IInputInitOptions<T> {
+    clearIcon?: boolean;
+    escClears?: boolean;
+    placeholder?: string;
+  }
+
+  interface INumberInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    min?: number;
+    max?: number;
+    step?: number;
+  }
+
+  interface IChoiceInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    items?: T[];
+    nullable?: boolean;
+  }
+
+  interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
+    value?: T[];
+  }
+
+  interface IStringInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    icon?: string | HTMLElement;
+    // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
+  }
+
+  interface IColumnInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    table?: DataFrame;
+    filter?: Function;
+  }
+
+  interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
+    available?: string[];
+    checked?: string[];
+  }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
   export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
@@ -730,10 +769,6 @@ export namespace input {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
-  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
-    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
-  }
-
   export function userGroups(name: string, value?: User[], onValueChanged: Function | null = null): InputBase<User[]> {
     const i = forInputType(d4.InputType.UserGroups);
     if (value)
@@ -741,27 +776,83 @@ export namespace input {
     return i;
   }
 
-  // export function bySemType(semType: string) {
-  //
+  function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
+    const input = forInputType(type);
+    input.caption = name;
+    // go through properties and set them
+    _options(input.root, options?.elementOptions);
+    return input;
+  }
+
+  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Int, name, options);
+  }
+
+  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Slider, name, options);
+  }
+
+  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T> {
+    return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
+  }
+
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[]> {
+    return _create(d4.InputType.MultiChoice, name, options);
+  }
+
+  export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Text, name, options);
+  }
+
+  export function search(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Search, name, options);
+  }
+
+  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Float, name, options);
+  }
+
+  export function date(name: string, options?: ITextBoxInputInitOptions<dayjs.Dayjs>): DateInput {
+    return _create(d4.InputType.Date, name, options);
+  }
+
+  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+    return _create(d4.InputType.Bool, name, options);
+  }
+
+  // do we need this?
+  export function toggle(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+    return _create(d4.InputType.Switch, name, options);
+  }
+
+  export function molecule(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Molecule, name, options);
+  }
+
+  // export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+    // const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
+    // return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
   // }
 
-  // function _options(inputBase: InputBase, options?: InputOptions) {
-  //   if (options == null)
-  //     return;
-  //   return inputBase;
-  // }
-  //
-  // export function int(name: string, options?: InputOptions) {
-  //   return _options(intInput(name, options?.value, options?.onValueChanged));
-  // }
-  //
-  // export function choice(name: string, choices: string[], options?: InputOptions) {
-  //   return _options(choiceInput(name, options?.value ?? choices[0], choices, options?.onValueChanged));
-  // }
-  //
-  // export function multiChoice(name: string, options?: InputOptions) {
-  //
-  // }
+  export function columns(name: string, options?: IColumnsInputInitOptions<Column[]>): InputBase<Column[]> {
+    return _create(d4.InputType.Columns, name, options);
+  }
+
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame[]>): InputBase<DataFrame> {
+    return _create(d4.InputType.Table, name, options);
+  }
+
+  export function textArea(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.TextArea, name, options);
+  }
+
+  export function color(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Color, name, options);
+  }
+
+  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Radio, name, options);
+  }
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
@@ -953,22 +1044,81 @@ export class tools {
   static resizeFormLabels(element: HTMLElement): void {
     this.waitForElementInDom(element).then((form)=>{
       if(!form.classList.contains('ui-form-condensed')) {
-        form.classList.remove('ui-form');
+
         let labels: number[] = [];
+        let inputs: number[] = [];
+        let options: number[] = [];
+        let formElements = $(form).find('div.ui-input-root');
         let formLabels = $(form).find('label.ui-input-label');
+        let formInputs = $(form).find('input.ui-input-editor, select.ui-input-editor > option, .d4-column-selector-column');
+        let formOptions = $(form).find('div.ui-input-options');
         
-        formLabels.each((i)=>{
-            let renderWidth = formLabels[i]!.getBoundingClientRect().width;
+        formElements.each((i) => {
+          if ($(formLabels[i]).has('canvas'))
+            inputs.push(100)
+        });
+
+        //Get the width of input labels
+        formLabels.each((i) => {
+            let element = formLabels[i] as HTMLElement;
+            let value = document.createElement('span');
+            value.textContent = element.textContent;
+            value.style.visibility = 'hidden';
+            value.style.position = 'fixed';
+            form.append(value);
+            let renderWidth = Math.ceil(value.getBoundingClientRect().width);
             labels.push(renderWidth);
+            value.remove();
         });
         
+        //Set the max and min width for input labels
         formLabels.each((i)=>{
           let label = formLabels[i] as HTMLElement;
           label.style.minWidth = String(Math.min(...labels))+'px';
           label.style.maxWidth = String(Math.max(...labels))+'px';
         });
 
-        form.classList.add('ui-form')
+        //Get the width of input values
+        formInputs.each((i) => {
+          let element = formInputs[i] as HTMLElement;
+          let value = document.createElement('span');
+          if (element.tagName == 'INPUT'){
+            let temp = element as HTMLInputElement;
+            value.textContent = temp.value != undefined ? temp.value : '';
+          } else {
+            value.textContent = element.textContent;
+          }
+          value.style.visibility = 'hidden';
+          value.style.position = 'fixed';
+          form.append(value);
+          let renderWidth = Math.ceil(value.getBoundingClientRect().width+24); //Include 20px of select padding;
+          inputs.push(renderWidth);
+          value.remove();
+        });
+
+        //Get the width of input-options
+        formOptions.each((i) => {
+          let element = formOptions[i] as HTMLDivElement;
+          let renderWidth = Math.ceil(element.getBoundingClientRect().width);
+          options.push(renderWidth);
+        });
+
+        //Set the input-root max-width
+        formElements.each((i) => {
+          let element = formElements[i] as HTMLDivElement;
+          let labelWidth = labels.length > 0 ? Math.max(...labels) : 0;
+          let inputWidth = inputs.length > 0 ? Math.max(...inputs) : 0;
+          let optionsWidth = options.length > 0 ? Math.max(...options) : 0;
+          let width = labelWidth + inputWidth + optionsWidth + 16; //Include 16px field paddings;
+          element.style.width = '100%';
+          if (width < 200)
+            element.style.maxWidth = '200px';
+          else if (width > 500)
+            element.style.maxWidth = '500px';
+          else
+            element.style.maxWidth = String(width)+'px';
+        });
+
       }
     });
   }

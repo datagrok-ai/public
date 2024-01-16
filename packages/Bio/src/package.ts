@@ -68,7 +68,7 @@ import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomer
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+// import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
@@ -80,9 +80,6 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 
-import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
-import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
-  from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export const _package = new BioPackage();
@@ -246,6 +243,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
         plotEmbeddings: params.plotEmbeddings,
         options: params.options,
         preprocessingFunction: params.preprocessingFunction,
+        clusterEmbeddings: params.clusterEmbeddings,
       }).call();
     })
     .show();
@@ -267,16 +265,16 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Package settings editor --
 
-//name: packageSettingsEditor
-//description: The database connection
-//tags: packageSettingsEditor
-//input: object propList
-//output: widget result
-export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
-  const widget = new PackageSettingsEditorWidget(propList);
-  widget.init().then(); // Ignore promise returned
-  return widget as DG.Widget;
-}
+// //name: packageSettingsEditor
+// //description: The database connection
+// //tags: packageSettingsEditor
+// //input: object propList
+// //output: widget result
+// export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
+//   const widget = new PackageSettingsEditorWidget(propList);
+//   widget.init().then(); // Ignore promise returned
+//   return widget as DG.Widget;
+// }
 
 // -- Cell renderers --
 
@@ -429,7 +427,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
   let sequenceSpaceFunc: SequenceSpaceFunc = getSequenceSpace;
   if (ncUH.isHelm()) {
     sequenceSpaceFunc = sequenceSpaceByFingerprints;
-    cliffsEncodeFunction = async (seqCol: DG.Column, similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics) => {
+    cliffsEncodeFunction = async (seqCol: DG.Column, _similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics) => {
       await invalidateMols(seqCol, false);
       const molecularCol = seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS];
       const fingerPrints: DG.Column =
@@ -493,15 +491,22 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
-//meta.supportedUnits: fasta,separator
-//meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
+//meta.supportedUnits: fasta,separator,helm
+//meta.supportedDistanceFunctions: Levenshtein,Hamming,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
+//input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
+//input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
+// eslint-disable-next-line max-len
+//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern']; default: Morgan; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
-  col: DG.Column, metric: MmDistanceFunctionsNames): Promise<PreprocessFunctionReturnType> {
-  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric);
-  return {entries: seqList, options};
+  col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
+  fingerprintType = 'Morgan'): Promise<PreprocessFunctionReturnType> {
+  if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
+    return {entries: col.toList(), options: {}};
+  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType);
+  return {entries: seqList, options: {...options, gapOpen, gapExtend}};
 }
 
 //name: Helm Fingerprints
@@ -541,19 +546,20 @@ export async function helmPreprocessingFunction(
 //input: bool plotEmbeddings = true
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
+//input: bool clusterEmbeddings = true { optional: true }
 //output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
-  plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options
-): Promise<DG.ScatterPlotViewer | undefined> {
+  plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
+  clusterEmbeddings?: boolean): Promise<DG.ScatterPlotViewer | undefined> {
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
   if (!preprocessingFunction)
     preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
 
   const res = await reduceDimensionality(table, molecules, methodName,
-      similarityMetric as KnownMetrics, preprocessingFunction, plotEmbeddings, options, {
+      similarityMetric as KnownMetrics, preprocessingFunction, plotEmbeddings, clusterEmbeddings ?? false, options, {
         fastRowCount: 10000,
         scatterPlotName: 'Sequence space',
         bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],

@@ -11,7 +11,7 @@ import * as utils from '../../utils/utils';
 @grok.decorators.viewer({
   name: 'Tree',
   description: 'Creates a tree viewer',
-  trellisable: true,
+  trellisable: false,
   icon: 'icons/tree-viewer.svg',
 })
 export class TreeViewer extends EChartViewer {

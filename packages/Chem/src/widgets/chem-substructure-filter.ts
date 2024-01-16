@@ -206,6 +206,17 @@ export class SubstructureFilter extends DG.Filter {
     this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
 
+    this.subs.push(DG.debounce(this.dataFrame!.onFilterChanged, 10).subscribe(async (_) => {
+      if (this.bitset?.length !== this.dataFrame?.rowCount) {
+        const bitArray = await this.getFilterBitset();
+        this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+        this.batchResultObservable?.unsubscribe();
+        this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe(() => {
+          this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+        });
+      }
+    }));
+
     // hide the scaffold when user deactivates the filter
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))

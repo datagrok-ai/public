@@ -34,6 +34,7 @@ export const stringDistanceMetricsMethods: { [name: string]: (x: string, y: stri
   [StringMetricsNames.Levenshtein]: fl.distance,
   [StringMetricsNames.JaroWinkler]: jaroWinkler,
   [StringMetricsNames.Manhattan]: manhattanDistance,
+  [StringMetricsNames.Onehot]: categoricalDistance,
 };
 
 export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: BitArray) => number } = {
@@ -67,6 +68,7 @@ export const AvailableMetrics = {
     [StringMetricsNames.Levenshtein]: stringDistanceMetricsMethods[StringMetricsNames.Levenshtein],
     [StringMetricsNames.JaroWinkler]: stringDistanceMetricsMethods[StringMetricsNames.JaroWinkler],
     [StringMetricsNames.Manhattan]: stringDistanceMetricsMethods[StringMetricsNames.Manhattan],
+    [StringMetricsNames.Onehot]: stringDistanceMetricsMethods[StringMetricsNames.Onehot],
   },
   [DistanceMetricsSubjects.BitArray]: {
     [BitArrayMetricsNames.Tanimoto]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Tanimoto],
@@ -84,7 +86,8 @@ export const AvailableMetrics = {
     [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING],
     [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN],
     [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
-    [MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE]: mmDistanceFunctions[MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE],
+    [MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE]:
+      mmDistanceFunctions[MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE],
   },
   [DistanceMetricsSubjects.Number]: {
     [NumberMetricsNames.Difference]: numberDistanceMetricsMethods[NumberMetricsNames.Difference],
@@ -141,6 +144,10 @@ export function manhattanDistance(s1: string, s2: string): number {
       dist += s1[i] == s2[i] ? 0 : 1;
     return dist / s1.length;
   }
+}
+
+export function categoricalDistance(s1: string, s2: string): number {
+  return s1 === s2 ? 0 : 1;
 }
 
 /** Unified class implementing different string measures. */

@@ -133,6 +133,7 @@ export class TestsView extends UaView {
     df.onCurrentRowChanged.subscribe(async () => {
       const row = df.currentRow;
       const acc = DG.Accordion.create();
+      acc.root.style.width = '100%';
       let history: DG.DataFrame = await grok.functions.call('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
       history.getCol('id').name = '~id';
       history.getCol('uid').name = '~uid';

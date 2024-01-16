@@ -1,6 +1,7 @@
+/* eslint-disable valid-jsdoc */
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
+import {exec} from 'child_process';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 
@@ -22,7 +23,7 @@ export function link(args: LinkArgs) {
   const nOptions = Object.keys(args).length - 1;
   if (nOptions > 1 || args['_'].length > 1 || (nOptions === 1 && !args.local && !args.npm))
     return false;
-  const local = args.npm ? false : true;  // args.local is default
+  const local = args.npm ? false : true; // args.local is default
 
   if (!utils.isPackageDir(curDir)) {
     color.error('File `package.json` not found. Run the command from the package directory');
@@ -46,13 +47,13 @@ export function link(args: LinkArgs) {
       json.scripts['link-all'] = generateLinkScript(packagePath, packageHierarchy);
       json.scripts['build-all'] = generateBuildScript(packagePath, packageHierarchy);
       fs.writeFileSync(packageJsonPath, JSON.stringify(json, null, 2), 'utf-8');
-      exec('npm install && npm link && npm run link-all', { cwd: packagePath }, (err, stdout, stderr) => {
+      exec('npm install && npm link && npm run link-all', {cwd: packagePath}, (err, stdout, stderr) => {
         if (err) throw err;
         else console.log(stderr, stdout);
       });
     }
 
-    packageHierarchy.forEach(packageName => link(getPackagePath(packageName)));
+    packageHierarchy.forEach((packageName) => link(getPackagePath(packageName)));
     link(curDir);
   } else {
     runScript(curDir, 'npm install', dependencies, {
@@ -70,7 +71,7 @@ function readDependencies(packagePath: string): utils.Indexable {
   const fileContent = fs.readFileSync(path.join(packagePath, 'package.json'), 'utf-8');
   const json = JSON.parse(fileContent);
   const libs: utils.Indexable = {};
-  for (let dep in json.dependencies) {
+  for (const dep in json.dependencies) {
     if (dep === apiPackageName || dep.startsWith(`${libScope}/`))
       libs[dep] = json.dependencies[dep];
   }
@@ -125,7 +126,7 @@ function runScript(packageDir: string, script: string, dependencies: utils.Index
     if (err) throw err;
     else {
       console.log(stderr, stdout);
-      for(const dep in dependencies) {
+      for (const dep in dependencies) {
         const depPath = getPackagePath(dep);
         exec(script, {cwd: depPath}, (err, stdout, stderr) => {
           if (options.dirMessage)
@@ -163,7 +164,7 @@ function generateLinkScript(packagePath: string, hierarchy: string[]): string {
     if (!packageNames.includes(dep))
       color.error(`Hierarchy does not include package ${dep}`);
   }
-  let script = `npm link${packageNames.length ? (' ' + packageNames.join(' ')) : ''}`;
+  const script = `npm link${packageNames.length ? (' ' + packageNames.join(' ')) : ''}`;
   return script;
 }
 

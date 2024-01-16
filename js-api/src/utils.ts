@@ -701,4 +701,12 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
+
+  export function getTestDataGeneratorByType(type: string) {
+    return api.grok_Test_GetTestDataGeneratorByType(type);
+  }
+
+  export function getInputTestDataGeneratorByType(inputType: string) {
+    return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
+  }
 }

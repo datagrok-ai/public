@@ -6,17 +6,21 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
 import * as grok from 'datagrok-api/grok';
+
 import wu from 'wu';
-import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
-import {Subject, Subscription} from 'rxjs';
-import {updateDivInnerHTML} from '../utils/ui-utils';
-import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {fromEvent, Subject, Subscription, Unsubscribable} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
-import {_package} from '../package-test';
+import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {errInfo, errStack} from '@datagrok-libraries/bio/src/utils/err-info';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {IHelmWebEditor} from '@datagrok-libraries/bio/src/types/editor';
+
+import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
+import {updateDivInnerHTML} from '../utils/ui-utils';
+
+import {_package} from '../package';
 
 export class BioSubstructureFilter extends DG.Filter {
   bioFilter: BioFilterBase | null = null;
@@ -84,6 +88,7 @@ export class BioSubstructureFilter extends DG.Filter {
   }
 
   detach() {
+    if (this.bioFilter) this.bioFilter.detach();
     super.detach();
   }
 
@@ -147,18 +152,16 @@ abstract class BioFilterBase {
     return new HTMLElement();
   }
 
-  get substructure() {
-    return '';
-  }
-
-  set substructure(s: string) {
-  }
+  abstract get substructure(): string;
+  abstract set substructure(s: string);
 
   async substructureSearch(_column: DG.Column): Promise<DG.BitSet | null> {
     return null;
   }
 
   abstract resetFilter(): void;
+
+  abstract detach(): void;
 }
 
 class FastaFilter extends BioFilterBase {
@@ -191,6 +194,8 @@ class FastaFilter extends BioFilterBase {
   resetFilter(): void {
     this.substructureInput.value = '';
   }
+
+  detach(): void { }
 }
 
 export class SeparatorFilter extends FastaFilter {
@@ -227,10 +232,12 @@ export class SeparatorFilter extends FastaFilter {
   async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
     return linearSubstructureSearch(this.substructure, column, this.colSeparator);
   }
+
+  detach(): void { }
 }
 
 export class HelmFilter extends BioFilterBase {
-  helmEditor: any;
+  helmEditor: IHelmWebEditor;
   _filterPanel = ui.div('', {style: {cursor: 'pointer'}});
   helmSubstructure = '';
 
@@ -239,14 +246,18 @@ export class HelmFilter extends BioFilterBase {
     this.init();
   }
 
+  viewSubs: Unsubscribable[] = [];
+
   async init() {
-    this.helmEditor = await grok.functions.call('HELM:helmWebEditor');
+    this.helmEditor = await grok.functions.call('Helm:helmWebEditor');
     await ui.tools.waitForElementInDom(this._filterPanel);
     this.updateFilterPanel();
-    this._filterPanel.addEventListener('click', (_event: MouseEvent) => {
-      const {editorDiv, webEditor} = this.helmEditor.createWebEditor(this.helmSubstructure);
-      //@ts-ignore
-      ui.dialog({showHeader: false, showFooter: true})
+    let editorDiv: HTMLDivElement | undefined;
+    let webEditor: any | undefined;
+    // TODO: Unsubscribe 'click' and 'sizeChanged'
+    this.viewSubs.push(fromEvent(this._filterPanel, 'click').subscribe(() => {
+      ({editorDiv, webEditor} = this.helmEditor.createWebEditor(this.helmSubstructure));
+      const dlg = ui.dialog({showHeader: false, showFooter: true})
         .add(editorDiv)
         .onOK(() => {
           const helmString = webEditor.canvas.getHelm(true)
@@ -255,12 +266,24 @@ export class HelmFilter extends BioFilterBase {
           this.updateFilterPanel(this.substructure);
           setTimeout(() => { this.onChanged.next(); }, 10);
         }).show({modal: true, fullScreen: true});
-    });
-    ui.onSizeChanged(this._filterPanel).subscribe((_) => {
-      const helmString = this.helmEditor
-        .webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-      this.updateFilterPanel(helmString);
-    });
+      const onCloseSub = dlg.onClose.subscribe(() => {
+        onCloseSub.unsubscribe();
+        editorDiv = undefined;
+        webEditor = undefined;
+      });
+    }));
+    this.viewSubs.push(ui.onSizeChanged(this._filterPanel).subscribe((_) => {
+      try {
+        if (!!webEditor) {
+          const helmString = webEditor.canvas.getHelm(true)
+            .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+          this.updateFilterPanel(helmString);
+        }
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+      }
+    }));
   }
 
   get filterPanel() {
@@ -301,5 +324,9 @@ export class HelmFilter extends BioFilterBase {
     console.debug('Bio: HelmFilter.resetFilter()');
     this.helmSubstructure = '';
     this.updateFilterPanel(this.substructure);
+  }
+
+  detach(): void {
+    for (const sub of this.viewSubs) sub.unsubscribe();
   }
 }

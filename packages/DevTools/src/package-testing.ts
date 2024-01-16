@@ -136,10 +136,15 @@ export class TestManager extends DG.ViewBase {
       let allPackageTests: object;
       if (f.package.name === 'Core') {
         allPackageTests = {};
-        allPackageTests[DART_TESTS_CAT] = {tests: [], clear: true};
-        const testFunctions = DG.Func.find({tags: ['dartTest']});
-        for (const f of testFunctions)
-          allPackageTests[DART_TESTS_CAT].tests.push(new Test(DART_TESTS_CAT, f.name, async () => await f.apply()));
+        const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
+        for (const f of testFunctions) {
+          const isAggTest: boolean = f.outputs.length > 0;
+          const catName: string = isAggTest ? f.name : DART_TESTS_CAT;
+          if (allPackageTests[catName] == null)
+            allPackageTests[catName] = {tests: [], clear: true};
+          allPackageTests[catName].tests.push(new Test(catName, f.name,
+            async () => await f.apply(), {isAggregated: isAggTest}));
+        }
       } else {
         selectedPackage.check = true;
         await f.package.load({file: f.options.file});
@@ -220,7 +225,7 @@ export class TestManager extends DG.ViewBase {
       this.setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
       ui.tooltip.bind(item.root,
         () => this.getTestsInfoGrid({package: t.packageName, category: t.test.category, name: t.test.name},
-          NODE_TYPE.TEST, true));
+          NODE_TYPE.TEST, true)?.info);
       if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name)
         this.selectedNode = item;
     });
@@ -405,15 +410,16 @@ export class TestManager extends DG.ViewBase {
     const res = {category: DART_TESTS_CAT, name: t.test.name,
       success: true, result: 'OK', ms: 0, skipped: false};
     const start = Date.now();
+    let result: any;
     try {
-      await t.test.test();
+      result = await t.test.test();
     } catch (e) {
       res.success = false;
       res.result = e.toString();
     }
     res.ms = Date.now() - start;
     console.log(`Finished ${DART_TESTS_CAT} ${t.test.name} for ${res.ms} ms`);
-    return DG.DataFrame.fromObjects([res]);
+    return result ?? DG.DataFrame.fromObjects([res]);
   }
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
@@ -582,15 +588,27 @@ export class TestManager extends DG.ViewBase {
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
-    const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
+    const obj = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType),
+      nodeType, false, unhandled);
+    const grid = obj.info;
+    const testInfo = obj.testInfo;
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
+    if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
+      const logs: string = testInfo.get('logs', 0);
+      acc.addPane('Logs', () => ui.divText(logs), logs !== '');
+    }
     acc.addPane('History', () => ui.waitBox(async () => {
       let query: string;
       let params: object;
       let b1: string | boolean = true;
       let b2: string | boolean = false;
       let col: string = 'success';
+      if (nodeType == NODE_TYPE.TEST && tests.test.options.isAggregated) {
+        params = {packageName: tests.packageName, category: tests.test.name};
+        query = 'CategoryHistory';
+        nodeType = null;
+      }
       switch (nodeType) {
       case NODE_TYPE.PACKAGE:
         query = 'PackageHistory';
@@ -608,6 +626,7 @@ export class TestManager extends DG.ViewBase {
         col = 'status';
         break;
       }
+
       const history = await grok.data.query(`DevTools:${query}`, params);
       const arr = history.col(col).toList();
       this.detailsTable.rows[Object.keys(params).length].cells[1].innerHTML = history.get('date', arr.indexOf(b1));
@@ -620,7 +639,8 @@ export class TestManager extends DG.ViewBase {
   resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE): object {
     return nodeType === NODE_TYPE.PACKAGE ? {package: tests.package.name} :
       nodeType === NODE_TYPE.CATEGORY ? {package: tests.packageName, category: tests.fullName} :
-        {package: tests.packageName, category: tests.test.category, name: tests.test.name};
+        tests.test.options.isAggregated ? {package: tests.packageName, category: tests.test.name} :
+          {package: tests.packageName, category: tests.test.category, name: tests.test.name};
   }
 
   testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -643,8 +663,9 @@ export class TestManager extends DG.ViewBase {
 
   getTestsInfoGrid(condition: object, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
     let info = ui.divText('No tests have been run');
+    let testInfo: DG.DataFrame;
     if (this.testsResultsDf) {
-      const testInfo = this.testsResultsDf
+      testInfo = this.testsResultsDf
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
@@ -655,7 +676,7 @@ export class TestManager extends DG.ViewBase {
           'exceptions', testInfo.get('package', 0)]);
       }
       if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
-        return info;
+        return {info, testInfo};
       const cat = testInfo.get('category', 0);
       if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
         const time = testInfo.get('ms', 0);
@@ -683,6 +704,6 @@ export class TestManager extends DG.ViewBase {
         } else return null;
       }
     }
-    return info;
+    return {info, testInfo};
   };
 }

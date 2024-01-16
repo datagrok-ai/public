@@ -797,6 +797,16 @@ export interface IDartApi {
   grok_Property_Set_ShowSlider(p: any, x: any): any;
   grok_Property_Get_ShowPlusMinus(p: any): any;
   grok_Property_Set_ShowPlusMinus(p: any, x: any): any;
+  grok_Property_Get_Format(p: any): any;
+  grok_Property_Set_Format(p: any, x: any): any;
+  grok_Property_Get_UserEditable(p: any): any;
+  grok_Property_Set_UserEditable(p: any, x: any): any;
+  grok_Property_Get_Min(p: any): any;
+  grok_Property_Set_Min(p: any, x: any): any;
+  grok_Property_Get_Max(p: any): any;
+  grok_Property_Set_Max(p: any, x: any): any;
+  grok_Property_Get_Step(p: any): any;
+  grok_Property_Set_Step(p: any, x: any): any;
   grok_Property_Get_Options(p: any): any;
   grok_Property_Get(p: any, propertyName: String): any;
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
@@ -1008,6 +1018,8 @@ export interface IDartApi {
   grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
+  grok_InputForm_Get_Source(form: any): any;
+  grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
@@ -1229,6 +1241,8 @@ export interface IDartApi {
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
+  grok_FileInfo_FromBytes(data: any): any;
+  grok_FileInfo_FromString(data: String): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1238,7 +1252,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
-  grok_FileInfo_ReadAsString(p0: any): Promise<any>;
+  grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
   grok_Dapi_UserFiles_Exists(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Delete(fi: any): Promise<any>;
@@ -1329,6 +1343,9 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_DayJs_To_DateTime(milliseconds: Num): any;
+  grok_Test_GetTestDataGeneratorByType(type: String): any;
+  grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
+  grok_Shell_GetClientBuildInfo(): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DockerImage(): any;

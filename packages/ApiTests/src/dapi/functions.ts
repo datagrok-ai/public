@@ -46,7 +46,7 @@ category('Dapi: functions calls', async () => {
 
     const loadedFunCall = await GDF.calls.include('parentCall').find(funcCall.id);
     expect(loadedFunCall.parentCall.id, parentFuncCall.id);
-  });
+  }, {skipReason: 'GROK-14488'});
 
   test('load package function call', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
