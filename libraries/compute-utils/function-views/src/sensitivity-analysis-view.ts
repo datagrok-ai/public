@@ -16,6 +16,7 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
+const supportedTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 
 enum DISTRIB_TYPE {
   UNIFORM = 'Uniform',
@@ -332,17 +333,7 @@ export class SensitivityAnalysisView {
                 return 'Switch to mark output as requiring analysis';
               return 'Switch to mark output as not requiring analysis';
             });
-            // TODO: Replace by proper check
-            switch (outputProp.propertyType) {
-            case DG.TYPE.INT:
-            case DG.TYPE.BIG_INT:
-            case DG.TYPE.FLOAT:
-            case DG.TYPE.BOOL:
-            case DG.TYPE.DATA_FRAME:
-              break;
-            default:
-              $(isInterestInput.root).css({'visibility': 'hidden'});
-            }
+            if (!supportedTypes.includes(outputProp.propertyType)) $(isInterestInput.root).css({'visibility': 'hidden'});
             input.root.insertBefore(isInterestInput.root, input.captionLabel);
 
             return input;
@@ -529,7 +520,7 @@ export class SensitivityAnalysisView {
   private buildFormWithBtn() {
     let prevCategory = 'Misc';
     const form = Object.values(this.store.inputs)
-      .reduce(({container, switches}, inputConfig) => {
+      .reduce((container, inputConfig) => {
         const prop = inputConfig.prop;
         if (prop.category !== prevCategory) {
           container.append(ui.h2(prop.category));
@@ -541,21 +532,18 @@ export class SensitivityAnalysisView {
           ...inputConfig.saForm.map((input) => input.root),
         );
 
-        return {container, switches};
-      }, {
-        container: ui.form([
-          this.store.analysisInputs.analysisType.input,
-          this.store.analysisInputs.samplesCount.input,
-        ], {style: {'overflow-y': 'scroll', 'padding-right': '4px'}}),
-        switches: [] as DG.InputBase[],
-      });
+        return container;
+      }, ui.form([
+        this.store.analysisInputs.analysisType.input,
+        this.store.analysisInputs.samplesCount.input,
+      ], {style: {'overflow-y': 'scroll', 'padding-right': '4px'}}));
 
     const outputsTitle = ui.h2('Outputs');
-    form.container.appendChild(outputsTitle);
+    form.appendChild(outputsTitle);
     prevCategory = 'Misc';
 
     const outputForm = Object.values(this.store.outputs)
-      .reduce(({container, switches}, outputConfig) => {
+      .reduce((container, outputConfig) => {
         const prop = outputConfig.prop;
         if (prop.category !== prevCategory) {
           container.append(ui.h2(prop.category));
@@ -567,18 +555,15 @@ export class SensitivityAnalysisView {
           ...outputConfig.analysisInputs.map((input) => input.root),
         );
 
-        return {container, switches};
-      }, {
-        container: form.container,
-        switches: [] as DG.InputBase[],
-      });
+        return container;
+      }, form);
 
     this.store.analysisInputs.analysisType.value.subscribe((analysisType) => {
       if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS)
         $(this.store.analysisInputs.samplesCount.input.root).hide();
       else {
         $(outputsTitle).show();
-        $(outputForm.container).show();
+        $(outputForm).show();
         $(this.store.analysisInputs.samplesCount.input.root).show();
       }
     });
@@ -603,18 +588,18 @@ export class SensitivityAnalysisView {
 
     const buttons = ui.buttonsInput([this.runButton]);
 
-    form.container.appendChild(
+    form.appendChild(
       buttons,
     );
 
-    ui.tools.handleResize(form.container, (w: number) => {
+    ui.tools.handleResize(form, (w: number) => {
       if (w < 320)
-        $(form.container).addClass('ui-form-condensed');
+        $(form).addClass('ui-form-condensed');
       else
-        $(form.container).removeClass('ui-form-condensed');
+        $(form).removeClass('ui-form-condensed');
     });
 
-    return form.container;
+    return form;
   }
 
   private addTooltips(): void {
@@ -1091,122 +1076,6 @@ export class SensitivityAnalysisView {
 
       grok.shell.o = overviewPanel.root;
     });
-  }
-
-  private async runSimpleAnalysis() {
-    const paramValues = Object.keys(this.store.inputs).reduce((acc, propName) => {
-      switch (this.store.inputs[propName].type) {
-      case DG.TYPE.INT:
-      case DG.TYPE.BIG_INT:
-        const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-        const intStep = (numPropConfig.max.value - numPropConfig.min.value) / (numPropConfig.lvl.value - 1);
-        acc[propName] = numPropConfig.isChanging.value ?
-          Array.from({length: numPropConfig.lvl.value}, (_, i) => Math.round(numPropConfig.min.value + i*intStep)) :
-          [numPropConfig.const.value];
-        break;
-      case DG.TYPE.FLOAT:
-        const floatPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-        const floatStep = (floatPropConfig.max.value - floatPropConfig.min.value) / (floatPropConfig.lvl.value - 1);
-        acc[propName] = floatPropConfig.isChanging.value ?
-          Array.from({length: floatPropConfig.lvl.value}, (_, i) => floatPropConfig.min.value + i*floatStep) :
-          [floatPropConfig.const.value];
-        break;
-      case DG.TYPE.BOOL:
-        const boolPropConfig = this.store.inputs[propName] as SensitivityBoolStore;
-        acc[propName] = boolPropConfig.isChanging.value ?
-          [boolPropConfig.const.value, !boolPropConfig.const.value]:
-          [boolPropConfig.const.value];
-        break;
-      default:
-        const constPropConfig = this.store.inputs[propName] as SensitivityConstStore;
-        acc[propName] = [constPropConfig.const.value];
-      }
-
-      return acc;
-    }, {} as Record<string, any[]>);
-
-    let runParams = Object.values(paramValues)[0].map((item) => [item]) as any[][];
-    for (let i = 1; i < Object.values(paramValues).length; i++) {
-      const values = Object.values(paramValues)[i];
-
-      const newRunParams = [] as any[][];
-      for (const accVal of runParams) {
-        for (const val of values)
-          newRunParams.push([...accVal, val]);
-      }
-
-      runParams = newRunParams;
-    }
-
-    const funccalls = runParams.map((runParams) => this.func.prepare(
-      this.func.inputs
-        .map((input, idx) => ({name: input.name, idx}))
-        .reduce((acc, {name, idx}) => {
-          acc[name] = runParams[idx];
-          return acc;
-        }, {} as Record<string, any>),
-    ));
-
-    const pi = DG.TaskBarProgressIndicator.create(`Running ${funccalls.length} function calls...`);
-    const calledFuncCalls = await Promise.all(funccalls.map(async (funccall) => await funccall.call()));
-    pi.close();
-
-    const comparisonDf = getDfFromRuns(
-      calledFuncCalls,
-      this.func,
-      this.options,
-    );
-
-    this.comparisonView.dataFrame = comparisonDf;
-
-    this.comparisonView.grid.props.rowHeight = 25;
-    this.comparisonView.grid.props.showAddNewRowIcon = false;
-    this.comparisonView.grid.props.allowEdit = false;
-
-    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.width = 70;
-    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
-
-    for (let i = 0; i < this.comparisonView.grid.columns.length; i++) {
-      const gridCol = this.comparisonView.grid.columns.byIndex(i)!;
-      if (gridCol.column?.temp[VIEWER_PATH]) {
-        gridCol.width = 350;
-        gridCol.cellType = 'html';
-      };
-    }
-
-    this.comparisonView.grid.onCellPrepare((gc) => {
-      if (gc.isColHeader || gc.isRowHeader) return;
-
-      if (gc.tableColumn!.name === RUN_NAME_COL_LABEL)
-        gc.style.textVertical = true;
-
-      if (gc.tableColumn && gc.tableColumn.temp[VIEWER_PATH]) {
-        const initialValue = gc.cell.value;
-
-        const viewerConfig = gc.tableColumn.temp[VIEWER_PATH];
-        const viewerType = viewerConfig['type'] as string;
-        gc.element =
-          ui.waitBox(async () => {
-            const viewer = Object.values(viewerTypesMapping).includes(viewerType) ?
-              DG.Viewer.fromType(viewerType, initialValue) :
-              await initialValue.plot.fromType(viewerType) as DG.Viewer;
-
-            // Workaround required since getOptions and setOptions are not symmetrical
-            if (!gc.tableColumn!.temp[VIEWER_PATH]['look']) {
-              viewer.setOptions(viewerConfig);
-              gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
-            } else
-              viewer.setOptions(gc.tableColumn!.temp[VIEWER_PATH]['look']);
-
-            return viewer.root;
-          });
-
-        gc.element.style.width = '100%';
-        gc.element.style.height = '100%';
-      }
-    });
-
-    this.comparisonView.grid.props.rowHeight = 25;
   }
 
   private async runElementaryAnalysis() {
