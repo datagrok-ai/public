@@ -15,7 +15,8 @@ export class PatternSVGDimensionsCalculator {
 
   constructor(
     private config: PatternConfiguration,
-    private distinctNucleobaseTypes: string[],
+    //todo: remove from constructor, used by only one method
+    // private distinctNucleobaseTypes: string[],
     private isPhosphorothioateLinkageActive: boolean,
   ) {
     this.strandLabelWidth = this.getStrandLabelWidth();
@@ -145,17 +146,17 @@ export class PatternSVGDimensionsCalculator {
     };
   }
 
-  getLegendCirclePosition(index: number): Position {
+  getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[]): Position {
     const centerPosition = {
-      x: this.computeLegendCircleXPosition(index),
+      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes),
       y: this.getLegendVerticalPosition(),
     };
     return centerPosition;
   }
 
-  getLegendTextPosition(index: number): Position {
+  getLegendTextPosition(index: number, distinctNucleobaseTypes: string[]): Position {
     const legendPosition = {
-      x: this.computeLegendCircleXPosition(index) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
+      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
       y: this.getLegendTextVerticalPosition(),
     };
     return legendPosition;
@@ -193,9 +194,9 @@ export class PatternSVGDimensionsCalculator {
     );
   };
 
-  private computeLegendCircleXPosition(index: number): number {
+  private computeLegendCircleXPosition(index: number, distinctNucleobaseTypes: string[]): number {
     const legendStartIndex = this.isPhosphorothioateLinkageActive ? 1 : 0;
-    const totalPositions = this.distinctNucleobaseTypes.length + legendStartIndex;
+    const totalPositions = distinctNucleobaseTypes.length + legendStartIndex;
     const width = this.getCanvasWidth();
     const spacingUnit = width / totalPositions;
     const position = (index + legendStartIndex) * spacingUnit;
