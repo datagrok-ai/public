@@ -22,8 +22,7 @@ export enum HINT {
   NIM = 'Nimotuzumab disposition model',
   CLEAR = 'Clear model',
   TO_JS = 'Export model to JavaScript script',
-  APP = 'Export model to platform application with user interface',
-  RUN = `Solve (${HOT_KEY.RUN})`,
+  APP = 'Export model to platform application with user interface'
 };
 
 /** UI titles */
@@ -44,12 +43,10 @@ export enum TITLE {
   NIM = 'Nimotuzumab',
   CLEAR = 'Clear',
   TO_JS = 'js',
-  APP = 'app',
   MISC = 'Misc',
-  SOLVE = 'Solve',
   VARY = 'Vary inputs',
   MODEL = 'Model',
-  IPUTS = 'App'
+  IPUTS = 'Run'
 };
 
 /** Help links */
@@ -104,13 +101,13 @@ export enum INFO {
 
 /** Demo app help info */
 export const demoInfo = `# Try
-Modify formulas and press <i class="fas fa-play"></i> **Run** button.
+Modify formulas and go to the **${TITLE.IPUTS}** tab.
 
 # No-code
 Define equations in a declarative form.
 
 # Interactivity
-Play with model inputs on the **App** tab.
+Play with model inputs on the **${TITLE.IPUTS}** tab.
 
 # Examples
 Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.

@@ -180,22 +180,20 @@ export async function runSolverApp() {
   const runSolving = async (showApp: boolean) => {  
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
-      inputsDiv = await getInputsUI(ivp, solve);
-      tabControl.clear();
-      tabControl.currentPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
-            
-      if (showApp)
-        tabControl.currentPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
-      else
-        tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
 
-      playIcon.hidden = true;
+      if (prevInputsNode !== null)
+        inputsDiv.removeChild(prevInputsNode);  
+
+      prevInputsNode = inputsDiv.appendChild(await getInputsUI(ivp, solve));
+      tabControl.currentPane = showApp ? inputsPane : modelPane;
+      toChangeInputs = false;
+
     } catch (err) {
         if (err instanceof Error) 
           grok.shell.error(err.message);
         else
           grok.shell.error(ERROR_MSG.CORE_ISSUE);
-  }};
+  }}; 
    
   let solutionTable = DG.DataFrame.create();
   let solverView = grok.shell.addTableView(solutionTable);
@@ -205,11 +203,16 @@ export async function runSolverApp() {
   solverView.name = MISC.VIEW_DEFAULT_NAME;
   let modelDiv = ui.divV([]);
   let inputsDiv = ui.divV([]);
+  let prevInputsNode: Node | null = null;
   const tabControl = ui.tabControl();
 
-  const playIcon = ui.iconFA('play', async () => {await runSolving(true)}, HINT.RUN);  
-  playIcon.style.color = "var(--green-2)";
-  playIcon.classList.add("fas");
+  const modelPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
+  const inputsPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+
+  tabControl.onTabChanged.subscribe(async (_) => { 
+    if ((tabControl.currentPane === inputsPane) && toChangeInputs) 
+      await runSolving(true);
+  });
 
   /** Code editor for IVP specifying */
   let editorView = new EditorView({
@@ -220,12 +223,13 @@ export async function runSolverApp() {
   
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
   let toShowWarning = true;
-  let isChanged = false;
+  let isModelChanged = false;
+  let toChangeInputs = false;
 
   editorView.dom.addEventListener('keydown', async (e) => {
     if (e.key !== HOT_KEY.RUN) {
-      isChanged = true;
-      playIcon.hidden = false;
+      isModelChanged = true;
+      toChangeInputs = true;
     }
   });
 
@@ -266,7 +270,7 @@ export async function runSolverApp() {
   /** Set IVP code editor state */
   const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
     toChangeSolutionViewerProps = true;
-    isChanged = false;
+    isModelChanged = false;
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
@@ -300,7 +304,7 @@ export async function runSolverApp() {
 
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
-    if (toShowWarning && isChanged) {      
+    if (toShowWarning && isModelChanged) {      
       const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
       solverView.append(dlg);
@@ -357,15 +361,19 @@ export async function runSolverApp() {
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
-  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS); 
+  const exportButton = ui.bigButton(TITLE.TO_JS, exportToJS, HINT.TO_JS); 
   
   solverView.root.addEventListener('keydown', async (e) => {
     if (e.key === HOT_KEY.RUN) {
       e.stopImmediatePropagation();
       e.preventDefault();
-      await runSolving(true);
-    }
-  });
+
+      if (tabControl.currentPane === modelPane) 
+        if ( toChangeInputs )
+          await runSolving(true);
+        else
+          tabControl.currentPane = inputsPane;
+  }});
 
   const openMenu = DG.Menu.popup()
     .item(TITLE.FROM_FILE, async () => await overwrite(undefined, loadFn), undefined, {description: HINT.LOAD})
@@ -386,7 +394,7 @@ export async function runSolverApp() {
   const openIcon = ui.iconFA('folder-open', () => openMenu.show(), HINT.OPEN);
   const saveIcon = ui.iconFA('save', async () => {await saveFn()}, HINT.SAVE);
 
-  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, playIcon]]);
+  solverView.setRibbonPanels([[openIcon, saveIcon, exportButton, helpIcon]]);
 } // runSolverApp
 
 /** Run solver demo application */
@@ -460,14 +468,13 @@ export async function runSolverDemoApp() {
   const runSolving = async (showApp: boolean) => {  
     try {  
       const ivp = getIVP(editorView.state.doc.toString());
-      inputsDiv = await getInputsUI(ivp, solve);
-      tabControl.clear();
-      tabControl.currentPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
-            
-      if (showApp)
-        tabControl.currentPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
-      else
-        tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+
+      if (prevInputsNode !== null)
+        inputsDiv.removeChild(prevInputsNode);  
+
+      prevInputsNode = inputsDiv.appendChild(await getInputsUI(ivp, solve));
+      tabControl.currentPane = showApp ? inputsPane : modelPane;
+      toChangeInputs = false;
 
     } catch (err) {
         if (err instanceof Error) 
@@ -484,7 +491,15 @@ export async function runSolverDemoApp() {
   solverView.name = MISC.VIEW_DEFAULT_NAME;
   let modelDiv = ui.divV([]);
   let inputsDiv = ui.divV([]);
+  let prevInputsNode: Node | null = null;
   const tabControl = ui.tabControl();
+  const modelPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
+  const inputsPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+
+  tabControl.onTabChanged.subscribe(async (_) => { 
+    if ((tabControl.currentPane === inputsPane) && toChangeInputs) 
+      await runSolving(true);
+  });
 
   /** Code editor for IVP specifying */
   let editorView = new EditorView({
@@ -495,11 +510,14 @@ export async function runSolverDemoApp() {
   
   let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
   let toShowWarning = false;
-  let isChanged = false;
+  let isModelChanged = false;  
+  let toChangeInputs = false;
 
   editorView.dom.addEventListener('keydown', async (e) => {
-    if (e.key !== HOT_KEY.RUN)
-      isChanged = true;
+    if (e.key !== HOT_KEY.RUN) {
+      isModelChanged = true;
+      toChangeInputs = true;
+    }
   });
 
   /** Load IVP from file */
@@ -540,7 +558,7 @@ export async function runSolverDemoApp() {
   /** Set IVP code editor state */
   const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
     toChangeSolutionViewerProps = true;
-    isChanged = false;
+    isModelChanged = false;
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
@@ -574,7 +592,7 @@ export async function runSolverDemoApp() {
 
   /** Overwrite the editor content */
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
-    if (toShowWarning && isChanged) {      
+    if (toShowWarning && isModelChanged) {      
       const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
       solverView.append(dlg);
@@ -638,25 +656,25 @@ export async function runSolverDemoApp() {
   node.container.dart.elementTitle.hidden = true;
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
 
-  const playIcon = ui.iconFA('play', async () => {await runSolving(true)}, HINT.RUN);  
-  playIcon.style.color = "var(--green-2)";
-  playIcon.classList.add("fas");
-
   await runSolving(false);
 
   solverView.dockManager.dock(divHelp, 'right', undefined, undefined, 0.3);
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
-  const exportButton = ui.button(TITLE.TO_JS, exportToJS, HINT.TO_JS);  
+  const exportButton = ui.bigButton(TITLE.TO_JS, exportToJS, HINT.TO_JS);  
   
   solverView.root.addEventListener('keydown', async (e) => {
     if (e.key === HOT_KEY.RUN) {
       e.stopImmediatePropagation();
       e.preventDefault();
-      await runSolving(true);
-    }
-  });
+
+      if (tabControl.currentPane === modelPane) 
+        if ( toChangeInputs )
+          await runSolving(true);
+        else
+          tabControl.currentPane = inputsPane;
+  }});
 
   const openMenu = DG.Menu.popup()
     .item(TITLE.FROM_FILE, async () => await overwrite(undefined, loadFn), undefined, {description: HINT.LOAD})
@@ -677,7 +695,7 @@ export async function runSolverDemoApp() {
   const openIcon = ui.iconFA('folder-open', () => openMenu.show(), HINT.OPEN);
   const saveIcon = ui.iconFA('save', async () => {await saveFn()}, HINT.SAVE);
 
-  solverView.setRibbonPanels([[openIcon, saveIcon], [helpIcon], [exportButton, playIcon]]);
+  solverView.setRibbonPanels([[openIcon, saveIcon, exportButton, helpIcon]]);
 } // runSolverDemoApp
 
 /** Return model inputs UI */
