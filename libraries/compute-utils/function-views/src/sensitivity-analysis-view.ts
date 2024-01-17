@@ -16,7 +16,8 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
-const supportedTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
+const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
+const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 
 enum DISTRIB_TYPE {
   UNIFORM = 'Uniform',
@@ -51,7 +52,7 @@ type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 type InputValues = {
   isChanging: BehaviorSubject<boolean>,
   const: InputWithValue<boolean | number | string>,
-  constForm: HTMLElement,
+  constForm: DG.InputBase[],
   saForm: DG.InputBase[],
 }
 
@@ -67,21 +68,18 @@ type SensitivityNumericStore = {
 type SensitivityBoolStore = {
   prop: DG.Property,
   type: DG.TYPE.BOOL,
-} & InputValues;
-
-type SensitivityStrStore = {
-  prop: DG.Property,
-  type: DG.TYPE.STRING,
+  lvl: number,
 } & InputValues;
 
 type SensitivityConstStore = {
   prop: DG.Property,
   type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL | DG.TYPE.STRING>,
+  lvl: 1,
 } & InputValues;
 
-type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore | SensitivityStrStore;
+type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
 
-const getWorkaroundElement = () => ui.div([], 'sa-switch-input');
+const getSwitchMock = () => ui.div([], 'sa-switch-input');
 
 export class SensitivityAnalysisView {
   generateInputFields = (func: DG.Func) => {
@@ -104,37 +102,46 @@ export class SensitivityAnalysisView {
       },
     } as AnalysisProps;
 
-    analysisInputs.analysisType.input.root.insertBefore(getWorkaroundElement(), analysisInputs.analysisType.input.captionLabel);
-    analysisInputs.samplesCount.input.root.insertBefore(getWorkaroundElement(), analysisInputs.samplesCount.input.captionLabel);
+    analysisInputs.analysisType.input.root.insertBefore(getSwitchMock(), analysisInputs.analysisType.input.captionLabel);
+    analysisInputs.samplesCount.input.root.insertBefore(getSwitchMock(), analysisInputs.samplesCount.input.captionLabel);
 
     const getInputValue = (input: DG.Property, key: string) => (
       input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
     );
+
+    const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput = true) => {
+      const input = ui.switchInput(' ', defaultValue, f);
+      $(input.root).addClass('sa-switch-input');
+      $(input.captionLabel).hide();
+
+      ui.tooltip.bind(input.root, () => {
+        if (isInput) {
+          return (input.value) ?
+            'Switch to mark input as immutable': 'Switch to mark input as mutable';
+        } else {
+          return !input.value ?
+            'Switch to mark output as requiring analysis' :
+            'Switch to mark output as not requiring analysis';
+        }
+      });
+
+      return input;
+    };
 
     const inputs = func.inputs.reduce((acc, inputProp) => {
       switch (inputProp.propertyType) {
       case DG.TYPE.INT:
       case DG.TYPE.BIG_INT:
       case DG.TYPE.FLOAT:
-        const isChangingInputMin = (() => {
-          const input = ui.switchInput(' ', false, (v: boolean) => {
-            ref.isChanging.next(v);
-            this.updateRunButtonText();
-          });
-          $(input.root).addClass('sa-switch-input');
-          $(input.captionLabel).hide();
-          return input;
-        })();
+        const isChangingInputMin = getSwitchElement(false, (v: boolean) => {
+          ref.isChanging.next(v);
+          this.updateRunButtonText();
+        });
 
-        const isChangingInputConst = (() => {
-          const input = ui.switchInput(' ', false, (v: boolean) => {
-            ref.isChanging.next(v);
-            this.updateRunButtonText();
-          });
-          $(input.root).addClass('sa-switch-input');
-          $(input.captionLabel).hide();
-          return input;
-        })();
+        const isChangingInputConst = getSwitchElement(false, (v: boolean) => {
+          ref.isChanging.next(v);
+          this.updateRunButtonText();
+        });
 
         const temp = {
           type: inputProp.propertyType,
@@ -142,8 +149,7 @@ export class SensitivityAnalysisView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => ref.const.value = v);
-
+              const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               return inp;
             })(),
@@ -153,9 +159,6 @@ export class SensitivityAnalysisView {
             input:
               (() => {
                 const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} min`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
-
-                (inp.input as HTMLInputElement).placeholder = 'Min';
-
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 return inp;
               })(),
@@ -180,13 +183,14 @@ export class SensitivityAnalysisView {
         };
 
         [temp.max.input, temp.lvl.input, temp.distrib.input].forEach((input) => {
-          input.root.insertBefore(getWorkaroundElement(), input.captionLabel);
+          input.root.insertBefore(getSwitchMock(), input.captionLabel);
+          $(input.root).removeProp('display');
         });
 
         const simpleSa = [temp.lvl.input, temp.distrib.input];
         acc[inputProp.name] = {
           ...temp,
-          constForm: temp.const.input.root,
+          constForm: [temp.const.input],
           saForm: [
             temp.min.input,
             temp.max.input,
@@ -209,31 +213,21 @@ export class SensitivityAnalysisView {
           temp.isChanging, analysisInputs.analysisType.value,
         ]).subscribe(([isChanging, analysisType]) => {
           if (isChanging) {
-            $(ref.constForm).hide();
-            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
-              ref.saForm.forEach((input) => $(input.root).show());
-              simpleSa.forEach((input) => $(input.root).show());
-            } else {
-              ref.saForm.forEach((input) => $(input.root).show());
-              simpleSa.forEach((input) => $(input.root).hide());
-            }
+            ref.constForm.forEach((input) => $(input.root).show());
+            ref.saForm.forEach((input) => $(input.root).show());
+            simpleSa.forEach((input) => analysisType === ANALYSIS_TYPE.GRID_ANALYSIS ? $(input.root).show(): $(input.root).hide());
           } else {
-            $(ref.constForm).show();
+            ref.constForm.forEach((input) => $(input.root).show());
             ref.saForm.forEach((input) => $(input.root).hide());
           }
         });
         break;
 
       case DG.TYPE.BOOL:
-        const isChangingInputBoolConst = (() => {
-          const input = ui.switchInput(' ', false, (v: boolean) => {
-            boolRef.isChanging.next(v);
-            this.updateRunButtonText();
-          });
-          $(input.root).addClass('sa-switch-input');
-          $(input.captionLabel).hide();
-          return input;
-        })();
+        const isChangingInputBoolConst = getSwitchElement(false, (v: boolean) => {
+          boolRef.isChanging.next(v);
+          this.updateRunButtonText();
+        });
 
         const tempBool = {
           type: inputProp.propertyType,
@@ -243,62 +237,43 @@ export class SensitivityAnalysisView {
               const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v);
               temp.root.insertBefore(isChangingInputBoolConst.root, temp.captionLabel);
 
-              ui.tooltip.bind(isChangingInputBoolConst.root, () => {
-                if (boolRef.isChanging.value === false)
-                  return 'Switch to mark input as mutable';
-                return 'Switch to mark input as immutable';
-              });
-
               return temp;
             })(),
             value: false,
           } as InputWithValue<boolean>,
-          changing: {
-            input: ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v),
-            value: false,
-          } as InputWithValue<boolean>,
           isChanging: new BehaviorSubject<boolean>(false),
+          lvl: 1,
         };
 
         acc[inputProp.name] = {
           ...tempBool,
-          constForm: tempBool.const.input.root,
-          saForm: [tempBool.changing.input],
+          constForm: [tempBool.const.input],
+          saForm: [],
         } as SensitivityBoolStore;
-
         const boolRef = acc[inputProp.name] as SensitivityBoolStore;
-        combineLatest([
-          tempBool.isChanging, analysisInputs.analysisType.value,
-        ]).subscribe(([isChanging, analysisType]) => {
-          if (isChanging) {
-            $(boolRef.constForm).hide();
-            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
-              boolRef.saForm.forEach((input) => $(input.root).css('visibility', 'visible'));
-              simpleSa.forEach((input) => $(input.root).css('visibility', 'visible'));
-            } else {
-              boolRef.saForm.forEach((input) => $(input.root).css('visibility', 'visible'));
-              simpleSa.forEach((input) => $(input.root).css('visibility', 'hidden'));
-            }
-          } else {
-            $(boolRef.constForm).show();
-            boolRef.saForm.forEach((input) => $(input.root).css('visibility', 'hidden'));
-          }
-        });
-        boolRef.isChanging.subscribe((val) => {
-          isChangingInputBoolConst.notify = false;
-          isChangingInputBoolConst.value = val;
-          isChangingInputBoolConst.notify = true;
+        boolRef.isChanging.subscribe((v) => {
+          boolRef.lvl = v ? 2: 1;
         });
         break;
-
       default:
+        const switchMock = getSwitchMock();
+
+        const tempDefault = {
+          input: (() => {
+            const temp = ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: DG.InputBase) => tempDefault.value = v.value});
+            temp.root.insertBefore(switchMock, temp.captionLabel);
+
+            return temp;
+          })(),
+          value: inputProp.defaultValue,
+        };
         acc[inputProp.name] = {
-          const: {
-            input: ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: any) => ref.const.value = v}),
-            value: inputProp.defaultValue,
-          },
+          const: tempDefault,
+          constForm: [tempDefault.input],
+          saForm: [] as DG.InputBase[],
           type: inputProp.propertyType,
           prop: inputProp,
+          isChanging: new BehaviorSubject(false),
         } as SensitivityConstStore;
       }
 
@@ -318,23 +293,16 @@ export class SensitivityAnalysisView {
 
             input.addCaption(outputProp.caption ?? outputProp.name);
 
-            const isInterestInput = (() => {
-              const input = ui.switchInput(' ', outputProp.propertyType !== DG.TYPE.DATA_FRAME, (v: boolean) => {
-                temp.isInterest.next(v);
-                this.updateRunButtonText();
-              });
-              $(input.root).addClass('sa-switch-input');
-              $(input.captionLabel).hide();
-              return input;
-            })();
-
-            ui.tooltip.bind(isInterestInput.root, () => {
-              if (temp.isInterest.value === false)
-                return 'Switch to mark output as requiring analysis';
-              return 'Switch to mark output as not requiring analysis';
-            });
-            if (!supportedTypes.includes(outputProp.propertyType)) $(isInterestInput.root).css({'visibility': 'hidden'});
-            input.root.insertBefore(isInterestInput.root, input.captionLabel);
+            const isInterestInput = supportedOutputTypes.includes(outputProp.propertyType) ?
+              getSwitchElement(
+                outputProp.propertyType !== DG.TYPE.DATA_FRAME,
+                (v: boolean) => {
+                  temp.isInterest.next(v);
+                  this.updateRunButtonText();
+                },
+                false,
+              ).root: getSwitchMock();
+            input.root.insertBefore(isInterestInput, input.captionLabel);
 
             return input;
           })(),
@@ -343,7 +311,7 @@ export class SensitivityAnalysisView {
             const input = ui.stringInput('Column', DF_OPTIONS.ALL_COLUMNS, (v: string) => {
               temp.value.colName = v;
             });
-
+            input.root.insertBefore(getSwitchMock(), input.captionLabel);
             return input;
           })()]: [],
         value: {
@@ -354,19 +322,10 @@ export class SensitivityAnalysisView {
       };
       $(temp.input.input).css('visibility', 'hidden');
 
-      temp.analysisInputs.forEach((input) => {
-        input.root.insertBefore(getWorkaroundElement(), input.captionLabel);
-      });
-
       if (temp.prop.propertyType === DG.TYPE.DATA_FRAME) {
         temp.isInterest.subscribe((isInterest) => {
-          if (isInterest) {
-            temp.analysisInputs.forEach((input) => $(input.root).show());
-            $(temp.input.input).css('visibility', 'visible');
-          } else {
-            temp.analysisInputs.forEach((input) => $(input.root).hide());
-            $(temp.input.input).css('visibility', 'hidden');
-          }
+          temp.analysisInputs.forEach((input) => isInterest ? $(input.root).show() : $(input.root).hide());
+          $(temp.input.input).css('visibility', isInterest ? 'visible': 'hidden');
         });
       }
 
@@ -464,9 +423,13 @@ export class SensitivityAnalysisView {
     case ANALYSIS_TYPE.GRID_ANALYSIS:
       let product = 1;
 
-      for (const name of Object.keys(inputs)) {
-        if (inputs[name].isChanging.value) {
-          product *= (inputs[name] as SensitivityNumericStore).lvl.value;
+      const hasLvlInput = (input: SensitivityStore): input is SensitivityNumericStore => {
+        return input.type === DG.TYPE.INT || input.type === DG.TYPE.BIG_INT || input.type === DG.TYPE.FLOAT;
+      };
+
+      for (const input of Object.values(inputs)) {
+        if (input.isChanging.value) {
+          product *= hasLvlInput(input) ? input.lvl.value : input.lvl;
           ++variedInputsCount;
         }
       }
@@ -528,7 +491,7 @@ export class SensitivityAnalysisView {
         }
 
         container.append(
-          inputConfig.constForm,
+          ...inputConfig.constForm.map((input) => input.root),
           ...inputConfig.saForm.map((input) => input.root),
         );
 
@@ -643,10 +606,7 @@ export class SensitivityAnalysisView {
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
       const inpType = this.store.inputs[propName].prop.propertyType;
-      if (inpType === DG.TYPE.BOOL)
-        continue;
-
-      if (inpType === DG.TYPE.STRING)
+      if (inpType === DG.TYPE.BOOL || inpType === DG.TYPE.STRING)
         continue;
 
       const propConfig = this.store.inputs[propName];
@@ -710,7 +670,7 @@ export class SensitivityAnalysisView {
 
       switch (this.store.analysisInputs.analysisType.value.value) {
       case ANALYSIS_TYPE.GRID_ANALYSIS:
-        this.runElementaryAnalysis();
+        this.runGridAnalysis();
         break;
       case ANALYSIS_TYPE.RANDOM_ANALYSIS:
         this.runRandomAnalysis();
@@ -724,52 +684,28 @@ export class SensitivityAnalysisView {
     });
   }
 
-  private getFixedInputColumns(rowCount: number): DG.Column [] {
-    return Object.keys(this.store.inputs).filter((propName) => {
-      switch (this.store.inputs[propName].type) {
-      case DG.TYPE.INT:
-      case DG.TYPE.BIG_INT:
-      case DG.TYPE.FLOAT:
-        const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-        return numPropConfig.isChanging.value === false;
-      default:
+  private getFixedInputColumns(rowCount: number): DG.Column[] {
+    return Object.values(this.store.inputs).filter((input) => {
+      if (!supportedInputTypes.includes(input.type))
         return true;
-      }
-    }).map((propName) => (DG.Column.fromList(
-      this.store.inputs[propName].type as unknown as DG.COLUMN_TYPE,
-      this.store.inputs[propName].prop.caption ?? propName,
-      Array(rowCount).fill(this.store.inputs[propName].const.value),
-    )));
+      return !input.isChanging.value;
+    }).map((input) => {
+      return DG.Column.fromList(
+        input.type as unknown as DG.COLUMN_TYPE,
+        input.prop.caption ?? input.prop.name,
+        Array(rowCount).fill(input.const.value),
+      );
+    });
   }
 
   private async runSobolAnalysis() {
     const options = {
       func: this.func,
-      fixedInputs: Object.keys(this.store.inputs).filter((propName) => {
-        switch (this.store.inputs[propName].type) {
-        case DG.TYPE.INT:
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.FLOAT:
-          const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-          return numPropConfig.isChanging.value === false;
-        default:
-          return true;
-        }
-      }).map((propName) => ({
+      fixedInputs: this.getFixedInputs().map((propName) => ({
         name: propName,
         value: this.store.inputs[propName].const.value,
       })),
-      variedInputs: Object.keys(this.store.inputs).filter((propName) => {
-        switch (this.store.inputs[propName].type) {
-        case DG.TYPE.INT:
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.FLOAT:
-          const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-          return numPropConfig.isChanging.value === true;
-        default:
-          return false;
-        }
-      }).map((propName) => {
+      variedInputs: this.getVariedInputs().map((propName) => {
         const propConfig = this.store.inputs[propName] as SensitivityNumericStore;
 
         return {
@@ -922,34 +858,32 @@ export class SensitivityAnalysisView {
     });
   }
 
+  private getFixedInputs() {
+    return Object.keys(this.store.inputs).filter((propName) => {
+      if (supportedInputTypes.includes(this.store.inputs[propName].type))
+        return !this.store.inputs[propName].isChanging.value;
+
+      return true;
+    });
+  }
+
+  private getVariedInputs() {
+    return Object.keys(this.store.inputs).filter((propName) => {
+      if (supportedInputTypes.includes(this.store.inputs[propName].type))
+        return this.store.inputs[propName].isChanging.value;
+
+      return false;
+    });
+  }
+
   private async runRandomAnalysis() {
     const options = {
       func: this.func,
-      fixedInputs: Object.keys(this.store.inputs).filter((propName) => {
-        switch (this.store.inputs[propName].type) {
-        case DG.TYPE.INT:
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.FLOAT:
-          const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-          return numPropConfig.isChanging.value === false;
-        default:
-          return true;
-        }
-      }).map((propName) => ({
+      fixedInputs: this.getFixedInputs().map((propName) => ({
         name: propName,
         value: this.store.inputs[propName].const.value,
       })),
-      variedInputs: Object.keys(this.store.inputs).filter((propName) => {
-        switch (this.store.inputs[propName].type) {
-        case DG.TYPE.INT:
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.FLOAT:
-          const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-          return numPropConfig.isChanging.value === true;
-        default:
-          return false;
-        }
-      }).map((propName) => {
+      variedInputs: this.getVariedInputs().map((propName) => {
         const propConfig = this.store.inputs[propName] as SensitivityNumericStore;
 
         return {
@@ -1078,7 +1012,7 @@ export class SensitivityAnalysisView {
     });
   }
 
-  private async runElementaryAnalysis() {
+  private async runGridAnalysis() {
     const paramValues = Object.keys(this.store.inputs).reduce((acc, propName) => {
       switch (this.store.inputs[propName].type) {
       case DG.TYPE.INT:
@@ -1255,8 +1189,6 @@ export class SensitivityAnalysisView {
     this.comparisonView.grid.props.rowHeight = 25;
 
     const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, variedInputsColumns.length);
-
-    console.log(nameOfNonFixedOutput);
 
     // add other vizualizations depending on the varied inputs dimension
     switch (variedInputsColumns.length) {
