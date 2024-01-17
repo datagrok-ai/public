@@ -27,6 +27,7 @@ import './views/docking-nested';
 import './views/events';
 import './views/layouts';
 import './views/files-view';
+import './views/packages';
 import './viewers/viewers';
 import './viewers/filters';
 import './gui/viewers/scatter-plot';
