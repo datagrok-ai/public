@@ -2,19 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getIcon} from './utils';
+import {getIcon, getStatusIcon, Status} from './utils';
 import {_package} from '../package';
 
-interface TestCase {
+interface TestCase extends Options {
   name: string;
+  path: string;
   text: string;
-  order?: number;
+  status: Status;
+  icon: HTMLElement;
+  reason: HTMLElement;
 }
 
-interface Category {
+interface Category extends Options {
   name: string;
   children: (TestCase | Category)[];
-  order?: number;
 }
 
 interface Options {
@@ -29,6 +31,7 @@ export class TestTrack extends DG.ViewBase {
   currentNode: DG.TreeViewNode | DG.TreeViewGroup;
   map: {[key: string]: (Category | TestCase)} = {};
   list: Category[] = [];
+  expanded: boolean = false;
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -54,13 +57,25 @@ export class TestTrack extends DG.ViewBase {
     }
 
     // Generate tree
-    const files = await _package.files.list('Test Track', true);
+    const filesP = _package.files.list('Test Track', true);
+    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack');
+    for (const row of history.rows) {
+      const path = row.get('path');
+      const status: Status = row.get('status');
+      const reason: string = row.get('reason');
+      const el: TestCase = {name: '', path, text: '', status,
+        icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(reason, 'tt-reason')};
+      this.map[path] = el;
+    }
+    const files = await filesP;
+    const p: Promise<void>[] = [];
     for (const file of files) {
       if (file.isDirectory)
         this.processDir(file);
       else
-        await this.processFile(file);
+        p.push(this.processFile(file));
     }
+    await Promise.all(p);
     this.list.forEach((c) => this.sortCategoryRecursive(c));
     this.list.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
 
@@ -71,7 +86,15 @@ export class TestTrack extends DG.ViewBase {
     const report = ui.button(getIcon('tasks', {style: 'fas'}), () => {
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
-    const ribbon = ui.divH([plus, report]);
+    const ec = ui.button(getIcon('sort', {style: 'fas'}), () => {
+      this.expanded = !this.expanded;
+      this.tree.items.forEach((n: DG.TreeViewGroup | DG.TreeViewNode) => {
+        if (n.constructor === DG.TreeViewGroup)
+          n.expanded = this.expanded;
+      });
+    }, 'Expand/collapse');
+    report.classList.add('tt-ribbon-button');
+    const ribbon = ui.divH([plus, report, ec]);
 
     // Test case div
     this.tree.onSelectedNodeChanged.subscribe((node) => {
@@ -100,18 +123,23 @@ export class TestTrack extends DG.ViewBase {
   }
 
   async processFile(file: DG.FileInfo): Promise<void> {
-    const pathL = file.path.replace(/\.[^/.]+$/, '').split('/').slice(2);
+    const pathL = file.path.replace(/\.[^.]+$/, '').split('/').slice(2);
     if (pathL.length < 2)
       grok.shell.error('Root test case');
     const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
     const [text, jsonS] = (await _package.files.readAsText(file)).split('\n{', 2);
-    let el: TestCase = {name: file.name.replace(/\.[^/.]+$/, ''), text};
+    const path = pathL.join(': ');
+    const elOld: TestCase | undefined = this.map[path] as TestCase;
+    const status = elOld ? elOld.status : null;
+    const reason = elOld ? elOld.reason : ui.div('', 'tt-reason');
+    const icon = elOld ? elOld.icon : ui.div();
+    let el: TestCase = {name: file.name.replace(/\.[^.]+$/, ''), path, text, status, reason, icon};
     if (jsonS) {
       const json: Options = JSON.parse('{' + jsonS);
-      el = {...el, ...json};
+      el = {...json, ...el};
     }
     parent.children.push(el);
-    this.map[pathL.join(': ')] = el;
+    this.map[path] = el;
   }
 
   sortCategoryRecursive(cat: Category): void {
@@ -128,11 +156,57 @@ export class TestTrack extends DG.ViewBase {
 
   initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {
     if ('text' in obj) {
-      parent.item(obj.name, obj);
+      const node = parent.item(obj.name, obj);
+      this.setContextMenu(node);
+      node.captionLabel.after(node.value.reason);
+      node.captionLabel.after(node.value.icon);
       return;
     }
     const group = parent.getOrCreateGroup(obj.name, obj, false);
     for (const child of obj.children)
       this.initTreeGroupRecursive(child, group);
+  }
+
+  setContextMenu(node: DG.TreeViewNode) {
+    node.captionLabel.addEventListener('contextmenu', (e) => {
+      DG.Menu.popup()
+        .group('Status').items(['Passed', 'Failed', 'Skipped', 'Empty'],
+          (i) => {
+            const status = (i === 'Empty' ? null : i.toLowerCase()) as Status;
+            if (node.value.status === status) return;
+            if (status === 'failed' || status === 'skipped')
+              this.showChangeNodeStatusDialog(node, status);
+            else
+              this.changeNodeStatus(node, status);
+          },
+          {radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
+        .endGroup()
+        .show();
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
+  changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string): void {
+    node.value.status = status;
+    node.value.icon.innerHTML = '';
+    node.value.reason.innerText = '';
+    if (!status) return;
+    const icon = getStatusIcon(status);
+    node.value.icon.append(icon);
+    if (status === 'failed' || status === 'skipped')
+      node.value.reason.innerText = reason;
+    const params = {success: status === 'passed', result: reason ?? '', skipped: status === 'skipped',
+      type: 'manual', category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text};
+    grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
+  }
+
+  showChangeNodeStatusDialog(node: DG.TreeViewNode, status: 'failed' | 'skipped'): void {
+    const dialog = ui.dialog(status === 'failed' ? 'Specify ticket' : 'Specify skip reason');
+    const input = ui.textInput(status === 'failed' ? 'Key' : 'Reason', '', () => {});
+    input.nullable = false;
+    dialog.add(input);
+    dialog.onOK(() => this.changeNodeStatus(node, status, input.value));
+    dialog.show({resizable: true});
   }
 };
