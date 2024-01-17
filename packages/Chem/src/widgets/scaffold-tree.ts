@@ -463,6 +463,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   size: string;
   allowGenerate: boolean;
   applyFilter: boolean = true;
+  summary: string;
 
   constructor() {
     super();
@@ -474,6 +475,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
+    this.summary = this.string('summary', '');
 
     const dataFrames = grok.shell.tables;
     for (let n = 0; n < dataFrames.length; ++n) {
@@ -538,19 +540,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   getFilterSum(): string {
     const view = grok.shell.tv;
-    const filtersGroup = view.getFiltersGroup({ createDefaultFilters: true }).dart.filters;
-    const filterSummary = filtersGroup
-      .filter((f: any) => {
-        const isFiltering = f.jsFilter ? f.jsFilter.isFiltering : f.look.active;
-        return isFiltering !== false;
-      })
-      .map((f: any) => {
-        const columnName = f.jsFilter ? f.jsFilter.columnName : f.look.valueColumnName;
-        const filterSummary = f.jsFilter ? f.jsFilter.filterSummary : f.FilterControl_filterSummary;
-        return `${columnName}:${filterSummary}`;
-      })
-      .join('\n');
-    return filterSummary;
+    const filtersGroup = view.getFiltersGroup();
+    const filterSummary = filtersGroup.getFilterSummary();
+    return filterSummary.textContent === null ? '' : filterSummary.textContent;
   }
   
 
@@ -1833,6 +1825,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
         if (thisViewer.bitset != null)
           dataFrame.filter.and(thisViewer.bitset);
+        this.summary = this.getFilterSum();
       }));
     }
 
