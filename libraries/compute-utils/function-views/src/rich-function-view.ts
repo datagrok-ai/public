@@ -776,6 +776,21 @@ export class RichFunctionView extends FunctionView {
     this.setInputLockState(input, name, value, state);
   }
 
+  public getParamChanges<T = any>(name: string): Observable<T | null> {
+    const ptype = this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCallReplaced.pipe(
+      startWith(null),
+      filter(() => !!this.funcCall),
+      switchMap(() => this.funcCall[ptype][name].onChanged.pipe(startWith(null))),
+      map(() => this.funcCall[ptype][name].value as T),
+    );
+  }
+
+  public getParamValue<T = any>(name: string): T | null {
+    const ptype = this.funcCall?.['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCall?.[ptype][name].value;
+  }
+
   private setInputLockState(input: FuncCallInput, paramName: string, value: any, state?: INPUT_STATE) {
     // if the state is undefined, it is common input with no special state.
     // thus, no need to save it.
