@@ -127,7 +127,7 @@ export class TestTrack extends DG.ViewBase {
     if (pathL.length < 2)
       grok.shell.error('Root test case');
     const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
-    const [text, jsonS] = (await _package.files.readAsText(file)).split('\n{', 2);
+    const [text, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
     const path = pathL.join(': ');
     const elOld: TestCase | undefined = this.map[path] as TestCase;
     const status = elOld ? elOld.status : null;
@@ -135,7 +135,7 @@ export class TestTrack extends DG.ViewBase {
     const icon = elOld ? elOld.icon : ui.div();
     let el: TestCase = {name: file.name.replace(/\.[^.]+$/, ''), path, text, status, reason, icon};
     if (jsonS) {
-      const json: Options = JSON.parse('{' + jsonS);
+      const json: Options = JSON.parse(jsonS);
       el = {...json, ...el};
     }
     parent.children.push(el);
