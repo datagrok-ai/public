@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import {getRdKitModule}
   from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {ILineSeries, ScatterPlotLinesRenderer}
+import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {debounceTime} from 'rxjs/operators';
@@ -13,16 +13,14 @@ import {getSigFigs} from '../../utils/chem-common';
 import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
-import {lastSelectedPair, moleculesPairInfo, getMmpScatterPlot,
-  runMmpChemSpace} from './mmp-cliffs';
+import {moleculesPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME, MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y} from './mmp-constants';
 import {drawMoleculeLabels} from '../../rendering/molecule-label';
 import {getGenerations} from './mmp-generations';
-
-let currentTab = '';
+import { FormsViewer } from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -49,6 +47,9 @@ export class MmpAnalysis {
   generationsGrid: DG.Grid;
   //rdkit
   rdkitModule: RDModule;
+  currentTab = '';
+  lastSelectedPair: number | null = null;
+  propPanelViewer: FormsViewer;
 
   constructor(table: DG.DataFrame, molecules: DG.Column, palette: PaletteCodes,
     rules: MmpRules, diffs: Array<Float32Array>,
@@ -206,7 +207,7 @@ export class MmpAnalysis {
     });
 
     tabs.onTabChanged.subscribe(() => {
-      currentTab = tabs.currentPane.name;
+      this.currentTab = tabs.currentPane.name;
       if (tabs.currentPane.name == MMP_TAB_TRANSFORMATIONS) {
         this.enableFilters = true;
         this.refilterAllPairs(false);
@@ -215,9 +216,9 @@ export class MmpAnalysis {
         this.enableFilters = false;
       } else if (tabs.currentPane.name == MMP_TAB_CLIFFS) {
         this.refilterCliffs(sliderInputs.map((si) => si.value), false);
-        if (lastSelectedPair) {
-          grok.shell.o = moleculesPairInfo(lastSelectedPair, this.linesIdxs,
-            this.linesActivityCorrespondance[lastSelectedPair],
+        if (this.lastSelectedPair) {
+          grok.shell.o = moleculesPairInfo(this.lastSelectedPair, this.linesIdxs,
+            this.linesActivityCorrespondance[this.lastSelectedPair],
             this.casesGrid.dataFrame, this.diffs, this.parentTable, molecules.name, this.rdkitModule);
         }
       }
@@ -234,7 +235,23 @@ export class MmpAnalysis {
     tabs.getPane(MMP_TAB_CLIFFS).header.onmouseover =
       (ev): void => ui.tooltip.show(decript3, ev.clientX, ev.clientY + 5);
 
+    this.linesRenderer.lineClicked.subscribe((event: MouseOverLineEvent) => {
+      this.linesRenderer!.currentLineId = event.id;
+      if (event.id !== -1) {
+        grok.shell.o = moleculesPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+          casesGrid.dataFrame, diffs, table, molecules.name, rdkitModule, this.propPanelViewer);
+        this.lastSelectedPair = event.id;
+      }
+    });
+
     this.mmpView.append(tabs);
+
+    const propertiesColumnsNames = this.parentTable.columns.names()
+      .filter((name) => name !== this.parentCol.name && name !== MMP_COLNAME_CHEMSPACE_X &&
+        name !== MMP_COLNAME_CHEMSPACE_Y && !name.startsWith('~'));
+    this.propPanelViewer = new FormsViewer();
+    this.propPanelViewer.dataframe = this.parentTable;
+    this.propPanelViewer.columns = propertiesColumnsNames;
   }
 
   static async init(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList) {
@@ -260,14 +277,6 @@ export class MmpAnalysis {
     //running internal chemspace
     const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, linesActivityCorrespondance,
       casesGrid.dataFrame, diffs, module);
-
-    DG.debounce((table.onMetadataChanged), 50)
-      .subscribe(async (_: any) => {
-        if (lastSelectedPair && currentTab === MMP_TAB_CLIFFS) {
-          grok.shell.o = moleculesPairInfo(lastSelectedPair, linesIdxs, linesActivityCorrespondance[lastSelectedPair],
-            casesGrid.dataFrame, diffs, table, molecules.name, module);
-        }
-      });
 
     const generationsGrid: DG.Grid =
       getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
