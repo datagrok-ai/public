@@ -331,12 +331,11 @@ export class RichFunctionView extends FunctionView {
   public buildIO(): HTMLElement {
     const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
     const inputElements = ([
-      ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
+      ...Array.from(inputForm.childNodes),
       ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
     ]);
 
     ui.tools.handleResize(inputBlock, () => {
-      //if (inputElements.some((child) => $(child).width() < 150) ||
       if ($(inputBlock).width() < 300) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
