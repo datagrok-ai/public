@@ -462,7 +462,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.viewSyncer.sync(logPrefix, async () => { // setData
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
-        if (this.viewed) {
+        if (this.viewed && !this.setDataInProgress) {
           await this.destroyView(1, callLog);
           this.viewed = false;
         }
@@ -492,10 +492,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
             this.ligandColumnName = molCol.name;
         }
 
-        if (!this.viewed) {
+        if (!this.viewed && this.setDataInProgress) {
           await this.buildView(1, callLog);
           this.viewed = true;
         }
+
       } finally {
         this.setDataInProgress = false;
       }
