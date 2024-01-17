@@ -385,14 +385,7 @@ export function _getIterator(dart: any) {
 }
 
 export function _isDartium() {
-  return Array
-    .from(document.getElementsByTagName('script'))
-    .some((s) => {
-      let a = s.getAttribute('src');
-      if (a == null)
-        return null;
-      return a.includes('dart.js');
-    });
+  return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
 }
 
 export function _toJson(x: any) {
