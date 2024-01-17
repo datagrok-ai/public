@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## 1.1.4 (2024-01-17)
+
+* Add ability to use queries directly as source functions.
+* Fixed bugs with hit triage, including incorrect saving and addition of calculated properties.
+
 ## 1.1.3 (2023-12-27)
 
 Fix incompatibility with old api version

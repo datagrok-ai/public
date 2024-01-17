@@ -45,6 +45,7 @@ export type HitTriageTemplate = {
     campaignFields: HitTriageCampaignField[],
     dataSourceType: IngestType,
     queryFunctionName?: string;
+    isDataSourceQuery?: boolean;
 }
 
 export const CampaignFieldTypes = {

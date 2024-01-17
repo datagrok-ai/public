@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
-  HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus} from './types';
+  HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus,
+  HitDesignTemplate} from './types';
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, HTScriptPrefix, HitSelectionColName, i18n} from './consts';
 import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
@@ -86,7 +87,9 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     this._dfName = this.dataFrame.name ?? ingestProps?.query;
     this.dataFrame.name = this._dfName ?? this.dataFrame.name ?? 'Molecules';
     this._campaignId = campaignId;
-    this.template = template;
+    this.template = this.campaign?.template ?
+      {...this.campaign.template, dataSourceType: template.dataSourceType,
+        queryFunctionName: template.queryFunctionName} : template;
     this._campaignFilters = presetFilters;
 
     if (!presetFilters) {
@@ -95,6 +98,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         const fName = `${func.package}:${func.name}`;
         funcs[fName] = func.args;
       } );
+
       await this.calculateColumns({
         descriptors: template.compute.descriptors.enabled ? template.compute.descriptors.args : [],
         externals: funcs,
@@ -184,7 +188,63 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     this._pickViewPromise = new Promise<void>((res) => {resolvePromise = res;});
     const getComputeDialog = async () => {
       chemFunctionsDialog(async (resultMap) => {
-        this.calculateColumns(resultMap, view);
+        const oldDescriptors = this.template!.compute.descriptors.args;
+        const oldFunctions = this.template!.compute.functions;
+        const oldScripts = this.template!.compute.scripts ?? [];
+        const newDescriptors = resultMap.descriptors;
+        const newComputeObj = {
+          descriptors: {
+            enabled: !!resultMap?.descriptors?.length,
+            args: resultMap?.descriptors ?? [],
+          },
+          functions: Object.entries(resultMap?.externals ?? {}).map(([funcName, args]) => {
+            const splitFunc = funcName.split(':');
+            return ({
+              name: splitFunc[1],
+              package: splitFunc[0],
+              args: args,
+            });
+          }),
+          scripts: Object.entries(resultMap?.scripts ?? {})
+            .filter(([name, _]) => name.startsWith(HTScriptPrefix) && name.split(':').length === 3)
+            .map(([scriptId, args]) => {
+              const scriptNameParts = scriptId.split(':');
+              return ({
+                name: scriptNameParts[1] ?? '',
+                id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
+        };
+        this.template!.compute = newComputeObj;
+        const uncalculatedDescriptors = newDescriptors.filter((d) => !oldDescriptors.includes(d));
+        const uncalculatedFunctions = newComputeObj.functions.filter((func) => {
+          if (!oldFunctions.some((f) => f.name === func.name && f.package === func.package))
+            return true;
+          const oldFunc = oldFunctions.find((f) => f.name === func.name && f.package === func.package)!;
+          return !Object.entries(func.args).every(([key, value]) => oldFunc.args[key] === value);
+        });
+        const uncalculatedScripts = newComputeObj.scripts.filter((func) => {
+          if (!oldScripts.some((f) => f.id === func.id ))
+            return true;
+          const oldScript = oldScripts.find((f) => f.id === func.id)!;
+          return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
+        });
+
+        const externalFuncs: {[_: string]: IFunctionArgs} = {};
+        uncalculatedFunctions.forEach((func) => {
+          const fName = `${func.package}:${func.name}`;
+          externalFuncs[fName] = func.args;
+        });
+        const externalScripts: {[_: string]: IFunctionArgs} = {};
+        uncalculatedScripts.forEach((script) => {
+          const fName = `${HTScriptPrefix}:${script.name}:${script.id}`;
+          externalScripts[fName] = script.args;
+        });
+        await this.calculateColumns(
+          {descriptors: uncalculatedDescriptors, externals: externalFuncs, scripts: externalScripts},
+          view);
+        this.saveCampaign('In Progress', false);
       }, () => null, this.template!, true);
     };
     if (!this.dataFrame!.col(HitSelectionColName))
@@ -290,8 +350,9 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       columnSemTypes,
       rowCount: enrichedDf.rowCount,
       filteredRowCount: enrichedDf.filter.trueCount,
+      template: this.template as HitDesignTemplate | undefined,
     };
-
+    this.campaign = campaign;
 
     const csvDf = DG.DataFrame.fromColumns(
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
