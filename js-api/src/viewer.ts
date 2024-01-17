@@ -451,8 +451,8 @@ export class FilterGroup extends Viewer {
     api.grok_FilterGroup_Add(this.dart, state);
   }
 
-  updateOrAdd<T extends FilterState>(state: T) {
-    api.grok_FilterGroup_UpdateOrAdd(this.dart, state);
+  updateOrAdd<T extends FilterState>(state: T, requestFilter?: boolean) {
+    api.grok_FilterGroup_UpdateOrAdd(this.dart, state, requestFilter);
   }
 }
 
