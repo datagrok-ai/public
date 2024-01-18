@@ -126,7 +126,7 @@ For `numeric` types
 
 | Option   | Description                                                                                                                                |
 |----------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |                                                                                |
+| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |
 
 For `list` type`
 
