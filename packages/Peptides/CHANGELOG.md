@@ -1,6 +1,11 @@
 # Peptides changelog
 
-## 1.17.2 (2023-10-26)
+## 1.17.3 (WIP)
+
+* Sequence space random seeding for reproducibility.
+* Use of generated clusters for summery web logo table.
+
+## 1.17.2 (2023-12-26)
 
 * Improved dimensionality reduction (sequence space).
 

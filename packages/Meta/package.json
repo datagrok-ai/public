@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.27",
+  "version": "3.7.31",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1812,6 +1812,12 @@
         },
         "1.19.0": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.19.1": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.19.2": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
@@ -2668,6 +2674,9 @@
         },
         "2.11.26": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.27": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3453,6 +3462,9 @@
         },
         "1.1.9": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.10": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3726,6 +3738,9 @@
           "datagrok-api": "^1.16.2"
         },
         "1.1.3": {
+          "datagrok-api": "^1.16.2"
+        },
+        "1.1.4": {
           "datagrok-api": "^1.16.2"
         }
       },

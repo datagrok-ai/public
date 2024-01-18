@@ -32,6 +32,9 @@ export class SequenceSpaceParams {
   epsilon: number = 0.01;
   minPts: number = 4;
   fingerprintType: string = 'Morgan';
+  constructor(clusterEmbeddings?: boolean) {
+    this.clusterEmbeddings = !!clusterEmbeddings;
+  }
 }
 
 export type PartialPeptidesSettings = Partial<PeptidesSettings>;

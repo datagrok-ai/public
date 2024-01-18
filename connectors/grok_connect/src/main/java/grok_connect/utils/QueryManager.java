@@ -67,14 +67,13 @@ public class QueryManager {
         connection = provider.getConnection(query.func.connection);
         logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Received connection to {} database", provider.descriptor.type);
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
-        if (resultSet != null) {
-            supportTransactions = connection.getMetaData().supportsTransactions();
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            logger.debug("Initializing ResultSet manager...");
-            resultSetManager.init(metaData, currentFetchSize);
-            logger.debug("ResultSet manager was initialized");
-            columnCount = metaData.getColumnCount();
-        }
+        if (resultSet == null) return;
+        supportTransactions = connection.getMetaData().supportsTransactions();
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        logger.debug("Initializing ResultSet manager...");
+        resultSetManager.init(metaData, currentFetchSize);
+        logger.debug("ResultSet manager was initialized");
+        columnCount = metaData.getColumnCount();
     }
 
     public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException, ClassNotFoundException {

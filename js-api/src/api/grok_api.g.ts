@@ -157,6 +157,7 @@ export interface IDartApi {
   grok_View_Get_Temp(v: any): any;
   grok_View_Load_Layout(v: any, l: any, pickupColumnsTags: Bool): any;
   grok_View_Save_Layout(v: any): any;
+  grok_View_Get_Info(v: any): any;
   grok_View_Get_DockNode(v: any): any;
   grok_View_Get_RibbonMenu(v: any): any;
   grok_View_Set_RibbonMenu(v: any, menu: any): any;
@@ -320,7 +321,7 @@ export interface IDartApi {
   grok_Viewer_FromJsViewer(jsViewer: any): any;
   grok_FilterGroup_GetStates(filterGroup: any, colName: String, type: String): any;
   grok_FilterGroup_Add(filterGroup: any, state: any): any;
-  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any): any;
+  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any, requestFilter: any): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;

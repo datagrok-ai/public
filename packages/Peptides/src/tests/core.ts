@@ -105,5 +105,5 @@ category('Core', () => {
     await grok.dapi.layouts.delete(sl);
     await grok.dapi.tables.delete(sti);
     await grok.dapi.projects.delete(sp);
-  });
+  }, {skipReason: 'ViewLayout should become ViewInfo in 1.18.'});
 });

@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
-import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
-import {debounceTime, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
+import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
+import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
@@ -145,10 +145,14 @@ export class PipelineView extends FunctionView {
       hiddenOnInit?: VISIBILITY_STATE,
       helpUrl?: string | HTMLElement,
     }[],
+    options: {
+      historyEnabled: boolean,
+      isTabbed: boolean,
+    } = {historyEnabled: true, isTabbed: false},
   ) {
     super(
       funcName,
-      {historyEnabled: true, isTabbed: false},
+      options,
     );
   }
 
@@ -523,12 +527,14 @@ export class PipelineView extends FunctionView {
       }
     };
 
-    this.stepTabs.onTabChanged.subscribe(async () => {
+    if (!this.options.isTabbed) {
+      this.stepTabs.onTabChanged.subscribe(async () => {
+        updateHelpPanel();
+        updateRibbonPanels();
+      });
+      grok.shell.windows.help.visible = true;
       updateHelpPanel();
-      updateRibbonPanels();
-    });
-    grok.shell.windows.help.visible = true;
-    updateHelpPanel();
+    }
 
     this.hideSteps(
       ...this.initialConfig
@@ -651,5 +657,12 @@ export class PipelineView extends FunctionView {
 
   public override async executeTest(spec: any, updateMode = false) {
     await testPipeline(spec, this, {updateMode});
+  }
+
+  public getStepViewRuns<T extends FunctionView>(name: string): Observable<T> {
+    return this.onStepCompleted.pipe(
+      filter((funcCall) => funcCall.func.nqName === name),
+      map(() => this.getStepView<T>(name)),
+    );
   }
 }

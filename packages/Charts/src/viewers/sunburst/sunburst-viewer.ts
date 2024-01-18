@@ -31,7 +31,6 @@ export class SunburstViewer extends EChartViewer {
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
-    this.addRowSourceAndFormula();
 
     this.option = {
       animation: false,
@@ -49,11 +48,6 @@ export class SunburstViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  override sourceRowsChanged() {
-    super.sourceRowsChanged();
-    console.log(this.filter?.trueCount);
-  }
-
   isCanvasEmpty(ctx: any, x: any, y: any) {
     const pixel = ctx.getImageData(x, y, 1, 1).data;
     return pixel[3] === 0;
@@ -61,7 +55,7 @@ export class SunburstViewer extends EChartViewer {
 
   handleDataframeSelection(path: string[], event: any) {
     this.dataFrame.selection.handleClick((i) => {
-      if (!this.dataFrame.filter.get(i))
+      if (!this.filter.get(i))
         return false;
       for (let j = 0; j < path.length; j++) {
         if (this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(i).toString() !== path[j])
@@ -188,11 +182,12 @@ export class SunburstViewer extends EChartViewer {
     
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
-    super.onTableAttached();
+    this.addSelectionOrDataSubs();
+    this.render();
   }
 
   getSeriesData(): treeDataType[] | undefined {
-    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter);
+    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter);
   }
 
   async handleStructures(data: treeDataType[] | undefined) {

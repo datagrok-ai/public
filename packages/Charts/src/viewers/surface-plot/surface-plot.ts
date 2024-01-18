@@ -36,7 +36,7 @@ export class SurfacePlot extends EChartViewer {
     return y || x;
   };
   plotFilter = () => {
-    const ind = Array.from(this.dataFrame.filter.getSelectedIndexes());
+    const ind = Array.from(this.filter.getSelectedIndexes());
     return ind.map((id) => this.rawData[id]);
   };
   switch = (a: any[], b: any[], n: number, type: string) => {
@@ -150,7 +150,6 @@ export class SurfacePlot extends EChartViewer {
       return;
     }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(() => this.render(false)));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
     const num = Array.from(this.dataFrame.columns);
     num.forEach((c) => {

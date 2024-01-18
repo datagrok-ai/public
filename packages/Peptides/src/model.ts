@@ -247,7 +247,7 @@ export class PeptidesModel {
         mpr.render();
         break;
       case 'sequenceSpaceParams':
-        this.addSequenceSpace();
+        this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
         break;
       }
     }
@@ -1120,7 +1120,7 @@ export class PeptidesModel {
   /**
    * Adds Sequence Space viewer to the analysis view
    */
-  async addSequenceSpace(): Promise<void> {
+  async addSequenceSpace(settings: {clusterEmbeddings?: boolean, clusterCol?: DG.Column | null} = {}): Promise<void> {
     if (this._sequenceSpaceViewer !== null) {
       try {
         this._sequenceSpaceViewer?.detach();
@@ -1129,7 +1129,6 @@ export class PeptidesModel {
     }
     if (this._sequenceSpaceCols.length !== 0)
       this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
-
     this._sequenceSpaceCols = [];
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     const uh = UnitsHandler.getOrCreate(seqCol);
@@ -1150,7 +1149,10 @@ export class PeptidesModel {
         return;
       }
     }
-    const seqSpaceSettings = this.settings?.sequenceSpaceParams ?? new type.SequenceSpaceParams();
+    const clusterEmbeddings = !settings.clusterCol && !!settings.clusterEmbeddings;
+    const seqSpaceSettings = this.settings?.sequenceSpaceParams ??
+      new type.SequenceSpaceParams(clusterEmbeddings);
+    seqSpaceSettings.clusterEmbeddings = clusterEmbeddings;
     const seqSpaceParams: {
       table: DG.DataFrame,
       molecules: DG.Column,
@@ -1167,9 +1169,8 @@ export class PeptidesModel {
         methodName: DimReductionMethods.UMAP,
         similarityMetric: seqSpaceSettings.distanceF,
         plotEmbeddings: true,
-        sparseMatrixThreshold: 0.3,
         options: {'bypassLargeDataWarning': true, 'dbScanEpsilon': seqSpaceSettings.epsilon,
-          'dbScanMinPts': seqSpaceSettings.minPts,
+          'dbScanMinPts': seqSpaceSettings.minPts, 'randomSeed': '1',
           'preprocessingFuncArgs': {
             gapOpen: seqSpaceSettings.gapOpen, gapExtend: seqSpaceSettings.gapExtend,
             fingerprintType: seqSpaceSettings.fingerprintType,
@@ -1204,11 +1205,13 @@ export class PeptidesModel {
       return;
 
 
-    if (!seqSpaceSettings.clusterEmbeddings) { // color by activity if clusters are not automatically generated.
+    if (!seqSpaceSettings.clusterEmbeddings && !settings.clusterCol) { // color by activity if no clusters
       seqSpaceViewer.props.colorColumnName = this.getScaledActivityColumn()!.name;
     }
     seqSpaceViewer.props.showXSelector = false;
     seqSpaceViewer.props.showYSelector = false;
+    if (settings.clusterCol)
+      seqSpaceViewer.props.colorColumnName = settings.clusterCol.name;
     this._sequenceSpaceViewer = seqSpaceViewer;
     seqSpaceViewer.onContextMenu.subscribe((menu) => {
       try {

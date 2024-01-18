@@ -8,7 +8,7 @@ export const FILENAME = 'test-cases.csv';
 export const PASSED = 'passed';
 export const FAILED = 'failed';
 export const SKIPPED = 'skipped';
-export type Status = typeof PASSED | typeof FAILED | typeof SKIPPED | null;
+export type Status = typeof PASSED | typeof FAILED | typeof SKIPPED;
 
 const map = {
   [PASSED]: {name: 'check', color: 'var(--green-2)'},
