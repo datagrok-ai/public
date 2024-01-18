@@ -610,8 +610,8 @@ function getMathArg(funcIdx: number): string {
   return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
 }
 
-/** Return custom output lines */
-function getCustomOutputLines(name: string, outputs: Map<string, Output>): string[] {
+/** Return custom output lines: no expressions */
+function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Output>): string[] {
   const res = [''];    
   
   res.push(SCRIPT.CUSTOM_OUTPUT_COM);
@@ -619,14 +619,81 @@ function getCustomOutputLines(name: string, outputs: Map<string, Output>): strin
 
   outputs.forEach((val, key) => {
     if (!val.formula)
-      res.push(`${SCRIPT.SPACE2} DG.Column.fromFloat32Array('${val.caption}', ${DF_NAME}.col('${key}').getRawData()),`);
+      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${DF_NAME}.col('${key}').getRawData()),`);
   });
 
   res.push('];');    
   res.push(`${DF_NAME} = DG.DataFrame.fromColumns(${COLUMNS});`);
   res.push(`${DF_NAME}.name = '${name}';`);
   return res;
+} // getCustomOutputLinesNoExpressions
+
+/** Return custom output lines: with expressions */
+function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
+  const res = [''];    
+  
+  res.push(SCRIPT.CUSTOM_OUTPUT_COM);
+
+  // 1. Solution raw data
+  res.push(`const ${ivp.arg.name}RawData = ${DF_NAME}.col('${ivp.arg.name}').getRawData();`);
+  res.push(`let ${ivp.arg.name};`);
+  res.push(`const len = ${ivp.arg.name}RawData.length;\n`);  
+
+  ivp.inits.forEach((val, key) => {
+    res.push(`const ${key}RawData = ${DF_NAME}.col('${key}').getRawData();`);    
+  });
+
+  res.push('');
+
+  // 2. Expressions raw data & variables
+  ivp.exprs!.forEach((val, key) => {
+    if (ivp.outputs!.has(key))
+      res.push(`const ${key}RawData = new Float32Array(len);`);
+
+    res.push(`let ${key};`);
+  });
+
+  res.push('');
+
+  // 3. Computations
+  res.push('for (let i = 0; i < len; ++i) {');
+  res.push(`${SCRIPT.SPACE2}${ivp.arg.name} = ${ivp.arg.name}RawData[i];`);
+
+  ivp.inits.forEach((val, key) => {
+    res.push(`${SCRIPT.SPACE2}${key} = ${key}RawData[i];`);
+  });
+
+  ivp.exprs!.forEach((val, key) => {
+    res.push(`${SCRIPT.SPACE2}${key} = ${val};`);
+
+    if (ivp.outputs!.has(key))
+      res.push(`${SCRIPT.SPACE2}${key}RawData[i] = ${key};`);
+  });
+
+  res.push('}\n');
+
+  // 4. Form output
+  res.push(`${DF_NAME} = DG.DataFrame.fromColumns([`);
+  ivp.outputs!.forEach((val, key) => {
+    if (!val.formula)
+      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${key}RawData),`);
+  });
+
+  res.push(']);');
+  res.push(`${DF_NAME}.name = '${ivp.name}';`);
+  
+  return res;
 }
+
+/** Return custom output lines */
+function getCustomOutputLines(ivp: IVP): string[] {
+  if (ivp.exprs !== null)
+    for (const key of ivp.exprs.keys())
+      if (ivp.outputs?.has(key))
+        return getCustomOutputLinesWithExpressions(ivp);
+
+  return getCustomOutputLinesNoExpressions(ivp.name, ivp.outputs!);
+} // getCustomOutputLinesWithExpressions
 
 /** Return main body of JS-script: basic variant */
 function getScriptMainBodyBasic(ivp: IVP): string[] {  
@@ -876,7 +943,7 @@ export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true
   const res = getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
   
   if (ivp.outputs)
-    return res.concat(getCustomOutputLines(ivp.name, ivp.outputs));
+    return res.concat(getCustomOutputLines(ivp));
 
   return res;
 }
