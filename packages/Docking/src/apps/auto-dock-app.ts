@@ -11,7 +11,7 @@ import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-help
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-import {_package, cachedData} from '../package';
+import {_package, CACHED_DDCKING} from '../package';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 
 export type AutoDockDataType = {
@@ -126,7 +126,7 @@ export class AutoDockApp {
       const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
       if (posesAllDf !== undefined) {
         this.downloadPosesBtn.disabled = false;
-        cachedData.set(this.data, posesAllDf);
+        CACHED_DDCKING.set(this.data, posesAllDf);
         return posesAllDf;
       }
     } catch (err: any) {

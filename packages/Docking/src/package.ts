@@ -13,7 +13,8 @@ import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-se
 import {DockingPackage} from './package-utils';
 
 export const _package = new DockingPackage();
-export const cachedData: DG.LruCache<AutoDockDataType, DG.DataFrame> = new DG.LruCache<AutoDockDataType, DG.DataFrame>();
+export const CACHED_DDCKING: DG.LruCache<AutoDockDataType, DG.DataFrame> = new DG.LruCache<AutoDockDataType, DG.DataFrame>();
+const CACHED_MOLSTAR: DG.LruCache<string, DG.Widget> = new DG.LruCache<string, DG.Widget>();
 const AFFINITY_COL = 'affinity';
 const POSE_COL = 'pose';
 
@@ -159,7 +160,7 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     };
 
     const app = new AutoDockApp();
-    const autodockResults = cachedData.has(data) ? cachedData.get(data) : await app.init(data);
+    const autodockResults = CACHED_DDCKING.has(data) ? CACHED_DDCKING.get(data) : await app.init(data);
     if (!autodockResults)
       return;
 
@@ -201,31 +202,41 @@ function processAutodockResults(table: DG.DataFrame): DG.DataFrame {
 
 //name: Docking
 //tags: panel, chem, widgets
-//input: semantic_value smiles { semType: Molecule3D }
+//input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-export async function autodockWidget(smiles: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  return await getAutodockSingle(smiles);
+export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
+  const result = new DG.Widget(ui.divH([]));
+  const loader = ui.loader();
+  result.root.append(loader);
+  getAutodockSingle(molecule).then((widget) => {
+    result.root.removeChild(loader);
+    result.root.append(widget!.root);
+  });
+  return result;
 }
 
-
 //name: getAutodockSingle
-export async function getAutodockSingle(smiles: DG.SemanticValue): Promise<DG.Widget<any> | null> {
+export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
   const currentTable = grok.shell.tv.table;
   //@ts-ignore
-  const key: AutoDockDataType = cachedData.K.find((key: AutoDockDataType) => key.ligandDf === currentTable);
+  const key: AutoDockDataType = CACHED_DDCKING.K.find((key: AutoDockDataType) => key.ligandDf === currentTable);
   if (!key) {
     grok.shell.warning('Run Chem | Docking first');
     return null; 
   }
 
-  const autodockResults = cachedData.get(key);
-  const matchDf = autodockResults!.rows.match(`${smiles.cell.column.name} = ${smiles.cell.valueString}`).toDataFrame();
-  const receptorData = key.receptor;
+  const autodockResults = CACHED_DDCKING.get(key);
+  const matchDf = autodockResults!.rows.match(`${molecule.cell.column.name} = ${molecule.cell.valueString}`).toDataFrame();
+  
+  const widgetKey = `${key.receptor}/${key.ligandMolColName}`
+  const cachedWidget = CACHED_MOLSTAR.has(widgetKey);
+  if (cachedWidget)
+    return CACHED_MOLSTAR.get(widgetKey)!;
 
   const widget = new DG.Widget(ui.div([]));
   const targetViewer = await currentTable!.plot.fromType('Biostructure', {
-    dataJson: BiostructureDataJson.fromData(receptorData),
-    ligandColumnName: 'molecule',
+    dataJson: BiostructureDataJson.fromData(key.receptor),
+    ligandColumnName: key.ligandMolColName,
     zoom: true,
   });
   const result = ui.div();
@@ -237,8 +248,9 @@ export async function getAutodockSingle(smiles: DG.SemanticValue): Promise<DG.Wi
   }
 
   result.appendChild(ui.tableFromMap(map));
-  widget.root.append(result);
   widget.root.append(targetViewer.root);
+  widget.root.append(result);
+  CACHED_MOLSTAR.set(widgetKey, widget);
   return widget;
 }
 
