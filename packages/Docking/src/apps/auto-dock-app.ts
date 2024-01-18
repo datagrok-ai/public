@@ -11,7 +11,7 @@ import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-help
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-import {_package} from '../package';
+import {_package, cachedData} from '../package';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 
 export type AutoDockDataType = {
@@ -126,6 +126,7 @@ export class AutoDockApp {
       const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
       if (posesAllDf !== undefined) {
         this.downloadPosesBtn.disabled = false;
+        cachedData.set(this.data, posesAllDf);
         return posesAllDf;
       }
     } catch (err: any) {
@@ -164,7 +165,10 @@ async function runAutoDock(
 
   const ligandRowCount = ligandCol.length;
   for (let lRowI = 0; lRowI < ligandRowCount && lRowI < 3; ++lRowI) {
-    const ligandMol = ligandCol.get(lRowI);
+    const ligandMol = ligandCol.semType === DG.SEMTYPE.MOLECULE 
+      ? await grok.functions.call('Chem:convertMolNotation',
+    {molecule: ligandCol.get(lRowI), sourceNotation: 'unknown', targetNotation: 'v3Kmolblock'})
+      : ligandCol.get(lRowI);
     // const ligandData: BiostructureData = {binary: false, ext: 'mol', data: ligandMol};
     const ligandPdb = await pdbHelper.molToPdb(ligandMol!);
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
@@ -179,19 +183,9 @@ async function runAutoDock(
     // region: add extra columns to AutoDock output
 
     const pdbqtCol = posesDf.getCol(poseColName);
-    pdbqtCol.name = `${poseColName}_pdbqt`;
+    pdbqtCol.name = poseColName;
     pdbqtCol.semType = DG.SEMTYPE.MOLECULE3D;
     pdbqtCol.setTag(DG.TAGS.UNITS, 'pdbqt');
-    const rowCount = posesDf.rowCount;
-    const molCol = DG.Column.fromType(DG.TYPE.STRING, poseColName, rowCount);
-    for (let rowI = 0; rowI < rowCount; ++rowI) {
-      const pdbqtVal = pdbqtCol.get(rowI);
-      const molVal = await pdbHelper.pdbqtToMol(pdbqtVal);
-      molCol.set(rowI, molVal);
-    }
-    molCol.semType = DG.SEMTYPE.MOLECULE;
-    posesDf.columns.insert(molCol, 0);
-
     // endregion: add extra columns to AutoDock output
 
     if (posesAllDf === undefined) {
