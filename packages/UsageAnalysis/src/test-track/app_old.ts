@@ -254,7 +254,7 @@ export class TestTrack extends DG.ViewBase {
   addNode(parent: DG.TreeViewGroup, name: string, testCase: string | null): void {
     let node: DG.TreeViewGroup | DG.TreeViewNode;
     const values: TestCaseValues = {id: crypto.randomUUID(), parentId: parent.value.id,
-      testCase: testCase, status: null, icon: ui.div(), reason: ui.div([], 'tt-reason')};
+      testCase: testCase, status: 'failed', icon: ui.div(), reason: ui.div([], 'tt-reason')};
     if (testCase === null)
       node = parent.getOrCreateGroup(name, values, false);
     else
