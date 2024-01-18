@@ -19,14 +19,6 @@
   color: var(--grey-3);
 }
 
-.ui-input-editor button.ui-btn-nav.ui-btn {
-  background-color: rgb(80 169 197 / 25%);
-  color: #50A9C5;
-  float: left;
-  margin-right: 5px;
-  padding: 0 12px;
-}
-
 .ui-input-editor button.ui-btn-nav.ui-btn.d4-disabled {
   color: var(--grey-3)
 }

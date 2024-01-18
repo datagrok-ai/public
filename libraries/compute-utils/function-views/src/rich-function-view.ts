@@ -295,32 +295,50 @@ export class RichFunctionView extends FunctionView {
     ];
   }
 
+  private formButtons = ui.div();
+  private buildFormButtons() {
+    const standardButtons = this.getStandardButtons();
+
+    console.log(this.func.name, this.navBtns);
+    const newFormButtons = ui.buttonsInput();
+    $(newFormButtons.firstChild).css({'display': 'none'});
+    newFormButtons.lastChild?.replaceWith(ui.div([
+      ...this.navBtns,
+      ...this.additionalBtns,
+      ...standardButtons,
+    ], 'ui-input-editor'));
+    $(newFormButtons).addClass('rfv-buttons');
+
+    this.formButtons.replaceWith(newFormButtons);
+    this.formButtons = newFormButtons;
+
+    return newFormButtons;
+  }
+
   /**
    * Override to change additional buttons placed between navigation and run buttons.
    */
-  protected additionalBtns = ui.divH([]) as HTMLElement;
+  protected additionalBtns = [] as HTMLElement[];
   /**
    * Changes additional buttons to provided ones.
    * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
    */
   public setAdditionalButtons(additionalBtns: HTMLElement[]) {
-    const additionalBtnsContainer = ui.divH(additionalBtns);
-    this.additionalBtns.replaceWith(additionalBtnsContainer);
-    this.additionalBtns = additionalBtnsContainer;
+    this.additionalBtns = additionalBtns;
+
+    this.buildFormButtons();
   }
 
   /**
    * Override to change navigation buttons placed next to the additional buttons.
    */
-  protected navBtns = ui.divH([]) as HTMLElement;
+  protected navBtns = [] as HTMLElement[];
   /**
    * Changes navigation buttons to provided ones.
    * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
-    const navBtnsContainer = ui.divH(navBtns);
-    this.navBtns.replaceWith(navBtnsContainer);
-    this.navBtns = navBtnsContainer;
+    this.navBtns = navBtns;
   }
 
   /**
@@ -371,18 +389,9 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
-    const standardButtons = this.getStandardButtons();
+    this.buildFormButtons();
 
-    const controllsDiv = ui.buttonsInput([
-      this.navBtns as any,
-      ui.divH([
-        this.additionalBtns,
-        ...standardButtons,
-      ], {style: {'gap': '5px'}}),
-    ]);
-    $(controllsDiv).addClass('rfv-buttons');
-
-    const controlsForm = ui.div(controllsDiv, 'ui-form ui-form-wide');
+    const controlsForm = ui.div(this.formButtons, 'ui-form ui-form-wide');
     $(controlsForm).css({
       'padding-left': '0px',
       'padding-bottom': '0px',
