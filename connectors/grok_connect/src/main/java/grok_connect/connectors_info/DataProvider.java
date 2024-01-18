@@ -64,12 +64,11 @@ public abstract class DataProvider
         List<FuncParam> queryParams = new ArrayList<>();
 
         while (matcher.find()) {
-            queryBuffer.append(query.substring(idx, matcher.start()));
+            queryBuffer.append(query, idx, matcher.start());
             FuncParam param = queryRun.func.getParam(matcher.group(1));
             PatternMatcherResult pmr = patternToQueryParam(queryRun, param, matcher.group(2));
             patternParams.add(param);
             queryParams.addAll(pmr.params);
-
             queryBuffer.append(pmr.query);
             idx = matcher.end();
         }
@@ -77,7 +76,7 @@ public abstract class DataProvider
         queryRun.func.removeParams(patternParams);
         queryRun.func.addParams(queryParams);
 
-        queryBuffer.append(query.substring(idx, query.length()));
+        queryBuffer.append(query.substring(idx));
         query = queryBuffer.toString();
         return query;
     }
