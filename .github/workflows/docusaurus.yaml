@@ -250,7 +250,7 @@ jobs:
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
+    if: ${{ github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true' }}
     runs-on: ubuntu-22.04
     environment: Help
     steps:
