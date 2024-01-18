@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.19.2 (2024-01-18)
+
+### Bug fixes
+
+- RFV: Run button disabling fix
+
 ## 1.19.1 (2024-01-18)
 
 ### Features
