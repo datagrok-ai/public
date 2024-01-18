@@ -978,6 +978,10 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
 /** UI Tools **/
 export class tools {
+  private static mutationObserver: MutationObserver | null = null;
+  private static mutationObserverElements: {
+    element: HTMLElement, resolveF: (element: HTMLElement) => void, timestamp: number
+  }[] = [];
 
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
     let width = element.clientWidth;
@@ -1016,28 +1020,32 @@ export class tools {
   static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
     if (_isDartium()) {
       return new Promise(resolve => {
-        setInterval(function() {
-          if (document.contains(element))
+        const intervalId = setInterval(function() {
+          if (document.contains(element)) {
+            clearInterval(intervalId);
             return resolve(element);
+          }
         }, 100);
       });
     }
 
+    tools.mutationObserver ??=  new MutationObserver((_) => {
+      tools.mutationObserverElements.forEach((item, index) => {
+        if (document.contains(item.element)) {
+          item.resolveF(item.element);
+          tools.mutationObserverElements.splice(index, 1);
+        }
+      })
+    });
+    tools.mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+    
     return new Promise(resolve => {
       if (document.contains(element))
         return resolve(element);
-
-      const observer = new MutationObserver(_ => {
-        if (document.contains(element)) {
-          resolve(element);
-          observer.disconnect();
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      tools.mutationObserverElements.push({element: element, resolveF: resolve, timestamp: Date.now()});
     });
   }
 
