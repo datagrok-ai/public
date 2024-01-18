@@ -1,6 +1,18 @@
 # Chem changelog
 
-## 1.8.9 (2023-01-09)
+## 1.8.10 (2024-01-17)
+
+### Features
+
+* Molecule labels on scatter plot zoom in Chemical Space and Activity Cliffs
+
+### Bug Fixes
+
+* [#2626](https://github.com/datagrok-ai/public/issues/2626): Unexpected warning on adding child node to the scaffold tree if parent contains 'H' atom
+* [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there are two views opened
+* [#2629](https://github.com/datagrok-ai/public/issues/2629): Structure filter filters out all molecules in the presence of filter-by-zoom scatterplot and multiple views
+
+## 1.8.9 (2024-01-09)
 
 ### Features
 

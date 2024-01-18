@@ -467,7 +467,7 @@ arch-options-icon
   visibility: visible;
 }
 
-.empty-filter {
+.chem-empty-filter {
   gap: 5px;
 }
 
@@ -506,4 +506,9 @@ arch-options-icon
 .sketch-link {
   border: none!important;
   color: var(--blue-1);
+}
+
+.chem-test {
+  position: relative;
+  width: 100%
 }

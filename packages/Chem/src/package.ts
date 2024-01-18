@@ -1100,8 +1100,8 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
-    molBlock: molblock,
-  });
+    molBlock: molblock, //@ts-ignore
+  }, false);
 }
 
 //name: Copy as SMILES
