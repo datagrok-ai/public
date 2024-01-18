@@ -28,11 +28,11 @@ context help are docked to the right. This appearance is fully customizable, you
 the sidebar
 (`Windows`), or turn them on/off with the following shortcuts:
 
-|    Menu Option         |      Shortcut               |         Action                |
-|------------------------|-----------------------------|-------------------------------|
-| Windows | Toolbox      | Alt + X                     | Show/hide the toolbox         |
-| Windows | Properties   | F4                          | Show/hide the context panel  |
-| Windows | Context Help | F1                          | Show/hide the context help    |
+| Menu Option             | Shortcut | Action                      |
+|-------------------------|----------|-----------------------------|
+| Windows \| Toolbox      | Alt + X  | Show/hide the toolbox       |
+| Windows \| Properties   | F4       | Show/hide the context panel |
+| Windows \| Context Help | F1       | Show/hide the context help  |
 
 In addition to the design modularity, these panels can be resized and docked.
 

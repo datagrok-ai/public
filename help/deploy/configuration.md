@@ -12,7 +12,7 @@ variables.
 
 | Option              | Required        | Default | Description                                                                                      |
 |---------------------|-----------------|---------|--------------------------------------------------------------------------------------------------|
-| dbServer            | <b>Required</b> |         | Postgres database server.                                                                        |                                                                                                  |
+| dbServer            | <b>Required</b> |         | Postgres database server                                                                         |
 | dbPort              | Optional        | 5432    | Postgres database server port                                                                    |
 | db                  | <b>Required</b> |         | Datagrok database name                                                                           |
 | dbLogin             | <b>Required</b> |         | Username to connect to database                                                                  |
