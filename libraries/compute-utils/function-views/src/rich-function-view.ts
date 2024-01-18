@@ -228,7 +228,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = this.validationUpdates.pipe().subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.isRunning).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -282,7 +282,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private getStandardButtons(): HTMLElement[] {
-    const runButton = this.getRunButton();
+    const runButton = this.getRunButton() as HTMLButtonElement;
     const runButtonWrapper = ui.div([runButton]);
     ui.tooltip.bind(
       runButtonWrapper,
@@ -299,7 +299,6 @@ export class RichFunctionView extends FunctionView {
   private buildFormButtons() {
     const standardButtons = this.getStandardButtons();
 
-    console.log(this.func.name, this.navBtns);
     const newFormButtons = ui.buttonsInput();
     $(newFormButtons.firstChild).css({'display': 'none'});
     newFormButtons.lastChild?.replaceWith(ui.div([
@@ -308,6 +307,7 @@ export class RichFunctionView extends FunctionView {
       ...standardButtons,
     ], 'ui-input-editor'));
     $(newFormButtons).addClass('rfv-buttons');
+    $(newFormButtons).css({'max-width': '100%'});
 
     this.formButtons.replaceWith(newFormButtons);
     this.formButtons = newFormButtons;
