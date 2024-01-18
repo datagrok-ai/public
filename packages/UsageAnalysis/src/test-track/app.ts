@@ -9,7 +9,7 @@ interface TestCase extends Options {
   name: string;
   path: string;
   text: string;
-  status: Status;
+  status: Status | null;
   icon: HTMLElement;
   reason: HTMLElement;
 }
@@ -32,6 +32,7 @@ export class TestTrack extends DG.ViewBase {
   map: {[key: string]: (Category | TestCase)} = {};
   list: Category[] = [];
   expanded: boolean = false;
+  version: string = grok.shell.build.client.version;
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -58,7 +59,7 @@ export class TestTrack extends DG.ViewBase {
 
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
-    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack');
+    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', {version: this.version});
     for (const row of history.rows) {
       const path = row.get('path');
       const status: Status = row.get('status');
@@ -80,9 +81,11 @@ export class TestTrack extends DG.ViewBase {
     this.list.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
 
     // Ribbon
-    const plus = ui.button(getIcon('plus', {style: 'fas'}), () => {
-    }, 'Add test case');
-    plus.classList.add('tt-ribbon-button');
+    const gh = ui.button(getIcon('github', {style: 'fab'}), () => {
+      window.open('https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis/files/Test Track',
+        '_blank')?.focus();
+    }, 'Edit list');
+    gh.classList.add('tt-ribbon-button');
     const report = ui.button(getIcon('tasks', {style: 'fas'}), () => {
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
@@ -94,7 +97,7 @@ export class TestTrack extends DG.ViewBase {
       });
     }, 'Expand/collapse');
     report.classList.add('tt-ribbon-button');
-    const ribbon = ui.divH([plus, report, ec]);
+    const ribbon = ui.divH([gh, report, ec]);
 
     // Test case div
     this.tree.onSelectedNodeChanged.subscribe((node) => {
@@ -146,7 +149,10 @@ export class TestTrack extends DG.ViewBase {
     if (!cat.children.length) return;
     const cats = cat.children.filter((c) => 'children' in c) as Category[];
     cat.children.sort((a, b) => {
-      if (a.order === undefined && b.order === undefined) return 0;
+      if ('children' in a && !('children' in b)) return -1;
+      if ('children' in b && !('children' in a)) return 1;
+      if (a.order === undefined && b.order === undefined)
+        return a.name.localeCompare(b.name);
       if (a.order === undefined) return 1;
       if (b.order === undefined) return -1;
       return a.order > b.order ? 1 : -1;
@@ -158,6 +164,7 @@ export class TestTrack extends DG.ViewBase {
     if ('text' in obj) {
       const node = parent.item(obj.name, obj);
       this.setContextMenu(node);
+      (node.value.reason as HTMLElement).ondblclick = () => this.showChangeReasonDialog(node, node.value.status);
       node.captionLabel.after(node.value.reason);
       node.captionLabel.after(node.value.icon);
       return;
@@ -167,12 +174,12 @@ export class TestTrack extends DG.ViewBase {
       this.initTreeGroupRecursive(child, group);
   }
 
-  setContextMenu(node: DG.TreeViewNode) {
+  setContextMenu(node: DG.TreeViewNode): void {
     node.captionLabel.addEventListener('contextmenu', (e) => {
       DG.Menu.popup()
-        .group('Status').items(['Passed', 'Failed', 'Skipped', 'Empty'],
+        .group('Status').items(['Passed', 'Failed', 'Skipped'],
           (i) => {
-            const status = (i === 'Empty' ? null : i.toLowerCase()) as Status;
+            const status = i.toLowerCase() as Status;
             if (node.value.status === status) return;
             if (status === 'failed' || status === 'skipped')
               this.showChangeNodeStatusDialog(node, status);
@@ -181,6 +188,10 @@ export class TestTrack extends DG.ViewBase {
           },
           {radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
         .endGroup()
+        .item('Edit', async () => {
+          window.open(`https://github.com/datagrok-ai/public/edit/master/packages/UsageAnalysis/files/Test Track/${
+            node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
+        })
         .show();
       e.preventDefault();
       e.stopPropagation();
@@ -191,13 +202,12 @@ export class TestTrack extends DG.ViewBase {
     node.value.status = status;
     node.value.icon.innerHTML = '';
     node.value.reason.innerText = '';
-    if (!status) return;
     const icon = getStatusIcon(status);
     node.value.icon.append(icon);
     if (status === 'failed' || status === 'skipped')
       node.value.reason.innerText = reason;
-    const params = {success: status === 'passed', result: reason ?? '', skipped: status === 'skipped',
-      type: 'manual', category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text};
+    const params = {success: status === 'passed', result: reason ?? '', skipped: status === 'skipped', type: 'manual',
+      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
   }
 
@@ -207,6 +217,26 @@ export class TestTrack extends DG.ViewBase {
     input.nullable = false;
     dialog.add(input);
     dialog.onOK(() => this.changeNodeStatus(node, status, input.value));
+    dialog.show({resizable: true});
+  }
+
+  changeNodeReason(node: DG.TreeViewNode, reason: string, status: Status): void {
+    if (status !== node.value.status) {
+      grok.shell.warning('Test case status was changed');
+      return;
+    }
+    node.value.reason.innerText = reason;
+    const params = {success: status === 'passed', result: reason, skipped: status === 'skipped', type: 'manual',
+      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version};
+    grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
+  }
+
+  showChangeReasonDialog(node: DG.TreeViewNode, status: Status): void {
+    const dialog = ui.dialog(status === 'failed' ? 'Edit ticket' : 'Edit skip reason');
+    const input = ui.textInput(status === 'failed' ? 'Key' : 'Reason', node.value.reason.innerText, () => {});
+    input.nullable = false;
+    dialog.add(input);
+    dialog.onOK(() => this.changeNodeReason(node, input.value, status));
     dialog.show({resizable: true});
   }
 };

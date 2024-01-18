@@ -119,8 +119,7 @@ left join filled f on f.date = e.date and f.status = e.status
 
 --name: TestTrack
 --connection: System:Datagrok
---meta.cache1: all
---meta.invalidateOn1: 0 0 0 * *
+--input: string version
 select
 distinct on (e.description)
 e.description as path,
@@ -131,7 +130,8 @@ from events e
 inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
 left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
+left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-where e.event_time::date = now()::date
+where v3.value = @version
 order by e.description, e.event_time desc
 --end
