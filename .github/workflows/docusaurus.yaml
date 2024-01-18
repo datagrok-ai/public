@@ -199,6 +199,11 @@ jobs:
           name: docusaurus
           path: docusaurus/build
           retention-days: 7
+      - name: 'debug'
+        run: |
+          echo ${{ github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true' }}
+          echo ${{ github.ref }}
+          echo ${{ needs.common-check.outputs.continue }}
 #      - name: Commit plugins.json
 #        id: git
 #        if: github.ref == 'refs/heads/master'
