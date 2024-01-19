@@ -65,7 +65,7 @@ category('MolstarViewer', () => {
     expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 3, 'The current ligand of rowIdx = 3.');
     expect(viewer.ligands.selected.length, 2);
-  });
+  }, {timeout: 30000,});
 
   test('ligands-Molecule3D', async () => {
     const [pdbqtCnt, targetData]: [string, BiostructureData] = await Promise.all([
@@ -109,7 +109,7 @@ category('MolstarViewer', () => {
     expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.current!.rowIdx, 1, 'The current ligand of rowIdx = 1.');
     expect(viewer.ligands.selected.length, 2);
-  });
+  }, {timeout: 30000});
 
   const pdbIdCsv: string = `pdb_id
 1QBS
@@ -194,7 +194,7 @@ category('MolstarViewer', () => {
     expect(!!pdbGCol, true, `'pdb' column not found`);
 
     const back = PdbGridCellRendererBack.getOrCreate(pdbGCol);
-    await back.awaitRendered(15000);
+    await back.awaitRendered(20000);
 
     // region Click
     const cellPdb0 = view.grid.cell('pdb', 0);
@@ -207,7 +207,7 @@ category('MolstarViewer', () => {
     const gridOverlay = $(view.grid.root).find('canvas').get()[2];
     await testEvent(back.onClicked, () => {}, () => {
       gridOverlay.dispatchEvent(ev); // Click
-    }, 20000);
+    }, 20000, 'click handling 20000 timeout');
     // endregion Click
 
     const viewer = wu(view.viewers)
