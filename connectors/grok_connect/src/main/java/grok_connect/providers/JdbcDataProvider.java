@@ -46,7 +46,6 @@ public abstract class JdbcDataProvider extends DataProvider {
     protected String driverClassName;
 
     public void prepareProvider() throws ClassNotFoundException {
-        Class.forName(driverClassName);
     }
 
     public Connection getConnection(DataConnection conn)
