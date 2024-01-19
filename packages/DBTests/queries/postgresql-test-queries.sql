@@ -143,3 +143,9 @@ SELECT pg_sleep(3);
 --batch
 SELECT * FROM COMPRESS_INT;
 --end
+
+--name: TestForColumnsOnEmptyResult
+--friendlyName: TestForColumnsOnEmptyResult
+--connection: PostgreSQLDBTests
+SELECT * FROM mock_data WHERE id > 30;
+--end
