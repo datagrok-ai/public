@@ -439,7 +439,7 @@ export async function demoBioDockingConformations(): Promise<void> {
 //meta.demoPath: Bioinformatics | Proteins
 //description: View structures PDB in grids
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Proteins
-//test: demoBioProteins() //wait: 20000
+//test: demoBioProteins() //wait: 1000 //timeout: 60000
 export async function demoBioProteins(): Promise<void> {
   const t1: number = window.performance.now();
   await demoBio07NoScript();
