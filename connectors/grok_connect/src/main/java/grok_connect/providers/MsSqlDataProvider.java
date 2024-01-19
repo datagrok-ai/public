@@ -78,7 +78,6 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         if (conn.credentials.getLogin() == null || conn.credentials.getPassword() == null) {
             throw new RuntimeException("Login or password can't be blank");
         }
-        connString += "user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword();
         return connString;
     }
 
