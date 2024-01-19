@@ -74,7 +74,7 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
 
     @Override
     public String limitToSql(String query, Integer limit) {
-        return query.replaceFirst("select", String.format("select top %s", limit));
+        return query + "top " + limit.toString() + " ";
     }
 
     @Override
