@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getIcon, getStatusIcon, Status, PASSED, FAILED, SKIPPED} from './utils';
+import {getIcon, getStatusIcon, Status, colors, PASSED, FAILED, SKIPPED} from './utils';
 import {_package} from '../package';
 
 interface TestCase extends Options {
   name: string;
   path: string;
-  text: string;
+  text: HTMLElement;
   status: Status | null;
   icon: HTMLElement;
   reason: HTMLElement;
@@ -66,7 +66,7 @@ export class TestTrack extends DG.ViewBase {
       const path = row.get('path');
       const status: Status = row.get('status');
       const reason: string = row.get('reason');
-      const el: TestCase = {name: '', path, text: '', status,
+      const el: TestCase = {name: '', path, text: ui.markdown(''), status,
         icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(reason, 'tt-reason')};
       this.map[path] = el;
     }
@@ -90,6 +90,16 @@ export class TestTrack extends DG.ViewBase {
     }, 'Test Track folder');
     gh.classList.add('tt-ribbon-button');
     const report = ui.button(getIcon('tasks', {style: 'fas'}), () => {
+      const list: {name: string, category: string, status: Status | null, reason: string}[] = [];
+      Object.values(this.map).forEach((el) => {
+        if ('children' in el) return;
+        list.push({name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status, reason: el.reason.innerText});
+      });
+      const df = DG.DataFrame.fromObjects(list)!;
+      df.getCol('status').colors.setCategorical(colors);
+      const tv = grok.shell.addTableView(df);
+      tv.grid.sort(['category', 'name']);
+      tv.name = 'Report';
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
     const ec = ui.button(getIcon('sort', {style: 'fas'}), () => {
@@ -112,7 +122,9 @@ export class TestTrack extends DG.ViewBase {
     // Test case div
     this.tree.onSelectedNodeChanged.subscribe((node) => {
       this.currentNode = node;
-      this.testCaseDiv.innerText = node.value.text ?? '';
+      this.testCaseDiv.innerHTML = '';
+      if (node.value.text)
+        this.testCaseDiv.append(node.value.text);
     });
 
     // UI
@@ -140,7 +152,8 @@ export class TestTrack extends DG.ViewBase {
     if (pathL.length < 2)
       grok.shell.error('Root test case');
     const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
-    const [text, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
+    const [textS, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
+    const text = ui.markdown(textS);
     const path = pathL.join(': ');
     const elOld: TestCase | undefined = this.map[path] as TestCase;
     const status = elOld ? elOld.status : null;

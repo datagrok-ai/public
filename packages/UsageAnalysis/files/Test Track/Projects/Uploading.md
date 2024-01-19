@@ -1,12 +1,14 @@
-1. Add the table in Datagrok (from anywhere: files, queries, local storage, etc.)
-2. Click on “Share” section on Sidebar
-3. Click “Upload” button near “Scratchpad” project
-4. Enter a name for the new project
-5. Enter description for the new project
-6. Turn on the “Presentation mode” switch
-7. Click “OK”
-8. Click “OK” in “Share dialog”
+1. Open the table from anywhere:
+    - Query results (with and without data sync)
+    - Tables from App Data (with and without data sync)
+    - Tables from the local host
+2. Go to **Projects** and click the **Upload** button near the **Scratchpad** project. A dialog opens.
+3. In the dialog, enter a name for the new project.
+4. Enter a description for the new project.
+5. Turn on the **Presentation mode** switch.
+6. Click **OK**. A **Share** dialog opens.
+7. In the **Share** dialog, click **OK** .
 ---
 {
-  "order": 2
+  "order": 1
 }

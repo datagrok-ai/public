@@ -8,17 +8,23 @@
 }
 
 #tt-test-case-div {
-  height: 200px;
+  height: 270px;
   background-color: var(--grey-1);
   border-radius: 9px;
-  padding: 10px;
+  padding: 10px 10px 0 10px;
   overflow-y: scroll;
   line-height: 1.5;
 }
 
+#tt-test-case-div ol {
+  margin-block-start: 0;
+  padding-inline-start: 0;
+  list-style-position: inside;
+}
+
 #tt-test-case-div-outer {
   position: relative;
-  margin: 10px 10px 0 10px;
+  margin: 0 8px;
 }
 
 #tt-edit-button {
@@ -29,8 +35,6 @@
   margin: 0;
   padding: 4px;
   height: unset;
-  /* box-shadow: 0 0 10px var(--grey-1);
-  background-color: var(--grey-1); */
 }
 
 #tt-test-case-div-outer:hover #tt-edit-button {
@@ -55,9 +59,9 @@
   margin: 4px 0 !important;
 }
 
-.tt-ribbon-button:nth-child(1) {
+/* .tt-ribbon-button:nth-child(1) {
   margin-left: 2px !important;
-}
+} */
 
 #tt-ribbon-save-button:enabled {
   animation-name: color;

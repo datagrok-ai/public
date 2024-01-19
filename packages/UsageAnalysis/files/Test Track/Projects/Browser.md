@@ -1,11 +1,9 @@
-1. Open a "Projects" view for "Data" section on Sidebar
-2. Use search to find the "demog" project
-3. Open "Share" dialog for the "demog" project from its context menu
-4. Check "Details" for the "demog" project from its context menu
-5. Check all tabs on Property Panel for "demog" project
-
-* it is possible to use any other project that currently exists on the tested instance for testing
+1. Go to **Data** > **Projects.**
+2. Use search to find the `demog` project.
+3. Right-click the `demog` project and select **Share** from the context menu.
+4. Right-click the `demog` project and check **Details** from the context menu.
+5. On the **Context Pane**, check all tabs for the `demog` project.
 ---
 {
-  "order": 1
+  "order": 3
 }
