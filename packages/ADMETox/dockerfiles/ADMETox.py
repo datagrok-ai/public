@@ -26,6 +26,14 @@ models_extensions = [
     "CYP2D6-Inhibitor.pt", "CL-Hepa.pt", "CL-Micro.pt", "Half-Life.pt",
 ]
 
+def is_malformed(smiles):
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        return mol is None
+    except Exception as e:
+        print(f"Error validating SMILES '{smiles}': {str(e)}")
+        return True
+
 def read_csv_and_return_string(file_path):
     with open(file_path, 'r') as file:
         csv_reader = csv.reader(file)
@@ -36,18 +44,40 @@ def read_csv_and_return_string(file_path):
 def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
     current_path = os.path.dirname(os.path.realpath(__file__))
     print(f'Cuda available check: {torch.cuda.is_available()}')
+    malformed_indexes = []
+    with open(test_path, 'r') as file:
+        first_row = file.readline().strip()
+        smiles_list = [line.strip() for line in file.readlines()]
+        malformed_indexes = [i + 1 for i, smiles in enumerate(smiles_list) if is_malformed(smiles)]
+    
+    if malformed_indexes:
+        valid_smiles_list = [first_row] + [smiles for smiles in smiles_list if not is_malformed(smiles)]
+
+    temp_file_path = 'temp'
+    with open(temp_file_path, 'w') as file:
+            file.write('\n'.join(valid_smiles_list))
     command = [
         "chemprop_predict",
-        "--test_path", test_path,
+        "--test_path", temp_file_path,
         "--checkpoint_path", checkpoint_path,
         "--preds_path", preds_path,
-        "--gpu", "0",
         "--batch_size", "1024",
         "--empty_cache",
         "--num_workers", "0"
     ]
 
     subprocess.call(command, cwd=current_path)
+    os.remove(temp_file_path)
+
+    if malformed_indexes:
+        with open(preds_path, 'r') as file:
+            content = file.readlines()
+        
+        for index in malformed_indexes:
+            content.insert(index, "Malformed\n")
+        
+        with open(preds_path, 'w') as file:
+            file.writelines(content)
 
 def generate_fingerprint(smiles):
     mol = Chem.MolFromSmiles(smiles)
@@ -74,12 +104,21 @@ def calculate_chemprop_probability(smiles_list, model):
 def make_euclia_predictions(test_path, checkpoint_path, add_probability):
     current_path = os.path.dirname(os.path.realpath(__file__))
     model = joblib.load(checkpoint_path)
-    smiles = pd.read_csv(test_path, header=None).iloc[:, 0].tolist()
-    molecules = [Chem.MolFromSmiles(smile) for smile in smiles if Chem.MolFromSmiles(smile) is not None]
+    smiles_list = pd.read_csv(test_path, header=None).iloc[1:, 0].tolist()
+    valid_smiles = [smile for smile in smiles_list if Chem.MolFromSmiles(smile) is not None]
+    molecules = [Chem.MolFromSmiles(smile) for smile in valid_smiles]
     model(molecules)
     predictions = model.prediction   
     probabilities = model.probability if add_probability else None
     probabilities = [sublist[0] for sublist in probabilities]
+
+    if len(valid_smiles) < len(smiles_list):
+        malformed_indexes = [i for i, smile in enumerate(smiles_list) if smile not in valid_smiles]    
+        for index in malformed_indexes:
+            predictions.insert(index, " ")
+            if add_probability:
+                probabilities.insert(index, None)
+    
     return predictions, probabilities
 
 def handle_model(model, test_data_path, add_probability):
@@ -94,15 +133,12 @@ def handle_model(model, test_data_path, add_probability):
         os.remove(result_path)
         new_columns = {col: f"{model}" for col in current_df.columns}
         current_df = current_df.rename(columns=new_columns)
-        print(f'addProbability: {add_probability}')
         if add_probability == 'true':
             probabilities = calculate_chemprop_probability(smiles_list, model)
             current_df[f'Y_{model}_probability'] = probabilities
     else:
         predictions, probabilities = make_euclia_predictions(test_data_path, test_model_name, add_probability)
         current_df = pd.DataFrame({f'{model}': predictions})
-        print(f'addProbability: {add_probability}')
-        print(type(add_probability))
         if add_probability == 'true':
             current_df[f'{model}_probability'] = probabilities
     
