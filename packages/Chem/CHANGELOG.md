@@ -1,6 +1,6 @@
 # Chem changelog
 
-## 1.8.10 (2024-01-17)
+## 1.8.10 (2024-01-19)
 
 ### Features
 
@@ -11,6 +11,7 @@
 * [#2626](https://github.com/datagrok-ai/public/issues/2626): Unexpected warning on adding child node to the scaffold tree if parent contains 'H' atom
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there are two views opened
 * [#2629](https://github.com/datagrok-ai/public/issues/2629): Structure filter filters out all molecules in the presence of filter-by-zoom scatterplot and multiple views
+* GROK-14542: Filter Panel | Structure filter: incorrect behavior on deleting a filter in a cloned view
 
 ## 1.8.9 (2024-01-09)
 
