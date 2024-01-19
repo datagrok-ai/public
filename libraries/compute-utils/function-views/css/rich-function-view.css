@@ -1,6 +1,10 @@
-.rfv-buttons {
+.ui-form .ui-input-buttons.rfv-buttons {
     margin-top: 0px;
     position: sticky;
+}
+
+.ui-form .ui-input-buttons.rfv-buttons .ui-input-editor {
+    flex-wrap: wrap;
 }
 
 .ui-input-root.rfv-restricted-input.d4-disabled {
@@ -44,8 +48,9 @@
     margin-right: 0px!important;
 }
 
-.ui-form .rfv-buttons > .ui-input-editor {
-    justify-content: space-between
+.rfv-form .ui-form .rfv-buttons > .ui-input-editor {
+    gap: 5px;
+    justify-content: flex-end;
 }
 
 div.ui-box > div.ui-box.rfv-form > div.ui-div {

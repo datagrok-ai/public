@@ -454,6 +454,18 @@ populated default values, and created popups with help text.
 After running this script, Datagrok automatically opens the new dataframe.
 It will contain an additional column **ID** with the generated row ID.
 
+:::warning Case-insensitive column names
+
+In Datagrok, unlike `Python`/`R` dataframes, column names are case-insensitive. 
+If you return a dataframe with columns whose names differ only by letter case, 
+Datagrok will automatically add a number to the column header to differentiate them.
+
+
+To prevent any confusion or issues with column names, 
+we recommend using unique names that are distinct regardless of case. 
+
+:::
+
 ### Using column inputs
 
 Datagrok provides you with data inputs to select one or multiple columns from a dataframe.

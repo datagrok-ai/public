@@ -1,6 +1,11 @@
 # Grok Connect changelog
 
-## 2.1.10 - 2.1.11 (WIP)
+## 2.1.12 (WIP)
+
+* Make logging async
+* Improve queries logging and debugging
+
+## 2.1.10 - 2.1.11
 
 * Fix categorize()
 * Fix NullPointer when update query executed

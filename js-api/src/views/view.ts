@@ -303,6 +303,14 @@ export class View extends ViewBase {
     return toJs(api.grok_View_Save_Layout(this.dart));
   }
 
+  /**
+   *  Saves view as a ViewInfo. Only applicable to certain views, such as {@link TableView}.
+   *  @returns {ViewInfo} */
+  getInfo(): ViewLayout {
+    return toJs(api.grok_View_Get_Info(this.dart));
+  }
+
+
   /** View name. It gets shown in the tab handle.
    * @type {string} */
   get name(): string {

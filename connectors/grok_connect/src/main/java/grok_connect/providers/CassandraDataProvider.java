@@ -249,12 +249,11 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
         try {
             statement.setObject(parameterIndex, localDateTime.toLocalDate());
-            return localDateTime.toString();
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
                     parameterIndex), e);

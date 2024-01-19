@@ -117,16 +117,16 @@ For `column` and `column_list` types
 
 For `string` type
 
-| Option                       | Value                                                                             | Description                                        |
-|------------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------|
-| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
+| Option                       | Value                                                                             | Description                                |
+|------------------------------|-----------------------------------------------------------------------------------|--------------------------------------------|
+| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                       |
 | [suggestions](#autocomplete) | Name of a function that returns a list of strings to autocomplete user input      | Autocomplete gives you options as you type |
 
 For `numeric` types
 
 | Option   | Description                                                                                                                                |
 |----------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |                                                                                |
+| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |
 
 For `list` type`
 

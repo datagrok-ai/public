@@ -10,7 +10,7 @@ import {
   after,
 } from '@datagrok-libraries/utils/src/test';
 import dayjs from 'dayjs';
-import {DataFrame, toDart} from 'datagrok-api/dg';
+import {DataFrame, FileInfo, toDart} from 'datagrok-api/dg';
 
 const langs = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
 
@@ -60,6 +60,17 @@ for (const lang of langs) {
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
           {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
         expect(!result || result.length === 0, false);
+      });
+    }
+
+    if (!['JavaScript', 'Grok'].includes(lang)) {
+      test('File and blob input/output', async () => {
+        const fileStringData = 'Hello world!';
+        const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
+        const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
+            {'fileInput': FileInfo.fromString(fileStringData), 'blobInput': FileInfo.fromBytes(fileBinaryData)});
+        expect((result['fileOutput'] as FileInfo).data, fileBinaryData);
+        expect((result['blobOutput'] as FileInfo).data, fileBinaryData);
       });
     }
 

@@ -1819,6 +1819,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
+      if (thisViewer.tree.items.length < 1)
+        return;
       const firstChild = thisViewer.tree.items[0];
       if (dataFrame.rowCount !== value(firstChild).bitset?.length)
         await updateAllNodesHits(thisViewer);

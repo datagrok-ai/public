@@ -1,5 +1,22 @@
 # Compute changelog
 
+## 1.19.2 (2024-01-18)
+
+### Bug fixes
+
+- RFV: Run button disabling fix
+
+## 1.19.1 (2024-01-18)
+
+### Features
+
+- SA: Internal refactoring & UI improvements
+
+### Bug fixes
+
+- RFV: Foldable categories design fix
+- RFV: Buttons layout changes
+
 ## 1.19.0 (2024-01-08)
 
 ### Features

@@ -10,19 +10,33 @@ Templates in HitTriage contain essential configurations for conducting a campaig
 
 - **Campaign Prefix** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
 
-- **Data Ingestion Settings** : Controls how molecular data is ingested into the template. Users can choose between file upload or a query option. For the query, HitTriage searches for functions in any Datagrok package tagged with `HitTriageDataSource`. For example:
+- **Data Ingestion Settings** : Controls how molecular data is ingested into the template. Users can choose between file upload or a query option. For the query, HitTriage searches for functions in any Datagrok package tagged with `HitTriageDataSource` and queries with same tag. For example, a package can export the following function:
 
-    ```//name: Demo File Ingestion
-    //input: int numberOfMolecules [Molecules count]
-    //tags: HitTriageDataSource
-    //output: dataframe result
-    export async function demoFileIngest(numberOfMolecules: number): Promise<DG.DataFrame> {
-    const df = grok.data.demo.molecules(numberOfMolecules);
-    df.name = 'Variable Molecules number';
-    return df;
-    }
-    ```
-    The application will detect that the function requeires an input parameter and will prompt the user to provide it in campaigns form. The function must return a dataframe with a column containing molecules
+```//name: Demo File Ingestion
+//input: int numberOfMolecules [Molecules count]
+//tags: HitTriageDataSource
+//output: dataframe result
+export async function demoFileIngest(numberOfMolecules: number): Promise<DG.DataFrame> {
+const df = grok.data.demo.molecules(numberOfMolecules);
+df.name = 'Variable Molecules number';
+return df;
+}
+```
+Or users can write a query in the query editor, save it and share with others. Example for loading molecules from Chembl database:
+
+```--name: _someChemblStructure
+    --friendlyName: Load Some Chembl structures
+    --input: int numberOfMolecules = 1000
+    --tags: HitTriageDataSource
+    --connection: Chembl
+    select
+    canonical_smiles, molregno
+    from
+    compound_structures
+    limit @numberOfMolecules
+```
+
+The application will detect that the function/query requeires an input parameter and will prompt the user to provide it in campaigns form. The function\query must return a dataframe with a column containing molecules.
 
 - **Additional fields** : Users can configure additional fields for the template, which will be prompted for input during campaign creation. These fields include name, type, and whether they are required or not. For example, additional field for a campaign can be a target protein name, Head scientist name, deadlile, etc.
 
@@ -30,7 +44,7 @@ Templates in HitTriage contain essential configurations for conducting a campaig
 
 - **Submit function** : Users can define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/template.png)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/template.png?raw=true)
 
 ## Campaigns
 
@@ -42,22 +56,22 @@ Campaigns are built based on templates and encompass the actual hit triage proce
 
 - **Functionality**: Once a campaign starts, you can add extra calculated columns, apply changes, fileter, save or submit the campaign.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/campaign.png)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign.png?raw=true)
 
 ## Getting started
 
 Users can continue ongoing campaigns either directly by a link or by selecting it from the campaigns table.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_Continue_campaign.gif)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_Continue_campaign.gif?raw=true)
 
 Users can create a new template by clicking on the `New Template` button in the `Templates` dropdown.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_create_template.gif)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_create_template.gif?raw=true)
 
 Users can start a new campaign by choosing a template and filling out the required information. 
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_create_campaign.gif)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_create_campaign.gif?raw=true)
 
 After the campaign starts, users can filter, modify or add viewers to the campaign and then save them. once saved, reloading the campaign will restore the saved state.
 
-![template](https://datagrok.ai/help/uploads/hittriage/files/images/HT_save_campaign.gif)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_save_campaign.gif?raw=true)

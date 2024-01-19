@@ -978,6 +978,10 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
 /** UI Tools **/
 export class tools {
+  private static mutationObserver: MutationObserver | null = null;
+  private static mutationObserverElements: {
+    element: HTMLElement, resolveF: (element: HTMLElement) => void, timestamp: number
+  }[] = [];
 
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
     let width = element.clientWidth;
@@ -1016,28 +1020,32 @@ export class tools {
   static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
     if (_isDartium()) {
       return new Promise(resolve => {
-        setInterval(function() {
-          if (document.contains(element))
+        const intervalId = setInterval(function() {
+          if (document.contains(element)) {
+            clearInterval(intervalId);
             return resolve(element);
+          }
         }, 100);
       });
     }
 
+    tools.mutationObserver ??=  new MutationObserver((_) => {
+      tools.mutationObserverElements.forEach((item, index) => {
+        if (document.contains(item.element)) {
+          item.resolveF(item.element);
+          tools.mutationObserverElements.splice(index, 1);
+        }
+      })
+    });
+    tools.mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+    
     return new Promise(resolve => {
       if (document.contains(element))
         return resolve(element);
-
-      const observer = new MutationObserver(_ => {
-        if (document.contains(element)) {
-          resolve(element);
-          observer.disconnect();
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      tools.mutationObserverElements.push({element: element, resolveF: resolve, timestamp: Date.now()});
     });
   }
 
@@ -1136,48 +1144,8 @@ export class Tooltip {
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
-    if (tooltip != null){
+    if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
-
-        tools.waitForElementInDom(element).then((el)=>{ 
-          if(el.classList.contains('d4-disabled')) {
-            let overlay = document.createElement('span');
-            overlay.style.position = 'fixed';
-
-            if ($('body').has('.d4-tooltip-overlays').length !=0)
-              $('.d4-tooltip-overlays').append(overlay)
-            else
-              $('body').append(div([overlay],'d4-tooltip-overlays'));
-            
-            let interval = setInterval(()=> {
-              let target = el.getBoundingClientRect();
-              overlay.style.left = String(target.left)+'px';
-              overlay.style.top = String(target.top)+'px';
-              overlay.style.width = String(target.width)+'px';
-              overlay.style.height = String(target.height)+'px';
-              
-              if ($('body').has(el).length == 0) { 
-                overlay.remove();
-                clearInterval(interval);
-              }
-
-            }, 100);
-
-            overlay.addEventListener('mousemove', (e:MouseEvent)=> {
-              api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
-            });
-
-            overlay.addEventListener('mouseleave', (e:MouseEvent)=> {
-              setTimeout(()=>{
-                api.grok_Tooltip_Hide();
-              }, 250)
-            });
-
-          }
-
-        });
-      
-    }
     return element;
   }
 
