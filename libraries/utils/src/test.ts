@@ -243,25 +243,26 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
   const moduleDemo = [];
   const moduleDetectors = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
-  const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
+  const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)|timeout:\s*(\d+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     const demo = f.options['demoPath'];
     if ((tests && Array.isArray(tests) && tests.length)) {
       for (let i = 0; i < tests.length; i++) {
         const res = (tests[i] as string).matchAll(reg);
-        const map: {skip?: string, wait?: number, cat?: string} = {};
+        const map: {skip?: string, wait?: number, cat?: string, timeout?: number} = {};
         Array.from(res).forEach((arr) => {
           if (arr[0].startsWith('skip')) map['skip'] = arr[1];
           else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
           else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
+          else if (arr[0].startsWith('timeout')) map['timeout'] = parseInt(arr[4]);
         });
         const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
           const res = await grok.functions.eval(addNamespace(tests[i], f));
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, {skipReason: map.skip});
+        }, {skipReason: map.skip, timeout: map.timeout});
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
