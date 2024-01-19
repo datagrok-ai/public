@@ -82,7 +82,8 @@ export class Test {
 }
 
 export async function testEvent<T>(event: Observable<T>,
-  handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
+  handler: (args: T) => void, trigger: () => void, ms: number = 0, reason: string = `timeout`
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const sub = event.subscribe((args: T) => {
       try {
@@ -98,7 +99,7 @@ export async function testEvent<T>(event: Observable<T>,
     const timeout = setTimeout(() => {
       sub.unsubscribe();
       // eslint-disable-next-line prefer-promise-reject-errors
-      reject('timeout');
+      reject(reason);
     }, ms);
     trigger();
   });
@@ -510,15 +511,24 @@ export async function awaitCheck(checkHandler: () => boolean,
 
 async function timeout(func: () => Promise<any>, testTimeout: number): Promise<any> {
   let timeout: Timeout | null = null;
+  const t1: number = window.performance.now();
   const timeoutPromise = new Promise<any>((_, reject) => {
     //@ts-ignore
     timeout = setTimeout(() => {
+      const t2: number = window.performance.now();
+      //console.debug(`utils: timeout(), timeout, ET: ${t2 - t1} ms`);
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('EXECUTION TIMEOUT');
     }, testTimeout);
   });
   try {
-    return await Promise.race([func(), timeoutPromise]);
+    return await Promise.race([
+      (async () => {
+        await func();
+        const t2: number = window.performance.now();
+        //console.debug(`utils: timeout(), func() end, ET: ${t2 - t1} ms`);
+      })(),
+      timeoutPromise/* timeoutPromise can reject but never resolve */]);
   } finally {
     if (timeout)
       clearTimeout(timeout);
