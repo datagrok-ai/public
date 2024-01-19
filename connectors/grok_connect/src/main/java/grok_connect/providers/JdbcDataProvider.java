@@ -368,11 +368,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         try {
             EventType resultSetProcessingEventType = dryRun ? EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL
                     : EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
-
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                     "Filling columns of DataFrame with id {}...", operationNumber);
-            int rowCount = 0;
             if (resultSet.next()) {
+                int rowCount = 0;
                 do {
                     rowCount++;
                     for (int c = 1; c < columnCount + 1; c++) {
@@ -392,12 +391,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
                         "Filled columns with {} rows of DataFrame with id {}", rowCount, operationNumber);
-                if (!dryRun)
-                    dataFrame.addColumns(resultSetManager.getProcessedColumns());
             }
             else
                 queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
                         "Result set is empty");
+            dataFrame.addColumns(resultSetManager.getProcessedColumns());
             return dataFrame;
         } catch (Exception e) {
             queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
