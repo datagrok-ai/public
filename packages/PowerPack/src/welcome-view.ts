@@ -53,7 +53,8 @@ export function welcomeView(): DG.View | undefined {
     searchHost.style.display = (search ? '' : 'none');
     if (search != null)
       powerSearch(s, searchHost);
-    view.path = search ? `search?q=${s}` : 'search';
+    //@todo uncomment when bug GROK-14545 is fixed
+    // view.path = search ? `search?q=${s}` : 'search';
   }
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe((_) => doSearch(input.value));

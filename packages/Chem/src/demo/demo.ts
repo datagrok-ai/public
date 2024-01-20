@@ -61,7 +61,7 @@ export async function _demoChemOverview(): Promise<void> {
   let propPanel: Element;
   let canvas: HTMLCanvasElement;
   let filters: DG.FilterGroup;
-  demoScript
+  await demoScript
     .step('Load molecules', async () => {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
       tv.grid.columns.setOrder(firstCols.concat(lastCols));
@@ -116,13 +116,16 @@ export async function _demoChemOverview(): Promise<void> {
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
 
       let dT = null;
-      try {dT = new DataTransfer();} catch (e) { }
+      try {
+        dT = new DataTransfer();
+      } catch (e) {
+      }
       const evt = new ClipboardEvent('paste', {clipboardData: dT});
-            evt.clipboardData!.setData('text/plain', demoScaffold);
-            scaffoldSketcherInput.value = demoScaffold;
-            await delay(100);
-            scaffoldSketcherInput.dispatchEvent(evt);
-            Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
+        evt.clipboardData!.setData('text/plain', demoScaffold);
+        scaffoldSketcherInput.value = demoScaffold;
+        await delay(100);
+        scaffoldSketcherInput.dispatchEvent(evt);
+        Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Aligning structures by scaffold', delay: 1000})
     .step('Add sparkline columns', async () => {
       tv.grid.columns.add({gridColumnName: `radar`, cellType: 'radar'});
@@ -131,15 +134,15 @@ export async function _demoChemOverview(): Promise<void> {
       tv.grid.scrollToCell('MolWt', 0);
     })
     .step('Add color coding', async () => {
-            table.col('MolWt')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.LINEAR);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_CONDITIONAL,
-              '{"0 - 6.25":"#73aff5","6.25 - 12.50":"#ffa500","12.50 - 18.75":"#ff5140","18.75 - 25":"#50af28"}');
-            table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            grok.shell.windows.showHelp = true;
-            //@ts-ignore
-            grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
-            DG.chem.currentSketcherType = sketcherType;
+        table.col('MolWt')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.LINEAR);
+        table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
+        table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_CONDITIONAL,
+          '{"0 - 6.25":"#73aff5","6.25 - 12.50":"#ffa500","12.50 - 18.75":"#ff5140","18.75 - 25":"#50af28"}');
+        table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
+        grok.shell.windows.showHelp = true;
+        //@ts-ignore
+        grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+        DG.chem.currentSketcherType = sketcherType;
     })
     .start();
 }
@@ -149,7 +152,7 @@ export async function _demoSimilaritySearch(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Searching for molecules most similar to target molecule');
   let table: DG.DataFrame;
   let tv: DG.TableView;
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('smiles.csv');
       table = tv.dataFrame;
@@ -189,7 +192,7 @@ export async function _demoMoleculesVisualizations(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Creating various viewers on molecule columns');
   let table: DG.DataFrame;
   let tv: DG.TableView;
-  demoScript
+  await demoScript
     .step('Loading table', async () => {
       tv = await openMoleculeDataset('r-groups.csv');
       table = tv.dataFrame;
@@ -231,7 +234,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     return null;
   };
 
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
@@ -271,7 +274,7 @@ export async function _demoActivityCliffs(): Promise<void> {
   let table: DG.DataFrame;
   let tv: DG.TableView;
   let scatterPlot: DG.Viewer;
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
@@ -282,9 +285,9 @@ export async function _demoActivityCliffs(): Promise<void> {
       const axesNames = getEmbeddingColsNames(table);
       const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
       scatterPlot = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs',
-        table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
-        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
-        createTooltipElement, createPropPanelElement, undefined, 0.5);
+            table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
+            DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
+            createTooltipElement, createPropPanelElement, undefined, 0.5);
       progressBar.close();
       await delay(1000);
     }, {description: 'Results are shown on a scatter plot', delay: 2000})
@@ -301,12 +304,13 @@ export async function _demoActivityCliffs(): Promise<void> {
         if (i.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`)
           cliffsGrid = i;
       }
-            cliffsGrid!.dataFrame.currentRowIdx = 35;
-            await delay(3000);
-            cliffsGrid!.dataFrame.currentRowIdx = 6;
-            await delay(3000);
-            cliffsGrid!.dataFrame.currentRowIdx = 5;
-    }, {description: 'When you select a cliff scatter plot is zoomed to that exact cliff', delay: 3000})
+        cliffsGrid!.dataFrame.col('act_diff')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.LINEAR);
+        cliffsGrid!.dataFrame.currentRowIdx = 35;
+        await delay(3000);
+        cliffsGrid!.dataFrame.currentRowIdx = 6;
+        await delay(3000);
+        cliffsGrid!.dataFrame.currentRowIdx = 5;
+    }, {description: 'Select a cliff to zoom on it on the scatter plot', delay: 3000})
     .start();
 }
 
@@ -397,24 +401,30 @@ export async function _demoDatabases(): Promise<void> {
   };
 
   const demoScript = new DemoScript('Demo', 'Searching chemical databases');
-  demoScript
+  await demoScript
     .step('Performing search in databases', async () => {
       const view = grok.shell.addView(DG.View.create());
       view.root.append(totalDiv);
-    }, {description: `Datagrok allows you to connect various chemical databases and easily 
+    }, {
+      description: `Datagrok allows you to connect various chemical databases and easily 
         perform searches. You can create your own requests using various inputs. 
-        As an example we will browse CheMBL database and perform substructure search`, delay: 5000})
+        As an example we will browse CheMBL database and perform substructure search`, delay: 5000,
+    })
     .step('Searching first substructure', async () => {
       await search(ids[0]);
-    }, {description: 'Entering substructure via standard molecule input form and performing search by clicking \'RUN\'',
-      delay: 2000})
+    }, {
+      description: 'Entering substructure via standard molecule input form and performing search by clicking \'RUN\'',
+      delay: 2000,
+    })
     .step('Searching second substructure', async () => {
       await search(ids[1]);
     }, {description: 'Repeat the same for some other substructure'})
     .step('Searching third substructure', async () => {
       await search(ids[2]);
     }, {description: 'And one more search'})
-    .step('Final', async () => {DG.chem.currentSketcherType = sketcherType;})
+    .step('Final', async () => {
+      DG.chem.currentSketcherType = sketcherType;
+    })
     .start();
 }
 

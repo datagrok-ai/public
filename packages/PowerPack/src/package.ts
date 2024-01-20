@@ -13,6 +13,7 @@ import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
 import {AboutWidget} from './widgets/about-widget';
 import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+import {appSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
@@ -95,6 +96,14 @@ export function _functionSearch(s: string): Promise<any[]> {
   return functionSearch(s);
 }
 
+//description: Apps
+//tags: search
+//input: string s
+//output: list result
+export function _appsSearch(s: string): Promise<any[]> {
+  return appSearch(s);
+}
+
 //description: Scripts
 //tags: search
 //input: string s
@@ -153,7 +162,7 @@ grok.events.onContextMenu.subscribe((args) => {
      (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.LINE_CHART)) {
     const menu = args.args.menu.find('Tools');
     if (menu != null)
-      menu.item('Formula Lines...', () => {formulaLinesDialog(src);});
+      menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
   }
 });
 
@@ -186,7 +195,7 @@ export function viewerGallery(): void {
       panel[0][1].remove();
 
       const icon = ui.iconFA('',
-        () => {viewersDialog(view as DG.TableView, (view as DG.TableView).table!);}, 'Add viewer');
+        () => { viewersDialog(view as DG.TableView, (view as DG.TableView).table!); }, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
       const btn = ui.div([icon]);
