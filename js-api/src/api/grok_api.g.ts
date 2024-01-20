@@ -321,7 +321,8 @@ export interface IDartApi {
   grok_Viewer_FromJsViewer(jsViewer: any): any;
   grok_FilterGroup_GetStates(filterGroup: any, colName: String, type: String): any;
   grok_FilterGroup_Add(filterGroup: any, state: any): any;
-  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any, requestFilter: any): any;
+  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any, requestFilter: Bool): any;
+  grok_FilterGroup_GetFilterSummary(filterGroup: any): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
@@ -351,6 +352,7 @@ export interface IDartApi {
   grok_Viewer_Set_HelpUrl(v: any, s: String): any;
   grok_Viewer_Get_DataFrame(v: any): any;
   grok_Viewer_Set_DataFrame(v: any, df: any): any;
+  grok_Viewer_Get_Filter(v: any): any;
   grok_Viewer_Get_EventBus_Events(v: any): any;
   grok_Viewer_Get_PropertyChanged_Events(v: any): any;
   grok_Viewer_To_Trellis_Look(v: any): any;
