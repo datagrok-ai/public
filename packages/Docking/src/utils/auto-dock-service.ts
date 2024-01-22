@@ -13,7 +13,8 @@ import {delay, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 
-import {_package, getAutoDockService} from '../package';
+import {_package} from './constants';
+import { getAutoDockService } from '../package';
 
 namespace Forms {
   export type dockLigand = {
@@ -39,6 +40,12 @@ namespace Forms {
   export type dockLigandListRes = {
     /** pdbqt */ ligand_results: { [ligandIdx: number]: string; }
   }
+
+  export type LigandResults = {
+    error?: string;
+    poses?: string;
+  }
+
 }
 
 export function buildDefaultAutodockGpf(receptorName: string, npts: GridSize): string {
@@ -148,11 +155,6 @@ export class AutoDockService implements IAutoDockService {
   async dockLigand(receptor: BiostructureData, ligand: BiostructureData,
     autodockGpf: string, poseCount: number = 30, poseColName: string = 'poses', debug: boolean = false
   ): Promise<DG.DataFrame> {
-    if (receptor.binary || receptor.ext !== 'pdb')
-      throw new Error(`Unsupported receptor ext '${receptor.ext}' or binary, must be 'pdb' string.`);
-    if (ligand.binary || ligand.ext !== 'pdb')
-      throw new Error(`Unsupported ligand ext '${ligand.ext}' or binary, must be 'pdb' string.`);
-
     const form: Forms.dockLigand = {
       receptor: receptor.data as string,
       receptor_format: receptor.ext,
@@ -226,8 +228,9 @@ export class AutoDockService implements IAutoDockService {
 
     let posesAllDf: DG.DataFrame | undefined = undefined;
     for (const [ligandIdx, ligandPoses] of Object.entries(adRes.ligand_results)) {
-      const posesDf = this.ph.parsePdbqt(ligandPoses, poseColName);
-      (posesDf.columns.addNewInt('ligandIdx')).init((rowI) => ligandIdx);
+      const ligand = ligandPoses as unknown as Forms.LigandResults;
+      const poses = ligand['poses'];
+      const posesDf: DG.DataFrame | undefined = poses ? this.ph.parsePdbqt(poses, poseColName) : undefined;
 
       if (posesAllDf === undefined) {
         posesAllDf = posesDf;

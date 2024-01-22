@@ -39,7 +39,7 @@ category('AutoDock', () => {
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
   });
 
-  test('1bdq', async () => {
+  test('dock ligand', async () => {
     if (!adSvc) return;
 
     const receptorPdb = await _package.files.readAsText('samples/1bdq-wo-ligands.pdb');
@@ -54,4 +54,23 @@ category('AutoDock', () => {
     const posesDf = await adSvc.dockLigand(receptorData, ligandData, autodockGpf);
     expect(posesDf.rowCount, 30);
   }, {timeout: 60000});
+
+  test('dock ligand column', async () => {
+    if (!adSvc) return;
+    
+    const receptorPdb = await _package.files.readAsText('samples/1bdq-wo-ligands.pdb');
+    const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/1bdq-short.sdf');
+    const ligandDf: DG.DataFrame = (await grok.functions.call('Chem:importSdf', {bytes: sdfBytes}))[0];
+    const ligandCol = ligandDf.getCol('molecule');
+    ligandCol.setTag(DG.TAGS.UNITS, 'mol');
+    grok.shell.addTableView(DG.DataFrame.fromColumns([ligandCol]));
+    if (receptorPdb === '' || !ligandCol)
+      throw new Error('Empty test data');
+
+    const receptorData: BiostructureData = {binary: false, ext: 'pdb', data: receptorPdb};
+    const npts = new GridSize(20, 20, 20);
+    const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
+    const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf);
+    expect(posesDf.rowCount, 120);
+  }, {timeout: 200000});
 });

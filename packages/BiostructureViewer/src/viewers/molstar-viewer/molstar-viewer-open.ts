@@ -19,6 +19,13 @@ import {molecule3dFileExtensions} from './consts';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 import {_package} from '../../package';
+import { MolScriptBuilder } from 'molstar/lib/mol-script/language/builder';
+import { StructureSelectionCategory, StructureSelectionQuery } from 'molstar/lib/mol-plugin-state/helpers/structure-selection-query';
+import { SetUtils } from 'molstar/lib/mol-util/set';
+import { PolymerNames } from 'molstar/lib/mol-model/structure/model/types';
+import { Script } from 'molstar/lib/mol-script/script';
+import { StructureSelection } from 'molstar/lib/mol-model/structure';
+import { components } from 'react-select';
 
 export type LigandData = {
   data: string,
@@ -59,7 +66,7 @@ export async function removeVisualsData(
 }
 
 /** Adds ligand and returns component keys. single component has multiple refs when created manually */
-export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandData, _color: DG.Color | null
+export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandData, _color: DG.Color | null, zoom: boolean
 ): Promise<string[]> {
   const ligandLabel: string = `<Ligand at row ${ligand.rowIdx}>`;
   const _molData = await plugin.builders.data.rawData({data: ligand.data, label: LIGAND_LABEL});
@@ -70,6 +77,14 @@ export async function addLigandOnStage(plugin: PluginUIContext, ligand: LigandDa
     _structure, 'ligand', {label: ligandLabel});
   await plugin.builders.structure.hierarchy.applyPreset(_molTrajectory, 'default',
     {representationPreset: 'polymer-and-ligand'});
+  
+  if (zoom) {
+    const polymer = MolScriptBuilder.struct.generator.all();
+    const sel = Script.getStructureSelection(polymer, _structure.data!);
+    const loci = StructureSelection.toLociWithSourceUnits(sel);
+    plugin.managers.structure.focus.addFromLoci(loci);
+    plugin.managers.camera.focusLoci(loci);
+  }
   return [_molData.ref, _molTrajectory.ref, _model.ref, _structure.ref, _component!.ref];
 }
 
@@ -163,6 +178,7 @@ export async function parseAndVisualsData(
     throw new Error(`Unhandled parsed parts '${JSON.stringify(unhandledParsedPartList)}'.`);
 
   _package.logger.debug(`${logPrefix} -> structureRefs = ${JSON.stringify(refListRes)} `);
+  
   return refListRes;
 }
 
