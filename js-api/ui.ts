@@ -1879,6 +1879,50 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
+export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: string | null | (() => string | HTMLElement | null)): void {
+  if (!disabled)
+    element.classList.remove('d4-disabled');
+  else
+    element.classList.add('d4-disabled');
+
+  if (tooltip == null)
+    return;
+
+  api.grok_Tooltip_SetOn(element, tooltip);
+
+  const overlay = document.createElement('span');
+  overlay.style.position = 'fixed';
+
+  if ($(document.body).has('.d4-tooltip-overlays').length != 0)
+    $('.d4-tooltip-overlays').append(overlay)
+  else
+    document.body.append(div([overlay],'d4-tooltip-overlays'));
+
+  let interval = setInterval(()=> {
+    let target = element.getBoundingClientRect();
+    
+    overlay.style.left = String(target.left)+'px';
+    overlay.style.top = String(target.top)+'px';
+    overlay.style.width = String(target.width)+'px';
+    overlay.style.height = String(target.height)+'px';
+    
+    if ($('body').has(element).length == 0 || !element.classList.contains('d4-disabled')) { 
+      overlay.remove();
+      clearInterval(interval);
+    }
+  }, 100);
+
+  overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+    api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
+  });
+
+  overlay.addEventListener('mouseleave', (e:MouseEvent) => {
+    setTimeout(() => {
+      api.grok_Tooltip_Hide();
+    }, 200)
+  });
+}
+
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/file-browser}
  */
