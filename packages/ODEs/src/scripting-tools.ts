@@ -33,6 +33,10 @@ const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 
 const POW_IDX = MATH_FUNCS.indexOf('pow');
 const MATH_CONSTS = ['PI', 'E', ];
 
+/** Default meta */
+const defaultMetas = `//meta.runOnOpen: true
+//meta.runOnInput: true`; 
+
 /** Numerical input specification */
 export type Input = {
   value: number,
@@ -549,7 +553,7 @@ function getViewersLine(ivp: IVP): string {
 }
 
 /** Generate annotation lines */
-function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
+function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] {
   const res = [] as string[];
 
   // the 'name' line
@@ -600,7 +604,10 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {
   if (toAddEditor)
     res.push(ANNOT.EDITOR);
 
-  ivp.metas.forEach((line) => res.push(`//${line}`));
+  if (ivp.metas.length >0)
+    ivp.metas.forEach((line) => res.push(`//${line}`));
+  else
+    res.push(defaultMetas);
 
   return res;
 } // getAnnot
@@ -939,7 +946,7 @@ function getScriptMainBody(ivp: IVP): string[] {
 }
 
 /** Return JS-script lines */
-export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = true): string[] {  
+export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] {  
   const res = getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
   
   if (ivp.outputs)

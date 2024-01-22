@@ -85,10 +85,7 @@ ${CONTROL_EXPR.PARAMS}:
   V = 0.087 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
   K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
   
-${CONTROL_EXPR.TOL}: 0.0000001
-
-${CONTROL_EXPR.RUN_ON_OPEN}: true
-${CONTROL_EXPR.RUN_ON_INPUT}: true`;
+${CONTROL_EXPR.TOL}: 0.0000001`;
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD

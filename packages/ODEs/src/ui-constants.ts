@@ -78,7 +78,7 @@ export enum WARNING {
 /** Other UI constants */
 export enum MISC {
   VIEW_DEFAULT_NAME = 'Template',
-  FILE_DEFAULT_NAME = 'equations.txt',
+  FILE_DEFAULT_NAME = 'equations.ivp',
 };
 
 /** Code completion infos */
@@ -123,4 +123,10 @@ Press **JS** button and export model to JavaScript script.
 export enum INPUT_TYPE {
   FLOAT = 'Float',
   INT = 'Int',
+};
+
+/** Path related consts */
+export enum PATH {  
+  MODEL = `/model=`,
+  CUSTOM = `${MODEL}custom`,
 };

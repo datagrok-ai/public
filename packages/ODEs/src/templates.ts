@@ -77,7 +77,7 @@ ${CONTROL_EXPR.INITS}:
 ${CONTROL_EXPR.ARG}: t
   start = 0 {caption: Initial; category: Time; min: 0; max: 10} [Initial time of simulation]
   finish = 10 {caption: Final; category: Time; min: 10; max: 20} [Final time of simulation]
-  step = 0.01 {caption: Initial; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
+  step = 0.01 {caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 

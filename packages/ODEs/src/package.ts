@@ -29,7 +29,7 @@ export function solve(problem: ODEs): DG.DataFrame {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-export async function DiffStudio() {
+export async function DiffStudio(): Promise<void> {  
   await runSolverApp(); 
 }
 
@@ -37,6 +37,16 @@ export async function DiffStudio() {
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio
 //test: demoEquaSleekX() //wait: 100
-export async function demoDiffStudio(): Promise<any>  {
+export async function demoDiffStudio(): Promise<void>  {
   await runSolverDemoApp();
+}
+
+//name: ivpFileHandler
+//tags: file-handler
+//input: string content
+//output: list tables
+//meta.ext: ivp
+export async function ivpFileHandler(content: string) {
+  await runSolverApp(content);
+  return [];
 }

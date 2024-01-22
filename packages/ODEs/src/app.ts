@@ -12,23 +12,23 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE} from './ui-constants';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP} from './scripting-tools';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
-  CLEAR = 0,
-  BASIC_TEMPLATE = 1,
-  ADVANCED_TEMPLATE = 2,  
-  FROM_FILE = 3,
-  EXTENDED_TEMPLATE = 4,
-  CHEM_REACT = 5,
-  ROBERT = 6,
-  FERM = 7,
-  PKPD = 8,
-  ACID_PROD = 9,
-  NIMOTUZUMAB = 10,
+  EMPTY = 'empty',
+  BASIC_TEMPLATE = 'template',
+  ADVANCED_TEMPLATE = 'advanced',
+  FROM_FILE = 'from-file',
+  EXTENDED_TEMPLATE = 'extended',
+  CHEM_REACT = 'chem-react',
+  ROBERT = 'robertson',
+  FERM = 'fermentation',
+  PKPD = 'pk-pd',
+  ACID_PROD = 'ga-production',
+  NIMOTUZUMAB = 'nimotuzumab',
 };
 
 /** Get problem with respect to IVP editor state. */
@@ -110,7 +110,7 @@ function lineChartOptions(colNames: string[]): Object {
 }
 
 /** Run solver application */
-export async function runSolverApp() {
+export async function runSolverApp(content?: string)  {
 
   /** Get JS-script for solving the current IVP */
   const exportToJS = async () => {
@@ -135,7 +135,9 @@ export async function runSolverApp() {
   }};
 
   /** Solve IVP */
-  const solve = async (ivp: IVP) => {
+  const solve = async (ivp: IVP, inputsPath: string) => {
+    solverView.path = `${solverMainPath}&${inputsPath}`;
+
     const start = ivp.arg.start.value;
     const finish = ivp.arg.finish.value;
     const step = ivp.arg.step.value;
@@ -196,7 +198,9 @@ export async function runSolverApp() {
   }}; 
    
   let solutionTable = DG.DataFrame.create();
+  const startingPath = grok.shell.v.path;
   let solverView = grok.shell.addTableView(solutionTable);
+  let solverMainPath: string = PATH.CUSTOM;
   let solutionViewer: DG.Viewer | null = null;
   let viewerDockNode: DG.DockNode | null = null;
   let toChangeSolutionViewerProps = false;
@@ -216,7 +220,7 @@ export async function runSolverApp() {
 
   /** Code editor for IVP specifying */
   let editorView = new EditorView({
-    doc: TEMPLATES.BASIC,
+    doc: content ?? TEMPLATES.BASIC,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     parent: modelDiv
   });
@@ -230,6 +234,8 @@ export async function runSolverApp() {
     if (e.key !== HOT_KEY.RUN) {
       isModelChanged = true;
       toChangeInputs = true;
+      solverView.path = PATH.CUSTOM;
+      solverMainPath = PATH.CUSTOM;
     }
   });
 
@@ -281,12 +287,18 @@ export async function runSolverApp() {
     });
 
     editorView.setState(newState);
+    
+    // set path
+    if (state === EDITOR_STATE.FROM_FILE)
+      solverMainPath = PATH.CUSTOM;
+    else
+      solverMainPath = `${PATH.MODEL}${state}`;
 
     switch(state) {
-      case EDITOR_STATE.CLEAR:
+      case EDITOR_STATE.EMPTY:
         if (solutionViewer && viewerDockNode) {
           grok.shell.dockManager.close(viewerDockNode);
-          solutionViewer = null;
+          solutionViewer = null;          
         }
         break;
 
@@ -317,14 +329,14 @@ export async function runSolverApp() {
           if (fn)
             await fn();
           else
-            setState(state ?? EDITOR_STATE.CLEAR);          
+            setState(state ?? EDITOR_STATE.EMPTY);          
         })
         .show();
     }
     else if (fn)
       await fn();
     else
-      setState(state ?? EDITOR_STATE.CLEAR);
+      setState(state ?? EDITOR_STATE.EMPTY);
   }; // overwrite
 
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
@@ -347,7 +359,7 @@ export async function runSolverApp() {
       .item(TITLE.NIM, async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
       .endGroup()
       .separator()
-      .item(TITLE.CLEAR, async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: HINT.CLEAR})
+      .item(TITLE.CLEAR, async () => await overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
       .show();    
   });
   
@@ -357,7 +369,16 @@ export async function runSolverApp() {
   node.container.dart.elementTitle.hidden = true;
 
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
-  await runSolving(false);
+  
+  // routing
+  if (content) {
+    //console.log(startingPath);
+    await runSolving(false);
+  }
+  else {
+    //console.log(startingPath);
+    await setState(EDITOR_STATE.BASIC_TEMPLATE);
+  }  
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
@@ -396,6 +417,8 @@ export async function runSolverApp() {
 
   solverView.setRibbonPanels([[openIcon, saveIcon, exportButton, helpIcon]]);
 } // runSolverApp
+
+
 
 /** Run solver demo application */
 export async function runSolverDemoApp() {
@@ -571,7 +594,7 @@ export async function runSolverDemoApp() {
     editorView.setState(newState);
 
     switch(state) {
-      case EDITOR_STATE.CLEAR:
+      case EDITOR_STATE.EMPTY:
         if (solutionViewer && viewerDockNode) {
           grok.shell.dockManager.close(viewerDockNode);
           solutionViewer = null;
@@ -605,14 +628,14 @@ export async function runSolverDemoApp() {
           if (fn)
             await fn();
           else
-            setState(state ?? EDITOR_STATE.CLEAR);          
+            setState(state ?? EDITOR_STATE.EMPTY);          
         })
         .show();
     }
     else if (fn)
       await fn();
     else
-      setState(state ?? EDITOR_STATE.CLEAR);
+      setState(state ?? EDITOR_STATE.EMPTY);
   };
 
   editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
@@ -635,7 +658,7 @@ export async function runSolverDemoApp() {
       .item(TITLE.NIM, async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
       .endGroup()
       .separator()
-      .item(TITLE.CLEAR, async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: HINT.CLEAR})
+      .item(TITLE.CLEAR, async () => await overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
       .show();    
   });
 
@@ -698,10 +721,10 @@ export async function runSolverDemoApp() {
   solverView.setRibbonPanels([[openIcon, saveIcon, exportButton, helpIcon]]);
 } // runSolverDemoApp
 
-/** Return model inputs UI */
-async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Promise<HTMLDivElement> {
-  await solveFn(ivp);
 
+
+/** Return model inputs UI */
+async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => Promise<void>): Promise<HTMLDivElement> {
   /**  String to value */
   const strToVal = (s: string) => {
     let num = Number(s);
@@ -793,6 +816,20 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
     input.setTooltip(options.description!);
   };
 
+  /** Return line with inputs names & values */
+  const getInputsPath = () => {
+    let line = '';
+    
+    inputsByCategories.forEach((inputs, cat) => {
+      if (cat !== TITLE.MISC)
+        inputs.forEach((input) => {line += `${input.caption}=${input.value},`});
+    });
+
+    inputsByCategories.get(TITLE.MISC)!.forEach((input) => {line += `${input.caption}=${input.value},`});
+
+    return line;
+  };
+
   // Inputs for argument
   for (const key in ivp.arg)
     if (key !== SCRIPTING.ARG_NAME) {
@@ -803,7 +840,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
         if (input.value !== null) {
           //@ts-ignore
           ivp.arg[key].value = input.value;
-          await solveFn(ivp);
+          await solveFn(ivp, getInputsPath());
         }
       });
 
@@ -817,7 +854,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
     input.onChanged(async () => {
       if (input.value !== null) {
         ivp.inits.get(key)!.value = input.value;
-        await solveFn(ivp);
+        await solveFn(ivp, getInputsPath());
       }
     });
 
@@ -832,7 +869,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
       input.onChanged(async () => {
         if (input.value !== null) {
           ivp.params!.get(key)!.value = input.value;
-          await solveFn(ivp);
+          await solveFn(ivp, getInputsPath());
         }
       });
 
@@ -848,7 +885,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
     input.onChanged(async () => {
       if (input.value !== null) {
         ivp.loop!.count.value = input.value;
-        await solveFn(ivp);
+        await solveFn(ivp, getInputsPath());
       }
     });
 
@@ -863,7 +900,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
       input.onChanged(async () => {
         if (input.value !== null) {
           ivp.updates![idx].duration.value = input.value;
-          await solveFn(ivp);
+          await solveFn(ivp, getInputsPath());
         }
       });
 
@@ -891,6 +928,8 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP) => Promise<void>): Prom
 
   form.style.overflowY = 'auto';
   form.style.padding = '5px';
+
+  await solveFn(ivp, getInputsPath());
   
   return form;
 } // getInputsUI
