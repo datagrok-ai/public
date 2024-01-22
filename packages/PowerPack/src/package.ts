@@ -124,8 +124,9 @@ export function _usersSearch(s: string): Promise<any[]> {
 //tags: search
 //input: string s
 //output: widget w
-export function _pdbSearch(s: string): Promise<any> {
-  return pdbSearch(s);
+export function _pdbSearch(s: string): Promise<DG.Widget | null> {
+  const ret= pdbSearch(s);
+  return ret;
 }
 
 //description: PubChem
