@@ -151,7 +151,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     @Override
     public String limitToSql(String query, Integer limit) {
-        return query + "top " + limit.toString() + " ";
+        return String.format("%stop %s", query, limit);
     }
 
     @Override

@@ -7,7 +7,7 @@ public class FuncCall {
     public static final String DEBUG_QUERY_KEY = "debug";
     public String id;
     public DataQuery func;
-    public Map options;
+    public Map<String, Object> options;
     public Map<String, Object> parameterValues = new HashMap<>();
     public Map<String, Object> aux = new HashMap<>();
     public String log;

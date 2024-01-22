@@ -486,11 +486,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
-        List<Object> values = matcher.values;
+        List<String> values = matcher.values;
         String value = null;
-        if (values.size() > 0) {
-            value = ((String) values.get(0)).toLowerCase();
-        }
+        if (values.size() > 0)
+            value = values.get(0).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:

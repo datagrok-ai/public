@@ -40,18 +40,22 @@ public abstract class DataProvider
     public abstract PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher);
     public abstract PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher);
 
+    @SuppressWarnings("unchecked")
     private PatternMatcherResult patternToQueryParam(FuncCall queryRun, FuncParam param, String colName) {
         String type = param.options.get("pattern");
-        Map patterns = (Map)queryRun.options.get("patterns");
-        PatternMatcher matcher = new PatternMatcher((Map)patterns.get(param.name), colName);
-        if (type.equals("num") || type.equals("double") || type.equals("int")) {
-            return numericPatternConverter(param, matcher);
-        } else if (type.equals("string")) {
-            return stringPatternConverter(param, matcher);
-        } else if (type.equals("datetime")) {
-            return dateTimePatternConverter(param, matcher);
-        } else {
-            throw new UnsupportedOperationException();
+        Map<String, Object> patterns = (Map<String, Object>) queryRun.options.get("patterns");
+        PatternMatcher matcher = new PatternMatcher((Map<String, Object>)patterns.get(param.name), colName);
+        switch (type) {
+            case "num":
+            case "double":
+            case "int":
+                return numericPatternConverter(param, matcher);
+            case "string":
+                return stringPatternConverter(param, matcher);
+            case "datetime":
+                return dateTimePatternConverter(param, matcher);
+            default:
+                throw new UnsupportedOperationException();
         }
     }
 

@@ -7,9 +7,6 @@ import java.util.stream.Collectors;
 import grok_connect.connectors_info.DataConnection;
 
 public class TableQuery {
-    public String tableName;
-    public String schema;
-    public DataConnection connection;
     public String whereOp = "and";
     public String havingOp = "and";
     public List<String> fields = new ArrayList<>();
@@ -20,7 +17,9 @@ public class TableQuery {
     public List<String> groupByFields = new ArrayList<>();
     public List<FieldPredicate> having = new ArrayList<>();
     public List<FieldOrder> orderBy = new ArrayList<>();
-
+    public String tableName;
+    public String schema;
+    public DataConnection connection;
     public Integer limit;
 
     public TableQuery() {
@@ -47,8 +46,8 @@ public class TableQuery {
         sql.append("FROM");
         sql.append(System.lineSeparator());
         sql.append(table);
-        sql.append(System.lineSeparator());
         if (!whereClauses.isEmpty()) {
+            sql.append(System.lineSeparator());
             List<String> clauses = new ArrayList<>();
             sql.append("WHERE");
             sql.append(System.lineSeparator());
@@ -56,36 +55,37 @@ public class TableQuery {
                 clauses.add(String.format("  (%s)", patternToSql.convert(clause)));
             sql.append(clauses.stream()
                     .collect(Collectors
-                            .joining(String.format(" %s%s", whereOp, System.lineSeparator()), "", System.lineSeparator()))
+                            .joining(String.format(" %s%s", whereOp, System.lineSeparator())))
             );
         }
 
         if (!groupByFields.isEmpty()) {
+            sql.append(System.lineSeparator());
             sql.append("GROUP BY");
             sql.append(System.lineSeparator());
             sql.append(
-                 groupByFields.stream()
-                         .collect(Collectors.joining(", ", "", System.lineSeparator())));
+                    String.join(", ", groupByFields));
         }
 
         if (!pivots.isEmpty()) {
+            sql.append(System.lineSeparator());
             sql.append("PIVOT ON");
             sql.append(System.lineSeparator());
-            sql.append(pivots.stream().collect(Collectors.joining(", ", "", System.lineSeparator())));
+            sql.append(String.join(", ", pivots));
         }
 
         if (!having.isEmpty()) {
+            sql.append(System.lineSeparator());
             sql.append("HAVING");
             sql.append(System.lineSeparator());
             List<String> clauses = new ArrayList<>();
             for (FieldPredicate clause: having)
-                clauses.add(String.format("  (%s)", patternToSql.convert(clause)));
-            sql.append(clauses.stream()
-                    .collect(Collectors
-                            .joining(String.format(" %s%s", havingOp, System.lineSeparator()), "", System.lineSeparator())));
+                clauses.add(String.format("\t(%s)", patternToSql.convert(clause)));
+            sql.append(String.join(String.format(" %s%s", havingOp, System.lineSeparator()), clauses));
         }
 
         if (!orderBy.isEmpty()) {
+            sql.append(System.lineSeparator());
             List<String> orders = new ArrayList<>();
             sql.append("ORDER BY");
             sql.append(System.lineSeparator());
@@ -94,12 +94,16 @@ public class TableQuery {
                         String.format("[%s]", order.field) : String.format("\"%s\"", order.field);
                 orders.add(String.format("%s%s", orderField, order.asc ? " asc" : " desc"));
             }
-            sql.append(
-                    pad(orders).stream().collect(Collectors.joining(", ", "", System.lineSeparator()))
-            );
+            sql.append(String.join(", ", pad(orders)));
         }
-
-        return limit != null && limitAtEnd ? limitToSql.convert(sql.toString(), limit) : sql.toString();
+        String result;
+        if (limit != null && limitAtEnd) {
+            sql.append(System.lineSeparator());
+            result = limitToSql.convert(sql.toString(), limit);
+        }
+        else
+            result = sql.toString();
+        return result;
     }
 
     private String getSelectFields(AggrToSql aggrToSql, AddBrackets addBrackets) {
