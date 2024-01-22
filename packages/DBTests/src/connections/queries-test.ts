@@ -56,6 +56,33 @@ category('Connections', () => {
     expect(t.columns.byName('first_name').length, 0);
   });
 
+  test('External Provider: Create, insert, update, drop', async () => {
+    // CREATE statement
+    let query = await grok.dapi.queries.filter(`friendlyName = "TestCreateTable"`).include('params').first();
+    let call = query.prepare();
+    await call.call();
+    let table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+    //INSERT statement
+    query = await grok.dapi.queries.filter(`friendlyName = "TestInsertData"`).include('params').first();
+    call = query.prepare();
+    await call.call();
+    table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+    //UPDATE statement
+    query = await grok.dapi.queries.filter(`friendlyName = "TestUpdateData"`).include('params').first();
+    call = query.prepare();
+    await call.call();
+    table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+    //DROP statement
+    query = await grok.dapi.queries.filter(`friendlyName = "TestDropTable"`).include('params').first();
+    call = query.prepare();
+    await call.call();
+    table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+  });
+
   //
   // test('External Provider First part', async () => {
   //   const query = await grok.dapi.queries.filter(`friendlyName = "Compounds"`).include('params').first();

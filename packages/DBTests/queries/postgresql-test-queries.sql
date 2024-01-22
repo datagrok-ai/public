@@ -149,3 +149,27 @@ SELECT * FROM COMPRESS_INT;
 --connection: PostgreSQLDBTests
 SELECT * FROM mock_data WHERE id > 30;
 --end
+
+--name: TestCreateTable
+--friendlyName: TestCreateTable
+--connection: PostgreSQLDBTests
+CREATE TABLE tmp_table_test (id bigint, name varchar);
+--end
+
+--name: TestInsertData
+--friendlyName: TestInsertData
+--connection: PostgreSQLDBTests
+INSERT INTO tmp_table_test VALUES (1, 'TEST');
+--end
+
+--name: TestUpdateData
+--friendlyName: TestUpdateData
+--connection: PostgreSQLDBTests
+UPDATE tmp_table_test SET name = 'test' WHERE id = 1;
+--end
+
+--name: TestDropTable
+--friendlyName: TestDropTable
+--connection: PostgreSQLDBTests
+DROP TABLE tmp_table_test;
+--end
