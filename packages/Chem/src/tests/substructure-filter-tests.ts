@@ -282,9 +282,10 @@ M  END
 
     //start filtering by 1st structure
     filter.sketcher.setSmiles(substr1);
-    await delay(500);
+    //waiting for first filtering results
+    await awaitCheck(() => df.filter.trueCount !== df.rowCount, 'filtering hasn\'t been started', 10000);
     //terminate filtering
-    filter.sketcher.setSmiles(substr2);
+    filter.sketcher.setMolFile(substr2);
     //finish filtering
     await awaitCheck(() => df.filter.trueCount === df.rowCount, 'filter hasn\'t been reset', 10000);
     const simResults = await chemSimilaritySearch(df, df.col('smiles')!, df.get('smiles', 0),
