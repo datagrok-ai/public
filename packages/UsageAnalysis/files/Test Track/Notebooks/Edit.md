@@ -1,8 +1,14 @@
-1. Click on “Functions” section on sidebar and then click on “Notebooks”
-2. Find notebook you create in the previous steps (8.1) by “demog” name (named according to the names of the tables for which they were created)
-3. Open “demog” notebook by double-clicking on it
-4. Click on “Edit” button on toolbar
-5. Add to Notebook body to next code:
-race= PostgresqlProducts['race']
+1. Go to **Functions > Notebooks**
+2. Find the Notebook from the previous step (8.1) by "demog" name (named according to the name of the table for which it was created)
+3. Open "demog" notebook by double-clicking it.
+4. On the top toolbar, click the **Edit** button
+5. Add the next code to the Notebook body:
+```
+race= demog[‘RACE’]
 race.describe()
-6. Click on “Play” button on toolbar
+```
+6. On the top toolbar, click the **Play** button
+---
+{
+  "order": 2
+}

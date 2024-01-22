@@ -1,5 +1,8 @@
-1. Open “demog” table
-2. Call context menu to table view title
-3. Click on “Open in Notebook” from context menu
-4. Click on “HTML” button on toolbar
-5. Click on “Download” button on toolbar and download the created notebook in all suggested formats
+1. Open "demog" table.
+2. Right-click the table view title and select **Open in Notebook** from the context menu
+3. On the top toolbar, click the **HTML** button.
+4. On the top toolbar, click the **Download** button and download the created notebook in all suggested formats.
+---
+{
+  "order": 1
+}

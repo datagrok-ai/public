@@ -1,5 +1,9 @@
-1. Open “smiles” table (For example from Files -> Demo Files/chem)
-2. Click on “Similarity Search” from Chem top-menu
-3. Click on structures inside “Similarity Search” viewer
-4. Open “Similarity Search” viewer properties (Click on corresponding icon on the title of the viewer)
-5. Change arbitrarily the values ​​of parameters "Fingerprint" and "Distance metric"
+1. Open "smiles" table (For example from Files -> Demo Files/chem)
+2. On the menu ribbon, open **Chem** > **Similarity Search**.
+3. Click the structures in the **Similarity Search** viewer
+4. To open **Similarity Search** viewer properties, click the Gear icon on top of the viewer
+5. Change the values of **Fingerprint** and **Distance metric** parameters arbitrarily
+---
+{
+  "order": 8
+}

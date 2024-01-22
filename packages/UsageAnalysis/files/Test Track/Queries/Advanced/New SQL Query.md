@@ -1,6 +1,9 @@
-1. Open “Data” section on sidebar and then click on “Databases” item
-2. Expand PostreSQL > Northwind > Schemas > public
-3. Call context menu for “products” DB Table
-4. Click on “New SQL Query” from context menu
-5. Click on “Play” button on toolbar
-6. Click on "Run query..." action on Toolbox
+1. Go to **Data** > **Databases**
+2. Expand **PostgresDart** > **northwind** > **Schemas** > **public**. A list of tables opens.
+3. Right-click the **products** DB table and select **New SQL Query** from the context menu
+4. On the top toolbar, click the **Play** button
+5. On Toolbox, click the **Run query**... action
+---
+{
+  "order": 4
+}

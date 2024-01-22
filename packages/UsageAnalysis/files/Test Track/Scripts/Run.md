@@ -1,7 +1,11 @@
-1. Open “Functions” section on sidebar and then click on “Scripts” item
-2. Find "test_R_scrip" script from step 5.1 and open context menu for its
-3. Click on “Run” from context menu
-4. Click “OK” in parameters dialog
+1. Go to **Functions > Scripts**
+2. Find the `testRscrip` script from step 5.1 and right-click it
+3. Select **Run** from the context menu
+4. In the parameters dialog, click **OK**
 5. Open Datagrok console (Alt + C)
-6. Enter the following expression into the console: {your namespace}:Test("cars"). Where {your namespace} equal to your platform login
+6. Enter the following expression into the console: *{your namespace}:*testRscript*("cars")*. Where {your namespace} equals your platform login
 7. Execute the command entered in the console
+---
+{
+  "order": 3
+}

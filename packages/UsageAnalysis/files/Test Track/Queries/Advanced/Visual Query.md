@@ -1,10 +1,16 @@
-1. Open “Data” section on sidebar and then click on “Databases” item
-2. Expand PostreSQL > Northwind > Schemas > public
-3. Call context menu for “products” DB Table
-4. Click on “Visual Query” from context menu
-5. Fill “Name” field with “test_visual_query”
-6. Select "productid" column for "Columns" field, "suplplierid" column for "Rows" field and select avg(unitprice) for "Measures" field
-7. Click on “Play” button on toolbar
-8. Click on "Run query..." action on Toolbox
-9. Click on “Save” button on toolbar
-10. Run “test_visual_query” from Databases (double-click on it in tree)
+1. Go to **Data** > **Databases**
+2. Expand **PostgresDart** > **northwind** > **Schemas** > **public**. A list of tables opens.
+3. Right-click the **products** DB table and select **Visual Q**uery from the context menu
+4. Fill **Name** field with `test_visual_query`
+5. Select:
+    - the `productid` column for the **Columns** field
+    - the`suplplierid` column for the **Rows** field
+    - avg(unitprice) for the **Measures** field
+6. On the top toolbar, click the **Play** button
+7. On Toolbox, click the **Run query**... action
+8. On the top toolbar, click the **Save** button.
+9. Go to **Data** > **Databases** and run **test_visual_query** (double-click it)
+---
+{
+  "order": 3
+}

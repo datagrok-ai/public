@@ -140,18 +140,18 @@ export class TestTrack extends DG.ViewBase {
     const el: Category = {name: dir.name, children: [], status: null, icon: ui.div()};
     const pathL = dir.path.split('/').slice(2);
     if (pathL.length > 1) {
-      const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
+      const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category;
       parent.children.push(el);
     } else
       this.list.push(el);
-    this.map[pathL.join(': ')] = el;
+    this.map[pathL.join(': ') + ' C'] = el;
   }
 
   async processFile(file: DG.FileInfo): Promise<void> {
     const pathL = file.path.replace(/\.[^.]+$/, '').split('/').slice(2);
     if (pathL.length < 2)
       grok.shell.error('Root test case');
-    const parent = this.map[pathL.slice(0, -1).join(': ')] as Category;
+    const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category;
     const [textS, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');

@@ -16,9 +16,13 @@
   line-height: 1.5;
 }
 
+#tt-test-case-div > .d4-markup > ol {
+  padding-inline-start: 0;
+}
+
 #tt-test-case-div ol {
   margin-block-start: 0;
-  padding-inline-start: 0;
+  padding-inline-start: 30px;
   list-style-position: inside;
 }
 

@@ -1,5 +1,9 @@
-1. Click on “Functions” section on sidebar and then click on “Notebooks”
-2. Find Notebook you crate in the previous steps (8.1)
-3. Call context menu fo it
-4. Click on “Delete” and then YES in confirmation dialog
+1. Go to **Functions > Notebooks**
+2. Find Notebook from the previous steps (8.1)
+3. Right-click it and select **Delete** from the context menu
+4. In the confirmation dialog, click YES
 5. Check that notebook has been deleted and is no longer present
+---
+{
+  "order": 4
+}

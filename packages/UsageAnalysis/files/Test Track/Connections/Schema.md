@@ -1,5 +1,9 @@
-1. Open “Data” section on sidebar and then click on “Databases” item
-2. Expand the "PostgreSQL" and call the context menu for "northwond" connection
-3. Click on “Browse schema” from context menu
-4. Expand “View” and “Tables” sections on Toolbox
-5. Check that the structures presented in schema view can be interacted with as with DB Tables (from its context menu)
+1. Go to **Data > Databases**.
+2. Expand the **PostgresDart**.
+3. Right-click the `northwind` connection and select **Browse schema** from the context menu.
+4. On **Toolbox**, expand the **View** and **Tables** tabs.
+5. Check that you can interact with the structures presented in schema view as with DB Tables (from its context menu)
+---
+{
+  "order": 6
+}

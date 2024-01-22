@@ -9,10 +9,10 @@
 5. Select some/all rows in **SPGI.** The same rows should be selected in SPGI-linked1.
 6. Go to **Projects** > **Scratchpad**.
 7. Click the **Upload** button.
-8. Enter the `Link\_test` name for the project and click **OK.**
+8. Enter the `Link_test` name for the project and click **OK.**
 9. Right-click the **Sidebar** and select **Close All.**
 10. Go to **Data > Projects**
-11. Locate the `Link\_test` project and open it.
+11. Locate the `Link_test` project and open it.
 12. Select some/all rows in **SPGI.** The same rows should be selected in SPGI-linked1.
 ---
 {

@@ -1,13 +1,19 @@
-1. Open “Functions” section on sidebar and then click on “Scripts” item
-2. Expand “Actions” tab on Toolbox
-3. Click on “New R script” action
-4. Click on “Open script sample table” icon on toolbar (*)
-5. Click on “Signature editor” button on toolbar
-6. Set “Name” field in signature editor to “test_R_script”
-7. Click on “Parameters” tab
-8. Click on “ADD PARAMETER +” button to add new parameter
-9. Set next attributes for new parameter in parameters table: direction = “output”, name = “new_param”, type = “string”
-10. Click on “Open function editor” button on toolbar
-11. Click on “Play” button on toolbar
-12. Click on “Save” button on toolbar
-13. Click on “x” icon to close script view
+1. Go to **Functions > Scripts**
+2. Expand **Actions** tab and click the **New R script** action
+3. On the top toolbar, click the **Open script sample table** (\*) icon
+4. On the top toolbar, click the **Signature editor**
+5. In the **Signature editor**, set the **Name** field to `testRscript`
+6. In the **Signature editor**, click the **Parameters** tab
+7. Click the **ADD PARAMETER** + button to add a new parameter
+8. Set next attributes for the new parameter in the parameters table:
+    - direction = `output`
+    - name = `newParam`
+    - type = `string`
+9. On the toolbar, click the**Open function editor** button
+10. On the toolbar, click the**Play** button
+11. On the toolbar, click the**Save** button
+12. Click on the **x** icon to close script view
+---
+{
+  "order": 1
+}

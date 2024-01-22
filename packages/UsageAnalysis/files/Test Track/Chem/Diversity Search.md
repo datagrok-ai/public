@@ -1,5 +1,9 @@
-1. Open “smiles” table (For example from Files -> Demo Files/chem)
-2. Click on “Diversity Search” from Chem top-menu
-3. Click on structures inside “Similarity Search” viewer
-4. Open “Diversity Search” viewer properties (Click on corresponding icon on the title of the viewer)
-5. Change arbitrarily the values ​​of parameters "Fingerprint" and "Distance metric"
+1. Open "smiles" table (For example from Files -> Demo Files/chem)
+2. On the menu ribbon, open **Chem** | **Diversity Search**.
+3. Click the structures inside **Diversity Search** viewer
+4. To open **Diversity Search** viewer properties, click the Gear icon on top of the viewer
+5. Change arbitrarily the values of parameters **Fingerprint** and **Distance metric**
+---
+{
+  "order": 9
+}

@@ -1,6 +1,9 @@
-1. Open “Functions” section on sidebar and then click on “Scripts” item
-2. Find "test_R_scrip" script from step 5.1
-3. Double click on "test_R_scrip" script
-4. Add add the expression "new_param=”test”" to script body
-5. Click on “Save” button on toolbar
-6. Click on “x” icon to close script view
+1. Go to **Functions > Scripts**
+2. Find the `testRscript` script from step 5.1 and double-click it
+3. Add the expression `newParam=’test’ ` to script body (newParam="test")
+4. On the toolbar, click the**Save** button
+5. Click on the **x** icon to close script view
+---
+{
+  "order": 2
+}
