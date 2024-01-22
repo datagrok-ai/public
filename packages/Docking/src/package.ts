@@ -4,19 +4,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {AutoDockRunResult, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
-import {getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {DockingPackage} from './package-utils';
-
-export const _package = new DockingPackage();
-export const CACHED_DDCKING: DG.LruCache<AutoDockDataType, DG.DataFrame> = new DG.LruCache<AutoDockDataType, DG.DataFrame>();
-const CACHED_MOLSTAR: DG.LruCache<string, DG.Widget> = new DG.LruCache<string, DG.Widget>();
-const AFFINITY_COL = 'affinity';
-const POSE_COL = 'pose';
+import {_package, TARGET_PATH, CACHED_DOCKING, CACHED_MOLSTAR, AFFINITY_COL, POSE_COL} from './utils/constants';
 
 //name: info
 export function info() {
@@ -119,8 +112,6 @@ export async function runAutodock4(
   }
 }
 
-const TARGET_PATH = 'System:AppData/Docking/targets';
-
 //name: getConfigFiles
 //output: list<string> configFiles
 export async function getConfigFiles(): Promise<string[]> {
@@ -160,7 +151,7 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     };
 
     const app = new AutoDockApp();
-    const autodockResults = CACHED_DDCKING.has(data) ? CACHED_DDCKING.get(data) : await app.init(data);
+    const autodockResults = CACHED_DOCKING.has(data) ? CACHED_DOCKING.get(data) : await app.init(data);
     if (!autodockResults)
       return;
 
@@ -190,11 +181,6 @@ function addColorCoding(column: DG.GridColumn) {
 function processAutodockResults(table: DG.DataFrame): DG.DataFrame {
   const affinityDescription = 'Estimated Free Energy of Binding.\
     Lower values correspond to stronger binding.';
-  
-  /*table.columns.names().forEach((colName) => {
-    if (![AFFINITY_COL, POSE_COL].includes(colName))
-      table.columns.remove(colName);
-  });*/
   const processedTable = DG.DataFrame.fromColumns([table.col(POSE_COL)!, table.col(AFFINITY_COL)!]);
   processedTable.col(AFFINITY_COL)!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
   return processedTable;
@@ -205,31 +191,34 @@ function processAutodockResults(table: DG.DataFrame): DG.DataFrame {
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
 export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  const result = new DG.Widget(ui.divH([]));
-  const loader = ui.loader();
-  result.root.append(loader);
-  getAutodockSingle(molecule).then((widget) => {
-    result.root.removeChild(loader);
-    result.root.append(widget!.root);
-  });
-  return result;
+  let result = new DG.Widget(ui.divH([]));
+  const update = () => {
+    ui.remove(result.root);
+    result.root.append(ui.loader());
+    getAutodockSingle(molecule).then((dockingResults) => {
+      ui.remove(result.root);
+      result = dockingResults!;
+    });
+  }
+  update();
+  return await getAutodockSingle(molecule);
 }
 
 //name: getAutodockSingle
 export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
   const currentTable = grok.shell.tv.table;
   //@ts-ignore
-  const key: AutoDockDataType = CACHED_DDCKING.K.find((key: AutoDockDataType) => key.ligandDf === currentTable);
+  const key: AutoDockDataType = CACHED_DOCKING.K.find((key: AutoDockDataType) => key.ligandDf === currentTable);
   if (!key) {
     grok.shell.warning('Run Chem | Docking first');
     return null; 
   }
 
-  const autodockResults = CACHED_DDCKING.get(key);
-  const matchDf = autodockResults!.rows.match(`${molecule.cell.column.name} = ${molecule.cell.valueString}`).toDataFrame();
-  
+  const autodockResults = CACHED_DOCKING.get(key);
+  const matchDf: DG.DataFrame = autodockResults!.rows.match(`${molecule.cell.column.name} = ${molecule.value}`).toDataFrame();
   const widgetKey = `${key.receptor}/${key.ligandMolColName}`
   const cachedWidget = CACHED_MOLSTAR.has(widgetKey);
+
   if (cachedWidget)
     return CACHED_MOLSTAR.get(widgetKey)!;
 
@@ -246,11 +235,11 @@ export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.
     const columnValue = matchDf.get(columnName, 0);
     map[columnName] = columnValue;
   }
-
   result.appendChild(ui.tableFromMap(map));
   widget.root.append(targetViewer.root);
   widget.root.append(result);
   CACHED_MOLSTAR.set(widgetKey, widget);
+
   return widget;
 }
 

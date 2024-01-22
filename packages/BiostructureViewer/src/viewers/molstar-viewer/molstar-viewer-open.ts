@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {v4 as uuidv4} from 'uuid';
 
-import {FileInfo as MolScriptBuilderFileInfo} from 'molstar/lib/mol-util/file-info';
+import {FileInfo as msFileInfo} from 'molstar/lib/mol-util/file-info';
 import {Color as msColor} from 'molstar/lib/mol-util/color';
 import {StateObjectSelector} from 'molstar/lib/mol-state';
 import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
@@ -102,7 +102,7 @@ export async function parseAndVisualsData(
     new PluginStateObject.Data.String(dataEff.data as string);
 
   //await plugin.dataTransaction(async () => {
-  const dataProvider = plugin.dataFormats.auto({ext: dataEff.ext} as MolScriptBuilderFileInfo, data)!;
+  const dataProvider = plugin.dataFormats.auto({ext: dataEff.ext} as msFileInfo, data)!;
   if (!dataProvider)
     throw new Error(`Can not find data provider for file ext '${dataEff.ext}'.`);
 
