@@ -1049,86 +1049,153 @@ export class tools {
     });
   }
 
-  static resizeFormLabels(element: HTMLElement): void {
-    this.waitForElementInDom(element).then((form)=>{
-      if(!form.classList.contains('ui-form-condensed')) {
+  static async resizeFormLabels(element: HTMLElement): Promise<void> {
+    if(element.hasAttribute('data-type') || element.children.length == 0 || element.classList.contains('ui-form-condensed'))
+      return;
 
-        let labels: number[] = [];
-        let inputs: number[] = [];
-        let options: number[] = [];
-        let formElements = $(form).find('div.ui-input-root');
-        let formLabels = $(form).find('label.ui-input-label');
-        let formInputs = $(form).find('input.ui-input-editor, select.ui-input-editor > option, .d4-column-selector-column');
-        let formOptions = $(form).find('div.ui-input-options');
-        
-        formElements.each((i) => {
-          if ($(formLabels[i]).has('canvas'))
-            inputs.push(100)
-        });
+    const tempForm = element.cloneNode(true) as HTMLElement;
+    const formClassName = element.className;
 
-        //Get the width of input labels
-        formLabels.each((i) => {
-            let element = formLabels[i] as HTMLElement;
-            let value = document.createElement('span');
-            value.textContent = element.textContent;
-            value.style.visibility = 'hidden';
-            value.style.position = 'fixed';
-            form.append(value);
-            let renderWidth = Math.ceil(value.getBoundingClientRect().width);
-            labels.push(renderWidth);
-            value.remove();
-        });
-        
-        //Set the max and min width for input labels
-        formLabels.each((i)=>{
-          let label = formLabels[i] as HTMLElement;
-          label.style.minWidth = String(Math.min(...labels))+'px';
-          label.style.maxWidth = String(Math.max(...labels))+'px';
-        });
+    document.body.append(tempForm);
+    tempForm.className = 'ui-form';
 
-        //Get the width of input values
-        formInputs.each((i) => {
-          let element = formInputs[i] as HTMLElement;
-          let value = document.createElement('span');
-          if (element.tagName == 'INPUT'){
-            let temp = element as HTMLInputElement;
-            value.textContent = temp.value != undefined ? temp.value : '';
-          } else {
-            value.textContent = element.textContent;
-          }
-          value.style.visibility = 'hidden';
-          value.style.position = 'fixed';
-          form.append(value);
-          let renderWidth = Math.ceil(value.getBoundingClientRect().width+24); //Include 20px of select padding;
-          inputs.push(renderWidth);
-          value.remove();
-        });
+    let minFormWidth = 150;
+    let maxFormWidth = 450;
 
-        //Get the width of input-options
-        formOptions.each((i) => {
-          let element = formOptions[i] as HTMLDivElement;
-          let renderWidth = Math.ceil(element.getBoundingClientRect().width);
-          options.push(renderWidth);
-        });
+    let labels: number[] = [];
+    let inputs: number[] = [];
+    let options: number[] = [];
+    let formElements = $(tempForm).find('div.ui-input-root');
+    let formLabels = $(tempForm).find('div.ui-input-root:not(.ui-input-buttons) > label.ui-input-label:not(:empty)');
+    let formInputs = $(tempForm).find('input.ui-input-editor, select.ui-input-editor > option, .d4-column-selector-column');
+    let formOptions = $(tempForm).find('div.ui-input-root > div.ui-input-options');
 
-        //Set the input-root max-width
-        formElements.each((i) => {
-          let element = formElements[i] as HTMLDivElement;
-          let labelWidth = labels.length > 0 ? Math.max(...labels) : 0;
-          let inputWidth = inputs.length > 0 ? Math.max(...inputs) : 0;
-          let optionsWidth = options.length > 0 ? Math.max(...options) : 0;
-          let width = labelWidth + inputWidth + optionsWidth + 16; //Include 16px field paddings;
-          element.style.width = '100%';
-          if (width < 200)
-            element.style.maxWidth = '200px';
-          else if (width > 500)
-            element.style.maxWidth = '500px';
-          else
-            element.style.maxWidth = String(width)+'px';
-        });
-
-      }
+    formElements.each((i) => {
+      if ($(formElements[i]).has('canvas').length != 0)
+        inputs.push(100)
     });
+
+    //Get the width of input labels
+    formLabels.each((i) => {
+        let element = formLabels[i] as HTMLElement;
+        let value = document.createElement('span');
+        value.textContent = element.textContent;
+        value.style.visibility = 'hidden';
+        value.style.position = 'fixed';
+        tempForm.append(value);
+        let renderWidth = Math.ceil(value.getBoundingClientRect().width);
+        labels.push(renderWidth);
+        value.remove();
+    });
+    
+    //Set the width for each input labels
+    formLabels.each((i)=>{
+      let label = formLabels[i] as HTMLElement;
+      label.style.minWidth = String(Math.min(...labels))+'px';;
+      label.style.maxWidth = String(Math.max(...labels))+'px';
+    });
+
+    //Get the width of input values
+    formInputs.each((i) => {
+      let element = formInputs[i] as HTMLElement;
+      let value = document.createElement('span');
+      if (element.tagName == 'INPUT'){
+        let temp = element as HTMLInputElement;
+        value.textContent = temp.value != undefined ? temp.value : '';
+      } else {
+        value.textContent = element.textContent;
+      }
+      value.style.visibility = 'hidden';
+      value.style.position = 'fixed';
+      tempForm.append(value);
+      let renderWidth = Math.ceil(value.getBoundingClientRect().width+24); //Include 20px of select padding;
+      inputs.push(renderWidth < 50 ? 50 : renderWidth);
+      value.remove();
+    });
+
+    //Get the width of input-options
+    formOptions.each((i) => {
+      let element = formOptions[i] as HTMLDivElement;
+      let renderWidth = Math.ceil(element.getBoundingClientRect().width);
+      options.push(renderWidth);
+    });
+
+    //Set the input-root max-width and calculate min form width
+    formElements.each((i) => {
+      let element = formElements[i] as HTMLDivElement;
+
+      //set the input field max-width;
+      let maxLabelWidth = labels.length > 0 ? Math.max(...labels) : 0;
+      let maxInputWidth = inputs.length > 0 ? Math.max(...inputs) : 0;
+      let maxOptionsWidth = options.length > 0 ? Math.max(...options) : 0;
+      let minLabelWidth = labels.length > 0 ? Math.min(...labels) : 0;
+
+      maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8; //Include 8px label margin;
+      
+      element.style.width = '100%';
+      element.style.maxWidth = String(maxFormWidth)+'px';
+
+      minFormWidth = Math.ceil((maxLabelWidth)/2+30+8+maxOptionsWidth);
+    });
+
+    formLabels.each((i)=>{
+      let label = formLabels[i] as HTMLElement;
+      label.style.width = String(Math.ceil(Math.max(...labels)/maxFormWidth*100))+'%';
+    });
+
+    //Set calculated parameters from the temp form;
+    for (let i = 0; i< tempForm.children.length; i++) {
+      let tempField = tempForm.children[i];
+      let field = element.children[i];
+
+      field.setAttribute('style', tempField.getAttribute('style')!);
+      field.firstElementChild?.setAttribute('style', tempField.firstElementChild?.getAttribute('style')!)
+    }
+
+    element.setAttribute('data-type','form');
+    element.setAttribute('data-min-width', String(minFormWidth));
+    element.setAttribute('data-max-width', String(maxFormWidth));
+    
+    tempForm.remove();
+
+    //Modify form field for dialog content;
+    if (element.classList.contains('d4-dialog-contents') || element.parentElement?.classList.contains('d4-dialog-contents')) {
+      let formWidth = Math.ceil(element.getBoundingClientRect().width-24);
+      
+      Array.from(element.children).forEach((field) => {
+        let root = field as HTMLElement;
+        let label = root.querySelector('label') as HTMLElement;
+
+        if (maxFormWidth < formWidth)
+          root.style.maxWidth = String(formWidth)+'px';
+
+        label != null ? label.style.removeProperty('width'): null;
+      });
+    }
+    
+    //Set styles for buttons container if exsit;
+    if (element.querySelector('.ui-input-buttons') != null) {
+      let buttons = element.querySelector('.ui-input-buttons') as HTMLElement;
+      let label = buttons.querySelector('label') as HTMLElement;
+      let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
+      
+      label != null ? label.remove() : null;
+
+      if (editor != null) {
+        editor.style.flexWrap = 'wrap';
+        editor.style.padding = '0';
+      }
+    }
+
+    //Auto resize to condensed type;
+    tools.handleResize(element, (w)=>{
+        let formWidth = element.getBoundingClientRect().width;
+        if (formWidth < minFormWidth)
+          element.className = formClassName+' ui-form-condensed';
+        else if (formWidth > minFormWidth)
+          element.className = formClassName;
+    })
+
   }
 }
 
@@ -1681,29 +1748,31 @@ export namespace forms {
     tools.resizeFormLabels(d);
     return d;
   }
+
+  export function addButtons(form: HTMLDivElement, children: HTMLButtonElement[] = []): void {
+    if (!Array.isArray(children))
+      children = [children];
+  
+    let style = $(form).find('div.ui-input-root').first().attr('style');
+    let root = document.createElement('div');
+    let editor = document.createElement('div');
+    $(editor).addClass('ui-input-editor').css('flex-wrap', 'wrap').css('padding', '0');
+    $(root).addClass('ui-input-root ui-input-buttons').attr('style', style != null ? style : '');
+  
+    if (children != null)
+      $(editor).append(children.map(x => render(x)));
+
+    root.append(editor);
+    form.append(root);
+  }
   
 }
 
 export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
-  // let d = document.createElement('div');
-  // if (children != null) {
-  //   $(d).append(children.map(x => render(x)));
-  // }
   const form = InputForm.forInputs(inputs);
   const d = form.root;
   _options(d, options);
   $(d).addClass('ui-form');
-  
-  if (autosize) {
-    tools.resizeFormLabels(d);
-    tools.handleResize(d, (w)=>{
-      let formWidth = d.getBoundingClientRect().width;
-      if (formWidth < 200)
-        d.className = 'ui-form ui-form-condensed';
-      else if (formWidth > 200)
-        d.className = 'ui-form';
-    })
-  }
   return d;
 }
 
