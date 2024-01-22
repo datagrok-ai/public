@@ -74,7 +74,6 @@ export class AutoDockApp {
   // -- View --
 
   private view!: DG.TableView;
-  //private targetViewer!: TargetViewerType;
   private posesGrid!: DG.Grid;
 
   async buildView(): Promise<void> {
@@ -174,7 +173,6 @@ async function runAutoDock(
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
 
     const npts: GridSize = {x: 40, y: 40, z: 40};
-    //TODO: use config that is provided by user
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
     const posesDf = await adSvc.dockLigand(
       receptorData, ligandData, gpfFile ?? autodockGpf, confirmationNum ?? 10, poseColName);
