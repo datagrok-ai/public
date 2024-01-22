@@ -20,6 +20,13 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2024-01-22 1.17.11
+
+### Addressed Issues
+
+* (Bug) [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there are two views opened 
+
+
 ## 2023-12-21 1.17.10
 
 ### Addressed Issues
