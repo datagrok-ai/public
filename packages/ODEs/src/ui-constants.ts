@@ -50,17 +50,15 @@ export enum TITLE {
 };
 
 /** Help links */
-export enum LINK {
-  ROOT = '/help/compute/',
-  DIF_STUDIO_MD = `${ROOT}diff-studio.md`,
-  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
-  EXAMPLES = `${ROOT}examples/`,
-  CHEM_REACT = `${EXAMPLES}chem-react.md`,
-  FERMENTATION = `${EXAMPLES}fermentation.md`,
-  GA_PRODUCTION = `${EXAMPLES}ga-production.md`,
-  NIMOTUZUMAB = `${EXAMPLES}nimotuzumab.md`,
-  PKPD = `${EXAMPLES}pk-pd.md`,
-  ROBERTSON = `${EXAMPLES}robertson.md`,  
+export enum LINK {  
+  DIF_STUDIO_REL = '/help/compute/diff-studio',
+  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',  
+  CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
+  FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
+  GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
+  NIMOTUZUMAB = `${DIF_STUDIO_REL}#nimotuzumab`,
+  PKPD = `${DIF_STUDIO_REL}#pk-pd`,
+  ROBERTSON = `${DIF_STUDIO_REL}#robertson-model.md`,  
 };
 
 /** Error messages */

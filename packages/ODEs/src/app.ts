@@ -100,7 +100,7 @@ function getLink(state: EDITOR_STATE): string {
       return LINK.NIMOTUZUMAB;
 
     default:
-      return LINK.DIF_STUDIO_MD;
+      return LINK.DIF_STUDIO_REL;
   }
 } // getLink
 
@@ -276,7 +276,7 @@ export async function runSolverApp(content?: string)  {
       solverView.path = PATH.CUSTOM;
       solverMainPath = PATH.CUSTOM;
       startingInputs = null;
-      solverView.helpUrl = LINK.DIF_STUDIO_MD;
+      solverView.helpUrl = LINK.DIF_STUDIO_REL;
     }
   });
 
@@ -364,7 +364,7 @@ export async function runSolverApp(content?: string)  {
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
     if (toShowWarning && isModelChanged) {      
       const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
-      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
+      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
       solverView.append(dlg);
 
       dlg
@@ -413,7 +413,7 @@ export async function runSolverApp(content?: string)  {
   editorView.dom.style.height = '100%';
   const node = solverView.dockManager.dock(tabControl.root, 'left');
   node.container.dart.elementTitle.hidden = true;
-  solverView.helpUrl = LINK.DIF_STUDIO_MD;
+  solverView.helpUrl = LINK.DIF_STUDIO_REL;
   
   // routing
   if (content) {    
@@ -682,7 +682,7 @@ export async function runSolverDemoApp() {
   const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
     if (toShowWarning && isModelChanged) {      
       const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
-      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_MD});
+      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
       solverView.append(dlg);
 
       dlg
@@ -742,7 +742,7 @@ export async function runSolverDemoApp() {
 
   const node = solverView.dockManager.dock(tabControl.root, 'left');
   node.container.dart.elementTitle.hidden = true;
-  solverView.helpUrl = LINK.DIF_STUDIO_MD;
+  solverView.helpUrl = LINK.DIF_STUDIO_REL;
 
   await runSolving(false);
 
