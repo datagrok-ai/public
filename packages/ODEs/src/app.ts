@@ -15,7 +15,6 @@ import { USE_CASES } from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP} from './scripting-tools';
-import { equal } from '@tensorflow/tfjs-backend-cpu/dist/kernels/Equal';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -44,7 +43,7 @@ const MODELS: string[] = [ EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.NIMOTUZUMAB,
 ];
 
-/** Get problem with respect to IVP editor state. */
+/** Get problem with respect to IVP editor state */
 function getProblem(state: EDITOR_STATE): string {
   switch (state) {
     case EDITOR_STATE.BASIC_TEMPLATE:
@@ -78,6 +77,32 @@ function getProblem(state: EDITOR_STATE): string {
       return TEMPLATES.EMPTY;
   }
 } // getProblem
+
+/** Return help link with respect to IVP editor state */
+function getLink(state: EDITOR_STATE): string {
+  switch (state) {
+    case EDITOR_STATE.CHEM_REACT:
+      return LINK.CHEM_REACT;
+
+    case EDITOR_STATE.ROBERT:
+      return LINK.ROBERTSON;    
+
+    case EDITOR_STATE.FERM:
+      return LINK.FERMENTATION;
+
+    case EDITOR_STATE.PKPD:
+      return LINK.PKPD;
+
+    case EDITOR_STATE.ACID_PROD:
+      return LINK.GA_PRODUCTION;
+
+    case EDITOR_STATE.NIMOTUZUMAB:
+      return LINK.NIMOTUZUMAB;
+
+    default:
+      return LINK.DIF_STUDIO_MD;
+  }
+} // getLink
 
 /** Completions of control expressions */
 const completions = [
@@ -251,6 +276,7 @@ export async function runSolverApp(content?: string)  {
       solverView.path = PATH.CUSTOM;
       solverMainPath = PATH.CUSTOM;
       startingInputs = null;
+      solverView.helpUrl = LINK.DIF_STUDIO_MD;
     }
   });
 
@@ -295,6 +321,7 @@ export async function runSolverApp(content?: string)  {
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
+    solverView.helpUrl = getLink(state);
 
     if (toClearStartingInputs)
       startingInputs = null;
@@ -386,12 +413,10 @@ export async function runSolverApp(content?: string)  {
   editorView.dom.style.height = '100%';
   const node = solverView.dockManager.dock(tabControl.root, 'left');
   node.container.dart.elementTitle.hidden = true;
-
   solverView.helpUrl = LINK.DIF_STUDIO_MD;
   
   // routing
-  if (content) {
-    console.log(startingPath);
+  if (content) {    
     await runSolving(false);
   }
   else {

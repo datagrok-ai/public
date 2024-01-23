@@ -51,8 +51,16 @@ export enum TITLE {
 
 /** Help links */
 export enum LINK {
-  DIF_STUDIO_MD = '/help/compute/diff-studio.md',
+  ROOT = '/help/compute/',
+  DIF_STUDIO_MD = `${ROOT}diff-studio.md`,
   DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
+  EXAMPLES = `${ROOT}examples/`,
+  CHEM_REACT = `${EXAMPLES}chem-react.md`,
+  FERMENTATION = `${EXAMPLES}fermentation.md`,
+  GA_PRODUCTION = `${EXAMPLES}ga-production.md`,
+  NIMOTUZUMAB = `${EXAMPLES}nimotuzumab.md`,
+  PKPD = `${EXAMPLES}pk-pd.md`,
+  ROBERTSON = `${EXAMPLES}robertson.md`,  
 };
 
 /** Error messages */
