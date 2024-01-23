@@ -2,10 +2,7 @@
 title: "Diff Studio"
 ---
 
-**Datagrok Diff Studio** is an innovative tool 
-allowing you to define and solve 
-[ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation)
-(ODEs) right within your web browser. 
+**Datagrok Diff Studio** is an innovative tool for solving [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) right within your web browser. 
 
 Differential equations play a crucial role in modeling complex systems in diverse fields, 
 from chemical engineering and drug design to environmental studies and financial modeling. 
@@ -33,20 +30,19 @@ run it as standalone data processing unit, or include in an [application](../dev
 
 To run **Diff Studio**:
 
-* Go to **Functions > Apps** and run **Diff Studio**. 
-  You will see the default code template with one simple differential equation.
-* Press <i class="fas fa-play"></i> **Run** button on the top panel. 
-  You will immediately see the table and the graph with the resulting function.
-* Edit formulas or add new ones
-* Click **F5** or <i class="fas fa-play"></i> **Run** button to re-run calculations and see updated data.
+* Go to **Apps** and run **Diff Studio**. You will see the default code template with one simple differential equation.
+* Go to **Run** tab and you will get UI for interactive model exploration.
+* Go to **Model** tab, edit formulas or add new ones.
+* Click **F5** or go to **Run** tab to re-run calculations and see updated data.
 
 ![Run Diff Studio](pics/DiffStudio-run.gif)
 
 ### Loading and saving data
 
-* **To save formulas** in a local file, press the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the file in Downloads
+* **To save formulas** in a local file, press the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
 * **To load formulas** from a local file, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
+* **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
 ### Loading templates and examples
 
@@ -209,7 +205,7 @@ Find the created Javascript script in the platform `Scripts`.
 
 The export feature provides an extension of your project with [scripting](scripting.md) tools. 
 
-### Usability improvements
+## Usability improvements
 
 For all Diff Studio parameters, you can add annotations described in
 [functional annotations](../datagrok/concepts/functions/func-params-annotation.md).
@@ -217,7 +213,7 @@ When you convert your model into the Datagrok script,
 Diff Studio converts it to the script input annotations, 
 allowing Datagrok to automatically create rich and self-explaining UI.
 
-. Use `#tags: model` to add your model to the `Model Catalog`. 
+Use `#tags: model` to add your model to the `Model Catalog`. 
 Provide a description in the `#description` line:
 
 ```python
@@ -258,34 +254,65 @@ Provide tooltips in brackets `[ ]`:
   P1 = 1 {category: Parameters} [P1 parameter tooltip]
 ```
 
+Specify `min`, `max` and `step` values to get sliders and clickers for the rapid model exploration:
+
+```python
+#inits:
+  x = 2 {min: 0; max: 5}
+  y = 0 {min: -2; max: 2; step: 0.1}
+```
+
 ![Using input annotations](pics/DiffStudio-input-annotations.gif)
-
-Use the following `meta`-s:
-
-| Annotation               | Feature                                              |    
-|--------------------------|------------------------------------------------------|
-| `#meta.runOnOpen: true`  | Start computations immediately upon model launch.    | 
-| `#meta.runOnInput: true` | Re-calculate results immediately upon input changes. | 
-
 
 ## Examples
 
-The Diff Studio has built-in examples. Get access to them 
-via the <i class="fas fa-folder-open"></i> **Load...** button on the ribbon and use it as a template.
+The Diff Studio has built-in examples. They cover all the Diff Studio capabilities. Get access to them 
+via the <i class="fas fa-folder-open"></i> **Load...** button on the ribbon and use as a template.
 
-|<div style={{ width:400 }}></div> |Use case|Features|
-|----------------------------------|--------|--------|
-|![add-to-workspace](chem-react-network.png)|`Chem reactions`|- simulates [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action)<br/> <br/>- illustrates annotation of inputs|
-|![add-to-workspace](robertson-network.png)|`Robertson's model`|- Robertson’s chemical reaction model<br/> <br/>- [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation) example<br/> <br/>- shows how Datagrok solves complicated ODEs|
-|![add-to-workspace](fermentation.gif)|`Fermentation`|- models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)<br/> <br/>- shows the usage of the `runOnOpen` and  `runOnInput` meta-features|
-|![add-to-workspace](pk-pd.gif)|`PK-PD`|- simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)<br/> <br/>- illustrates the usage of the `loop` feature for dosing specification|
-|![add-to-workspace](acid-production.png)|`Acid production`|- models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger<br/> <br/>- shows the usage of the `update` feature for multi-stage simulation|
-|![add-to-workspace](nimotuzumab.png)|`Nimotuzumab`|- models population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147)<br/> <br/>-demonstrates the `output` feature|
+### Chem reactions
+
+The `Chem react` example simulates deterministic [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action) given in the network
+
+![add-to-workspace](pics/DiffStudio-chem-react-network.png)
+
+This example illustrates annotation of model inputs.
+
+### Robertson model
+
+Robertson’s chemical reaction model is a well-known example of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation). It describes the process
+
+![add-to-workspace](pics/DiffStudio-robertson-network.png)
+
+Numerical solution of stiff problems is a complicated task. Diff Studio provides solution of both stiff and non-stiff equations.
+
+### Fermentation
+
+The `Fermentation` example illustrates the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation).
+
+![add-to-workspace](pics/DiffStudio-fermentation.gif)
+
+### PK-PD
+
+PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046). It is used in drug discovery and development. The `PK-PD` example illustrates the usage of the `loop` feature for dosing specification
+
+![add-to-workspace](pics/DiffStudio-pk-pd.gif)
+
+### Acid production
+
+`Acid production` models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the `update` feature for multi-stage simulation
+
+![add-to-workspace](pics/DiffStudio-acid-production.gif)
+
+### Nimotuzumab
+
+The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147). It demonstrates the `output` feature
+
+![add-to-workspace](pics/DiffStudio-nimotuzumab.gif)
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the Diff Studio 
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
 
-## See also:
+See also
 
 * [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
 * [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
