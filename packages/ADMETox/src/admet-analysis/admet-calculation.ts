@@ -8,7 +8,6 @@ import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarati
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 const _COLUMN_NAME_STORAGE = 'column_names';
-let sliderValue = 0.5;
 let boolValue = false;
 const nonSpecific = ['Pgp-Inhibitor', 'Pgp-Substrate', 'Caco2', 'Lipophilicity', 'PPBR', 'VDss'];
 
@@ -49,15 +48,19 @@ export async function addCalculations(smilesCol: DG.Column, viewTable: DG.DataFr
   openModelsDialog(await getSelected(), smilesCol, async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
-    const pi = DG.TaskBarProgressIndicator.create('Running prediction...');
-    const csvString = DG.DataFrame.fromColumns([smilesCol]).toCsv();
-    pi.update(10, 'Getting results from server');
-    const admetoxResults = await runAdmetox(csvString, selected.join(','), String(boolValue));
-    pi.update(80, 'Results are ready');
-    const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
-    table ? addResultColumns(table, viewTable) : grok.log.warning('');
-    pi.close();
+    await performPredictions(smilesCol, viewTable, selected.join(','), boolValue);
   });
+}
+
+export async function performPredictions(smilesCol: DG.Column, viewTable: DG.DataFrame, properties: string, addProbabilities: boolean) {
+  const pi = DG.TaskBarProgressIndicator.create('Running prediction...');
+  const csvString = DG.DataFrame.fromColumns([smilesCol]).toCsv();
+  pi.update(10, 'Getting results from server');
+  const admetoxResults = await runAdmetox(csvString, properties, String(addProbabilities));
+  pi.update(80, 'Results are ready');
+  const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
+  table ? addResultColumns(table, viewTable) : grok.log.warning('');
+  pi.close();
 }
 
 /**
@@ -99,6 +102,8 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   if (table.columns.length > 0) {
+    if (table.rowCount > viewTable.rowCount)
+      table.rows.removeAt(table.rowCount - 1);
     const modelNames: string[] = table.columns.names();
     const updatedModelNames: string[] = [];
     for (let i = 0; i < modelNames.length; ++i) {
@@ -113,7 +118,6 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
-    //viewTable.rows.removeWhere((row) => row.get('Pgp-Inhibitor_probability') < sliderValue);
     addColorCoding(updatedModelNames);
   }
 }
@@ -186,7 +190,6 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
  * @returns {Promise<void>} A promise that resolves when the dialog is closed.
  */
 async function openModelsDialog(selected: any, smilesColumn: DG.Column, onOK: any): Promise<void> {
-  sliderValue = 0.5;
   boolValue = false;
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
@@ -278,16 +281,13 @@ async function openModelsDialog(selected: any, smilesColumn: DG.Column, onOK: an
     //@ts-ignore
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
   molInput.root.style.marginLeft = '-70px';
-  const sliderInput = ui.sliderInput('Confidence interval', 1, 0, 2, (value: number) => sliderValue = value/2);
-  const boolInput = ui.boolInput('Add columns', false, (value: boolean) => boolValue = value);
-  sliderInput.root.style.marginLeft = '-20px';
+  const boolInput = ui.boolInput('Probability', false, (value: boolean) => boolValue = value);
   boolInput.root.style.marginLeft = '-55px';
   const dlg = ui.dialog('ADME/Tox');
   dlg
     .add(molInput)
     .add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
-    .add(sliderInput.root)
     .add(boolInput)
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
     .show()

@@ -4,7 +4,7 @@ export const properties: any = {
         "description": "Models to predict absorbtion",
         "models": [
         {
-            "skip": false,
+            "skip": true,
             "name": "Pgp-Inhibitor"
         },
         {
@@ -66,11 +66,11 @@ export const properties: any = {
             "name": "CYP1A2-Substrate"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "CYP3A4-Inhibitor"
         },
         {
-            "skip": false,
+            "skip": true,
             "name": "CYP3A4-Substrate"
         },
         {
