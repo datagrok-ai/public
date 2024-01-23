@@ -4,7 +4,7 @@ import Icons from '/static/docusaurus_css/all.min.css';
 import Animate from '/static/docusaurus_css/new/animate.min.css';
 import MainCSS from '/static/docusaurus_css/new/main.css';
 import Head from '@docusaurus/Head';
-
+import Layout from '@theme/Layout/Provider';
 import NavBar from '../../components/new/navbar';
 import Footer from '../../components/new/footer';
 import HomeLayout from '../../docs/home.mdx';
@@ -12,6 +12,7 @@ import HomeLayout from '../../docs/home.mdx';
 export default function root() {
     return(
         <>
+        <Layout>
         <Head>
             <meta name="robots" content="noindex" />
             <meta name="googlebot" content="noindex" />
@@ -24,7 +25,8 @@ export default function root() {
             <HomeLayout/>
             </div>
             <Footer/>
-        </div>
+        </div> 
+        </Layout>
         </>
     );
 }
