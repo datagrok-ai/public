@@ -35,6 +35,8 @@ export class TestTrack extends DG.ViewBase {
   list: Category[] = [];
   expanded: boolean = false;
   version: string = grok.shell.build.client.version;
+  userId: string = DG.User.current().id;
+  start: string;
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -51,6 +53,12 @@ export class TestTrack extends DG.ViewBase {
     this.testCaseDiv = ui.div();
     this.testCaseDiv.id = 'tt-test-case-div';
     this.currentNode = this.tree;
+    let start = localStorage.getItem('TTState');
+    if (start === null) {
+      start = Date.now().toString();
+      localStorage.setItem('TTState', start);
+    }
+    this.start = start;
   }
 
   async init() {
@@ -61,7 +69,8 @@ export class TestTrack extends DG.ViewBase {
 
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
-    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', {version: this.version});
+    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
+      {version: this.version, userId: this.userId, start: this.start});
     for (const row of history.rows) {
       const path = row.get('path');
       const status: Status = row.get('status');
@@ -110,25 +119,29 @@ export class TestTrack extends DG.ViewBase {
       });
     }, 'Expand/collapse');
     ec.classList.add('tt-ribbon-button');
-    const refresh = ui.button(getIcon('sync-alt', {style: 'fas'}), () => {
-      const oldRoot = this.root;
-      ui.setUpdateIndicator(oldRoot);
-      TestTrack.instance = new TestTrack();
-      TestTrack.getInstance().init().then(() => grok.shell.dockManager.close(oldRoot));
-    }, 'Refresh');
+    const refresh = ui.button(getIcon('sync-alt', {style: 'fas'}), () => this.refresh(), 'Refresh');
     refresh.classList.add('tt-ribbon-button');
-    const ribbon = ui.divH([gh, report, ec, refresh]);
+    ec.classList.add('tt-ribbon-button');
+    const start = ui.button(getIcon('plus', {style: 'fas'}), () => this.showStartNewTestingDialog(), 'Start new testing');
+    start.classList.add('tt-ribbon-button');
+    const ribbon = ui.divH([gh, report, ec, refresh, start]);
 
     // Test case div
+    const edit = ui.button(getIcon('edit'), () => this.editTestCase(this.currentNode), 'Edit test case');
+    edit.id = 'tt-edit-button';
+    edit.disabled = true;
     this.tree.onSelectedNodeChanged.subscribe((node) => {
       this.currentNode = node;
       this.testCaseDiv.innerHTML = '';
-      if (node.value.text)
+      if (node.value.text) {
         this.testCaseDiv.append(node.value.text);
+        edit.disabled = false;
+      } else
+        edit.disabled = true;
     });
 
     // UI
-    this.append(ui.div([this.testCaseDiv], {id: 'tt-test-case-div-outer'}));
+    this.append(ui.div([this.testCaseDiv, edit], {id: 'tt-test-case-div-outer'}));
     this.append(ribbon);
     this.append(this.tree.root);
     this.root.style.padding = '0';
@@ -212,14 +225,16 @@ export class TestTrack extends DG.ViewBase {
           },
           {radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
         .endGroup()
-        .item('Edit', async () => {
-          window.open(`https://github.com/datagrok-ai/public/edit/master/packages/UsageAnalysis/files/Test Track/${
-            node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
-        })
+        .item('Edit', () => this.editTestCase(node))
         .show();
       e.preventDefault();
       e.stopPropagation();
     });
+  }
+
+  editTestCase(node: DG.TreeViewNode): void {
+    window.open(`https://github.com/datagrok-ai/public/edit/master/packages/UsageAnalysis/files/Test Track/${
+      node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
   }
 
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string): void {
@@ -231,7 +246,7 @@ export class TestTrack extends DG.ViewBase {
     if (status === FAILED || status === SKIPPED)
       node.value.reason.innerText = reason;
     const params = {success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version};
+      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, userId: this.userId, start: this.start};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
   }
@@ -279,7 +294,7 @@ export class TestTrack extends DG.ViewBase {
     }
     node.value.reason.innerText = reason;
     const params = {success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version};
+      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, userId: this.userId, start: this.start};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
   }
 
@@ -290,5 +305,22 @@ export class TestTrack extends DG.ViewBase {
     dialog.add(input);
     dialog.onOK(() => this.changeNodeReason(node, input.value, status));
     dialog.show({resizable: true});
+  }
+
+  showStartNewTestingDialog(): void {
+    const dialog = ui.dialog('Confirm');
+    dialog.add(ui.divText('Are you sure you want to start new testing?'));
+    dialog.onOK(() => {
+      localStorage.setItem('TTState', Date.now().toString());
+      this.refresh();
+    });
+    dialog.show();
+  }
+
+  refresh() {
+    const oldRoot = this.root;
+    ui.setUpdateIndicator(oldRoot);
+    TestTrack.instance = new TestTrack();
+    TestTrack.getInstance().init().then(() => grok.shell.dockManager.close(oldRoot));
   }
 };
