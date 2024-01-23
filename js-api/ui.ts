@@ -1880,10 +1880,14 @@ export function setDisplay(element: HTMLElement, show: boolean) {
 }
 
 export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: string | null | (() => string | HTMLElement | null)): void {
-  if (!disabled)
+  if (!disabled) {
     element.classList.remove('d4-disabled');
-  else
+    element.classList.contains('ui-input-root') ? element.classList.remove('ui-input-disabled') : null
+  }
+  else {
     element.classList.add('d4-disabled');
+    element.classList.contains('ui-input-root') ? element.classList.add('ui-input-disabled') : null
+  }
 
   if (tooltip == null)
     return;
