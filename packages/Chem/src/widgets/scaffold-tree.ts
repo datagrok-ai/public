@@ -475,7 +475,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
-    this.summary = this.string('summary', '');
+    this.summary = this.string('summary', this.getFilterSum());
 
     const dataFrames = grok.shell.tables;
     for (let n = 0; n < dataFrames.length; ++n) {
@@ -540,12 +540,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   getFilterSum(): string {
     const view = grok.shell.tv;
-    const filtersGroup = view.getFiltersGroup();
+    const filtersGroup = view.getFiltersGroup({createDefaultFilters: false});
     const filterSummary = filtersGroup.getFilterSummary();
-    return filterSummary.textContent === null ? '' : filterSummary.textContent;
+    const rows = (filterSummary as HTMLTableElement).rows;
+    let resultSummary = '';
+    const totalRows = rows.length;
+  
+    Array.from(rows).forEach((row, idx) => {
+      resultSummary += Array.from(row.cells).map(td => td.textContent).join(': ');
+      if (idx < totalRows - 1)
+        resultSummary += '\n';
+    });
+  
+    return resultSummary;
   }
   
-
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
     const thisViewer = this;
     const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
