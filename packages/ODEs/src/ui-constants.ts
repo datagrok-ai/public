@@ -127,6 +127,9 @@ export enum INPUT_TYPE {
 
 /** Path related consts */
 export enum PATH {  
-  MODEL = `/model=`,
+  MODEL = `?model=`,
   CUSTOM = `${MODEL}custom`,
+  EMPTY = `${MODEL}empty`,  
+  EQ = '=',
+  AND = '&',
 };

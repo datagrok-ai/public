@@ -15,6 +15,7 @@ import { USE_CASES } from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP} from './scripting-tools';
+import { equal } from '@tensorflow/tfjs-backend-cpu/dist/kernels/Equal';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -30,6 +31,18 @@ enum EDITOR_STATE {
   ACID_PROD = 'ga-production',
   NIMOTUZUMAB = 'nimotuzumab',
 };
+
+/** Models & templates */
+const MODELS: string[] = [ EDITOR_STATE.BASIC_TEMPLATE,
+  EDITOR_STATE.ADVANCED_TEMPLATE,
+  EDITOR_STATE.EXTENDED_TEMPLATE,
+  EDITOR_STATE.CHEM_REACT,
+  EDITOR_STATE.ROBERT,
+  EDITOR_STATE.FERM,
+  EDITOR_STATE.PKPD,
+  EDITOR_STATE.ACID_PROD,
+  EDITOR_STATE.NIMOTUZUMAB,
+];
 
 /** Get problem with respect to IVP editor state. */
 function getProblem(state: EDITOR_STATE): string {
@@ -136,7 +149,7 @@ export async function runSolverApp(content?: string)  {
 
   /** Solve IVP */
   const solve = async (ivp: IVP, inputsPath: string) => {
-    solverView.path = `${solverMainPath}&${inputsPath}`;
+    solverView.path = `${solverMainPath}${inputsPath}`;
 
     const start = ivp.arg.start.value;
     const finish = ivp.arg.finish.value;
@@ -186,7 +199,7 @@ export async function runSolverApp(content?: string)  {
       if (prevInputsNode !== null)
         inputsDiv.removeChild(prevInputsNode);  
 
-      prevInputsNode = inputsDiv.appendChild(await getInputsUI(ivp, solve));
+      prevInputsNode = inputsDiv.appendChild(await getInputsUI(ivp, solve, startingInputs));
       tabControl.currentPane = showApp ? inputsPane : modelPane;
       toChangeInputs = false;
 
@@ -198,7 +211,8 @@ export async function runSolverApp(content?: string)  {
   }}; 
    
   let solutionTable = DG.DataFrame.create();
-  const startingPath = grok.shell.v.path;
+  const startingPath = window.location.href;
+  let startingInputs: Map<string, number> | null = null;
   let solverView = grok.shell.addTableView(solutionTable);
   let solverMainPath: string = PATH.CUSTOM;
   let solutionViewer: DG.Viewer | null = null;
@@ -236,6 +250,7 @@ export async function runSolverApp(content?: string)  {
       toChangeInputs = true;
       solverView.path = PATH.CUSTOM;
       solverMainPath = PATH.CUSTOM;
+      startingInputs = null;
     }
   });
 
@@ -251,7 +266,7 @@ export async function runSolverApp(content?: string)  {
       const reader = new FileReader();
       reader.addEventListener("load", () => { 
         text = reader.result as string; 
-        setState(EDITOR_STATE.FROM_FILE, text);
+        setState(EDITOR_STATE.FROM_FILE, true, text);
         dlg.close();
       }, false);
           
@@ -274,12 +289,15 @@ export async function runSolverApp(content?: string)  {
   };
 
   /** Set IVP code editor state */
-  const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
+  const setState = async (state: EDITOR_STATE, toClearStartingInputs: boolean = true, text?: string | undefined) => {
     toChangeSolutionViewerProps = true;
     isModelChanged = false;
     editorState = state;
     solutionTable = DG.DataFrame.create();
     solverView.dataFrame = solutionTable;
+
+    if (toClearStartingInputs)
+      startingInputs = null;
 
     const newState = EditorState.create({
       doc: text ?? getProblem(state), 
@@ -298,7 +316,8 @@ export async function runSolverApp(content?: string)  {
       case EDITOR_STATE.EMPTY:
         if (solutionViewer && viewerDockNode) {
           grok.shell.dockManager.close(viewerDockNode);
-          solutionViewer = null;          
+          solutionViewer = null;
+          solverView.path = PATH.EMPTY;
         }
         break;
 
@@ -372,13 +391,34 @@ export async function runSolverApp(content?: string)  {
   
   // routing
   if (content) {
-    //console.log(startingPath);
+    console.log(startingPath);
     await runSolving(false);
   }
   else {
-    //console.log(startingPath);
-    await setState(EDITOR_STATE.BASIC_TEMPLATE);
-  }  
+    let eqIdx = startingPath.indexOf(PATH.EQ);
+    const andIdx = startingPath.indexOf(PATH.AND);
+
+    if ((eqIdx > -1) && (eqIdx < andIdx - 1)) {
+      const model = startingPath.slice(eqIdx + 1, andIdx);
+
+      if (MODELS.includes(model)) {
+        try {
+          startingInputs = new Map<string, number>();
+
+          startingPath.slice(andIdx + 1).split(PATH.AND).forEach((equality) => {
+            eqIdx = equality.indexOf(PATH.EQ);
+            startingInputs?.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+          });
+        } catch (error) {
+          startingInputs = null;      
+        }        
+
+        await setState(model as EDITOR_STATE, false);        
+      }
+    }
+    else 
+      await setState(EDITOR_STATE.BASIC_TEMPLATE);
+  }
 
   const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
 
@@ -724,7 +764,7 @@ export async function runSolverDemoApp() {
 
 
 /** Return model inputs UI */
-async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => Promise<void>): Promise<HTMLDivElement> {
+async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => Promise<void>, startingInputs?: Map<string, number> | null): Promise<HTMLDivElement> {
   /**  String to value */
   const strToVal = (s: string) => {
     let num = Number(s);
@@ -750,53 +790,57 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
       inputType: INPUT_TYPE.FLOAT,
     };
 
-    if (modelInput.annot === null)
-      return options;  
+    if (modelInput.annot !== null) {
+      let annot = modelInput.annot;
+      let descr: string | undefined = undefined;
 
-    let annot = modelInput.annot;
-    let descr: string | undefined = undefined;
+      let posOpen = annot.indexOf(BRACKET_OPEN);
+      let posClose = annot.indexOf(BRACKET_CLOSE);
 
-    let posOpen = annot.indexOf(BRACKET_OPEN);
-    let posClose = annot.indexOf(BRACKET_CLOSE);
-
-    if (posOpen !== -1) {    
-      if (posClose === -1)
-        throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, check ${name}`);
+      if (posOpen !== -1) {    
+        if (posClose === -1)
+          throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, check ${name}`);
     
-      descr = annot.slice(posOpen + 1, posClose);
+        descr = annot.slice(posOpen + 1, posClose);
     
-      annot = annot.slice(0, posOpen);
+        annot = annot.slice(0, posOpen);
+      }
+
+      posOpen = annot.indexOf(BRACE_OPEN);
+      posClose = annot.indexOf(BRACE_CLOSE);
+
+      if (posOpen >= posClose)
+        throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, check ${name}`);
+    
+      let pos: number;
+      let key: string;
+      let val;
+
+      annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
+        pos = str.indexOf(CONTROL_SEP);
+      
+        if (pos === -1)
+          throw new Error(`${ERROR_MSG.MISSING_COLON}, check ${name}`);
+      
+        key = str.slice(0, pos).trim();
+        val = str.slice(pos + 1).trim();
+
+        // @ts-ignore
+        options[key] = strToVal(val);
+      });
+
+      options.description = descr ?? '';
+      options.name = options.caption ?? options.name;
+      options.caption = options.name;
     }
 
-    posOpen = annot.indexOf(BRACE_OPEN);
-    posClose = annot.indexOf(BRACE_CLOSE);
-
-    if (posOpen >= posClose)
-      throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, check ${name}`);
-    
-    let pos: number;
-    let key: string;
-    let val;
-
-    annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
-      pos = str.indexOf(CONTROL_SEP);
-      
-      if (pos === -1)
-        throw new Error(`${ERROR_MSG.MISSING_COLON}, check ${name}`);
-      
-      key = str.slice(0, pos).trim();
-      val = str.slice(pos + 1).trim();
-
-      // @ts-ignore
-      options[key] = strToVal(val);
-    });
-
-    options.description = descr ?? '';
-
-    options.name = options.caption ?? options.name;
+    if (startingInputs) {
+      options.defaultValue = startingInputs.get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
+      modelInput.value = options.defaultValue;
+    }
 
     return options;
-  };
+  }; // getOptions
   
   const inputsByCategories = new Map<string, DG.InputBase[]>();
   inputsByCategories.set(TITLE.MISC, []);
@@ -822,10 +866,10 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
     
     inputsByCategories.forEach((inputs, cat) => {
       if (cat !== TITLE.MISC)
-        inputs.forEach((input) => {line += `${input.caption}=${input.value},`});
+        inputs.forEach((input) => {line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`});
     });
 
-    inputsByCategories.get(TITLE.MISC)!.forEach((input) => {line += `${input.caption}=${input.value},`});
+    inputsByCategories.get(TITLE.MISC)!.forEach((input) => {line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`});
 
     return line;
   };
@@ -924,7 +968,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
       form.append(ui.h2(TITLE.MISC));
       inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));     
     }
-  }
+  } 
 
   form.style.overflowY = 'auto';
   form.style.padding = '5px';
