@@ -463,6 +463,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   size: string;
   allowGenerate: boolean;
   applyFilter: boolean = true;
+  summary: string;
 
   constructor() {
     super();
@@ -474,6 +475,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
+    this.summary = this.string('summary', this.getFilterSum());
 
     const dataFrames = grok.shell.tables;
     for (let n = 0; n < dataFrames.length; ++n) {
@@ -537,6 +539,23 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._initMenu();
   }
 
+  getFilterSum(): string {
+    const view = grok.shell.tv;
+    const filtersGroup = view.getFiltersGroup({createDefaultFilters: false});
+    const filterSummary = filtersGroup.getFilterSummary();
+    const rows = (filterSummary as HTMLTableElement).rows;
+    let resultSummary = '';
+    const totalRows = rows.length;
+  
+    Array.from(rows).forEach((row, idx) => {
+      resultSummary += Array.from(row.cells).map(td => td.textContent).join(': ');
+      if (idx < totalRows - 1)
+        resultSummary += '\n';
+    });
+  
+    return resultSummary;
+  }
+  
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
     const thisViewer = this;
     const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
@@ -1816,6 +1835,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
         if (thisViewer.bitset != null)
           dataFrame.filter.and(thisViewer.bitset);
+        this.summary = this.getFilterSum();
       }));
     }
 
