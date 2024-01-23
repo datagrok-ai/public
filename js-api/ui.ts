@@ -1753,19 +1753,23 @@ export namespace forms {
     if (!Array.isArray(children))
       children = [children];
   
+    if (children == null)
+      return;
+
     let style = $(form).find('div.ui-input-root').first().attr('style');
     let root = document.createElement('div');
     let editor = document.createElement('div');
     $(editor).addClass('ui-input-editor').css('flex-wrap', 'wrap').css('padding', '0');
     $(root).addClass('ui-input-root ui-input-buttons').attr('style', style != null ? style : '');
-  
-    if (children != null)
+    
+    if ($(form).find('.ui-input-buttons').length != 0) {
+        $(form).find('.ui-input-buttons > div.ui-input-editor').append(children.map(x => render(x)));
+    } else {
       $(editor).append(children.map(x => render(x)));
-
-    root.append(editor);
-    form.append(root);
+      root.append(editor);
+      form.append(root);
+    }
   }
-  
 }
 
 export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
