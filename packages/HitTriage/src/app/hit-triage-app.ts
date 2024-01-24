@@ -6,8 +6,10 @@ import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
   HitDesignTemplate} from './types';
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, HTScriptPrefix, HitSelectionColName, i18n} from './consts';
-import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName,
+  HTQueryPrefix, HTScriptPrefix, HitSelectionColName, i18n} from './consts';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit,
+  joinQueryResults, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
@@ -94,14 +96,24 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
     if (!presetFilters) {
       const funcs: {[_: string]: IFunctionArgs} = {};
+      const scripts: {[_: string]: IFunctionArgs} = {};
+      const queries: {[_: string]: IFunctionArgs} = {};
       template.compute.functions.forEach((func) => {
         const fName = `${func.package}:${func.name}`;
         funcs[fName] = func.args;
-      } );
+      });
+      template.compute.scripts?.forEach((script) => {
+        const fName = `${HTScriptPrefix}:${script.name}:${script.id}`;
+        scripts[fName] = script.args;
+      });
+      template.compute.queries?.forEach((query) => {
+        const fName = `${HTQueryPrefix}:${query.name}:${query.id}`;
+        queries[fName] = query.args;
+      });
 
       await this.calculateColumns({
         descriptors: template.compute.descriptors.enabled ? template.compute.descriptors.args : [],
-        externals: funcs,
+        externals: funcs, scripts, queries,
       });
     };
     const curView = grok.shell.v;
@@ -158,13 +170,40 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       if (props) {
         // props['table'] = this.dataFrame!;
         // props['molecules'] = this.molColName!;
+        const scriptParts = scriptName.split(':');
+        const scriptId = scriptParts[2];
+        if (!scriptId)
+          continue;
         try {
-          const s = await grok.dapi.scripts.find(scriptName);
+          const s = await grok.dapi.scripts.find(scriptId);
           if (!s)
             continue;
           const tablePropName = s.inputs[0].name;
           const colPropName = s.inputs[1].name;
           await s.apply({...props, [tablePropName]: this.dataFrame!, [colPropName]: this.molColName});
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+
+    // handling queries
+    for (const queryName of Object.keys(resultMap.queries ?? {})) {
+      const props = resultMap.queries![queryName];
+      if (props) {
+        const queryParts = queryName.split(':');
+        const queryId = queryParts[2];
+        if (!queryId)
+          continue;
+        try {
+          const s = await grok.dapi.queries.find(queryId);
+          if (!s)
+            continue;
+          const listPropName = s.inputs[0].name;
+          const molList = this.dataFrame!.col(this.molColName!)!.toList();
+          const resDf: DG.DataFrame = await s.apply({...props, [listPropName]: molList});
+          if (resDf)
+            await joinQueryResults(this.dataFrame!, this.molColName!, resDf);
         } catch (e) {
           console.error(e);
         }
@@ -191,6 +230,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         const oldDescriptors = this.template!.compute.descriptors.args;
         const oldFunctions = this.template!.compute.functions;
         const oldScripts = this.template!.compute.scripts ?? [];
+        const oldQueries = this.template!.compute.queries ?? [];
         const newDescriptors = resultMap.descriptors;
         const newComputeObj = {
           descriptors: {
@@ -215,6 +255,16 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
                 args: args,
               });
             }),
+          queries: Object.entries(resultMap?.queries ?? {})
+            .filter(([name, _]) => name.startsWith(HTQueryPrefix) && name.split(':').length === 3)
+            .map(([scriptId, args]) => {
+              const scriptNameParts = scriptId.split(':');
+              return ({
+                name: scriptNameParts[1] ?? '',
+                id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
         };
         this.template!.compute = newComputeObj;
         const uncalculatedDescriptors = newDescriptors.filter((d) => !oldDescriptors.includes(d));
@@ -230,6 +280,12 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
           const oldScript = oldScripts.find((f) => f.id === func.id)!;
           return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
         });
+        const uncalculatedQueries = newComputeObj.queries.filter((query) => {
+          if (!oldQueries.some((f) => f.id === query.id))
+            return true;
+          const oldQuery = oldQueries.find((f) => f.id === query.id)!;
+          return !Object.entries(query.args).every(([key, value]) => oldQuery.args[key] === value);
+        });
 
         const externalFuncs: {[_: string]: IFunctionArgs} = {};
         uncalculatedFunctions.forEach((func) => {
@@ -241,8 +297,14 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
           const fName = `${HTScriptPrefix}:${script.name}:${script.id}`;
           externalScripts[fName] = script.args;
         });
+        const externalQueries: {[_: string]: IFunctionArgs} = {};
+        uncalculatedQueries.forEach((query) => {
+          const fName = `${HTQueryPrefix}:${query.name}:${query.id}`;
+          externalQueries[fName] = query.args;
+        });
         await this.calculateColumns(
-          {descriptors: uncalculatedDescriptors, externals: externalFuncs, scripts: externalScripts},
+          {descriptors: uncalculatedDescriptors, externals: externalFuncs,
+            scripts: externalScripts, queries: externalQueries},
           view);
         this.saveCampaign('In Progress', false);
       }, () => null, this.template!, true);

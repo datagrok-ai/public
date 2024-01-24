@@ -163,6 +163,16 @@ export async function createTemplateAccordeon(dataSourceFunctionMap: { [key: str
                 args: args,
               });
             }),
+          queries: Object.entries(funcDialogRes?.queries ?? {})
+            .filter(([name, _]) => name.startsWith(C.HTQueryPrefix) && name.split(':').length === 3)
+            .map(([queryName, args]) => {
+              const queryNameParts = queryName.split(':');
+              return ({
+                name: queryNameParts[1] ?? '',
+                id: queryNameParts[2] ?? '',
+                args: args,
+              });
+            }),
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
         queryFunctionName: (ingestTypeInput.value === 'Query') ? dataSourceFunctionInput.value ?? undefined : undefined,

@@ -3,11 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageTemplateFunction, HitTriageTemplateScript} from '../types';
 import {HitDesignMolColName, ViDColFormat} from '../consts';
+import {joinQueryResults} from '../utils';
 
 export async function calculateSingleCellValues(
   value: string, descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
+  queries: HitTriageTemplateScript[] = [],
 ): Promise<DG.DataFrame> {
-  const col = DG.Column.fromStrings(HitDesignMolColName, [value]);
+  const canonicalSmiles = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+  const col = DG.Column.fromStrings(HitDesignMolColName, [canonicalSmiles]);
   const table = DG.DataFrame.fromColumns([col]);
   await table.meta.detectSemanticTypes();
 
@@ -16,9 +19,12 @@ export async function calculateSingleCellValues(
 
   for (const func of functions) {
     const props = func.args;
-    const f = await grok.functions.find(`${func.package}:${func.name}`);
-    if (!f)
+    const fs = DG.Func.find({package: func.package, name: func.name});
+    if (!fs.length || !fs[0]) {
+      console.warn(`Function ${func.name} from package ${func.package} is not found`);
       continue;
+    }
+    const f = fs[0];
     const tablePropName = f.inputs[0].name;
     const colPropName = f.inputs[1].name;
     await f.apply({...props, [tablePropName]: table, [colPropName]: col.name});
@@ -32,6 +38,23 @@ export async function calculateSingleCellValues(
         const tablePropName = scriptFunc.inputs[0].name;
         const colPropName = scriptFunc.inputs[1].name;
         await scriptFunc.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  for (const query of queries) {
+    const props = query.args;
+    try {
+      const queryFunc = await grok.dapi.queries.find(query.id);
+      if (queryFunc) {
+        const listPropName = queryFunc.inputs[0].name;
+        const valueList = [canonicalSmiles];
+        const qRes = await queryFunc.apply({...props, [listPropName]: valueList});
+        if (!qRes || qRes.rowCount === 0)
+          continue;
+        await joinQueryResults(table, HitDesignMolColName, qRes);
       }
     } catch (e) {
       console.error(e);

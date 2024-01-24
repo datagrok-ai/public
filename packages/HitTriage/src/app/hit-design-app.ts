@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue, HTScriptPrefix, HitDesignCampaignIdKey,
+import {CampaignIdKey, CampaignJsonName, CampaignTableName,
+  EmptyStageCellValue, HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
   HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from './consts';
 import {calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
@@ -270,7 +271,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
           const calcDf =
               await calculateSingleCellValues(
-                newValue, computeObj.descriptors.args, computeObj.functions, computeObj.scripts);
+                newValue, computeObj.descriptors.args, computeObj.functions, computeObj.scripts, computeObj.queries);
 
           for (const col of calcDf.columns.toList()) {
             if (col.name === HitDesignMolColName) continue;
@@ -302,6 +303,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             const oldDescriptors = this.template!.compute.descriptors.args;
             const oldFunctions = this.template!.compute.functions;
             const oldScripts = this.template!.compute.scripts ?? [];
+            const oldQueries = this.template!.compute.queries ?? [];
             const newDescriptors = resultMap.descriptors;
             const newComputeObj = {
               descriptors: {
@@ -326,6 +328,16 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
                     args: args,
                   });
                 }),
+              queries: Object.entries(resultMap?.queries ?? {})
+                .filter(([name, _]) => name.startsWith(HTQueryPrefix) && name.split(':').length === 3)
+                .map(([queryName, args]) => {
+                  const queryNameParts = queryName.split(':');
+                  return ({
+                    name: queryNameParts[1] ?? '',
+                    id: queryNameParts[2] ?? '',
+                    args: args,
+                  });
+                }),
             };
             this.template!.compute = newComputeObj;
             this.campaign!.template = this.template;
@@ -344,6 +356,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
               return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
             });
 
+            const uncalculatedQueries = newComputeObj.queries.filter((func) => {
+              if (!oldQueries.some((f) => f.id === func.id ))
+                return true;
+              const oldQuery = oldQueries.find((f) => f.id === func.id)!;
+              return !Object.entries(func.args).every(([key, value]) => oldQuery.args[key] === value);
+            });
+
             ui.setUpdateIndicator(view.grid.root, true);
             try {
               for (let i = 0; i < this.dataFrame!.rowCount; i++) {
@@ -351,7 +370,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
                 if (!value || value === '')
                   continue;
                 const calcDf = await calculateSingleCellValues(
-                  value, uncalculatedDescriptors, uncalculatedFunctions, uncalculatedScripts);
+                  value, uncalculatedDescriptors, uncalculatedFunctions, uncalculatedScripts, uncalculatedQueries);
 
                 for (const col of calcDf.columns.toList()) {
                   if (col.name === HitDesignMolColName) continue;
