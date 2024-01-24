@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
+// import * as grok from 'datagrok-api/grok';
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/function-signature-editor-test';
@@ -13,8 +13,10 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: bool skipCore {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string,
+  testContext: TestContext, skipCore: boolean = false): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext}, skipCore ? ['Core'] : undefined);
   return DG.DataFrame.fromObjects(data)!;
 }
