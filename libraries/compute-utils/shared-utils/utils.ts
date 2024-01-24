@@ -139,7 +139,8 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
     if (
       (messages?.errors && messages.errors.length) ||
       (messages?.warnings && messages.warnings.length) ||
-      (messages?.notifications && messages.notifications.length)
+      (messages?.notifications && messages.notifications.length) ||
+      messages?.pending
     )
       $(validationIndicator).css('display', 'flex');
     else
