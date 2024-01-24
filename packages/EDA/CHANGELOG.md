@@ -1,5 +1,21 @@
 # EDA changelog
 
+## 1.1.10 (2024-1-16)
+
+* Add option to pass random seed to dimensionality reduction methods. This allows to reproduce results of dimensionality reduction.
+
+## 1.1.9 (2024-1-12)
+
+* Improvements to multi column dimensionality reduction.
+
+## 1.1.8 (2024-1-10)
+
+* Removed separate methods of dimensionality reduction and substituted with a single method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) that supports t-SNE and UMAP. The method allows to use multiple columns (like number, string, Molecule, Macromolecule, etc.) as features with different distance functions. The method also allows to cluster resulting embeddings using DBSCAN algorithm and color resulting scatterplot according to clusters.
+
+## 1.1.7 (2023-12-14)
+
+* Add DBSCAN clustering to Top Menu > ML > Cluster > DBSCAN.
+
 ## 1.1.6 (2023-10-31)
 
 Methods descriptions are updated.
