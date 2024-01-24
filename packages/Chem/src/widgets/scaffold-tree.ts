@@ -540,20 +540,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   getFilterSum(): string {
-    const view = grok.shell.tv;
-    const filtersGroup = view.getFiltersGroup({createDefaultFilters: false});
-    const filterSummary = filtersGroup.getFilterSummary();
-    const rows = (filterSummary as HTMLTableElement).rows;
-    let resultSummary = '';
-    const totalRows = rows.length;
-  
-    Array.from(rows).forEach((row, idx) => {
-      resultSummary += Array.from(row.cells).map(td => td.textContent).join(': ');
-      if (idx < totalRows - 1)
-        resultSummary += '\n';
-    });
-  
-    return resultSummary;
+    return Array.from(grok.shell.tv.dataFrame.rows.filters).join('\n');
   }
   
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
@@ -1835,9 +1822,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
         if (thisViewer.bitset != null)
           dataFrame.filter.and(thisViewer.bitset);
-        this.summary = this.getFilterSum();
       }));
     }
+
+    this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
+      this.summary = this.getFilterSum();
+    }));
 
     this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
       if (thisViewer.tree.items.length < 1)
