@@ -210,7 +210,18 @@ export class SubstructureFilter extends DG.Filter {
     // hide the scaffold when user deactivates the filter
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))
-      .subscribe((_: any) => delete this.column!.temp[FILTER_SCAFFOLD_TAG]));
+      .subscribe((_: any) => {
+        delete this.column!.temp[FILTER_SCAFFOLD_TAG];
+        //in case filter filter is disabled during search, we finish current search
+        if (!this.batchResultObservable?.closed) {
+          this.searchNotCompleted = true;
+          this.sketcher.getSmarts().then((smarts) => {
+            this.terminatePreviousSearch();
+            this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
+          });
+        }
+
+      }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       {
@@ -258,18 +269,6 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
 
-    this.subs.push(this.dataFrame!.onEvent('d4-filter-control-active-changed').subscribe(() => {
-      //in case filter is swithed off via checkbox on filter panel, we finish current search
-      if (!this.isFiltering && this.bitset) {
-        if (!this.batchResultObservable?.closed) {
-          this.searchNotCompleted = true;
-          this.sketcher.getSmarts().then((smarts) => {
-            this.terminatePreviousSearch();
-            this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
-          });
-        }
-      }
-    }));
 
     this.currentSearches.add('');
     chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
@@ -293,6 +292,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   detach() {
+    _package.logger.debug(`************detaching filter ${this.filterId}`);
     //reset active filter id in case it is detached
     if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === this.filterId)
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = -1;
@@ -314,6 +314,8 @@ export class SubstructureFilter extends DG.Filter {
       super.detach();
       this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     }
+    if (this.column?.temp[FILTER_SCAFFOLD_TAG])
+      this.column.temp[FILTER_SCAFFOLD_TAG] = null;
   }
 
   applyFilter(): void {
@@ -353,13 +355,14 @@ export class SubstructureFilter extends DG.Filter {
     state.searchType = this.searchType;
     state.simCutOff = this.similarityCutOff;
     state.fp = this.fp;
+    _package.logger.debug(`saving state: ${state.molBlock}, filter id: ${this.filterId}`);
     return state;
   }
 
   /** Override to load filter state. */
   applyState(state: any): void {
     super.applyState(state);
-
+    _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
 
     if (!this.initListeners) {
       this.initListeners = true;
