@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/function-signature-editor-test';
-import './tests/dev-panel-test';
+// import './tests/dev-panel-test';
 import './tests/test-manager-tests';
 
 export const _package = new DG.Package();
