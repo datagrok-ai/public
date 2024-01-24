@@ -2,26 +2,22 @@
 title: "Diff Studio"
 ---
 
-**Datagrok Diff Studio** is an innovative tool for solving [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) right within your web browser. 
+**Datagrok Diff Studio** solves [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) right within your web browser, and provides interactive exploration of their solution.
 
-Differential equations play a crucial role in modeling complex systems in diverse fields, 
-from chemical engineering and drug design to environmental studies and financial modeling. 
+Differential equations play a crucial role in modeling complex systems in diverse fields, from chemical engineering and drug design to environmental studies and financial modeling.
 
-Using **Datagrok Diff Studio**, you can easily create mathematical models,
-develop and optimize it, use interactive [visualizations](../visualize/viewers) 
-and other features of the Datagrok platform.
-Moreover, in a single click you can turn your model into the [Datagrok script](scripting.md),
-run it as standalone data processing unit, or include in an [application](../develop/how-to/build-an-app.md).
+Using **Diff Studio**, you can create mathematical models, build interactive [visualizations](../visualize/viewers),
+develop platform [applications](../develop/how-to/build-an-app.md) and combine them with other features of Datagrok.
 
-**Key benefits and features of the Datagrok Diff Studio**:
+**Key benefits and features**:
 
-* **Enhanced mathematical modeling:** Diff Studio can model and analyse complex multi-equation systems.
-* **Ease of use:** The Diff Studio intuitive interface makes it accessible 
+* **Enhanced mathematical modeling:** The Diff Studio can model and analyse complex multi-equation systems.
+* **Ease of use:** The Diff Studio intuitive interface makes it accessible
   and useful to both beginners and experts in mathematical modeling.
-* **Rapid design:** The collection of built-in project templates and use cases speed up model design.
-* **Streamlined Integration:** In just one click, you can convert formulas to the platform script, 
+* **Rapid design:** The collection of built-in model templates and examples speeds up model design.
+* **Streamlined Integration:** In a single click, you can convert formulas to the platform [script](scripting.md),
   implementing no-code development.
-* **Broad application scope:** The Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) 
+* **Broad application scope:** The Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics)
   and [hybrid antibody formation](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
 
 ## Using Diff Studio
@@ -46,7 +42,7 @@ To run **Diff Studio**:
 
 ### Loading templates and examples
 
-To load a template, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, 
+To load a template, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
 select **Templates** and choose one of the following templates:
 
 | Template   | Features                                                                                    |
@@ -55,14 +51,14 @@ select **Templates** and choose one of the following templates:
 | `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
 | `Extended` | The *annotating* feature for extended UI generation                                         |
 
-To load an example, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, 
+To load an example, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
 select **Examples** and choose a one.
 
 ## Creating a custom differential equation model
 
 ### Basic structure
 
-A minimal project defining and solving ordinary differential equations (ODEs) contains
+A minimal project defining and solving ordinary differential equations contains
 *name*, *differential equations*, *initial values* and *argument* specifications.
 
 Use the `#name` keyword to define the name of your model:
@@ -71,7 +67,7 @@ Use the `#name` keyword to define the name of your model:
 #name: Problem1
 ```
 
-Place differential equations in the `#equations` block. You can add as many equations as you want. 
+Place differential equations in the `#equations` block. You can add as many equations as you want.
 Diff Studio automatically recognizes all identifiers that you use.
 You can use one-letter or multi-letter identifiers.
 
@@ -103,7 +99,7 @@ Define initial values of the functions in the `#inits` block:
 
 Use the advanced features to improve your model:
 
-Use `#comment` block to write a comment in any place of your 
+Use `#comment` block to write a comment in any place of your model
 
 ```python
 #comment:
@@ -157,13 +153,13 @@ Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.
 
 ### Multi-stage modeling
 
-The multi-stage model is a model where parameters and function values can vary for different 
+The multi-stage model is a model where parameters and function values can vary for different
 ranges of argument values.
 
-Datagrok provides a special capabilities for multi-stage simulation. 
+Datagrok provides a special capabilities for multi-stage simulation.
 
-Use the `#loop` feature to specify several modeling cycles. 
-Define the number of repetitions in the mandatory `count` variable and 
+Use the `#loop` feature to specify several modeling cycles.
+Define the number of repetitions in the mandatory `count` variable and
 use any mathematical expression to modify functions and parameters.
 You can set new values for parameters and change values for functions.
 
@@ -181,7 +177,7 @@ You can set new values for parameters and change values for functions.
 
 ![Multi-stage model - loop](pics/DiffStudio-loop.gif)
 
-Apply the `#update` feature to obtain acyclic simulation. 
+Apply the `#update` feature to obtain acyclic simulation.
 Set the length of the new modeling stage in the mandatory `length` variable.
 Inside you can use any mathematical expression to modify functions and parameters,
 same as for the `#loop` section.
@@ -194,33 +190,13 @@ same as for the `#loop` section.
 
 Use any valid expression, when specifying the updates of inputs.
 
-## Platform script generation
-
-You can convert any Diff Studio project to the Datagrok script:
-
-* Press the **JS** button on the top panel
-* Press the **SAVE** button to save generated script
-
-Find the created Javascript script in the platform `Scripts`.
-
-The export feature provides an extension of your project with [scripting](scripting.md) tools. 
-
 ## Usability improvements
 
 For all Diff Studio parameters, you can add annotations described in
 [functional annotations](../datagrok/concepts/functions/func-params-annotation.md).
 When you convert your model into the Datagrok script,
-Diff Studio converts it to the script input annotations, 
+Diff Studio converts it to the script input annotations,
 allowing Datagrok to automatically create rich and self-explaining UI.
-
-Use `#tags: model` to add your model to the `Model Catalog`. 
-Provide a description in the `#description` line:
-
-```python
-#name: Bioreaction
-#tags: model
-#description: Complex bioreaction simulation
-```
 
 Define the desired captions for the input parameters.
 If no caption is provided, Datagrok will use variable name.
@@ -266,7 +242,7 @@ Specify `min`, `max` and `step` values to get sliders and clickers for the rapid
 
 ## Examples
 
-The Diff Studio has built-in examples. They cover all the Diff Studio capabilities. Get access to them 
+The Diff Studio has built-in examples. They cover all the Diff Studio capabilities. Get access to them
 via the <i class="fas fa-folder-open"></i> **Load...** button on the ribbon and use as a template.
 
 ### Chem reactions
@@ -309,8 +285,31 @@ The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab]
 
 ![add-to-workspace](pics/DiffStudio-nimotuzumab.gif)
 
-Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the Diff Studio 
+Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
+
+## Platform script generation
+
+You can convert any Diff Studio project to the Datagrok script:
+
+* Press the **JS** button on the top panel
+* Press the **SAVE** button to save generated script
+
+Find the created Javascript script in the platform `Scripts`.
+
+Use `#tags: model` to add your model to the `Model Catalog`.
+Provide a description in the `#description` line:
+
+```python
+#name: Bioreaction
+#tags: model
+#description: Complex bioreaction simulation
+```
+
+The export feature provides an extension of your project with [scripting](scripting.md) tools. Apply it to get:
+
+* non-elementary and special functions' use
+* Datagrok packages' functions call
 
 See also
 
