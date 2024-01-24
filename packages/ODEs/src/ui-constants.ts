@@ -66,7 +66,7 @@ export enum ERROR_MSG {
   SOLVING_FAILS = 'Solving fails',
   APP_CREATING_FAILS = 'Application creating fails',
   EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
-  CORE_ISSUE = 'Core issue',
+  SCRIPTING_ISSUE = 'Platform scripting issue',
   MISSING_CLOSING_BRACKET = 'ANNOTATION: "]" is missing',
   INCORRECT_BRACES_USE = 'ANNOTATION: incorrect use of "{}"',
   MISSING_COLON = 'ANNOTATION: ":" is missing',

@@ -154,7 +154,7 @@ export async function runSolverApp(content?: string)  {
   const exportToJS = async () => {
     try {
       const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');      
+      const scriptText = getScriptLines(ivp, true, true).join('\n');      
       const script = DG.Script.create(scriptText);
 
       // try to call computations - correctness check
@@ -169,7 +169,7 @@ export async function runSolverApp(content?: string)  {
       if (err instanceof Error)
         grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
       else
-        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.SCRIPTING_ISSUE}`);
   }};
 
   /** Solve IVP */
@@ -232,7 +232,7 @@ export async function runSolverApp(content?: string)  {
         if (err instanceof Error) 
           grok.shell.error(err.message);
         else
-          grok.shell.error(ERROR_MSG.CORE_ISSUE);
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
   }}; 
    
   let solutionTable = DG.DataFrame.create();
@@ -507,7 +507,7 @@ export async function runSolverDemoApp() {
       if (err instanceof Error)
         grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
       else
-        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.SCRIPTING_ISSUE}`);
   }};
 
   /** Solve IVP */
@@ -568,7 +568,7 @@ export async function runSolverDemoApp() {
         if (err instanceof Error) 
           grok.shell.error(err.message);
         else
-          grok.shell.error(ERROR_MSG.CORE_ISSUE);
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
   }};  
    
   let solutionTable = DG.DataFrame.create();

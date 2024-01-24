@@ -21,6 +21,7 @@ export const BRACKET_CLOSE = ']';
 export const ANNOT_SEPAR = ';';
 const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
+const COMMENT_SEQ = '//';
 
 /** Solver package name */
 const PACKAGE_NAME = 'DiffStudio';
@@ -448,8 +449,13 @@ export function getIVP(text: string): IVP {
   const metas = [] as string[];
   let outputs: Map<string, Output> | null = null;
 
-  // 0. Split text into lines
-  const lines = text.split('\n').filter((s) => s !== '').map((s) => s.trimStart());
+  // 0. Split text into lines & remove comments
+  const lines = text.split('\n')
+    .map((s) => {
+      const idx = s.indexOf(COMMENT_SEQ);
+      return s.slice(0, (idx >= 0) ? idx : undefined).trimStart();
+    })
+    .filter((s) => s !== '');
 
   // 1. Skip first lines without the control tag  
   const start = getStartOfProblemDef(lines);
