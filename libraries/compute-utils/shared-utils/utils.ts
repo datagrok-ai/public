@@ -136,6 +136,15 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
 
     t.input.classList.remove('d4-invalid');
     t.input.classList.remove('d4-partially-invalid');
+    if (
+      (messages?.errors && messages.errors.length) ||
+      (messages?.warnings && messages.warnings.length) ||
+      (messages?.notifications && messages.notifications.length)
+    )
+      $(validationIndicator).css('display', 'flex');
+    else
+      $(validationIndicator).hide();
+
     if (messages?.errors && messages.errors.length)
       t.input.classList.add('d4-invalid');
     else if (messages?.warnings && messages.warnings.length)
