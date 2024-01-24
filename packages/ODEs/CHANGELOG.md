@@ -1,8 +1,16 @@
 # Diff Studio changelog
 
-## 1.0.2 (WIP)
+## 1.0.3 (WIP)
 
 ### Features
+
+* Tab control with `Model` and `Run` panes
+* Interactive model exploration via the `Run` pane
+* Routing of the example models
+* Check correctness of model inputs annotation
+* Comments (`//...`) in formulas
+* Expressions usage in the `#output`-block
+* Model *ivp*-files handling
 
 ## 1.0.2 (2023-12-21)
 
