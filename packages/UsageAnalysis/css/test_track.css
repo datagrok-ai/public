@@ -59,6 +59,21 @@
   cursor: default !important;
 }
 
+.tt-history i:nth-child(1) {
+  filter: blur(0.6px);
+  opacity: 0.8;
+}
+
+.tt-history i:nth-child(2) {
+  filter: blur(0.8px);
+  opacity: 0.6;
+}
+
+.tt-history i:nth-child(3) {
+  filter: blur(1px);
+  opacity: 0.4;
+}
+
 .tt-ribbon-button {
   margin: 4px 0 !important;
 }

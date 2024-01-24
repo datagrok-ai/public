@@ -10,8 +10,9 @@ interface TestCase extends Options {
   path: string;
   text: HTMLElement;
   status: Status | null;
-  icon: HTMLElement;
+  icon: HTMLDivElement;
   reason: HTMLElement;
+  history: HTMLDivElement;
 }
 
 interface Category extends Options {
@@ -25,6 +26,13 @@ interface Options {
   order?: number;
 }
 
+interface OldStatusInfo {
+  icon: HTMLElement;
+  uid: string;
+  version: string;
+  date: any;
+}
+
 export class TestTrack extends DG.ViewBase {
   private static instance: TestTrack;
   tree: DG.TreeViewGroup;
@@ -35,7 +43,7 @@ export class TestTrack extends DG.ViewBase {
   list: Category[] = [];
   expanded: boolean = false;
   version: string = grok.shell.build.client.version;
-  userId: string = DG.User.current().id;
+  uid: string = DG.User.current().id;
   start: string;
 
   public static getInstance(): TestTrack {
@@ -70,12 +78,12 @@ export class TestTrack extends DG.ViewBase {
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
-      {version: this.version, userId: this.userId, start: this.start});
+      {version: this.version, uid: this.uid, start: this.start});
     for (const row of history.rows) {
       const path = row.get('path');
       const status: Status = row.get('status');
       const reason: string = row.get('reason');
-      const el: TestCase = {name: '', path, text: ui.markdown(''), status,
+      const el: TestCase = {name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
         icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(reason, 'tt-reason')};
       this.map[path] = el;
     }
@@ -131,13 +139,37 @@ export class TestTrack extends DG.ViewBase {
     edit.id = 'tt-edit-button';
     edit.disabled = true;
     this.tree.onSelectedNodeChanged.subscribe((node) => {
+      if (this.currentNode.constructor === DG.TreeViewNode)
+        this.currentNode.value.history.style.display = 'none';
       this.currentNode = node;
       this.testCaseDiv.innerHTML = '';
-      if (node.value.text) {
-        this.testCaseDiv.append(node.value.text);
-        edit.disabled = false;
-      } else
+      if ('children' in node.value) {
         edit.disabled = true;
+        return;
+      }
+      this.testCaseDiv.append(node.value.text);
+      edit.disabled = false;
+      this.currentNode.value.history.style.display = 'flex';
+      if (node.value.history.classList.contains('processed')) return;
+      grok.functions.call('UsageAnalysis:LastStatuses', {path: node.value.path}).then(async (df: DG.DataFrame) => {
+        node.value.history.classList.add('processed');
+        if (!df.rowCount) return;
+        for (const row of df.rows) {
+          const el: OldStatusInfo = {
+            icon: getStatusIcon(row.get('status')),
+            date: row.get('date'),
+            uid: row.get('uid'),
+            version: row.get('version'),
+          };
+          node.value.history.append(el.icon);
+          const user = await grok.dapi.users.find(el.uid);
+          ui.tooltip.bind(el.icon, () => ui.tableFromMap({
+            'User': user,
+            'Date': el.date,
+            'Version': el.version,
+          }));
+        }
+      });
     });
 
     // UI
@@ -168,15 +200,17 @@ export class TestTrack extends DG.ViewBase {
     const [textS, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');
+    const name = file.name.replace(/\.[^.]+$/, '');
     const elOld: TestCase | undefined = this.map[path] as TestCase;
-    const status = elOld ? elOld.status : null;
-    const reason = elOld ? elOld.reason : ui.div('', 'tt-reason');
-    const icon = elOld ? elOld.icon : ui.div();
-    let el: TestCase = {name: file.name.replace(/\.[^.]+$/, ''), path, text, status, reason, icon};
-    if (jsonS) {
-      const json: Options = JSON.parse(jsonS);
-      el = {...json, ...el};
+    let el: TestCase;
+    if (elOld)
+      el = {...elOld, name, text};
+    else {
+      el = {name, path, text, status: null, history: ui.divH([], 'tt-history'),
+        icon: ui.div(), reason: ui.div('', 'tt-reason')};
     }
+    if (jsonS)
+      el = {...JSON.parse(jsonS), ...el};
     parent.children.push(el);
     this.map[path] = el;
   }
@@ -202,6 +236,7 @@ export class TestTrack extends DG.ViewBase {
       this.setContextMenu(node);
       (node.value.reason as HTMLElement).ondblclick = () => this.showChangeReasonDialog(node, node.value.status);
       node.captionLabel.after(node.value.reason);
+      node.captionLabel.after(node.value.history);
       node.captionLabel.after(node.value.icon);
       return;
     }
@@ -246,7 +281,7 @@ export class TestTrack extends DG.ViewBase {
     if (status === FAILED || status === SKIPPED)
       node.value.reason.innerText = reason;
     const params = {success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, userId: this.userId, start: this.start};
+      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
   }
@@ -294,7 +329,7 @@ export class TestTrack extends DG.ViewBase {
     }
     node.value.reason.innerText = reason;
     const params = {success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, userId: this.userId, start: this.start};
+      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
   }
 

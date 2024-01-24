@@ -120,7 +120,7 @@ left join filled f on f.date = e.date and f.status = e.status
 --name: TestTrack
 --connection: System:Datagrok
 --input: string version
---input: string userId
+--input: string uid
 --input: string start
 select
 distinct on (e.description)
@@ -134,8 +134,28 @@ left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1
 left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
 left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'userId' on v5.event_id = e.id
+left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
 left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'start' on v6.event_id = e.id
-where v3.value = @version and v5.value = @userId and v6.value = @start
+where v3.value = @version and v5.value = @uid and v6.value = @start
 order by e.description, e.event_time desc
+--end
+
+--name: LastStatuses
+--connection: System:Datagrok
+--input: string path
+select
+case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
+e.event_time as date,
+v5.value::uuid as uid,
+v3.value as version
+from events e
+inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
+left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
+left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
+left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
+left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
+left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
+where e.description = @path
+order by e.event_time desc
+limit 3
 --end
