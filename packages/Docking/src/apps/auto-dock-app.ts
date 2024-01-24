@@ -163,7 +163,7 @@ async function runAutoDock(
   let posesAllDf: DG.DataFrame | undefined = undefined;
 
   const ligandRowCount = ligandCol.length;
-  for (let lRowI = 0; lRowI < ligandRowCount && lRowI < 3; ++lRowI) {
+  for (let lRowI = 0; lRowI < ligandRowCount; ++lRowI) {
     const ligandMol = ligandCol.semType === DG.SEMTYPE.MOLECULE 
       ? await grok.functions.call('Chem:convertMolNotation',
     {molecule: ligandCol.get(lRowI), sourceNotation: 'unknown', targetNotation: 'v3Kmolblock'})

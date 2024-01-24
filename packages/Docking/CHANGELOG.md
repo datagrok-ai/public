@@ -5,6 +5,7 @@
 ### Features
 
 * Split from BiostructureViewer package
+* [#2568](https://github.com/datagrok-ai/public/issues/2568): Docking: Input UI
 
 ### Bug fixes
 

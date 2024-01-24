@@ -155,11 +155,13 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     if (!autodockResults)
       return;
 
-    const processedResults = processAutodockResults(autodockResults);
+    const processedResults = processAutodockResults(autodockResults, table);
     table.join(processedResults, [], [], null, null, DG.JOIN_TYPE.INNER, true);
     /**Temporary fix (renderer works incorrectly) */
+    const currentView = grok.shell.tv;
+    currentView.close();
     const grid = grok.shell.addTableView(table).grid;
-    
+
     addColorCoding(grid.columns.byName(AFFINITY_COL)!);
     grid.sort([AFFINITY_COL]);
     grid.onCellPrepare(function (gc) {
@@ -178,11 +180,15 @@ function addColorCoding(column: DG.GridColumn) {
   column.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.green}, ${DG.Color.red}]`;
 }
 
-function processAutodockResults(table: DG.DataFrame): DG.DataFrame {
+function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFrame): DG.DataFrame {
   const affinityDescription = 'Estimated Free Energy of Binding.\
     Lower values correspond to stronger binding.';
-  const processedTable = DG.DataFrame.fromColumns([table.col(POSE_COL)!, table.col(AFFINITY_COL)!]);
-  processedTable.col(AFFINITY_COL)!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
+  const poseCol = autodockResults.col(POSE_COL);
+  poseCol!.name = table.columns.getUnusedName(POSE_COL);
+  const affinityCol = autodockResults.col(AFFINITY_COL);
+  affinityCol!.name = table.columns.getUnusedName(AFFINITY_COL);
+  const processedTable = DG.DataFrame.fromColumns([poseCol!, affinityCol!]);
+  affinityCol!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
   return processedTable;
 }
 
