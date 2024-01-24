@@ -140,7 +140,8 @@ Options:
 --skip-publish      Skip the package publication step
 --record            Records the test execution process in mp4 format
 --verbose           Prints detailed information about passed and skipped tests in the console
---platform          Runs only platform tests (applicable only for ApiTests package)
+--platform          Runs only platform tests (applicable for ApiTests package only)
+--core              Runs package & core tests (applicable  for DevTools package only)
 
 Run package tests
 

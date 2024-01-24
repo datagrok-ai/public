@@ -14,7 +14,7 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled', 'platform',
+  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
     'report', 'skip-build', 'skip-publish', 'category', 'record', 'verbose', 'benchmark'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
@@ -61,6 +61,11 @@ export function test(args: TestArgs): boolean {
 
   if (args.platform && process.env.TARGET_PACKAGE !== 'ApiTests') {
     color.error('--platform flag can only be used in the ApiTests package');
+    return false;
+  }
+
+  if (args.core && process.env.TARGET_PACKAGE !== 'DevTools') {
+    color.error('--core flag can only be used in the DevTools package');
     return false;
   }
 
@@ -125,7 +130,7 @@ export function test(args: TestArgs): boolean {
       });
     }
 
-    function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
+    function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean, core?: boolean,
       report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         let consoleLog: string = '';
@@ -145,11 +150,18 @@ export function test(args: TestArgs): boolean {
         const r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
           if (options.benchmark)
             (<any>window).DG.Test.isInBenchmark = true;
-          return new Promise<resultObject>((resolve, reject) => {        
-            (<any>window).grok.functions.call(`${targetPackage}:${options.platform ? 'testPlatform' : 'test'}`, {
-              'category': options.category,
-              'testContext': testContext,
-            }).then((df: any) => {
+          return new Promise<resultObject>((resolve, reject) => {     
+            const params: {
+              category?: string,
+              testContext: testUtils.TestContext,
+              skipCore?: boolean
+            } = {
+              category: options.category,
+              testContext: testContext,
+            };
+            if (targetPackage === 'DevTools')
+              params.skipCore = options.core ? false : true;
+            (<any>window).grok.functions.call(`${targetPackage}:${options.platform ? 'testPlatform' : 'test'}`, params).then((df: any) => {
               let failed = false;
               let skipReport = '';
               let passReport = '';
@@ -212,7 +224,8 @@ export function test(args: TestArgs): boolean {
       }
 
       const r = await runTest(7200000, {category: args.category, verbose: args.verbose, platform: args.platform,
-        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark});
+        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark,
+        core: args.core});
 
       if (r.csv && args.csv) {
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
@@ -260,5 +273,6 @@ interface TestArgs {
   'skip-publish'?: boolean,
   verbose?: boolean,
   benchmark?: boolean,
-  platform?: boolean
+  platform?: boolean,
+  core?: boolean
 }
