@@ -147,7 +147,8 @@ select
 case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
 e.event_time as date,
 v5.value::uuid as uid,
-v3.value as version
+v3.value as version,
+v2.value as reason
 from events e
 inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id

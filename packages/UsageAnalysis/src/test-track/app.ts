@@ -11,7 +11,7 @@ interface TestCase extends Options {
   text: HTMLElement;
   status: Status | null;
   icon: HTMLDivElement;
-  reason: HTMLElement;
+  reason: HTMLDivElement;
   history: HTMLDivElement;
 }
 
@@ -27,10 +27,10 @@ interface Options {
 }
 
 interface OldStatusInfo {
-  icon: HTMLElement;
-  uid: string;
-  version: string;
-  date: any;
+  'User': DG.User;
+  'Date': any;
+  'Version': string;
+  'Reason'?: HTMLElement;
 }
 
 export class TestTrack extends DG.ViewBase {
@@ -84,7 +84,7 @@ export class TestTrack extends DG.ViewBase {
       const status: Status = row.get('status');
       const reason: string = row.get('reason');
       const el: TestCase = {name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-        icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(reason, 'tt-reason')};
+        icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(this.getReason(reason), 'tt-reason')};
       this.map[path] = el;
     }
     const files = await filesP;
@@ -149,25 +149,24 @@ export class TestTrack extends DG.ViewBase {
       }
       this.testCaseDiv.append(node.value.text);
       edit.disabled = false;
-      this.currentNode.value.history.style.display = 'flex';
+      node.value.history.style.display = 'flex';
       if (node.value.history.classList.contains('processed')) return;
+      node.value.history.classList.add('processed');
       grok.functions.call('UsageAnalysis:LastStatuses', {path: node.value.path}).then(async (df: DG.DataFrame) => {
-        node.value.history.classList.add('processed');
         if (!df.rowCount) return;
         for (const row of df.rows) {
-          const el: OldStatusInfo = {
-            icon: getStatusIcon(row.get('status')),
-            date: row.get('date'),
-            uid: row.get('uid'),
-            version: row.get('version'),
-          };
-          node.value.history.append(el.icon);
-          const user = await grok.dapi.users.find(el.uid);
-          ui.tooltip.bind(el.icon, () => ui.tableFromMap({
+          const icon = getStatusIcon(row.get('status'));
+          node.value.history.append(icon);
+          const user = await grok.dapi.users.find(row.get('uid'));
+          const map: OldStatusInfo = {
             'User': user,
-            'Date': el.date,
-            'Version': el.version,
-          }));
+            'Date': row.get('date'),
+            'Version': row.get('version'),
+          };
+          const reason = row.get('reason');
+          if (reason)
+            map['Reason'] = this.getReason(reason);
+          ui.tooltip.bind(icon, () => ui.tableFromMap(map));
         }
       });
     });
@@ -234,7 +233,7 @@ export class TestTrack extends DG.ViewBase {
     if ('text' in obj) {
       const node = parent.item(obj.name, obj);
       this.setContextMenu(node);
-      (node.value.reason as HTMLElement).ondblclick = () => this.showChangeReasonDialog(node, node.value.status);
+      node.value.reason.oncontextmenu = () => this.showChangeReasonDialog(node, node.value.status);
       node.captionLabel.after(node.value.reason);
       node.captionLabel.after(node.value.history);
       node.captionLabel.after(node.value.icon);
@@ -275,11 +274,11 @@ export class TestTrack extends DG.ViewBase {
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string): void {
     node.value.status = status;
     node.value.icon.innerHTML = '';
-    node.value.reason.innerText = '';
+    node.value.reason.innerHTML = '';
     const icon = getStatusIcon(status);
     node.value.icon.append(icon);
     if (status === FAILED || status === SKIPPED)
-      node.value.reason.innerText = reason;
+      node.value.reason.append(this.getReason(reason!));
     const params = {success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
       category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
@@ -327,7 +326,8 @@ export class TestTrack extends DG.ViewBase {
       grok.shell.warning('Test case status was changed');
       return;
     }
-    node.value.reason.innerText = reason;
+    node.value.reason.innerHTML = '';
+    node.value.reason.append(this.getReason(reason));
     const params = {success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start};
     grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
@@ -352,10 +352,38 @@ export class TestTrack extends DG.ViewBase {
     dialog.show();
   }
 
-  refresh() {
+  refresh(): void {
     const oldRoot = this.root;
     ui.setUpdateIndicator(oldRoot);
     TestTrack.instance = new TestTrack();
     TestTrack.getInstance().init().then(() => grok.shell.dockManager.close(oldRoot));
+  }
+
+  getReason(reason: string): HTMLElement {
+    const jira = reason.match(/GROK-\d{5}\b/);
+    if (jira)
+      return ui.link(reason, 'https://reddata.atlassian.net/browse/' + jira[0], reason);
+    const gh = reason.match(/#(\d{4})\b/);
+    if (gh)
+      return ui.link(reason, 'https://github.com/datagrok-ai/public/issues/' + gh[1], reason);
+    const slack = reason.includes('datagrok.slack.com');
+    if (slack)
+      return ui.link(reason, reason, reason, 'tt-slack-link');
+    const el = ui.divText(reason);
+    ui.tooltip.bind(el, () => reason);
+    return el;
+  }
+
+  setContextPanelPreview(el: HTMLAnchorElement): void {
+    el.onclick = (e) => {
+      if (!e.ctrlKey) return;
+      const ifrm = document.createElement('iframe');
+      ifrm.setAttribute('src', el.href);
+      ifrm.style.width = '100%';
+      ifrm.style.height = '100%';
+      ifrm.style.border = 'none';
+      grok.shell.o = ifrm;
+      e.preventDefault();
+    };
   }
 };

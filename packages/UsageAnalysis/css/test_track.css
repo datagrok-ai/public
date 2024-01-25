@@ -78,6 +78,16 @@
   margin: 4px 0 !important;
 }
 
+.tt-slack-link {
+  font-size: 0;
+}
+
+.tt-slack-link:after {
+  content: 'SLACK';
+  font-size: 13px;
+  vertical-align: -15%;
+}
+
 /* .tt-ribbon-button:nth-child(1) {
   margin-left: 2px !important;
 } */
