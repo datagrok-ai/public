@@ -27,11 +27,22 @@ export async function parquetInit() {
 //tags: file-handler
 //meta.ext: parquet
 export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-  const table = tableFromIPC(readParquet(bytes)).toArray();
-  const df = DG.DataFrame.fromObjects(table);
+  const table = tableFromIPC(readParquet(bytes));
+  const array = table.toArray();
+  const df = DG.DataFrame.fromObjects(array);
   if (df)
     return [df];
 }
+// for (let i = 0; i < array.length; i++) {
+//     const data = array[i].toArray();
+//     const name: string = data[0];
+//     for (let j = 1; j < data.length; j++) {
+//       if (name in obj)
+//         obj[name].push(data[j]);
+//       else
+//         obj[name] = [data[j]];
+//     }
+//   }
 
 //input: list bytes
 //output: list tables
@@ -50,9 +61,19 @@ export function featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | Sha
 //tags: fileExporter
 export function saveAsParquet(){
   let table = grok.shell.t;
+  const parquetUint8Array = toParquet(table);
+  DG.Utils.download(table.name + '.parquet', parquetUint8Array);
+}
+
+
+//name: toParquet
+//description: Convert DataFrame to parquet
+//input: dataframe table
+//output: blob bytes
+export function toParquet(table: DG.DataFrame) {
   let column_names = table.columns.names();
   const t: { [_: string]: any }= {};
-  for(var i = 0; i < column_names.length; i++){
+  for(let i = 0; i < column_names.length; i++){
     if(table.col(column_names[i])?.type === 'int'){
       t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
     }
@@ -63,8 +84,7 @@ export function saveAsParquet(){
   const res = tableFromArrays(t);
   const arrowUint8Array = tableToIPC(res, "stream");
   const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
-  const parquetUint8Array = writeParquet(arrowUint8Array, writerProperties);
-  DG.Utils.download(table.name + '.parquet', parquetUint8Array);
+  return writeParquet(arrowUint8Array, writerProperties);
 }
 
 
