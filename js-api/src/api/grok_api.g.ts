@@ -1433,6 +1433,8 @@ export interface IDartApi {
   grok_GridCellStyle_Set_imageScale(x: any, v: Num): any;
   grok_GridCellStyle_Get_opacity(x: any): any;
   grok_GridCellStyle_Set_opacity(x: any, v: Num): any;
+  grok_GridCellStyle_Get_clip(x: any): any;
+  grok_GridCellStyle_Set_clip(x: any, v: Bool): any;
   grok_GridCellStyle_Get_element(x: any): any;
   grok_GridCellStyle_Set_element(x: any, v: any): any;
   grok_GridCellStyle_Get_choices(x: any): any;
