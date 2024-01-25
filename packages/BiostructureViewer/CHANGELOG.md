@@ -1,6 +1,12 @@
 # BiostructureViewer changelog
 
-## 1.1.0 (WIP)
+## 1.0.24 (2024-01-24)
+
+### Bug fixes
+
+* Fix error on right click on row header,test
+
+## 1.0.23 (2024-01-19)
 
 ### Features
 
@@ -34,7 +40,7 @@
 * Fix MolstarViewer, NglViewer tests for IRenderer.awaitRendered
 * Fix MolstarViewer for retaining ligand
 * Add tests for pdbqt from autodock-gpu
-* Add pdbqt tests and sample data  
+* Add pdbqt tests and sample data
 * Add func/BiostructureViewer.autoDockApp
 * Fix Demo to check empty data
 * Fix import pdbqt to open poses with receptor

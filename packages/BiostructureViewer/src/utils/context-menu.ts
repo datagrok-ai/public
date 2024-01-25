@@ -3,13 +3,17 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {openPdbResidues} from '../package';
 import {defaultErrorHandler} from './err-info';
 
-import {_package} from '../package';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-
+export type BiostructureViewerWindowType = Window & {
+  $biostructureViewer?: {
+    contextMenuError?: any,
+  },
+};
+declare const window: BiostructureViewerWindowType;
 
 export function addContextMenuUI(event: DG.EventData): void {
   try {
@@ -31,7 +35,8 @@ export function addContextMenuUI(event: DG.EventData): void {
     }
   } catch (err: any) {
     defaultErrorHandler(err);
-    throw err;
+    if (!window.$biostructureViewer) window.$biostructureViewer = {};
+    window.$biostructureViewer.contextMenuError = err;
   }
 }
 
@@ -106,17 +111,19 @@ export function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boo
     }
   }
 
-  switch (gridCell.tableColumn!.semType) {
-    case DG.SEMTYPE.MOLECULE3D: {
-      menu
-        .item('Copy', copyRawValue)
-        .item('Download', downloadRawValue);
-      const showG = menu.group('Show');
-      const nglM = showG.item('Biostructure', showBiostructureViewer, null,
-        {description: 'Show with Biostructure (mol*) viewer'});
-      const msM = showG.item('NGL', showNglViewer, null,
-        {description: 'Show with NGL viewer'});
-      return true;
+  if (gridCell && gridCell.tableColumn) {
+    switch (gridCell.tableColumn.semType) {
+      case DG.SEMTYPE.MOLECULE3D: {
+        menu
+          .item('Copy', copyRawValue)
+          .item('Download', downloadRawValue);
+        const showG = menu.group('Show');
+        const nglM = showG.item('Biostructure', showBiostructureViewer, null,
+          {description: 'Show with Biostructure (mol*) viewer'});
+        const msM = showG.item('NGL', showNglViewer, null,
+          {description: 'Show with NGL viewer'});
+        return true;
+      }
     }
   }
   return false;
