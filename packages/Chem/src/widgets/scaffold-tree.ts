@@ -545,11 +545,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   addToFilters() {
     const summary = `${this.getFilterSum()} (viewer)`;
-    const filters = grok.shell.tv.dataFrame.rows.filters;
-    if (filters.includes(summary))
-      return;
-    filters.push(summary);
-  }
+    const { filters } = grok.shell.tv.dataFrame.rows;
+    const checkedNodes = this.tree.items.filter((node) => node.checked);
+  
+    if (checkedNodes.length > 0) {
+      if (!filters.includes(summary))
+        filters.push(summary);
+    } else {
+      filters.remove(summary);
+    }
+  }  
   
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
     const thisViewer = this;
@@ -1171,8 +1176,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (triggerRequestFilter)
       this.dataFrame.rows.requestFilter();
     this.updateUI();
-    if (this.applyFilter)
-      this.addToFilters();
   }
 
   highlightCanvas(group: DG.TreeViewGroup, color: string | null, smiles: string | null = null) {
@@ -1842,7 +1845,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const firstChild = thisViewer.tree.items[0];
       if (dataFrame.rowCount !== value(firstChild).bitset?.length)
         await updateAllNodesHits(thisViewer);
-      updateLabelWithLoaderOrBitset(thisViewer); 
+      updateLabelWithLoaderOrBitset(thisViewer);
+    }));
+
+    this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
+      if (this.applyFilter)
+        this.addToFilters();
     }));
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
