@@ -72,11 +72,11 @@ interface ISaliLims {
 }
 
 const filterCliffsSubj = new Subject<string>();
-const LINES_DF_ACT_DIFF_COL_NAME = 'act_diff';
-const LINES_DF_SALI_COL_NAME = 'sali';
-const LINES_DF_SIM_COL_NAME = 'sim';
+const LINES_DF_ACT_DIFF_COL_NAME = 'activity_difference';
+const LINES_DF_SALI_COL_NAME = 'SALI_index';
+const LINES_DF_SIM_COL_NAME = 'similarity';
 const LINES_DF_LINE_IND_COL_NAME = 'line_index';
-const LINES_DF_MOL_COLS_NAMES = ['1_seq', '2_seq'];
+const LINES_DF_MOL_COLS_NAMES = ['1_molecule', '2_molecule'];
 const CLIFFS_FILTER_APPLIED = 'filterCliffs';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
@@ -139,6 +139,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
 
   const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
 
+  linesRes.linesDf.col(LINES_DF_SALI_COL_NAME)!.setTag('description', 'Structure−Activity Landscape Index (activity difference divided by 1 minus similarity)')
   //creating scatter plot lines renderer
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);
@@ -146,6 +147,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const linesDfGrid = linesGridFunc ?
     linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
     linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+
+  if (linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME))
+    linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME)!.visible = false;
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
