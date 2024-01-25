@@ -512,3 +512,8 @@ arch-options-icon
   position: relative;
   width: 100%
 }
+
+/* workaround for OCL sketcher to show molecule properties - https://github.com/cheminfo/openchemlib-js/issues/117 */
+.gwt-DialogBox { 
+  z-index: 10000;
+}
