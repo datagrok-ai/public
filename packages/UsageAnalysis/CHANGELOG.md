@@ -2,8 +2,6 @@
 
 ## 1.1.0 (WIP)
 
-This release focuses on improvements and bug fixes. Test Track app released.
-
 *Dependency: datagarok-api >= 1.18.0*
 
 ### Features
@@ -15,8 +13,6 @@ This release focuses on improvements and bug fixes. Test Track app released.
 * GROK-14402 UA: Test Track
 
 ## 1.0.4 (2023-11-27)
-
-This release focuses on improvements and bug fixes.
 
 *Dependency: datagarok-api >= 1.17.3*
 
@@ -32,8 +28,6 @@ This release focuses on improvements and bug fixes.
 
 ## 1.0.3 (2023-11-09)
 
-This release focuses on improvements.
-
 *Dependency: datagarok-api >= 1.16.1*
 
 ### Features
@@ -42,8 +36,6 @@ This release focuses on improvements.
 * Overall improvements
 
 ## 1.0.2 (2023-10-31)
-
-This release focuses on improvements and bug fixes.
 
 *Dependency: datagarok-api >= 1.16.1*
 
@@ -66,8 +58,6 @@ This release focuses on improvements and bug fixes.
 
 ## 1.0.1 (2023-07-03)
 
-This release focuses on improvements and bug fixes.
-
 *Dependency: datagarok-api >= 1.13.8*
 
 ### Features
@@ -80,8 +70,6 @@ This release focuses on improvements and bug fixes.
 * Query deploy bugfix
 
 ## 1.0.0 (2023-05-10)
-
-Released package.
 
 *Dependency: datagarok-api >= 1.13.8*
 

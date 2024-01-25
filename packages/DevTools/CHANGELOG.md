@@ -2,8 +2,6 @@
 
 ## 1.3.42 (2024-01-24)
 
-This release focuses on improvements and bug fixes.
-
 *Dependency: datagarok-api >= 1.17.3*
 
 ### Bug Fixes
@@ -23,8 +21,6 @@ This release focuses on improvements and bug fixes.
 
 ## 1.3.41 (2023-11-14)
 
-This release focuses on improvements and bug fixes.
-
 *Dependency: datagarok-api >= 1.17.3*
 
 ### Bug Fixes
@@ -40,8 +36,6 @@ This release focuses on improvements and bug fixes.
 
 ## 1.3.40 (2023-09-20)
 
-This release focuses on bug fixes.
-
 *Dependency: datagarok-api >= 1.16.6*
 
 ### Bug Fixes
@@ -49,8 +43,6 @@ This release focuses on bug fixes.
 * GROK-13970 DevTools: Run option in Dev panel does not work
 
 ## 1.3.39 (2023-08-30)
-
-This release focuses on improvements and stability.
 
 *Dependency: datagarok-api >= 1.16.0*
 
@@ -60,8 +52,6 @@ This release focuses on improvements and stability.
 * GROK-13850: TM: improve hierarchy
 
 ## 1.3.38 (2023-07-20)
-
-This release focuses on improvements and bug fixes.
 
 *Dependency: datagarok-api >= 1.16.0*
 
