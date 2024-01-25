@@ -11,13 +11,13 @@ develop platform [applications](../develop/how-to/build-an-app.md) and combine t
 
 **Key benefits and features**:
 
-* **Enhanced mathematical modeling:** The Diff Studio can model and analyse complex multi-equation systems.
-* **Ease of use:** The Diff Studio intuitive interface makes it accessible
+* **Enhanced mathematical modeling:** Diff Studio can model and analyse complex multi-equation systems.
+* **Ease of use:** Diff Studio intuitive interface makes it accessible
   and useful to both beginners and experts in mathematical modeling.
 * **Rapid design:** The collection of built-in model templates and examples speeds up model design.
-* **Streamlined Integration:** In a single click, you can convert formulas to the platform [script](scripting.md),
+* **Streamlined integration:** In a single click, you can convert formulas to the platform [script](scripting.md),
   implementing no-code development.
-* **Broad application scope:** The Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics)
+* **Broad application scope:** Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics)
   and [hybrid antibody formation](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
 
 ## Using Diff Studio
@@ -40,25 +40,11 @@ To run **Diff Studio**:
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
-### Loading templates and examples
-
-To load a template, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
-select **Templates** and choose one of the following templates:
-
-| Template   | Features                                                                                    |
-|------------|---------------------------------------------------------------------------------------------|
-| `Basic`    | Minimum project with one differential equation                                              |
-| `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
-| `Extended` | The *annotating* feature for extended UI generation                                         |
-
-To load an example, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
-select **Examples** and choose a one.
-
 ## Creating a custom differential equation model
 
-### Basic structure
+### Basic model
 
-A minimal project defining and solving ordinary differential equations contains
+A minimal model defining and solving ordinary differential equations contains
 *name*, *differential equations*, *initial values* and *argument* specifications.
 
 Use the `#name` keyword to define the name of your model:
@@ -95,15 +81,23 @@ Define initial values of the functions in the `#inits` block:
   y = 5
 ```
 
-### Advances
+### Advanced model
 
-Use the advanced features to improve your model:
+Use the advanced features to improve your model.
 
 Use `#comment` block to write a comment in any place of your model
 
 ```python
 #comment:
   You can provide any text here. Diff Studio just ignores it.
+```
+
+Place comments right in formulas using `//`
+
+```python
+#equations:
+  dx/dt = x + y + exp(t) // 1-st equation
+  dy/dt = x - y - cos(t) // 2-nd equation
 ```
 
 Specify constants in the `#constants` block and parameters in the `#parameters` block.
@@ -151,7 +145,7 @@ Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.
 #tolerance: 0.00005
 ```
 
-### Multi-stage modeling
+### Multi-stage model
 
 The multi-stage model is a model where parameters and function values can vary for different
 ranges of argument values.
@@ -240,9 +234,23 @@ Specify `min`, `max` and `step` values to get sliders and clickers for the rapid
 
 ![Using input annotations](pics/DiffStudio-input-annotations.gif)
 
+## Loading templates and examples
+
+To load a template, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
+select **Templates** and choose one of the following templates:
+
+| Template   | Features                                                                                    |
+|------------|---------------------------------------------------------------------------------------------|
+| `Basic`    | Minimum project with one differential equation                                              |
+| `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
+| `Extended` | The *annotating* feature for extended UI generation                                         |
+
+To load an example, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
+select **Examples** and choose a one.
+
 ## Examples
 
-The Diff Studio has built-in examples. They cover all the Diff Studio capabilities. Get access to them
+Diff Studio has built-in examples. They cover all Diff Studio capabilities. Get access to them
 via the <i class="fas fa-folder-open"></i> **Load...** button on the ribbon and use as a template.
 
 ### Chem reactions
@@ -285,7 +293,7 @@ The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab]
 
 ![add-to-workspace](pics/DiffStudio-nimotuzumab.gif)
 
-Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine the Diff Studio
+Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
 
 ## Platform script generation
