@@ -475,7 +475,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
-    this.summary = this.string('summary', this.getFilterSum());
 
     const dataFrames = grok.shell.tables;
     for (let n = 0; n < dataFrames.length; ++n) {
@@ -536,11 +535,20 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
+    this.summary = this.string('summary', this.getFilterSum());
     this._initMenu();
   }
 
   getFilterSum(): string {
-    return Array.from(grok.shell.tv.dataFrame.rows.filters).join('\n');
+    return `${this.MoleculeColumn}: ${ScaffoldTreeViewer.TYPE}`;
+  }
+
+  addToFilters() {
+    const summary = `${this.getFilterSum()} (viewer)`;
+    const filters = grok.shell.tv.dataFrame.rows.filters;
+    if (filters.includes(summary))
+      return;
+    filters.push(summary);
   }
   
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
@@ -1111,7 +1119,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let tmpBitset = DG.BitSet.create(this.molColumn.length);
 
     let isNot = false;
-    
+  
     this.checkedScaffolds = [];
     removeElementByColor(this.colorCodedScaffolds, '');
     for (let n = 0; n < checkedNodes.length; ++n) { //going through all checked nodes, perform filtering and highlight
@@ -1163,6 +1171,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (triggerRequestFilter)
       this.dataFrame.rows.requestFilter();
     this.updateUI();
+    if (this.applyFilter)
+      this.addToFilters();
   }
 
   highlightCanvas(group: DG.TreeViewGroup, color: string | null, smiles: string | null = null) {
@@ -1699,6 +1709,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         }
       }
       this.clear();
+      this.summary = this.getFilterSum();
       //this.molColumn = this.dataFrame.columns.byName(this.MoleculeColumn);
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
@@ -1824,10 +1835,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           dataFrame.filter.and(thisViewer.bitset);
       }));
     }
-
-    this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
-      this.summary = this.getFilterSum();
-    }));
 
     this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
       if (thisViewer.tree.items.length < 1)
