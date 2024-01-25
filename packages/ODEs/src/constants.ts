@@ -37,6 +37,5 @@ export enum LOOP {
 export enum UPDATE {
   MIN_LINES_COUNT = 1,
   DURATION_IDX = 0,
-  DURATION = '_duration',  
-  MIN_DURATION = 0,
+  DURATION = '_duration', 
 };

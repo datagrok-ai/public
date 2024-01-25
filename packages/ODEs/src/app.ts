@@ -961,21 +961,6 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
     categorizeInput(options, input);    
   }
 
-  // Inputs for updates
-  if (ivp.updates !== null)
-    ivp.updates.forEach((val, idx, updates) => {
-      options = getOptions(`${SCRIPTING.DURATION} ${idx + 1}`, val.duration);
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null) {
-          ivp.updates![idx].duration.value = input.value;
-          await solveFn(ivp, getInputsPath());
-        }
-      });
-
-      categorizeInput(options, input);
-    });
-
   // Inputs form
   const form = ui.form([]);
 

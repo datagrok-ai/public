@@ -20,14 +20,14 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Click **F5** or go to **Run** tab
   * Cahnge inputs and explore your model
 * Use an advanced template:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel 
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
   * Select **Templates > Advanced...**
   * Modify formulas and click **F5**
 * Save formulas in a local file:
   * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
   * Find the *ivp*-file in Downloads, modify it using any text editor
 * Drag-n-drop:
-  * Drag *ivp*-file with equations right into the browser 
+  * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
   * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
   * Select **From file...**

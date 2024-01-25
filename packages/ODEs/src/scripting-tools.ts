@@ -73,7 +73,7 @@ type Loop = {
 
 /** Update specification */
 type Update = {
-  duration: Input,
+  durationFormula: string,
   updates: string[],
 };
 
@@ -358,12 +358,17 @@ function getUpdate(lines: string[], begin: number, end: number): Update {
 
   if (size < UPDATE.MIN_LINES_COUNT)
     throw new Error(ERROR_MSG.UPDATE);
-  
-  const duration = getInput(source[UPDATE.DURATION_IDX]);
-  if (duration.value < UPDATE.MIN_DURATION)
-    throw new Error(ERROR_MSG.DURATION);
 
-  return {duration: duration, updates: source.slice(UPDATE.DURATION_IDX + 1)};
+  const eqIdx = source[UPDATE.DURATION_IDX].indexOf(EQUAL_SIGN);
+
+  if (eqIdx === -1)
+    throw new Error(`${ERROR_MSG.UPDATE}. Check line: "${source[UPDATE.DURATION_IDX]}"`);
+    
+
+  return {
+    durationFormula: source[UPDATE.DURATION_IDX].slice(eqIdx + 1).trim(), 
+    updates: source.slice(UPDATE.DURATION_IDX + 1)
+  };
 }
 
 /** Get output specification */
@@ -588,10 +593,6 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] 
   res.push(`${ANNOT.DOUBLE_INPUT} ${t0} = ${getInputSpec(arg.start)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${t1} = ${getInputSpec(arg.finish)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${h} = ${getInputSpec(arg.step)}`);
-
-  // the 'update' lines
-  if (ivp.updates)
-    ivp.updates.forEach((updt, idx) => { res.push(`${ANNOT.DOUBLE_INPUT} ${UPDATE.DURATION}${idx + 1} = ${getInputSpec(updt.duration)}`) });
 
   // initial values lines
   ivp.inits.forEach((val, key) => res.push(`${ANNOT.DOUBLE_INPUT} ${key} = ${getInputSpec(val)}`));
@@ -922,6 +923,7 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
   ivp.updates!.forEach((upd, idx) => {
     res.push('');
     res.push(`${SCRIPT.UPDATE_COM} ${idx + 1}`);
+    res.push(`const ${UPDATE.DURATION}${idx + 1} = ${upd.durationFormula};`);
     res.push(`${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
     
     dfNames.forEach((name, idx) => { 
@@ -973,9 +975,6 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
   res[`${SERVICE}${arg.name}0`] = arg.start.value;
   res[`${SERVICE}${arg.name}1`] = arg.finish.value;
   res[`${SERVICE}h`] = arg.step.value;
-
-  if (ivp.updates)
-    ivp.updates.forEach((upd, idx) => res[`${UPDATE.DURATION}${idx + 1}`] = upd.duration.value);
 
   ivp.inits.forEach((val, key) => res[key] = val.value);
 
