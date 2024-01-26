@@ -37,7 +37,7 @@ const startRecording = async () => {
     const blob = new Blob(chunks, {type: chunks[0].type});
     stream.getVideoTracks()[0].stop();
 
-    DG.Utils.download(`Recording ${dayjs().local().format('YYYY MMM D, HH:mm')}.mkv`, blob, chunks[0].type);
+    DG.Utils.download(`Recording ${new Date().toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}.mkv`, blob, chunks[0].type);
   };
   recorder.start();
 };
