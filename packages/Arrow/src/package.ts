@@ -1,12 +1,13 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { tableFromIPC, tableFromArrays, tableToIPC} from 'apache-arrow';
+import {tableFromArrays, tableFromIPC, tableToIPC} from 'apache-arrow';
 //@ts-ignore
-import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from './arrow1';
-import { Buffer } from 'buffer';
+import {Compression, default as init, readParquet, writeParquet, WriterPropertiesBuilder} from './arrow1';
+import {Buffer} from 'buffer';
+import {FLOAT_NULL} from "datagrok-api/dg";
+
 export const _package = new DG.Package();
 
 
@@ -22,6 +23,23 @@ export async function parquetInit() {
   await init(_package.webRoot + 'dist/arrow1_bg.wasm');
 }
 
+//name: fromParquet
+//input: blob bytes
+//output: dataframe table
+export function fromParquet(bytes: Uint8Array) {
+  let d1 = new Date();
+  const table = tableFromIPC(readParquet(bytes));
+  console.log(`tableFromIPC ${new Date().getTime() - d1.getTime()} ms`)
+  d1 = new Date();
+  const array = table.toArray();
+  console.log(`table.toArray() ${new Date().getTime() - d1.getTime()} ms`)
+  d1 = new Date();
+  const df = DG.DataFrame.fromObjects(array);
+  console.log(`.fromObjects(array) ${new Date().getTime() - d1.getTime()} ms`)
+  return df;
+}
+
+
 //input: list bytes
 //output: list tables
 //tags: file-handler
@@ -33,16 +51,6 @@ export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | Sha
   if (df)
     return [df];
 }
-// for (let i = 0; i < array.length; i++) {
-//     const data = array[i].toArray();
-//     const name: string = data[0];
-//     for (let j = 1; j < data.length; j++) {
-//       if (name in obj)
-//         obj[name].push(data[j]);
-//       else
-//         obj[name] = [data[j]];
-//     }
-//   }
 
 //input: list bytes
 //output: list tables
@@ -71,20 +79,44 @@ export function saveAsParquet(){
 //input: dataframe table
 //output: blob bytes
 export function toParquet(table: DG.DataFrame) {
-  let column_names = table.columns.names();
-  const t: { [_: string]: any }= {};
-  for(let i = 0; i < column_names.length; i++){
-    if(table.col(column_names[i])?.type === 'int'){
-      t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
+  if (table == null) return null;
+  try {
+    let d1 = new Date();
+    let column_names = table.columns.names();
+    const t: { [_: string]: any }= {};
+    for(let i = 0; i < column_names.length; i++) {
+      let column = table.columns.byName(column_names[i]);
+      if(['int', 'float', 'qnum'].includes(column.type)) {
+        t[column_names[i]] = column.getRawData();
+      }
+      else if (table.col(column_names[i])?.type === 'datetime') {
+        const rawData: Float64Array = (column.getRawData() as Float64Array);
+        t[column_names[i]] = Array.from(rawData, (v, _) =>
+            v === FLOAT_NULL ? null : new Date(v / 1000));
+      }
+      else if (table.col(column_names[i])?.type === 'string') {
+        const indexes = column.getRawData();
+        t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
+      }
+      else {
+        t[column_names[i]] = column.toList();
+      }
     }
-    else{
-      t[column_names[i]] = table.columns.byName(column_names[i]).toList();
-    }
+    console.log(`Converted columns ${new Date().getTime() - d1.getTime()} ms`);
+    d1 = new Date();
+    const res = tableFromArrays(t);
+    console.log(`tableFromArrays ${new Date().getTime() - d1.getTime()} ms`);
+    d1 = new Date();
+    const arrowUint8Array = tableToIPC(res, "stream");
+    console.log(`tableToIPC ${new Date().getTime() - d1.getTime()} ms`);
+    d1 = new Date();
+    const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
+    const writeParquet1 = writeParquet(arrowUint8Array, writerProperties);
+    console.log(`writeParquet ${new Date().getTime() - d1.getTime()} ms`);
+    return writeParquet1;
+  } catch (e) {
+    throw e;
   }
-  const res = tableFromArrays(t);
-  const arrowUint8Array = tableToIPC(res, "stream");
-  const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
-  return writeParquet(arrowUint8Array, writerProperties);
 }
 
 
