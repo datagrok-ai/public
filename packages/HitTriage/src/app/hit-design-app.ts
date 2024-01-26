@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus} from './types';
+import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus, IFunctionArgs} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   EmptyStageCellValue, HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
   HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from './consts';
-import {calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
+import {calculateColumns, calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
 import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
@@ -299,7 +299,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       const hasSubmit = checkRibbonsHaveSubmit(ribbons);
       if (!hasSubmit) {
         const getComputeDialog = async () => {
-          chemFunctionsDialog(async (resultMap) => {
+          chemFunctionsDialog(this, async (resultMap) => {
             const oldDescriptors = this.template!.compute.descriptors.args;
             const oldFunctions = this.template!.compute.functions;
             const oldScripts = this.template!.compute.scripts ?? [];
@@ -342,46 +342,75 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             this.template!.compute = newComputeObj;
             this.campaign!.template = this.template;
             const uncalculatedDescriptors = newDescriptors.filter((d) => !oldDescriptors.includes(d));
-            const uncalculatedFunctions = newComputeObj.functions.filter((func) => {
-              if (!oldFunctions.some((f) => f.name === func.name && f.package === func.package))
-                return true;
-              const oldFunc = oldFunctions.find((f) => f.name === func.name && f.package === func.package)!;
-              return !Object.entries(func.args).every(([key, value]) => oldFunc.args[key] === value);
-            });
+            // const uncalculatedFunctions = newComputeObj.functions.filter((func) => {
+            //   if (!oldFunctions.some((f) => f.name === func.name && f.package === func.package))
+            //     return true;
+            //   const oldFunc = oldFunctions.find((f) => f.name === func.name && f.package === func.package)!;
+            //   return !Object.entries(func.args).every(([key, value]) => oldFunc.args[key] === value);
+            // });
 
-            const uncalculatedScripts = newComputeObj.scripts.filter((func) => {
-              if (!oldScripts.some((f) => f.id === func.id ))
-                return true;
-              const oldScript = oldScripts.find((f) => f.id === func.id)!;
-              return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
-            });
+            // const uncalculatedScripts = newComputeObj.scripts.filter((func) => {
+            //   if (!oldScripts.some((f) => f.id === func.id ))
+            //     return true;
+            //   const oldScript = oldScripts.find((f) => f.id === func.id)!;
+            //   return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
+            // });
 
-            const uncalculatedQueries = newComputeObj.queries.filter((func) => {
-              if (!oldQueries.some((f) => f.id === func.id ))
-                return true;
-              const oldQuery = oldQueries.find((f) => f.id === func.id)!;
-              return !Object.entries(func.args).every(([key, value]) => oldQuery.args[key] === value);
-            });
+            // const uncalculatedQueries = newComputeObj.queries.filter((func) => {
+            //   if (!oldQueries.some((f) => f.id === func.id ))
+            //     return true;
+            //   const oldQuery = oldQueries.find((f) => f.id === func.id)!;
+            //   return !Object.entries(func.args).every(([key, value]) => oldQuery.args[key] === value);
+            // });
 
+            const newFunctions: {[_: string]: IFunctionArgs} = {};
+            Object.entries(resultMap?.externals ?? {})
+              .filter(([funcName, args]) => {
+                const oldFunc = oldFunctions.find((f) => `${f.package}:${f.name}` === funcName);
+                if (!oldFunc)
+                  return true;
+                return !Object.entries(args).every(([key, value]) => oldFunc.args[key] === value);
+              }).forEach(([funcName, args]) => {newFunctions[funcName] = args;});
+
+            const newScripts: {[_: string]: IFunctionArgs} = {};
+            Object.entries(resultMap?.scripts ?? {})
+              .filter(([scriptName, args]) => {
+                const oldScript = oldScripts.find((f) => `${HTScriptPrefix}:${f.name}:${f.id}` === scriptName);
+                if (!oldScript)
+                  return true;
+                return !Object.entries(args).every(([key, value]) => oldScript.args[key] === value);
+              }).forEach(([scriptName, args]) => {newScripts[scriptName] = args;});
+
+            const newQueries: {[_: string]: IFunctionArgs} = {};
+            Object.entries(resultMap?.queries ?? {})
+              .filter(([queryName, args]) => {
+                const oldQuery = oldQueries.find((f) => `${HTQueryPrefix}:${f.name}:${f.id}` === queryName);
+                if (!oldQuery)
+                  return true;
+                return !Object.entries(args).every(([key, value]) => oldQuery.args[key] === value);
+              }).forEach(([queryName, args]) => {newQueries[queryName] = args;});
             ui.setUpdateIndicator(view.grid.root, true);
             try {
-              for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-                const value = this.dataFrame!.get(this.molColName, i);
-                if (!value || value === '')
-                  continue;
-                const calcDf = await calculateSingleCellValues(
-                  value, uncalculatedDescriptors, uncalculatedFunctions, uncalculatedScripts, uncalculatedQueries);
+              // for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+              //   const value = this.dataFrame!.get(this.molColName, i);
+              //   if (!value || value === '')
+              //     continue;
+              //   const calcDf = await calculateSingleCellValues(
+              //     value, uncalculatedDescriptors, uncalculatedFunctions, uncalculatedScripts, uncalculatedQueries);
 
-                for (const col of calcDf.columns.toList()) {
-                  if (col.name === HitDesignMolColName) continue;
-                  if (!this.dataFrame!.columns.contains(col.name)) {
-                    const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
-                    newCol.semType = col.semType;
-                  }
-                this.dataFrame!.col(col.name)!.set(i, col.get(0), false);
-                }
-                this.dataFrame!.fireValuesChanged();
-              }
+              //   for (const col of calcDf.columns.toList()) {
+              //     if (col.name === HitDesignMolColName) continue;
+              //     if (!this.dataFrame!.columns.contains(col.name)) {
+              //       const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
+              //       newCol.semType = col.semType;
+              //     }
+              //   this.dataFrame!.col(col.name)!.set(i, col.get(0), false);
+              //   }
+              //   this.dataFrame!.fireValuesChanged();
+              // }
+              await calculateColumns({descriptors: uncalculatedDescriptors, externals: newFunctions,
+                scripts: newScripts, queries: newQueries}, this.dataFrame!, this.molColName!);
+              this.dataFrame!.fireValuesChanged();
             } finally {
               ui.setUpdateIndicator(view.grid.root, false);
               this.saveCampaign(undefined, false);

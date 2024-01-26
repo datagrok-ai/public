@@ -183,7 +183,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   private async createNewTemplate() {
-    const newTemplateAccordeon = await createTemplateAccordeon(this.dataSourceFunctionsMap);
+    const newTemplateAccordeon = await createTemplateAccordeon(this.app, this.dataSourceFunctionsMap);
     // hideComponents(toRemove);
     // $(containerDiv).empty();
     // $(templateInputDiv).empty();

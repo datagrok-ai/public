@@ -125,3 +125,9 @@ export type INewTemplateResult<T> = {
 export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> & {stages: string[]};
 
 export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'>;
+
+export type ComputeFunctions = {
+    functions: DG.Func[],
+    scripts: DG.Script[],
+    queries: DG.DataQuery[],
+};

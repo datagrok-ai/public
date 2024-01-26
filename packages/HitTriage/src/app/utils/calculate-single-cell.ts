@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitTriageTemplateFunction, HitTriageTemplateScript} from '../types';
+import {HitTriageTemplateFunction, HitTriageTemplateScript, IComputeDialogResult} from '../types';
 import {HitDesignMolColName, ViDColFormat} from '../consts';
 import {joinQueryResults} from '../utils';
 
@@ -9,9 +9,11 @@ export async function calculateSingleCellValues(
   value: string, descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
   queries: HitTriageTemplateScript[] = [],
 ): Promise<DG.DataFrame> {
+  // TODO: this converts value to canonical one. We need to do it in a better way
   const canonicalSmiles = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
   const col = DG.Column.fromStrings(HitDesignMolColName, [canonicalSmiles]);
   const table = DG.DataFrame.fromColumns([col]);
+  table.name = 'HD Single cell values';
   await table.meta.detectSemanticTypes();
 
   if (descriptors.length)
@@ -77,4 +79,77 @@ export function getNewVid(vidCol: DG.Column<any>) {
   }
 
   return `V${''.concat(...new Array(ViDColFormat.length - 1 - (maxId +1).toString().length).fill('0'))}${maxId + 1}`;
+}
+
+export async function calculateColumns(resultMap: IComputeDialogResult, dataFrame: DG.DataFrame, molColName: string) {
+  // first step: convert all values to canonical smiles.
+  const molCol = dataFrame.col(molColName);
+  if (!molCol)
+    throw new Error('There is no molecule column in dataframe');
+  for (let i = 0; i < molCol.length; i++) {
+    if (molCol.isNone(i))
+      continue;
+    const value: string | null = molCol.get(i);
+    if (!value)
+      continue;
+    const newVal = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+    molCol.set(i, newVal, false);
+  }
+
+  if (resultMap.descriptors && resultMap.descriptors.length > 0)
+    await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
+
+  for (const funcName of Object.keys(resultMap.externals)) {
+    const props = resultMap.externals[funcName];
+    const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
+    const tablePropName = f.inputs[0].name;
+    const colPropName = f.inputs[1].name;
+    if (props)
+      await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molColName});
+  };
+  // handling scripts
+  for (const scriptName of Object.keys(resultMap.scripts ?? {})) {
+    const props = resultMap.scripts![scriptName];
+    if (props) {
+      // props['table'] = this.dataFrame!;
+      // props['molecules'] = this.molColName!;
+      const scriptParts = scriptName.split(':');
+      const scriptId = scriptParts[2];
+      if (!scriptId)
+        continue;
+      try {
+        const s = await grok.dapi.scripts.find(scriptId);
+        if (!s)
+          continue;
+        const tablePropName = s.inputs[0].name;
+        const colPropName = s.inputs[1].name;
+        await s.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molColName});
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  // handling queries
+  for (const queryName of Object.keys(resultMap.queries ?? {})) {
+    const props = resultMap.queries![queryName];
+    if (props) {
+      const queryParts = queryName.split(':');
+      const queryId = queryParts[2];
+      if (!queryId)
+        continue;
+      try {
+        const s = await grok.dapi.queries.find(queryId);
+        if (!s)
+          continue;
+        const listPropName = s.inputs[0].name;
+        const molList = dataFrame!.col(molColName!)!.toList();
+        const resDf: DG.DataFrame = await s.apply({...props, [listPropName]: molList});
+        if (resDf)
+          await joinQueryResults(dataFrame!, molColName!, resDf);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 }

@@ -5,25 +5,26 @@ import $ from 'cash-dom';
 import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree,
   HitTriageTemplate, HitTriageTemplateFunction, HitTriageTemplateScript} from '../types';
 import '../../../css/hit-triage.css';
-import {HTQueryPrefix, HTScriptPrefix, HitTriageComputeFunctionTag} from '../consts';
+import {HTQueryPrefix, HTScriptPrefix} from '../consts';
+import {HitAppBase} from '../hit-app-base';
 
-export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
+export async function chemFunctionsDialog(app: HitAppBase<any>,
+  onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
   template: Omit<HitTriageTemplate, 'dataSourceType'>, dialog?: boolean,
 ): Promise<IChemFunctionsDialogResult> {
   // if compute is in dialog form, we need to show all the functions
-  const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
+  const computeFunctions = await app.computeFunctions;
+  const functions = computeFunctions.functions
     .filter(({inputs: i}) => i.length > 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
       template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
 
   //const scripts = (await DG.Script.findAll({tags: [HitTriageComputeFunctionTag]})).filter((s) => s.type === 'script')
-  const scripts: HitTriageTemplateScript[] =
-  (await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list())
+  const scripts: HitTriageTemplateScript[] = computeFunctions.scripts
     .filter(({inputs: i}) => i.length >= 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((s) => ({name: s.name, id: s.id, args: template?.compute?.scripts?.find((ts) => ts.id === s.id)?.args ?? {}}));
 
-  const queries: HitTriageTemplateScript[] = (await grok.dapi.queries.include('params,connection')
-    .filter(`#${HitTriageComputeFunctionTag}`).list())
+  const queries: HitTriageTemplateScript[] = computeFunctions.queries
     .filter((q) => q.inputs.length > 0 && q.inputs[0].propertyType === 'list')// for now only lists...
     .map((q) => {
       return {
