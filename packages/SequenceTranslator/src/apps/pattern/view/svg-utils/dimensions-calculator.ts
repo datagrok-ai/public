@@ -15,33 +15,41 @@ export class PatternSVGDimensionsCalculator {
   constructor(
     private config: PatternConfiguration,
   ) {
-    const rightOverhangNucleotideCounts = STRANDS.reduce((acc, strand) => {
-      acc[strand] = this.countOverhangNucleotidesAtStartOfStrand(strand);
-      return acc;
-    }, {} as StrandToNumberMap);
+    const rightOverhangNucleotideCounts = this.computeRightOverhangNucleotideCounts();
+    const maxEffectiveStrandLength = this.computeMaxEffectiveStrandLength(rightOverhangNucleotideCounts);
+    const maxWidthOfRightOverhangs = this.computeMaxWidthOfRightOverhangs(rightOverhangNucleotideCounts);
+    const strandLabelWidth = this.computeStrandLabelWidth();
+    const maxTerminusLabelWidthByEnd = this.computeMaxWidthOfTerminusLabels();
 
+    this.initializeCalculators(
+      rightOverhangNucleotideCounts,
+      maxEffectiveStrandLength,
+      maxWidthOfRightOverhangs,
+      strandLabelWidth,
+      maxTerminusLabelWidthByEnd,
+    );
+  }
 
-    const maxEffectiveStrandLength = Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - rightOverhangNucleotideCounts[strand]));
-
-    const maxWidthOfRightOverhangs = Math.max(rightOverhangNucleotideCounts[STRAND.SENSE], rightOverhangNucleotideCounts[STRAND.ANTISENSE]);
-
-    const strandLabelWidth = this.getStrandLabelWidth();
-
-    const maxTerminusWidthByEnd = this.getMaxWidthOfTerminusLabels();
-
+  private initializeCalculators(
+    rightOverhangNucleotideCounts: StrandToNumberMap,
+    maxEffectiveStrandLength: number,
+    maxWidthOfRightOverhangs: number,
+    strandLabelWidth: StrandEndToNumberMap,
+    maxTerminusLabelWidthByEnd: StrandEndToNumberMap,
+  ): void {
     this.canvasDimensions = new CanvasDimensionCalculator(
       this.config,
       maxEffectiveStrandLength,
       maxWidthOfRightOverhangs,
       strandLabelWidth,
-      maxTerminusWidthByEnd,
+      maxTerminusLabelWidthByEnd,
     );
 
     this.nucleotidePositionCalculator = new NucleotidePositionCalculator(
       this.config,
       maxEffectiveStrandLength,
       rightOverhangNucleotideCounts,
-      maxTerminusWidthByEnd,
+      maxTerminusLabelWidthByEnd,
     );
 
     this.legendPositionCalculator = new LegendPositionCalculator(
@@ -52,7 +60,7 @@ export class PatternSVGDimensionsCalculator {
     this.labelPositionCalculator = new LabelPositionCalculator(
       this.config,
       maxWidthOfRightOverhangs,
-      maxTerminusWidthByEnd,
+      maxTerminusLabelWidthByEnd,
       strandLabelWidth,
       rightOverhangNucleotideCounts,
       this.nucleotidePositionCalculator,
@@ -64,6 +72,21 @@ export class PatternSVGDimensionsCalculator {
     );
   }
 
+  private computeRightOverhangNucleotideCounts(): StrandToNumberMap {
+    return STRANDS.reduce((overhangCounts, strand) => {
+      overhangCounts[strand] = this.countOverhangNucleotidesAtStartOfStrand(strand);
+      return overhangCounts;
+    }, {} as StrandToNumberMap);
+  }
+
+  private computeMaxEffectiveStrandLength(rightOverhangNucleotideCounts: StrandToNumberMap): number {
+    return Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - rightOverhangNucleotideCounts[strand]));
+  }
+
+  private computeMaxWidthOfRightOverhangs(rightOverhangNucleotideCounts: StrandToNumberMap): number {
+    return Math.max(rightOverhangNucleotideCounts[STRAND.SENSE], rightOverhangNucleotideCounts[STRAND.ANTISENSE]);
+  }
+
   getCanvasWidth(): number {
     return this.canvasDimensions.getCanvasWidth();
   }
@@ -71,65 +94,6 @@ export class PatternSVGDimensionsCalculator {
   getCanvasHeight(): number {
     return this.canvasDimensions.getCanvasHeight();
   }
-
-  private getStrandLabelWidth(): StrandEndToNumberMap {
-    const widthOfStrandLabel = Object.fromEntries(
-      STRAND_ENDS.map(
-        strandEnd => [strandEnd, this.computeMaxWidthForStrandEnd(strandEnd)]
-      )
-    ) as StrandEndToNumberMap;
-
-    return widthOfStrandLabel;
-  }
-
-  private getMaxWidthOfTerminusLabels(): StrandEndToNumberMap {
-    const maxWidthOfTerminusLabelsByEnd = STRAND_ENDS.reduce((acc, end) => {
-      acc[end] = this.getMaxWidthOfTerminusLabelsByEnd(end);
-      return acc;
-    }, {} as StrandEndToNumberMap);
-
-    return maxWidthOfTerminusLabelsByEnd;
-  }
-
-  private getMaxWidthOfTerminusLabelsByEnd(end: typeof STRAND_ENDS[number]) {
-    const textWidthCalculator = TextWidthCalculator.getInstance();
-    return Math.max(
-      ...STRANDS.map(strand =>
-        textWidthCalculator.computeTextWidth(
-          this.config.strandTerminusModifications[strand][STRAND_TO_END_TERMINUS_MAP[strand][end]],
-          SVG_TEXT_FONT_SIZES.NUCLEOBASE,
-          DEFAULT_FONT_FAMILY
-        )
-      )
-    );
-  };
-
-  private countOverhangNucleotidesAtStartOfStrand(strand: STRAND): number {
-    const nucleotides = this.config.nucleotideSequences[strand];
-
-    let overhangCount = 0;
-    for (const nucleotide of nucleotides) {
-      if (!isOverhangNucleotide(nucleotide))
-        break;
-      overhangCount++;
-    }
-
-    return overhangCount;
-  }
-
-  private computeMaxWidthForStrandEnd(strandEnd: STRAND_END): number {
-    const textWidthCalculator = TextWidthCalculator.getInstance();
-    return Math.max(
-      ...STRANDS.map(strand =>
-        textWidthCalculator.computeTextWidth(
-          STRAND_END_LABEL_TEXT[strandEnd][strand],
-          SVG_TEXT_FONT_SIZES.NUCLEOBASE,
-          DEFAULT_FONT_FAMILY
-        )
-      )
-    );
-  }
-
 
   getNucleotideCirclePosition(indexOfNucleotide: number, strand: STRAND): Position {
     return this.nucleotidePositionCalculator.getNucleotideCirclePosition(indexOfNucleotide, strand);
@@ -183,14 +147,72 @@ export class PatternSVGDimensionsCalculator {
   getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {
     return this.linkageStarPositionCalculator.getCenterPositionOfLinkageStar(index, strand);
   }
+
+  private computeStrandLabelWidth(): StrandEndToNumberMap {
+    const widthOfStrandLabel = Object.fromEntries(
+      STRAND_ENDS.map(
+        strandEnd => [strandEnd, this.getMaxWidthStrandEndLabelsByEnd(strandEnd)]
+      )
+    ) as StrandEndToNumberMap;
+
+    return widthOfStrandLabel;
+  }
+
+  private computeMaxWidthOfTerminusLabels(): StrandEndToNumberMap {
+    const maxWidthOfTerminusLabelsByEnd = STRAND_ENDS.reduce((maxWidthMap, end) => {
+      maxWidthMap[end] = this.getMaxWidthOfTerminusLabelsByEnd(end);
+      return maxWidthMap;
+    }, {} as StrandEndToNumberMap);
+
+    return maxWidthOfTerminusLabelsByEnd;
+  }
+
+  private getMaxWidthOfTerminusLabelsByEnd(end: STRAND_END): number {
+    return this.calculateMaxWidthOfStrandEndLabel(
+      strand => this.config.strandTerminusModifications[strand][STRAND_TO_END_TERMINUS_MAP[strand][end]]
+    );
+  }
+
+  private getMaxWidthStrandEndLabelsByEnd(strandEnd: STRAND_END): number {
+    return this.calculateMaxWidthOfStrandEndLabel(
+      strand => STRAND_END_LABEL_TEXT[strandEnd][strand]
+    );
+  }
+
+  private calculateMaxWidthOfStrandEndLabel(getLabelText: (strand: STRAND) => string): number {
+    const textWidthCalculator = TextWidthCalculator.getInstance();
+    return Math.max(
+      ...STRANDS.map(strand =>
+        textWidthCalculator.computeTextWidth(
+          getLabelText(strand),
+          SVG_TEXT_FONT_SIZES.NUCLEOBASE,
+          DEFAULT_FONT_FAMILY
+        )
+      )
+    );
+  }
+
+  private countOverhangNucleotidesAtStartOfStrand(strand: STRAND): number {
+    const nucleotides = this.config.nucleotideSequences[strand];
+
+    let overhangNucleotidesCount = 0;
+    for (const nucleotide of nucleotides) {
+      if (!isOverhangNucleotide(nucleotide))
+        break;
+      overhangNucleotidesCount++;
+    }
+
+    return overhangNucleotidesCount;
+  }
 }
 
-export class TextWidthCalculator {
+class TextWidthCalculator {
   private static instance: TextWidthCalculator;
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D | null;
   private pixelRatio: number;
 
+  // WARNING: singleton used to avoid creating canvas element on every call
   private constructor() {
     this.canvas = document.createElement('canvas');
     this.context = this.canvas.getContext('2d');
@@ -230,9 +252,9 @@ class CanvasDimensionCalculator {
   getCanvasWidth(): number {
     const widthOfNucleobases = SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * (this.maxEffectiveStrandLength + this.maxWidthOfRightOverhangs);
 
-    const canvasWidth = STRAND_ENDS.reduce((acc, end) => {
-      acc += this.strandLabelWidth[end] + this.maxTerminusWidthByEnd[end];
-      return acc;
+    const canvasWidth = STRAND_ENDS.reduce((totalWidth, end) => {
+      totalWidth += this.strandLabelWidth[end] + this.maxTerminusWidthByEnd[end];
+      return totalWidth;
     }, 0) + widthOfNucleobases + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
 
     return canvasWidth;

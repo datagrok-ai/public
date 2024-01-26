@@ -21,6 +21,7 @@ export class NucleotidePatternSVGRenderer {
   constructor(patternConfig: PatternConfiguration) {
     this.setupPatternConfig(patternConfig);
 
+    // todo: prefer dependency injection for all these properties
     this.patternDimensionsCalculator = new PatternSVGDimensionsCalculator(this.config);
 
     this.svgFactory = new SVGElementFactoryWrapper(new SVGElementFactory(), this.config, this.patternDimensionsCalculator);
@@ -127,7 +128,6 @@ class LegendBuilder {
   }
 
   private createLegendItemForPhosphorothioateLinkage(containsPhosphorothioateLinkages: boolean): SVGElement[] {
-    // todo: port to legend manager
     const starLinkageLegendLabel = this.svgFactory.createLinkageStarLegendLabel(containsPhosphorothioateLinkages);
     const phosphorothioateLinkageLabel = this.svgFactory.createPhosphorothioateLinkageLabel(containsPhosphorothioateLinkages);
 
@@ -346,6 +346,7 @@ class StrandElementBuilder {
 
     return svgElements;
   }
+
   // todo reduce the # of args
   private createElementsForNucleotide(
     indexOfNucleotide: number,
