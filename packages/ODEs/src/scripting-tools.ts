@@ -47,8 +47,8 @@ export type Input = {
 /** Argument of IVP specification */
 type Arg = {
   name: string,
-  start: Input,
-  finish: Input,
+  initial: Input,
+  final: Input,
   step: Input
 };
 
@@ -117,10 +117,14 @@ enum ERROR_MSG {
   COLON = 'Incorrect use of ":"',
   CASE_INSENS = 'Non-unique name (case-insensitive): use other caption for ',
   MISSING_INIT = 'Missing initial value for ',
-  UNDEF_NAME = `Undefined name: use ${CONTROL_EXPR.NAME}-block`,
+  UNDEF_NAME = `Undefined name of the model: use ${CONTROL_EXPR.NAME}-block`,
   UNDEF_DEQS = `No differential equations: use ${CONTROL_EXPR.DIF_EQ}-block`,
   UNDEF_INITS = `No initial values: use ${CONTROL_EXPR.INITS}-block`,
   UNDEF_ARG = `Undefined argument: use ${CONTROL_EXPR.ARG}-block`,
+  SEE_ARG = `(see ${CONTROL_EXPR.ARG}-block)`,
+  INTERVAL = `Incorrect limits for`,
+  NEGATIVE_STEP = `Incorrect step for`,
+  INCOR_STEP = `Step is greater than the length of solution interval ${SEE_ARG}`,
 }
 
 /** Datagrok annatations */
@@ -316,8 +320,8 @@ function getArg(lines: string[]): Arg {
 
   return {
     name: lines[0].slice(lines[0].indexOf(CONTROL_SEP) + 1).trim(),
-    start: getInput(lines[1]),
-    finish: getInput(lines[2]),
+    initial: getInput(lines[1]),
+    final: getInput(lines[2]),
     step: getInput(lines[3]),
   }
 }
@@ -590,8 +594,8 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] 
   const t0 = `${SERVICE}${arg.name}0`;
   const t1 = `${SERVICE}${arg.name}1`;
   const h = `${SERVICE}h`
-  res.push(`${ANNOT.DOUBLE_INPUT} ${t0} = ${getInputSpec(arg.start)}`);
-  res.push(`${ANNOT.DOUBLE_INPUT} ${t1} = ${getInputSpec(arg.finish)}`);
+  res.push(`${ANNOT.DOUBLE_INPUT} ${t0} = ${getInputSpec(arg.initial)}`);
+  res.push(`${ANNOT.DOUBLE_INPUT} ${t1} = ${getInputSpec(arg.final)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${h} = ${getInputSpec(arg.step)}`);
 
   // initial values lines
@@ -972,8 +976,8 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
 
   const arg = ivp.arg;
 
-  res[`${SERVICE}${arg.name}0`] = arg.start.value;
-  res[`${SERVICE}${arg.name}1`] = arg.finish.value;
+  res[`${SERVICE}${arg.name}0`] = arg.initial.value;
+  res[`${SERVICE}${arg.name}1`] = arg.final.value;
   res[`${SERVICE}h`] = arg.step.value;
 
   ivp.inits.forEach((val, key) => res[key] = val.value);
@@ -1060,4 +1064,15 @@ function checkCorrectness(ivp: IVP): void {
         usedNames.push(lowCase);
     });
   }
+
+  // 3. Check argument
+  if (ivp.arg.initial.value >= ivp.arg.final.value)
+    throw new Error(`${ERROR_MSG.INTERVAL} ${ivp.arg.name} ${ERROR_MSG.SEE_ARG}`);
+
+  if (ivp.arg.step.value <= 0)
+    throw new Error(`${ERROR_MSG.NEGATIVE_STEP} ${ivp.arg.name} ${ERROR_MSG.SEE_ARG}`);
+
+  if (ivp.arg.step.value > ivp.arg.final.value - ivp.arg.initial.value)
+    throw new Error(ERROR_MSG.INCOR_STEP);
+
 } // checkCorrectness

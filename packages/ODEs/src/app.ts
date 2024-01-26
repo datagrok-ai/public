@@ -174,66 +174,102 @@ export async function runSolverApp(content?: string)  {
 
   /** Solve IVP */
   const solve = async (ivp: IVP, inputsPath: string) => {
-    solverView.path = `${solverMainPath}${inputsPath}`;
+    try {
+      solverView.path = `${solverMainPath}${inputsPath}`;
 
-    const start = ivp.arg.start.value;
-    const finish = ivp.arg.finish.value;
-    const step = ivp.arg.step.value;
-
-    if (start >= finish)
-      return;
-
-    if ((step <= 0) || (step > finish - start))
-      return;
-
-    const scriptText = getScriptLines(ivp).join('\n');    
-    const script = DG.Script.create(scriptText);
-    const params = getScriptParams(ivp);    
-    const call = script.prepare(params);
-
-    await call.call();
-      
-    solutionTable = call.outputs[DF_NAME];
-    solverView.dataFrame = call.outputs[DF_NAME];
-    solverView.name = solutionTable.name;
-
-    if (!solutionViewer) {
-      solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
-      viewerDockNode = grok.shell.dockManager.dock(
-        solutionViewer, 
-        DG.DOCK_TYPE.TOP, 
-        solverView.dockManager.
-        findNode(solverView.grid.root
-      ));
-    }
-    else {
-      solutionViewer.dataFrame = solutionTable;
-
-      if (toChangeSolutionViewerProps) {
-        solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
-        toChangeSolutionViewerProps = false;
+      const start = ivp.arg.initial.value;
+      const finish = ivp.arg.final.value;
+      const step = ivp.arg.step.value;
+  
+      if (start >= finish)
+        return;
+  
+      if ((step <= 0) || (step > finish - start))
+        return;
+  
+      const scriptText = getScriptLines(ivp).join('\n');    
+      const script = DG.Script.create(scriptText);
+      const params = getScriptParams(ivp);    
+      const call = script.prepare(params);
+  
+      await call.call();
+        
+      solutionTable = call.outputs[DF_NAME];
+      solverView.dataFrame = call.outputs[DF_NAME];
+      solverView.name = solutionTable.name;
+  
+      if (!solutionViewer) {
+        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+        viewerDockNode = grok.shell.dockManager.dock(
+          solutionViewer, 
+          DG.DOCK_TYPE.TOP, 
+          solverView.dockManager.
+          findNode(solverView.grid.root
+        ));
       }
+      else {
+        solutionViewer.dataFrame = solutionTable;
+  
+        if (toChangeSolutionViewerProps) {
+          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+          toChangeSolutionViewerProps = false;
+        }
+      }
+
+      isSolvingSuccess = true;
+    } catch (error) {
+      clearSolution();
+
+      if (error instanceof Error) 
+          grok.shell.error(error.message);
+      else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);      
     }
   }; // solve
 
   /** Run solving the current IVP */
-  const runSolving = async (showApp: boolean) => {  
-    try {  
-      const ivp = getIVP(editorView.state.doc.toString());
+  const runSolving = async (showApp: boolean) => {
+    if (prevInputsNode !== null)
+        inputsDiv.removeChild(prevInputsNode);
 
-      if (prevInputsNode !== null)
-        inputsDiv.removeChild(prevInputsNode);  
+    try {
+      const ivp = getIVP(editorView.state.doc.toString());      
 
       prevInputsNode = inputsDiv.appendChild(await getInputsUI(ivp, solve, startingInputs));
-      tabControl.currentPane = showApp ? inputsPane : modelPane;
-      toChangeInputs = false;
 
-    } catch (err) {
-        if (err instanceof Error) 
-          grok.shell.error(err.message);
-        else
-          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
-  }}; 
+      runPane.header.hidden = !isSolvingSuccess;
+
+      if (isSolvingSuccess) {
+        toChangeInputs = false;      
+        tabControl.currentPane = (showApp && isSolvingSuccess)? runPane : modelPane;
+      }
+      else
+        tabControl.currentPane = modelPane;
+
+      } catch (error) {
+          prevInputsNode = null;
+          runPane.header.hidden = true;
+          tabControl.currentPane = modelPane;
+          clearSolution();
+
+          if (error instanceof Error) 
+            grok.shell.error(error.message);
+          else
+            grok.shell.error(ERROR_MSG.UI_ISSUE);
+      }          
+  }; // runSolving
+
+  /** Clear solution table & viewer */
+  const clearSolution = () => {
+    solutionTable = DG.DataFrame.create();
+    solverView.dataFrame = solutionTable;
+
+    if (solutionViewer && viewerDockNode) {
+      grok.shell.dockManager.close(viewerDockNode);
+      solutionViewer = null;
+      solverView.path = PATH.EMPTY;
+    }
+  } // clearSolution
    
   let solutionTable = DG.DataFrame.create();
   const startingPath = window.location.href;
@@ -249,11 +285,17 @@ export async function runSolverApp(content?: string)  {
   let prevInputsNode: Node | null = null;
   const tabControl = ui.tabControl();
 
+  let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
+  let toShowWarning = true;
+  let isModelChanged = false;
+  let toChangeInputs = false;
+  let isSolvingSuccess = false;
+
   const modelPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
-  const inputsPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+  const runPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
 
   tabControl.onTabChanged.subscribe(async (_) => { 
-    if ((tabControl.currentPane === inputsPane) && toChangeInputs) 
+    if ((tabControl.currentPane === runPane) && toChangeInputs) 
       await runSolving(true);
   });
 
@@ -262,12 +304,8 @@ export async function runSolverApp(content?: string)  {
     doc: content ?? TEMPLATES.BASIC,
     extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     parent: modelDiv
-  });
-  
-  let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
-  let toShowWarning = true;
-  let isModelChanged = false;
-  let toChangeInputs = false;
+  }); 
+
 
   editorView.dom.addEventListener('keydown', async (e) => {
     if (e.key !== HOT_KEY.RUN) {
@@ -277,6 +315,8 @@ export async function runSolverApp(content?: string)  {
       solverMainPath = PATH.CUSTOM;
       startingInputs = null;
       solverView.helpUrl = LINK.DIF_STUDIO_REL;
+      isSolvingSuccess = false;
+      runPane.header.hidden = false;
     }
   });
 
@@ -341,11 +381,7 @@ export async function runSolverApp(content?: string)  {
 
     switch(state) {
       case EDITOR_STATE.EMPTY:
-        if (solutionViewer && viewerDockNode) {
-          grok.shell.dockManager.close(viewerDockNode);
-          solutionViewer = null;
-          solverView.path = PATH.EMPTY;
-        }
+        clearSolution();
         break;
 
       case EDITOR_STATE.BASIC_TEMPLATE:
@@ -458,7 +494,7 @@ export async function runSolverApp(content?: string)  {
         if ( toChangeInputs )
           await runSolving(true);
         else
-          tabControl.currentPane = inputsPane;
+          tabControl.currentPane = runPane;
   }});
 
   const openMenu = DG.Menu.popup()
@@ -512,8 +548,8 @@ export async function runSolverDemoApp() {
 
   /** Solve IVP */
   const solve = async (ivp: IVP) => {
-    const start = ivp.arg.start.value;
-    const finish = ivp.arg.finish.value;
+    const start = ivp.arg.initial.value;
+    const finish = ivp.arg.final.value;
     const step = ivp.arg.step.value;
 
     if (start >= finish)
@@ -807,7 +843,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
   };
 
   /** Return options with respect to the model input specification */
-  const getOptions = (name: string, modelInput: Input) => {
+  const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
     let options: DG.PropertyOptions = { 
       name: name,
       defaultValue: modelInput.value,
@@ -824,7 +860,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
 
       if (posOpen !== -1) {    
         if (posClose === -1)
-          throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, check ${name}`);
+          throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, see '${name}' in ${modelBlock}-block`);
     
         descr = annot.slice(posOpen + 1, posClose);
     
@@ -835,7 +871,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
       posClose = annot.indexOf(BRACE_CLOSE);
 
       if (posOpen >= posClose)
-        throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, check ${name}`);
+        throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, see '${name}' in ${modelBlock}-block`);
     
       let pos: number;
       let key: string;
@@ -845,7 +881,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
         pos = str.indexOf(CONTROL_SEP);
       
         if (pos === -1)
-          throw new Error(`${ERROR_MSG.MISSING_COLON}, check ${name}`);
+          throw new Error(`${ERROR_MSG.MISSING_COLON}, see '${name}' in ${modelBlock}-block`);
       
         key = str.slice(0, pos).trim();
         val = str.slice(pos + 1).trim();
@@ -903,7 +939,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
   for (const key in ivp.arg)
     if (key !== SCRIPTING.ARG_NAME) {
       //@ts-ignore
-      options = getOptions(key, ivp.arg[key]);
+      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.onChanged(async () => {
         if (input.value !== null) {
@@ -918,7 +954,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
 
   // Inputs for initial values
   ivp.inits.forEach((val, key, map) => {
-    options = getOptions(key, val);
+    options = getOptions(key, val, CONTROL_EXPR.INITS);
     const input = ui.input.forProperty(DG.Property.fromOptions(options));
     input.onChanged(async () => {
       if (input.value !== null) {
@@ -933,7 +969,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
   // Inputs for parameters
   if (ivp.params !== null)
     ivp.params.forEach((val, key, map) => {
-      options = getOptions(key, val);
+      options = getOptions(key, val, CONTROL_EXPR.PARAMS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.onChanged(async () => {
         if (input.value !== null) {
@@ -947,7 +983,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
 
   // Inputs for loop
   if (ivp.loop !== null) {
-    options = getOptions(SCRIPTING.COUNT, ivp.loop.count);
+    options = getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP);
     options.inputType = INPUT_TYPE.INT; // since it's an integer
     options.type = DG.TYPE.INT; // since it's an integer
     const input = ui.input.forProperty(DG.Property.fromOptions(options));

@@ -67,9 +67,10 @@ export enum ERROR_MSG {
   APP_CREATING_FAILS = 'Application creating fails',
   EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
   SCRIPTING_ISSUE = 'Platform scripting issue',
-  MISSING_CLOSING_BRACKET = 'ANNOTATION: "]" is missing',
-  INCORRECT_BRACES_USE = 'ANNOTATION: incorrect use of "{}"',
-  MISSING_COLON = 'ANNOTATION: ":" is missing',
+  UI_ISSUE = 'UI creating issue',
+  MISSING_CLOSING_BRACKET = 'Annotation: "]" is missing',
+  INCORRECT_BRACES_USE = 'Annotation: incorrect use of "{}"',
+  MISSING_COLON = 'Annotation: ":" is missing',
   CHECK_ARGUMENTS = ' (check the "argument" section)',
   INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',
 };
