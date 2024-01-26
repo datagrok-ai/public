@@ -6,142 +6,70 @@ import {Position, StrandToNumberMap, StrandEndToNumberMap} from '../types';
 import {isOverhangNucleotide} from '../../model/helpers';
 
 export class PatternSVGDimensionsCalculator {
-  private strandLabelWidth: StrandEndToNumberMap;
-  private maxTerminusWidthByEnd: StrandEndToNumberMap;
-  private rightOverhangNucleotideCounts: StrandToNumberMap;
-  private maxEffectiveStrandLength: number;
-  private maxWidthOfRightOverhangs: number;
-  private xPositionOfTerminusModifications: Record<typeof STRAND_ENDS[number], StrandToNumberMap>;
+  private canvasDimensions: CanvasDimensionCalculator;
+  private nucleotidePositionCalculator: NucleotidePositionCalculator;
+  private legendPositionCalculator: LegendPositionCalculator;
+  private labelPositionCalculator: LabelPositionCalculator;
+  private linkageStarPositionCalculator: LinkageStarPositionCalculator;
 
   constructor(
     private config: PatternConfiguration,
   ) {
-    this.strandLabelWidth = this.getStrandLabelWidth();
-    this.maxTerminusWidthByEnd = this.getMaxWidthOfTerminusLabels();
-
-
-    this.rightOverhangNucleotideCounts = STRANDS.reduce((acc, strand) => {
+    const rightOverhangNucleotideCounts = STRANDS.reduce((acc, strand) => {
       acc[strand] = this.countOverhangNucleotidesAtStartOfStrand(strand);
       return acc;
     }, {} as StrandToNumberMap);
 
-    this.maxEffectiveStrandLength = Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - this.rightOverhangNucleotideCounts[strand]));
 
-    this.maxWidthOfRightOverhangs = Math.max(this.rightOverhangNucleotideCounts[STRAND.SENSE], this.rightOverhangNucleotideCounts[STRAND.ANTISENSE]);
+    const maxEffectiveStrandLength = Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - rightOverhangNucleotideCounts[strand]));
 
-    this.xPositionOfTerminusModifications = this.computeXPositionOfTerminusModifications();
-  }
+    const maxWidthOfRightOverhangs = Math.max(rightOverhangNucleotideCounts[STRAND.SENSE], rightOverhangNucleotideCounts[STRAND.ANTISENSE]);
 
+    const strandLabelWidth = this.getStrandLabelWidth();
 
-  getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {
-    return {
-      x: this.getXPositionOfLinkageStar(index, strand),
-      y: this.getYPositionOfLinkageStar(strand),
-    };
-  }
+    const maxTerminusWidthByEnd = this.getMaxWidthOfTerminusLabels();
 
-  getCommentLabelPosition(): Position {
-    const y = (this.config.isAntisenseStrandIncluded ? 11 : 8.5) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
-
-    const x = this.getXPositionOfStrandLabels()[STRAND_END.LEFT];
-    return { x, y };
-  }
-
-  getStarLabelPosition(): Position {
-    return {
-      x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
-      y: this.getLegendVerticalPosition(),
-    };
-  }
-
-  private getLegendVerticalPosition(): number {
-    return (this.config.isAntisenseStrandIncluded ? 9.5 : 6) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
-  }
-
-  private getLegendTextVerticalPosition(): number {
-    const position = this.config.isAntisenseStrandIncluded ? 10 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS : Y_POSITIONS_FOR_STRAND_ELEMENTS[STRAND.ANTISENSE].NUCLEOBASE_CIRCLE;
-    return position - 3;
-  }
-
-  getPhosphorothioateLinkageLabelPosition(): Position {
-    return {
-      x: 2 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS - 8,
-      y: this.getLegendTextVerticalPosition(),
-    };
-  }
-
-  getTerminusLabelPosition(strand: STRAND, end: STRAND_END): Position {
-    return {
-      x: this.xPositionOfTerminusModifications[end][strand],
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
-    };
-  }
-
-  getStrandEndLabelPosition(strand: STRAND, end: STRAND_END): Position {
-    const xPosition = this.getXPositionOfStrandLabels()[end];
-    return {
-      x: xPosition,
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
-    };
-  }
-
-  getTitleTextPosition(): Position {
-    return {
-      x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
-      y: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
-    };
-  }
-
-  getNumericLabelPosition(
-    indexOfNucleotide: number,
-    strand: STRAND,
-    displayedNucleotideNumber: number
-  ): Position {
-    const indexForVisualStrand = this.getVisualStrandIndex(indexOfNucleotide, strand);
-
-    const numericLabelOffset = this.computeNumericLabelXOffset(
-      this.config.nucleotideSequences[strand],
-      indexForVisualStrand,
-      displayedNucleotideNumber,
+    this.canvasDimensions = new CanvasDimensionCalculator(
+      this.config,
+      maxEffectiveStrandLength,
+      maxWidthOfRightOverhangs,
+      strandLabelWidth,
+      maxTerminusWidthByEnd,
     );
 
-    const numericLabelXPosition = this.computeNucleotideCircleXPosition(indexOfNucleotide, strand) + numericLabelOffset;
+    this.nucleotidePositionCalculator = new NucleotidePositionCalculator(
+      this.config,
+      maxEffectiveStrandLength,
+      rightOverhangNucleotideCounts,
+      maxTerminusWidthByEnd,
+    );
 
-    return {
-      x: numericLabelXPosition,
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUMERIC_LABEL,
-    };
+    this.legendPositionCalculator = new LegendPositionCalculator(
+      this.config,
+      this.canvasDimensions,
+    );
+
+    this.labelPositionCalculator = new LabelPositionCalculator(
+      this.config,
+      maxWidthOfRightOverhangs,
+      maxTerminusWidthByEnd,
+      strandLabelWidth,
+      rightOverhangNucleotideCounts,
+      this.nucleotidePositionCalculator,
+    );
+
+    this.linkageStarPositionCalculator = new LinkageStarPositionCalculator(
+      this.nucleotidePositionCalculator,
+      rightOverhangNucleotideCounts,
+    );
   }
 
-  getNucleotideCirclePosition(indexOfNucleotide: number, strand: STRAND): Position {
-    return {
-      x: this.computeNucleotideCircleXPosition(indexOfNucleotide, strand),
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_CIRCLE,
-    };
-  };
-
-  getNucleotideLabelTextPosition(indexOfNucleotide: number, strand: STRAND): Position {
-    return {
-      // todo: refactor legacy dependency on one-digit parameter
-      x: this.computeNucleotideCircleXPosition(indexOfNucleotide, strand) + NUMERIC_LABEL_POSITION_OFFSET.ONE_DIGIT,
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
-    };
+  getCanvasWidth(): number {
+    return this.canvasDimensions.getCanvasWidth();
   }
 
-  getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
-    const centerPosition = {
-      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages),
-      y: this.getLegendVerticalPosition(),
-    };
-    return centerPosition;
-  }
-
-  getLegendTextPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
-    const legendPosition = {
-      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
-      y: this.getLegendTextVerticalPosition(),
-    };
-    return legendPosition;
+  getCanvasHeight(): number {
+    return this.canvasDimensions.getCanvasHeight();
   }
 
   private getStrandLabelWidth(): StrandEndToNumberMap {
@@ -176,89 +104,6 @@ export class PatternSVGDimensionsCalculator {
     );
   };
 
-  private computeLegendCircleXPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): number {
-    const legendStartIndex = containsPhosphorothioateLinkages ? 1 : 0;
-    const totalPositions = distinctNucleobaseTypes.length + legendStartIndex;
-    const width = this.getCanvasWidth();
-    const spacingUnit = width / totalPositions;
-    const position = (index + legendStartIndex) * spacingUnit;
-    const adjustedPosition = position + SVG_CIRCLE_SIZES.LEGEND_RADIUS;
-    return Math.round(adjustedPosition);
-  }
-
-  // todo: cleanup legacy logic
-  private computeNucleotideCircleXPosition(index: number, strand: STRAND): number {
-    const rightOverhangs = this.rightOverhangNucleotideCounts[strand];
-    return this._computeNucleobaseCircleXPosition(index, rightOverhangs);
-  }
-
-  private _computeNucleobaseCircleXPosition(index: number, rightOverhangs: number): number {
-    const rightModificationOffset = this.maxTerminusWidthByEnd[STRAND_END.RIGHT];
-    const positionalIndex = this.maxEffectiveStrandLength - index + rightOverhangs + 1;
-    const xPosition = positionalIndex * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
-    const finalPosition = rightModificationOffset + xPosition;
-    return finalPosition;
-  }
-
-  private computeXPositionOfTerminusModifications(): Record<typeof STRAND_ENDS[number], StrandToNumberMap> {
-    const xPositionOfTerminusModifications = Object.fromEntries(
-      STRAND_ENDS.map(end => [
-        end,
-        Object.fromEntries(
-          STRANDS.map(strand => [
-            strand,
-            end === STRAND_END.LEFT
-            ? this.strandLabelWidth[STRAND_END.LEFT] - 5
-            : this.rightOverhangNucleotideCounts[strand] * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + this._computeNucleobaseCircleXPosition(-0.5, 0)
-          ])
-        )
-      ])
-    ) as Record<typeof STRAND_ENDS[number], StrandToNumberMap>;
-
-    return xPositionOfTerminusModifications;
-  }
-
-  private getXPositionOfStrandLabels(): StrandEndToNumberMap {
-    const maxRightTerminusModificationShift = Math.max(
-      ...STRANDS.map(strand => this.xPositionOfTerminusModifications[STRAND_END.RIGHT][strand])
-    );
-
-    const rightEndXPosition = maxRightTerminusModificationShift
-      + this.maxTerminusWidthByEnd[STRAND_END.LEFT]
-      + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * this.maxWidthOfRightOverhangs;
-
-    return {
-      [STRAND_END.LEFT]: 0,
-      [STRAND_END.RIGHT]: rightEndXPosition,
-    };
-  }
-
-  private computeNumericLabelXOffset(bases: string[], nucleobaseIndex: number, nucleotideNumericLabel: number): number {
-    const isSingleDigitLabel = nucleotideNumericLabel >= 0 && nucleotideNumericLabel < 10;
-
-    const criterion = isSingleDigitLabel || NUCLEOTIDES.includes(bases[nucleobaseIndex]);
-
-    return criterion ?
-      NUMERIC_LABEL_POSITION_OFFSET.ONE_DIGIT :
-      NUMERIC_LABEL_POSITION_OFFSET.TWO_DIGIT;
-  }
-
-  // todo: remove legacy division of x-y coordinates throughout the code
-  private getXPositionOfLinkageStar(index: number, strand: STRAND): number {
-    return this._computeNucleobaseCircleXPosition(index, this.rightOverhangNucleotideCounts[strand]) + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
-  }
-
-  private getYPositionOfLinkageStar(strand: STRAND): number {
-    return Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL + SVG_CIRCLE_SIZES.LINKAGE_STAR_RADIUS;
-  }
-
-  /** Inverses index for antisense strand image */
-  private getVisualStrandIndex(indexOfNucleotide: number, strand: STRAND): number {
-    return strand === STRAND.SENSE ?
-      indexOfNucleotide :
-      this.config.nucleotideSequences[strand].length - indexOfNucleotide;
-  }
-
   private countOverhangNucleotidesAtStartOfStrand(strand: STRAND): number {
     const nucleotides = this.config.nucleotideSequences[strand];
 
@@ -283,6 +128,60 @@ export class PatternSVGDimensionsCalculator {
         )
       )
     );
+  }
+
+
+  getNucleotideCirclePosition(indexOfNucleotide: number, strand: STRAND): Position {
+    return this.nucleotidePositionCalculator.getNucleotideCirclePosition(indexOfNucleotide, strand);
+  };
+
+  getNucleotideLabelTextPosition(indexOfNucleotide: number, strand: STRAND): Position {
+    return this.nucleotidePositionCalculator.getNucleotideLabelTextPosition(indexOfNucleotide, strand);
+  }
+
+  getNumericLabelPosition(
+    indexOfNucleotide: number,
+    strand: STRAND,
+    displayedNucleotideNumber: number
+  ): Position {
+    return this.nucleotidePositionCalculator.getNumericLabelPosition(indexOfNucleotide, strand, displayedNucleotideNumber);
+  }
+
+
+  getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
+    return this.legendPositionCalculator.getLegendCirclePosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages);
+  }
+
+  getLegendTextPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
+    return this.legendPositionCalculator.getLegendTextPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages);
+  }
+
+  getStarLabelPosition(): Position {
+    return this.legendPositionCalculator.getStarLabelPosition();
+  }
+
+  getPhosphorothioateLinkageLabelPosition(): Position {
+    return this.legendPositionCalculator.getPhosphorothioateLinkageLabelPosition();
+  }
+
+  getTerminusLabelPosition(strand: STRAND, end: STRAND_END): Position {
+    return this.labelPositionCalculator.getTerminusLabelPosition(strand, end);
+  }
+
+  getStrandEndLabelPosition(strand: STRAND, end: STRAND_END): Position {
+    return this.labelPositionCalculator.getStrandEndLabelPosition(strand, end);
+  }
+
+  getTitleTextPosition(): Position {
+    return this.labelPositionCalculator.getTitleTextPosition();
+  }
+
+  getCommentLabelPosition(): Position {
+    return this.labelPositionCalculator.getCommentLabelPosition();
+  }
+
+  getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {
+    return this.linkageStarPositionCalculator.getCenterPositionOfLinkageStar(index, strand);
   }
 }
 
@@ -322,9 +221,12 @@ export class TextWidthCalculator {
 class CanvasDimensionCalculator {
   constructor(
     private config: PatternConfiguration,
+    private maxEffectiveStrandLength: number,
+    private maxWidthOfRightOverhangs: number,
+    private strandLabelWidth: StrandEndToNumberMap,
+    private maxTerminusWidthByEnd: StrandEndToNumberMap,
   ) {}
 
-  // todo: more descriptive name
   getCanvasWidth(): number {
     const widthOfNucleobases = SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * (this.maxEffectiveStrandLength + this.maxWidthOfRightOverhangs);
 
@@ -338,5 +240,237 @@ class CanvasDimensionCalculator {
 
   getCanvasHeight(): number {
     return (this.config.isAntisenseStrandIncluded ? 11 : 9) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+  }
+}
+
+class NucleotidePositionCalculator {
+  constructor(
+    private config: PatternConfiguration,
+    private maxEffectiveStrandLength: number,
+    private rightOverhangNucleotideCounts: StrandToNumberMap,
+    private maxTerminusWidthByEnd: StrandEndToNumberMap,
+  ) {}
+
+  getNucleotideCirclePosition(indexOfNucleotide: number, strand: STRAND): Position {
+    return {
+      x: this.computeNucleotideCircleXPositionByStrand(indexOfNucleotide, strand),
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_CIRCLE,
+    };
+  };
+
+  getNucleotideLabelTextPosition(indexOfNucleotide: number, strand: STRAND): Position {
+    return {
+      // todo: refactor legacy dependency on one-digit parameter
+      x: this.computeNucleotideCircleXPositionByStrand(indexOfNucleotide, strand) + NUMERIC_LABEL_POSITION_OFFSET.ONE_DIGIT,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
+    };
+  }
+
+  // todo: cleanup legacy logic
+  private computeNucleotideCircleXPositionByStrand(index: number, strand: STRAND): number {
+    const rightOverhangCount = this.rightOverhangNucleotideCounts[strand];
+    return this.computeNucleobaseCircleXPosition(index, rightOverhangCount);
+  }
+
+  computeNucleobaseCircleXPosition(index: number, rightOverhangCount: number): number {
+    const rightModificationOffset = this.maxTerminusWidthByEnd[STRAND_END.RIGHT];
+    const positionalIndex = this.maxEffectiveStrandLength - index + rightOverhangCount + 1;
+    const xPosition = positionalIndex * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
+    const finalPosition = rightModificationOffset + xPosition;
+    return finalPosition;
+  }
+
+  getNumericLabelPosition(
+    indexOfNucleotide: number,
+    strand: STRAND,
+    displayedNucleotideNumber: number
+  ): Position {
+    const indexForVisualStrand = this.getVisualStrandIndex(indexOfNucleotide, strand);
+
+    const numericLabelOffset = this.computeNumericLabelXOffset(
+      this.config.nucleotideSequences[strand],
+      indexForVisualStrand,
+      displayedNucleotideNumber,
+    );
+
+    const numericLabelXPosition = this.computeNucleotideCircleXPositionByStrand(indexOfNucleotide, strand) + numericLabelOffset;
+
+    return {
+      x: numericLabelXPosition,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUMERIC_LABEL,
+    };
+  }
+
+  private computeNumericLabelXOffset(bases: string[], nucleobaseIndex: number, nucleotideNumericLabel: number): number {
+    const isSingleDigitLabel = nucleotideNumericLabel >= 0 && nucleotideNumericLabel < 10;
+
+    const criterion = isSingleDigitLabel || NUCLEOTIDES.includes(bases[nucleobaseIndex]);
+
+    return criterion ?
+      NUMERIC_LABEL_POSITION_OFFSET.ONE_DIGIT :
+      NUMERIC_LABEL_POSITION_OFFSET.TWO_DIGIT;
+  }
+
+  /** Inverses index for antisense strand image */
+  private getVisualStrandIndex(indexOfNucleotide: number, strand: STRAND): number {
+    return strand === STRAND.SENSE ?
+      indexOfNucleotide :
+      this.config.nucleotideSequences[strand].length - indexOfNucleotide;
+  }
+}
+
+class LegendPositionCalculator {
+  constructor(
+    private config: PatternConfiguration,
+    private canvasDimensionCalculator: CanvasDimensionCalculator,
+  ) {}
+
+  getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
+    const centerPosition = {
+      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages),
+      y: this.getLegendVerticalPosition(),
+    };
+    return centerPosition;
+  }
+
+  getLegendTextPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
+    const legendPosition = {
+      x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
+      y: this.getLegendTextVerticalPosition(),
+    };
+    return legendPosition;
+  }
+
+  private computeLegendCircleXPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): number {
+    const legendStartIndex = containsPhosphorothioateLinkages ? 1 : 0;
+    const totalPositions = distinctNucleobaseTypes.length + legendStartIndex;
+    const width = this.canvasDimensionCalculator.getCanvasWidth();
+    const spacingUnit = width / totalPositions;
+    const position = (index + legendStartIndex) * spacingUnit;
+    const adjustedPosition = position + SVG_CIRCLE_SIZES.LEGEND_RADIUS;
+    return Math.round(adjustedPosition);
+  }
+
+  getStarLabelPosition(): Position {
+    return {
+      x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
+      y: this.getLegendVerticalPosition(),
+    };
+  }
+
+  getPhosphorothioateLinkageLabelPosition(): Position {
+    return {
+      x: 2 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS - 8,
+      y: this.getLegendTextVerticalPosition(),
+    };
+  }
+
+  private getLegendVerticalPosition(): number {
+    return (this.config.isAntisenseStrandIncluded ? 9.5 : 6) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+  }
+
+  private getLegendTextVerticalPosition(): number {
+    const position = this.config.isAntisenseStrandIncluded ? 10 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS : Y_POSITIONS_FOR_STRAND_ELEMENTS[STRAND.ANTISENSE].NUCLEOBASE_CIRCLE;
+    return position - 3;
+  }
+}
+
+class LabelPositionCalculator {
+  private xPositionOfTerminusModifications: Record<typeof STRAND_ENDS[number], StrandToNumberMap>;
+  constructor(
+    private config: PatternConfiguration,
+    private maxWidthOfRightOverhangs: number,
+    private maxTerminusWidthByEnd: StrandEndToNumberMap,
+    private strandLabelWidth: StrandEndToNumberMap,
+    private rightOverhangNucleotideCounts: StrandToNumberMap,
+    private nucleotidePositionCalculator: NucleotidePositionCalculator,
+  ) {
+    this.xPositionOfTerminusModifications = this.computeXPositionOfTerminusModifications();
+  }
+
+  getTerminusLabelPosition(strand: STRAND, end: STRAND_END): Position {
+    return {
+      x: this.xPositionOfTerminusModifications[end][strand],
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
+    };
+  }
+
+  getStrandEndLabelPosition(strand: STRAND, end: STRAND_END): Position {
+    const xPosition = this.getXPositionOfStrandLabels()[end];
+    return {
+      x: xPosition,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
+    };
+  }
+
+  getTitleTextPosition(): Position {
+    return {
+      x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
+      y: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
+    };
+  }
+
+  getCommentLabelPosition(): Position {
+    const y = (this.config.isAntisenseStrandIncluded ? 11 : 8.5) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+
+    const x = this.getXPositionOfStrandLabels()[STRAND_END.LEFT];
+    return { x, y };
+  }
+
+  private getXPositionOfStrandLabels(): StrandEndToNumberMap {
+    const maxRightTerminusModificationShift = Math.max(
+      ...STRANDS.map(strand => this.xPositionOfTerminusModifications[STRAND_END.RIGHT][strand])
+    );
+
+    const rightEndXPosition = maxRightTerminusModificationShift
+      + this.maxTerminusWidthByEnd[STRAND_END.LEFT]
+      + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * this.maxWidthOfRightOverhangs;
+
+    return {
+      [STRAND_END.LEFT]: 0,
+      [STRAND_END.RIGHT]: rightEndXPosition,
+    };
+  }
+
+  private computeXPositionOfTerminusModifications(): Record<typeof STRAND_ENDS[number], StrandToNumberMap> {
+    const xPositionOfTerminusModifications = Object.fromEntries(
+      STRAND_ENDS.map(end => [
+        end,
+        Object.fromEntries(
+          STRANDS.map(strand => [
+            strand,
+            end === STRAND_END.LEFT
+            ? this.strandLabelWidth[STRAND_END.LEFT] - 5
+            : this.rightOverhangNucleotideCounts[strand] * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + this.nucleotidePositionCalculator.computeNucleobaseCircleXPosition(-0.5, 0)
+          ])
+        )
+      ])
+    ) as Record<typeof STRAND_ENDS[number], StrandToNumberMap>;
+
+    return xPositionOfTerminusModifications;
+  }
+
+}
+
+class LinkageStarPositionCalculator {
+  constructor(
+    private nucleotidePositionCalculator: NucleotidePositionCalculator,
+    private rightOverhangNucleotideCounts: StrandToNumberMap,
+  ) {}
+
+  getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {
+    return {
+      x: this.getXPositionOfLinkageStar(index, strand),
+      y: this.getYPositionOfLinkageStar(strand),
+    };
+  }
+
+  // todo: remove legacy division of x-y coordinates throughout the code
+  private getXPositionOfLinkageStar(index: number, strand: STRAND): number {
+    return this.nucleotidePositionCalculator.computeNucleobaseCircleXPosition(index, this.rightOverhangNucleotideCounts[strand]) + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+  }
+
+  private getYPositionOfLinkageStar(strand: STRAND): number {
+    return Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL + SVG_CIRCLE_SIZES.LINKAGE_STAR_RADIUS;
   }
 }
