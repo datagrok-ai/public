@@ -1074,7 +1074,7 @@ export class tools {
     this.applyStyles(tempForm, labels, inputs, options);
     this.copyAttributesToForm(element, tempForm, labels);
     this.adjustButtonContainer(element);
-    this.adjustDialogForm(element);
+    this.adjustDialogForm(element, tempForm);
     this.handleFormResize(element, labels, minInputWidth);
 
     tempForm.remove();
@@ -1086,7 +1086,6 @@ export class tools {
       if(!item.hasAttribute('data-align')) return;
       if (item.getAttribute('data-align') != 'row') return;
 
-      
       let root = document.createElement('div');
       root.className = 'ui-input-root ui-input-row';
 
@@ -1112,7 +1111,7 @@ export class tools {
   }
 
   private static skipResizing(element: HTMLElement): boolean {
-    return element.hasAttribute('data-type') || element.children.length == 0 || element.classList.contains('ui-form-condensed');
+    return element.hasAttribute('data-type') || element.children.length == 0 || element.classList.contains('ui-form-condensed') || element.classList.contains('ui-form-wide');
   }
 
   private static calculateWidths(tempForm: HTMLElement, selector: string, attribute: string, minInputWidth: number, minInputPadding:number): number[] {
@@ -1229,11 +1228,12 @@ export class tools {
     //If form has avalibable space then adjust min form width to maxFormWidth+128. 
     //Where 128 is space form input-ediotr + input-options if exist.
     if (maxFormWidth < maxLabelWidth+128) {
-      if (avaliableSpace == 0) return;
-      if (maxFormWidth+avaliableSpace < maxFormWidth+128)
-        maxFormWidth = maxFormWidth+avaliableSpace
-      else
-        maxFormWidth = maxLabelWidth+128
+      if (avaliableSpace != 0){
+        if (maxFormWidth+avaliableSpace < maxLabelWidth+128)
+          maxFormWidth = maxFormWidth+avaliableSpace
+        else
+          maxFormWidth = maxLabelWidth+128
+      }
     }
 
     //Set attributes to form fields
@@ -1266,7 +1266,7 @@ export class tools {
     element.style.maxWidth = String(maxFormWidth)+'px';
   }
 
-  private static adjustDialogForm(element: HTMLElement) {
+  private static adjustDialogForm(element: HTMLElement, tempForm:HTMLElement) {
     if (element.classList.contains('d4-dialog-contents') || element.parentElement?.classList.contains('d4-dialog-contents')) {
       element.style.removeProperty('max-width');
     
@@ -1284,6 +1284,8 @@ export class tools {
 
         label != null ? label.style.removeProperty('width'): null;
       });
+    } else {
+      this.adjustForm(element, tempForm);
     }
   }
   
@@ -1302,6 +1304,30 @@ export class tools {
       editor.style.flexWrap = 'wrap';
       editor.style.padding = '0';
     }
+  }
+
+  private static adjustForm(element:HTMLElement, tempForm:HTMLElement){
+    const minFormWidth = Number(tempForm.getAttribute('data-min-width'));
+    const maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
+    const currentWidth = element.getBoundingClientRect().width;
+    const label = tempForm.querySelector('label.ui-input-label') as HTMLElement;
+    const maxLabelWidth = parseInt(label.style.maxWidth);
+    
+    if (currentWidth > minFormWidth) {
+      Array.from(element.children).forEach((field)=>{
+        let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
+        let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
+        let option = field.querySelector('.ui-input-options') as HTMLElement;
+
+        if (currentWidth < maxLabelWidth+inputWidth+8+optionWidth)
+          option != null ? option.style.display = 'none' : null
+        else
+          option != null ? option.style.display = 'flex' : null
+
+      });
+    }
+    else if (currentWidth < minFormWidth)
+      element.classList.add('ui-form-condensed')
   }
 
   private static handleFormResize(element: HTMLElement, labels: number[], minInputWidth: number) {
@@ -1365,9 +1391,9 @@ export class tools {
 
       //If 80% of labels are shrinked change form type to condensed
       if (Math.round(100-(shrinkedLabels/fieldsCount*100)) < 80)
-        element.className = formClassName+' ui-form-condensed';
+        element.classList.add('ui-form-condensed');
       else
-        element.className = formClassName;
+        element.classList.remove('ui-form-condensed');
     });
     
   }
@@ -1919,7 +1945,6 @@ export namespace forms {
 
   export function wide(children: InputBase[], options: {} | null = null){
     let d = wideForm(children, options);
-    tools.resizeFormLabels(d);
     return d;
   }
 
