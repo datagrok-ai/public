@@ -1,5 +1,4 @@
-import {getSimilarityFromDistance} from '../distance-metrics-methods';
-import {BitArrayMetricsNames, KnownMetrics} from '../typed-metrics';
+import {KnownMetrics} from '../typed-metrics';
 import {DistanceAggregationMethod, DistanceAggregationMethods} from './types';
 import {insertSmaller, isNil} from './utils';
 
@@ -210,8 +209,7 @@ export class SparseMatrixService {
         //const value = seq1List[mi] && seq1List[mj] ? hamming(seq1List[mi], seq1List[mj]) : 0;
         const value = !isNil(values[mi]) && !isNil(values[mj]) ?
           distanceFn(values[mi], values[mj]) : 1;
-        const similarity =
-          Object.values(BitArrayMetricsNames).some((a) => a === fnName) ? getSimilarityFromDistance(value) : 1 - value;
+        const similarity = 1 - value;
         if (similarity >= threshold) {
           i.push(mi);
           j.push(mj);
