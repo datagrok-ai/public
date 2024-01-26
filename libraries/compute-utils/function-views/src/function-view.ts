@@ -22,6 +22,26 @@ const startUrl = new URL(grok.shell.startUri);
 
 const RunDataJSON = 'Run Data JSON';
 
+const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: false,
+    //@ts-ignore
+    selfBrowserSurface: 'include',
+  });
+  const recorder = new MediaRecorder(stream);
+
+  const chunks = [] as Blob[];
+  recorder.ondataavailable = (e) => chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, {type: chunks[0].type});
+    stream.getVideoTracks()[0].stop();
+
+    DG.Utils.download(`Recording ${dayjs().local().format('YYYY MMM D, HH:mm')}.mkv`, blob, chunks[0].type);
+  };
+  recorder.start();
+};
+
 export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
   protected _lastCall?: DG.FuncCall;
@@ -509,6 +529,8 @@ export abstract class FunctionView extends DG.ViewBase {
     testingGroup.item('Execute Test JSON', () => this.importRunJsonDialog());
     testingGroup.item('Update Test JSON', () => this.importRunJsonDialog(true));
     ribbonMenu.endGroup();
+
+    ribbonMenu.item('Record the screen', startRecording);
 
     if (this.getAbout) {
       ribbonMenu.item('About', async () => {
