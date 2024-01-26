@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.39.19 (2023-10)
+
+### Features
+
+* Store errors of postponed rendering for tests
+
 ## 5.39.0 (2023-10-25)
 
 ### Features
