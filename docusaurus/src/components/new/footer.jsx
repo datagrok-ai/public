@@ -92,7 +92,7 @@ export default function Footer() {
                     </div>
                 </div>
                 <div className="row footer-bottom pt-5"> 
-                    <p style={{opacity: "35%"}}>© {new Date().getFullYear()} Datagrok.inc. All rights reserved.</p>
+                    <p style={{opacity: "35%"}}>© {new Date().getFullYear()} Datagrok, Inc. All rights reserved.</p>
                     <FooterIconsSection links={footerIcons} /> 
                 </div>
             </div>
