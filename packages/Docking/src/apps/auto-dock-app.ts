@@ -11,7 +11,7 @@ import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-help
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-import {_package, CACHED_DOCKING} from '../utils/constants';
+import {_package, CACHED_DOCKING, BINDING_ENERGY_COL} from '../utils/constants';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 
 export type AutoDockDataType = {
@@ -20,8 +20,8 @@ export type AutoDockDataType = {
   receptor: BiostructureData,
   gpfFile?: string,
   confirmationNum?: number,
+  ligandDfString?: string;
 };
-type TargetViewerType = DG.Viewer<BiostructureProps> & IBiostructureViewer;
 
 export class AutoDockApp {
   private readonly appFuncName: string;
@@ -125,7 +125,11 @@ export class AutoDockApp {
       const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
       if (posesAllDf !== undefined) {
         this.downloadPosesBtn.disabled = false;
-        CACHED_DOCKING.set(this.data, posesAllDf);
+        //@ts-ignore
+        CACHED_DOCKING.K.push(this.data);
+        //@ts-ignore
+        CACHED_DOCKING.V.push(posesAllDf);
+        //CACHED_DOCKING.set(this.data, posesAllDf);
         return posesAllDf;
       }
     } catch (err: any) {
@@ -177,7 +181,7 @@ async function runAutoDock(
     const posesDf = await adSvc.dockLigand(
       receptorData, ligandData, gpfFile ?? autodockGpf, confirmationNum ?? 10, poseColName);
     
-    posesDf.rows.removeWhere((row) => row.get('affinity') !== posesDf.col('affinity')?.min);
+    posesDf.rows.removeWhere((row) => row.get(BINDING_ENERGY_COL) !== posesDf.col(BINDING_ENERGY_COL)?.min);
     // region: add extra columns to AutoDock output
 
     const pdbqtCol = posesDf.getCol(poseColName);

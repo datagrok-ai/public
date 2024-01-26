@@ -2,14 +2,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {AutoDock, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {_package, TARGET_PATH, CACHED_DOCKING, CACHED_MOLSTAR, AFFINITY_COL, POSE_COL} from './utils/constants';
+import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, PROPERTY_DESCRIPTIONS} from './utils/constants';
+import { forEach } from 'wu';
 
 //name: info
 export function info() {
@@ -132,6 +134,7 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
   const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
   const desirableHeight = 100;
+  const desirableWidth = 100;
   const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
   try {
     // AutoDock works with .pdb or .pdbqt files, both are text formats.
@@ -148,10 +151,30 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
       receptor: receptorData,
       gpfFile: (await grok.dapi.files.readAsText(configFile.fullPath)),
       confirmationNum: confirmations,
+      ligandDfString: table.toCsv(),
     };
 
     const app = new AutoDockApp();
-    const autodockResults = CACHED_DOCKING.has(data) ? CACHED_DOCKING.get(data) : await app.init(data);
+    const findMatchingKeyAndIndex = (): { matchingKey: AutoDockDataType | undefined, index: number | undefined } => {
+      //@ts-ignore
+      const index = CACHED_DOCKING.K.findIndex((cachedData: AutoDockDataType) => {
+        return Object.keys(data).slice(1).every((k: any) => {
+          if (cachedData) {
+            const typedKey = k as keyof AutoDockDataType;
+            return JSON.stringify(data[typedKey]) === JSON.stringify(cachedData[typedKey]);
+          } else 
+            return false;
+        });
+      });
+  
+      //@ts-ignore
+      return { matchingKey: index !== -1 ? CACHED_DOCKING.K[index] : undefined, index };
+    };
+    
+    const { matchingKey, index } = findMatchingKeyAndIndex();
+    const isCached = !!matchingKey && !!index;
+    //@ts-ignore
+    const autodockResults = isCached ? CACHED_DOCKING.V[index] : await app.init(data);
     if (!autodockResults)
       return;
 
@@ -162,13 +185,14 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     currentView.close();
     const grid = grok.shell.addTableView(table).grid;
 
-    addColorCoding(grid.columns.byName(AFFINITY_COL)!);
-    grid.sort([AFFINITY_COL]);
+    addColorCoding(grid.columns.byName(BINDING_ENERGY_COL)!);
+    grid.sort([BINDING_ENERGY_COL]);
     grid.onCellPrepare(function (gc) {
-      if (gc.grid.col(POSE_COL) !== null && gc.grid.props.rowHeight !== desirableHeight)
-          grid.setOptions({ 'rowHeight': desirableHeight });
+      if (gc.grid.col(POSE_COL) !== null && gc.grid.props.rowHeight !== desirableHeight) {
+        grid.col(POSE_COL)!.width = desirableWidth;
+        grid.setOptions({ 'rowHeight': desirableHeight });
+      }
     });
-
   } finally {
     pi.close();
   }
@@ -185,8 +209,8 @@ function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFra
     Lower values correspond to stronger binding.';
   const poseCol = autodockResults.col(POSE_COL);
   poseCol!.name = table.columns.getUnusedName(POSE_COL);
-  const affinityCol = autodockResults.col(AFFINITY_COL);
-  affinityCol!.name = table.columns.getUnusedName(AFFINITY_COL);
+  const affinityCol = autodockResults.col(BINDING_ENERGY_COL);
+  affinityCol!.name = table.columns.getUnusedName(BINDING_ENERGY_COL);
   const processedTable = DG.DataFrame.fromColumns([poseCol!, affinityCol!]);
   affinityCol!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
   return processedTable;
@@ -214,19 +238,27 @@ export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Wid
 export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
   const currentTable = grok.shell.tv.table;
   //@ts-ignore
-  const key: AutoDockDataType = CACHED_DOCKING.K.find((key: AutoDockDataType) => key.ligandDf === currentTable);
-  if (!key) {
+  const index = CACHED_DOCKING.V.findIndex((cachedData: DG.DataFrame) => {
+    if (cachedData) {
+      const names = currentTable?.columns.names();
+      const indexEnergy = names!.findIndex(name => name.includes(BINDING_ENERGY_COL));
+      const indexPoses = names!.findIndex(name => name.includes(POSE_COL));
+      const sameEnergy = cachedData.col(BINDING_ENERGY_COL)?.toString() === currentTable?.col(names![indexEnergy])?.toString();
+      const samePoses = cachedData.col(POSE_COL)?.toString() === currentTable?.col(names![indexPoses])?.toString();
+      return currentTable?.rowCount === cachedData.rowCount && sameEnergy && samePoses;
+    }
+    return false;
+  });
+
+  //@ts-ignore
+  const key = CACHED_DOCKING.K[index];
+  const matchingValue = CACHED_DOCKING.get(key);
+  if (matchingValue === null) {
     grok.shell.warning('Run Chem | Docking first');
-    return null; 
+    return null;
   }
 
-  const autodockResults = CACHED_DOCKING.get(key);
-  const matchDf: DG.DataFrame = autodockResults!.rows.match(`${molecule.cell.column.name} = ${molecule.value}`).toDataFrame();
-  const widgetKey = `${key.receptor}/${key.ligandMolColName}`
-  const cachedWidget = CACHED_MOLSTAR.has(widgetKey);
-
-  if (cachedWidget)
-    return CACHED_MOLSTAR.get(widgetKey)!;
+  const autodockResults = matchingValue;
 
   const widget = new DG.Widget(ui.div([]));
   const targetViewer = await currentTable!.plot.fromType('Biostructure', {
@@ -236,17 +268,36 @@ export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.
   });
   const result = ui.div();
   const map: { [_: string]: any } = {};
-  for (let i = 4; i < matchDf.columns.length; ++i) {
-    const columnName = matchDf.columns.names()[i];
-    const columnValue = matchDf.get(columnName, 0);
-    map[columnName] = columnValue;
+  for (let i = 3; i < autodockResults!.columns.length; ++i) {
+    const columnName = autodockResults!.columns.names()[i];
+    const propertyCol = autodockResults!.col(columnName);
+    map[columnName] = prop(molecule, propertyCol!, result);
   }
   result.appendChild(ui.tableFromMap(map));
   widget.root.append(targetViewer.root);
   widget.root.append(result);
-  CACHED_MOLSTAR.set(widgetKey, widget);
 
   return widget;
+}
+
+function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
+  const addColumnIcon = ui.iconFA('plus', () => {
+    const df = molecule.cell.dataFrame;
+    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
+    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
+    df.columns.add(propertyCol);
+  }, `Calculate ${propertyCol.name} for the whole table`);
+
+  ui.tools.setHoverVisibility(host, [addColumnIcon]);
+  $(addColumnIcon)
+    .css('color', '#2083d5')
+    .css('position', 'absolute')
+    .css('top', '2px')
+    .css('left', '-12px')
+    .css('margin-right', '5px');
+  
+  const idx = molecule.cell.rowIndex;
+  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
 }
 
 // -- Demo --
