@@ -510,27 +510,17 @@ export async function awaitCheck(checkHandler: () => boolean,
   });
 }
 
+// Returns test execution result or an error in case of timeout
 async function timeout(func: () => Promise<any>, testTimeout: number): Promise<any> {
   let timeout: Timeout | null = null;
-  const t1: number = window.performance.now();
   const timeoutPromise = new Promise<any>((_, reject) => {
-    //@ts-ignore
     timeout = setTimeout(() => {
-      const t2: number = window.performance.now();
-      //console.debug(`utils: timeout(), timeout, ET: ${t2 - t1} ms`);
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('EXECUTION TIMEOUT');
     }, testTimeout);
   });
   try {
-    return await Promise.race([
-      (async () => {
-        const res = await func();
-        const t2: number = window.performance.now();
-        return res;
-        //console.debug(`utils: timeout(), func() end, ET: ${t2 - t1} ms`);
-      })(),
-      timeoutPromise/* timeoutPromise can reject but never resolve */]);
+    return await Promise.race([func(), timeoutPromise]);
   } finally {
     if (timeout)
       clearTimeout(timeout);
