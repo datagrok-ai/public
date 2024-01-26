@@ -20,6 +20,12 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2024-01-26 1.17.12
+
+### Addressed Issues
+
+
+
 ## 2024-01-22 1.17.11
 
 ### Addressed Issues
