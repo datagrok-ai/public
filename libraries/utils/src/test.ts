@@ -525,8 +525,9 @@ async function timeout(func: () => Promise<any>, testTimeout: number): Promise<a
   try {
     return await Promise.race([
       (async () => {
-        await func();
+        const res = await func();
         const t2: number = window.performance.now();
+        return res;
         //console.debug(`utils: timeout(), func() end, ET: ${t2 - t1} ms`);
       })(),
       timeoutPromise/* timeoutPromise can reject but never resolve */]);
