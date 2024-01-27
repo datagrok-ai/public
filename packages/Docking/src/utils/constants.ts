@@ -8,7 +8,7 @@ export const CACHED_DOCKING: DG.LruCache<AutoDockDataType, DG.DataFrame> = new D
 export const BINDING_ENERGY_COL = 'binding energy';
 export const POSE_COL = 'pose';
 export const PROPERTY_DESCRIPTIONS: {[colName: string]: string} = {
-    'intermolecular': 'Final Intermolecular Energy',
+    'intermolecular (1)': 'Final Intermolecular Energy',
     'electrostatic': 'Electrostatic Energy',
     'ligand fixed': 'Moving Ligand-Fixed Receptor',
     'ligand moving': 'Moving Ligand-Moving Receptor',

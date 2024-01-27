@@ -12,6 +12,7 @@ import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { forEach } from 'wu';
+import { _demoDocking } from './demo/demo-docking';
 
 //name: info
 export function info() {
@@ -221,7 +222,7 @@ function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFra
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
 export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  let result = new DG.Widget(ui.divH([]));
+  /*let result = new DG.Widget(ui.divH([]));
   const update = () => {
     ui.remove(result.root);
     result.root.append(ui.loader());
@@ -230,7 +231,7 @@ export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Wid
       result = dockingResults!;
     });
   }
-  update();
+  update();*/
   return await getAutodockSingle(molecule);
 }
 
@@ -252,7 +253,8 @@ export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.
 
   //@ts-ignore
   const key = CACHED_DOCKING.K[index];
-  const matchingValue = CACHED_DOCKING.get(key);
+  //@ts-ignore
+  const matchingValue = CACHED_DOCKING.V[index];
   if (matchingValue === null) {
     grok.shell.warning('Run Chem | Docking first');
     return null;
@@ -263,7 +265,7 @@ export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.
   const widget = new DG.Widget(ui.div([]));
   const targetViewer = await currentTable!.plot.fromType('Biostructure', {
     dataJson: BiostructureDataJson.fromData(key.receptor),
-    ligandColumnName: key.ligandMolColName,
+    ligandColumnName: POSE_COL,
     zoom: true,
   });
   const result = ui.div();
@@ -300,4 +302,10 @@ function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElem
   return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
 }
 
+//name: Demo Docking
+//description: 
+//meta.demoPath: Bioinformatics | Docking
+export async function demoDocking(): Promise<void> {
+  _demoDocking();
+}
 // -- Demo --

@@ -182,6 +182,9 @@ async function runAutoDock(
       receptorData, ligandData, gpfFile ?? autodockGpf, confirmationNum ?? 10, poseColName);
     
     posesDf.rows.removeWhere((row) => row.get(BINDING_ENERGY_COL) !== posesDf.col(BINDING_ENERGY_COL)?.min);
+    if (posesDf!.rowCount > 1) {
+      posesDf!.rows.removeAt(1, posesDf!.rowCount - 1);
+    }
     // region: add extra columns to AutoDock output
 
     const pdbqtCol = posesDf.getCol(poseColName);
