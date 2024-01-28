@@ -4,31 +4,29 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {PatternAppLeftSection} from './left-section';
+import {PatternAppRightSection} from './right-section';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {EventBus} from '../model/event-bus';
 import {PatternConfigurationManager} from '../model/pattern-state-manager';
 
-export class PatternLayoutController {
-  private eventBus = EventBus.getInstance();
-  private dataManager = PatternAppDataManager.getInstance(this.eventBus);
+export class PatternAppLayout {
+  private eventBus = new EventBus();
+  private dataManager = new PatternAppDataManager(this.eventBus);
   private patternConfiguration = new PatternConfigurationManager(this.eventBus, this.dataManager);
+  private leftSection = new PatternAppLeftSection(this.eventBus, this.dataManager, this.patternConfiguration);
+  private rightSection = new PatternAppRightSection(this.eventBus, this.dataManager, this.patternConfiguration);
 
-  get htmlDivElement(): HTMLDivElement {
-    const leftSection = this.getLeftSection();
-    // const rightSection = this.getRightSection();
+  generateHTML(): HTMLDivElement {
+    const leftSection = this.leftSection.getLayout();
+    const rightSection = this.rightSection.getLayout();
+
+    const isResizeable = true;
+
     const layout = ui.splitH([
       leftSection,
-      // rightSection
-    ], {}, true);
+      rightSection,
+    ], {}, isResizeable);
 
     return layout;
   }
-
-  private getLeftSection(): HTMLDivElement {
-    const leftSection = new PatternAppLeftSection(this.eventBus, this.dataManager, this.patternConfiguration);
-    return leftSection.getLayout();
-  }
-
-  // private getRightSection(): HTMLDivElement {
-  // }
 }

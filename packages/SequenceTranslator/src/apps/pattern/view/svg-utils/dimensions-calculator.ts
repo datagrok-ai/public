@@ -421,6 +421,7 @@ class LabelPositionCalculator {
     const xPosition = this.getXPositionOfStrandLabels()[end];
     return {
       x: xPosition,
+      // todo: remove legacy grouping by y positions
       y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
     };
   }

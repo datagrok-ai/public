@@ -11,19 +11,11 @@ import {EventBus} from './event-bus';
 type PatternsRecord = {[patternName: string]: string};
 
 export class PatternAppDataManager {
-  private static instance: PatternAppDataManager;
-  private constructor(eventBus: EventBus) {
+  constructor(eventBus: EventBus) {
     this.patternListManager = new PatternListManager(eventBus);
     this.patternListManager.init();
   }
   private patternListManager: PatternListManager;
-
-  static getInstance(eventBus: EventBus): PatternAppDataManager {
-    if (!PatternAppDataManager.instance) {
-      PatternAppDataManager.instance = new PatternAppDataManager(eventBus);
-    }
-    return PatternAppDataManager.instance;
-  }
 
   fetchAvailableNucleotideBases(): string[] {
     const nucleotideBases: string[] = Object.keys(AXOLABS_STYLE_MAP);

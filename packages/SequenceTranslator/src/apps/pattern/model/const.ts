@@ -34,10 +34,7 @@ export const STRAND_TO_END_TERMINUS_MAP = {
   }
 } as const;
 
-export const enum SEQUENCE_LENGTH {
-  DEFAULT = 23,
-  MAX = 35,
-};
+export const MAX_SEQUENCE_LENGTH = 35;
 
 export const enum PATTERN_KEY {
   SS_BASES = 'ssBases',
@@ -54,6 +51,17 @@ export const enum PATTERN_KEY {
 export const USER_STORAGE_KEY: string = 'SequenceTranslator';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
 
+// todo: remove after refactoring
 export const DEFAULT_PHOSPHOROTHIOATE: boolean = true;
 
 export const OTHER_USERS = 'Other users';
+
+export namespace DEFAULT_PATTERN_CONFIG {
+  export const SEQUENCE_LENGTH = 23;
+  export const PHOSPHOROTHIOATE = true;
+  export const TERMINUS_MODIFICATION = '';
+  export const COMMENT = '';
+  export const IS_ANTISENSE_STRAND_VISIBLE = true;
+  export const PATTERN_NAME = '';
+  export const MODIFICATIONS_WITH_NUMERIC_LABELS = [] as string[];
+}

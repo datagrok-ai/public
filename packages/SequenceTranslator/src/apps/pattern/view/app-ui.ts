@@ -23,16 +23,6 @@ type Bases = Record<typeof STRANDS[number], string>;
 type PtoLinkageActive = Record<typeof STRANDS[number], boolean[]>;
 type TerminalModifications = Record<typeof STRANDS[number], Record<typeof TERMINI[number], string>>;
 
-type RenderNucleotidePatternOptions = {
-  patternName: string,
-  isAsStrandActive: boolean,
-  baseInputValues: Bases,
-  ptoLinkageValues: PtoLinkageActive,
-  terminalModificationValues: TerminalModifications,
-  comment: string,
-  modificationsWithNumericLabels: string[],
-};
-
 const enum MODIFICATION_CATEGORY {
   PTO,
   BASIS

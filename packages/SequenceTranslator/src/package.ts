@@ -44,8 +44,8 @@ export const _package: StPackage = new StPackage();
 
 async function buildLayout(appName: string): Promise<void> {
   await initSequenceTranslatorLibData();
-  const appUI = AppUIFactory.getUI(appName);
-  await appUI.createAppLayout();
+  const appUI = AppUIFactory.createAppUIInstance(appName);
+  await appUI.initializeAppLayout();
 }
 
 
@@ -59,7 +59,7 @@ export async function oligoToolkitApp(): Promise<void> {
   if (!externalViewFactories)
     throw new Error('External app view factories not loaded');
   const appUI = new CombinedAppUI(externalViewFactories!);
-  await appUI.createAppLayout();
+  await appUI.initializeAppLayout();
 }
 
 //name: Oligo Translator

@@ -8,13 +8,12 @@ import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
 import { StrandType } from '../model/types';
 
 import {StringInput, NumberInput} from './types';
+import {NucleotidePatternSVGRenderer} from '../view/svg-utils/svg-renderer';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {PatternConfigurationManager} from '../model/pattern-state-manager';
 import * as rxjs from 'rxjs';
-// WARNING: for some reason, cannot use rxjs.operators.debounceTime, although
-// webpack.config.js is configured to use rxjs.operators as rxjs.operators
 import $ from 'cash-dom';
 
 export class PatternAppRightSection {
@@ -25,7 +24,7 @@ export class PatternAppRightSection {
   ) { };
 
   getLayout(): HTMLDivElement {
-    const svgDisplay = new SvgDisplayManager().createUI();
+    const svgDisplay = new SvgDisplayManager().create();
     const layout = ui.panel([
       svgDisplay,
       // numericLabelTogglesContainer,
@@ -55,10 +54,13 @@ export class PatternAppRightSection {
 }
 
 class SvgDisplayManager {
+  private svgDisplayDiv = ui.div([]);
+  private renderer = new NucleotidePatternSVGRenderer(patternConfiguration);
+  const svg = renderer.renderPattern();
+
   constructor() { }
 
-  private svgDisplayDiv = ui.div([]);
-  createUI(): HTMLElement {
+  create(): HTMLElement {
     return this.svgDisplayDiv;
   }
 }

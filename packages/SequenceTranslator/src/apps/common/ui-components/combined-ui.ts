@@ -4,10 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TAB, APP} from './const';
-import {TranslatorLayoutHandler} from '../../translator/view/app-ui';
-import {StructureLayoutHandler} from '../../structure/view/app-ui';
+import {TranslatorAppLayout} from '../../translator/view/app-ui';
+import {StructureAppLayout} from '../../structure/view/app-ui';
 import {PatternLayoutHandler} from '../../pattern/view/app-ui';
-import {PatternLayoutController} from '../../pattern/view/layout';
+import {PatternAppLayout} from '../../pattern/view/layout';
 import {MonomerLibViewer} from '../monomer-lib/viewer';
 import {_package} from '../../../package';
 import {tryCatch} from '../model/helpers';
@@ -18,8 +18,8 @@ export abstract class AppUIBase {
   constructor(protected appName: string, protected parentAppName?: string) { }
   abstract addView(): Promise<void>;
 
-  async createAppLayout(): Promise<void> {
-    const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${this.appName}...`);
+  async initializeAppLayout(): Promise<void> {
+    const progressIndicator: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${this.appName}...`);
 
     let currentView = grok.shell.v?.root;
     if (currentView)
@@ -27,7 +27,7 @@ export abstract class AppUIBase {
 
     await tryCatch(async () => {
       await this.addView();
-    }, () => pi.close());
+    }, () => progressIndicator.close());
 
     if (currentView)
       ui.setUpdateIndicator(currentView, false);
@@ -38,7 +38,7 @@ abstract class SimpleAppUIBase extends AppUIBase {
   constructor(appName: string) {
     super(appName);
     this.view = DG.View.create();
-    this.setupView();
+    this.configureView();
   }
 
   protected view: DG.View;
@@ -55,7 +55,7 @@ abstract class SimpleAppUIBase extends AppUIBase {
     this.view.append(html);
   }
 
-  protected setupView(): void {
+  protected configureView(): void {
     this.view.box = true;
     this.view.name = this.appName;
 
@@ -102,7 +102,7 @@ export class CombinedAppUI extends AppUIBase {
     return result
   }
 
-  private getPath(): string {
+  private getCurrentPanePath(): string {
     let name = this.multiView.tabs.currentPane.name;
     name = name.charAt(0).toUpperCase() + name.substring(1).toLowerCase();
     const path = `/apps/${_package.name}/OligoToolkit/${name}`;
@@ -110,7 +110,7 @@ export class CombinedAppUI extends AppUIBase {
   }
 
   private setUrl(): void {
-    this.multiView.path = this.getPath();
+    this.multiView.path = this.getCurrentPanePath();
   }
 
   async addView(): Promise<void> {
@@ -136,7 +136,7 @@ export class ExternalPluginUI extends SimpleAppUIBase {
 export class AppUIFactory {
   private constructor() {}
 
-  static getUI(appName: string): SimpleAppUIBase {
+  static createAppUIInstance(appName: string): SimpleAppUIBase {
     switch (appName) {
       case APP.TRANSLATOR:
         return new OligoTranslatorUI();
@@ -151,6 +151,9 @@ export class AppUIFactory {
 }
 
 class OligoTranslatorUI extends SimpleAppUIBase {
+  private readonly topPanel: HTMLElement[];
+  private readonly layout = new TranslatorAppLayout();
+
   constructor() {
     super(APP.TRANSLATOR);
 
@@ -159,37 +162,33 @@ class OligoTranslatorUI extends SimpleAppUIBase {
       viewMonomerLibIcon,
     ];
     this.view.setRibbonPanels([this.topPanel]);
-    this.ui = new TranslatorLayoutHandler();
   }
 
-  private readonly topPanel: HTMLElement[];
-  private readonly ui: TranslatorLayoutHandler;
-
   protected getHtml(): Promise<HTMLDivElement> {
-    return this.ui.getHtmlElement();
+    return this.layout.getHtmlElement();
   };
 }
 
 class OligoPatternUI extends SimpleAppUIBase {
   constructor() {
     super(APP.PATTERN);
-    this.ui = new PatternLayoutController();
+    this.layout = new PatternAppLayout();
   }
-  private readonly ui: PatternLayoutController;
+  private readonly layout: PatternAppLayout;
   protected getHtml(): Promise<HTMLDivElement> {
-    // return Promise.resolve(this.ui.htmlDivElement);
-    return Promise.resolve(new PatternLayoutHandler().htmlDivElement);
+    return Promise.resolve(this.layout.generateHTML());
+    // return Promise.resolve(new PatternLayoutHandler().htmlDivElement);
   }
 }
 
 class OligoStructureUI extends SimpleAppUIBase {
   constructor() {
     super(APP.STRUCTRE)
-    this.ui = new StructureLayoutHandler();
+    this.layout = new StructureAppLayout();
   }
-  private readonly ui: StructureLayoutHandler;
+  private readonly layout: StructureAppLayout;
 
   protected getHtml(): Promise<HTMLDivElement> {
-    return this.ui.getHtmlDivElement();
+    return this.layout.getHtmlDivElement();
   }
 }

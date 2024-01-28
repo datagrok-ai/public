@@ -21,12 +21,18 @@ export interface LegacyPatternConfig {
 export type StrandType = typeof STRANDS[number];
 export type TerminalType = typeof TERMINI[number];
 
+export type NucleotideSequences = Record<StrandType, string[]>;
+export type PhosphorothioateLinkageFlags = Record<StrandType, boolean[]>;
+export type StrandTerminusModifications = Record<StrandType, Record<TerminalType, string>>;
+
 export type PatternConfiguration = {
   patternName: string,
   isAntisenseStrandIncluded: boolean,
-  nucleotideSequences: Record<StrandType, string[]>,
-  phosphorothioateLinkageFlags: Record<StrandType, boolean[]>,
-  strandTerminusModifications: Record<StrandType, Record<TerminalType, string>>,
+  nucleotideSequences: NucleotideSequences,
+  phosphorothioateLinkageFlags: PhosphorothioateLinkageFlags,
+  strandTerminusModifications: StrandTerminusModifications,
   patternComment: string,
   nucleotidesWithNumericLabels: string[],
 }
+
+

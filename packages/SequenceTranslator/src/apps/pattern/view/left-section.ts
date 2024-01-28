@@ -12,22 +12,19 @@ import {StringInput, NumberInput} from './types';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {PatternConfigurationManager} from '../model/pattern-state-manager';
-import * as rxjs from 'rxjs';
-// WARNING: for some reason, cannot use rxjs.operators.debounceTime, although
-// webpack.config.js is configured to use rxjs.operators as rxjs.operators
 import $ from 'cash-dom';
 
 export class PatternAppLeftSection {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    private patternConfiguration: PatternConfigurationManager,
+    // private patternConfiguration: PatternConfigurationManager,
   ) { };
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
       this.eventBus,
-      this.patternConfiguration,
+      // this.patternConfiguration,
       this.dataManager
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
@@ -51,7 +48,7 @@ export class PatternAppLeftSection {
 class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
-    private patternConfiguration: PatternConfigurationManager,
+    // private patternConfiguration: PatternConfigurationManager,
     private dataManager: PatternAppDataManager,
   ) { }
 
@@ -101,7 +98,7 @@ class PatternControlsManager {
       STRANDS.map((strand) => createStrandLengthInput(strand))
     );
 
-    this.eventBus.isAntisenseStrandActive$.subscribe((active: boolean) => {
+    this.eventBus.antisenseStrandToggled$.subscribe((active: boolean) => {
       $(strandLengthInputs[STRAND.ANTISENSE].root).toggle(active);
     })
 
@@ -112,7 +109,7 @@ class PatternControlsManager {
     const availableNucleoBases = this.dataManager.fetchAvailableNucleotideBases();
     const defaultNucleotideBase = this.dataManager.getDefaultNucleotideBase();
 
-    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases, (base: string) => this.eventBus.changeNucleotideBase(base));
+    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases, (base: string) => this.eventBus.changeSequenceBase(base));
 
     sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
     return sequenceBaseInput;
@@ -134,7 +131,7 @@ class PatternControlsManager {
   private createPatternNameInputBlock(): HTMLElement {
     const patternNameControls = new PatternNameControls(
       this.eventBus,
-      this.patternConfiguration,
+      // this.patternConfiguration,
     );
     return patternNameControls.createPatternNameInputBlock();
   }
@@ -145,7 +142,7 @@ class PatternChoiceControls {
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
   ) {
-    this.eventBus.requestLoadPattern$.subscribe((value: string) => this.handlePatternChoice(value));
+    this.eventBus.patternLoadRequested$.subscribe((value: string) => this.handlePatternChoice(value));
 
     const defaultUser = this.dataManager.getCurrentUserName();
     this.selectedUser = defaultUser;
@@ -154,7 +151,7 @@ class PatternChoiceControls {
     this.selectedPattern = defaultPattern;
 
     this.patternChoiceContainer = ui.div([]);
-    this.eventBus.patternListUpdate$.subscribe(() => this.updatePatternChoiceInputContainer());
+    this.eventBus.patternListUpdated$.subscribe(() => this.updatePatternChoiceInputContainer());
   }
 
   private selectedUser: string;
@@ -247,7 +244,7 @@ class PatternChoiceControls {
 class PatternNameControls {
   constructor(
     private eventBus: EventBus,
-    private patternConfiguration: PatternConfigurationManager,
+    // private patternConfiguration: PatternConfigurationManager,
   ) { }
   private patternName = 'Pattern';
 

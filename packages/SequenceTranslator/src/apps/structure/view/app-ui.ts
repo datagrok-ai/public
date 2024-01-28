@@ -21,7 +21,7 @@ const enum DIRECTION {
 };
 const STRANDS = ['ss', 'as', 'as2'] as const;
 
-export class StructureLayoutHandler {
+export class StructureAppLayout {
   constructor() {
     this.onInput = new rxjs.Subject<string>();
     this.onInvalidInput = new rxjs.Subject<string>();

@@ -20,7 +20,7 @@ import {FormatConverter} from '../model/format-converter';
 import {CODES_TO_HELM_DICT} from '../../common/data-loader/json-loader';
 import {DEFAULT_FORMATS} from '../../common/model/const';
 
-export class TranslatorLayoutHandler {
+export class TranslatorAppLayout {
   constructor() {
     const INPUT_FORMATS = Object.keys(CODES_TO_HELM_DICT).concat(DEFAULT_FORMATS.HELM);
     this.moleculeImgDiv = ui.div([]);
