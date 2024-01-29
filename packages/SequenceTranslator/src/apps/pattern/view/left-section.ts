@@ -11,7 +11,7 @@ import {StringInput, NumberInput} from './types';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {PatternDefaultsProvider} from '../model/default-state-configurator';
+import {PatternDefaultsProvider} from '../model/defaults-provider';
 import $ from 'cash-dom';
 
 export class PatternAppLeftSection {

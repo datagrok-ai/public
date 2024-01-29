@@ -6,7 +6,7 @@ import {StrandType, TerminalType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 
 import * as rxjs from 'rxjs';
-import {PatternDefaultsProvider} from './default-state-configurator';
+import {PatternDefaultsProvider} from './defaults-provider';
 
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;

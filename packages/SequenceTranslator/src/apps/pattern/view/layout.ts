@@ -7,7 +7,7 @@ import {PatternAppLeftSection} from './left-section';
 import {PatternAppRightSection} from './right-section';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {EventBus} from '../model/event-bus';
-import {PatternDefaultsProvider} from '../model/default-state-configurator';
+import {PatternDefaultsProvider} from '../model/defaults-provider';
 
 export class PatternAppLayout {
   private defaultStateConfigurator = new PatternDefaultsProvider();
