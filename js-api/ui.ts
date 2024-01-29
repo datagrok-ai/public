@@ -1224,15 +1224,20 @@ export class tools {
     let maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
     let maxLabelWidth = Math.max(...labels);
     let avaliableSpace = currentWidth - maxFormWidth > 0 ? currentWidth - maxFormWidth : 0;
+    let inputWidth = 0;
 
     //If form has avalibable space then adjust min form width to maxFormWidth+128. 
     //Where 128 is space form input-ediotr + input-options if exist.
     if (maxFormWidth < maxLabelWidth+128) {
       if (avaliableSpace != 0){
-        if (maxFormWidth+avaliableSpace < maxLabelWidth+128)
-          maxFormWidth = maxFormWidth+avaliableSpace
-        else
-          maxFormWidth = maxLabelWidth+128
+        if (maxFormWidth+avaliableSpace < maxLabelWidth+128) {
+          maxFormWidth = maxFormWidth+avaliableSpace;
+          inputWidth = maxFormWidth - maxLabelWidth - 8;
+        }
+        else {
+          maxFormWidth = maxLabelWidth+128;
+          inputWidth = 120;
+        }
       }
     }
 
@@ -1254,8 +1259,12 @@ export class tools {
       let dataOptions = item.getAttribute('data-options');
 
       if (dataLabel != null) root.setAttribute('data-label', dataLabel);
-      if (dataInput != null) root.setAttribute('data-input', dataInput);
       if (dataOptions != null) root.setAttribute('data-options', dataOptions);
+      
+      if (inputWidth != 0)
+        root.setAttribute('data-input', String(inputWidth));
+      else if (dataInput != null)
+        root.setAttribute('data-input', dataInput);
 
     });
 
