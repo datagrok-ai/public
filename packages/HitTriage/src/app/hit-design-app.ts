@@ -108,22 +108,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
     this._submitView ??= new HitDesignSubmitView(this);
     grok.shell.windows.showHelp = false;
-    //add empty rows to define stages, used for tile categories;
-    //const stagesRow = this.dataFrame.getCol(TileCategoriesColName);
-    // if (stagesRow) {
-    //   const categories = stagesRow.categories;
-    //   if (categories && categories.length) {
-    //     template.stages.forEach((s) => {
-    //       if (!categories.includes(s)) {
-    //         const newRow = this.dataFrame!.rows.addNew();
-    //         const idx = newRow.idx;
-    //         this.dataFrame!.set(TileCategoriesColName, idx, s);
-    //         this.dataFrame!.set(ViDColName, idx, EmptyStageCellValue);
-    //       }
-    //     });
-    //   }
-    // }
-    //this.dataFrame.rows.filter((r) => r[ViDColName] !== EmptyStageCellValue);
+
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
     const designV = grok.shell.addView(this.designView);
     this.currentDesignViewId = designV.name;
@@ -445,11 +430,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         const ribbonButtons: HTMLElement[] = [submitButton];
         if (this.template?.stages?.length ?? 0 > 0)
           ribbonButtons.unshift(tilesButton);
-        if (this.campaign && this.template) {
-          if (!this.campaign.template)
-            this.campaign.template = this.template;
-          ribbonButtons.unshift(calculateRibbon);
-        }
+        if (this.campaign && this.template && !this.campaign.template)
+          this.campaign.template = this.template;
+
+        ribbonButtons.unshift(calculateRibbon);
         ribbonButtons.unshift(addNewRowButton);
         ribbons.push(ribbonButtons);
         view.setRibbonPanels(ribbons);
@@ -591,16 +575,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
     await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignJsonName}`,
       JSON.stringify(campaign));
-
-    // const oldLayouts = (await grok.dapi.layouts.filter(`friendlyName = "${this._designViewName}"`).list())
-    //   .filter((l) => l && l.getUserDataValue(HDcampaignName) === campaignId);
-    // for (const l of oldLayouts)
-    //   await grok.dapi.layouts.delete(l);
-    // //save new layout
-    // newLayout.setUserDataValue(HDcampaignName, campaignId);
-    // const l = await grok.dapi.layouts.save(newLayout);
-    // const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
-    // await grok.dapi.permissions.grant(l, allGroup, true);
     notify && grok.shell.info('Campaign saved successfully.');
     this.campaign = campaign;
     return campaign;
