@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 import {
-  DEFAULT_PHOSPHOROTHIOATE, SEQUENCE_LENGTH, USER_STORAGE_KEY, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
+  DEFAULT_PATTERN_CONFIG as DEFAULT, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
 } from '../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 import {isOverhangNucleotide} from '../model/helpers';
@@ -140,7 +140,7 @@ export class PatternLayoutHandler {
     }
 
     function checkSequenceLengthValidity() {
-      return Object.values(strandLengthInputs).every(input => input.value! < SEQUENCE_LENGTH.MAX);
+      return Object.values(strandLengthInputs).every(input => input.value! < MAX_SEQUENCE_LENGTH);
     }
 
     function extendStrandsToNewLength() {
@@ -160,14 +160,14 @@ export class PatternLayoutHandler {
 
     function displayOutOfRangeDialog() {
       ui.dialog('Out of range')
-        .add(ui.divText(`Sequence length should be less than ${SEQUENCE_LENGTH.MAX} due to UI constraints.`))
+        .add(ui.divText(`Sequence length should be less than ${MAX_SEQUENCE_LENGTH} due to UI constraints.`))
         .onOK(() => resetAllStrandLengthsToMax())
         .onCancel(() => resetAllStrandLengthsToMax())
         .showModal(false);
     }
 
     function resetAllStrandLengthsToMax() {
-      Object.values(strandLengthInputs).forEach(input => input.value = SEQUENCE_LENGTH.MAX);
+      Object.values(strandLengthInputs).forEach(input => input.value = MAX_SEQUENCE_LENGTH);
     }
 
     function updateInputValues(category: MODIFICATION_CATEGORY, newValue: boolean | string): void {
@@ -590,7 +590,7 @@ export class PatternLayoutHandler {
     });
 
     function createFullyPtoInput(): BooleanInput {
-      const fullyPto = ui.boolInput('Fully PTO', DEFAULT_PHOSPHOROTHIOATE, handleFullPtoInputChange);
+      const fullyPto = ui.boolInput('Fully PTO', DEFAULT.PHOSPHOROTHIOATE, handleFullPtoInputChange);
       styleFullyPtoInputLabel(fullyPto.captionLabel);
       return fullyPto;
     }
@@ -615,25 +615,25 @@ export class PatternLayoutHandler {
     const isFullyPtoInput = createFullyPtoInput();
 
     const maxStrandLength = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, SEQUENCE_LENGTH.DEFAULT]
+      (strand) => [strand, DEFAULT.SEQUENCE_LENGTH]
     ));
     const modificationControls = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.div([])]
     ));
     const ptoLinkageInputs = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, Array<BooleanInput>(SEQUENCE_LENGTH.DEFAULT)
-        .fill(ui.boolInput('', DEFAULT_PHOSPHOROTHIOATE))]
+      (strand) => [strand, Array<BooleanInput>(DEFAULT.SEQUENCE_LENGTH)
+        .fill(ui.boolInput('', DEFAULT.PHOSPHOROTHIOATE))]
     ));
     const nucleobaseInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const choiceInputs = Array<StringInput>(SEQUENCE_LENGTH.DEFAULT)
+        const choiceInputs = Array<StringInput>(DEFAULT.SEQUENCE_LENGTH)
           .fill(ui.choiceInput('', defaultNucleotideBase, nucleotideBaseChoices));
         return [strand, choiceInputs];
       }
     ));
     const strandLengthInputs = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const input = ui.intInput(`${STRAND_LABEL[strand]} length`, SEQUENCE_LENGTH.DEFAULT, () => refreshUIForNewSequenceLength());
+        const input = ui.intInput(`${STRAND_LABEL[strand]} length`, DEFAULT.SEQUENCE_LENGTH, () => refreshUIForNewSequenceLength());
         input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
       }));

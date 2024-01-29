@@ -11,7 +11,7 @@ import {DefaultStateConfigurator} from './default-state-configurator';
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
   private _isAntisenseStrandVisible$: rxjs.BehaviorSubject<boolean>;
-  private _nucleobases$: rxjs.BehaviorSubject<NucleotideSequences>;
+  private _nucleotideSequences$: rxjs.BehaviorSubject<NucleotideSequences>;
   private _phosphorothioateLinkageFlags: rxjs.BehaviorSubject<PhosphorothioateLinkageFlags>;
   private _terminalModifications: rxjs.BehaviorSubject<StrandTerminusModifications>;
   private _comment$: rxjs.BehaviorSubject<string>;
@@ -19,7 +19,7 @@ export class EventBus {
 
   private _patternListUpdated$ = new rxjs.Subject<void>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
-  private _patternSaveRequested$ = new rxjs.Subject<string>();
+  private _patternSaveRequested$ = new rxjs.Subject<void>();
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
@@ -33,18 +33,18 @@ export class EventBus {
   private initializeDefaultState(defaults: DefaultStateConfigurator) {
     this._patternName$ = new rxjs.BehaviorSubject(defaults.getPatternName());
     this._isAntisenseStrandVisible$ = new rxjs.BehaviorSubject(defaults.getAntiSenseStrandVisibilityFlag());
-    this._nucleobases$ = new rxjs.BehaviorSubject(defaults.getNucleobases());
+    this._nucleotideSequences$ = new rxjs.BehaviorSubject(defaults.getNucleotideSequences());
     this._phosphorothioateLinkageFlags = new rxjs.BehaviorSubject(defaults.getPhosphorothioateLinkageFlags());
     this._terminalModifications = new rxjs.BehaviorSubject(defaults.getTerminusModifications());
     this._comment$ = new rxjs.BehaviorSubject(defaults.getComment());
     this._modificationsWithNumericLabels$ = new rxjs.BehaviorSubject(defaults.getModificationsWithNumericLabels());
   }
 
-  getPatterName(): string {
+  getPatternName(): string {
     return this._patternName$.getValue();
   }
 
-  setNewPatternName(patternName: string) {
+  updatePatternName(patternName: string) {
     this._patternName$.next(patternName);
   }
 
@@ -56,8 +56,48 @@ export class EventBus {
     this._isAntisenseStrandVisible$.next(isActive);
   }
 
-  antisenseStrandIsVisible(): boolean {
+  isAntiSenseStrandVisible(): boolean {
     return this._isAntisenseStrandVisible$.getValue();
+  }
+
+  getNucleotideSequences(): NucleotideSequences {
+    return this._nucleotideSequences$.getValue();
+  }
+
+  updateNucleotideSequences(nucleotideSequences: NucleotideSequences) {
+    this._nucleotideSequences$.next(nucleotideSequences);
+  }
+
+  getPhosphorothioateLinkageFlags(): PhosphorothioateLinkageFlags {
+    return this._phosphorothioateLinkageFlags.getValue();
+  }
+
+  updatePhosphorothioateLinkageFlags(phosphorothioateLinkageFlags: PhosphorothioateLinkageFlags) {
+    this._phosphorothioateLinkageFlags.next(phosphorothioateLinkageFlags);
+  }
+
+  getTerminalModifications(): StrandTerminusModifications {
+    return this._terminalModifications.getValue();
+  }
+
+  updateTerminalModifications(terminalModifications: StrandTerminusModifications) {
+    this._terminalModifications.next(terminalModifications);
+  }
+
+  getComment(): string {
+    return this._comment$.getValue();
+  }
+
+  updateComment(comment: string) {
+    this._comment$.next(comment);
+  }
+
+  getModificationsWithNumericLabels(): string[] {
+    return this._modificationsWithNumericLabels$.getValue();
+  }
+
+  updateModificationsWithNumericLabels(modificationsWithNumericLabels: string[]) {
+    this._modificationsWithNumericLabels$.next(modificationsWithNumericLabels);
   }
 
   changeSequenceBase(base: string) {
@@ -96,7 +136,7 @@ export class EventBus {
     this._patternDeletionRequested$.next(patternName);
   }
 
-  requestPatternSave(patternName: string) {
-    this._patternSaveRequested$.next(patternName);
+  requestPatternSave() {
+    this._patternSaveRequested$.next();
   }
 }

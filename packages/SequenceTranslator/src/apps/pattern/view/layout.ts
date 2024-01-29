@@ -7,14 +7,14 @@ import {PatternAppLeftSection} from './left-section';
 import {PatternAppRightSection} from './right-section';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {EventBus} from '../model/event-bus';
-import {PatternConfigurationManager} from '../model/pattern-state-manager';
+import {DefaultStateConfigurator} from '../model/default-state-configurator';
 
 export class PatternAppLayout {
-  private eventBus = new EventBus();
+  private defaultStateConfigurator = new DefaultStateConfigurator();
+  private eventBus = new EventBus(this.defaultStateConfigurator);
   private dataManager = new PatternAppDataManager(this.eventBus);
-  private patternConfiguration = new PatternConfigurationManager(this.eventBus, this.dataManager);
-  private leftSection = new PatternAppLeftSection(this.eventBus, this.dataManager, this.patternConfiguration);
-  private rightSection = new PatternAppRightSection(this.eventBus, this.dataManager, this.patternConfiguration);
+  private leftSection = new PatternAppLeftSection(this.eventBus, this.dataManager, this.defaultStateConfigurator);
+  private rightSection = new PatternAppRightSection(this.eventBus, this.dataManager);
 
   generateHTML(): HTMLDivElement {
     const leftSection = this.leftSection.getLayout();

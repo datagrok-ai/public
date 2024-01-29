@@ -1,31 +1,34 @@
-import {PatternAppDataManager} from './external-data-manager';
 import {STRANDS, TERMINI, DEFAULT_PHOSPHOROTHIOATE} from './const';
 import {TerminalType, NucleotideSequences, StrandType, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 import {DEFAULT_PATTERN_CONFIG as DEFAULT} from './const';
+import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 
 export class DefaultStateConfigurator {
-  constructor(
-    private dataManager: PatternAppDataManager
-  ) { }
+  constructor() { }
 
   getPatternName(): string { return DEFAULT.PATTERN_NAME; }
 
   getAntiSenseStrandVisibilityFlag(): boolean { return DEFAULT.IS_ANTISENSE_STRAND_VISIBLE; }
 
-  getNucleobases(): NucleotideSequences {
-    const nucleobases = {} as NucleotideSequences;
+  getNucleotideSequences(): NucleotideSequences {
+    const nucleotideSequences = {} as NucleotideSequences;
     const defaultNucleobase = this.fetchDefaultNucleobase();
     STRANDS.forEach((strand) => {
-      nucleobases[strand] = new Array(DEFAULT.SEQUENCE_LENGTH).fill(defaultNucleobase);
+      nucleotideSequences[strand] = new Array(DEFAULT.SEQUENCE_LENGTH).fill(defaultNucleobase);
     });
 
-    return nucleobases;
+    return nucleotideSequences;
   }
 
-  private fetchDefaultNucleobase(): string {
-    return this.dataManager.fetchAvailableNucleotideBases()[0];
+  fetchDefaultNucleobase(): string {
+    return this.fetchAvailableNucleotideBases()[0];
   }
   
+  fetchAvailableNucleotideBases(): string[] {
+    const nucleotideBases: string[] = Object.keys(AXOLABS_STYLE_MAP);
+    return nucleotideBases;
+  }
+
   getPhosphorothioateLinkageFlags(): PhosphorothioateLinkageFlags {
     const phosphorothioateLinkageFlags = {} as PhosphorothioateLinkageFlags;
     STRANDS.forEach((strand) => {

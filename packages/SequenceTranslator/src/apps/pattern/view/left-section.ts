@@ -11,21 +11,21 @@ import {StringInput, NumberInput} from './types';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {PatternConfigurationManager} from '../model/pattern-state-manager';
+import {DefaultStateConfigurator} from '../model/default-state-configurator';
 import $ from 'cash-dom';
 
 export class PatternAppLeftSection {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    // private patternConfiguration: PatternConfigurationManager,
+    private defaultState: DefaultStateConfigurator,
   ) { };
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
       this.eventBus,
-      // this.patternConfiguration,
-      this.dataManager
+      this.dataManager,
+      this.defaultState,
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
 
@@ -48,8 +48,8 @@ export class PatternAppLeftSection {
 class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
-    // private patternConfiguration: PatternConfigurationManager,
     private dataManager: PatternAppDataManager,
+    private defaultState: DefaultStateConfigurator,
   ) { }
 
   createUIComponents(): HTMLElement[] {
@@ -88,7 +88,9 @@ class PatternControlsManager {
 
   private createStrandLengthInputs(): Record<string, NumberInput> {
     const createStrandLengthInput = (strand: StrandType) => {
-      const sequenceLength = this.patternConfiguration.getBases(strand).length;
+
+      const sequenceLength = this.eventBus.getNucleotideSequences()[strand].length;
+
       const input = ui.intInput(`${STRAND_LABEL[strand]} length`, sequenceLength);
       input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
       return [strand, input];
@@ -106,8 +108,8 @@ class PatternControlsManager {
   }
 
   private createSequenceBaseInput(): StringInput {
-    const availableNucleoBases = this.dataManager.fetchAvailableNucleotideBases();
-    const defaultNucleotideBase = this.dataManager.getDefaultNucleotideBase();
+    const availableNucleoBases = this.defaultState.fetchAvailableNucleotideBases();
+    const defaultNucleotideBase = this.defaultState.fetchDefaultNucleobase();
 
     const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases, (base: string) => this.eventBus.changeSequenceBase(base));
 
@@ -246,10 +248,13 @@ class PatternNameControls {
     private eventBus: EventBus,
     // private patternConfiguration: PatternConfigurationManager,
   ) { }
-  private patternName = 'Pattern';
 
   createPatternNameInputBlock(): HTMLElement {
-    const patternNameInput = ui.textInput('Save as', this.patternName, (value: string) => this.handlePatternNameChange(value));
+    const patternNameInput = ui.textInput(
+      'Save as',
+      this.eventBus.getPatternName(),
+      (newValue: string) => this.eventBus.updatePatternName(newValue)
+    );
 
     this.handlePatternNameChange(patternNameInput.value);
 
@@ -266,17 +271,16 @@ class PatternNameControls {
   }
 
   private handlePatternNameChange(patternName: string): void {
-    this.patternName = patternName;
-    this.patternConfiguration.setPatternName(this.patternName);
+    this.eventBus.updatePatternName(patternName);
   }
 
   private processSaveButtonClick(): void {
-    if (this.patternName === '') {
+    if (this.eventBus.getPatternName() === '') {
       grok.shell.warning(`Insert pattern name`);
       return;
     }
-    grok.shell.info(`Pattern ${this.patternName} saved`);
-    this.eventBus.requestPatternSave(this.patternName);
+    grok.shell.info(`Pattern ${this.eventBus.getPatternName()} saved`);
+    this.eventBus.requestPatternSave();
   }
 }
 

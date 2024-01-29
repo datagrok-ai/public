@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 import {isPatternCreatedByCurrentUser} from './oligo-pattern';
 import {USER_STORAGE_KEY} from './const';
 import {EventBus} from './event-bus';
@@ -16,15 +15,6 @@ export class PatternAppDataManager {
     this.patternListManager.init();
   }
   private patternListManager: PatternListManager;
-
-  fetchAvailableNucleotideBases(): string[] {
-    const nucleotideBases: string[] = Object.keys(AXOLABS_STYLE_MAP);
-    return nucleotideBases;
-  }
-
-  getDefaultNucleotideBase(): string {
-    return this.fetchAvailableNucleotideBases()[0];
-  }
 
   getCurrentUserPatternNames(): string[] {
     return this.patternListManager.getCurrentUserPatternNames() || [];
@@ -40,7 +30,6 @@ export class PatternAppDataManager {
 }
 
 class PatternListManager {
-  // private initialized = false;
   private currentUserPatterns: string[] = [];
   private otherUsersPatterns: string[] = [];
   private currentUserFriendlyName = '';

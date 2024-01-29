@@ -12,7 +12,6 @@ import {NucleotidePatternSVGRenderer} from '../view/svg-utils/svg-renderer';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {PatternConfigurationManager} from '../model/pattern-state-manager';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
@@ -20,7 +19,6 @@ export class PatternAppRightSection {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    private patternConfiguration: PatternConfigurationManager,
   ) { };
 
   getLayout(): HTMLDivElement {
@@ -55,8 +53,8 @@ export class PatternAppRightSection {
 
 class SvgDisplayManager {
   private svgDisplayDiv = ui.div([]);
-  private renderer = new NucleotidePatternSVGRenderer(patternConfiguration);
-  const svg = renderer.renderPattern();
+  // private renderer = new NucleotidePatternSVGRenderer(patternConfiguration);
+  // const svg = renderer.renderPattern();
 
   constructor() { }
 
