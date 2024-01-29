@@ -1158,15 +1158,17 @@ export class tools {
 
         // Get text content width
         if (element.tagName == 'DIV') {
-          value.textContent = element.textContent;
-          renderWidth = Math.ceil(value.getBoundingClientRect().width);
+          // If Multi-choice or radio button - get container width
+          if (element.parentElement?.classList.contains('ui-input-radio') || element.parentElement?.classList.contains('ui-input-multi-choice')) {
+            renderWidth = Math.ceil(element.getBoundingClientRect().width)-minInputPadding;
+          } else {
+            value.textContent = element.textContent;
+            renderWidth = Math.ceil(value.getBoundingClientRect().width);
+          }
         }
 
         // Set canvas min width
         if ($(element).has('canvas').length != 0) { renderWidth = 100; }
-
-        if (element.parentElement?.classList.contains('ui-input-multi-choice') || element.parentElement?.classList.contains('ui-input-radio'))
-          renderWidth = Math.ceil(element.getBoundingClientRect().width);
 
         //Check if calculated width not smaller than minimun input width
         renderWidth+minInputPadding < minInputWidth ? renderWidth = minInputWidth : renderWidth = renderWidth+minInputPadding;
@@ -1207,7 +1209,7 @@ export class tools {
       
       //Max and min form width + 8px label margin
       let maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8;
-      let minFormWidth = maxLabelWidth + maxInputWidth;
+      let minFormWidth = maxLabelWidth + 128;
 
       element.style.width = '100%';
       element.style.maxWidth = String(maxFormWidth)+'px';
@@ -1337,6 +1339,17 @@ export class tools {
     }
     else if (currentWidth < minFormWidth)
       element.classList.add('ui-form-condensed')
+
+    // Add tooltips for radio and multi-choice inputs
+    Array.from(element.children).forEach((field)=>{ 
+      let editor = field.querySelector('.ui-input-editor');
+      if (editor != null && editor.children.length != 0) {
+        Array.from(editor.children).forEach((item) => {
+          let label = item.querySelector('label');
+          label != null ? api.grok_Tooltip_SetOn(label, label.textContent) : null;
+        })
+      }
+    });
   }
 
   private static handleFormResize(element: HTMLElement, labels: number[], minInputWidth: number) {
@@ -1369,7 +1382,8 @@ export class tools {
         if (currentWidth < Math.max(...labels)+minInputWidth) {
           label != null ? label.style.width = String(Math.ceil(Math.max(...labels)/(Math.max(...labels)+58)*100))+'%' : null;
           label != null ? label.style.flexShrink = String(1-Math.max(...labels)/(Math.max(...labels)+58)) : null;
-
+          label != null ? api.grok_Tooltip_SetOn(label, label?.textContent) : null;
+          
           if (editor == null) return;
 
           editor.style.maxWidth = String(minInputWidth)+'px';
