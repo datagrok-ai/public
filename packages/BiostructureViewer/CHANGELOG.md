@@ -1,5 +1,18 @@
 # BiostructureViewer changelog
 
+## 1.0.25 (2024-01-29)
+
+### Features
+
+* MolstarViewer optimize buildView postponed, destroyView detach only
+
+### Bug fixes
+
+* Fix MolstarViewer tests
+* Fix BiotrackViewer for arbitrary data frame error
+* Fix MolstarViewer test error Unsupported file extension bcif
+* Fix MolstarViewer for pdb_data test
+
 ## 1.0.24 (2024-01-24)
 
 ### Bug fixes

@@ -46,8 +46,8 @@ category('MolstarViewer', () => {
     // expect(viewer.ligands.selected.length, 0);
 
     df.currentRowIdx = 0;
-    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
+    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current !== null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 0);
@@ -135,9 +135,12 @@ category('MolstarViewer', () => {
 
     df.currentRowIdx = 0;
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
+    const t1 = window.performance.now();
     await awaitGrid(tv.grid);
     await delay(DebounceIntervals.currentRow * 2.5);
     await viewer.awaitRendered(15000);
+    const t2 = window.performance.now();
+    _package.logger.debug(`${logPrefix}, awaitRendered for currentRow ET: ${t2 - t1}`);
     const aViewer = viewer as any;
     expect(aViewer.dataEff !== null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '1QBS');
@@ -170,6 +173,7 @@ category('MolstarViewer', () => {
     df.currentRowIdx = 0;
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
     await awaitGrid(tv.grid);
+
     await delay(DebounceIntervals.currentRow * 2.5);
     await viewer.awaitRendered(15000);
     const aViewer = viewer as any;
@@ -188,6 +192,7 @@ category('MolstarViewer', () => {
   }, {timeout: 40000});
 
   test('pdb_data', async () => {
+    // debugger;
     const df = await _package.files.readCsv('pdb_data.csv');
     const view = grok.shell.addTableView(df);
     const pdbGCol = view.grid.col('pdb')!;
@@ -196,8 +201,10 @@ category('MolstarViewer', () => {
     const back = PdbGridCellRendererBack.getOrCreate(pdbGCol);
     await back.awaitRendered(20000);
 
+    const rowI = 1;
+    const pdbName = '1ZP8';
     // region Click
-    const cellPdb0 = view.grid.cell('pdb', 0);
+    const cellPdb0 = view.grid.cell('pdb', rowI);
     const grb = view.grid.root.getBoundingClientRect();
     const cb = cellPdb0.bounds;
     const ev = new MouseEvent('click', {
@@ -213,8 +220,11 @@ category('MolstarViewer', () => {
     const viewer = wu(view.viewers)
       .find((v) => v.type === 'Biostructure') as MolstarViewer;
     expect(!!viewer, true, 'Viewer not found');
+    await delay(DebounceIntervals.currentRow * 2.5);
+    await viewer.awaitRendered(15000);
     const aViewer = viewer as any;
-    expect(!!aViewer.dataEff, true, 'Viewer dataEff is empty');
+    expect(!!aViewer.dataEff, true, 'Viewer dataEff is empty.');
+    expect(aViewer.dataEff.data.includes(pdbName), true, `Viewer dataEff must be '${pdbName}' for row ${rowI}.`);
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
   }, {timeout: 60000});
 });
