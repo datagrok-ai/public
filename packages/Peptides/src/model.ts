@@ -52,6 +52,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {getDbscanWorker} from '@datagrok-libraries/math';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
@@ -172,6 +173,8 @@ export class PeptidesModel {
   set settings(s: type.PartialPeptidesSettings) {
     const newSettingsEntries = Object.entries(s) as ([keyof type.PeptidesSettings, never])[];
     // Holds updated settings categories
+    const oldSeqSpaceOptions: Partial<type.SequenceSpaceParams> =
+      Object.assign({}, this.settings?.sequenceSpaceParams ?? {});
     const updateVars: Set<string> = new Set();
     for (const [key, value] of newSettingsEntries) {
       this.settings![key] = value;
@@ -205,6 +208,24 @@ export class PeptidesModel {
     if (!this.isInitialized)
       return;
 
+    if (updateVars.has('sequenceSpaceParams')) {
+      const newSeqSpaceOptions = this.settings!.sequenceSpaceParams!;
+      let onlyClusteringChanged = true;
+      for (const [key, value] of Object.entries(newSeqSpaceOptions)) {
+        if (
+          oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
+          key !== 'minPts' && key !== 'clusterEmbeddings'
+        ) {
+          onlyClusteringChanged = false;
+          break;
+        }
+      }
+      if (onlyClusteringChanged) {
+        updateVars.delete('sequenceSpaceParams');
+        if (this.settings!.sequenceSpaceParams.clusterEmbeddings)
+          updateVars.add('clusterParams');
+      }
+    }
 
     // Apply new settings
     for (const variable of updateVars) {
@@ -248,6 +269,9 @@ export class PeptidesModel {
         break;
       case 'sequenceSpaceParams':
         this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
+        break;
+      case 'clusterParams':
+        this.clusterEmbeddings();
         break;
       }
     }
@@ -1117,6 +1141,35 @@ export class PeptidesModel {
     return newDf.getTag(DG.TAGS.ID)!;
   }
 
+  private async clusterEmbeddings(): Promise<void> {
+    if (!this._sequenceSpaceCols || this._sequenceSpaceCols.length === 0) {
+      grok.shell.warning('Embeddings columns are not initialized');
+      return;
+    }
+    const embeddingColNames = this._sequenceSpaceCols.filter((colName) => colName.toLowerCase().startsWith('embed_'));
+    if (embeddingColNames.length !== 2) {
+      grok.shell.warning(`Found ${embeddingColNames.length} embeddings columns, expected 2`);
+      return;
+    }
+    const oldClusterCol = this._sequenceSpaceCols.filter((colName) => colName.toLowerCase().startsWith('cluster'));
+    if (oldClusterCol.length > 0)
+      this.df.columns.remove(oldClusterCol[0]);
+    const embed1 = this.df.getCol(embeddingColNames[0]).getRawData() as Float32Array;
+    const embed2 = this.df.getCol(embeddingColNames[1]).getRawData() as Float32Array;
+    const epsilon = this.settings!.sequenceSpaceParams!.epsilon ?? 0.01;
+    const minPts = this.settings!.sequenceSpaceParams!.minPts ?? 4;
+    const clusterRes = await getDbscanWorker(embed1, embed2, epsilon, minPts);
+    const newClusterName = this.df.columns.getUnusedName('Cluster');
+    const clusterCol = this.df.columns.addNewString(newClusterName);
+    clusterCol.init((i) => clusterRes[i].toString());
+    if (this._sequenceSpaceViewer !== null)
+      this._sequenceSpaceViewer.props.colorColumnName = clusterCol.name;
+
+    this._sequenceSpaceCols = [embeddingColNames[0], embeddingColNames[1], clusterCol.name];
+    const gridCol = this.analysisView.grid.col(clusterCol.name);
+    gridCol && (gridCol.visible = false);
+  }
+
   /**
    * Adds Sequence Space viewer to the analysis view
    */
@@ -1184,7 +1237,7 @@ export class PeptidesModel {
     const addedColCount = seqSpaceSettings.clusterEmbeddings ? 3 : 2;
     const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
       for (const col of colArgs.columns) {
-        if (col.name.startsWith('Embed_') ||
+        if (col.name.toLowerCase().startsWith('embed_') ||
         ( seqSpaceSettings.clusterEmbeddings && col.name.toLowerCase().startsWith('cluster'))) {
           const gridCol = this.analysisView.grid.col(col.name);
           if (gridCol == null)
