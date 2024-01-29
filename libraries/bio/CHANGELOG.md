@@ -1,6 +1,12 @@
 # bio changelog
 
-## 5.39.19 (2023-10)
+## 5.39.20 (2021-01-29)
+
+### Features
+
+* Routines to check viewer for IViewer, IRenderer
+
+## 5.39.19 (2024-01-26)
 
 ### Features
 
