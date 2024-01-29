@@ -391,15 +391,11 @@ export namespace chem {
           ui.empty(this.extSketcherDiv);
           const currentMolfile = this.getMolFile();
           ui.tooltip.bind(this.extSketcherCanvas, () => this.createMoleculeTooltip(currentMolfile));
-          const r = window.devicePixelRatio;
-          canvasMol(0, 0, width * r, height * r, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
+          canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
               this.extSketcherDiv.append(this.extSketcherCanvas);
               this.extSketcherDiv.append(this.clearSketcherButton);
-              this.extSketcherCanvas.style.minWidth = '100px';
-              this.extSketcherCanvas.style.width = '100%';
-              this.extSketcherCanvas.style.height = '';
             });
         } else {
           ui.empty(this.extSketcherDiv);
@@ -489,6 +485,10 @@ export namespace chem {
         }
       };
 
+      ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
+        if (!this.isEmpty() && !this.extSketcherDiv.closest('.d4-popup-host'))
+          this.updateExtSketcherContent();
+      });
 
       this.updateExtSketcherContent();
       return this.extSketcherDiv;
