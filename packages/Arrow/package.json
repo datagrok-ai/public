@@ -60,5 +60,11 @@
   "canView": [
     "All users"
   ],
-  "category": "Data Access"
+  "category": "Data Access",
+  "meta": {
+    "dartium": false,
+    "browserFeatures": [
+      "wasm"
+    ]
+  }
 }
