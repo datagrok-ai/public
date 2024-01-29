@@ -572,16 +572,30 @@ const catDF = DG.DataFrame.fromColumns([DG.Column.fromStrings('col', ['val1', 'v
  * @param  {object} options List of options (optional)
  * @return {Promise<void>} The test is considered successful if it completes without errors
  */
-export async function testViewer(v: string, df: DG.DataFrame,
-  options?: {detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean}): Promise<void> {
+export async function testViewer(v: string, df: DG.DataFrame, options?: {
+  detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean,
+  packageName?: string, awaitViewer?: (viewer: DG.Viewer) => Promise<void>
+}): Promise<void> {
+  const createViewer = async (tv: DG.TableView, v: string, packageName?: string): Promise<DG.Viewer> => {
+    let res: DG.Viewer;
+    if (packageName) {
+      res = await tv.dataFrame.plot.fromType(v) as DG.Viewer;
+      tv.dockManager.dock(res);
+    } else
+      res = tv.addViewer(v);
+    return res;
+  };
+
   if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
   let tv = grok.shell.addTableView(df);
   const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
-  const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
-    ${viewerName} input,${viewerName} h1,${viewerName} a,${viewerName} .d4-viewer-error`;
+  // const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
+  //   ${viewerName} input,${viewerName} h1,${viewerName} a,${viewerName} .d4-viewer-error`;
+  const selector = ['div.ui-box' /* root */, 'canvas', 'svg', 'img', 'input', 'h1', 'a', '.d4-viewer-error']
+    .map((selTag) => `${viewerName} ${selTag}`).join(', ');
   const res = [];
   try {
-    let viewer = tv.addViewer(v);
+    let viewer = await createViewer(tv, v, options?.packageName);
     await awaitCheck(() => document.querySelector(selector) !== null,
       'cannot load viewer', 3000);
     const tag = document.querySelector(selector)?.tagName;
@@ -630,11 +644,13 @@ export async function testViewer(v: string, df: DG.DataFrame,
     expectArray(res, [2, 1, 2]);
     expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
     if (options?.arbitraryDfTest !== false) {
+      if (options?.awaitViewer) await options.awaitViewer(viewer);
       grok.shell.closeAll();
+
       await delay(100);
       tv = grok.shell.addTableView(catDF);
       try {
-        viewer = tv.addViewer(v);
+        viewer = await createViewer(tv, v, options?.packageName);
       } catch (e) {
         grok.shell.closeAll();
         DG.Balloon.closeAll();
@@ -643,6 +659,7 @@ export async function testViewer(v: string, df: DG.DataFrame,
       await awaitCheck(() => document.querySelector(selector) !== null,
         'cannot load viewer on arbitrary dataset', 3000);
     }
+    if (options?.awaitViewer) await options.awaitViewer(viewer);
   } finally {
     // closeAll() is handling by common test workflow
     // grok.shell.closeAll();

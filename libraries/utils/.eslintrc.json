@@ -31,8 +31,7 @@
     "linebreak-style": "off",
     "curly": [
       "error",
-      "multi-or-nest",
-      "consistent"
+      "multi-or-nest"
     ],
     "brace-style": [
       "error",
