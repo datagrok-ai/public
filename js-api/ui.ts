@@ -1071,7 +1071,7 @@ export class tools {
     const inputs = this.calculateWidths(tempForm, selectors[1], 'data-input', minInputWidth, minInputPadding);
     const options = this.calculateWidths(tempForm, selectors[2], 'data-options', minInputWidth, minInputPadding);
 
-    this.applyStyles(tempForm, labels, inputs, options);
+    this.applyStyles(tempForm, labels, inputs, options, minInputWidth);
     this.copyAttributesToForm(element, tempForm, labels);
     this.adjustButtonContainer(element);
     this.adjustDialogForm(element, tempForm);
@@ -1182,7 +1182,7 @@ export class tools {
     return width;
   }
 
-  private static applyStyles(tempForm: HTMLElement, labels: number[], inputs: number[], options: number[]) {
+  private static applyStyles(tempForm: HTMLElement, labels: number[], inputs: number[], options: number[], minInputWidth:number) {
     
     //Set the min and max width to input label element
     Array.from(tempForm.children).forEach((element) => {
@@ -1209,7 +1209,7 @@ export class tools {
       
       //Max and min form width + 8px label margin
       let maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8;
-      let minFormWidth = maxLabelWidth + 128;
+      let minFormWidth = maxLabelWidth + minInputWidth + 8;
 
       element.style.width = '100%';
       element.style.maxWidth = String(maxFormWidth)+'px';
@@ -1262,11 +1262,7 @@ export class tools {
 
       if (dataLabel != null) root.setAttribute('data-label', dataLabel);
       if (dataOptions != null) root.setAttribute('data-options', dataOptions);
-      
-      if (inputWidth != 0)
-        root.setAttribute('data-input', String(inputWidth));
-      else if (dataInput != null)
-        root.setAttribute('data-input', dataInput);
+      if (dataInput != null) root.setAttribute('data-input', dataInput);
 
     });
 
@@ -1322,7 +1318,7 @@ export class tools {
     const maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
     const currentWidth = element.getBoundingClientRect().width;
     const label = tempForm.querySelector('label.ui-input-label') as HTMLElement;
-    const maxLabelWidth = parseInt(label.style.maxWidth);
+    const maxLabelWidth = label != null ? parseInt(label.style.maxWidth) : 0;
     
     if (currentWidth > minFormWidth) {
       Array.from(element.children).forEach((field)=>{
