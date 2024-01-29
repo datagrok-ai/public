@@ -3,7 +3,7 @@ import {TerminalType, NucleotideSequences, StrandType, PhosphorothioateLinkageFl
 import {DEFAULT_PATTERN_CONFIG as DEFAULT} from './const';
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 
-export class DefaultStateConfigurator {
+export class PatternDefaultsProvider {
   constructor() { }
 
   getPatternName(): string { return DEFAULT.PATTERN_NAME; }

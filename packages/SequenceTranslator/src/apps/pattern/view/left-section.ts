@@ -11,21 +11,21 @@ import {StringInput, NumberInput} from './types';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {DefaultStateConfigurator} from '../model/default-state-configurator';
+import {PatternDefaultsProvider} from '../model/default-state-configurator';
 import $ from 'cash-dom';
 
 export class PatternAppLeftSection {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    private defaultState: DefaultStateConfigurator,
+    private defaults: PatternDefaultsProvider,
   ) { };
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
       this.eventBus,
       this.dataManager,
-      this.defaultState,
+      this.defaults,
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
 
@@ -49,7 +49,7 @@ class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    private defaultState: DefaultStateConfigurator,
+    private defaultState: PatternDefaultsProvider,
   ) { }
 
   createUIComponents(): HTMLElement[] {

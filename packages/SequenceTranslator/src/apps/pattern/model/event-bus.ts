@@ -6,7 +6,7 @@ import {StrandType, TerminalType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 
 import * as rxjs from 'rxjs';
-import {DefaultStateConfigurator} from './default-state-configurator';
+import {PatternDefaultsProvider} from './default-state-configurator';
 
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
@@ -26,11 +26,11 @@ export class EventBus {
   private _sequenceBaseChanged$ = new rxjs.Subject<string>();
 
 
-  constructor(defaults: DefaultStateConfigurator) {
+  constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
   }
 
-  private initializeDefaultState(defaults: DefaultStateConfigurator) {
+  private initializeDefaultState(defaults: PatternDefaultsProvider) {
     this._patternName$ = new rxjs.BehaviorSubject(defaults.getPatternName());
     this._isAntisenseStrandVisible$ = new rxjs.BehaviorSubject(defaults.getAntiSenseStrandVisibilityFlag());
     this._nucleotideSequences$ = new rxjs.BehaviorSubject(defaults.getNucleotideSequences());
