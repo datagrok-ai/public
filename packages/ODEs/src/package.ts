@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {ODEs, solveODEs} from './solver';
-import {runSolverApp, runSolverDemoApp} from './app';
+import {runSolverApp, runSolverDemoApp, getFilePreview} from './app';
 
 export const _package = new DG.Package();
 
@@ -49,4 +49,14 @@ export async function demoDiffStudio(): Promise<void>  {
 export async function ivpFileHandler(content: string) {
   await runSolverApp(content);
   return [];
+}
+
+//name: previewIvp
+//tags: fileViewer, fileViewer-ivp
+//input: file file
+//output: view preview
+export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
+  const equations = await file.readAsString();
+
+  return await getFilePreview(equations);
 }

@@ -842,10 +842,19 @@ export async function runSolverDemoApp() {
 
   solverView.setRibbonPanels([[openIcon, saveIcon, exportButton, helpIcon]]);
 
+  grok.shell.windows.context.visible = false;
+  grok.shell.windows.help.visible = false;
+  grok.shell.windows.help.syncCurrentObject = true;
+
+  const helpMD = ui.markdown(demoInfo);
+  const divHelp = ui.div([helpMD]);  
+  divHelp.style.padding = '10px';
+  divHelp.style.overflow = 'auto';
+  helpMD.style.fontWeight = 'lighter';
+  solverView.dockManager.dock(divHelp, 'right', undefined, undefined, 0.3);
+
   await runSolving(false);
 } // runSolverDemoApp
-
-
 
 /** Return model inputs UI */
 async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => Promise<void>, startingInputs: Map<string, number> | null): Promise<HTMLDivElement> {
@@ -1046,3 +1055,49 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
   
   return form;
 } // getInputsUI
+
+/** Return file preview view */
+export async function getFilePreview(equations: string): Promise<DG.View> {
+  const view = DG.View.create();
+  view.helpUrl = LINK.DIF_STUDIO_REL;
+  const modelDiv = ui.divV([]);
+
+  const editorView = new EditorView({
+    doc: equations,
+    extensions: [basicSetup, python()],
+    parent: modelDiv
+  });
+
+  editorView.dom.style.overflow = 'auto';
+  editorView.dom.style.height = '100%';
+  try {
+    const ivp = getIVP(equations);
+    const scriptText = getScriptLines(getIVP(equations)).join('\n');    
+    const script = DG.Script.create(scriptText);
+    const params = getScriptParams(ivp);    
+    const call = script.prepare(params);
+  
+    await call.call();
+
+    const solutionTable = call.outputs[DF_NAME];
+    const grid = DG.Viewer.grid(solutionTable);
+    const graph = DG.Viewer.lineChart(
+      solutionTable,
+      lineChartOptions(solutionTable.columns.names())
+    );
+    grid.root.style.width = '100%';
+    graph.root.style.width = '100%';
+
+    const solutionDiv = ui.divV([graph.root, grid.root]);
+
+    const tabCtrl = ui.tabControl();
+    tabCtrl.addPane(TITLE.MODEL, () => modelDiv);
+    tabCtrl.addPane(TITLE.SOLUTION, () => solutionDiv);
+    view.append(tabCtrl).style.padding = '0px';
+  }
+  catch (error) {    
+    view.append(modelDiv).style.padding = '0px';    
+  }
+
+  return view;
+} // getFilePreview

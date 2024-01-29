@@ -46,7 +46,8 @@ export enum TITLE {
   MISC = 'Misc',
   VARY = 'Vary inputs',
   MODEL = 'Model',
-  IPUTS = 'Run'
+  IPUTS = 'Run',
+  SOLUTION = 'Solution',
 };
 
 /** Help links */
