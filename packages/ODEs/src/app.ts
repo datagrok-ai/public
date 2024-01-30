@@ -134,7 +134,7 @@ function contrCompletions(context: any) {
 }
 
 /** Return options of line chart */
-function lineChartOptions(colNames: string[]): Object {
+function getLineChartOptions(colNames: string[]): Object {
   const count = colNames.length;
 
   return {
@@ -199,7 +199,7 @@ export async function runSolverApp(content?: string)  {
       solverView.name = solutionTable.name;
   
       if (!solutionViewer) {
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+        solutionViewer = DG.Viewer.lineChart(solutionTable, getLineChartOptions(solutionTable.columns.names()));
         viewerDockNode = grok.shell.dockManager.dock(
           solutionViewer, 
           DG.DOCK_TYPE.TOP, 
@@ -211,7 +211,7 @@ export async function runSolverApp(content?: string)  {
         solutionViewer.dataFrame = solutionTable;
   
         if (toChangeSolutionViewerProps) {
-          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+          solutionViewer.setOptions(getLineChartOptions(solutionTable.columns.names()));
           toChangeSolutionViewerProps = false;
         }
       }
@@ -448,7 +448,8 @@ export async function runSolverApp(content?: string)  {
   editorView.dom.style.overflow = 'auto';
   editorView.dom.style.height = '100%';
   const node = solverView.dockManager.dock(tabControl.root, 'left');
-  node.container.dart.elementTitle.hidden = true;
+  if (node.container.dart.elementTitle)
+    node.container.dart.elementTitle.hidden = true;
   solverView.helpUrl = LINK.DIF_STUDIO_REL;
   
   // routing
@@ -569,7 +570,7 @@ export async function runSolverDemoApp() {
       solverView.name = solutionTable.name;
   
       if (!solutionViewer) {
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(solutionTable.columns.names()));
+        solutionViewer = DG.Viewer.lineChart(solutionTable, getLineChartOptions(solutionTable.columns.names()));
         viewerDockNode = grok.shell.dockManager.dock(
           solutionViewer, 
           DG.DOCK_TYPE.TOP, 
@@ -581,7 +582,7 @@ export async function runSolverDemoApp() {
         solutionViewer.dataFrame = solutionTable;
   
         if (toChangeSolutionViewerProps) {
-          solutionViewer.setOptions(lineChartOptions(solutionTable.columns.names()));
+          solutionViewer.setOptions(getLineChartOptions(solutionTable.columns.names()));
           toChangeSolutionViewerProps = false;
         }
       }
@@ -1058,10 +1059,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
 
 /** Return file preview view */
 export async function getFilePreview(equations: string): Promise<DG.View> {
-  const view = DG.View.create();
-  view.helpUrl = LINK.DIF_STUDIO_REL;
   const modelDiv = ui.divV([]);
-
   const editorView = new EditorView({
     doc: equations,
     extensions: [basicSetup, python()],
@@ -1070,6 +1068,10 @@ export async function getFilePreview(equations: string): Promise<DG.View> {
 
   editorView.dom.style.overflow = 'auto';
   editorView.dom.style.height = '100%';
+
+  let toShowInfo = true;
+  const openBtn = ui.bigButton(TITLE.OPEN, async () => { await runSolverApp(equations); }, HINT.OPEN_DS);
+
   try {
     const ivp = getIVP(equations);
     const scriptText = getScriptLines(getIVP(equations)).join('\n');    
@@ -1079,25 +1081,83 @@ export async function getFilePreview(equations: string): Promise<DG.View> {
   
     await call.call();
 
-    const solutionTable = call.outputs[DF_NAME];
-    const grid = DG.Viewer.grid(solutionTable);
-    const graph = DG.Viewer.lineChart(
-      solutionTable,
-      lineChartOptions(solutionTable.columns.names())
-    );
-    grid.root.style.width = '100%';
-    graph.root.style.width = '100%';
+    let solutionTable = DG.DataFrame.create();
+    const solverView = DG.TableView.create(solutionTable);
+    solverView.setRibbonPanels([]);
+    let graph: DG.Viewer;
 
-    const solutionDiv = ui.divV([graph.root, grid.root]);
+    /** Solve IVP */
+    const solve = async (ivp: IVP) => {
+      try {      
+        const start = ivp.arg.initial.value;
+        const finish = ivp.arg.final.value;
+        const step = ivp.arg.step.value;
+  
+        if (start >= finish)
+          return;
+   
+        if ((step <= 0) || (step > finish - start))
+          return;
+    
+        const scriptText = getScriptLines(ivp).join('\n');    
+        const script = DG.Script.create(scriptText);
+        const params = getScriptParams(ivp);    
+        const call = script.prepare(params);
+    
+        await call.call();
+          
+        solutionTable = call.outputs[DF_NAME];
+        solverView.dataFrame = solutionTable;
+        graph.dataFrame = solutionTable;
+      } catch (error) {  
+        if (error instanceof Error) 
+          grok.shell.error(error.message);
+        else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);      
+      }
+    }; // solve
 
+    solutionTable = call.outputs[DF_NAME];
+    graph = DG.Viewer.lineChart(solutionTable, getLineChartOptions(solutionTable.columns.names()));
+    solverView.dockManager.dock(graph, DG.DOCK_TYPE.TOP);    
+
+    const inputsDiv = await getInputsUI(ivp, solve, null);    
+    
     const tabCtrl = ui.tabControl();
-    tabCtrl.addPane(TITLE.MODEL, () => modelDiv);
-    tabCtrl.addPane(TITLE.SOLUTION, () => solutionDiv);
-    view.append(tabCtrl).style.padding = '0px';
-  }
-  catch (error) {    
-    view.append(modelDiv).style.padding = '0px';    
-  }
+    const modelPane = tabCtrl.addPane(TITLE.MODEL, () => modelDiv);
+    const runPane = tabCtrl.addPane(TITLE.SOLUTION, () => inputsDiv);
+    tabCtrl.currentPane = runPane;
+    const node = solverView.dockManager.dock(tabCtrl.root, DG.DOCK_TYPE.LEFT, null, undefined, 0.25);
+    node.container.dart.elementTitle.hidden = true;    
 
-  return view;
+    editorView.dom.addEventListener('keydown', async (e) => {
+      if (e.key === HOT_KEY.RUN) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+  
+        if (tabCtrl.currentPane === modelPane)         
+          tabCtrl.currentPane = runPane;
+      }
+      else if (toShowInfo) {
+        toShowInfo = false;        
+        grok.shell.info(ui.divV([ERROR_MSG.OPEN_IN_DIF_STUD, ui.divH([openBtn])]));
+      }
+    });
+
+    return solverView;
+  }
+  catch (error) {
+    const view = DG.View.create();
+    view.helpUrl = LINK.DIF_STUDIO_REL;
+    view.append(modelDiv).style.padding = '0px';
+
+    editorView.dom.addEventListener('keydown', async (e) => {
+      if (toShowInfo) {
+        toShowInfo = false;        
+        grok.shell.info(ui.divV([ERROR_MSG.OPEN_IN_DIF_STUD, ui.divH([openBtn])]));
+      }
+    });
+
+    return view;
+  }  
 } // getFilePreview

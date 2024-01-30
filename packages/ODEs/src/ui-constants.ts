@@ -22,7 +22,8 @@ export enum HINT {
   NIM = 'Nimotuzumab disposition model',
   CLEAR = 'Clear model',
   TO_JS = 'Export model to JavaScript script',
-  APP = 'Export model to platform application with user interface'
+  APP = 'Export model to platform application with user interface',
+  OPEN_DS = 'Open model in Diff Studio',
 };
 
 /** UI titles */
@@ -48,6 +49,7 @@ export enum TITLE {
   MODEL = 'Model',
   IPUTS = 'Run',
   SOLUTION = 'Solution',
+  OPEN = 'Open',
 };
 
 /** Help links */
@@ -74,6 +76,7 @@ export enum ERROR_MSG {
   MISSING_COLON = 'Annotation: ":" is missing',
   CHECK_ARGUMENTS = ' (check the "argument" section)',
   INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',
+  OPEN_IN_DIF_STUD = 'To change the model, open it in Diff Studio.',
 };
 
 /** Warning dialog lines */
