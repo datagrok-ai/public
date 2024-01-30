@@ -210,17 +210,9 @@ export class PeptidesModel {
 
     if (updateVars.has('sequenceSpaceParams')) {
       const newSeqSpaceOptions = this.settings!.sequenceSpaceParams!;
-      let onlyClusteringChanged = true;
-      for (const [key, value] of Object.entries(newSeqSpaceOptions)) {
-        if (
-          oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
-          key !== 'minPts' && key !== 'clusterEmbeddings'
-        ) {
-          onlyClusteringChanged = false;
-          break;
-        }
-      }
-      if (onlyClusteringChanged) {
+      if (!Object.entries(newSeqSpaceOptions).some(([key, value]) =>
+        oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
+          key !== 'minPts' && key !== 'clusterEmbeddings')) {
         updateVars.delete('sequenceSpaceParams');
         if (this.settings!.sequenceSpaceParams.clusterEmbeddings)
           updateVars.add('clusterParams');
