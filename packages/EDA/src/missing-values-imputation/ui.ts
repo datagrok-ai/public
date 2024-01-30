@@ -3,14 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { TITLE, KNN_IMPUTER, ERROR_MSG, HINT } from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, 
+import { SUPPORTED_COLUMN_TYPES, METRIC, DISTANCE, MetricInfo, DEFAULT, MIN_NEIGHBORS, 
   impute, getMissingValsIndices, areThereFails, imputeFailed } from "./knn-imputer";
 
 /** Setting of the feature metric inputs */
 type FeatureInputSettings = {
   defaultWeight: number,
-  defaultMetric: METRIC_TYPE,
-  availableMetrics: METRIC_TYPE[], 
+  defaultMetric: METRIC,
+  availableMetrics: METRIC[], 
 };
 
 /** Return default setting of the feature metric inputs */
@@ -20,8 +20,8 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
     case DG.COLUMN_TYPE.DATE_TIME:
       return {
         defaultWeight: DEFAULT.WEIGHT,
-        defaultMetric: METRIC_TYPE.ONE_HOT,
-        availableMetrics: [METRIC_TYPE.ONE_HOT]
+        defaultMetric: METRIC.ONE_HOT,
+        availableMetrics: [METRIC.ONE_HOT]
       };
 
     case DG.COLUMN_TYPE.INT:
@@ -29,8 +29,8 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
     case DG.COLUMN_TYPE.QNUM:
       return {
         defaultWeight: DEFAULT.WEIGHT,
-        defaultMetric: METRIC_TYPE.DIFFERENCE,
-        availableMetrics: [METRIC_TYPE.DIFFERENCE, METRIC_TYPE.ONE_HOT]
+        defaultMetric: METRIC.DIFFERENCE,
+        availableMetrics: [METRIC.DIFFERENCE, METRIC.ONE_HOT]
       };
 
     default:
@@ -106,9 +106,9 @@ export function runKNNImputer(): void {
   neighborsInput.setTooltip(HINT.NEIGHBORS);
 
   // Distance components
-  let distType = DISTANCE_TYPE.EUCLIDEAN;
-  const distTypeInput = ui.choiceInput(TITLE.DISTANCE, distType, [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN], 
-    () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN);
+  let distType = DISTANCE.EUCLIDEAN;
+  const distTypeInput = ui.choiceInput(TITLE.DISTANCE, distType, [DISTANCE.EUCLIDEAN, DISTANCE.MANHATTAN], 
+    () => distType = distTypeInput.value ?? DISTANCE.EUCLIDEAN);
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)
@@ -157,13 +157,12 @@ export function runKNNImputer(): void {
   const checkApplicability = () => {
     showWidgets();    
     
-    if (selectedFeatureColNames.length === 1) {
+    if (selectedFeatureColNames.length === 1) 
       targetColNames.forEach((name) => {
         if (selectedFeatureColNames[0] === name) {
           hideWidgets();
           grok.shell.warning(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
       }});
-    }
   };
 
   // Metrics components

@@ -27,6 +27,7 @@ import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 import {runKNNImputer} from './missing-values-imputation/ui';
+import {imputeByKNN} from './missing-values-imputation/knn-imputer';
 
 export const _package = new DG.Package();
 
@@ -351,4 +352,14 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //desription: Missing values imputation using the k-nearest neighbors method
 export function kNNImputation() {  
   runKNNImputer();  
+}
+
+//name: missingValuesImputation
+//description: Missing values imputation using KNN
+//input: dataframe table
+//input: object impute
+//input: object using
+//input: bool inPlace
+export function missingValuesImputation(table: DG.DataFrame, impute: string[], using: string[], inPlace: boolean): void {
+  imputeByKNN(table, impute, using, inPlace);
 }

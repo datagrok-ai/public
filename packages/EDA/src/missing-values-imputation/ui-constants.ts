@@ -19,6 +19,10 @@ export enum ERROR_MSG {
   EMPTY_COLUMN = 'Column contains just null values',
   FAILS_TO_PREDICT_IMPUTATION_FAILS = 'Failed to predict imputation fails',
   WRONG_PREDICTIONS = 'wrong evaluation of KNN imputation fails',
+  NO_COLS_IMPUT = 'No columns to be imputed',
+  NON_SUPPORTED = 'Non-supported type of columns:',
+  FAKE_NAME = 'No columns with names:',
+  NO_FEATURES = 'No feature columns to be used for imputation',
 };
 
 /** Suffix used for column copy */

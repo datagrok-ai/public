@@ -11,7 +11,7 @@ export const SUPPORTED_COLUMN_TYPES = [
   DG.COLUMN_TYPE.INT,
   DG.COLUMN_TYPE.FLOAT,
   DG.COLUMN_TYPE.STRING,
-  DG.COLUMN_TYPE.DATE_TIME,
+  //DG.COLUMN_TYPE.DATE_TIME,
   DG.COLUMN_TYPE.QNUM,
 ] as string[];
 
@@ -39,13 +39,13 @@ export function getNullValue(col: DG.Column): number {
 }
 
 /** Metric types (between column elements) */
-export enum METRIC_TYPE {
+export enum METRIC {
   ONE_HOT = 'One-hot',
   DIFFERENCE = 'Difference',
 };
 
 /** Distance types (over several columns). */
-export enum DISTANCE_TYPE {
+export enum DISTANCE {
   EUCLIDEAN = 'Euclidean',
   MANHATTAN = 'Manhattan',
 };
@@ -53,7 +53,7 @@ export enum DISTANCE_TYPE {
 /** Metric specification. */
 export type MetricInfo = {
   weight: number,
-  type: METRIC_TYPE,
+  type: METRIC,
 };
 
 /** Default values */
@@ -76,7 +76,7 @@ type Item = {
 
 /** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
 export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetrics: Map<string, MetricInfo>,
-  missingValsIndices: Map<string, number[]>, distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): Map<string, number[]>
+  missingValsIndices: Map<string, number[]>, distance: DISTANCE, neighbors: number, inPlace: boolean): Map<string, number[]>
 {
   // 1. Check inputs completness
 
@@ -142,11 +142,11 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
         featureNullVal.push(getNullValue(feature));
         
         switch (metricInfo.type) {
-          case METRIC_TYPE.DIFFERENCE:
+          case METRIC.DIFFERENCE:
             metricFunc.push((a: number, b: number) => metricInfo.weight * Math.abs(a - b));            
             break;
 
-          case METRIC_TYPE.ONE_HOT:
+          case METRIC.ONE_HOT:
             metricFunc.push((a: number, b: number) => metricInfo.weight * ((a === b) ? 0 : 1));            
             break;
         
@@ -209,7 +209,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     };
 
     /** Return norm of the buffer vector (distance between i-th & j-th elements) */
-    const dist = (distance === DISTANCE_TYPE.EUCLIDEAN) ? euclideanDistFunc : manhattanDistFunc;
+    const dist = (distance === DISTANCE.EUCLIDEAN) ? euclideanDistFunc : manhattanDistFunc;
 
     /** Check if the current item (i.e. table row) can be used */
     const canItemBeUsed = (cur: number) => {
@@ -466,3 +466,94 @@ export function imputeFailed(df: DG.DataFrame, failedToImpute: Map<string, numbe
     }
   });
 }
+
+/** */
+export function imputeByKNN(table: DG.DataFrame, impute?: string[], using?: string[], inPlace?: boolean, distance?: string, weights?: number[]): void {
+  const columns = table.columns.toList();
+  const colNames = table.columns.names();
+  const targetColNames = [] as string[];
+  const featureColNames = [] as string[];
+  const nonSupportedColNames = [] as string[];
+  const fakeColNames = [] as string[];
+  let removed: string | null = null;
+
+  // Form columns for imputation
+  if (impute) {
+    impute.forEach((name) => {
+      if (colNames.includes(name)) {
+        const col = table.col(name);
+
+        if (SUPPORTED_COLUMN_TYPES.includes(col!.type)) {
+          if (col!.stats.missingValueCount > 0)
+            targetColNames.push(name);            
+        } 
+        else
+          nonSupportedColNames.push(name);
+      }
+      else
+        fakeColNames.push(name);
+    });
+  }
+  else {
+    columns.forEach((col) => {
+      if (SUPPORTED_COLUMN_TYPES.includes(col.name) && (col.stats.missingValueCount > 0))
+        targetColNames.push(col.name);
+    });
+  }
+
+  // Non-supported messege
+  const nonSupportedMsg = () => {
+    if (nonSupportedColNames.length > 0)
+      return `${ERROR_MSG.NON_SUPPORTED} ${nonSupportedColNames.join(', ')}.`;
+
+    return '';
+  };
+
+  // Fake names messege
+  const fakeMsg = () => {
+    if (fakeColNames.length > 0)
+      return `${ERROR_MSG.FAKE_NAME} ${fakeColNames.join(', ')}.`;
+
+    return '';
+  };
+
+  // Check target columns
+  if (targetColNames.length === 0) {
+    grok.shell.error(`${ERROR_MSG.NO_COLS_IMPUT}. ${nonSupportedMsg()} ${fakeMsg()}`);
+    return;
+  }
+
+  // Form columns with features (to be used for imputation)
+  if (using) {
+    using.forEach((name) => {
+      if (colNames.includes(name)) {
+        const col = table.col(name);
+  
+        if (SUPPORTED_COLUMN_TYPES.includes(col!.type))
+          featureColNames.push(name);        
+        else
+          nonSupportedColNames.push(name);
+      }
+      else
+        fakeColNames.push(name);
+    });
+  }
+  else {
+    columns.forEach((col) => {
+      if (SUPPORTED_COLUMN_TYPES.includes(col.name))
+        featureColNames.push(col.name);
+    });
+  }
+
+  // Check feature columns
+  if (featureColNames.length === 0) {
+    grok.shell.error(`${ERROR_MSG.NO_FEATURES}. ${nonSupportedMsg()} ${fakeMsg()}`);
+    return;
+  }
+
+  // Get column that cannot be imputed
+  if ((featureColNames.length === 1) && (targetColNames.includes(featureColNames[0])))
+    removed = featureColNames[0];
+
+  grok.shell.info('Success!');
+} // imputeByKNN
