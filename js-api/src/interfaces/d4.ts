@@ -237,8 +237,6 @@ export interface IHistogramLookSettings {
 
   showCharts: boolean;
 
-  legendInViewerFiltering: boolean;
-
   marginLeft: number;
 
   marginTop: number;
@@ -515,8 +513,6 @@ export interface IScatterPlotLookSettings {
   /// Requires *Auto Axis Size* to be turned off.
   yAxisWidth: number;
 
-  legendInViewerFiltering: boolean;
-
   axisFont: string;
 
   labelFont: string;
@@ -715,8 +711,6 @@ export interface ILineChartLookSettings {
 
   rowGroupTooltip: string;
 
-  legendInViewerFiltering: boolean;
-
   innerChartMarginTop: number;
 
   innerChartMarginBottom: number;
@@ -807,6 +801,8 @@ export interface IBarChartLookSettings {
 
   showCategoryValues: boolean;
 
+  showValuesInsteadOfCategories: boolean;
+
   showCategorySelector: boolean;
 
   /// A categorical column to further split data on.
@@ -868,8 +864,6 @@ export interface IBarChartLookSettings {
 
   barBorderLineColor: number;
 
-  legendInViewerFiltering: boolean;
-
   outerMarginLeft: number;
 
   outerMarginRight: number;
@@ -877,6 +871,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
 
   showEmptyBars: boolean;
 
@@ -1085,8 +1083,6 @@ export interface IPieChartLookSettings {
   includeNulls: boolean;
 
   autoLayout: boolean;
-
-  legendInViewerFiltering: boolean;
 
   segmentAngleColumnName: string;
 
@@ -1567,15 +1563,9 @@ export interface ITrellisPlotLookSettings {
 
   showGridlines: string;
 
-  legendInViewerFiltering: boolean;
-
   showXSelectors: boolean;
 
   showYSelectors: boolean;
-
-  showXAxes: boolean;
-
-  showYAxes: boolean;
 
   showXLabels: boolean;
 

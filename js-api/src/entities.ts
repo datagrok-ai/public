@@ -658,6 +658,14 @@ export class FileInfo extends Entity {
   readAsBytes(): Promise<Uint8Array> {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
+
+  static fromBytes(data: Uint8Array): FileInfo {
+      return api.grok_FileInfo_FromBytes(data);
+  }
+
+  static fromString(data: string): FileInfo {
+    return api.grok_FileInfo_FromString(data);
+  }
 }
 
 /** @extends Entity
@@ -1000,9 +1008,22 @@ export class Package extends Entity {
     return api.grok_Package_Get_Credentials(this.name);
   }
 
-  /** Returns properties for a package. */
-  getProperties(): Promise<Map<string, any>> {
-    return api.grok_Package_Get_Properties(this.name);
+  /**
+   * Deprecated. Use getSettings instead. 
+   *  Returns properties for a package. 
+  */
+  getProperties(): Promise<any> {
+    return this.getSettings();
+  }
+
+  /** Returns settings for a package. */
+  getSettings(): Promise<any> {
+    return api.grok_Package_Get_Settings(this.name);
+  }
+
+  /** Updates settings for a package. */
+  setSettings(props: Map<string, any>, group: Group): Promise<void> {
+    return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
   private _files: FileSource | null = null;
@@ -1165,6 +1186,21 @@ export class Property {
   /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
   get showPlusMinus(): string { return api.grok_Property_Get_ShowPlusMinus(this.dart); }
   set showPlusMinus(s: string) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
+
+  get format(): string { return api.grok_Property_Get_Format(this.dart); }
+  set format(s: string) { api.grok_Property_Set_Format(this.dart, s); }
+
+  get userEditable(): boolean { return api.grok_Property_Get_UserEditable(this.dart); }
+  set userEditable(s: boolean) { api.grok_Property_Set_UserEditable(this.dart, s); }
+
+  get min(): number { return api.grok_Property_Get_Min(this.dart); }
+  set min(s: number) { api.grok_Property_Set_Min(this.dart, s); }
+
+  get max(): number { return api.grok_Property_Get_Max(this.dart); }
+  set max(s: number) { api.grok_Property_Set_Max(this.dart, s); }
+
+  get step(): number { return api.grok_Property_Get_Step(this.dart); }
+  set step(s: number) { api.grok_Property_Set_Step(this.dart, s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.

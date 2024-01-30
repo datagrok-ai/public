@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -6,14 +8,25 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS, computeUMAP, computeTSNE, computeSPE} from './eda-tools';
-import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
+import {computePCA, computePLS} from './eda-tools';
+import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart,
   scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
-import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
+import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
 import {oneWayAnova} from './stat-tools';
+import {getDbscanWorker} from '@datagrok-libraries/math';
+
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+import {MultiColumnDimReductionEditor} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
+import {multiColReduceDimensionality} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+
+import {runKNNImputer} from './missing-values-imputation/ui';
 
 export const _package = new DG.Package();
 
@@ -27,7 +40,24 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: ML | Dimensionality Reduction | PCA...
+//top-menu: ML | Cluster | DBSCAN...
+//name: DBSCAN
+//description: Density-based spatial clustering of applications with noise (DBSCAN)
+//input: dataframe df
+//input: column xCol {type: numerical}
+//input: column yCol {type: numerical}
+//input: double epsilon = 0.02 {caption: Epsilon} [The maximum distance between two samples for them to be considered as in the same neighborhood.]
+//input: int minPts = 4 {caption: Minimum points} [The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.]
+export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column, epsilon: number, minPts: number) {
+  const x = xCol.getRawData() as Float32Array;
+  const y = yCol.getRawData() as Float32Array;
+  const res = await getDbscanWorker(x, y, epsilon, minPts);
+  const clusterColName = df.columns.getUnusedName('Cluster');
+  const cluster = DG.Column.fromInt32Array(clusterColName, res);
+  df.columns.add(cluster);
+}
+
+//top-menu: ML | Analyze | PCA...
 //name: PCA
 //description: Principal component analysis (PCA)
 //input: dataframe table
@@ -37,61 +67,52 @@ export async function init(): Promise<void> {
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  center: boolean, scale: boolean): Promise<DG.DataFrame> 
-{
+  center: boolean, scale: boolean): Promise<DG.DataFrame> {
   const pcaTable = await computePCA(table, features, components, center, scale);
   addPrefixToEachColumnName('PCA', pcaTable.columns);
   return pcaTable;
 }
 
-//top-menu: ML | Dimensionality Reduction | UMAP...
-//name: UMAP
-//description: Uniform Manifold Approximation and Projection (UMAP)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; min: 1; max: 20; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
-//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
-//input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
-//input: double minDist = 0.1 {caption: Minimum distance; min: 0; max: 1; category: Hyperparameters} [The effective minimum distance between embedded points.]
-//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
-//output: dataframe result {action:join(table)}
-export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
-{
-  return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
+
+//name: None (number)
+//tags: dim-red-preprocessing-function
+//meta.supportedTypes: int,float,double,qnum
+//meta.supportedDistanceFunctions: Difference
+//input: column col
+//input: string _metric {optional: true}
+//output: object result
+export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
+  const entries = col.toList();
+  return {entries, options: {}};
 }
 
-//top-menu: ML | Dimensionality Reduction | t-SNE...
-//name: t-SNE
-//description: t-distributed stochastic neighbor embedding (t-SNE)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
-//input: double learningRate = 10 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter. Should be in the range 10...1000.]
-//input: int perplexity = 30 {caption: Perplexity; category: Hyperparameters} [The number of nearest neighbors. Should be less than the number of samples.]
-//input: int iterations = 500 {caption: Iterations; category: Hyperparameters} [Maximum number of iterations for the optimization. Should be at least 250.]
-//output: dataframe result {action:join(table)}
-export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  learningRate: number, perplexity: number, iterations: number): Promise<DG.DataFrame> 
-{
-  return await computeTSNE(features, components, learningRate, perplexity, iterations);
+//name: None (string)
+//tags: dim-red-preprocessing-function
+//meta.supportedTypes: string
+//meta.supportedDistanceFunctions: Levenshtein,Hamming,One-Hot
+//input: column col
+//input: string _metric {optional: true}
+//output: object result
+export function stringPreprocessingFunction(col: DG.Column, _metric: string) {
+  const entries = col.toList();
+  return {entries, options: {}};
 }
 
-//top-menu: ML | Dimensionality Reduction | SPE...
-//name: SPE
-//description: Stochastic proximity embedding (SPE)
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
-//input: int steps = 0 {caption: Steps; category: Hyperparameters} [Number of random selections of point pairs and distance computations between them.]
-//input: int cycles = 1000000 {caption: Cycles; category: Hyperparameters} [Number of the method cycles.]
-//input: double cutoff = 0.0 {caption: Cutoff; category: Hyperparameters} [Cutoff distance between points.]
-//input: double lambda = 2.0 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter.]
-//output: dataframe result {action:join(table)}
-export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimension: number,
-  steps: number, cycles: number, cutoff: number, lambda: number): Promise<DG.DataFrame> 
-{
-  return await computeSPE(features, dimension, steps, cycles, cutoff, lambda);
+//top-menu: ML | Reduce Dimensionality...
+//name: Multi Column Dimensionality Reduction
+export async function reduceDimensionality(): Promise<void> {
+  const editor = new MultiColumnDimReductionEditor();
+  ui.dialog('Dimensionality reduction').add(editor.getEditor()).onOK(async () => {
+    const params = editor.getParams();
+    if (params.columns.length === 0)
+      return;
+    await multiColReduceDimensionality(params.table, params.columns, params.methodName as DimReductionMethods,
+      params.distanceMetrics as KnownMetrics[],
+      params.weights, params.preprocessingFunctions, params.aggreaggregationMethod as DistanceAggregationMethods,
+      !!params.plotEmbeddings, !!params.clusterEmbeddings, params.options, {
+        fastRowCount: 10000,
+      });
+  }).show();
 }
 
 //top-menu: ML | Analyze | Multivariate Analysis...
@@ -102,9 +123,8 @@ export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimensio
 //input: column_list features {type: numerical}
 //input: column predict {type: numerical}
 //input: int components = 3
-export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList, 
-  predict: DG.Column, components: number): Promise<void> 
-{
+export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList,
+  predict: DG.Column, components: number): Promise<void> {
   const plsResults = await computePLS(table, features, predict, components);
   addPLSvisualization(table, names, features, predict, plsResults);
 }
@@ -113,17 +133,17 @@ export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.Co
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //meta.demoPath: Compute | Multivariate analysis
 //meta.isDemoScript: True
-export async function demoMultivariateAnalysis(): Promise<any>  {
-  const demoScript = new DemoScript('Partial least squares regression', 
-    'Analysis of multidimensional data.'); 
-  
+export async function demoMultivariateAnalysis(): Promise<any> {
+  const demoScript = new DemoScript('Partial least squares regression',
+    'Analysis of multidimensional data.');
+
   const cars = carsDataframe();
 
   const components = 3;
   const names = cars.columns.byName('model');
   const predict = cars.columns.byName('price');
   const features = cars.columns.remove('price').remove('model');
-  const plsOutput = await computePLS(cars, features, predict, components);  
+  const plsOutput = await computePLS(cars, features, predict, components);
 
   const sourceCars = carsDataframe();
   sourceCars.name = 'Cars';
@@ -136,7 +156,7 @@ export async function demoMultivariateAnalysis(): Promise<any>  {
       view = grok.shell.getTableView(sourceCars.name);
     }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
     .step('Model', async () => {
-      dialog = ui.dialog({title:'Multivariate Analysis (PLS)'})
+      dialog = ui.dialog({title: 'Multivariate Analysis (PLS)'})
         .add(ui.tableInput('Table', sourceCars))
         .add(ui.columnsInput('Features', cars, features.toList, {available: undefined, checked: features.names()}))
         .add(ui.columnInput('Names', cars, names, undefined))
@@ -147,16 +167,14 @@ export async function demoMultivariateAnalysis(): Promise<any>  {
         })
         .show({x: 400, y: 140});
     }, {description: 'Predict car price by its other features.', delay: 0})
-    .step('Regression coeffcicients', async () => 
-      {
-        dialog.close();
-        view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))},
-      {description: 'The feature "diesel" affects the price the most.', delay: 0})
-    .step('Scores', async () => 
-      {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
+    .step('Regression coeffcicients', async () => {
+      dialog.close();
+      view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]));
+    },
+    {description: 'The feature "diesel" affects the price the most.', delay: 0})
+    .step('Scores', async () => {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]));},
       {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
-    .step('Prediction', async () => 
-      {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]))}, 
+    .step('Prediction', async () => {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]));},
       {description: 'Closer to the line means better price prediction.', delay: 0})
     .start();
 }
@@ -170,9 +188,8 @@ export async function demoMultivariateAnalysis(): Promise<any>  {
 //input: double max = 173 {caption: max; category: Range}
 //input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
 //output: dataframe df
-export async function testDataLinearSeparable(name: string, samplesCount: number, featuresCount: number, 
-  min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> 
-{
+export async function testDataLinearSeparable(name: string, samplesCount: number, featuresCount: number,
+  min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
   return await testDataForBinaryClassification(LINEAR, [0, 0], name, samplesCount, featuresCount,
     min, max, violatorsPercentage);
 }
@@ -187,9 +204,8 @@ export async function testDataLinearSeparable(name: string, samplesCount: number
 //input: double max = 173 {caption: max; category: Range}
 //input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
 //output: dataframe df
-export async function testDataLinearNonSeparable(name: string, sigma: number, samplesCount: number, 
-  featuresCount: number, min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> 
-{
+export async function testDataLinearNonSeparable(name: string, sigma: number, samplesCount: number,
+  featuresCount: number, min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
   return await testDataForBinaryClassification(RBF, [sigma, 0], name, samplesCount, featuresCount,
     min, max, violatorsPercentage);
 }
@@ -202,10 +218,9 @@ export async function testDataLinearNonSeparable(name: string, sigma: number, sa
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
-export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: string, 
-  gamma: number, toShowReport: boolean): Promise<any> 
-{    
-  const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
+export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: string,
+  gamma: number, toShowReport: boolean): Promise<any> {
+  const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);
 
   if (toShowReport)
     showTrainReport(df, trainedModel);
@@ -219,8 +234,8 @@ export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: str
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export async function applyLinearKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
-  return await getPrediction(df, model); 
+export async function applyLinearKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> {
+  return await getPrediction(df, model);
 }
 
 //name: trainRBFkernelSVM
@@ -232,12 +247,11 @@ export async function applyLinearKernelSVM(df: DG.DataFrame, model: any): Promis
 //input: double sigma = 1.5 {category: Hyperparameters}
 //input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
-export async function trainRBFkernelSVM(df: DG.DataFrame, predict_column: string, 
-  gamma: number, sigma: number, toShowReport: boolean): Promise<any> 
-{  
+export async function trainRBFkernelSVM(df: DG.DataFrame, predict_column: string,
+  gamma: number, sigma: number, toShowReport: boolean): Promise<any> {
   const trainedModel = await getTrainedModel(
-    {gamma: gamma, kernel: RBF, sigma: sigma}, 
-    df, predict_column);   
+    {gamma: gamma, kernel: RBF, sigma: sigma},
+    df, predict_column);
 
   if (toShowReport)
     showTrainReport(df, trainedModel);
@@ -251,9 +265,9 @@ export async function trainRBFkernelSVM(df: DG.DataFrame, predict_column: string
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export async function applyRBFkernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
-  return await getPrediction(df, model); 
-} 
+export async function applyRBFkernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> {
+  return await getPrediction(df, model);
+}
 
 //name: trainPolynomialKernelSVM
 //meta.mlname: polynomial kernel LS-SVM
@@ -265,12 +279,11 @@ export async function applyRBFkernelSVM(df: DG.DataFrame, model: any): Promise<D
 //input: double d = 2 {category: Hyperparameters}
 //input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
-export async function trainPolynomialKernelSVM(df: DG.DataFrame, predict_column: string, 
-  gamma: number, c: number, d: number, toShowReport: boolean): Promise<any> 
-{  
+export async function trainPolynomialKernelSVM(df: DG.DataFrame, predict_column: string,
+  gamma: number, c: number, d: number, toShowReport: boolean): Promise<any> {
   const trainedModel = await getTrainedModel(
-    {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d}, 
-    df, predict_column);   
+    {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d},
+    df, predict_column);
 
   if (toShowReport)
     showTrainReport(df, trainedModel);
@@ -284,8 +297,8 @@ export async function trainPolynomialKernelSVM(df: DG.DataFrame, predict_column:
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export async function applyPolynomialKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
-  return await getPrediction(df, model); 
+export async function applyPolynomialKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> {
+  return await getPrediction(df, model);
 }
 
 //name: trainSigmoidKernelSVM
@@ -298,12 +311,11 @@ export async function applyPolynomialKernelSVM(df: DG.DataFrame, model: any): Pr
 //input: double theta = 1 {category: Hyperparameters}
 //input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
-export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: string, 
-  gamma: number, kappa: number, theta: number, toShowReport: boolean): Promise<any> 
-{  
+export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: string,
+  gamma: number, kappa: number, theta: number, toShowReport: boolean): Promise<any> {
   const trainedModel = await getTrainedModel(
-    {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta}, 
-    df, predict_column);   
+    {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta},
+    df, predict_column);
 
   if (toShowReport)
     showTrainReport(df, trainedModel);
@@ -317,8 +329,8 @@ export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: st
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
-  return await getPrediction(df, model); 
+export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> {
+  return await getPrediction(df, model);
 }
 
 //top-menu: ML | Analyze | ANOVA...
@@ -331,5 +343,12 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
 export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
-  addOneWayAnovaVizualization(table, factor, feature, res);  
+  addOneWayAnovaVizualization(table, factor, feature, res);
+}
+
+//top-menu: ML | Missing Values Imputation ...
+//name: KNN impute
+//desription: Missing values imputation using the k-nearest neighbors method
+export function kNNImputation() {  
+  runKNNImputer();  
 }

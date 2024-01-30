@@ -8,9 +8,12 @@ import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
+import {HitAppBase} from '../hit-app-base';
 
 
-export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitTriageTemplate>> {
+export async function createTemplateAccordeon(app: HitAppBase<any>,
+  dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery },
+): Promise<INewTemplateResult<HitTriageTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
   const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
   const availableTemplateKeys: string[] = [];
@@ -24,8 +27,10 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
   });
-  const submitFunctionInput = ui.choiceInput('Submit function', null, Object.keys(submitFunctionsMap));
+  const submitFunctionInput = ui.choiceInput('Submit function', null, [null, ...Object.keys(submitFunctionsMap)]);
   submitFunctionInput.value = null;
+  submitFunctionInput.nullable = true;
+  submitFunctionInput.fireChanged();
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
   const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
 
@@ -74,18 +79,26 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
       functions: [],
     },
   } as unknown as HitTriageTemplate;
-  const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
+  const funcInput = await chemFunctionsDialog(app, (res) => {funcDialogRes = res;}, () => null,
     dummyTemplate, false);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
+  if (Object.entries(dataSourceFunctionMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
-  const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
-  const dataSourceFunctionsMap: {[key: string]: DG.Func} = {};
-  dataSourceFunctions.forEach((func) => {
-    dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
-  });
+    const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
+    const dataSourceQueries = await grok.dapi.queries.include('params,connection')
+      .filter(`#${C.HitTriageDataSourceTag}`).list();
+    // DG.Script.create
+    dataSourceFunctions.forEach((func) => {
+      dataSourceFunctionMap[func.friendlyName ?? func.name] = func;
+    });
+    dataSourceQueries.forEach((query) => {
+      dataSourceFunctionMap[query.friendlyName ?? query.name] = query;
+    });
+  }
+  const combinedSourceNames = Object.keys(dataSourceFunctionMap);
   const dataSourceFunctionInput = ui.choiceInput(
-    C.i18n.dataSourceFunction, Object.keys(dataSourceFunctionsMap)[0],
-    Object.keys(dataSourceFunctionsMap));
+    C.i18n.dataSourceFunction, combinedSourceNames[0],
+    combinedSourceNames);
   const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File'], () => {
     if (ingestTypeInput.value !== 'Query')
       dataSourceFunctionInput.root.style.display = 'none';
@@ -149,6 +162,16 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
               return ({
                 name: scriptNameParts[1] ?? '',
                 id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
+          queries: Object.entries(funcDialogRes?.queries ?? {})
+            .filter(([name, _]) => name.startsWith(C.HTQueryPrefix) && name.split(':').length === 3)
+            .map(([queryName, args]) => {
+              const queryNameParts = queryName.split(':');
+              return ({
+                name: queryNameParts[1] ?? '',
+                id: queryNameParts[2] ?? '',
                 args: args,
               });
             }),

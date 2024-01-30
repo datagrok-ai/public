@@ -69,3 +69,8 @@ export function hexToPercentRgb(hex: string): number[] | null {
       0.3
   ] : null;
 }
+
+export function getFirstNSymbols(number: number, digits: number): string {
+  const str = number.toFixed(digits).toString().slice(0, digits);
+  return str[str.length - 1] === '.' ? number.toFixed(1).toString() : str;
+}

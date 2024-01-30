@@ -12,7 +12,7 @@ import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
-import { delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
+import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
@@ -21,6 +21,26 @@ import {testFunctionView} from '../../shared-utils/function-views-testing';
 const startUrl = new URL(grok.shell.startUri);
 
 const RunDataJSON = 'Run Data JSON';
+
+const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: false,
+    //@ts-ignore
+    selfBrowserSurface: 'include',
+  });
+  const recorder = new MediaRecorder(stream);
+
+  const chunks = [] as Blob[];
+  recorder.ondataavailable = (e) => chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, {type: chunks[0].type});
+    stream.getVideoTracks()[0].stop();
+
+    DG.Utils.download(`Recording ${new Date().toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}.mkv`, blob, chunks[0].type);
+  };
+  recorder.start();
+};
 
 export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
@@ -84,22 +104,22 @@ export abstract class FunctionView extends DG.ViewBase {
       this.setAsLoaded();
     }
 
-    const historySub = this.isHistorical.subscribe((newValue) => {
-      if (this.options.isTabbed || !this.func) return;
-
-      if (newValue) {
-        this.path = `?id=${this.funcCall.id}`;
-        const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
-        if ((this.name.indexOf(' — ') < 0))
-          this.changeViewName(`${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`);
-        else
-          this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`);
-      } else {
-        this.path = ``;
-        this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
-      }
-    });
-    this.subs.push(historySub);
+    if (this.isHistoryEnabled && this.func && !this.options.isTabbed) {
+      const historySub = this.isHistorical.subscribe((newValue) => {
+        if (newValue) {
+          this.path = `?id=${this.funcCall.id}`;
+          const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+          if ((this.name.indexOf(' — ') < 0))
+            this.changeViewName(`${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`);
+          else
+            this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`);
+        } else {
+          this.path = ``;
+          this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
+        }
+      });
+      this.subs.push(historySub);
+    }
   }
 
   /**
@@ -314,7 +334,7 @@ export abstract class FunctionView extends DG.ViewBase {
     ui.empty(this.root);
     this.root.appendChild(this.buildIO());
 
-    if (this.options.historyEnabled) this.buildHistoryBlock();
+    if (this.options.historyEnabled && this.isHistoryEnabled) this.buildHistoryBlock();
     this.buildRibbonMenu();
     this.buildRibbonPanels();
   }
@@ -439,13 +459,13 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const newRibbonPanels: HTMLElement[][] =
       [[
-        ...this.options.historyEnabled ? [
+        ...!this.options.isTabbed && this.isHistoryEnabled && this.options.historyEnabled ? [
           historyButton,
         ]: [],
-        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
+        ...!this.options.isTabbed && this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0 ? [
           exportBtn,
         ]: [],
-        editBtn,
+        ...!this.options.isTabbed ? [editBtn]: [],
       ]];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -489,7 +509,7 @@ export abstract class FunctionView extends DG.ViewBase {
       }
     }
 
-    if (this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
+    if (this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
       ribbonMenu
         .group('Export')
         .items(this.getFormats(), this.exportRun.bind(this))
@@ -509,6 +529,8 @@ export abstract class FunctionView extends DG.ViewBase {
     testingGroup.item('Execute Test JSON', () => this.importRunJsonDialog());
     testingGroup.item('Update Test JSON', () => this.importRunJsonDialog(true));
     ribbonMenu.endGroup();
+
+    ribbonMenu.item('Record the screen', startRecording);
 
     if (this.getAbout) {
       ribbonMenu.item('About', async () => {
@@ -564,7 +586,7 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
 
-    if (this.options.historyEnabled) this.buildHistoryBlock();
+    if (this.options.historyEnabled && this.isHistoryEnabled) this.buildHistoryBlock();
     this.isHistorical.next(true);
 
     await this.onAfterSaveRun(savedCall);
@@ -661,7 +683,7 @@ export abstract class FunctionView extends DG.ViewBase {
       this.lastCall = deepCopy(this.funcCall);
       // If a view is incapuslated into a tab (e.g. in PipelineView),
       // there is no need to save run till an entire pipeline is over.
-      if (!(this.options.isTabbed || this.runningOnInput || this.runningOnStart))
+      if (!(this.options.isTabbed || this.runningOnInput) && this.isHistoryEnabled)
         await this.saveRun(this.funcCall);
     } catch (err: any) {
       grok.shell.error(err.toString());
@@ -736,10 +758,6 @@ export abstract class FunctionView extends DG.ViewBase {
     return ['Excel'];
   };
 
-  protected get hasUploadMode() {
-    return this.func.options['uploadMode'] === 'true';
-  }
-
   protected get runningOnInput() {
     return this.func.options['runOnInput'] === 'true';
   }
@@ -750,5 +768,35 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get mandatoryConsistent() {
     return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
+  }
+
+  protected get features(): Record<string, boolean> | string[] {
+    return JSON.parse(this.func.options['features'] ?? '{}');
+  }
+
+  private getFeature(featureName: string, defaultValue: boolean) {
+    if (this.features instanceof Array)
+      return this.features.includes(featureName);
+
+    if (this.features instanceof Object)
+      return this.features[featureName] ?? defaultValue;
+
+    return defaultValue;
+  }
+
+  protected get isExportEnabled() {
+    return this.getFeature('export', true);
+  }
+
+  protected get isHistoryEnabled() {
+    return this.getFeature('history', true);
+  }
+
+  protected get isSaEnabled() {
+    return this.getFeature('sens-analysis', false);
+  }
+
+  protected get hasUploadMode() {
+    return this.getFeature('upload', false);
   }
 }

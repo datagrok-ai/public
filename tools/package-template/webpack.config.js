@@ -4,7 +4,7 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.js'
+    package: './src/package.js',
   },
   devtool: 'source-map',
   externals: {

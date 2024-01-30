@@ -1,6 +1,6 @@
-import { getSimilarityFromDistance } from "../distance-metrics-methods";
-import { BitArrayMetricsNames, KnownMetrics, Measure } from "../typed-metrics";
-import { insertSmaller, isNil } from "./utils";
+import {KnownMetrics} from '../typed-metrics';
+import {DistanceAggregationMethod, DistanceAggregationMethods} from './types';
+import {insertSmaller, isNil} from './utils';
 
 export type SparseMatrixResult = {
   i: Int32Array,
@@ -20,8 +20,6 @@ export class SparseMatrixService {
     }
 
     public async calc<T>(values: Array<T>, fnName: KnownMetrics, threshold: number, opts: {[_: string]: any} = {}) {
-
-
       //size of full matrix
       const matSize = values.length * (values.length - 1) / 2;
       const chunkSize = Math.floor(matSize / this._workerCount);
@@ -35,18 +33,19 @@ export class SparseMatrixService {
       const promises =
         new Array<Promise<SparseMatrixResult>>(this._workerCount);
 
-      const workers = new Array(this._workerCount).fill(null).map(() => new Worker(new URL('./sparse-matrix-worker', import.meta.url)));
+      const workers = new Array(this._workerCount)
+        .fill(null).map(() => new Worker(new URL('./sparse-matrix-worker', import.meta.url)));
       for (let idx = 0; idx < this._workerCount; idx++) {
         promises[idx] = new Promise((resolveWorker, rejectWorker) => {
           const startIdx = idx * chunkSize;
           const endIdx = idx === this._workerCount - 1 ? matSize : (idx + 1) * chunkSize;
-          if (endIdx <= startIdx) 
+          if (endIdx <= startIdx)
             resolveWorker({i: new Int32Array(0), j: new Int32Array(0), distance: new Float32Array(0), idx});
           workers[idx].postMessage({values, startIdx, endIdx, threshold, fnName, opts});
           workers[idx].onmessage = ({data: {error, i, j, distance}}): void => {
-            if (error) { 
+            if (error) {
               workers[idx].terminate();
-              rejectWorker(error); 
+              rejectWorker(error);
             } else {
               workers[idx].terminate();
               resolveWorker({i, j, distance, idx});
@@ -71,23 +70,39 @@ export class SparseMatrixService {
       return {i, j, distance};
     }
 
-    public async getKNN<T>(values: Array<T>, fnName: KnownMetrics, nNeighbours: number = 15, opts: {[_: string]: any} = {}) {
-      const matSize = values.length * (values.length - 1) / 2;
+    public async getKNN(
+      values: Array<any>, fnName: KnownMetrics, nNeighbours: number = 15, opts: {[_: string]: any} = {}
+    ) {
+      return await this.multiColumnKNN([values], [fnName], nNeighbours, [opts], [1]);
+    }
+
+    public async multiColumnKNN(values: Array<Array<any>>, fnNames: KnownMetrics[], nNeighbours: number = 15,
+      opts: {[_: string]: any}[], weights: number[],
+      aggregationMethod: DistanceAggregationMethod = DistanceAggregationMethods.EUCLIDEAN
+    ) {
+      if (values.length !== fnNames.length || values.length !== opts.length || values.length !== weights.length)
+        throw new Error('values, distance functions, options and weights arrays should have the same length');
+
+      if (values.some((v) => v.length !== values[0].length))
+        throw new Error('all values arrays should have the same length');
+
+      const matSize = values[0].length * (values[0].length - 1) / 2;
       const chunkSize = Math.floor(matSize / this._workerCount);
       const promises =
         new Array<Promise<KnnResult>>(this._workerCount);
-      const workers = new Array(this._workerCount).fill(null).map(() => new Worker(new URL('./knn-worker', import.meta.url)));
+      const workers = new Array(this._workerCount)
+        .fill(null).map(() => new Worker(new URL('./knn-worker', import.meta.url)));
       for (let idx = 0; idx < this._workerCount; idx++) {
         promises[idx] = new Promise((resolveWorker, rejectWorker) => {
           const startIdx = idx * chunkSize;
           const endIdx = idx === this._workerCount - 1 ? matSize : (idx + 1) * chunkSize;
-          if (endIdx <= startIdx) 
+          if (endIdx <= startIdx)
             resolveWorker({knnDistances: new Array(0), knnIndexes: new Array(0)});
-          workers[idx].postMessage({values, startIdx, endIdx, fnName, opts, nNeighbours});
+          workers[idx].postMessage({values, startIdx, endIdx, fnNames, opts, nNeighbours, weights, aggregationMethod});
           workers[idx].onmessage = ({data: {error, knnDistances, knnIndexes}}): void => {
-            if (error) { 
+            if (error) {
               workers[idx].terminate();
-              rejectWorker(error); 
+              rejectWorker(error);
             } else {
               workers[idx].terminate();
               resolveWorker({knnDistances, knnIndexes});
@@ -95,21 +110,22 @@ export class SparseMatrixService {
           };
         });
       }
-  
+
       const results = await Promise.all(promises);
-      const knnRes: KnnResult = {knnDistances: new Array(values.length).fill(null).map(() => new Array<number>(nNeighbours).fill(99999)),
-        knnIndexes: new Array(values.length).fill(null).map(() => new Array<number>(nNeighbours).fill(-1))};
+      const knnRes: KnnResult = {
+        knnDistances: new Array(values[0].length).fill(null).map(() => new Array<number>(nNeighbours).fill(99999)),
+        knnIndexes: new Array(values[0].length).fill(null).map(() => new Array<number>(nNeighbours).fill(-1))};
       for (const res of results) {
-        for (let i = 0; i < values.length; ++i) {
-          for (let j = 0; j < res.knnDistances[i]?.length ?? 0; ++j) {
+        for (let i = 0; i < values[0].length; ++i) {
+          for (let j = 0; j < res.knnDistances[i]?.length ?? 0; ++j)
             insertSmaller(knnRes.knnDistances[i], knnRes.knnIndexes[i], res.knnDistances[i][j], res.knnIndexes[i][j]);
-          }
         }
       }
       return knnRes;
     }
 
-    public async getSampleDistances<T>(values: Array<T>, fnName: KnownMetrics, opts: {[_: string]: any} = {}): Promise<Float32Array> {
+    public async getSampleDistances<T>(values: Array<T>, fnName: KnownMetrics,
+      opts: {[_: string]: any} = {}): Promise<Float32Array> {
       const thresholdWorkers = new Array(this._workerCount).fill(null)
         .map(() => new Worker(new URL('./sparse-matrix-threshold-worker', import.meta.url)));
       // data may be sorted by clusters, which will hinder the random sampling
@@ -119,7 +135,7 @@ export class SparseMatrixService {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffledValues[i], shuffledValues[j]] = [shuffledValues[j], shuffledValues[i]];
       }
-  
+
       try {
         const matSize = values.length * (values.length - 1) / 2;
         const chunkSize = Math.floor(matSize / this._workerCount);
@@ -132,12 +148,13 @@ export class SparseMatrixService {
           tPromises[idx] = new Promise((resolveWorker, rejectWorker) => {
             const startIdx = idx * chunkSize;
             const endIdx = idx === this._workerCount - 1 ? matSize : (idx + 1) * chunkSize;
-            thresholdWorkers[idx].postMessage({values: shuffledValues, startIdx, endIdx, sampleLength: testSetSizePerWorker, fnName, opts});
+            thresholdWorkers[idx].postMessage({
+              values: shuffledValues, startIdx, endIdx, sampleLength: testSetSizePerWorker, fnName, opts
+            });
             thresholdWorkers[idx].onmessage = ({data: {error, distance}}): void => {
               thresholdWorkers[idx].terminate();
-              if (error) { rejectWorker(error); } else {
+              if (error) rejectWorker(error); else
                 resolveWorker({distance});
-              }
             };
           });
         }
@@ -161,16 +178,15 @@ export class SparseMatrixService {
     }
 
     private async getMinimalThreshold<T>(values: Array<T>, fnName: KnownMetrics, opts: {[_: string]: any} = {}) {
-
       //We need to calculate the minimal threshold first,
       //in order to get matrix such that it does not exceed the maximum size of 1GB
       //we have 3 return arrays, each 4 bites per element, so if the maximum size of the matrix is 1GB,
-      const max_Sparse_matrix_size = 70_000_000;
+      const maxSparseMatrixSize = 70_000_000;
       try {
         const matSize = values.length * (values.length - 1) / 2;
         const distance = await this.getSampleDistances(values, fnName, opts);
-        const fractionIndex = Math.floor(max_Sparse_matrix_size / matSize * distance.length);
-        let threshold = 1 - distance[fractionIndex];
+        const fractionIndex = Math.floor(maxSparseMatrixSize / matSize * distance.length);
+        const threshold = 1 - distance[fractionIndex];
         // threshold = Math.max(threshold, 0.3);
         return threshold;
       } catch (e) {
@@ -179,7 +195,9 @@ export class SparseMatrixService {
       }
     }
 
-    public static calcSync<T> (values: Array<T> | ArrayLike<T>, fnName: KnownMetrics, distanceFn: Function, threshold: number) {
+    public static calcSync<T>(
+      values: Array<T> | ArrayLike<T>, fnName: KnownMetrics, distanceFn: Function, threshold: number
+    ) {
       const i: number[] = [];
       const j: number[] = [];
       const distances: number[] = [];
@@ -191,7 +209,7 @@ export class SparseMatrixService {
         //const value = seq1List[mi] && seq1List[mj] ? hamming(seq1List[mi], seq1List[mj]) : 0;
         const value = !isNil(values[mi]) && !isNil(values[mj]) ?
           distanceFn(values[mi], values[mj]) : 1;
-        const similarity = Object.values(BitArrayMetricsNames).some((a) => a === fnName) ? getSimilarityFromDistance(value) : 1 - value;
+        const similarity = 1 - value;
         if (similarity >= threshold) {
           i.push(mi);
           j.push(mj);
@@ -204,7 +222,7 @@ export class SparseMatrixService {
           mj = mi + 1;
         }
       }
-    
+
       const iArray = new Int32Array(i);
       const jArray = new Int32Array(j);
       const distanceArray = new Float32Array(distances);

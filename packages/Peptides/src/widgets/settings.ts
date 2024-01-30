@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import * as type from '../utils/types';
@@ -8,16 +9,17 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
+import {MmDistanceFunctionsNames as distFNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
-type PaneInputs = {[paneName: string]: DG.InputBase[]};
-type SettingsElements = {dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs};
+type PaneInputs = { [paneName: string]: DG.InputBase[] };
+type SettingsElements = { dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs };
 
 export enum SETTINGS_PANES {
   GENERAL = 'General',
   VIEWERS = 'Viewers',
-  MUTATION_CLIFFS = 'Mutation Cliffs',
   COLUMNS = 'Columns',
-};
+  SEQUENCE_SPACE = 'Sequence space',
+}
 
 export enum GENERAL_INPUTS {
   ACTIVITY = 'Activity',
@@ -28,45 +30,57 @@ export enum VIEWERS_INPUTS {
   DENDROGRAM = VIEWER_TYPE.DENDROGRAM,
 }
 
-export enum MUTATION_CLIFFS_INPUTS {
-  MAX_MUTATIONS = 'Max mutations',
-  MIN_ACTIVITY_DELTA = 'Min activity delta',
-}
-
 export enum COLUMNS_INPUTS {
   IS_INCLUDED = '',
   AGGREGATION = 'Aggregation',
 }
+export enum SEQUENCE_SPACE_INPUTS {
+  DISTANCE_FUNCTION = 'Distance function',
+  GAP_OPEN = 'Gap open penalty',
+  GAP_EXTEND = 'Gap extend penalty',
+  CLUSTER_EMBEDDINGS = 'Cluster embeddings',
+  EPSILON = 'Epsilon',
+  MIN_PTS = 'Minimum points',
+  FINGERPRINT_TYPE = 'Fingerprint type',
+}
+
 
 export const PANES_INPUTS = {
   [SETTINGS_PANES.GENERAL]: GENERAL_INPUTS,
   [SETTINGS_PANES.VIEWERS]: VIEWERS_INPUTS,
-  [SETTINGS_PANES.MUTATION_CLIFFS]: MUTATION_CLIFFS_INPUTS,
   [SETTINGS_PANES.COLUMNS]: COLUMNS_INPUTS,
+  [SETTINGS_PANES.SEQUENCE_SPACE]: SEQUENCE_SPACE_INPUTS,
 };
 
-//TODO: show sliderInput values
+/**
+ * Creates settings dialog for peptides analysis.
+ * @param model - Peptides analysis model.
+ * @return - Settings dialog elements.
+ */
 export function getSettingsDialog(model: PeptidesModel): SettingsElements {
+  if (model.settings == null)
+    grok.log.error('PeptidesError: Settings are not initialized');
+
   const accordion = ui.accordion();
   const settings = model.settings;
-  const currentScaling = settings.scaling ?? C.SCALING_METHODS.NONE;
-  // const currentBidirectional = settings.isBidirectional ?? false;
-  const currentMaxMutations = settings.maxMutations ?? 1;
-  const currentMinActivityDelta = settings.minActivityDelta ?? 0;
-  const currentColumns = settings.columns ?? {};
+  const currentScaling = settings?.activityScaling ?? C.SCALING_METHODS.NONE;
+  const currentColumns = settings?.columns ?? {};
 
-  const result: type.PeptidesSettings = {};
+  const result: type.PartialPeptidesSettings = {};
   const inputs: PaneInputs = {};
+  const seqSpaceParams = settings?.sequenceSpaceParams ?? new type.SequenceSpaceParams();
 
   // General pane options
   const activityCol = ui.columnInput(GENERAL_INPUTS.ACTIVITY, model.df,
-    model.df.getCol(model.settings.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
-    {filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
-      col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0});
+    model.df.getCol(model.settings!.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
+    {
+      filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
+        col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0,
+    });
   activityCol.setTooltip('Numeric activity column');
   const activityScaling =
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
-      () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
+      () => result.activityScaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
   activityScaling.setTooltip('Activity column transformation method');
 
   accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling]), true);
@@ -94,36 +108,14 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram]), true);
   inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];
 
-  // Mutation Cliffs pane options
-  const maxMutations = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MAX_MUTATIONS, currentMaxMutations, 1, 50, () => {
-    const val = Math.round(maxMutations.value);
-    $(maxMutations.root).find('label.ui-input-description').remove();
-    result.maxMutations = val;
-    maxMutations.addPostfix(val.toString());
-    //@ts-ignore TODO: UPDATE API VERSION
-  }, {step: 1}) as DG.InputBase<number>;
-  maxMutations.setTooltip('Maximum number of mutations between reference and mutated sequences');
-  maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
-  const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, currentMinActivityDelta, 0,
-    100, () => {
-      const val = minActivityDelta.value.toFixed(3);
-      result.minActivityDelta = parseFloat(val);
-      $(minActivityDelta.root).find('label.ui-input-description').remove();
-      minActivityDelta.addPostfix(val);
-      //@ts-ignore TODO: UPDATE API VERSION
-    }, {step: 0.05}) as DG.InputBase<number>;
-  minActivityDelta.setTooltip('Minimum activity difference between reference and mutated sequences');
-  minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
-  accordion.addPane(SETTINGS_PANES.MUTATION_CLIFFS, () => ui.inputs([maxMutations, minActivityDelta]), true);
-  inputs[SETTINGS_PANES.MUTATION_CLIFFS] = [maxMutations, minActivityDelta];
-
   // Columns to include pane options
   const inputsRows: HTMLElement[] = [];
   const includedColumnsInputs: DG.InputBase[] = [];
   for (const col of model.df.columns.numerical) {
     const colName = col.name;
-    if (colName === settings.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY)
+    if (colName === settings!.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY)
       continue;
+
 
     const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',
       () => {
@@ -136,7 +128,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
             delete result.columns;
         }
       }) as DG.InputBase<boolean>;
-    isIncludedInput.setTooltip('Include aggregated column value in tooltips, Logo Summary Table and Distribution panel');
+    isIncludedInput.setTooltip('Include aggregated column value in tooltips, Logo Summary Table and ' +
+      'Distribution panel');
 
     const aggregationInput = ui.choiceInput(COLUMNS_INPUTS.AGGREGATION, (currentColumns)[colName] ?? DG.AGG.AVG,
       Object.values(DG.STATS), () => {
@@ -161,6 +154,69 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     inputs[SETTINGS_PANES.COLUMNS] = includedColumnsInputs;
   }
 
+  // Sequence space pane options
+  const modifiedSeqSpaceParams: Partial<type.SequenceSpaceParams> = {};
+  function onSeqSpaceParamsChange(fieldName: keyof type.SequenceSpaceParams, value: any): void {
+    correctSeqSpaceInputs();
+    if (value === null || value === undefined || value === '')
+      return;
+    modifiedSeqSpaceParams[fieldName] = value;
+    let isAllSame = true;
+    for (const [key, val] of Object.entries(modifiedSeqSpaceParams)) {
+      if (val !== seqSpaceParams[key as keyof type.SequenceSpaceParams]) {
+        isAllSame = false;
+        break;
+      }
+    }
+    if (isAllSame)
+      delete result.sequenceSpaceParams;
+    else
+      result.sequenceSpaceParams = {...seqSpaceParams, ...modifiedSeqSpaceParams};
+  }
+
+  function toggleInputs(nwInputs: DG.InputBase[], condition: boolean): void {
+    nwInputs.forEach((input) => {
+      if (condition)
+        input.root.style.display = 'flex';
+      else
+        input.root.style.display = 'none';
+    });
+  }
+
+  const distanceFunctionInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION, seqSpaceParams.distanceF,
+    [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
+    () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value));
+  distanceFunctionInput.setTooltip('Distance function');
+  const gapOpenInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_OPEN, seqSpaceParams.gapOpen,
+    () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value));
+  const gapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, seqSpaceParams.gapExtend,
+    () => onSeqSpaceParamsChange('gapExtend', gapExtendInput.value));
+  const clusterEmbeddingsInput =
+    ui.boolInput(SEQUENCE_SPACE_INPUTS.CLUSTER_EMBEDDINGS, seqSpaceParams.clusterEmbeddings ?? false,
+      () => onSeqSpaceParamsChange('clusterEmbeddings', clusterEmbeddingsInput.value));
+  clusterEmbeddingsInput.setTooltip('Cluster embeddings using DBSCAN algorithm');
+  const epsilonInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.EPSILON, seqSpaceParams.epsilon,
+    () => onSeqSpaceParamsChange('epsilon', epsilonInput.value));
+  epsilonInput.setTooltip(
+    'Epsilon parameter for DBSCAN. Minimum distance between two points to be considered as a cluster');
+  const minPtsInput = ui.intInput(SEQUENCE_SPACE_INPUTS.MIN_PTS, seqSpaceParams.minPts,
+    () => onSeqSpaceParamsChange('minPts', minPtsInput.value));
+  minPtsInput.setTooltip('Minimum number of points in a cluster');
+  const fingerprintTypesInput = ui.choiceInput('Fingerprint type', seqSpaceParams.fingerprintType,
+    ['Morgan', 'RDKit', 'Pattern'], () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value));
+  function correctSeqSpaceInputs(): void {
+    toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
+    toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
+    toggleInputs([fingerprintTypesInput],
+      distanceFunctionInput.value === distFNames.MONOMER_CHEMICAL_DISTANCE ||
+      distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
+  }
+  correctSeqSpaceInputs();
+
+  const seqSpaceInputs = [distanceFunctionInput, fingerprintTypesInput, gapOpenInput,
+    gapExtendInput, clusterEmbeddingsInput, epsilonInput, minPtsInput];
+  accordion.addPane(SETTINGS_PANES.SEQUENCE_SPACE, () => ui.inputs(seqSpaceInputs), true);
+  inputs[SETTINGS_PANES.SEQUENCE_SPACE] = seqSpaceInputs;
   const dialog = ui.dialog('Peptides settings').add(accordion);
   dialog.root.style.width = '400px';
   dialog.onOK(() => model.settings = result);

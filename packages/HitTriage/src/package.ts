@@ -10,19 +10,17 @@ export const _package = new DG.Package();
 
 //tags: app
 //name: Hit Triage
-//output: view
-export async function hitTriageApp(): Promise<DG.ViewBase> {
+export async function hitTriageApp(): Promise<void> {
   const c = grok.functions.getCurrentCall();
-  return new HitTriageApp(c).multiView;
+  new HitTriageApp(c);
 }
 
 //tags: app
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
-//output: view
-export async function hitDesignApp(): Promise<DG.ViewBase> {
+export async function hitDesignApp(): Promise<void> {
   const c = grok.functions.getCurrentCall();
-  return new HitDesignApp(c).multiView;
+  new HitDesignApp(c);
 }
 
 //name: Demo Molecules 100
@@ -60,14 +58,6 @@ export async function demoFileIngest2(numberOfMolecules: number): Promise<DG.Dat
 export async function demoFileSubmit(df: DG.DataFrame, molecules: string): Promise<void> {
   grok.shell.info(df.rowCount);
   grok.shell.info(molecules);
-}
-
-//name: Sample File Submit
-//tags: HitTriageSubmitFunction
-//input: dataframe df [dataframe]
-//input: string molecules [molecules column name]
-export async function demoFileSubmit1(df: DG.DataFrame, molecules: string): Promise<void> {
-  grok.shell.info('Another function');
 }
 
 // //name: Gasteiger Partial Charges

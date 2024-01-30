@@ -60,8 +60,9 @@ export class ChordViewer extends EChartViewer {
   }
 
   onTableAttached() {
-    super.onTableAttached();
+    this.addSelectionOrDataSubs();
     this.initChartEventListeners();
+    this.render();
   }
 
   getNodes() {
@@ -69,7 +70,7 @@ export class ChordViewer extends EChartViewer {
 
     const dataFrameSourceColumn = this.dataFrame.getCol('source');
     const dataFrameTargetColumn = this.dataFrame.getCol('target');
-    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+    const filteredIndexList = this.filter.getSelectedIndexes();
 
     const sourceList: Array<string> = new Array<string>(filteredIndexList.length);
     const targetList: Array<string> = new Array<string>(filteredIndexList.length);

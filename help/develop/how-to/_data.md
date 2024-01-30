@@ -58,7 +58,7 @@ demog.set('age', 1, 44);
 
 ### Tags
 
-When annotating dataframes and columns with [metadata](../../catalog/tags.md), take a moment to consider whether you
+When annotating dataframes and columns with [metadata](../../govern/catalog/tags.md), take a moment to consider whether you
 want a tag to be shown to the user. If metadata is attached to facilitate other parts of the data workflow, or you find
 it difficult to read the value stored in a tag, it makes sense to discard it from tooltips where people can see it. To
 do this, simply start a tag name with the `.` prefix.

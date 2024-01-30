@@ -15,6 +15,7 @@ export interface IDartApi {
   grok_List_Clear(x: any): any;
   grok_List_Insert(x: any, index: Num, element: any): any;
   grok_List_Add(x: any, element: any): any;
+  grok_List_Remove(x: any, element: any): any;
   grok_List_Sort(x: any): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
@@ -157,6 +158,7 @@ export interface IDartApi {
   grok_View_Get_Temp(v: any): any;
   grok_View_Load_Layout(v: any, l: any, pickupColumnsTags: Bool): any;
   grok_View_Save_Layout(v: any): any;
+  grok_View_Get_Info(v: any): any;
   grok_View_Get_DockNode(v: any): any;
   grok_View_Get_RibbonMenu(v: any): any;
   grok_View_Set_RibbonMenu(v: any, menu: any): any;
@@ -320,7 +322,8 @@ export interface IDartApi {
   grok_Viewer_FromJsViewer(jsViewer: any): any;
   grok_FilterGroup_GetStates(filterGroup: any, colName: String, type: String): any;
   grok_FilterGroup_Add(filterGroup: any, state: any): any;
-  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any): any;
+  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any, requestFilter: Bool): any;
+  grok_FilterGroup_GetFilterSummary(filterGroup: any): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
@@ -350,6 +353,7 @@ export interface IDartApi {
   grok_Viewer_Set_HelpUrl(v: any, s: String): any;
   grok_Viewer_Get_DataFrame(v: any): any;
   grok_Viewer_Set_DataFrame(v: any, df: any): any;
+  grok_Viewer_Get_Filter(v: any): any;
   grok_Viewer_Get_EventBus_Events(v: any): any;
   grok_Viewer_Get_PropertyChanged_Events(v: any): any;
   grok_Viewer_To_Trellis_Look(v: any): any;
@@ -797,6 +801,16 @@ export interface IDartApi {
   grok_Property_Set_ShowSlider(p: any, x: any): any;
   grok_Property_Get_ShowPlusMinus(p: any): any;
   grok_Property_Set_ShowPlusMinus(p: any, x: any): any;
+  grok_Property_Get_Format(p: any): any;
+  grok_Property_Set_Format(p: any, x: any): any;
+  grok_Property_Get_UserEditable(p: any): any;
+  grok_Property_Set_UserEditable(p: any, x: any): any;
+  grok_Property_Get_Min(p: any): any;
+  grok_Property_Set_Min(p: any, x: any): any;
+  grok_Property_Get_Max(p: any): any;
+  grok_Property_Set_Max(p: any, x: any): any;
+  grok_Property_Get_Step(p: any): any;
+  grok_Property_Set_Step(p: any, x: any): any;
   grok_Property_Get_Options(p: any): any;
   grok_Property_Get(p: any, propertyName: String): any;
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
@@ -1008,6 +1022,8 @@ export interface IDartApi {
   grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
+  grok_InputForm_Get_Source(form: any): any;
+  grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
@@ -1221,12 +1237,16 @@ export interface IDartApi {
   grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
+  grok_Package_Get_Settings(packageName: String): Promise<any>;
+  grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
+  grok_FileInfo_FromBytes(data: any): any;
+  grok_FileInfo_FromString(data: String): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1236,7 +1256,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
-  grok_FileInfo_ReadAsString(p0: any): Promise<any>;
+  grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
   grok_Dapi_UserFiles_Exists(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Delete(fi: any): Promise<any>;
@@ -1327,6 +1347,9 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_DayJs_To_DateTime(milliseconds: Num): any;
+  grok_Test_GetTestDataGeneratorByType(type: String): any;
+  grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
+  grok_Shell_GetClientBuildInfo(): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DockerImage(): any;
@@ -1411,6 +1434,8 @@ export interface IDartApi {
   grok_GridCellStyle_Set_imageScale(x: any, v: Num): any;
   grok_GridCellStyle_Get_opacity(x: any): any;
   grok_GridCellStyle_Set_opacity(x: any, v: Num): any;
+  grok_GridCellStyle_Get_clip(x: any): any;
+  grok_GridCellStyle_Set_clip(x: any, v: Bool): any;
   grok_GridCellStyle_Get_element(x: any): any;
   grok_GridCellStyle_Set_element(x: any, v: any): any;
   grok_GridCellStyle_Get_choices(x: any): any;

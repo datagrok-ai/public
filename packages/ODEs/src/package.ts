@@ -26,17 +26,17 @@ export function solve(problem: ODEs): DG.DataFrame {
   return solveODEs(problem); 
 }
 
-//name: EquaSleek X
+//name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-export async function EquaSleekX() {
+export async function DiffStudio() {
   await runSolverApp(); 
 }
 
-//name: Solver Demo
+//name: Diff Studio Demo
 //description: Interactive solver of ordinary differential equations (ODE)
-//meta.demoPath: Compute | ODEs solver
+//meta.demoPath: Compute | Diff Studio
 //test: demoEquaSleekX() //wait: 100
-export async function demoEquaSleekX(): Promise<any>  {
+export async function demoDiffStudio(): Promise<any>  {
   await runSolverDemoApp();
 }

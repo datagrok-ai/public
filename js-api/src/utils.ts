@@ -230,6 +230,9 @@ export class DartList<T> implements Iterable<T> {
   /** Sets the value at the given [index] in the list to [value]. */
   set(index: number, value: T): T { return api.grok_List_Set(this.dart, index, value); }
 
+  /** Removes the first occurrence of [value] from the list. */
+  remove(value: T) { api.grok_List_Remove(this.dart, value); }
+
   includes(item: T, start?: number) {
     const length = this.length;
     for (let i = (start ? start : 0); i < length; i++) {
@@ -385,14 +388,7 @@ export function _getIterator(dart: any) {
 }
 
 export function _isDartium() {
-  return Array
-    .from(document.getElementsByTagName('script'))
-    .some((s) => {
-      let a = s.getAttribute('src');
-      if (a == null)
-        return null;
-      return a.includes('dart.js');
-    });
+  return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
 }
 
 export function _toJson(x: any) {
@@ -701,4 +697,12 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
+
+  export function getTestDataGeneratorByType(type: string) {
+    return api.grok_Test_GetTestDataGeneratorByType(type);
+  }
+
+  export function getInputTestDataGeneratorByType(inputType: string) {
+    return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
+  }
 }

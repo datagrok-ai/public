@@ -121,13 +121,12 @@ public class ClickHouseProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
         try {
             statement.setTimestamp(parameterIndex, ts);
-            return ts.toString();
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
                     parameterIndex), e);

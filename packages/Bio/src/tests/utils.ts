@@ -35,9 +35,11 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
 /** Waits if container is not started
  * @param {number} ms - time to wait in milliseconds */
 export async function awaitContainerStart(ms: number = 10000): Promise<void> {
-  const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
-  if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking')
+  const container = await grok.dapi.docker.dockerContainers.filter('bio').first();
+  if (container.status !== 'started' && container.status !== 'checking')
     await delay(ms);
+    // TODO: Enable with new JS API version
+    // await grok.dapi.docker.dockerContainers.run(container.id, true);
 }
 
 export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {

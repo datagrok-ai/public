@@ -23,6 +23,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs = this.viewer.subs;
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.viewer.clearFilters();
+      if (this.viewer._bitOpInput)
+        this.viewer._bitOpInput.value = BitwiseOp.OR;
       this.viewer.clearNotIcon(this.viewer.tree.children);
     }));
   }

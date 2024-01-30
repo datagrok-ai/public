@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
-import {_rdKitModule, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {_rdKitModule, drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from 'datagrok-api/grok';
 import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UNITS} from 'datagrok-api/dg';
@@ -67,7 +67,7 @@ function value(node: TreeViewNode): ITreeNode {
 }
 
 function getMol(molString : string) : RDMol | null {
-  return getMolSafe(molString, {mergeQueryHs: true, kekulize: true}, _rdKitModule, true).mol;
+  return getMolSafe(molString, {kekulize: true}, _rdKitModule, true).mol;
 }
 
 function processUnits(molPBlok : string): string {
@@ -319,27 +319,20 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, smarts, FILTER_TYPES.scaffold)).buffer.buffer, molColumn.length);
 }
 
-let offscreen : OffscreenCanvas | null = null;
-let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
-
-
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false, color: string | null = null, substructure: string | null = null): HTMLDivElement {
   const r = window.devicePixelRatio;
-  if (offscreen === null || offscreen.width !== Math.floor(width*r) || offscreen.height !== Math.floor(height*r)) {
-    offscreen = new OffscreenCanvas(Math.floor(width*r), Math.floor(height*r));
-    gOffscreen = offscreen.getContext('2d', {willReadFrequently: true});
-  }
-
-  const g = gOffscreen;
-  g!.imageSmoothingEnabled = true;
-  g!.imageSmoothingQuality = 'high';
+  const resizable = viewer ? viewer.resizable : false;
+  const moleculeWidth = (resizable && !tooltip) ? (viewer!.sizesMap['large'].width) * r : width * r;
+  const moleculeHeight = (resizable && !tooltip) ? (viewer!.sizesMap['large'].height) * r : height * r;
+  const moleculeHost = ui.canvas(width, height);
   if (skipDraw) {
-    g!.font = '18px Roboto, Roboto Local';
+    const context = moleculeHost.getContext('2d');
+    context!.font = '18px Roboto, Roboto Local';
     const text = 'Loading...';
-    const tm = g!.measureText(text);
+    const tm = context!.measureText(text);
     const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent;
     const lineWidth = tm.width;
-    g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
+    context!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
     substructure = substructure !== null ? substructure : molStr;
     const mol = getQueryMolSafe(molStr, '', _rdKitModule);
@@ -347,24 +340,17 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     if (mol !== null && substrMol !== null && color !== null) {
       const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
       _addColorsToBondsAndAtoms(matchedAtomsAndBonds[0], color);
-      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0] === undefined ? null : matchedAtomsAndBonds[0]);
+      drawMoleculeToCanvas(0, 0, moleculeWidth, moleculeHeight, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, matchedAtomsAndBonds[0]);
       mol.delete();
       substrMol.delete();
     } else if (mol !== null && substrMol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, null);
+      drawMoleculeToCanvas(0, 0, width, height, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, null);
       mol.delete();
       substrMol.delete();
     }
   }
-
-  const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
-  const moleculeHost = ui.canvas(width, height);
-  const resizable = viewer ? viewer.resizable : false;
   
   $(moleculeHost).addClass('chem-canvas');
-  moleculeHost.width = (resizable && !tooltip) ? (viewer!.sizesMap['large'].width) * r : width * r;
-  moleculeHost.height = (resizable && !tooltip) ? (viewer!.sizesMap['large'].height) * r : height * r;
-  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
   moleculeHost.style.width = '100%';
   moleculeHost.style.height = '';
   return ui.divH([ui.div(moleculeHost, 'mol-host')], 'chem-mol-box');
@@ -455,6 +441,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   resizable: boolean = false;
   smartsExist: boolean = false;
   current?: DG.TreeViewNode;
+  closeAll?: boolean = false;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -476,6 +463,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   size: string;
   allowGenerate: boolean;
   applyFilter: boolean = true;
+  summary: string;
 
   constructor() {
     super();
@@ -499,7 +487,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (let n = 0; n < tableNames.length; ++n)
       tableNames[n] = this.molColumns[n][0].dataFrame.name;
 
-    this.Table = this.addProperty('Table', DG.TYPE.DATA_FRAME, grok.shell.tv.dataFrame.name, {editor: 'table', category: 'Data'});
+    const defaultTableName = tableNames.length > 0 ? tableNames[0] : '';
+    this.Table = this.addProperty('Table', DG.TYPE.DATA_FRAME, defaultTableName, {editor: 'table', category: 'Data'});
 
     this.tableIdx = tableNames.length > 0 ? tableNames.indexOf(this.Table) : -1;
 
@@ -546,9 +535,27 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
+    this.summary = this.string('summary', this.getFilterSum());
     this._initMenu();
   }
 
+  getFilterSum(): string {
+    return `${this.MoleculeColumn}: ${ScaffoldTreeViewer.TYPE}`;
+  }
+
+  addToFilters() {
+    const summary = `${this.getFilterSum()} (viewer)`;
+    const { filters } = grok.shell.tv.dataFrame.rows;
+    const checkedNodes = this.tree.items.filter((node) => node.checked);
+  
+    if (checkedNodes.length > 0) {
+      if (!filters.includes(summary))
+        filters.push(summary);
+    } else {
+      filters.remove(summary);
+    }
+  }  
+  
   registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
     const thisViewer = this;
     const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
@@ -1072,8 +1079,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (changeBitwise)
       this._bitOpInput!.value = BitwiseOp.OR;
     this.clearNotIcon(this.tree.children);
-    
-    this.dataFrame.rows.requestFilter();
+
+    if (!this.closeAll)
+      this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
 
@@ -1116,7 +1124,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let tmpBitset = DG.BitSet.create(this.molColumn.length);
 
     let isNot = false;
-    
+  
     this.checkedScaffolds = [];
     removeElementByColor(this.colorCodedScaffolds, '');
     for (let n = 0; n < checkedNodes.length; ++n) { //going through all checked nodes, perform filtering and highlight
@@ -1570,10 +1578,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
     divFolder.classList.add('fas', 'icon-fill');
-    divFolder.onclick = (e) => {
-      this.makeNodeActiveAndFilter(group);
-    }
-
+    
     const labelDiv = ui.divText(label);
     const iconsDiv = ui.divV([
       ui.iconFA('trash-alt', () => {
@@ -1606,6 +1611,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.updateFilters();
     });
 
+    folder.onclick = (e) => {
+      this.makeNodeActiveAndFilter(group);
+    }
+    
     value(group).labelDiv = labelDiv;
 
     return group;
@@ -1703,6 +1712,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         }
       }
       this.clear();
+      this.summary = this.getFilterSum();
       //this.molColumn = this.dataFrame.columns.byName(this.MoleculeColumn);
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
@@ -1830,10 +1840,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
+      if (thisViewer.tree.items.length < 1)
+        return;
       const firstChild = thisViewer.tree.items[0];
       if (dataFrame.rowCount !== value(firstChild).bitset?.length)
         await updateAllNodesHits(thisViewer);
-      updateLabelWithLoaderOrBitset(thisViewer); 
+      updateLabelWithLoaderOrBitset(thisViewer);
+    }));
+
+    this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
+      if (this.applyFilter)
+        this.addToFilters();
     }));
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
@@ -1847,6 +1864,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.clearFilters();
       this.clearNotIcon(this.tree.children);
+    }));
+
+    this.subs.push(grok.events.onViewRemoving.subscribe((_) => {
+      this.closeAll = true;
     }));
 
     this.render();

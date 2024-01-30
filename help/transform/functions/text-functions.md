@@ -104,7 +104,7 @@ Length("Text")    // 4
 Returns false if the string `s1` equal to `s2` and true otherwise.
 
 ```javascript
-Eq("Sky", "Sky")    // false
+NotEq("Sky", "Sky")    // false
 ```
 
 ## <a name="padleft"></a>PadLeft(`s`, `width`, `padding`)

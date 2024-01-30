@@ -31,6 +31,8 @@ export function rGroupAnalysis(col: DG.Column): void {
   const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
   const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
 
+  let prefixIdx = 0;
+
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
@@ -70,8 +72,18 @@ export function rGroupAnalysis(col: DG.Column): void {
       col = col.dataFrame.columns.byName(columnInput.value!);
       const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
       if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
-        grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
-        return;
+        prefixIdx++;  
+        const maxPrefixIdx = 100;
+        for (let i = 0; i < maxPrefixIdx; i++) {
+          const reIdx = new RegExp(`^${columnPrefixInput.value}\\d+_${prefixIdx}$`, 'i');
+          if(!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
+            break;
+          prefixIdx++;       
+        }
+        if (prefixIdx - 1 === maxPrefixIdx) {
+          grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+          return;
+        }
       }
       const core = await sketcher.getSmarts();
       if (!core) {
@@ -98,8 +110,9 @@ export function rGroupAnalysis(col: DG.Column): void {
                 mol?.delete();
               }
             }
-            const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-
+            const rColName = prefixIdx ? `${resCol.name}_${prefixIdx}` : resCol.name;
+            resCol.name = rColName;
+            const rCol = DG.Column.fromStrings(rColName, molsArray);
             rCol.semType = DG.SEMTYPE.MOLECULE;
             rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
             col.dataFrame.columns.add(rCol);

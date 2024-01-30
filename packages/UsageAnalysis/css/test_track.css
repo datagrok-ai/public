@@ -1,0 +1,118 @@
+#tt-tree {
+  width: 100%;
+  overflow-y: unset;
+}
+
+#tt-tree .d4-tree-view-group {
+  width: 100%;
+}
+
+#tt-test-case-div {
+  height: 270px;
+  background-color: var(--grey-1);
+  border-radius: 9px;
+  padding: 10px 10px 0 10px;
+  overflow-y: scroll;
+  line-height: 1.5;
+}
+
+#tt-test-case-div > .d4-markup > ol {
+  padding-inline-start: 0;
+}
+
+#tt-test-case-div ol {
+  margin-block-start: 0;
+  padding-inline-start: 30px;
+  list-style-position: inside;
+}
+
+#tt-test-case-div-outer {
+  position: relative;
+  margin: 0 8px;
+}
+
+#tt-edit-button {
+  position: absolute;
+  display: none;
+  right: 5px;
+  top: 5px;
+  margin: 0;
+  padding: 4px;
+  height: unset;
+}
+
+#tt-test-case-div-outer:hover #tt-edit-button {
+  display: flex;
+}
+
+#tt-test-case-div:focus-visible + #tt-edit-button {
+  display: none;
+}
+
+.tt-new-test-case-input {
+  width: 300px;
+  height: 200px;
+}
+
+.tt-status-icon {
+  margin-left: 5px !important;
+  cursor: default !important;
+}
+
+.tt-history i:nth-child(1) {
+  filter: blur(0.6px);
+  opacity: 0.8;
+}
+
+.tt-history i:nth-child(2) {
+  filter: blur(0.8px);
+  opacity: 0.6;
+}
+
+.tt-history i:nth-child(3) {
+  filter: blur(1px);
+  opacity: 0.4;
+}
+
+.tt-ribbon-button {
+  margin: 4px 0 !important;
+}
+
+.tt-slack-link {
+  font-size: 0;
+}
+
+.tt-slack-link:after {
+  content: 'SLACK';
+  font-size: 13px;
+  vertical-align: -15%;
+}
+
+/* .tt-ribbon-button:nth-child(1) {
+  margin-left: 2px !important;
+} */
+
+#tt-ribbon-save-button:enabled {
+  animation-name: color;
+  animation-duration: 1.5s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse;
+  animation-timing-function: linear;
+}
+
+@keyframes color {
+  from {
+    }
+  to {
+    color: #c9e7ff;
+    }
+}
+
+.tt-reason {
+  position: absolute;
+  right: 10px;
+  max-width: 100px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: var(--grey-4);
+}

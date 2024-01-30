@@ -62,7 +62,7 @@ file with the settings
 
 ## Git
 
-Check our [git recommendations](https://datagrok.ai/help/develop/advanced/git-policy) to work with the repository
+Check our [git recommendations](https://datagrok.ai/help/develop/dev-process/git-policy) to work with the repository
 
 ## Performance recommendations
 

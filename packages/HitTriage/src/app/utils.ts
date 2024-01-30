@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
+import {ComputeQueryMolColName} from './consts';
 
 export const toFormatedDateString = (d: Date): string => {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
@@ -92,3 +93,20 @@ export async function runAsync<T>(root: HTMLElement, func: () => Promise<T>) {
     ui.setUpdateIndicator(root, false);
   }
 }
+
+export async function joinQueryResults(df: DG.DataFrame, molColName: string, qRes: DG.DataFrame) {
+  if (qRes.rowCount === 0)
+    return;
+  const molCol = df.col(molColName);
+  if (!molCol)
+    throw new Error('There is no molecule column in dataframe');
+  let resOriginalCol = qRes.col(ComputeQueryMolColName);
+  if (!resOriginalCol) {
+    await qRes.meta.detectSemanticTypes();
+    resOriginalCol = qRes.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  }
+  if (!resOriginalCol)
+    throw new Error('There is no original molecule column in query result dataframe');
+  const newColNames = qRes.columns.names().filter((name) => name !== ComputeQueryMolColName);
+  df.join(qRes, [molColName], [resOriginalCol.name], undefined, newColNames, undefined, true);
+};

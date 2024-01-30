@@ -16,6 +16,12 @@
 * Fix cell renderer monomer tooltip for polymer type
 * Patch WebEditor hanging on getTextWidth
 
+## 2.1.24 (2024-01-09)
+
+### Bug Fixes
+
+* GROK-13798: Fix error bioSubstructureFilter for Helm on size changed
+
 ## 2.1.16 (2023-07-21)
 
 This release focuses on stability.

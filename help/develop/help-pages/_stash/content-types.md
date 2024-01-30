@@ -106,7 +106,7 @@ Topics typically introduce concepts (such as a platform feature or capability) a
 * What is this?
 * Why is it relevant, and why would I use it?
 
-Think of everything a user might want to know if they’ve never heard of this concept before. Notice there’s no _how_ in
+Think of everything a user might want to know if they've never heard of this concept before. Notice there's no _how_ in
 these questions. Tell users _what_ it is and _why_ they need it. Reserve _how to do something_ for tutorials and how-to
 guides. Link to reference material where appropriate. Don't describe more than one concept per article. Start a new
 topic and link to it instead.

@@ -2,13 +2,23 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
+import {ComputeFunctions} from './types';
+import {HitTriageComputeFunctionTag} from './consts';
 
 export class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
   public template?: T;
   public baseUrl!: string;
+  public computeFunctions: Promise<ComputeFunctions>;
   constructor(public parentCall: DG.FuncCall) {
     this.resetBaseUrl();
+    this.computeFunctions = new Promise<ComputeFunctions>(async (resolve) => {
+      const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+      const scripts = await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list();
+      const queries = await grok.dapi.queries.include('params,connection')
+        .filter(`#${HitTriageComputeFunctionTag}`).list();
+      resolve({functions, scripts, queries});
+    });
   }
 
   public resetBaseUrl() {

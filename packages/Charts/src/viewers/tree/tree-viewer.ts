@@ -11,7 +11,7 @@ import * as utils from '../../utils/utils';
 @grok.decorators.viewer({
   name: 'Tree',
   description: 'Creates a tree viewer',
-  trellisable: true,
+  trellisable: false,
   icon: 'icons/tree-viewer.svg',
 })
 export class TreeViewer extends EChartViewer {
@@ -150,7 +150,7 @@ export class TreeViewer extends EChartViewer {
         columnName: this.colorColumnName, propertyName: 'color' });
     }
 
-    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
+    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
   }
 
   render() {

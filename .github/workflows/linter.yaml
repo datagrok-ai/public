@@ -94,11 +94,12 @@ jobs:
           files: '**/*.{md,mdx}'
           separator: ","
       - name: markdownlint-cli
-        uses: DavidAnson/markdownlint-cli2-action@v9
+        uses: DavidAnson/markdownlint-cli2-action@v14.0.0
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
           globs: ${{ steps.changed-files.outputs.all_changed_files }}
           separator: ","
+          fix: true
 
   commit:
     name: CommitLint

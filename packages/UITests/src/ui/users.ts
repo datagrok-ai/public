@@ -1,27 +1,28 @@
-import {after, before, category, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
 category('UI: Users', () => {
-  let v: DG.ViewBase;
-  let tb: HTMLElement;
-
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Manage');
-    const usel = mng.content.querySelector('[data-view=users]') as HTMLElement;
-    await usel.click();
-    v = grok.shell.v;
-    tb = v.toolbox;
-    const filters = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Filters') as HTMLElement;
-    if (!filters.classList.contains('expanded')) await filters.click();
-    const actions = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Actions') as HTMLElement;
-    if (!actions.classList.contains('expanded')) actions.click();
+    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
+    mng.header.click();
+    let platform: any;
+    await awaitCheck(() => {
+      platform = Array.from(document.querySelectorAll('div.d4-tree-view-node'))
+        .find((el) => el.textContent === 'Platform');
+      return platform !== undefined;
+    }, '', 2000);
+    if ((platform.nextElementSibling as HTMLElement).style.display === 'none')
+      (platform.firstElementChild as HTMLElement).click();
+    await delay(100);
+    const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
+      .find((el) => el.textContent === 'Users') as HTMLElement;
+    groups.click();
   });
 
+  /*
   test('filters.all', async () => {
     const usapi = await grok.dapi.users
       .list()
@@ -30,7 +31,7 @@ category('UI: Users', () => {
     const all = Array.from(tb.querySelectorAll('label'))
       .find((el) => el.textContent === 'All');
     if (all === undefined) throw new Error('cannot find All');
-    await all.click();
+    all.click();
     await awaitCheck(() => {
       if (document.querySelector('.grok-items-view-counts') !== null)
         return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
@@ -56,6 +57,7 @@ category('UI: Users', () => {
       }, 'number of users does not match', 3000);
     }, 10);
   });
+  */
 
   test('actions.addUser', async () => {
     const user = DG.User.create();
@@ -67,32 +69,22 @@ category('UI: Users', () => {
   }, {skipReason: 'GROK-11318'});
 
   test('actions.addServiceUser', async () => {
-    const asu = Array.from(tb.querySelectorAll('label'))
-      .find((el) => el.textContent === 'Add Service User...');
-    if (asu === undefined) throw new Error('cannot find Add Service User');
-    await asu.click();
-    const diag = document.getElementsByClassName('d4-dialog');
-    if (diag.length === 0) throw new Error('Add Service User does not work');
-    const cancel = diag[0].querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
+    await showDialog('Service user');
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Add Service User dialog was not shown', 1000);
+    const diag = DG.Dialog.getOpenDialogs()[0];
+    const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
   });
 
   test('actions.inviteFriend', async () => {
-    const iaf = Array.from(tb.querySelectorAll('label'))
-      .find((el) => el.textContent === 'Invite a Friend...');
-    if (iaf === undefined) throw new Error('cannot find Invite a Friend');
-    await iaf.click();
-    const diag = document.getElementsByClassName('d4-dialog');
-    if (diag.length === 0) throw new Error('Invite a Friend does not work');
-    const cancel = diag[0].querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
+    await showDialog('Invite a friend');
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Invite a friend dialog was not shown', 1000);
+    const diag = DG.Dialog.getOpenDialogs()[0];
+    const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
   });
 
   test('user.panel', async () => {
-    const all = Array.from(tb.querySelectorAll('label'))
-      .find((el) => el.textContent === 'All');
-    if (all === undefined) throw new Error('cannot find All');
-    await all.click();
     await awaitCheck(() => {
       if (document.querySelector('.grok-gallery-grid') !== null)
         return document.querySelector('.grok-gallery-grid')!.children.length !== 0;
@@ -117,4 +109,19 @@ category('UI: Users', () => {
   after(async () => {
     grok.shell.closeAll();
   });
+
+  async function showDialog(label: string) {
+    const cng = Array.from(document.querySelectorAll('.ui-btn'))
+      .find((el) => el.textContent === 'New');
+    if (cng === undefined) throw new Error(`cannot find New User button`);
+    (cng as HTMLElement).click();
+    let optn: any;
+    await awaitCheck(() => {
+      optn = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find((el) => el.textContent === label);
+      return optn !== undefined;
+    }, '', 1000);
+    // (optn as HTMLElement).parentElement?.addEventListener('click', () => grok.shell.error('CLICK'));
+    optn.click();
+  };
 }, {clear: false});

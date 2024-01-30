@@ -22,7 +22,7 @@ specify their default formats:
 
 In addition to that, users may change the format directly
 in [column properties](../../visualize/viewers/grid.md#formatting) of an open table. This is done by defining the value
-of `format` tag. The syntax and standard formats are described in this [article](../../catalog/tags.md#format) and
+of `format` tag. The syntax and standard formats are described in this [article](../../govern/catalog/tags.md#format) and
 given for reference in the respective [code snippet](https://public.datagrok.ai/js/samples/grid/data-format). Here is a
 brief example to illustrate how the representation of data can be changed:
 

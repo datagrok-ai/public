@@ -1,6 +1,28 @@
 # Grok Connect changelog
 
-## 2.1.9 (WIP)
+## 2.1.13 (2024-01-19) (WIP)
+
+### Bug fixes
+
+* Fix empty DataFrame with no columns when no results were returned from the query
+* Fix MSSQL credentials expose in logs
+* Fix TableQuery. Creates a query with aliases for column names
+* Fix blob, clob and nclob display for Oracle
+* Fix deadlock when several drivers have been loaded in parallel
+
+## 2.1.12
+
+* Make logging async
+* Improve queries logging and debugging
+
+## 2.1.10 - 2.1.11
+
+* Fix categorize()
+* Fix NullPointer when update query executed
+* Fix Snowflake connection building
+* Fix bit type support in columns
+
+## 2.1.9
 
 * Update of Neptune driver version
 

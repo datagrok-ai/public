@@ -1,6 +1,6 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {BitArrayMetricsNames, IntArrayMetricsNames} from './typed-metrics/consts';
-import { MmDistanceFunctionsNames } from './macromolecule-distance-functions';
+import {BitArrayMetricsNames} from './typed-metrics/consts';
+import {MmDistanceFunctionsNames} from './macromolecule-distance-functions';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
   [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,
@@ -57,7 +57,7 @@ export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
 }
 
 export function tanimotoDistance(x: BitArray, y: BitArray): number {
-  return getDistanceFromSimilarity(tanimotoSimilarity(x, y));
+  return 1 - tanimotoSimilarity(x, y);
 }
 
 export function tanimotoDistanceIntArray(x: Uint32Array, y: Uint32Array): number {
@@ -74,7 +74,7 @@ export function diceSimilarity(x: BitArray, y: BitArray): number {
 }
 
 export function diceDistance(x: BitArray, y: BitArray): number {
-  return getDistanceFromSimilarity(diceSimilarity(x, y));
+  return 1 - diceSimilarity(x, y);
 }
 
 export function cosineSimilarity(x: BitArray, y: BitArray): number {
@@ -85,7 +85,7 @@ export function cosineSimilarity(x: BitArray, y: BitArray): number {
 }
 
 export function cosineDistance(x: BitArray, y: BitArray): number {
-  return getDistanceFromSimilarity(cosineSimilarity(x, y));
+  return 1 - cosineSimilarity(x, y);
 }
 
 export function euclideanSimilarity(x: BitArray, y: BitArray): number {
@@ -111,7 +111,7 @@ export function sokalSimilarity(x: BitArray, y: BitArray): number {
 }
 
 export function sokalDistance(x: BitArray, y: BitArray): number {
-  return getDistanceFromSimilarity(sokalSimilarity(x, y));
+  return 1 - sokalSimilarity(x, y);
 }
 
 export function kulczynskiSimilarity(x: BitArray, y: BitArray): number {
@@ -146,7 +146,7 @@ export function asymmetricSimilarity(x: BitArray, y: BitArray): number {
 }
 
 export function asymmetricDistance(x: BitArray, y: BitArray): number {
-  return getDistanceFromSimilarity(asymmetricSimilarity(x, y));
+  return 1 - asymmetricSimilarity(x, y);
 }
 
 export function braunBlanquetSimilarity(x: BitArray, y: BitArray): number {
