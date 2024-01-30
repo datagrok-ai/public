@@ -26,6 +26,8 @@ import {multiColReduceDimensionality} from
 import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
+import {runKNNImputer} from './missing-values-imputation/ui';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -342,4 +344,11 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
   addOneWayAnovaVizualization(table, factor, feature, res);
+}
+
+//top-menu: ML | Missing Values Imputation ...
+//name: KNN impute
+//desription: Missing values imputation using the k-nearest neighbors method
+export function kNNImputation() {  
+  runKNNImputer();  
 }
