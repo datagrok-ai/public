@@ -1289,9 +1289,10 @@ export class tools {
         if (maxFormWidth < formWidth)
           root.style.maxWidth = String(formWidth)+'px';
 
-        label != null ? label.style.removeProperty('width'): null;
+        label.style.removeProperty('width')
       });
-    } else {
+    } 
+    else {
       this.adjustForm(element, tempForm);
     }
   }
@@ -1304,7 +1305,7 @@ export class tools {
     let label = buttons.querySelector('label') as HTMLElement;
     let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
     
-    label != null ? label.remove() : null;
+    if (label != null) label.remove();
 
     if (editor != null) {
       editor.classList.add('ui-buttons-editor');
@@ -1325,11 +1326,24 @@ export class tools {
         let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
         let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
         let option = field.querySelector('.ui-input-options') as HTMLElement;
+        let optionIcon = iconFA('ellipsis-h', ()=>{
+          $(element).find('.ui-input-options').not(option).removeClass('ui-input-options-expand');
+          $(option).toggleClass('ui-input-options-expand');
+        });
+        optionIcon.classList.add('ui-input-options-icon');
 
-        if (currentWidth < maxLabelWidth+inputWidth+8+optionWidth)
-          option != null ? option.style.display = 'none' : null
-        else
-          option != null ? option.style.display = 'flex' : null
+        if (option == null) return;
+
+        if ($(option).has('i').length != 0) option.append(optionIcon);
+
+        if (currentWidth < maxLabelWidth+inputWidth+8+optionWidth) {
+         $(option).children().css('display', 'none');
+         $(optionIcon).css('display', 'flex');
+        }
+        else {
+          $(option).children().css('display', 'flex');
+          $(optionIcon).css('display', 'none');
+        }
 
       });
     }
@@ -1342,7 +1356,8 @@ export class tools {
       if (editor != null && editor.children.length != 0) {
         Array.from(editor.children).forEach((item) => {
           let label = item.querySelector('label');
-          label != null ? api.grok_Tooltip_SetOn(label, label.textContent) : null;
+          if (label != null)
+            api.grok_Tooltip_SetOn(label, label.textContent)
         })
       }
     });
@@ -1354,7 +1369,7 @@ export class tools {
     const formClassName = element.className;
     const minFormWidth = element.getAttribute('data-min-width') != null ? Number(element.getAttribute('data-min-width')) : Math.max(...labels)+minInputWidth;
     
-    tools.handleResize(element, (currentWidth)=>{ 
+    tools.handleResize(element, (currentWidth) => { 
       let shrinkedLabels = 0;
 
       fields.forEach((field, index) => {
@@ -1369,27 +1384,40 @@ export class tools {
         let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
         
         //Hide options if current width less than max label width + current input and options width + 8px label margin
-        if (currentWidth < Math.max(...labels)+inputWidth+8+optionWidth)
-          option != null ? option.style.display = 'none' : null
-        else
-          option != null ? option.style.display = 'flex' : null
-  
+        if (currentWidth < Math.max(...labels)+inputWidth+8+optionWidth) {
+          if (option != null)
+            $(option).children().css('display','none');
+            $(option).find('.ui-input-options-icon').css('display','flex');
+        }
+        else {
+          if (option != null)
+            $(option).removeClass('ui-input-options-expand');
+            $(option).children().css('display','flex');
+            $(option).find('.ui-input-options-icon').css('display','none');
+        }
+
         //Shrink labels if current form width less than min form width
         if (currentWidth < Math.max(...labels)+minInputWidth) {
-          label != null ? label.style.width = String(Math.ceil(Math.max(...labels)/(Math.max(...labels)+58)*100))+'%' : null;
-          label != null ? label.style.flexShrink = String(1-Math.max(...labels)/(Math.max(...labels)+58)) : null;
-          label != null ? api.grok_Tooltip_SetOn(label, label?.textContent) : null;
-          
+          if (label != null) {
+            label.style.width = String(Math.ceil(Math.max(...labels)/(Math.max(...labels)+58)*100))+'%';
+            label.style.flexShrink = String(1-Math.max(...labels)/(Math.max(...labels)+58));
+            api.grok_Tooltip_SetOn(label, label?.textContent);
+          }
+
           if (editor == null) return;
 
           editor.style.maxWidth = String(minInputWidth)+'px';
           editor.style.width = '100%';
         }
         else {
-          label != null ? label.style.width = '100%' : null;
-          label != null ? label.style.removeProperty('flex-shrink') : null;
-          editor != null ? editor.style.removeProperty('max-width') : null;
-          editor != null ? editor.style.removeProperty('width') : null;
+          if (label != null) {
+            label.style.width = '100%';
+            label.style.removeProperty('flex-shrink');
+          }
+          if (editor != null) {
+            editor.style.removeProperty('max-width');
+            editor.style.removeProperty('width');
+          }
         }
   
         //Detect when label become to shrink  
@@ -1398,13 +1426,24 @@ export class tools {
   
         //Hide options for condensed form  
         if (element.classList.contains('ui-form-condensed')) {
-          editor != null ? editor.style.maxWidth = 'initial' : null;
-          editor != null ? editor.style.removeProperty('width') : null;
+          if (editor != null) {
+            editor.style.maxWidth = 'initial';
+            editor.style.removeProperty('width');
+          }
 
-          if (currentWidth < inputWidth+8+optionWidth)
-            option != null ? option.style.display = 'none' : null
-          else
-            option != null ? option.style.display = 'flex' : null
+          if (currentWidth < inputWidth+8+optionWidth) {
+            if (option != null) { 
+              $(option).children().css('display','none');
+              $(option).find('.ui-input-options-icon').css('display','flex');
+            }
+          }
+          else {
+            if (option != null) {
+              $(option).removeClass('ui-input-options-expand');
+              $(option).children().css('display','flex');
+              $(option).find('.ui-input-options-icon').css('display','none');
+            }
+          }
         }
       });
 
