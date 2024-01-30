@@ -817,10 +817,14 @@ Most of them are hints to improve the interface for your scripts.
 You should list options in curly braces in corresponding header lines.
 The order of the hints makes no difference. All options are optional.
 
-### Input captions
+### Input captions and hints
 
 You can add an arbitrary caption for an input parameter. 
 Proper caption helps the user to understand the meaning of the parameter.
+
+To add a hint to the input parameter, place the hint text in the square brackets 
+after the parameter annotation.
+
 
 ```mdx-code-block
 <Tabs>
@@ -843,7 +847,7 @@ Proper caption helps the user to understand the meaning of the parameter.
 ```
 
 ```python
-#input: double V1 { caption: Initial volume of liquid }
+#input: double V1 { caption: Initial volume of liquid } [Used to calculate the initial concentration and the volume change]
 ```
 
 ```mdx-code-block
