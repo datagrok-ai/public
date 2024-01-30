@@ -93,6 +93,44 @@ Actelion Java MolfileCreator 1.0
 M  END
 `;
 
+const molFileForCloneTest2 = `
+MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+   -0.1786    0.8920    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8930    0.4795    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8930   -0.3455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.1786   -0.7580    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5358   -0.3455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5358    0.4795    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  2  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  2  0  0  0  0
+  6  1  1  0  0  0  0
+M  END
+`;
+
+const molFileForCloneTest1 = `
+MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+   -0.6919    0.4455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4064    0.0330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4064   -0.7920    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6919   -1.2044    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0225   -0.7920    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0225    0.0330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  6  1  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  1  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  1  0  0  0  0
+M  END
+`;
+
 category('substructure filters', async () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -333,14 +371,10 @@ M  END
 
     DG.chem.currentSketcherType = 'Ketcher';
     const filter1 = await createFilter('Structure', df, sketcherDialogs, 15000);
-    const substr = 'C1CCCCC1';
-    const terminateFlag = 'terminate_substructure_search-tests/spgi-100-Structure';
 
     //filter by structure and wait for results
-    filter1.sketcher.setSmiles(substr);
-    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
-      expect(df.filter.trueCount, 5);
-    }, () => {}, 3000);
+    filter1.sketcher.setSmiles('C1CCCCC1');
+    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered', 3000);
 
     //check that search is finished and loader is disabled
     expect(filter1.calculating, false, 'search hasn\'t been finished properly, loader is active');
@@ -414,7 +448,141 @@ M  END
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
+  test('1_clone_layout_scenario', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tv1 = await createTableView(df);
+    const filter1 = await openFilterPanel(tv1, 'Structure');
+    await initializeFilter(filter1);
+    await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+    const tv2 = await cloneView(tv1, df);
+    const filter2 = await openFilterPanel(tv2, 'Structure');
+    await checkFilterSynchronized(filter2, 'C1CCCCC1');
+    await switchToView(tv1);
+    const layout = await saveLayout(tv1);
+    await filterByStructure(df, filter1, molFileForCloneTest2, 32);
+    await applyLayout(tv1, layout, df, 5);
+    await checkFilterSynchronized(filter2, 'C1CCCCC1');
+    await closeView(tv2);
+    //check that filter is still active on df
+    expect(df.filter.trueCount, 5, 'incorrect filter value');
+  });
+
+  test('2_clone_layout_scenario', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tv1 = await createTableView(df);
+    const filter1 = await openFilterPanel(tv1, 'Structure');
+    const tv2 = await cloneView(tv1, df);
+    const filter2 = await openFilterPanel(tv2, 'Structure');
+    await switchToView(tv1);
+    await initializeFilter(filter1);
+    await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+    await checkFilterSynchronized(filter2, 'C1CCCCC1');
+    const layout = await saveLayout(tv1);
+    await filterByStructure(df, filter1, molFileForCloneTest2, 32);
+    await applyLayout(tv1, layout, df, 5);
+    await checkFilterSynchronized(filter2, 'C1CCCCC1');
+    await closeView(tv2);
+    //check that filter is still active on df
+    expect(df.filter.trueCount, 5, 'incorrect filter value');
+  });
+
+  test('3_clone_layout_scenario', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tv1 = await createTableView(df);
+    const filter1 = await openFilterPanel(tv1, 'Structure');
+    const tv2 = await cloneView(tv1, df);
+    const filter2 = await openFilterPanel(tv2, 'Structure');
+    await initializeFilter(filter2);
+    await filterByStructure(df, filter2, molFileForCloneTest1, 5);
+    await checkFilterSynchronized(filter1, 'C1CCCCC1');
+    switchToView(tv1);
+    const layout = await saveLayout(tv1);
+    await filterByStructure(df, filter1, molFileForCloneTest2, 32);
+    await applyLayout(tv1, layout, df, 5);
+    await checkFilterSynchronized(filter2, 'C1CCCCC1');
+    await closeView(tv2);
+    //check that filter is still active on df
+    expect(df.filter.trueCount, 5, 'incorrect filter value');
+  });
+
 });
+
+async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
+  await grok.data.detectSemanticTypes(df);
+  const tv1 = grok.shell.addTableView(df);
+  return tv1;
+}
+
+async function openFilterPanel(tv: DG.TableView, colName: string): Promise<SubstructureFilter> {
+  //open filter panel
+  const fg1 = tv.getFiltersGroup();
+  //wait for filters added to filter panel
+  await awaitCheck(() => fg1.dart.filters.length !== 0, 'filter panel hasn\'t been created', 3000);
+  //get required filter from filter panel
+const filter1 = fg1.dart.filters.filter((it: any) => it?.jsFilter?.columnName === colName)[0].jsFilter as SubstructureFilter;
+return filter1;
+}
+
+
+async function initializeFilter(filter: SubstructureFilter): Promise<void> {
+  //open sketcher to initialize sketcher (need for sketcher to send onChanged events)
+  await ui.tools.waitForElementInDom(filter.sketcher.emptySketcherLink); //need to wait for Sketch button to appear in DOM to click it
+  filter.sketcher.emptySketcherLink.click();
+  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 3000);
+  //close sketcher
+  const sketcherDlg = document.getElementsByClassName('d4-dialog')[0];
+  Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
+}
+
+async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
+  //setting structure and wait for results
+  filter.sketcher.setMolFile(molfile);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 3000);
+}
+
+async function checkFilterSynchronized(filter: SubstructureFilter, smiles: string) {
+  //check that structure in filter has been updated
+  await awaitCheck(() => filter.sketcher.getSmiles() === smiles, 'structure in filter in cloned view hasn\'t been updated', 3000);
+}
+
+async function cloneView(viewToClone: DG.TableView, df: DG.DataFrame) {
+  //cloning view
+  const l = viewToClone.saveLayout();
+  const tv2 = grok.shell.addTableView(df);
+  await delay(50);
+  tv2.loadLayout(l);
+  await delay(50);
+  return tv2;
+}
+
+async function switchToView(tableView: DG.TableView) {
+  grok.shell.v = tableView;
+  await delay(50);
+}
+
+async function saveLayout(tableView: DG.TableView): Promise<DG.ViewLayout> {  
+  const layout = tableView.saveLayout();
+  return layout;
+}
+
+async function applyLayout(tv: DG.TableView, layout: DG.ViewLayout, df: DG.DataFrame, trueCount: number) {
+     //apply saved layout
+     tv.loadLayout(layout);
+     //waiting for layout to be applied
+     await awaitCheck(() => df.filter.trueCount === trueCount, 'layout hasn\'t been applied', 3000);
+}
+
+async function closeView(tv: DG.TableView) {
+  tv.close();
+  //wait for view to close
+  await awaitCheck(() => {
+    for (let i of grok.shell.tableViews) {
+      if (i.name === 'tests/spgi-100 (2)')
+        return false;
+    }
+    return true;
+  }, 'cloned view hasn\'t been closed', 3000);
+}
 
 async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
   Promise<SubstructureFilter> {
