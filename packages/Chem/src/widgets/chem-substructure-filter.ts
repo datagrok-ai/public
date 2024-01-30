@@ -195,6 +195,7 @@ export class SubstructureFilter extends DG.Filter {
         inplaceSketcher = true;
       }
       if (inplaceSketcher) {
+        this.refresh();
         this.root.append(this.sketcher.root);
         this.searchOptionsDiv.append(this.searchTypeInput.root);
       } else
@@ -213,8 +214,8 @@ export class SubstructureFilter extends DG.Filter {
       .subscribe((_: any) => {
         delete this.column!.temp[FILTER_SCAFFOLD_TAG];
         //in case filter filter is disabled during search, we finish current search
-        if (!this.batchResultObservable?.closed) {
-          this.searchNotCompleted = true;
+        if (this.batchResultObservable && !this.batchResultObservable?.closed) {
+          this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.sketcher.getSmarts().then((smarts) => {
             this.terminatePreviousSearch();
             this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
@@ -292,6 +293,8 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   detach() {
+    //in case search was terminated via disabling filter we need to reset searchNotCompleted variable in detach
+    this.searchNotCompleted = false;
     _package.logger.debug(`************detaching filter ${this.filterId}`);
     //reset active filter id in case it is detached
     if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === this.filterId)
@@ -301,8 +304,7 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.getSmarts().then((smarts) => {
         this.terminatePreviousSearch();
         this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
-        this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
-        super.detach();
+        this.finishDetach();
       });
     } else {
       if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === -1) //before detaching - synchronize state with other substructure filters on the same column
@@ -311,9 +313,13 @@ export class SubstructureFilter extends DG.Filter {
           molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
           tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp
         });
-      super.detach();
-      this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
+      this.finishDetach();
     }
+  }
+
+  finishDetach(): void {
+    super.detach();
+    this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
   }
