@@ -105,13 +105,13 @@ export class TSNE {
 
     public getIterSize(rowSize: number) {
       if (rowSize <= 2000)
-        return 200;
-      else if (rowSize <= 3000)
-        return 150;
-      else if (rowSize <= 5000)
-        return 120;
-      else
         return 100;
+      else if (rowSize <= 3000)
+        return 90;
+      else if (rowSize <= 5000)
+        return 80;
+      else
+        return 70;
     }
 
     // compute (p_{i|j} + p_{j|i})/(2n)
@@ -134,7 +134,7 @@ export class TSNE {
         let betamax = Infinity;
         let beta = 1; // initial value of precision
         let done = false;
-        const maxtries = this.getIterSize(rowSize) / 10;
+        const maxtries = Math.floor(this.getIterSize(rowSize) / 5);
 
         // perform binary search to find a suitable precision beta
         // so that the entropy of the distribution is appropriate
