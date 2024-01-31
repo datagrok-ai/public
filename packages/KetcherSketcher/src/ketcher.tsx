@@ -149,20 +149,22 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   setMoleculeFromHost(): void {
-    if (this.host?._molfile !== null) {
-      if (this.host!.molFileUnits === chem.Notation.MolBlock)
-        this.molFile = this.host!._molfile;
-      if (this.host!.molFileUnits === chem.Notation.V3KMolBlock)
-        this.molV3000 = this.host!._molfile;
-      return;
-    }
-    if (this.host?._smiles !== null) {
-      this.smiles = this.host!._smiles;
-      return;
-    }
-    if (this.host?._smarts !== null) {
-      this.smarts = this.host!._smarts;
-      return;
+    if (this.host) {
+      if (this.host!._molfile !== null) {
+        if (this.host!.molFileUnits === chem.Notation.MolBlock)
+          this.molFile = this.host!._molfile;
+        if (this.host!.molFileUnits === chem.Notation.V3KMolBlock)
+          this.molV3000 = this.host!._molfile;
+        return;
+      }
+      if (this.host!._smiles !== null) {
+        this.smiles = this.host!._smiles;
+        return;
+      }
+      if (this.host!._smarts !== null) {
+        this.smarts = this.host!._smarts;
+        return;
+      }
     }
   }
 
