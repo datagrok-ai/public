@@ -23,6 +23,9 @@ export enum ERROR_MSG {
   NON_SUPPORTED = 'Non-supported type of columns:',
   FAKE_NAME = 'No columns with names:',
   NO_FEATURES = 'No feature columns to be used for imputation',
+  INCORRECT_DIST = 'Incorrect distance. Use one of the following:',
+  DIF_LENGTH = 'Arrays of features and weights must be of the same length',
+  WEIGHT_GREATER = 'Weights must be greater than',
 };
 
 /** Suffix used for column copy */
@@ -50,10 +53,10 @@ export enum TITLE {
 /** Help links */
 export const KNN_IMPUTER = '/help/transform/missing-values-imputation';
 
-/** Tooltips */ 
+/** Tooltips */
 export enum HINT {
   TARGET = 'Columns with missing values that must be filled',
-  FEATURES = "Columns with features to be used for determining the 'nearest' elements in the KNN method",
+  FEATURES = 'Columns with features to be used for determining the "nearest elements in the KNN method',
   IN_PLACE = 'Defines whether to use in-place imputation or add a new column without missing values',
   METRIC = 'Type of metric between the feature values',
   WEIGHT = 'Weight',

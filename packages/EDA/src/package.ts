@@ -27,7 +27,7 @@ import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 import {runKNNImputer} from './missing-values-imputation/ui';
-import {imputeByKNN} from './missing-values-imputation/knn-imputer';
+import {imputeByKNN, KNNimputerParams} from './missing-values-imputation/knn-imputer';
 
 export const _package = new DG.Package();
 
@@ -173,9 +173,9 @@ export async function demoMultivariateAnalysis(): Promise<any> {
       view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]));
     },
     {description: 'The feature "diesel" affects the price the most.', delay: 0})
-    .step('Scores', async () => {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]));},
+    .step('Scores', async () => { view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3])); },
       {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
-    .step('Prediction', async () => {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]));},
+    .step('Prediction', async () => { view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0])); },
       {description: 'Closer to the line means better price prediction.', delay: 0})
     .start();
 }
@@ -350,16 +350,13 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //top-menu: ML | Missing Values Imputation ...
 //name: KNN impute
 //desription: Missing values imputation using the k-nearest neighbors method
-export function kNNImputation() {  
-  runKNNImputer();  
+export function kNNImputation() {
+  runKNNImputer();
 }
 
 //name: missingValuesImputation
 //description: Missing values imputation using KNN
 //input: dataframe table
-//input: object impute
-//input: object using
-//input: bool inPlace
-export function missingValuesImputation(table: DG.DataFrame, impute: string[], using: string[], inPlace: boolean): void {
-  imputeByKNN(table, impute, using, inPlace);
-}
+//input: object params
+export function missingValuesImputation(table: DG.DataFrame, params: KNNimputerParams): void { imputeByKNN(table, params); }
+

@@ -2,15 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { TITLE, KNN_IMPUTER, ERROR_MSG, HINT } from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC, DISTANCE, MetricInfo, DEFAULT, MIN_NEIGHBORS, 
+import {TITLE, KNN_IMPUTER, ERROR_MSG, HINT} from './ui-constants';
+import { SUPPORTED_COLUMN_TYPES, METRIC, DISTANCE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
   impute, getMissingValsIndices, areThereFails, imputeFailed } from "./knn-imputer";
 
 /** Setting of the feature metric inputs */
 type FeatureInputSettings = {
   defaultWeight: number,
   defaultMetric: METRIC,
-  availableMetrics: METRIC[], 
+  availableMetrics: METRIC[],
 };
 
 /** Return default setting of the feature metric inputs */
@@ -187,8 +187,7 @@ export function runKNNImputer(): void {
     distTypeInput.root.style.width = '50%';
     distTypeInput.setTooltip(HINT.METRIC);
     distTypeInput.root.hidden = true; // this input will be used further
-
-    // The following should provide a slider (see th bug https://reddata.atlassian.net/browse/GROK-14431)
+    
     // @ts-ignore
     const prop = DG.Property.fromOptions({ "name": name, "inputType": "Float", min: 0, max: 10, "showSlider": true, "step": 1});
     const weightInput = ui.input.forProperty(prop);

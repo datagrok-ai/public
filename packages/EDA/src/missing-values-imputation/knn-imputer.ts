@@ -11,19 +11,19 @@ export const SUPPORTED_COLUMN_TYPES = [
   DG.COLUMN_TYPE.INT,
   DG.COLUMN_TYPE.FLOAT,
   DG.COLUMN_TYPE.STRING,
-  //DG.COLUMN_TYPE.DATE_TIME,
+  DG.COLUMN_TYPE.DATE_TIME,
   DG.COLUMN_TYPE.QNUM,
 ] as string[];
 
 /** Return null value with respect to the column type */
 export function getNullValue(col: DG.Column): number {
   switch (col.type) {
-    case DG.COLUMN_TYPE.INT:        
+    case DG.COLUMN_TYPE.INT:
       return DG.INT_NULL;
 
     case DG.COLUMN_TYPE.FLOAT:
       return DG.FLOAT_NULL;
-    
+
     case DG.COLUMN_TYPE.QNUM:
       return DG.FLOAT_NULL;
 
@@ -32,10 +32,10 @@ export function getNullValue(col: DG.Column): number {
 
     case DG.COLUMN_TYPE.STRING:
       return col.max;
-  
+
     default:
       throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-  }  
+  }
 }
 
 /** Metric types (between column elements) */
@@ -46,8 +46,8 @@ export enum METRIC {
 
 /** Distance types (over several columns). */
 export enum DISTANCE {
-  EUCLIDEAN = 'Euclidean',
-  MANHATTAN = 'Manhattan',
+  EUCLIDEAN = 'euclidean',
+  MANHATTAN = 'manhattan',
 };
 
 /** Metric specification. */
@@ -62,11 +62,26 @@ export enum DEFAULT {
   NEIGHBORS = 4,
   IN_PLACE = 1,
   SELECTED = 1,
-  KEEP_EMPTY = 0,
+  KEEP_EMPTY = 0,  
+};
+const DEFAULT_DIST = DISTANCE.EUCLIDEAN;
+const DEFAULT_IN_PLACE = true;
+const DEFAULT_KEEP_EMPTY = false;
+
+/** KNN-imputer parameters */
+export type KNNimputerParams = {
+  impute: string[] | undefined, 
+  using: string[] | undefined,
+  neighbors: number | undefined, 
+  inPlace: boolean | undefined, 
+  keepEmpty: boolean | undefined, 
+  distance: string | undefined, 
+  weights: number[] | undefined,
 };
 
-/** Min number of neighbors for KNN */
+/** Min-s of KNN parameters*/
 export const MIN_NEIGHBORS = 1;
+const MIN_WEIGHT = 0;
 
 /** Dataframe item: index - number of row,  dist - distance to the target element */
 type Item = {
@@ -75,9 +90,10 @@ type Item = {
 };
 
 /** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
-export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetrics: Map<string, MetricInfo>,
-  missingValsIndices: Map<string, number[]>, distance: DISTANCE, neighbors: number, inPlace: boolean): Map<string, number[]>
-{
+export function impute(df: DG.DataFrame, targetColNames: string[],
+  featuresMetrics: Map<string, MetricInfo>,
+  missingValsIndices: Map<string, number[]>,
+  distance: DISTANCE, neighbors: number, inPlace: boolean): Map<string, number[]> {
   // 1. Check inputs completness
 
   if (neighbors < MIN_NEIGHBORS)
@@ -91,16 +107,17 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
 
   if (featuresMetrics.size === 0)
     throw new Error(ERROR_MSG.KNN_NO_FEATURE_COLUMNS);
-  
-  if (featuresMetrics.size === 1)
+
+  if (featuresMetrics.size === 1) {
     targetColNames.forEach((name) => {
       if (featuresMetrics.has(name))
         throw new Error(`${ERROR_MSG.KNN_NO_FEATURE_COLUMNS} can be used for the column '${name}'`);
-      });
+    });
+  }
 
   targetColNames.forEach((name) => {
     if (!missingValsIndices.has(name))
-      throw new Error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.WRONG_PREDICTIONS}`);      
+      throw new Error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.WRONG_PREDICTIONS}`);
   });
 
   const columns = df.columns;
@@ -140,21 +157,22 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
         const feature = columns.byName(name);
         featureSource.push(feature.getRawData());
         featureNullVal.push(getNullValue(feature));
-        
+
         switch (metricInfo.type) {
           case METRIC.DIFFERENCE:
-            metricFunc.push((a: number, b: number) => metricInfo.weight * Math.abs(a - b));            
+            metricFunc.push((a: number, b: number) => metricInfo.weight * Math.abs(a - b));
             break;
 
           case METRIC.ONE_HOT:
-            metricFunc.push((a: number, b: number) => metricInfo.weight * ((a === b) ? 0 : 1));            
+            metricFunc.push((a: number, b: number) => metricInfo.weight * ((a === b) ? 0 : 1));
             break;
-        
+
           default:
             break;
         }
-    }});
-    
+      }
+    });
+
     const featuresCount = featureSource.length;
     const properIndices = new Uint32Array(featureSource.length);
     const bufferVector = new Float32Array(featureSource.length);
@@ -173,19 +191,20 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     /** Obtain proper indices for KNN: features with missing vals are skipped */
     const getProperIndeces = (idx: number) => {
       properIndicesCount = 0;
-      
-      for (let i = 0; i < featuresCount; ++i)
+
+      for (let i = 0; i < featuresCount; ++i) {
         if (featureSource[i][idx] !== featureNullVal[i]) {
           properIndices[properIndicesCount] = i;
           ++properIndicesCount;
         }
+      }
     };
 
     /** Compute buffer vector */
     const computeBufferVector = (idx: number, cur: number) => {
       properIndices.forEach((properIndex, k) => {
         bufferVector[k] = metricFunc[properIndex](featureSource[properIndex][idx], featureSource[properIndex][cur]);
-      })
+      });
     };
 
     /** Euclidean distance function */
@@ -193,7 +212,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       let sum = 0;
 
       for (let i = 0; i < properIndicesCount; ++i)
-        sum +=bufferVector[i] * bufferVector[i];
+        sum += bufferVector[i] * bufferVector[i];
 
       return Math.sqrt(sum);
     };
@@ -201,10 +220,10 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     /** Manhattan distance function */
     const manhattanDistFunc = () => {
       let sum = 0;
-    
+
       for (let i = 0; i < properIndicesCount; ++i)
         sum += Math.abs(bufferVector[i]);
-    
+
       return Math.sqrt(sum);
     };
 
@@ -216,16 +235,17 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       if (source[cur] === nullValue)
         return false;
 
-      for (let i = 0; i < properIndicesCount; ++i)        
+      for (let i = 0; i < properIndicesCount; ++i) {
         if (featureSource[properIndices[i]][cur] === featureNullVal[properIndices[i]])
           return false;
+      }
 
       return true;
     };
 
     /** Return the most frequent of the nearest items (for categorial data) */
     const mostFrequentOfTheNearestItems = () => {
-      frequencies.forEach((v, i,arr) => arr[i] = 0);
+      frequencies.forEach((v, i, arr) => arr[i] = 0);
       let i = 0;
 
       for (i = 0; i < nearestItemsCount; ++i)
@@ -233,7 +253,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
 
       let maxFreq = frequencies[0];
       let maxFreqIdx = 0;
-      
+
       frequencies.forEach((v, i) => {
         if (v > maxFreq) {
           maxFreq = v;
@@ -245,7 +265,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     };
 
     /** Get imputation value */
-    const getFillValue = (idx: number) => {      
+    const getFillValue = (idx: number) => {
       getProperIndeces(idx);
 
       // check available features
@@ -255,7 +275,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       nearestItemsCount = 0;
 
       // search for the closest items
-      for (let cur = 0; cur < len; ++cur)
+      for (let cur = 0; cur < len; ++cur) {
         if (canItemBeUsed(cur) && (cur !== idx)) {
           // 1) compute distance between cur-th and idx-th items
           computeBufferVector(idx, cur);
@@ -265,24 +285,25 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
           if (nearestItemsCount < neighbors) {
             nearestItems[nearestItemsCount] = {index: cur, dist: curDist};
             ++nearestItemsCount;
-          }
-          else {
+          } else {
             // 2.1) find the farest
             maxInd = 0;
             maxDist = nearestItems[0].dist;
 
-            for(let i = 1; i < nearestItemsCount; ++i)
+            for (let i = 1; i < nearestItemsCount; ++i) {
               if (maxDist < nearestItems[i].dist) {
                 maxDist = nearestItems[i].dist;
                 maxInd = i;
               }
-            
+            }
+
             // 2.2) replace
             if (curDist < maxDist)
               nearestItems[maxInd] = {index: cur, dist: curDist};
           } // else
-        } // for cur
-      
+        }
+      } // for cur
+
       // check found nearest items
       if (nearestItemsCount === 0)
         throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column "${col.name}", row ${idx + 1}`);
@@ -293,35 +314,35 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       // compute fill value
       sum = 0;
       for (let i = 0; i < nearestItemsCount; ++i)
-        sum += source[nearestItems[i].index];        
+        sum += source[nearestItems[i].index];
 
       fillValue = sum / nearestItemsCount;
 
       if (col.type === DG.COLUMN_TYPE.INT)
         return Math.round(fillValue);
 
-      return fillValue;      
+      return fillValue;
     }; // getFillValue
-    
+
     if (inPlace) {
       // use indices found previousely
-      for (const i of missingValsIndices.get(name)!)        
+      for (const i of missingValsIndices.get(name)!) {
         try {
           source[i] = getFillValue(i);
-        }  catch (err) {
-            failedToImputeIndices.push(i);
-              
-            if (!(err instanceof Error))
-              grok.shell.error(ERROR_MSG.CORE_ISSUE);
+        } catch (err) {
+          failedToImputeIndices.push(i);
+
+          if (!(err instanceof Error))
+            grok.shell.error(ERROR_MSG.CORE_ISSUE);
         }
-      
+      }
+
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(name, failedToImputeIndices);
 
-      // to reset view      
+      // to reset view
       col.set(0, col.get(0));
-    } // if
-    else {
+    } else {
       //@ts-ignore
       const copy = col.clone();
 
@@ -335,19 +356,20 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       }
 
       copy.name = copyName;
-      
+
       const copySource = copy.getRawData();
 
       // use indices found previousely
-      for (const i of missingValsIndices.get(name)!)        
+      for (const i of missingValsIndices.get(name)!) {
         try {
           copySource[i] = getFillValue(i);
-        }  catch (err) {
-            failedToImputeIndices.push(i);              
-              
-            if (!(err instanceof Error))
-              grok.shell.error(ERROR_MSG.CORE_ISSUE);
+        } catch (err) {
+          failedToImputeIndices.push(i);
+
+          if (!(err instanceof Error))
+            grok.shell.error(ERROR_MSG.CORE_ISSUE);
         }
+      }
 
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(copyName, failedToImputeIndices);
@@ -374,7 +396,7 @@ export function getMissingValsIndices(columns: DG.Column[]): Map<string, number[
 
     const indices = [] as number[];
     const nullValue = getNullValue(col);
-    
+
     col.getRawData().forEach((val, idx) => {
       if (val === nullValue)
         indices.push(idx);
@@ -389,9 +411,10 @@ export function getMissingValsIndices(columns: DG.Column[]): Map<string, number[
 /** Predict existence of missing values imputation fails */
 export function areThereFails(targetColNames: string[], featureColNames: string[], misValsInds: Map<string, number[]>): boolean {
   // check feature columns
-  for (const name of featureColNames)
+  for (const name of featureColNames) {
     if (!misValsInds.has(name))
       return false;
+  }
 
   // check target columns
   for (const target of targetColNames) {
@@ -399,7 +422,7 @@ export function areThereFails(targetColNames: string[], featureColNames: string[
 
     if (indices === undefined)
       throw new Error(ERROR_MSG.FAILS_TO_PREDICT_IMPUTATION_FAILS);
-    
+
     for (const idx of indices) {
       let failToImpute = true;
 
@@ -429,11 +452,12 @@ function getFirstNonNull<T>(col: DG.Column<T>): T {
   const raw = col.getRawData();
   const len = raw.length;
 
-  for (let i = 0; i < len; ++i)
+  for (let i = 0; i < len; ++i) {
     if (raw[i] !== nullValue)
       return col.get(i)!;
+  }
 
-  throw new Error(ERROR_MSG.EMPTY_COLUMN);  
+  throw new Error(ERROR_MSG.EMPTY_COLUMN);
 }
 
 /** Return default fill value with respect to the column type */
@@ -459,7 +483,7 @@ export function imputeFailed(df: DG.DataFrame, failedToImpute: Map<string, numbe
     const col = df.col(colName);
     if (col !== null) {
       if (!SUPPORTED_COLUMN_TYPES.includes(col.type))
-        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);        
+        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
 
       const fillVal = getDefaultFillValue(col);
       indices.forEach((idx) => col.set(idx, fillVal));
@@ -467,93 +491,178 @@ export function imputeFailed(df: DG.DataFrame, failedToImpute: Map<string, numbe
   });
 }
 
+/** Get default metric specification*/
+function getDefaultMetricInfo(type: DG.COLUMN_TYPE): MetricInfo {
+  switch (type) {
+    case DG.COLUMN_TYPE.STRING:
+    case DG.COLUMN_TYPE.DATE_TIME:
+      return {
+        weight: DEFAULT.WEIGHT,
+        type: METRIC.ONE_HOT
+      };
+
+    case DG.COLUMN_TYPE.INT:
+    case DG.COLUMN_TYPE.FLOAT:
+    case DG.COLUMN_TYPE.QNUM:
+      return {
+        weight: DEFAULT.WEIGHT,
+        type: METRIC.DIFFERENCE
+      };
+
+    default:
+      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  }
+}
+
 /** */
-export function imputeByKNN(table: DG.DataFrame, impute?: string[], using?: string[], inPlace?: boolean, distance?: string, weights?: number[]): void {
+export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void {
+
+  // Check parameters of imputation
+
+  // check neighbors
+  if (params.neighbors)
+    if ((params.neighbors < MIN_NEIGHBORS) || (!Number.isInteger(params.neighbors))) {
+      grok.shell.error(ERROR_MSG.INCORRECT_NEIGHBORS);
+      return;
+    }
+  
+  // check distnace
+  if (params.distance) {
+    const dists = Object.values(DISTANCE);
+
+    if (!dists.includes(params.distance as DISTANCE)) {
+      grok.shell.error(`${ERROR_MSG.INCORRECT_DIST} ${dists.join(', ')}.`);
+      return;      
+    }
+  }
+
+  // check weights
+  if ((params.weights !== undefined) && (params.using !== undefined)) {
+    if (params.weights.length !== params.using.length) {
+      grok.shell.error(ERROR_MSG.DIF_LENGTH);
+      return;
+    }
+
+    params.weights.forEach((val) => {
+      if (val < MIN_WEIGHT) {
+        grok.shell.error(`${ERROR_MSG.WEIGHT_GREATER} ${MIN_WEIGHT}.`);
+        return;
+      }
+    });
+  }
+
   const columns = table.columns.toList();
   const colNames = table.columns.names();
-  const targetColNames = [] as string[];
-  const featureColNames = [] as string[];
   const nonSupportedColNames = [] as string[];
   const fakeColNames = [] as string[];
-  let removed: string | null = null;
+  let nameToRemove: string | null = null;
 
-  // Form columns for imputation
-  if (impute) {
-    impute.forEach((name) => {
-      if (colNames.includes(name)) {
-        const col = table.col(name);
-
-        if (SUPPORTED_COLUMN_TYPES.includes(col!.type)) {
-          if (col!.stats.missingValueCount > 0)
-            targetColNames.push(name);            
-        } 
-        else
-          nonSupportedColNames.push(name);
-      }
-      else
-        fakeColNames.push(name);
-    });
-  }
-  else {
-    columns.forEach((col) => {
-      if (SUPPORTED_COLUMN_TYPES.includes(col.name) && (col.stats.missingValueCount > 0))
-        targetColNames.push(col.name);
-    });
-  }
+  const targetColNames = [] as string[];
+  const featuresMetrics = new Map<string, MetricInfo>();
+  const distance = params.distance ?? DEFAULT_DIST;
+  const neighbors = params.neighbors ?? DEFAULT.NEIGHBORS;
+  const inPlace = params.inPlace ?? DEFAULT_IN_PLACE;
+  const keepEmpty = params.keepEmpty ?? DEFAULT_KEEP_EMPTY;
 
   // Non-supported messege
   const nonSupportedMsg = () => {
     if (nonSupportedColNames.length > 0)
       return `${ERROR_MSG.NON_SUPPORTED} ${nonSupportedColNames.join(', ')}.`;
-
     return '';
   };
-
+  
   // Fake names messege
   const fakeMsg = () => {
     if (fakeColNames.length > 0)
       return `${ERROR_MSG.FAKE_NAME} ${fakeColNames.join(', ')}.`;
-
     return '';
-  };
+  };  
 
+  // Form columns for imputation
+  if (params.impute) {
+    params.impute.forEach((name) => {
+      if (colNames.includes(name)) {
+        const col = table.col(name);
+
+        if (SUPPORTED_COLUMN_TYPES.includes(col!.type)) {
+          if (col!.stats.missingValueCount > 0)
+            targetColNames.push(name);
+        } else {
+          nonSupportedColNames.push(name);
+        }
+      } else {
+        fakeColNames.push(name);
+      }
+    });
+  } else {
+    columns.forEach((col) => {
+      if (SUPPORTED_COLUMN_TYPES.includes(col.type) && (col.stats.missingValueCount > 0))
+        targetColNames.push(col.name);
+    });
+  }
+  
   // Check target columns
   if (targetColNames.length === 0) {
     grok.shell.error(`${ERROR_MSG.NO_COLS_IMPUT}. ${nonSupportedMsg()} ${fakeMsg()}`);
     return;
   }
+  
+  const missingValsIndices = getMissingValsIndices(columns.filter((col) => targetColNames.includes(col.name)));
 
   // Form columns with features (to be used for imputation)
-  if (using) {
-    using.forEach((name) => {
+  if (params.using) {
+    params.using.forEach((name, idx) => {
       if (colNames.includes(name)) {
         const col = table.col(name);
-  
-        if (SUPPORTED_COLUMN_TYPES.includes(col!.type))
-          featureColNames.push(name);        
-        else
+
+        if (SUPPORTED_COLUMN_TYPES.includes(col!.type)) {
+          const metricInfo = getDefaultMetricInfo(col!.type as DG.COLUMN_TYPE);
+          
+          if (params.weights)
+            metricInfo.weight = params.weights[idx];
+
+          featuresMetrics.set(name, metricInfo);
+        } else
           nonSupportedColNames.push(name);
-      }
-      else
+      } else {
         fakeColNames.push(name);
+      }
     });
-  }
-  else {
+  } else {
     columns.forEach((col) => {
-      if (SUPPORTED_COLUMN_TYPES.includes(col.name))
-        featureColNames.push(col.name);
+      if (SUPPORTED_COLUMN_TYPES.includes(col.type))
+        featuresMetrics.set(col.name, getDefaultMetricInfo(col.type as DG.COLUMN_TYPE));
     });
   }
 
   // Check feature columns
-  if (featureColNames.length === 0) {
+  if (featuresMetrics.size === 0) {
     grok.shell.error(`${ERROR_MSG.NO_FEATURES}. ${nonSupportedMsg()} ${fakeMsg()}`);
     return;
   }
 
   // Get column that cannot be imputed
-  if ((featureColNames.length === 1) && (targetColNames.includes(featureColNames[0])))
-    removed = featureColNames[0];
+  if (featuresMetrics.size === 1) {
+    const key = Object.keys(featuresMetrics)[0];
 
-  grok.shell.info('Success!');
+    if (targetColNames.includes(key))
+      nameToRemove = key;
+  }
+
+  // PERFORM IMPUTATION
+  const failedToImpute = impute(
+    table, 
+    targetColNames.filter((name) => name !== nameToRemove),
+    featuresMetrics, 
+    missingValsIndices, 
+    distance as DISTANCE, 
+    neighbors, 
+    inPlace
+  );
+
+  if (nameToRemove !== null)
+    failedToImpute.set(nameToRemove, missingValsIndices.get(nameToRemove)!);
+
+  if ((failedToImpute.size > 0) && !keepEmpty)
+    imputeFailed(table, failedToImpute);
 } // imputeByKNN
