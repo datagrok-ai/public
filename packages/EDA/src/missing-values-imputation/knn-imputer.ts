@@ -516,7 +516,6 @@ function getDefaultMetricInfo(type: DG.COLUMN_TYPE): MetricInfo {
 
 /** */
 export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void {
-
   // Check parameters of imputation
 
   // check neighbors
@@ -603,6 +602,11 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
   
   // Check target columns
   if (targetColNames.length === 0) {
+    if ((nonSupportedColNames.length === 0) && (fakeColNames.length === 0)) {
+      grok.shell.info(ERROR_MSG.NO_MISSING_VALUES);
+      return;      
+    }
+
     grok.shell.error(`${ERROR_MSG.NO_COLS_IMPUT}. ${nonSupportedMsg()} ${fakeMsg()}`);
     return;
   }
