@@ -33,7 +33,8 @@
     "ts-loader": "latest",
     "typescript": "latest",
     "worker-loader": "latest",
-    "puppeteer": "^13.7.0"
+    "puppeteer": "^13.7.0",
+    "@datagrok/chem": "^1.8.10"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
