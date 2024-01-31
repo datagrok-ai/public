@@ -269,9 +269,8 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (moduleTests[cat] === undefined)
             moduleTests[cat] = {tests: [], clear: true};
           moduleTests[cat].tests.push(test);
-        } else {
+        } else
           moduleAutoTests.push(test);
-        }
       }
     }
     if (demo) {
@@ -335,7 +334,7 @@ function resetConsole(): void {
 }
 
 export async function runTests(options?:
-  {category?: string, test?: string, testContext?: TestContext}, exclude?: string[]) {
+  {category?: string, test?: string, testContext?: TestContext, exclude?: string[], verbose?: boolean}) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   await initAutoTests(package_);
   const results: { category?: string, name?: string, success: boolean,
@@ -348,7 +347,7 @@ export async function runTests(options?:
   const logs = redefineConsole();
   for (const [key, value] of Object.entries(tests)) {
     if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
-      exclude?.some((c) => key.startsWith(c)))
+      options.exclude?.some((c) => key.startsWith(c)))
       continue;
     stdLog(`Started ${key} category`);
     categories.push(key);
@@ -363,13 +362,13 @@ export async function runTests(options?:
     const res = [];
     if (value.clear) {
       for (let i = 0; i < t.length; i++) {
-        res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name));
+        res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
         grok.shell.closeAll();
         DG.Balloon.closeAll();
       }
     } else {
       for (let i = 0; i < t.length; i++)
-        res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name));
+        res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
     }
     const data = res.filter((d) => d.result != 'skipped');
     try {
@@ -440,7 +439,7 @@ function getResult(x: any) {
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  categoryTimeout?: number, packageName?: string) {
+  categoryTimeout?: number, packageName?: string, verbose?: boolean) {
   logs.length = 0;
   let r: {category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string};
   let type: string = 'package';
@@ -451,9 +450,9 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     stdLog(`Started ${t.category} ${t.name}`);
   const start = Date.now();
   try {
-    if (skip) {
+    if (skip)
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
-    } else {
+    else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
       timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
@@ -464,10 +463,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
-    r.result = r.result.toCsv();
     type = 'core';
     if (col)
       r.success = col.stats.sum === col.length;
+    if (!verbose) {
+      const df = r.result;
+      df.columns.remove('stack');
+      df.rows.removeWhere((r) => r.get('success'));
+      r.result = df;
+    }
+    r.result = r.result.toCsv();
   }
   r.logs = logs.join('\n');
   r.ms = Date.now() - start;

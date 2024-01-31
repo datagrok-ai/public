@@ -155,7 +155,8 @@ export function test(args: TestArgs): boolean {
               category?: string,
               test?: string,
               testContext: testUtils.TestContext,
-              skipCore?: boolean
+              skipCore?: boolean,
+              verbose?: boolean
             } = {
               testContext: testContext,
             };
@@ -164,8 +165,10 @@ export function test(args: TestArgs): boolean {
               params.category = split[0];
               params.test = split[1];
             }
-            if (targetPackage === 'DevTools')
+            if (targetPackage === 'DevTools') {
               params.skipCore = options.core ? false : true;
+              params.verbose = options.verbose === true;
+            }
             (<any>window).grok.functions.call(`${targetPackage}:${options.platform ? 'testPlatform' : 'test'}`, params).then((df: any) => {
               let failed = false;
               let skipReport = '';
