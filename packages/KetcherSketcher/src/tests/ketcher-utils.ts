@@ -53,18 +53,9 @@ export async function _testSetMolfile() {
 
 export async function _testSetSmarts() {
     const {sketcher, dialog} = await createKetcher();
-    const t = new Promise((resolve, reject) => {
-        sketcher!.onChanged.subscribe(async (_: any) => {
-            try {
-                const resultSmarts = await sketcher.getSmarts();
-                resolve(resultSmarts);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    });
     sketcher.setKetcherMolecule(testSmarts);
-    const res = await t;
+    await awaitCheck(() => sketcher._molV3000 !== null && sketcher._molV3000 !== '', 'molecule has not been set', 5000);
+    const res = await sketcher.getSmarts();
     const rdkit = await grok.functions.call('Chem:getRdKitModule');
     const qmolTest = rdkit.get_qmol(testSmarts);
     const smarts = qmolTest.get_smarts();
