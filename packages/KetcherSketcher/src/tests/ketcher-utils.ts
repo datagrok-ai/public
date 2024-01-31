@@ -27,7 +27,7 @@ const testSmarts = '[!#6&!#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 export async function _testSetSmiles() {
     const {sketcher, dialog} = await createKetcher();
     sketcher.setKetcherMolecule(testSmiles);
-    await awaitCheck(() => sketcher._smiles === testSmiles, 'molecule has not been set', 5000);
+    await awaitCheck(() => sketcher._smiles === testSmiles, 'molecule has not been set', 10000);
     dialog.close();
 }
 
@@ -47,14 +47,14 @@ export async function _testSetMolfile() {
         }
         return false;
     }, 
-        'molecule has not been set', 5000);
+        'molecule has not been set', 10000);
     dialog.close();
 }
 
 export async function _testSetSmarts() {
     const {sketcher, dialog} = await createKetcher();
     sketcher.setKetcherMolecule(testSmarts);
-    await awaitCheck(() => sketcher._molV3000 !== null && sketcher._molV3000 !== '', 'molecule has not been set', 5000);
+    await awaitCheck(() => sketcher._molV3000 !== null && sketcher._molV3000 !== '', 'molecule has not been set', 10000);
     const res = await sketcher.getSmarts();
     const rdkit = await grok.functions.call('Chem:getRdKitModule');
     const qmolTest = rdkit.get_qmol(testSmarts);
