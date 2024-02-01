@@ -30,7 +30,7 @@ export const enum HELM_VALUE_TYPE {
 
 // fields of "rgroups" sub-object in HELM library
 export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSmiles',
+  CAP_GROUP_SMILES = 'capGroupSMILES',
   // WARNING: both capitalization variants coexist
   CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES',
   ALTERNATE_ID = 'alternateId',
