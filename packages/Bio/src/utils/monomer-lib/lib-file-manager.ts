@@ -6,7 +6,11 @@ import * as DG from 'datagrok-api/dg';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLib} from './monomer-lib';
-import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/const';
+import {
+  HELM_REQUIRED_FIELD as REQ, HELM_REQUIRED_FIELDS,
+  HELM_VALUE_TYPE,
+  HELM_FIELD_TYPE
+} from '@datagrok-libraries/bio/src/utils/const';
 
 import * as rxjs from 'rxjs';
 
@@ -146,19 +150,7 @@ export class MonomerLibFileManager {
 
   /** The file **must** strictly satisfy HELM standard */
   private isValid(fileContent: string): boolean {
-    const jsonContent = JSON.parse(fileContent);
-    if (!Array.isArray(jsonContent))
-      return false;
-    const requiredFields = [
-      REQ.AUTHOR, REQ.CREATE_DATE, REQ.ID, REQ.MOLFILE,
-      REQ.MONOMER_TYPE, REQ.NAME, REQ.POLYMER_TYPE, REQ.RGROUPS, REQ.SMILES, REQ.SYMBOL
-    ];
-    const result = jsonContent.every((monomer: any) => {
-      return requiredFields.every((field) => {
-        return Object.keys(monomer).includes(field);
-      });
-    });
-    return result;
+    return new MonomerLibFileValidator().validate(fileContent);
   }
 
   /** Get relative paths for files in LIB_PATH  */
@@ -181,5 +173,82 @@ export class MonomerLibFileManager {
       // Get relative path (to LIB_PATH)
       return path.substring(LIB_PATH.length);
     });
+  }
+}
+
+class MonomerLibFileValidator {
+  validate(fileContent: string): boolean {
+    let jsonContent: any[];
+    try {
+      jsonContent = JSON.parse(fileContent);
+    } catch (e) {
+      console.error('Bio: Monomer Library File Manager: Invalid JSON format:', e);
+      return false;
+    }
+
+    if (!Array.isArray(jsonContent))
+      return false;
+
+    return jsonContent.every((monomer) => this.validateMonomer(monomer));
+  }
+
+  private validateMonomer(monomer: any): boolean {
+    for (const field of HELM_REQUIRED_FIELDS) {
+      const fieldType = HELM_FIELD_TYPE[field];
+
+      if (!monomer.hasOwnProperty(field))
+      {
+        console.log('1', monomer);
+        console.log(field);
+        return false;
+      }
+
+      if (field.toLowerCase() === REQ.RGROUPS.toLowerCase() && !this.validateRGroups(monomer[field]))
+      {
+        console.log('2', monomer);
+        console.log(field);
+        return false;
+      }
+
+      if (typeof fieldType === 'string' && !this.matchesType(monomer[field], fieldType as string))
+      {
+        console.log('3', monomer);
+        console.log(field);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private validateRGroups(rgroups: any[]): boolean {
+    if (!Array.isArray(rgroups)) return false;
+
+    return rgroups.every((rgroup) => {
+      const fieldType = HELM_FIELD_TYPE[REQ.RGROUPS] as any;
+      const itemsType = fieldType.itemsType as Record<string, string>;
+      return Object.entries(itemsType).every(([field, type]) => {
+        // WARNING: toLowerCase is necessary because HELMCoreLibrary has "capGroupSMILES" and "capGroupSmiles"
+        const hasField = Object.keys(rgroup).map((key) => key.toLowerCase()).some((key) => key === field.toLowerCase());
+
+        const result = hasField && this.matchesType(rgroup[field], type);
+        console.log(rgroup, field, type, result);
+        return result;
+      });
+    });
+  }
+
+  private matchesType(value: any, typeInfo: string): boolean {
+    switch (typeInfo) {
+      case HELM_VALUE_TYPE.STRING:
+        return typeof value === 'string';
+      case HELM_VALUE_TYPE.STRING_OR_NULL:
+        return typeof value === 'string' || value === null;
+      case HELM_VALUE_TYPE.INTEGER:
+        return Number.isInteger(value);
+      case HELM_VALUE_TYPE.ARRAY:
+        return Array.isArray(value);
+      default:
+        return false;
+    }
   }
 }

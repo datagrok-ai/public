@@ -6,7 +6,7 @@ export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
 
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
-export const enum HELM_REQUIRED_FIELDS {
+export const enum HELM_REQUIRED_FIELD {
   SYMBOL = 'symbol',
   NAME = 'name',
   MOLFILE = 'molfile',
@@ -19,11 +19,67 @@ export const enum HELM_REQUIRED_FIELDS {
   CREATE_DATE = 'createDate',
 }
 
+/** See:
+ * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
+export const enum HELM_VALUE_TYPE {
+  STRING = 'string',
+  STRING_OR_NULL = 'stringOrNull',
+  INTEGER = 'integer',
+  ARRAY = 'array',
+};
+
+// fields of "rgroups" sub-object in HELM library
+export const enum HELM_RGROUP_FIELDS {
+  CAP_GROUP_SMILES = 'capGroupSmiles',
+  // WARNING: both capitalization variants coexist
+  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES',
+  ALTERNATE_ID = 'alternateId',
+  CAP_GROUP_NAME = 'capGroupName',
+  LABEL = 'label',
+}
+
+
+/** See:
+ * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
+export const HELM_FIELD_TYPE: { [key: string]: string | object } = {
+  [HELM_REQUIRED_FIELD.SYMBOL]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.NAME]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.MOLFILE]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.AUTHOR]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.ID]: HELM_VALUE_TYPE.INTEGER,
+  [HELM_REQUIRED_FIELD.RGROUPS]: {
+    itemsType: {
+      [HELM_RGROUP_FIELDS.ALTERNATE_ID]: HELM_VALUE_TYPE.STRING,
+      [HELM_RGROUP_FIELDS.CAP_GROUP_NAME]: HELM_VALUE_TYPE.STRING,
+      [HELM_RGROUP_FIELDS.CAP_GROUP_SMILES]: HELM_VALUE_TYPE.STRING,
+      [HELM_RGROUP_FIELDS.LABEL]: HELM_VALUE_TYPE.STRING,
+    }
+  },
+  [HELM_REQUIRED_FIELD.SMILES]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.POLYMER_TYPE]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.MONOMER_TYPE]: HELM_VALUE_TYPE.STRING,
+  [HELM_REQUIRED_FIELD.CREATE_DATE]: HELM_VALUE_TYPE.STRING_OR_NULL,
+};
+
+export const HELM_REQUIRED_FIELDS = [
+  HELM_REQUIRED_FIELD.AUTHOR,
+  HELM_REQUIRED_FIELD.CREATE_DATE,
+  HELM_REQUIRED_FIELD.ID,
+  HELM_REQUIRED_FIELD.MOLFILE,
+  HELM_REQUIRED_FIELD.MONOMER_TYPE,
+  HELM_REQUIRED_FIELD.NAME,
+  HELM_REQUIRED_FIELD.POLYMER_TYPE,
+  HELM_REQUIRED_FIELD.RGROUPS,
+  HELM_REQUIRED_FIELD.SMILES,
+  HELM_REQUIRED_FIELD.SYMBOL,
+];
+
 export const enum HELM_OPTIONAL_FIELDS {
   NATURAL_ANALOG = 'naturalAnalog',
   META = 'meta', // for SequenceTranslator
 }
 
+// todo: remove
 export const enum HELM_FIELDS {
   MONOMER_TYPE = 'monomerType',
   SMILES = 'smiles',
@@ -36,15 +92,6 @@ export const enum HELM_FIELDS {
   ID = 'id',
   POLYMER_TYPE = 'polymerType',
   SYMBOL = 'symbol'
-}
-
-// fields of "rgroups" sub-object in HELM library
-export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSmiles',
-  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
-  ALTERNATE_ID = 'alternateId',
-  CAP_GROUP_NAME = 'capGroupName',
-  LABEL = 'label',
 }
 
 // possible values of polymers

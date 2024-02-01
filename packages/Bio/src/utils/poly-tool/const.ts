@@ -1,4 +1,4 @@
-import {HELM_REQUIRED_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_REQUIRED_FIELD} from '@datagrok-libraries/bio/src/utils/const';
 
 export const enum HELM_WRAPPER {
   LEFT = 'PEPTIDE1{',
@@ -17,9 +17,9 @@ export const enum CYCLIZATION_TYPE {
 }
 
 export const helmFieldsToPolyToolInputFields = {
-  [HELM_REQUIRED_FIELDS.SYMBOL]: 'Short Name',
-  [HELM_REQUIRED_FIELDS.NAME]: 'Medium Name',
-  [HELM_REQUIRED_FIELDS.SMILES]: 'SMILES',
+  [HELM_REQUIRED_FIELD.SYMBOL]: 'Short Name',
+  [HELM_REQUIRED_FIELD.NAME]: 'Medium Name',
+  [HELM_REQUIRED_FIELD.SMILES]: 'SMILES',
 };
 
 export const R_GROUP_BLOCK_DUMMY = [
