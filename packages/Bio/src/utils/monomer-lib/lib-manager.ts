@@ -19,7 +19,7 @@ declare const window: MonomerLibWindowType;
 
 export async function getLibFileNameList(): Promise<string[]> {
   const fileManager = await MonomerLibFileManager.getInstance();
-  return fileManager.getRelativePathsOfValidFiles();
+  return fileManager.getRelativePathsOfValidLibraryFiles();
 }
 
 /** Singleton wrapper for MonomerLib, provides API for managing libraries on
@@ -84,7 +84,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
    */
   async readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
     const libFileManager = await MonomerLibFileManager.getInstance();
-    const lib: IMonomerLib = await libFileManager.readLibraryFile(path, fileName);
+    const lib: IMonomerLib = await libFileManager.loadLibraryFromFile(path, fileName);
     return lib;
   }
 

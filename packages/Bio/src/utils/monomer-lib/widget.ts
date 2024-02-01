@@ -56,7 +56,7 @@ class MonomerLibraryManagerWidget {
           const name = selectedFile.name;
           const progressIndicator = DG.TaskBarProgressIndicator.create(`Adding ${name} as a monomer library`);
           try {
-            await this.monomerLibFileManager.addLibFile(content, name);
+            await this.monomerLibFileManager.addLibraryFile(content, name);
           } catch (e) {
             grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM standard`);
           } finally {
@@ -89,8 +89,7 @@ class ControlsFormManager {
     const controlList = await this.getControlList();
     const inputsForm = ui.form(controlList);
 
-    const monomerLibFileListChange$ = this.monomerLibFileManager.monomerLibFileListChange$;
-    DG.debounce<void>(monomerLibFileListChange$, 1000).subscribe(
+    this.monomerLibFileManager.debouncedMonomerLibFileListChange$.subscribe(
       async () => await this.updateControlsForm()
     );
     return inputsForm;
@@ -98,7 +97,7 @@ class ControlsFormManager {
 
   async updateControlsForm(): Promise<void> {
     // WARNING: this is necessary to prevent sync issues with the file system
-    await this.monomerLibFileManager.refreshValidFilePaths();
+    // await this.monomerLibFileManager.refreshValidFilePaths();
     const updatedForm = await this.createControlsForm();
     $(this.inputsForm).replaceWith(updatedForm);
   }
@@ -106,8 +105,8 @@ class ControlsFormManager {
   private async getControlList(): Promise<DG.InputBase<boolean | null>[]> {
     const settings = await getUserLibSettings();
     const fileManager = await MonomerLibFileManager.getInstance();
-    await fileManager.refreshValidFilePaths();
-    const libFileNameList: string[] = fileManager.getRelativePathsOfValidFiles();
+    await fileManager.refreshLibraryFilePaths();
+    const libFileNameList: string[] = fileManager.getRelativePathsOfValidLibraryFiles();
     const libInputList: DG.InputBase<boolean | null>[] = [];
 
     for (const libFileName of libFileNameList) {
@@ -139,7 +138,7 @@ class ControlsFormManager {
     dialog.add(ui.divText(`Are you sure you want to delete ${fileName}?\nThis will delete the file from ${LIB_PATH}`))
       .onOK(async () => {
         const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
-        await this.monomerLibFileManager.deleteLibFile(fileName);
+        await this.monomerLibFileManager.deleteLibraryFile(fileName);
         progressIndicator.close();
       })
       .showModal(false);
