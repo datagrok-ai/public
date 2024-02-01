@@ -41,7 +41,7 @@ export class DbColumn {
 
 
 export interface IFilterDescription {
-  type: 'distinct' | 'search' | 'range';
+  type: 'distinct' | 'combo' | 'radio' | 'search' | 'range' | 'expression';
   column: string;
 }
 
@@ -173,17 +173,22 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
     return `delete from ${entity.entityType.table.name} where ${this.getWhereKeySql(entity)}`;
   }
 
+  async query(sql: string): Promise<DG.DataFrame> {
+    console.log(sql);
+    return await grok.data.db.query(this.connectionId, sql);
+  }
+
   async create(entity: TEntity):  Promise<TEntity> {
-    await grok.data.db.query(this.connectionId, this.getCreateSql(entity));
+    await this.query(this.getCreateSql(entity));
     return entity;
   }
 
   async read(filter?: TFilter, options?: IQueryOptions): Promise<DG.DataFrame> {
-    return await grok.data.db.query(this.connectionId, this.getReadSql(filter,  options));
+    return await this.query(this.getReadSql(filter,  options));
   }
 
   async readSingle(keyFilter?: {[name: string]: string}): Promise<{[name: string]: any} | null> {
-    const df = await grok.data.db.query(this.connectionId, this.getReadSql(keyFilter));
+    const df = await this.query(this.getReadSql(keyFilter));
     if (df.rowCount == 0)
       return null;
     const resultRow: {[name: string]: any} = {};
@@ -193,12 +198,12 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
   }
 
   async update(entity: TEntity): Promise<TEntity> {
-    await grok.data.db.query(this.connectionId, this.getUpdateSql(entity));
+    await this.query(this.getUpdateSql(entity));
     return entity;
   }
 
   async delete(entity: TEntity): Promise<TEntity> {
-    await grok.data.db.query(this.connectionId, this.getDeleteSql(entity));
+    await this.query(this.getDeleteSql(entity));
     return entity;
   }
 }
@@ -263,6 +268,8 @@ export abstract class CruddyFilter {
     switch (filter.type) {
       case 'distinct': return new CruddyFilterCategorical(entityType, filter);
       case 'range': return new CruddyFilterRange(entityType, filter);
+      case 'combo': return new CruddyFilterCombo(entityType, filter);
+      case 'expression': return new CruddyFilterExpression(entityType, filter);
     }
 
     throw `Unknown filter type: ${filter.type}`;
@@ -276,9 +283,46 @@ export class CruddyFilterCategorical extends CruddyFilter {
   constructor(entityType: DbEntityType, filter: IFilterDescription) {
     super(entityType, filter);
     entityType.crud
-      .read({}, { distinct: true, columnNames: [filter.column]})
+      .query(`select ${filter.column}, count(${filter.column}) from ${entityType.table.name} group by ${filter.column}`)
+      //.read({}, { distinct: true, columnNames: [filter.column]})
       .then((df) => {
         this.choices = ui.multiChoiceInput('values', [], df.columns.byIndex(0).toList());
+        this.choices.onChanged(() => this.onChanged.next(this));
+        this.root.appendChild(ui.h2(filter.column));
+        this.root.appendChild(this.choices.input);
+
+        // counts
+        const counts = df.columns.byIndex(1);
+        for (let i = 0; i < df.rowCount; i++) {
+          const div = this.choices.input.children[i] as HTMLDivElement;
+          const percent = Math.round(counts.getNumber(i) * 100 / counts.stats.max);
+          div.style.background = `linear-gradient(to right, #eff7fa ${percent}%, white ${percent}%)`;
+          div.appendChild(ui.divText(`${counts.getNumber(i)}`, 'cruddy-category-count'));
+        }
+      });
+  }
+
+  getCondition(): TFilter {
+    const choices = (this.choices!.value as Array<any>);
+    if (choices.length == 0) return {};
+
+    return {
+      [`${this.filter.column} in (${choices.map((x) => `'${x}'`).join(', ')})`]: null
+    };
+  }
+}
+
+
+export class CruddyFilterCombo extends CruddyFilter {
+  choices?: DG.ChoiceInput<string>;
+
+  constructor(entityType: DbEntityType, filter: IFilterDescription) {
+    super(entityType, filter);
+    entityType.crud
+      .read({}, { distinct: true, columnNames: [filter.column]})
+      .then((df) => {
+        const items = df.columns.byIndex(0).toList();
+        this.choices = ui.choiceInput('values', null, items, null, {nullable: true});
         this.choices.onChanged(() => this.onChanged.next(this));
         this.root.appendChild(ui.h2(filter.column));
         this.root.appendChild(this.choices.input);
@@ -286,9 +330,65 @@ export class CruddyFilterCategorical extends CruddyFilter {
   }
 
   getCondition(): TFilter {
-    return {
-      [`${this.filter.column} in (${(this.choices!.value as Array<any>).map((x) => `'${x}'`).join(', ')})`]: null
+    return this.choices?.value == null ? {} : {[this.filter.column]: this.choices.value};
+  }
+}
+
+
+namespace Exp {
+  export const CONTAINS = 'contains';
+  export const STARTS_WITH = 'starts with';
+  export const ENDS_WITH = 'ends with';
+  export const GT = '>';
+  export const LT = '<';
+
+  export const typeOperators: {[key: string]: string[]} = {
+    [DG.TYPE.STRING]: [ STARTS_WITH, ENDS_WITH ],
+    [DG.TYPE.INT]: [ GT, LT ],
+    [DG.TYPE.FLOAT]: [ GT, LT ],
+  };
+
+  export function getCondition(column: string, op: string, value: any): TFilter {
+    if (!value || value === '')
+      return {};
+
+    switch (op) {
+      case STARTS_WITH: return {[`starts_with(${column}, '${value}')`]: null};
+      case ENDS_WITH: return {[`${column} like '%${value}'`]: null};
+      case LT: return {[`${column} < ${value}`]: null};
+      case GT: return {[`${column} > ${value}`]: null};
+    }
+    return {};
+  }
+}
+
+
+export class CruddyFilterExpression extends CruddyFilter {
+
+  operation = ui.choiceInput('operator', '', ['']);
+  colInput = ui.choiceInput('column', this.entityType.columns[0].name, this.entityType.columns.map((c) => c.name));
+  input = ui.stringInput('input', '');
+
+  constructor(entityType: DbEntityType, filter: IFilterDescription) {
+    super(entityType, filter);
+    this.root.className = 'd4-flex-row';
+    this.root.appendChild(this.colInput.input);
+    this.root.appendChild(this.operation.input);
+    this.root.appendChild(this.input.input);
+
+    const refresh = () => {
+      this.operation.items = Exp.typeOperators[this.entityType.getColumn(this.colInput.value!).type];
     };
+
+    this.colInput.onChanged(() => { refresh(); this.onChanged.next(this); });
+    this.operation.onChanged(() => this.onChanged.next(this));
+    this.input.onChanged(() => this.onChanged.next(this));
+
+    refresh();
+  }
+
+  getCondition(): TFilter {
+    return Exp.getCondition(this.colInput.value!, this.operation.value!, this.input.value);
   }
 }
 
@@ -298,6 +398,7 @@ export class CruddyFilterRange extends CruddyFilter {
 
   constructor(entityType: DbEntityType, filter: IFilterDescription) {
     super(entityType, filter);
+    this.slider.root.querySelector('svg')!.style.height = '20px';
     const minCol = `min(${filter.column}) as min`;
     const maxCol = `max(${filter.column}) as max`;
     entityType.crud
@@ -332,6 +433,8 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.entityType = entityType;
     this.name = entityType.type;
     this.crud = new DbQueryEntityCrud(app.config.connection, entityType);
+    this.root.style.display = 'flex';
+    this.root.classList.add('cruddy-view');
 
     this.crud.read().then((df) => {
       this.grid = df.plot.grid();
@@ -339,7 +442,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
       this.host.appendChild(this.filters.root);
       this.host.appendChild(this.grid.root);
       this.grid.root.style.flexGrow = '1';
-      //this.grid.root.style.height = '100%';
+      this.grid.root.style.height = 'inherit';
       this.initBehaviors();
       this.initFilters();
     });
@@ -347,7 +450,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
 
   initFilters() {
     this.filters.init(this.entityType);
-    this.filters.onChanged.subscribe((q) => {
+    this.filters.onChanged.pipe(debounceTime(100)).subscribe((q) => {
       this.crud.read(this.filters.getCondition()).then((df) => {
         this.grid!.dataFrame = df;
       });

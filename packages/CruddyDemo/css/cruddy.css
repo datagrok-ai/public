@@ -1,0 +1,14 @@
+.cruddy-view .ui-input-multi-choice-checks > div {
+    background-position-x: 14px;
+    background-size: 90%;
+    background-repeat: no-repeat;
+}
+
+.cruddy-view .ui-input-multi-choice-checks > div > label {
+    margin-left: 2px;
+}
+
+.cruddy-category-count {
+    margin-left: auto;
+    color: #dadada;
+}
