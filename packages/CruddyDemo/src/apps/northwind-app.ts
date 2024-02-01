@@ -75,7 +75,6 @@ const orderDetailsTable = new DbTable({
 });
 
 
-
 export const northwindConfig = new CruddyConfig({
   connection: 'Samples:PostgresNorthwind',
   tables: [ customersTable, employeesTable, categoriesTable, productsTable, ordersTable, orderDetailsTable],
@@ -84,7 +83,12 @@ export const northwindConfig = new CruddyConfig({
     new DbEntityType({ type: 'Product', table: productsTable }),
     new DbEntityType({ type: 'Customer', table: customersTable }),
     new DbEntityType({ type: 'Employee', table: employeesTable }),
-    new DbEntityType({ type: 'Order', table: ordersTable }),
+    new DbEntityType({ type: 'Order', table: ordersTable, filters: [
+        { type: 'distinct', column: 'shipcountry'},
+        { type: 'combo', column: 'shipcity'},
+        { type: 'range', column: 'orderid'},
+        { type: 'expression', column: 'shipcity'},
+    ]}),
     new DbEntityType({ type: 'Order Details', table: orderDetailsTable }),
   ]
 });

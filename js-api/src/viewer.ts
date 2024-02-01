@@ -481,6 +481,10 @@ export class FilterGroup extends Viewer {
   getFilterSummary(): Element {
     return api.grok_FilterGroup_GetFilterSummary(this.dart);
   }
+
+  get filtersList(): Array<any> {
+    return toJs(api.grok_FilterGroup_Get_FiltersList(this.dart));
+  }
 }
 
 export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {

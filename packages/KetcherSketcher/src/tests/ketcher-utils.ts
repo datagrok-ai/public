@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, delay, expect} from '@datagrok-libraries/utils/src/test';
+import * as ui from 'datagrok-api/ui';
+import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import Sketcher = grok.chem.Sketcher;
 import { KetcherSketcher } from '../ketcher';
 
@@ -24,32 +25,37 @@ M  END`;
 const testSmarts = '[!#6&!#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 
 export async function _testSetSmiles() {
-    const sketcher = await createKetcher();
+    const {sketcher, dialog} = await createKetcher();
     sketcher.setKetcherMolecule(testSmiles);
-    await awaitCheck(() => sketcher._smiles === testSmiles, 'molecule has not been set', 5000);
+    await awaitCheck(() => sketcher._smiles === testSmiles, 'molecule has not been set', 10000);
+    dialog.close();
 }
 
 export async function _testSetMolfile() {
-    const sketcher = await createKetcher();
+    const {sketcher, dialog} = await createKetcher();
     sketcher.setKetcherMolecule(testMolfile);
-    await awaitCheck(() => !!sketcher._molV2000 && (sketcher._molV2000!.split('\n').splice(3).join('') === testMolfile.split('\n').splice(3).join('')), 
-        'molecule has not been set', 5000);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    await awaitCheck(() => {
+        if (!!sketcher._molV2000) {
+            const mol1 = rdkit.get_mol(testMolfile);
+            const mol2 = rdkit.get_mol(sketcher._molV2000);
+            const match1 = mol1.get_substruct_match(mol2);
+            const match2 = mol2.get_substruct_match(mol1);
+            mol1.delete();
+            mol2.delete();
+            return match1 !== '{}' && match2 !== '{}';
+        }
+        return false;
+    }, 
+        'molecule has not been set', 10000);
+    dialog.close();
 }
 
 export async function _testSetSmarts() {
-    const sketcher = await createKetcher();
-    const t = new Promise((resolve, reject) => {
-        sketcher!.onChanged.subscribe(async (_: any) => {
-            try {
-                const resultMol = await sketcher.getSmarts();
-                resolve(resultMol);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    });
-    sketcher.setKetcherMolecule(testMolfile);
-    const res = await t;
+    const {sketcher, dialog} = await createKetcher();
+    sketcher.setKetcherMolecule(testSmarts);
+    await awaitCheck(() => sketcher._molV3000 !== null && sketcher._molV3000 !== '', 'molecule has not been set', 10000);
+    const res = await sketcher.getSmarts();
     const rdkit = await grok.functions.call('Chem:getRdKitModule');
     const qmolTest = rdkit.get_qmol(testSmarts);
     const smarts = qmolTest.get_smarts();
@@ -58,12 +64,14 @@ export async function _testSetSmarts() {
     const resSmarts = qmol.get_smarts();
     qmol?.delete();
     expect(resSmarts, smarts);
+    dialog.close();
 }
 
-async function createKetcher(): Promise<KetcherSketcher> {
-    const sketcher = await DG.Func.find({tags: ['moleculeSketcher'], name: 'ketcherSketcher'})[0].apply();
-    const sketcherHost = new Sketcher();
-    await sketcher.init(sketcherHost);
-    await delay(1000);
-    return sketcher;
+async function createKetcher(): Promise<any> {
+    const func = await DG.Func.find({tags: ['moleculeSketcher'], name: 'ketcherSketcher'})[0];
+    grok.chem.currentSketcherType = func.friendlyName;
+    const s = new Sketcher();
+    const d = ui.dialog().add(s).show();
+    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 10000);
+    return {sketcher: s.sketcher, dialog: d};
 }

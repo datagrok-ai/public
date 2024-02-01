@@ -371,6 +371,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
+    let isHistoryBlockOpened = false;
 
     this.subs.push(
       newHistoryBlock.onRunChosen.subscribe(async (id) => {
@@ -380,10 +381,16 @@ export abstract class FunctionView extends DG.ViewBase {
       }),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
       grok.events.onCurrentViewChanged.subscribe(() => {
-        if (grok.shell.v === this) {
-          setTimeout(() => {
-            grok.shell.o = this.historyRoot;
-          });
+        if (grok.shell.v == this) {
+          if (isHistoryBlockOpened)
+            grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
+        } else {
+          const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
+          if (historyPanel) {
+            grok.shell.dockManager.close(historyPanel);
+            isHistoryBlockOpened = true;
+          } else
+            isHistoryBlockOpened = false;
         }
       }),
     );
@@ -392,7 +399,6 @@ export abstract class FunctionView extends DG.ViewBase {
     this.historyRoot.style.removeProperty('justify-content');
     this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
-    grok.shell.o = this.historyRoot;
     this.historyBlock = newHistoryBlock;
     return newHistoryBlock.root;
   }
@@ -404,13 +410,9 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
-      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
-      historyButton.classList.toggle('d4-current');
-      grok.shell.o = this.historyRoot;
+      if (!grok.shell.dockManager.findNode(this.historyRoot))
+        grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
     });
-
-    historyButton.classList.add('d4-toggle-button');
-    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
 
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
@@ -422,7 +424,7 @@ export abstract class FunctionView extends DG.ViewBase {
       if (!this.historyBlock || !this.lastCall) return;
 
       this.historyBlock.showEditDialog(this.lastCall);
-    }, 'Edit this run');
+    }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {

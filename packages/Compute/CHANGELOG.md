@@ -1,5 +1,14 @@
 # Compute changelog
 
+## 1.20.0 (2024-02-01)
+
+### Features
+
+- PLV: Added help icon for steps if help is available
+- RFV: Added "add to favorites" icon for historical runs cards
+- ModelCatalog: Moved help to model's context menu
+- RFV: Moved History panel out from context panel
+
 ## 1.19.2 (2024-01-18)
 
 ### Bug fixes
