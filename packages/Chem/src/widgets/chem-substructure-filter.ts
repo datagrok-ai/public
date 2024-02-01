@@ -213,7 +213,7 @@ export class SubstructureFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_: any) => {
         delete this.column!.temp[FILTER_SCAFFOLD_TAG];
-        //in case filter filter is disabled during search, we finish current search
+        //in case filter filter is disabled during active search, we finish current search
         if (this.batchResultObservable && !this.batchResultObservable?.closed) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.sketcher.getSmarts().then((smarts) => {
@@ -293,7 +293,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   detach() {
-    //in case search was terminated via disabling filter we need to reset searchNotCompleted variable in detach
+    //in case search was terminated via disabling filter (in onRowsFiltering subscription) we need to reset searchNotCompleted variable in detach
     this.searchNotCompleted = false;
     _package.logger.debug(`************detaching filter ${this.filterId}`);
     //reset active filter id in case it is detached
@@ -325,6 +325,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
+    //we apply filter bitset only from one actuve filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC];
     if (activeFilterId !== this.filterId) {
       if (activeFilterId === -1)
@@ -334,9 +335,11 @@ export class SubstructureFilter extends DG.Filter {
         return;
       }
     }
-    if ((this.bitset && this.dataFrame?.filter.length !== this.bitset.length) || this.recalculateFilter) { // in case dataframe has been changed (rows added/removed)
-      /*in case we enable filter due to async onSketchChanged widget's onRowsFiltering sets filter summary before we check for some other filter is
-       already filtering for the exact same thing. Thus we need this flag not to return from onSketcherChanged  */
+    // in case dataframe has been changed (rows added/removed) while filter was disabled
+    // or applyState with molfile was called on inactive filter -> need to recalculate results
+    if ((this.bitset && this.dataFrame?.filter.length !== this.bitset.length) || this.recalculateFilter) {
+      /*in case we enable filter widget's onRowsFiltering sets filter summary before we check for some other filter is
+       already filtering for the exact same thing (due to async _onSketchChanged). Thus we need this flag not to return from onSketcherChanged  */
       this.recalculateFilter = true;
       this._onSketchChanged();
       return;
@@ -350,6 +353,7 @@ export class SubstructureFilter extends DG.Filter {
           isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
         }]);
         this.active = true;
+        // if filter was disabled during active search and then enabled -> need to recalculate results
         if (this.searchNotCompleted)
           this._onSketchChanged();
     }
@@ -420,7 +424,7 @@ export class SubstructureFilter extends DG.Filter {
     if (!this.isFiltering) {
       _package.logger.debug(`not filtering ${newSmarts}, ${this.filterId}`);
       this.currentMolfile = newMolFile;
-      this.recalculateFilter = !!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile);
+      this.recalculateFilter = !!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile); //in case applyState was called on disabled filter
       this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null; //TODO
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
