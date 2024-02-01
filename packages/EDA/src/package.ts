@@ -173,9 +173,9 @@ export async function demoMultivariateAnalysis(): Promise<any> {
       view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]));
     },
     {description: 'The feature "diesel" affects the price the most.', delay: 0})
-    .step('Scores', async () => { view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3])); },
+    .step('Scores', async () => {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]));},
       {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
-    .step('Prediction', async () => { view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0])); },
+    .step('Prediction', async () => {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]));},
       {description: 'Closer to the line means better price prediction.', delay: 0})
     .start();
 }
@@ -358,5 +358,6 @@ export function kNNImputation() {
 //description: Missing values imputation using KNN
 //input: dataframe table
 //input: object params
-export function missingValuesImputation(table: DG.DataFrame, params: KNNimputerParams): void { imputeByKNN(table, params); }
-
+export function missingValuesImputation(table: DG.DataFrame, params: KNNimputerParams): void {
+  imputeByKNN(table, params);
+}

@@ -62,7 +62,7 @@ export enum DEFAULT {
   NEIGHBORS = 4,
   IN_PLACE = 1,
   SELECTED = 1,
-  KEEP_EMPTY = 0,  
+  KEEP_EMPTY = 0,
 };
 const DEFAULT_DIST = DISTANCE.EUCLIDEAN;
 const DEFAULT_IN_PLACE = true;
@@ -70,12 +70,12 @@ const DEFAULT_KEEP_EMPTY = false;
 
 /** KNN-imputer parameters */
 export type KNNimputerParams = {
-  impute: string[] | undefined, 
+  impute: string[] | undefined,
   using: string[] | undefined,
-  neighbors: number | undefined, 
-  inPlace: boolean | undefined, 
-  keepEmpty: boolean | undefined, 
-  distance: string | undefined, 
+  neighbors: number | undefined,
+  inPlace: boolean | undefined,
+  keepEmpty: boolean | undefined,
+  distance: string | undefined,
   weights: number[] | undefined,
 };
 
@@ -514,24 +514,25 @@ function getDefaultMetricInfo(type: DG.COLUMN_TYPE): MetricInfo {
   }
 }
 
-/** */
+/** Impute missing vals using kNN with the specified parameters */
 export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void {
   // Check parameters of imputation
 
   // check neighbors
-  if (params.neighbors)
+  if (params.neighbors) {
     if ((params.neighbors < MIN_NEIGHBORS) || (!Number.isInteger(params.neighbors))) {
       grok.shell.error(ERROR_MSG.INCORRECT_NEIGHBORS);
       return;
     }
-  
+  }
+
   // check distnace
   if (params.distance) {
     const dists = Object.values(DISTANCE);
 
     if (!dists.includes(params.distance as DISTANCE)) {
       grok.shell.error(`${ERROR_MSG.INCORRECT_DIST} ${dists.join(', ')}.`);
-      return;      
+      return;
     }
   }
 
@@ -550,12 +551,17 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
     });
   }
 
+  // Operating vars
   const columns = table.columns.toList();
   const colNames = table.columns.names();
   const nonSupportedColNames = [] as string[];
   const fakeColNames = [] as string[];
   let nameToRemove: string | null = null;
+  const rowCount = table.rowCount;
+  let col: DG.Column;
+  let misValsCount: number;
 
+  // Inputs for kNN imputer
   const targetColNames = [] as string[];
   const featuresMetrics = new Map<string, MetricInfo>();
   const distance = params.distance ?? DEFAULT_DIST;
@@ -569,22 +575,23 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
       return `${ERROR_MSG.NON_SUPPORTED} ${nonSupportedColNames.join(', ')}.`;
     return '';
   };
-  
+
   // Fake names messege
   const fakeMsg = () => {
     if (fakeColNames.length > 0)
       return `${ERROR_MSG.FAKE_NAME} ${fakeColNames.join(', ')}.`;
     return '';
-  };  
+  };
 
   // Form columns for imputation
   if (params.impute) {
     params.impute.forEach((name) => {
       if (colNames.includes(name)) {
-        const col = table.col(name);
+        col = table.col(name)!;
+        misValsCount = col.stats.missingValueCount;
 
         if (SUPPORTED_COLUMN_TYPES.includes(col!.type)) {
-          if (col!.stats.missingValueCount > 0)
+          if ((misValsCount > 0) && (misValsCount < rowCount))
             targetColNames.push(name);
         } else {
           nonSupportedColNames.push(name);
@@ -595,22 +602,24 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
     });
   } else {
     columns.forEach((col) => {
-      if (SUPPORTED_COLUMN_TYPES.includes(col.type) && (col.stats.missingValueCount > 0))
+      misValsCount = col.stats.missingValueCount;
+
+      if (SUPPORTED_COLUMN_TYPES.includes(col.type) && (misValsCount > 0) && (misValsCount < rowCount))
         targetColNames.push(col.name);
     });
   }
-  
+
   // Check target columns
   if (targetColNames.length === 0) {
     if ((nonSupportedColNames.length === 0) && (fakeColNames.length === 0)) {
       grok.shell.info(ERROR_MSG.NO_MISSING_VALUES);
-      return;      
+      return;
     }
 
     grok.shell.error(`${ERROR_MSG.NO_COLS_IMPUT}. ${nonSupportedMsg()} ${fakeMsg()}`);
     return;
   }
-  
+
   const missingValsIndices = getMissingValsIndices(columns.filter((col) => targetColNames.includes(col.name)));
 
   // Form columns with features (to be used for imputation)
@@ -621,13 +630,14 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
 
         if (SUPPORTED_COLUMN_TYPES.includes(col!.type)) {
           const metricInfo = getDefaultMetricInfo(col!.type as DG.COLUMN_TYPE);
-          
+
           if (params.weights)
             metricInfo.weight = params.weights[idx];
 
           featuresMetrics.set(name, metricInfo);
-        } else
+        } else {
           nonSupportedColNames.push(name);
+        }
       } else {
         fakeColNames.push(name);
       }
@@ -655,12 +665,12 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
 
   // PERFORM IMPUTATION
   const failedToImpute = impute(
-    table, 
+    table,
     targetColNames.filter((name) => name !== nameToRemove),
-    featuresMetrics, 
-    missingValsIndices, 
-    distance as DISTANCE, 
-    neighbors, 
+    featuresMetrics,
+    missingValsIndices,
+    distance as DISTANCE,
+    neighbors,
     inPlace
   );
 

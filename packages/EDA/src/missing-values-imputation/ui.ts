@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TITLE, KNN_IMPUTER, ERROR_MSG, HINT} from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC, DISTANCE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
-  impute, getMissingValsIndices, areThereFails, imputeFailed } from "./knn-imputer";
+import {SUPPORTED_COLUMN_TYPES, METRIC, DISTANCE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
+  impute, getMissingValsIndices, areThereFails, imputeFailed} from './knn-imputer';
 
 /** Setting of the feature metric inputs */
 type FeatureInputSettings = {
@@ -41,12 +41,15 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
 /** Run the KNN missing values imputer */
 export function runKNNImputer(): void {
   /** current dataframe */
-  let df: DG.DataFrame | null = grok.shell.t;
+  const df = grok.shell.t;
 
   if (df === null) {
     grok.shell.warning(ERROR_MSG.NO_DATAFRAME);
     return;
-  }    
+  }
+
+  const rowCount = df.rowCount;
+  let misValsCount: number;
 
   /** columns with missing values */
   const colsWithMissingVals = [] as DG.Column[];
@@ -58,16 +61,17 @@ export function runKNNImputer(): void {
   const availableFeatureColsNames = [] as string[];
 
   // get columns with missing vals & available feature cols
-  df.columns.toList()
-    .filter((col) => SUPPORTED_COLUMN_TYPES.includes(col.type))
-    .forEach((col) => {
+  df.columns.toList().forEach((col) => {
+    if (SUPPORTED_COLUMN_TYPES.includes(col.type)) {
       availableFeatureColsNames.push(col.name);
+      misValsCount = col.stats.missingValueCount;
 
-      if (col.stats.missingValueCount > 0) {
+      if ((misValsCount > 0) && (misValsCount < rowCount)) {
         colsWithMissingVals.push(col);
         availableTargetColsNames.push(col.name);
       }
-    });
+    }
+  });
 
   // get indices of missing values: col name -> array of indices
   const misValsInds = getMissingValsIndices(colsWithMissingVals);
@@ -84,12 +88,12 @@ export function runKNNImputer(): void {
 
   // In-place components
   let inPlace = DEFAULT.IN_PLACE > 0;
-  const inPlaceInput = ui.boolInput(TITLE.IN_PLACE, inPlace, () => { inPlace = inPlaceInput.value ?? false;});
+  const inPlaceInput = ui.boolInput(TITLE.IN_PLACE, inPlace, () => { inPlace = inPlaceInput.value ?? false; });
   inPlaceInput.setTooltip(HINT.IN_PLACE);
 
   // Keep empty feature
   let keepEmpty = DEFAULT.KEEP_EMPTY > 0;
-  const keepEmptyInput = ui.boolInput(TITLE.KEEP_EMPTY, keepEmpty, () => { keepEmpty = keepEmptyInput.value ?? false });
+  const keepEmptyInput = ui.boolInput(TITLE.KEEP_EMPTY, keepEmpty, () => { keepEmpty = keepEmptyInput.value ?? false; } );
   keepEmptyInput.setTooltip(HINT.KEEP_EMPTY);
 
   // Neighbors components
@@ -98,7 +102,7 @@ export function runKNNImputer(): void {
     const val = neighborsInput.value;
     if (val === null)
       neighborsInput.value = neighbors;
-    else if (val >= MIN_NEIGHBORS) 
+    else if (val >= MIN_NEIGHBORS)
       neighbors = val;
     else
       neighborsInput.value = neighbors;
@@ -107,29 +111,29 @@ export function runKNNImputer(): void {
 
   // Distance components
   let distType = DISTANCE.EUCLIDEAN;
-  const distTypeInput = ui.choiceInput(TITLE.DISTANCE, distType, [DISTANCE.EUCLIDEAN, DISTANCE.MANHATTAN], 
+  const distTypeInput = ui.choiceInput(TITLE.DISTANCE, distType, [DISTANCE.EUCLIDEAN, DISTANCE.MANHATTAN],
     () => distType = distTypeInput.value ?? DISTANCE.EUCLIDEAN);
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)
   let targetColNames = colsWithMissingVals.map((col) => col.name);
   const targetColInput = ui.columnsInput(TITLE.COLUMNS, df, () => {
-    targetColNames = targetColInput.value.map((col) => col.name);    
+    targetColNames = targetColInput.value.map((col) => col.name);
     checkApplicability();
   }, {available: availableTargetColsNames, checked: availableTargetColsNames});
   targetColInput.setTooltip(HINT.TARGET);
 
   // Feature columns components
   let selectedFeatureColNames = availableFeatureColsNames as string[];
-  const featuresInput = ui.columnsInput(TITLE.FEATURES, df, () => {    
+  const featuresInput = ui.columnsInput(TITLE.FEATURES, df, () => {
     selectedFeatureColNames = featuresInput.value.map((col) => col.name);
 
     if (selectedFeatureColNames.length > 0) {
       checkApplicability();
-      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));      
-    }
-    else
+      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
+    } else {
       hideWidgets();
+    }
   }, {available: availableFeatureColsNames, checked: availableFeatureColsNames});
   featuresInput.setTooltip(HINT.FEATURES);
 
@@ -155,14 +159,16 @@ export function runKNNImputer(): void {
 
   /** Check applicability of the imputation */
   const checkApplicability = () => {
-    showWidgets();    
-    
-    if (selectedFeatureColNames.length === 1) 
+    showWidgets();
+
+    if (selectedFeatureColNames.length === 1) {
       targetColNames.forEach((name) => {
         if (selectedFeatureColNames[0] === name) {
           hideWidgets();
           grok.shell.warning(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
-      }});
+        }
+      });
+    }
   };
 
   // Metrics components
@@ -172,7 +178,7 @@ export function runKNNImputer(): void {
   metricsDiv.style.overflow = 'auto';
 
   // Create metrics UI
-  availableFeatureColsNames.forEach((name) => {    
+  availableFeatureColsNames.forEach((name) => {
     // initialization
     const type = df!.col(name)!.type as DG.COLUMN_TYPE;
     const settings = getFeatureInputSettings(type);
@@ -187,9 +193,10 @@ export function runKNNImputer(): void {
     distTypeInput.root.style.width = '50%';
     distTypeInput.setTooltip(HINT.METRIC);
     distTypeInput.root.hidden = true; // this input will be used further
-    
+
     // @ts-ignore
-    const prop = DG.Property.fromOptions({ "name": name, "inputType": "Float", min: 0, max: 10, "showSlider": true, "step": 1});
+    // eslint-disable-next-line quote-props
+    const prop = DG.Property.fromOptions({'name': name, 'inputType': 'Float', min: 0, max: 10, 'showSlider': true, 'step': 1});
     const weightInput = ui.input.forProperty(prop);
     weightInput.value = settings.defaultWeight;
     weightInput.onChanged(() => {
@@ -198,7 +205,7 @@ export function runKNNImputer(): void {
       featuresMetrics.set(name, distInfo);
     });
     weightInput.setTooltip(HINT.WEIGHT);
-    
+
     const div = ui.divH([distTypeInput.root, weightInput.root]);
     metricInfoInputs.set(name, div);
     metricsDiv.append(div);
@@ -212,29 +219,28 @@ export function runKNNImputer(): void {
   keepEmptyInput.root.hidden = !areThereFails(targetColNames, selectedFeatureColNames, misValsInds);
 
   // Icon showing/hiding metrics UI
-  const settingsIcon = ui.icons.settings(() => { metricsDiv.hidden = !metricsDiv.hidden;}, HINT.METRIC_SETTINGS);
+  const settingsIcon = ui.icons.settings(() => { metricsDiv.hidden = !metricsDiv.hidden; }, HINT.METRIC_SETTINGS);
 
   const distDiv = ui.divH([distTypeInput.root, settingsIcon]);
 
   dlg.addButton(TITLE.RUN, () => {
-      dlg.close();
-      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
+    dlg.close();
+    availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
-      try {
-        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
+    try {
+      const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
 
-        if (!keepEmpty)
-          imputeFailed(df!, failedToImpute);
-      }
-      catch (err) {
-        if (err instanceof Error)
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
-        else
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-      }      
-    })
+      if (!keepEmpty)
+        imputeFailed(df!, failedToImpute);
+    } catch (err) {
+      if (err instanceof Error)
+        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+      else
+        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+    }
+  })
     .add(targetColInput)
-    .add(featuresInput)    
+    .add(featuresInput)
     .add(distDiv)
     .add(metricsDiv)
     .add(neighborsInput)
