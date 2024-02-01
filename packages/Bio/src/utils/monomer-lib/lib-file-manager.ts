@@ -11,17 +11,17 @@ import {HELM_REQUIRED_FIELDS as REQ} from '@datagrok-libraries/bio/src/utils/con
 import * as rxjs from 'rxjs';
 
 /** Singleton for adding, validation and reading of monomer library files.
- * All files **must** be aligned to HELM standard before adding. */
+ * All files **must** be aligned to the HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor() {
-    DG.debounce<void>(this._onFileListChange, 3000).subscribe(async () => {
+    DG.debounce<void>(this._monomerLibFileListChange$, 3000).subscribe(async () => {
       await this.updateFilePaths();
     });
   }
 
   private validFiles: string[] = [];
 
-  private _onFileListChange = new rxjs.Subject<void>();
+  private _monomerLibFileListChange$ = new rxjs.Subject<void>();
 
   private static instance: MonomerLibFileManager | undefined;
 
@@ -33,8 +33,8 @@ export class MonomerLibFileManager {
     return MonomerLibFileManager.instance;
   }
 
-  get onFileListChange(): rxjs.Observable<void> {
-    return this._onFileListChange.asObservable();
+  get monomerLibFileListChange$(): rxjs.Observable<void> {
+    return this._monomerLibFileListChange$.asObservable();
   }
 
   private async init(): Promise<void> {
@@ -51,7 +51,7 @@ export class MonomerLibFileManager {
     await this.validateFile(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
     await this.validateAllFiles();
-    this._onFileListChange.next();
+    this._monomerLibFileListChange$.next();
     const fileExists = await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
     if (!fileExists)
       grok.shell.error(`Failed to add ${fileName} library`);
@@ -67,7 +67,7 @@ export class MonomerLibFileManager {
     try {
       await grok.dapi.files.delete(LIB_PATH + `${fileName}`);
       await this.validateAllFiles();
-      this._onFileListChange.next();
+      this._monomerLibFileListChange$.next();
       grok.shell.info(`Deleted ${fileName} library`);
     } catch (e) {
       console.error(e);
