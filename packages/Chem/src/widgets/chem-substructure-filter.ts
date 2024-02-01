@@ -104,7 +104,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isReadyToApplyFilter(): boolean {
-    return this.bitset != null || this.currentMolfile !== '';
+    return this.bitset != null;
   }
 
   constructor() {
@@ -334,7 +334,7 @@ export class SubstructureFilter extends DG.Filter {
         return;
       }
     }
-    if (!this.bitset || (this.bitset && this.dataFrame?.filter.length !== this.bitset.length)) { //in case we call applyFilter on a new created filter
+    if ((this.bitset && this.dataFrame?.filter.length !== this.bitset.length) || this.recalculateFilter) { // in case dataframe has been changed (rows added/removed)
       /*in case we enable filter due to async onSketchChanged widget's onRowsFiltering sets filter summary before we check for some other filter is
        already filtering for the exact same thing. Thus we need this flag not to return from onSketcherChanged  */
       this.recalculateFilter = true;
@@ -349,6 +349,7 @@ export class SubstructureFilter extends DG.Filter {
           molecule: this.currentMolfile,
           isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
         }]);
+        this.active = true;
         if (this.searchNotCompleted)
           this._onSketchChanged();
     }
@@ -381,6 +382,7 @@ export class SubstructureFilter extends DG.Filter {
         this.finishSearch(queryMol);
       }));
     }
+    this.active = state.active ?? true;
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       state.molBlock ??= (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule;
     if (state.molBlock) {
@@ -418,14 +420,16 @@ export class SubstructureFilter extends DG.Filter {
     if (!this.isFiltering) {
       _package.logger.debug(`not filtering ${newSmarts}, ${this.filterId}`);
       this.currentMolfile = newMolFile;
-      this.bitset = null;
+      this.recalculateFilter = !!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile);
+      this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null; //TODO
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();
       this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-        molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
-        tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
+      if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === this.filterId)
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
+          molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
+          tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) && !this.searchNotCompleted && !this.recalculateFilter) {
