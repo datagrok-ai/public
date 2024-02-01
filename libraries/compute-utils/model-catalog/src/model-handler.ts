@@ -88,16 +88,13 @@ export class ModelHandler extends DG.ObjectHandler {
 
   // Checks whether this is the handler for [x]
   override isApplicable(x: any) {
-    return x instanceof DG.Func && x.hasTag('model');
+    const js = DG.toJs(x);
+    return js instanceof DG.Func && js.hasTag('model');
   }
 
   private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);
 
-  constructor(
-    private viewName: string,
-    private funcName: string,
-    private currentPackage: DG.Package,
-  ) {
+  constructor() {
     super();
   }
 
@@ -138,10 +135,9 @@ export class ModelHandler extends DG.ObjectHandler {
         ui.label(x.friendlyName),
       ]);
 
-      if (!hasMissingMandatoryGroups) {
+      if (!hasMissingMandatoryGroups)
         markup.ondblclick = () => {ModelHandler.openModel(x);};
-        markup.onclick = () => {ModelHandler.openHelp(x);};
-      } else
+      else
         label.classList.add('d4-disabled');
 
       if (hasMissingMandatoryGroups) {
@@ -228,6 +224,10 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override init(): void {
+    this.registerParamFunc('Help', (func: DG.Func) => {
+      ModelHandler.openHelp(DG.toJs(func));
+    });
+
     setTimeout(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
       const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);

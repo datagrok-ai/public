@@ -371,7 +371,7 @@ export class HistoryPanel {
     const editIcon = ui.iconFA('edit', (ev) => {
       ev.stopPropagation();
       this.showEditDialog(funcCall);
-    }, 'Edit selected run');
+    }, 'Edit selected run metadata');
     editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
@@ -425,7 +425,7 @@ export class HistoryPanel {
   }
 
   showEditDialog(funcCall: DG.FuncCall) {
-    const dlg = ui.dialog({title: 'Edit run'});
+    const dlg = ui.dialog({title: 'Edit run metadata'});
 
     let title = funcCall.options['title'] ?? '';
     let description = funcCall.options['description'] ?? '';
