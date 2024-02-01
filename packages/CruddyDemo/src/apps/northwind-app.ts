@@ -84,7 +84,8 @@ export const northwindConfig = new CruddyConfig({
     new DbEntityType({ type: 'Customer', table: customersTable }),
     new DbEntityType({ type: 'Employee', table: employeesTable }),
     new DbEntityType({ type: 'Order', table: ordersTable, filters: [
-        { type: 'distinct', column: 'shipcountry'}
+        { type: 'distinct', column: 'shipcountry'},
+        { type: 'range', column: 'orderid'},
     ]}),
     new DbEntityType({ type: 'Order Details', table: orderDetailsTable }),
   ]

@@ -2,7 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {debounceTime} from 'rxjs/operators';
+import {Subject} from "rxjs";
 
+type TFilter = {[name: string]: string | null};
 
 export class DbTable {
   schema: string = '';
@@ -38,8 +40,8 @@ export class DbColumn {
 }
 
 
-export interface IFilter {
-  type: 'distinct' | 'search' | 'slider';
+export interface IFilterDescription {
+  type: 'distinct' | 'search' | 'range';
   column: string;
 }
 
@@ -49,7 +51,7 @@ export class DbEntityType {
   type: string = '';
   table: DbTable = new DbTable();
   behaviors: string[] = [];
-  filters: IFilter[] = [];
+  filters: IFilterDescription[] = [];
   crud: DbQueryEntityCrud = new DbQueryEntityCrud('', this);
 
   constructor(init?: Partial<DbEntityType>) {
@@ -89,7 +91,7 @@ export abstract class EntityCrud<TEntity extends DbEntity = DbEntity> {
   abstract create(entity: TEntity): Promise<TEntity>;
 
   /** Reads the entities, according to the specified filter. */
-  abstract read(filter?: {[name: string]: string}): Promise<DG.DataFrame>;
+  abstract read(filter?: TFilter): Promise<DG.DataFrame>;
 
   /** Updates the entity in the database.
    * Returns the entity on success, or throws an exception otherwise. */
@@ -104,6 +106,8 @@ export abstract class EntityCrud<TEntity extends DbEntity = DbEntity> {
 export interface IQueryOptions {
   distinct?: boolean;
   columnNames?: string[];
+  limit?: number;
+  offset?: number;
 }
 
 
@@ -133,10 +137,10 @@ export class DbQueryEntityCrud<TEntity extends DbEntity = DbEntity> extends Enti
     return column.type == 'string' ? "'" + value + "'" : `${value}`;
   }
 
-  getWhereSql(filter: {[name: string]: string}): string {
+  getWhereSql(filter: TFilter): string {
     return Object
       .keys(filter)
-      .map((columnName) => columnName + ' = ' + this.sqlValue(filter[columnName]))
+      .map((columnName) => filter[columnName] != null ? columnName + ' = ' + this.sqlValue(filter[columnName]) : columnName)
       .join(' AND ');
   }
 
@@ -156,11 +160,13 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
       `where ${this.getWhereKeySql(entity)}`;
   }
 
-  getReadSql(filter?: {[name: string]: string}, options?: IQueryOptions): string {
+  getReadSql(filter?: TFilter, options?: IQueryOptions): string {
     const columnNames = options?.columnNames ?? this.entityType.columns.map(c => c.name);
     return `select ${options?.distinct ? 'distinct ' : ''} ${columnNames.join(', ')} ` +
            `from ${this.entityType.table.name}` +
-            (filter && Object.keys(filter).length > 0 ? ` where ${this.getWhereSql(filter)}` : '');
+            (filter && Object.keys(filter).length > 0 ? ` where ${this.getWhereSql(filter)}` : '') +
+            (options?.limit ? ` limit ${options.limit}` : '') +
+            (options?.offset ? ` limit ${options.offset}` : '');
   }
 
   getDeleteSql(entity: TEntity) {
@@ -172,8 +178,8 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
     return entity;
   }
 
-  async read(filter?: {[name: string]: string}, options?: IQueryOptions): Promise<DG.DataFrame> {
-    return await grok.data.db.query(this.connectionId, this.getReadSql(filter, options));
+  async read(filter?: TFilter, options?: IQueryOptions): Promise<DG.DataFrame> {
+    return await grok.data.db.query(this.connectionId, this.getReadSql(filter,  options));
   }
 
   async readSingle(keyFilter?: {[name: string]: string}): Promise<{[name: string]: any} | null> {
@@ -207,22 +213,107 @@ export class CruddyViewConfig {
 }
 
 
-export class CruddyEntityFilter {
+export class CruddyFilterHost {
+  root: HTMLDivElement = ui.divV([]);
+  onChanged: Subject<TFilter> = new Subject<TFilter>();
+  filters: CruddyFilter[] = [];
+
+  constructor() {
+    this.onChanged
+      .pipe(debounceTime(100))
+      .subscribe((_) => grok.shell.info('Filter changed: ' + JSON.stringify(this.getCondition())));
+  }
+
+  getCondition(): TFilter {
+    return CruddyFilter.mergeConditions(this.filters.map((f) => f.getCondition()));
+  }
+
+  init(entityType: DbEntityType) {
+    for (const f of entityType.filters) {
+      const filter = CruddyFilter.create(entityType, f);
+      filter.onChanged.subscribe((x) => this.onChanged.next(x));
+      this.filters.push(filter);
+      this.root.appendChild(filter.root);
+    }
+  }
+}
+
+
+export abstract class CruddyFilter {
   root: HTMLDivElement = ui.divV([]);
   entityType: DbEntityType;
-  filter: IFilter;
+  filter: IFilterDescription;
+  onChanged: Subject<any> = new Subject<any>();
 
-  constructor(entityType: DbEntityType, filter: IFilter) {
+  abstract getCondition(): TFilter;
+
+  static mergeConditions(conditions: TFilter[]): TFilter {
+    const query = {};
+    for (const f of conditions)
+      Object.assign(query, f);
+    return query;
+  }
+
+  protected constructor(entityType: DbEntityType, filter: IFilterDescription) {
     this.entityType = entityType;
     this.filter = filter;
+  }
 
-    if (filter.type == 'distinct') {
-      entityType.crud
-        .read({}, { distinct: true, columnNames: [filter.column]})
-        .then((df) => {
-          this.root.appendChild(DG.Viewer.filters(df).root);
-        });
+  static create(entityType: DbEntityType, filter: IFilterDescription): CruddyFilter {
+    switch (filter.type) {
+      case 'distinct': return new CruddyFilterCategorical(entityType, filter);
+      case 'range': return new CruddyFilterRange(entityType, filter);
     }
+
+    throw `Unknown filter type: ${filter.type}`;
+  }
+}
+
+
+export class CruddyFilterCategorical extends CruddyFilter {
+  choices?: DG.InputBase;
+
+  constructor(entityType: DbEntityType, filter: IFilterDescription) {
+    super(entityType, filter);
+    entityType.crud
+      .read({}, { distinct: true, columnNames: [filter.column]})
+      .then((df) => {
+        this.choices = ui.multiChoiceInput('values', [], df.columns.byIndex(0).toList());
+        this.choices.onChanged(() => this.onChanged.next(this));
+        this.root.appendChild(ui.h2(filter.column));
+        this.root.appendChild(this.choices.input);
+      });
+  }
+
+  getCondition(): TFilter {
+    return {
+      [`${this.filter.column} in (${(this.choices!.value as Array<any>).map((x) => `'${x}'`).join(', ')})`]: null
+    };
+  }
+}
+
+
+export class CruddyFilterRange extends CruddyFilter {
+  slider = ui.rangeSlider(0, 1, 0, 1, false, 'thin_barbell');
+
+  constructor(entityType: DbEntityType, filter: IFilterDescription) {
+    super(entityType, filter);
+    const minCol = `min(${filter.column}) as min`;
+    const maxCol = `max(${filter.column}) as max`;
+    entityType.crud
+      .read({}, { columnNames: [minCol, maxCol]})
+      .then((df) => {
+        this.slider.setValues(df.get('min', 0), df.get('max', 0), df.get('min', 0), df.get('max', 0));
+        this.slider.onValuesChanged.subscribe((_) => this.onChanged.next(this));
+        this.root.appendChild(ui.h2(filter.column));
+        this.root.appendChild(this.slider.root);
+      });
+  }
+
+  getCondition(): TFilter {
+    return {
+      [`(${this.filter.column} >= ${this.slider.min} and ${this.filter.column} <= ${this.slider.max})`]: null
+    };
   }
 }
 
@@ -233,8 +324,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   crud: DbQueryEntityCrud;
   grid?: DG.Grid;
   host: HTMLDivElement = ui.divH([]);
-  filters: CruddyEntityFilter[] = [];
-  filtersDiv: HTMLDivElement = ui.divV([]);
+  filters: CruddyFilterHost = new CruddyFilterHost();
 
   constructor(app: CruddyApp, entityType: DbEntityType) {
     super();
@@ -246,7 +336,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.crud.read().then((df) => {
       this.grid = df.plot.grid();
       this.append(this.host);
-      this.host.appendChild(this.filtersDiv);
+      this.host.appendChild(this.filters.root);
       this.host.appendChild(this.grid.root);
       this.grid.root.style.flexGrow = '1';
       //this.grid.root.style.height = '100%';
@@ -256,11 +346,12 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   }
 
   initFilters() {
-    for (const f of this.entityType.filters) {
-      const filter = new CruddyEntityFilter(this.entityType, f);
-      this.filters.push(filter);
-      this.filtersDiv.appendChild(filter.root);
-    }
+    this.filters.init(this.entityType);
+    this.filters.onChanged.subscribe((q) => {
+      this.crud.read(this.filters.getCondition()).then((df) => {
+        this.grid!.dataFrame = df;
+      });
+    });
   }
 
   initBehaviors() {
@@ -372,8 +463,6 @@ export class CruddyApp {
   }
 
   run(): void {
-    // let v = new DG.MultiView({viewFactories: })
-
     for (let entityType of this.config.entityTypes) {
       let view = new CruddyEntityView(this, entityType);
       grok.shell.addView(view);

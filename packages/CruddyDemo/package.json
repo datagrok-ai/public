@@ -7,6 +7,7 @@
     "datagrok-api": "latest",
     "cash-dom": "latest",
     "dayjs": "latest",
+    "rxjs": "^6.5.5",
     "@datagrok-libraries/utils": "latest"
   },
   "devDependencies": {
