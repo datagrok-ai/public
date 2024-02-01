@@ -519,7 +519,7 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
   // Check parameters of imputation
 
   // check neighbors
-  if (params.neighbors) {
+  if (params.neighbors !== undefined) {
     if ((params.neighbors < MIN_NEIGHBORS) || (!Number.isInteger(params.neighbors))) {
       grok.shell.error(ERROR_MSG.INCORRECT_NEIGHBORS);
       return;
@@ -556,7 +556,6 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
   const colNames = table.columns.names();
   const nonSupportedColNames = [] as string[];
   const fakeColNames = [] as string[];
-  let nameToRemove: string | null = null;
   const rowCount = table.rowCount;
   let col: DG.Column;
   let misValsCount: number;
@@ -568,6 +567,7 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
   const neighbors = params.neighbors ?? DEFAULT.NEIGHBORS;
   const inPlace = params.inPlace ?? DEFAULT_IN_PLACE;
   const keepEmpty = params.keepEmpty ?? DEFAULT_KEEP_EMPTY;
+  let failedToImpute: Map<string, number[]>;
 
   // Non-supported messege
   const nonSupportedMsg = () => {
@@ -655,16 +655,7 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
     return;
   }
 
-  // Get column that cannot be imputed
-  if (featuresMetrics.size === 1) {
-    const key = Object.keys(featuresMetrics)[0];
-
-    if (targetColNames.includes(key))
-      nameToRemove = key;
-  }
-
-  // PERFORM IMPUTATION
-  const failedToImpute = impute(
+  const performImputation = (nameToRemove?: string) => impute(
     table,
     targetColNames.filter((name) => name !== nameToRemove),
     featuresMetrics,
@@ -674,8 +665,23 @@ export function imputeByKNN(table: DG.DataFrame, params: KNNimputerParams): void
     inPlace
   );
 
-  if (nameToRemove !== null)
-    failedToImpute.set(nameToRemove, missingValsIndices.get(nameToRemove)!);
+  // PERFORM IMPUTATION (with respect to the features)
+  if (featuresMetrics.size > 1) {
+    failedToImpute = performImputation();
+  } else {
+    const key = [...featuresMetrics.keys()][0];
+
+    if (targetColNames.includes(key)) {
+      if (targetColNames.length > 1)
+        failedToImpute = performImputation(key);
+      else
+        failedToImpute = new Map<string, number[]>();
+
+      failedToImpute.set(key, missingValsIndices.get(key)!);
+    } else {
+      failedToImpute = performImputation();
+    }
+  }
 
   if ((failedToImpute.size > 0) && !keepEmpty)
     imputeFailed(table, failedToImpute);
