@@ -1420,5 +1420,12 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
   }
 }
 
+//name: canonicalize
+//input: string molecule { semType: Molecule }
+//output: string smiles { semType: Molecule }
+//meta.role: canonicalizer
+export function canonicalize(molecule: string): string {
+  return convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+}
 
 export {getMCS};
