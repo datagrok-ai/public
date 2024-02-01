@@ -104,7 +104,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isReadyToApplyFilter(): boolean {
-    return this.bitset != null;
+    return this.bitset != null || this.currentMolfile !== '';
   }
 
   constructor() {
@@ -334,7 +334,9 @@ export class SubstructureFilter extends DG.Filter {
         return;
       }
     }
-    if (this.bitset && this.dataFrame?.filter.length !== this.bitset.length) { // in case dataframe has been changed (rows added/removed)
+    if (!this.bitset || (this.bitset && this.dataFrame?.filter.length !== this.bitset.length)) { //in case we call applyFilter on a new created filter
+      /*in case we enable filter due to async onSketchChanged widget's onRowsFiltering sets filter summary before we check for some other filter is
+       already filtering for the exact same thing. Thus we need this flag not to return from onSketcherChanged  */
       this.recalculateFilter = true;
       this._onSketchChanged();
       return;
@@ -347,7 +349,6 @@ export class SubstructureFilter extends DG.Filter {
           molecule: this.currentMolfile,
           isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
         }]);
-        this.active = true;
         if (this.searchNotCompleted)
           this._onSketchChanged();
     }
@@ -380,7 +381,6 @@ export class SubstructureFilter extends DG.Filter {
         this.finishSearch(queryMol);
       }));
     }
-    this.active = state.active ?? true;
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       state.molBlock ??= (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule;
     if (state.molBlock) {
@@ -418,8 +418,7 @@ export class SubstructureFilter extends DG.Filter {
     if (!this.isFiltering) {
       _package.logger.debug(`not filtering ${newSmarts}, ${this.filterId}`);
       this.currentMolfile = newMolFile;
-      this.bitset = !this.active ?
-        DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null; //TODO
+      this.bitset = null;
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();
