@@ -44,7 +44,10 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_) => {
-        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));
+        if (super.isFiltering)
+          this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));//in case node is disabled - keep the highlight
+        else
+          this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, ''); //in case whole filter is disabled - drop the highlight
       }),
     );
     this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
