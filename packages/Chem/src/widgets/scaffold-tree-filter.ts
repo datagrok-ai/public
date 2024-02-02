@@ -70,7 +70,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     });
 
     if (state.savedTree)
-      this.viewer.loadTreeStr(state.savedTree);
+      this.viewer.loadTreeStr(state.savedTree, state.active);
 
     if (state.colorCodedScaffolds)
       this.viewer.colorCodedScaffolds = JSON.parse(state.colorCodedScaffolds);
