@@ -216,10 +216,9 @@ export class SubstructureFilter extends DG.Filter {
         //in case filter filter is disabled during active search, we finish current search
         if (this.batchResultObservable && !this.batchResultObservable?.closed) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
-          this.sketcher.getSmarts().then((smarts) => {
-            this.terminatePreviousSearch();
-            this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
-          });
+          this.terminatePreviousSearch();
+          const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+          this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
         }
 
       }));
@@ -293,31 +292,20 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   detach() {
-    //in case search was terminated via disabling filter (in onRowsFiltering subscription) we need to reset searchNotCompleted variable in detach
-    this.searchNotCompleted = false;
-    _package.logger.debug(`************detaching filter ${this.filterId}`);
-    //reset active filter id in case it is detached
-    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === this.filterId)
+    //in case detaching active filter -> send sync event to other filters and reset active filter id
+    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === this.filterId) {
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = -1;
-    //finishing search in case it is still running
-    if (this.batchResultObservable && !this.batchResultObservable?.closed) {
-      this.sketcher.getSmarts().then((smarts) => {
-        this.terminatePreviousSearch();
-        this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
-        this.finishDetach();
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
+        bitset: this.bitset,
+        molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
+        tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp
       });
-    } else {
-      if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] === -1) //before detaching - synchronize state with other substructure filters on the same column
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-          bitset: this.bitset,
-          molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
-          tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp
-        });
-      this.finishDetach();
-    }
-  }
-
-  finishDetach(): void {
+    };
+    //terminating search (in case the search was active at the moment of detach)
+    _package.logger.debug(`************finish search in detach ${this.filterId}`);
+    this.terminatePreviousSearch();
+    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+    this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
     super.detach();
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
@@ -325,7 +313,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
-    //we apply filter bitset only from one actuve filtering fiter, other filters are just synchronizing
+    //we apply filter bitset only from one active filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC];
     if (activeFilterId !== this.filterId) {
       if (activeFilterId === -1)
@@ -338,9 +326,6 @@ export class SubstructureFilter extends DG.Filter {
     // in case dataframe has been changed (rows added/removed) while filter was disabled
     // or applyState with molfile was called on inactive filter -> need to recalculate results
     if ((this.bitset && this.dataFrame?.filter.length !== this.bitset.length) || this.recalculateFilter) {
-      /*in case we enable filter widget's onRowsFiltering sets filter summary before we check for some other filter is
-       already filtering for the exact same thing (due to async _onSketchChanged). Thus we need this flag not to return from onSketcherChanged  */
-      this.recalculateFilter = true;
       this._onSketchChanged();
       return;
     }
@@ -389,16 +374,16 @@ export class SubstructureFilter extends DG.Filter {
     this.active = state.active ?? true;
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       state.molBlock ??= (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule;
-    if (state.molBlock) {
+    if (state.molBlock && state.molBlock !== this.currentMolfile) {
       this.currentMolfile = state.molBlock;
       this.sketcher.setMolFile(state.molBlock);
       this.updateFilterUiOnSketcherChanged(this.currentMolfile);
     }
-    if (state.searchType)
+    if (state.searchType && state.searchType !== this.searchType)
       this.searchTypeInput.value = state.searchType;
-    if (state.simCutOff)
+    if (state.simCutOff && state.simCutOff !== this.similarityCutOff)
       this.similarityCutOffInput.value = state.simCutOff;
-    if (state.fp)
+    if (state.fp && state.fp !== this.fp)
       this.fpInput.value = state.fp;
 
     const that = this;
@@ -415,7 +400,7 @@ export class SubstructureFilter extends DG.Filter {
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
     _package.logger.debug(`newMolfile ${newMolFile} , ${this.filterId}`);
-    const newSmarts = await this.getSmartsToFilter();
+    const newSmarts = _convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
     _package.logger.debug(`newSmarts ${newSmarts}, ${this.filterId}`);
     if (this.currentMolfile !== newMolFile)
       this.updateFilterUiOnSketcherChanged(newMolFile);
@@ -439,7 +424,7 @@ export class SubstructureFilter extends DG.Filter {
           tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) && !this.searchNotCompleted && !this.recalculateFilter) {
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`)) {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property
       _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolFile)} , ${this.filterId}`);
@@ -473,14 +458,8 @@ export class SubstructureFilter extends DG.Filter {
     }
   }
 
-  async getSmartsToFilter() {
-    return this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
-      _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
-  }
-
-
   async getFilterBitset(): Promise<BitArray> {
-    const smarts = await this.getSmartsToFilter();
+    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
     return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, FILTER_TYPES.substructure, false, false,
       this.searchType, this.similarityCutOff, this.fp);
   }
