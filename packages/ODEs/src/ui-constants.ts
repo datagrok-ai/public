@@ -9,7 +9,7 @@ export enum HOT_KEY {
 export enum HINT {
   HELP = 'Open help in a new tab',
   OPEN = 'Open model',
-  SAVE = 'Save model to local file',
+  SAVE_LOC = 'Save model to local file',
   LOAD = 'Load model from local file',
   BASIC = 'Open basic template',
   ADV = 'Open advanced template',
@@ -24,11 +24,12 @@ export enum HINT {
   TO_JS = 'Export model to JavaScript script',
   APP = 'Export model to platform application with user interface',
   OPEN_DS = 'Open model in Diff Studio',
+  SAVE = 'Save changes', 
 };
 
 /** UI titles */
 export enum TITLE {
-  SAVE = 'Save...',
+  SAVE_DOTS = 'Save...',
   LOAD = 'Load...',
   FROM_FILE = 'From file...',
   TEMPL = 'Templates',
@@ -51,6 +52,7 @@ export enum TITLE {
   SOLUTION = 'Solution',
   OPEN = 'Open',
   BROWSE = 'Browse',
+  SAVE = 'Save',
 };
 
 /** Help links */
