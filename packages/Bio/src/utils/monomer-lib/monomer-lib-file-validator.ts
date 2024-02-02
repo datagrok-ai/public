@@ -15,6 +15,13 @@ export class MonomerLibFileValidator {
     if (jsonContent === null)
       return false;
 
+    if (!Array.isArray(jsonContent)) {
+      console.warn(
+        'Bio: Monomer Library File Validator: Invalid JSON format: The file must contain an array of monomers.'
+      );
+      return false;
+    }
+
     return this.validateJsonContent(jsonContent, fileName);
   }
 
