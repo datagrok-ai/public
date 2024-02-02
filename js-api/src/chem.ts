@@ -335,6 +335,7 @@ export namespace chem {
       if (mode)
         this._mode = mode;
       this.root.style.height = '100%';
+      this.extSketcherCanvas.classList.add('chem-external-sketcher-canvas');
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
       this.emptySketcherLink = ui.divText('Sketch', 'chem-sketch-link sketch-link');
       this.calculating = false;
@@ -397,9 +398,6 @@ export namespace chem {
               ui.empty(this.extSketcherDiv);
               this.extSketcherDiv.append(this.extSketcherCanvas);
               this.extSketcherDiv.append(this.clearSketcherButton);
-              this.extSketcherCanvas.style.minWidth = '100px';
-              this.extSketcherCanvas.style.width = '100%';
-              this.extSketcherCanvas.style.height = '';
             });
         } else {
           ui.empty(this.extSketcherDiv);
