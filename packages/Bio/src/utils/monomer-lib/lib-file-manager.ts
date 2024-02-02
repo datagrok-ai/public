@@ -11,16 +11,19 @@ import {
   HELM_VALUE_TYPE,
   HELM_FIELD_TYPE
 } from '@datagrok-libraries/bio/src/utils/const';
+import {JSONSchemaType} from 'ajv';
+import {HELM_JSON_SCHEMA_PATH} from './consts';
 
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-
-const STRING_TYPE = 'string';
+import {MonomerLibFileValidator} from './monomer-lib-file-validator';
 
 /** Singleton for adding, validation and reading of monomer library files.
  * All files **must** be aligned to the HELM standard before adding. */
 export class MonomerLibFileManager {
-  private constructor() {
+  private constructor(
+    private fileValidator: MonomerLibFileValidator
+  ) {
     this._libraryFilesUpdateSubject$.pipe(
       debounceTime(3000)
     ).subscribe(async () => {
@@ -38,9 +41,15 @@ export class MonomerLibFileManager {
 
   static async getInstance(): Promise<MonomerLibFileManager> {
     if (MonomerLibFileManager.instance === undefined) {
-      MonomerLibFileManager.instance = new MonomerLibFileManager();
+      const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
+      const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
+
+      const fileValidator = new MonomerLibFileValidator(helmSchema);
+      MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator);
+
       await MonomerLibFileManager.instance.initialize();
     }
+
     return MonomerLibFileManager.instance;
   }
 
@@ -167,9 +176,8 @@ export class MonomerLibFileManager {
       throw new Error(`File ${fileName} does not satisfy HELM standard`);
   }
 
-  /** The file **must** strictly satisfy HELM standard */
   private isValidHELMFormatLibrary(fileContent: string): boolean {
-    return new MonomerLibFileValidator().validate(fileContent);
+    return this.fileValidator.validateFile(fileContent);
   }
 
   /** Get relative paths for files in LIB_PATH  */
@@ -192,72 +200,5 @@ export class MonomerLibFileManager {
       // Get relative path (to LIB_PATH)
       return path.substring(LIB_PATH.length);
     });
-  }
-}
-
-class MonomerLibFileValidator {
-  validate(fileContent: string): boolean {
-    return this.validateHELMFormat(fileContent);
-  }
-
-  private validateHELMFormat(fileContent: string): boolean {
-    let jsonContent: any[];
-    try {
-      jsonContent = JSON.parse(fileContent);
-    } catch (e) {
-      console.error('Bio: Monomer Library File Manager: Invalid JSON format:', e);
-      return false;
-    }
-
-    if (!Array.isArray(jsonContent))
-      return false;
-
-    return jsonContent.every((monomer) => this.isValidHELMMonomerObject(monomer));
-  }
-
-  private isValidHELMMonomerObject(monomer: any): boolean {
-    for (const field of HELM_REQUIRED_FIELDS) {
-      const fieldType = HELM_FIELD_TYPE[field];
-
-      if (!monomer.hasOwnProperty(field))
-        return false;
-
-      if (field.toLowerCase() === REQ.RGROUPS.toLowerCase() && !this.isValidRGroupsField(monomer[field]))
-        return false;
-
-      if (typeof fieldType === STRING_TYPE && !this.matchesValueType(monomer[field], fieldType as string))
-        return false;
-    }
-    return true;
-  }
-
-  private isValidRGroupsField(rgroups: any[]): boolean {
-    if (!Array.isArray(rgroups)) return false;
-
-    return rgroups.every((rgroup) => {
-      const fieldType = HELM_FIELD_TYPE[REQ.RGROUPS] as any;
-      const itemsType = fieldType.itemsType as Record<string, string>;
-      return Object.entries(itemsType).every(([field, type]) => {
-        const hasField = rgroup.hasOwnProperty(field);
-        const matchesType = this.matchesValueType(rgroup[field], type);
-
-        return hasField && matchesType;
-      });
-    });
-  }
-
-  private matchesValueType(value: any, typeInfo: string): boolean {
-    switch (typeInfo) {
-      case HELM_VALUE_TYPE.STRING:
-        return typeof value === STRING_TYPE;
-      case HELM_VALUE_TYPE.STRING_OR_NULL:
-        return typeof value === STRING_TYPE || value === null;
-      case HELM_VALUE_TYPE.INTEGER:
-        return Number.isInteger(value);
-      case HELM_VALUE_TYPE.ARRAY:
-        return Array.isArray(value);
-      default:
-        return false;
-    }
   }
 }
