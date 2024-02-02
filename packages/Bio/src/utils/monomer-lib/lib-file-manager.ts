@@ -142,7 +142,7 @@ export class MonomerLibFileManager {
       }
 
       const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${path}`);
-      if (!this.isValidHELMFormatLibrary(fileContent))
+      if (!this.isValidHELMFormatLibrary(fileContent, path))
         invalidFiles.push(path);
     }
 
@@ -171,13 +171,13 @@ export class MonomerLibFileManager {
   }
 
   private async validateLibraryFileAgainstHELM(fileContent: string, fileName: string): Promise<void> {
-    const isValid = this.isValidHELMFormatLibrary(fileContent);
+    const isValid = this.isValidHELMFormatLibrary(fileContent, fileName);
     if (!isValid)
       throw new Error(`File ${fileName} does not satisfy HELM standard`);
   }
 
-  private isValidHELMFormatLibrary(fileContent: string): boolean {
-    return this.fileValidator.validateFile(fileContent);
+  private isValidHELMFormatLibrary(fileContent: string, fileName: string): boolean {
+    return this.fileValidator.validateFile(fileContent, fileName);
   }
 
   /** Get relative paths for files in LIB_PATH  */

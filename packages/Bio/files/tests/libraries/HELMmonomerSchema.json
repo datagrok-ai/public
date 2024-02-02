@@ -76,11 +76,11 @@
     "monomerType": {
       "description": "Type of monomer from a fixed list of agreed monomer types.",
 	  "type": "string",
-	  "enum": ["Backbone", "Branch", "Undefined"]
+	  "enum": ["Backbone", "Branch", "Terminal", "Undefined"]
     },
     "createDate": {
       "description": "Date created.",
-	  "type": "string"
+	  "type": ["string", "null"]
     }
   },
   "required": [

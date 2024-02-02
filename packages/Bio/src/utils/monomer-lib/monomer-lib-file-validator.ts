@@ -1,20 +1,21 @@
-import Ajv, {JSONSchemaType} from 'ajv-draft-04';
-// import draft04 from 'ajv/dist/refs/json-schema-draft-04.json';
+import Ajv, {JSONSchemaType, ValidateFunction} from 'ajv-draft-04';
+import addErrors from 'ajv-errors';
 
 export class MonomerLibFileValidator {
-  private validateMonomerSchema: (data: any) => boolean;
+  private validateMonomerSchema: ValidateFunction<any>;
 
   constructor(private helmMonomerSchema: JSONSchemaType<any>) {
-    const ajv = new Ajv();
+    const ajv = new Ajv({allErrors: true, strictTuples: false});
+    addErrors(ajv);
     this.validateMonomerSchema = ajv.compile(this.helmMonomerSchema);
   }
 
-  validateFile(fileContent: string): boolean {
+  validateFile(fileContent: string, fileName: string): boolean {
     const jsonContent = this.parseJson(fileContent);
     if (jsonContent === null)
       return false;
 
-    return this.validateJsonContent(jsonContent);
+    return this.validateJsonContent(jsonContent, fileName);
   }
 
   private parseJson(fileContent: string): any[] | null {
@@ -26,12 +27,22 @@ export class MonomerLibFileValidator {
     }
   }
 
-  private validateJsonContent(jsonContent: any[]): boolean {
-    if (!Array.isArray(jsonContent)) {
-      console.error('Bio: Monomer Library File Validator: Invalid JSON format: Expected an array');
-      return false;
+  private validateJsonContent(jsonContent: any[], fileName: string): boolean {
+    let isValid = true;
+    for (const monomer of jsonContent) {
+      isValid = this.validateMonomerSchema(monomer);
+      if (!isValid) {
+        console.warn(
+          `Bio: Monomer Library File Validator:\nfile${fileName}\n monomer violating JSON schema:`,
+          monomer,
+          '\nError reason: ',
+          this.validateMonomerSchema.errors,
+          `\nThere may be other errors in ${fileName} since the validation is stopped after the first error.`,
+          ' Please, verify that the monomer library file satisfies the '
+        );
+        break;
+      }
     }
-
-    return jsonContent.every((monomer) => this.validateMonomerSchema(monomer));
+    return isValid;
   }
 }
