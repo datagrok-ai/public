@@ -14,7 +14,9 @@ import {initTemplates, templatesSearch} from './templates-search';
 const queries: DG.DataQuery[] = [];
 const widgetFunctions = DG.Func.find({returnType: 'widget'});
 const searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
+const searchDynamicFunctions = DG.Func.find({tags: ['search'], returnType: 'dynamic'});
 const searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
+
 
 export function initSearch() {
   //grok.dapi.queries.list().then((qs) => queries = qs);
@@ -35,6 +37,7 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   templatesSearch(s, host);
   widgetsSearch(s, host);
   specificWidgetsSearch(s, host);
+  specificDynamicSearch(s, host);
 }
 
 
@@ -89,6 +92,20 @@ function searchFunctionsSearch(s: string, host: HTMLDivElement): void {
         host.appendChild(ui.divV([
           ui.h3(sf.description ?? sf.name),
           ui.list(results),
+        ]));
+      }
+    });
+  }
+}
+
+// Evaluates custom search functions that return dynamic values
+function specificDynamicSearch(s: string, host: HTMLDivElement): void {
+  for (const sf of searchDynamicFunctions) {
+    sf.apply({s: s}).then((result: HTMLElement) => {
+      if (result) {
+        host.appendChild(ui.divV([
+          ui.h3(sf.description ?? sf.name),
+          result,
         ]));
       }
     });
