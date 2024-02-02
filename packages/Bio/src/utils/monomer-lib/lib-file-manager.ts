@@ -7,9 +7,7 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLib} from './monomer-lib';
 import {
-  HELM_REQUIRED_FIELD as REQ, HELM_REQUIRED_FIELDS,
-  HELM_VALUE_TYPE,
-  HELM_FIELD_TYPE
+  HELM_REQUIRED_FIELD as REQ,
 } from '@datagrok-libraries/bio/src/utils/const';
 import {JSONSchemaType} from 'ajv';
 import {HELM_JSON_SCHEMA_PATH} from './consts';
