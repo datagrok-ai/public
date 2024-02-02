@@ -2,41 +2,114 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {tableFromArrays, tableFromIPC, tableToIPC} from 'apache-arrow';
-//@ts-ignore
-import {Compression, default as init, readParquet, writeParquet, WriterPropertiesBuilder} from './arrow1';
-import {Buffer} from 'buffer';
-import {FLOAT_NULL} from "datagrok-api/dg";
+import {DataType, tableFromArrays, tableFromIPC, tableToIPC, Type, Vector} from 'apache-arrow';
+import {Compression, default as init, readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm/esm/arrow1";
 
 export const _package = new DG.Package();
-
-
 
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-
 //tags: init
 export async function parquetInit() {
   await init(_package.webRoot + 'dist/arrow1_bg.wasm');
 }
 
-//name: fromParquet
-//input: blob bytes
-//output: dataframe table
+// name: fromParquet
+// input: blob bytes
+// output: dataframe table
 export function fromParquet(bytes: Uint8Array) {
-  let d1 = new Date();
-  const table = tableFromIPC(readParquet(bytes));
-  console.log(`tableFromIPC ${new Date().getTime() - d1.getTime()} ms`)
-  d1 = new Date();
-  const array = table.toArray();
-  console.log(`table.toArray() ${new Date().getTime() - d1.getTime()} ms`)
-  d1 = new Date();
-  const df = DG.DataFrame.fromObjects(array);
-  console.log(`.fromObjects(array) ${new Date().getTime() - d1.getTime()} ms`)
-  return df;
+  if (bytes === null) return null;
+  const stream = readParquet(bytes).intoIPCStream();
+  const table = tableFromIPC(stream);
+
+  let columns = [];
+  for (let i = 0; i < table.numCols; i++) {
+    const vector = table.getChildAt(i)!;
+    let values: any;
+    let type = vector.type;
+    if (DataType.isDictionary(type)) {
+      values = unpackDictionaryColumn(vector);
+      type = vector.data[vector.data.length - 1].dictionary?.type;
+    } else
+      values = vector.toArray();
+    const name = table.schema.fields[i].name;
+    switch (type.typeId) {
+      case Type.Int8:
+      case Type.Int16:
+      case Type.Int32:
+      case Type.Int:
+        if (ArrayBuffer.isView(values) && type.bitWidth < 64)
+          columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
+        else if (type.bitWidth === 64)
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+        else
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT, name, values));
+        break;
+      case Type.Uint32:
+      case Type.Int64:
+      case Type.Uint64:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+        break;
+      case Type.Float:
+      case Type.Decimal:
+        if (ArrayBuffer.isView(values))
+          columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
+        else
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values));
+        break;
+      case Type.Utf8:
+      case Type.Interval:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values));
+        break;
+      case Type.Bool:
+        if (ArrayBuffer.isView(values))
+          columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer, table.numRows)));
+        else
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, values));
+        break;
+      case Type.Date:
+      case Type.Timestamp:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, values));
+        break;
+      case Type.Time:
+        if (type?.bitWidth < 64 && ArrayBuffer.isView(values))
+          columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
+        else
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+        break;
+      default:
+        columns.push(DG.Column.fromStrings(name, values));
+        break;
+    }
+  }
+  return DG.DataFrame.fromColumns(columns);
+}
+
+function unpackDictionaryColumn(vector: Vector) {
+  const codes = new Array(vector.length);
+  const ks = vector?.data[vector.data.length - 1]?.dictionary?.toArray();
+  let i = 0;
+  for (const chunk of vector.data) {
+    const nullMap = chunk.nullBitmap || [];
+    for (let j = 0; j < chunk.values.length; j++) {
+      const ix = chunk.values[j];
+      // Fancy bit operations because the null masks pack 8 observations into each bit.
+      // ix >> 3 advances the byte every 8 bits;
+      // (1 << (ix % 8) checks if the bit is set for the particular position inside the byte.
+
+      // You must check nullmap.length because if there are no null values in a chunk,
+      // the nullmap doesn't exist.
+      if (nullMap.length && !(nullMap[j >> 3] & (1 << (j % 8))))
+        codes[i] = null;
+      else
+        codes[i] = ks[ix];
+      i++;
+    }
+  }
+  return codes
 }
 
 
@@ -45,11 +118,7 @@ export function fromParquet(bytes: Uint8Array) {
 //tags: file-handler
 //meta.ext: parquet
 export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-  const table = tableFromIPC(readParquet(bytes));
-  const array = table.toArray();
-  const df = DG.DataFrame.fromObjects(array);
-  if (df)
-    return [df];
+  return [fromParquet(bytes as Uint8Array)];
 }
 
 //input: list bytes
@@ -60,17 +129,17 @@ export function featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | Sha
   const arrow = Buffer.from(bytes);
   const table = tableFromIPC(arrow).toArray();
   const df = DG.DataFrame.fromObjects(table);
-  if (df) 
+  if (df)
     return [df];
 }
 
 //name: saveAsParquet
 //description: Save as Parquet
 //tags: fileExporter
-export function saveAsParquet(){
+export function saveAsParquet() {
   let table = grok.shell.t;
   const parquetUint8Array = toParquet(table);
-  DG.Utils.download(table.name + '.parquet', parquetUint8Array);
+  DG.Utils.download(table.name + '.parquet', parquetUint8Array ?? new Uint8Array(0));
 }
 
 
@@ -80,58 +149,39 @@ export function saveAsParquet(){
 //output: blob bytes
 export function toParquet(table: DG.DataFrame) {
   if (table == null) return null;
-  try {
-    let d1 = new Date();
-    let column_names = table.columns.names();
-    const t: { [_: string]: any }= {};
-    for(let i = 0; i < column_names.length; i++) {
-      let column = table.columns.byName(column_names[i]);
-      if(['int', 'float', 'qnum'].includes(column.type)) {
-        t[column_names[i]] = column.getRawData();
-      }
-      else if (table.col(column_names[i])?.type === 'datetime') {
-        const rawData: Float64Array = (column.getRawData() as Float64Array);
-        t[column_names[i]] = Array.from(rawData, (v, _) =>
-            v === FLOAT_NULL ? null : new Date(v / 1000));
-      }
-      else if (table.col(column_names[i])?.type === 'string') {
-        const indexes = column.getRawData();
-        t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
-      }
-      else {
-        t[column_names[i]] = column.toList();
-      }
-    }
-    console.log(`Converted columns ${new Date().getTime() - d1.getTime()} ms`);
-    d1 = new Date();
-    const res = tableFromArrays(t);
-    console.log(`tableFromArrays ${new Date().getTime() - d1.getTime()} ms`);
-    d1 = new Date();
-    const arrowUint8Array = tableToIPC(res, "stream");
-    console.log(`tableToIPC ${new Date().getTime() - d1.getTime()} ms`);
-    d1 = new Date();
-    const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
-    const writeParquet1 = writeParquet(arrowUint8Array, writerProperties);
-    console.log(`writeParquet ${new Date().getTime() - d1.getTime()} ms`);
-    return writeParquet1;
-  } catch (e) {
-    throw e;
+  let column_names = table.columns.names();
+  const t: { [_: string]: any } = {};
+  for (let i = 0; i < column_names.length; i++) {
+    let column = table.columns.byName(column_names[i]);
+    if (['int', 'float', 'qnum'].includes(column.type))
+      t[column_names[i]] = column.getRawData();
+    else if (table.col(column_names[i])?.type === 'datetime') {
+      const rawData: Float64Array = (column.getRawData() as Float64Array);
+      t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
+    } else if (table.col(column_names[i])?.type === 'string') {
+      const indexes = column.getRawData();
+      t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
+    } else
+      t[column_names[i]] = column.toList();
   }
+  const res = tableFromArrays(t);
+  const arrowUint8Array = tableToIPC(res, "stream");
+  const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
+  return writeParquet(Table.fromIPCStream(arrowUint8Array), writerProperties);
 }
 
 
 //name: saveAsFeather
 //description: Save as Feather
 //tags: fileExporter
-export function saveAsFeather(){
+export function saveAsFeather() {
   let table = grok.shell.t;
   let column_names = table.columns.names();
   const t: { [_: string]: any } = {};
-  for(var i = 0; i < column_names.length; i++){
-    if(table.col(column_names[i])?.type === 'int'){
+  for (let i = 0; i < column_names.length; i++) {
+    if (table.col(column_names[i])?.type === 'int') {
       t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
-    }
-    else{
+    } else {
       t[column_names[i]] = table.columns.byName(column_names[i]).toList();
     }
   }
