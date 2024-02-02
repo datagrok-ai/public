@@ -56,6 +56,5 @@ export async function ivpFileHandler(content: string) {
 //input: file file
 //output: view preview
 export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
-  const equations = await file.readAsString();
-  return await getFilePreview(equations);
+  return await getFilePreview(file);
 }

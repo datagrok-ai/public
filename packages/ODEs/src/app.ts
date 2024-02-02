@@ -148,7 +148,7 @@ function getLineChartOptions(colNames: string[]): Object {
 }
 
 /** Run solver application */
-export async function runSolverApp(content?: string)  {
+export async function runSolverApp(content?: string) {
 
   /** Get JS-script for solving the current IVP */
   const exportToJS = async () => {
@@ -175,7 +175,7 @@ export async function runSolverApp(content?: string)  {
   /** Solve IVP */
   const solve = async (ivp: IVP, inputsPath: string) => {
     try {
-      solverView.path = `${solverMainPath}${inputsPath}`;
+      solverView.path = `${solverMainPath}${PATH.PARAM}${inputsPath}`;
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -378,6 +378,389 @@ export async function runSolverApp(content?: string)  {
       solverMainPath = PATH.CUSTOM;
     else
       solverMainPath = `${PATH.MODEL}${state}`;
+
+    switch(state) {
+      case EDITOR_STATE.EMPTY:
+        clearSolution();
+        break;
+
+      case EDITOR_STATE.BASIC_TEMPLATE:
+      case EDITOR_STATE.ADVANCED_TEMPLATE:
+      case EDITOR_STATE.EXTENDED_TEMPLATE:
+        await runSolving(false);
+        break;
+      
+      default:
+        await runSolving(true);
+        break;
+    }
+  }; // setState
+
+  /** Overwrite the editor content */
+  const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
+    if (toShowWarning && isModelChanged) {      
+      const boolInput = ui.boolInput(WARNING.CHECK, true, () => toShowWarning = !toShowWarning);      
+      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
+      solverView.append(dlg);
+
+      dlg
+        .add(ui.label(WARNING.MES))
+        .add(boolInput.root)
+        .onCancel(() => dlg.close())
+        .onOK(async () => {
+          if (fn)
+            await fn();
+          else
+            setState(state ?? EDITOR_STATE.EMPTY);          
+        })
+        .show();
+    }
+    else if (fn)
+      await fn();
+    else
+      setState(state ?? EDITOR_STATE.EMPTY);
+  }; // overwrite
+
+  editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
+    event.preventDefault();
+    DG.Menu.popup()
+      .item(TITLE.LOAD, async () => await overwrite(undefined, loadFn), undefined, {description: HINT.LOAD})
+      .item(TITLE.SAVE, saveFn, undefined, {description: HINT.SAVE})
+      .separator()         
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC})
+      .item(TITLE.ADV, async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV})
+      .item(TITLE.EXT, async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+      .endGroup()
+      .group(TITLE.CASES)
+      .item(TITLE.CHEM, async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})      
+      .item(TITLE.PKPD, async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .endGroup()
+      .separator()
+      .item(TITLE.CLEAR, async () => await overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
+      .show();    
+  });
+  
+  editorView.dom.style.overflow = 'auto';
+  editorView.dom.style.height = '100%';
+  const node = solverView.dockManager.dock(tabControl.root, 'left');
+  if (node.container.dart.elementTitle)
+    node.container.dart.elementTitle.hidden = true;
+  solverView.helpUrl = LINK.DIF_STUDIO_REL;
+  
+  // routing
+  if (content) {    
+    await runSolving(false);
+  }
+  else {
+    const modelIdx = startingPath.indexOf(PATH.MODEL);
+    const paramsIdx = startingPath.indexOf(PATH.PARAM);
+
+    if (modelIdx > -1) {
+      const model = startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
+      
+      if (MODELS.includes(model)) {
+        startingInputs = new Map<string, number>();
+
+        if (modelIdx < paramsIdx)
+          try {
+            startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
+              const eqIdx = equality.indexOf(PATH.EQ);
+              startingInputs?.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+            });
+          } catch (error) {
+            startingInputs = null;      
+          }
+        
+        await setState(model as EDITOR_STATE, false);
+      }
+      else 
+        await setState(EDITOR_STATE.BASIC_TEMPLATE);      
+    } 
+    else 
+      await setState(EDITOR_STATE.BASIC_TEMPLATE);
+  }
+
+  const helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
+
+  const exportButton = ui.bigButton(TITLE.TO_JS, exportToJS, HINT.TO_JS); 
+  
+  solverView.root.addEventListener('keydown', async (e) => {
+    if (e.key === HOT_KEY.RUN) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      if (tabControl.currentPane === modelPane) 
+        if ( toChangeInputs )
+          await runSolving(true);
+        else
+          tabControl.currentPane = runPane;
+  }});
+
+  const openMenu = DG.Menu.popup()
+    .item(TITLE.FROM_FILE, async () => await overwrite(undefined, loadFn), undefined, {description: HINT.LOAD})
+    .group(TITLE.TEMPL)
+    .item(TITLE.BASIC, async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC})
+    .item(TITLE.ADV, async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV})
+    .item(TITLE.EXT, async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+    .endGroup()
+    .group(TITLE.CASES)
+    .item(TITLE.CHEM, async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+    .item(TITLE.ROB, async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+    .item(TITLE.FERM, async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})   
+    .item(TITLE.PKPD, async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+    .item(TITLE.ACID, async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+    .item(TITLE.NIM, async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+    .endGroup();
+
+  const openIcon = ui.iconFA('folder-open', () => openMenu.show(), HINT.OPEN);
+  const saveIcon = ui.iconFA('save', async () => {await saveFn()}, HINT.SAVE);
+
+  solverView.setRibbonPanels([[openIcon, saveIcon, exportButton, helpIcon]]);
+} // runSolverApp
+
+export async function runSolverAppNew(content?: string)  {
+
+  /** Get JS-script for solving the current IVP */
+  const exportToJS = async () => {
+    try {
+      const ivp = getIVP(editorView.state.doc.toString());
+      const scriptText = getScriptLines(ivp, true, true).join('\n');      
+      const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);    
+      const call = script.prepare(params);
+      await call.call();
+
+      const sView = DG.ScriptView.create(script);
+      grok.shell.addView(sView);
+    }
+    catch (err) {
+      if (err instanceof Error)
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
+      else
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.SCRIPTING_ISSUE}`);
+  }};
+
+  /** Solve IVP */
+  const solve = async (ivp: IVP, inputsPath: string) => {
+    try {
+      solverView.path = `${solverMainPath}${PATH.PARAM}${inputsPath}`;
+
+      const start = ivp.arg.initial.value;
+      const finish = ivp.arg.final.value;
+      const step = ivp.arg.step.value;
+  
+      if (start >= finish)
+        return;
+  
+      if ((step <= 0) || (step > finish - start))
+        return;
+  
+      const scriptText = getScriptLines(ivp).join('\n');    
+      const script = DG.Script.create(scriptText);
+      const params = getScriptParams(ivp);    
+      const call = script.prepare(params);
+  
+      await call.call();
+        
+      solutionTable = call.outputs[DF_NAME];
+      solverView.dataFrame = call.outputs[DF_NAME];
+      solverView.name = solutionTable.name;
+  
+      if (!solutionViewer) {
+        solutionViewer = DG.Viewer.lineChart(solutionTable, getLineChartOptions(solutionTable.columns.names()));
+        viewerDockNode = grok.shell.dockManager.dock(
+          solutionViewer, 
+          DG.DOCK_TYPE.TOP, 
+          solverView.dockManager.
+          findNode(solverView.grid.root
+        ));
+      }
+      else {
+        solutionViewer.dataFrame = solutionTable;
+  
+        if (toChangeSolutionViewerProps) {
+          solutionViewer.setOptions(getLineChartOptions(solutionTable.columns.names()));
+          toChangeSolutionViewerProps = false;
+        }
+      }
+
+      isSolvingSuccess = true;
+    } catch (error) {
+      clearSolution();
+
+      if (error instanceof Error) 
+          grok.shell.error(error.message);
+      else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);      
+    }
+  }; // solve
+
+  /** Run solving the current IVP */
+  const runSolving = async (showApp: boolean) => {
+    if (prevInputsNode !== null)
+        inputsDiv.removeChild(prevInputsNode);
+
+    try {
+      const ivp = getIVP(editorView.state.doc.toString());      
+
+      prevInputsNode = inputsDiv.appendChild(await getInputsUI(ivp, solve, startingInputs));
+
+      runPane.header.hidden = !isSolvingSuccess;
+
+      if (isSolvingSuccess) {
+        toChangeInputs = false;      
+        tabControl.currentPane = (showApp && isSolvingSuccess)? runPane : modelPane;
+      }
+      else
+        tabControl.currentPane = modelPane;
+
+      } catch (error) {
+          prevInputsNode = null;
+          runPane.header.hidden = true;
+          tabControl.currentPane = modelPane;
+          clearSolution();
+
+          if (error instanceof Error) 
+            grok.shell.error(error.message);
+          else
+            grok.shell.error(ERROR_MSG.UI_ISSUE);
+      }          
+  }; // runSolving
+
+  /** Clear solution table & viewer */
+  const clearSolution = () => {
+    solutionTable = DG.DataFrame.create();
+    solverView.dataFrame = solutionTable;
+
+    if (solutionViewer && viewerDockNode) {
+      grok.shell.dockManager.close(viewerDockNode);
+      solutionViewer = null;
+      solverView.path = PATH.EMPTY;
+    }
+  } // clearSolution
+   
+  let solutionTable = DG.DataFrame.create();
+  const startingPath = window.location.href;
+  let startingInputs: Map<string, number> | null = null;
+  let solverView = grok.shell.addTableView(solutionTable);
+  let solverMainPath: string = PATH.CUSTOM;
+  let solutionViewer: DG.Viewer | null = null;
+  let viewerDockNode: DG.DockNode | null = null;
+  let toChangeSolutionViewerProps = false;
+  solverView.name = MISC.VIEW_DEFAULT_NAME;
+  let modelDiv = ui.divV([]);
+  let inputsDiv = ui.divV([]);
+  let prevInputsNode: Node | null = null;
+  const tabControl = ui.tabControl();
+
+  let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
+  let toShowWarning = true;
+  let isModelChanged = false;
+  let toChangeInputs = false;
+  let isSolvingSuccess = false;
+
+  const modelPane = tabControl.addPane(TITLE.MODEL, () => modelDiv);
+  const runPane = tabControl.addPane(TITLE.IPUTS, () => inputsDiv);
+
+  tabControl.onTabChanged.subscribe(async (_) => { 
+    if ((tabControl.currentPane === runPane) && toChangeInputs) 
+      await runSolving(true);
+  });
+
+  /** Code editor for IVP specifying */
+  let editorView = new EditorView({
+    doc: content ?? TEMPLATES.BASIC,
+    extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+    parent: modelDiv
+  }); 
+
+
+  editorView.dom.addEventListener('keydown', async (e) => {
+    if (e.key !== HOT_KEY.RUN) {
+      isModelChanged = true;
+      toChangeInputs = true;
+      solverView.path = PATH.CUSTOM;
+      solverMainPath = PATH.CUSTOM;
+      startingInputs = null;
+      solverView.helpUrl = LINK.DIF_STUDIO_REL;
+      isSolvingSuccess = false;
+      runPane.header.hidden = false;
+    }
+  });
+
+  /** Load IVP from file */
+  const loadFn = async () => {
+    let text = '';
+    const dlg = ui.dialog('Open a file');
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file';
+    fileInp.onchange = () => {
+      //@ts-ignore
+      const [file] = document.querySelector("input[type=file]").files;
+      const reader = new FileReader();
+      reader.addEventListener("load", () => { 
+        text = reader.result as string; 
+        setState(EDITOR_STATE.FROM_FILE, true, text);
+        dlg.close();
+      }, false);
+          
+      if (file) 
+        reader.readAsText(file);
+    }     
+
+    dlg.add(fileInp);        
+    fileInp.click();
+  }; // loadFn
+
+  /** Save the current IVP to file */
+  const saveFn = async () => {
+    const link = document.createElement("a");
+    const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
+    link.href = URL.createObjectURL(file);
+    link.download = MISC.FILE_DEFAULT_NAME;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  /** Set IVP code editor state */
+  const setState = async (state: EDITOR_STATE, toClearStartingInputs: boolean = true, text?: string | undefined) => {
+    toChangeSolutionViewerProps = true;
+    isModelChanged = false;
+    editorState = state;
+    solutionTable = DG.DataFrame.create();
+    solverView.dataFrame = solutionTable;
+    solverView.helpUrl = getLink(state);
+
+    if (toClearStartingInputs)
+      startingInputs = null;
+
+    const newState = EditorState.create({
+      doc: text ?? getProblem(state), 
+      extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+    });
+
+    editorView.setState(newState);
+    
+    // set path
+    if (state === EDITOR_STATE.FROM_FILE) {
+      solverView.basePath = PATH.APPS_DS;
+      solverMainPath = PATH.CUSTOM;
+    }
+    else if (state === EDITOR_STATE.EMPTY) {
+      solverView.basePath = PATH.APPS_DS;
+      solverMainPath = PATH.EMPTY;
+    }
+    else {
+      solverView.basePath = PATH.APP_DATA_DS;
+      solverMainPath = `/${state}.${MISC.FILE_EXT}`;
+    }
 
     switch(state) {
       case EDITOR_STATE.EMPTY:
@@ -965,7 +1348,7 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
 
     inputsByCategories.get(TITLE.MISC)!.forEach((input) => {line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`});
 
-    return line;
+    return line.slice(1); // we ignore 1-st '&'
   };
 
   // Inputs for argument
@@ -1058,7 +1441,32 @@ async function getInputsUI(ivp: IVP, solveFn: (ivp: IVP, inputsPath: string) => 
 } // getInputsUI
 
 /** Return file preview view */
-export async function getFilePreview(equations: string): Promise<DG.View> {
+export async function getFilePreview(file: DG.FileInfo): Promise<DG.View> {
+  const browseView = grok.shell.view(TITLE.BROWSE);
+  const mainPath = browseView!.path;  
+  const equations = await file.readAsString();
+  const startingPath = window.location.href;
+  let startingInputs: Map<string, number> | null = null;
+
+  const paramsIdx = startingPath.indexOf(PATH.PARAM);
+
+  if (paramsIdx > -1) {
+    try {
+      startingInputs = new Map<string, number>();
+      
+      console.log(startingPath.slice(paramsIdx + PATH.PARAM.length));
+
+      startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
+        let eqIdx = equality.indexOf(PATH.EQ);
+        startingInputs!.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+      });
+
+      console.log(startingInputs);
+    } catch (error) {
+      startingInputs = null;      
+    }    
+  }
+
   const modelDiv = ui.divV([]);
   const editorView = new EditorView({
     doc: equations,
@@ -1080,14 +1488,14 @@ export async function getFilePreview(equations: string): Promise<DG.View> {
     const call = script.prepare(params);
   
     await call.call();
-
+    
     let solutionTable = DG.DataFrame.create();
     const solverView = DG.TableView.create(solutionTable);
     solverView.setRibbonPanels([]);
     let graph: DG.Viewer;
 
     /** Solve IVP */
-    const solve = async (ivp: IVP) => {
+    const solve = async (ivp: IVP, inputsPath: string) => {
       try {      
         const start = ivp.arg.initial.value;
         const finish = ivp.arg.final.value;
@@ -1109,6 +1517,7 @@ export async function getFilePreview(equations: string): Promise<DG.View> {
         solutionTable = call.outputs[DF_NAME];
         solverView.dataFrame = solutionTable;
         graph.dataFrame = solutionTable;
+        browseView!.path = `${mainPath}${PATH.PARAM}${inputsPath}`;
       } catch (error) {  
         if (error instanceof Error) 
           grok.shell.error(error.message);
@@ -1121,13 +1530,13 @@ export async function getFilePreview(equations: string): Promise<DG.View> {
     graph = DG.Viewer.lineChart(solutionTable, getLineChartOptions(solutionTable.columns.names()));
     solverView.dockManager.dock(graph, DG.DOCK_TYPE.TOP);    
 
-    const inputsDiv = await getInputsUI(ivp, solve, null);    
+    const inputsDiv = await getInputsUI(ivp, solve, startingInputs);    
     
     const tabCtrl = ui.tabControl();
     const modelPane = tabCtrl.addPane(TITLE.MODEL, () => modelDiv);
     const runPane = tabCtrl.addPane(TITLE.SOLUTION, () => inputsDiv);
     tabCtrl.currentPane = runPane;
-    const node = solverView.dockManager.dock(tabCtrl.root, DG.DOCK_TYPE.LEFT, null, undefined, 0.25);
+    const node = solverView.dockManager.dock(tabCtrl.root, DG.DOCK_TYPE.LEFT);
     node.container.dart.elementTitle.hidden = true;    
 
     editorView.dom.addEventListener('keydown', async (e) => {

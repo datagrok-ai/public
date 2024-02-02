@@ -50,6 +50,7 @@ export enum TITLE {
   IPUTS = 'Run',
   SOLUTION = 'Solution',
   OPEN = 'Open',
+  BROWSE = 'Browse',
 };
 
 /** Help links */
@@ -88,8 +89,9 @@ export enum WARNING {
 
 /** Other UI constants */
 export enum MISC {
-  VIEW_DEFAULT_NAME = 'Template',
-  FILE_DEFAULT_NAME = 'equations.ivp',
+  VIEW_DEFAULT_NAME = 'Template',  
+  FILE_EXT = 'ivp',
+  FILE_DEFAULT_NAME = `equations.${FILE_EXT}`,
 };
 
 /** Code completion infos */
@@ -137,10 +139,13 @@ export enum INPUT_TYPE {
 };
 
 /** Path related consts */
-export enum PATH {  
+export enum PATH {
+  APP_DATA_DS = '/files/system.appdata/diffstudio',
+  APPS_DS = '/apps/DiffStudio',
   MODEL = `?model=`,
   CUSTOM = `${MODEL}custom`,
   EMPTY = `${MODEL}empty`,  
   EQ = '=',
   AND = '&',
+  PARAM = `?params:`,
 };
