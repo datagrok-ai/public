@@ -1251,10 +1251,11 @@ export class tools {
       let rootStyle = item.getAttribute('style');
       let labelStyle = item.firstElementChild?.getAttribute('style');
 
-      if (rootStyle != null) root.setAttribute('style', rootStyle);
+      if (rootStyle != null) {
+        root.setAttribute('style', rootStyle);
+        root.style.maxWidth = String(maxFormWidth)+'px';
+      }
       if (labelStyle != null) label.setAttribute('style', labelStyle);
-
-      root.style.maxWidth = String(maxFormWidth)+'px';
 
       let dataLabel = item.getAttribute('data-label');
       let dataInput = item.getAttribute('data-input');
