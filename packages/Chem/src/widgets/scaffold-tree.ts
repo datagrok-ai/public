@@ -768,7 +768,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.progressBar = null;
   }
 
-  async loadTreeStr(jsonStr: string) {
+  async loadTreeStr(jsonStr: string, triggerUpdateTag = true) {
     this.clear();
     const json = JSON.parse(jsonStr);
     if (json.length > 0 && (json.includes(BitwiseOp.AND) || json.includes(BitwiseOp.OR))) {
@@ -795,7 +795,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateUI();
 
     this.updateFilters();
-    this.updateTag();
+    if (triggerUpdateTag)
+      this.updateTag();
     if (this.dataFrame) {
       updateLabelWithLoaderOrBitset(this); 
     }
