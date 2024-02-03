@@ -7,14 +7,14 @@ const customersTable = new DbTable({
     new DbColumn({name: 'customerid', type: 'string', isKey: true}),
     new DbColumn({name: 'companyname', type: 'string'}),
     new DbColumn({name: 'city', type: 'string'}),
-    new DbColumn({name: 'region', type: 'string'}),
+    new DbColumn({name: 'region', type: 'string', nullable: true}),
     new DbColumn({name: 'fax', type: 'string'}),
     new DbColumn({name: 'contacttitle', type: 'string'}),
     new DbColumn({name: 'country', type: 'string'}),
     new DbColumn({name: 'postalcode', type: 'string'}),
     new DbColumn({name: 'contactname', type: 'string'}),
     new DbColumn({name: 'address', type: 'string'}),
-    new DbColumn({name: 'phone', type: 'string'}),
+    new DbColumn({name: 'phone', type: 'string', nullable: true}),
   ]
 });
 
@@ -56,7 +56,7 @@ const ordersTable = new DbTable({
     new DbColumn({name: 'orderid', type: 'int', isKey: true}),
     new DbColumn({name: 'shippeddate', type: 'datetime'}),
     new DbColumn({name: 'shipcountry', type: 'string'}),
-    new DbColumn({name: 'shipregion', type: 'string'}),
+    new DbColumn({name: 'shipregion', type: 'string', nullable: true}),
     new DbColumn({name: 'shipcity', type: 'string'}),
     new DbColumn({name: 'employeeid', type: 'int', ref: 'employees.employeeid'}),
     new DbColumn({name: 'customerid', type: 'string', ref: 'customers.customerid'}),

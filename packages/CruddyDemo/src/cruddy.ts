@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {debounceTime} from 'rxjs/operators';
 import {Subject} from "rxjs";
+import {ribbonPanel} from "datagrok-api/ui";
 
 type TFilter = {[name: string]: string | null};
 
@@ -27,15 +28,21 @@ export class DbTable {
 export class DbColumn {
   table: DbTable = new DbTable;
   name: string = '';
-  type: string = '';
+  type: DG.Type = DG.TYPE.STRING;
   isKey: boolean = false;
+  nullable: boolean = false;
   ref: string = '';
   references?: DbColumn;
   referencedBy: DbColumn[] = [];
-  prop?: DG.Property;  // additional properties such as semantic type, editor, formatting, etc.
+  prop: DG.Property;  // works with the DbEntity
 
   constructor(init?: Partial<DbColumn>) {
     Object.assign(this, init);
+
+    const col = this;
+    this.prop = DG.Property.create(this.name, this.type,
+      (x: DbEntity) => x.values[this.name],
+      function (x: DbEntity, v: any) { x.values[col.name] = v; });
   }
 }
 
@@ -65,16 +72,34 @@ export class DbEntityType {
   get columns(): DbColumn[] { return this.table.columns; };
   getColumn(name: string): DbColumn { return this.columns.find(c => c.name === name)!; };
 
+  get props(): DG.Property[] {
+    return this.table.columns.map((c) => c.prop);
+  };
 }
 
 
 export class DbEntity<T extends DbEntityType = DbEntityType> {
   entityType: T;
   values: {[key: string]: any };
+  row?: DG.Row;
 
   constructor(entityType: T, values: { [p: string]: any }) {
     this.entityType = entityType;
     this.values = values;
+  }
+
+  /** Initializes an entity from the table row */
+  static fromRow(entityType: DbEntityType, row: DG.Row) {
+    const values = Object.fromEntries(entityType.table.columns.map((c) => [c.name, row.get(c.name)]));
+    const entity = new DbEntity(entityType, values);
+    entity.row = row;
+    return entity;
+  }
+
+  /** Creates an empty instance of the entity, with all values assigned to null. */
+  static createNew(entityType: DbEntityType): DbEntity {
+    const values = Object.fromEntries(entityType.table.columns.map((c) => [c.name, null]));
+    return new DbEntity(entityType, values);
   }
 
   columns(options?: {isKey: boolean}): DbColumn[] {
@@ -419,6 +444,7 @@ export class CruddyFilterRange extends CruddyFilter {
 }
 
 
+/** Query, browse, navigate, edit entities */
 export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> extends DG.ViewBase {
   app: CruddyApp;
   entityType: DbEntityType;
@@ -426,6 +452,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   grid?: DG.Grid;
   host: HTMLDivElement = ui.divH([]);
   filters: CruddyFilterHost = new CruddyFilterHost();
+  ribbonPanel: HTMLDivElement = ui.ribbonPanel([]);
 
   constructor(app: CruddyApp, entityType: DbEntityType) {
     super();
@@ -435,6 +462,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.crud = new DbQueryEntityCrud(app.config.connection, entityType);
     this.root.style.display = 'flex';
     this.root.classList.add('cruddy-view');
+    this.setRibbonPanels([[this.ribbonPanel]]);
 
     this.crud.read().then((df) => {
       this.grid = df.plot.grid();
@@ -450,7 +478,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
 
   initFilters() {
     this.filters.init(this.entityType);
-    this.filters.onChanged.pipe(debounceTime(100)).subscribe((q) => {
+    this.filters.onChanged.pipe(debounceTime(100)).subscribe((_) => {
       this.crud.read(this.filters.getCondition()).then((df) => {
         this.grid!.dataFrame = df;
       });
@@ -460,10 +488,12 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   initBehaviors() {
     CruddyViewFeature.contextDetails().attach(this);
     CruddyViewFeature.editable().attach(this);
+    CruddyViewFeature.insertable().attach(this);
   }
 }
 
 
+/** Features can be dynamically added to the view */
 export class CruddyViewFeature {
   name: string;
   attach: (view: CruddyEntityView) => void;
@@ -525,6 +555,19 @@ export class CruddyViewFeature {
       });
     });
   }
+
+  /** Add the '+' icon on top that lets you insert new row in the corresponding table */
+  static insertable(): CruddyViewFeature {
+    return new CruddyViewFeature('insertable', (v) => {
+      v.ribbonPanel.appendChild(ui.iconFA('plus',  (_) => {
+        const entity = DbEntity.createNew(v.entityType);
+        ui.dialog({title: `Add ${v.entityType.type}`})
+          .add(ui.input.form(entity, entity.entityType.props))
+          .onOK(() => { v.entityType.crud.create(entity).then((_) => grok.shell.info('Created')); })
+          .show();
+      }));
+    });
+  }
 }
 
 
@@ -556,6 +599,7 @@ export class CruddyConfig {
 }
 
 
+/** Represents a running app. */
 export class CruddyApp {
   config: CruddyConfig;
   views: CruddyEntityView[] = [];

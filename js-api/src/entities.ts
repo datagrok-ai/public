@@ -14,8 +14,8 @@ declare var grok: any;
 const api: IDartApi = <any>window;
 
 
-type PropertyGetter = (a: object) => any;
-type PropertySetter = (a: object, value: any) => void;
+type PropertyGetter<TSource = any, TProp = any> = (a: TSource) => TProp;
+type PropertySetter<TSource = any, TProp = any> = (a: TSource, value: TProp) => void;
 type ValueValidator<T> = (value: T) => string;
 type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
 type DataConnectionParams = {server: string, db: string, port: number, schema: string, indexFiles: boolean,
