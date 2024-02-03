@@ -8,9 +8,9 @@ import $ from 'cash-dom';
 import {
   getUserLibSettings, LIB_PATH, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLibManager} from './lib-manager';
+import {MonomerLibManager} from '../lib-manager';
 
-import {MonomerLibFileManager} from './lib-file-manager';
+import {MonomerLibFileManager} from './file-manager';
 
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
   return new MonomerLibraryManagerWidget().createWidget();

@@ -11,7 +11,7 @@ import {
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MonomerLib} from './monomer-lib';
-import {MonomerLibFileManager} from './lib-file-manager';
+import {MonomerLibFileManager} from './library-file-manager/file-manager';
 import {_package} from '../../package';
 
 type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibManager };

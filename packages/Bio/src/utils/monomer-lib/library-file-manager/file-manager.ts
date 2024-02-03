@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLib} from './monomer-lib';
+import {MonomerLib} from '../monomer-lib';
 import {
   HELM_REQUIRED_FIELD as REQ,
 } from '@datagrok-libraries/bio/src/utils/const';
@@ -14,7 +14,7 @@ import {HELM_JSON_SCHEMA_PATH} from './consts';
 
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {MonomerLibFileValidator} from './monomer-lib-file-validator';
+import {MonomerLibFileValidator} from './file-validator';
 
 /** Singleton for adding, validation and reading of monomer library files.
  * All files **must** be aligned to the HELM standard before adding. */

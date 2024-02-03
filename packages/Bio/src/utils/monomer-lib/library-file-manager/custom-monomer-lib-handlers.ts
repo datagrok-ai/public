@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {createJsonMonomerLibFromSdf} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {PolyToolMonomerLibHandler} from '../poly-tool/monomer-lib-handler';
+import {PolyToolMonomerLibHandler} from '../../poly-tool/monomer-lib-handler';
 
 interface CustomMonomerLibHandler {
   getHelmLibContent(): Promise<string>;

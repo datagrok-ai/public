@@ -8,7 +8,7 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/sr
 import {
   getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLibFileManager} from '../utils/monomer-lib/lib-file-manager';
+import {MonomerLibFileManager} from '../utils/monomer-lib/library-file-manager/file-manager';
 
 
 category('monomerLibraries', () => {
