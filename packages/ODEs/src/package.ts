@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {ODEs, solveODEs} from './solver';
-import {runSolverApp, runSolverDemoApp, getFilePreview} from './app';
+import {runSolverApp, runSolverDemoApp, getFilePreview, Solver} from './app';
 
 export const _package = new DG.Package();
 
@@ -30,15 +30,19 @@ export function solve(problem: ODEs): DG.DataFrame {
 //description: Solver of ordinary differential equations systems
 //tags: app
 export async function DiffStudio(): Promise<void> {  
-  await runSolverApp(); 
+  //await runSolverApp();
+  const solver = new Solver();
+  await solver.runSolverApp();
 }
 
 //name: Diff Studio Demo
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio
 //test: demoEquaSleekX() //wait: 100
-export async function demoDiffStudio(): Promise<void>  {
-  await runSolverDemoApp();
+export async function demoDiffStudio(): Promise<void> {
+  //await runSolverDemoApp();
+  const solver = new Solver();
+  await solver.runSolverDemoApp();
 }
 
 //name: ivpFileHandler
@@ -47,7 +51,10 @@ export async function demoDiffStudio(): Promise<void>  {
 //output: list tables
 //meta.ext: ivp
 export async function ivpFileHandler(content: string) {
-  await runSolverApp(content);
+  //await runSolverApp(content);
+  const solver = new Solver();
+  await solver.runSolverApp(content);
+
   return [];
 }
 
@@ -57,4 +64,35 @@ export async function ivpFileHandler(content: string) {
 //output: view preview
 export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   return await getFilePreview(file);
+}
+
+//name: foo
+export async function foo() {
+  const op1 = {
+    "name": "stage",
+    "type": "int",
+    "defaultValue": 0,
+    "caption": 'bla1'
+  };
+const op2 = {
+    "name": "slider",
+    "type": DG.TYPE.FLOAT,
+    "defaultValue": 1,
+    "caption": 'bla2'
+  };
+
+const input1 = ui.input.forProperty(DG.Property.fromOptions(op1));
+const input2 = ui.input.forProperty(DG.Property.fromOptions(op2));
+
+const form = ui.form([]);
+
+const tabControl = ui.tabControl();
+const modelPane = tabControl.addPane('1-st', () => form);
+const runPane = tabControl.addPane('2-nd', () => ui.panel([form]));
+
+form.append(input1.root);
+form.append(input2.root);
+
+const v = grok.shell.addTableView(grok.data.demo.demog(10));
+v.dockManager.dock(tabControl.root, 'left');
 }
