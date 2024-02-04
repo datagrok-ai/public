@@ -1,4 +1,6 @@
-import {CruddyApp, CruddyConfig, CruddyEntityView, DbColumn, DbEntityType, DbTable} from "../cruddy";
+import {DbColumn, DbSchema, DbTable} from "../cruddy/table";
+import {DbEntityType} from "../cruddy/entity";
+import {CruddyApp, CruddyConfig, CruddyEntityView} from "../cruddy/app";
 
 
 const customersTable = new DbTable({
@@ -30,7 +32,6 @@ const employeesTable = new DbTable({
   ]
 });
 
-
 const categoriesTable = new DbTable({
   name: 'categories',
   columns: [
@@ -38,7 +39,6 @@ const categoriesTable = new DbTable({
     new DbColumn({name: 'categoryname', type: 'string'}),
   ]
 });
-
 
 const productsTable = new DbTable({
   name: 'products',
@@ -63,7 +63,6 @@ const ordersTable = new DbTable({
   ]
 });
 
-
 const orderDetailsTable = new DbTable({
   name: 'order_details',
   columns: [
@@ -74,16 +73,23 @@ const orderDetailsTable = new DbTable({
   ]
 });
 
+const northwindSchema: DbSchema = new DbSchema('northwind',
+  [customersTable, employeesTable, categoriesTable, productsTable, ordersTable, orderDetailsTable]);
 
 export const northwindConfig = new CruddyConfig({
   connection: 'Samples:PostgresNorthwind',
-  tables: [ customersTable, employeesTable, categoriesTable, productsTable, ordersTable, orderDetailsTable],
+  schema: northwindSchema,
   entityTypes: [
     new DbEntityType({ type: 'Category', table: categoriesTable }),
     new DbEntityType({ type: 'Product', table: productsTable }),
     new DbEntityType({ type: 'Customer', table: customersTable }),
     new DbEntityType({ type: 'Employee', table: employeesTable }),
-    new DbEntityType({ type: 'Order', table: ordersTable, filters: [
+    new DbEntityType({ type: 'Order', table: ordersTable,
+      gridColumnsNames: [
+        'orderid', 'shippeddate', 'shipcountry', 'shipregion', 'shipcity',
+        'employees.firstname', 'customers.name'
+      ],
+      filters: [
         { type: 'distinct', column: 'shipcountry'},
         { type: 'combo', column: 'shipcity'},
         { type: 'range', column: 'orderid'},
