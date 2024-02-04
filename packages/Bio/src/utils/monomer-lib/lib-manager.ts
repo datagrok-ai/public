@@ -12,13 +12,15 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MonomerLib} from './monomer-lib';
 import {MonomerLibFileManager} from './library-file-manager/file-manager';
+import {MonomerLibFileEventManager} from './library-file-manager/event-manager';
 import {_package} from '../../package';
 
 type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibManager };
 declare const window: MonomerLibWindowType;
 
 export async function getLibFileNameList(): Promise<string[]> {
-  const fileManager = await MonomerLibFileManager.getInstance();
+  const fileEventManager = MonomerLibFileEventManager.getInstance();
+  const fileManager = await MonomerLibFileManager.getInstance(fileEventManager);
   return fileManager.getRelativePathsOfValidLibraryFiles();
 }
 
@@ -83,7 +85,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
    * @return {Promise<IMonomerLib>} Promise of IMonomerLib
    */
   async readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
-    const libFileManager = await MonomerLibFileManager.getInstance();
+    const eventManager = MonomerLibFileEventManager.getInstance();
+    const libFileManager = await MonomerLibFileManager.getInstance(eventManager);
     const lib: IMonomerLib = await libFileManager.loadLibraryFromFile(path, fileName);
     return lib;
   }

@@ -11,25 +11,29 @@ import {
 import {MonomerLibManager} from '../lib-manager';
 
 import {MonomerLibFileManager} from './file-manager';
+import {MonomerLibFileEventManager} from './event-manager';
 
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
-  return new MonomerLibraryManagerWidget().createWidget();
+  const eventManager = MonomerLibFileEventManager.getInstance();
+  return new MonomerLibraryManagerWidget(eventManager).createWidget();
 }
 
 class MonomerLibraryManagerWidget {
-  constructor() { }
+  constructor(
+    private eventManager: MonomerLibFileEventManager
+  ) { }
 
   private monomerLibFileManager: MonomerLibFileManager;
 
   async createWidget() {
-    this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
+    this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     const content = await this.getWidgetContent();
     return new DG.Widget(content);
   }
 
   private async getWidgetContent(): Promise<HTMLElement> {
-    this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
-    const formHandler = new ControlsFormManager();
+    this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
+    const formHandler = new ControlsFormManager(this.eventManager);
     const libControlsForm = await formHandler.createControlsForm();
     $(libControlsForm).addClass('monomer-lib-controls-form');
     const addLibraryFilesButton: HTMLButtonElement = ui.button('Add', async () => await this.addLibraryFiles());
@@ -81,15 +85,16 @@ class MonomerLibraryManagerWidget {
 }
 
 class ControlsFormManager {
+  constructor(private eventManager: MonomerLibFileEventManager) { }
   private monomerLibFileManager: MonomerLibFileManager;
   private inputsForm: HTMLDivElement;
 
   async createControlsForm(): Promise<HTMLElement> {
-    this.monomerLibFileManager = await MonomerLibFileManager.getInstance();
+    this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     const controlList = await this.getControlList();
     const inputsForm = ui.form(controlList);
 
-    this.monomerLibFileManager.debouncedMonomerLibFileListChange$.subscribe(
+    this.eventManager.updateUIControlsRequested$.subscribe(
       async () => await this.updateControlsForm()
     );
     return inputsForm;
@@ -104,7 +109,7 @@ class ControlsFormManager {
 
   private async getControlList(): Promise<DG.InputBase<boolean | null>[]> {
     const settings = await getUserLibSettings();
-    const fileManager = await MonomerLibFileManager.getInstance();
+    const fileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     await fileManager.refreshLibraryFilePaths();
     const libFileNameList: string[] = fileManager.getRelativePathsOfValidLibraryFiles();
     const libInputList: DG.InputBase<boolean | null>[] = [];

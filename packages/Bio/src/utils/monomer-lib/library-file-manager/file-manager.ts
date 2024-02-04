@@ -11,50 +11,38 @@ import {
 } from '@datagrok-libraries/bio/src/utils/const';
 import {JSONSchemaType} from 'ajv';
 import {HELM_JSON_SCHEMA_PATH} from './consts';
+import {MonomerLibFileEventManager} from './event-manager';
 
-import * as rxjs from 'rxjs';
-import {debounceTime} from 'rxjs/operators';
 import {MonomerLibFileValidator} from './file-validator';
 
 /** Singleton for adding, validation and reading of monomer library files.
  * All files **must** be aligned to the HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor(
-    private fileValidator: MonomerLibFileValidator
+    private fileValidator: MonomerLibFileValidator,
+    private eventManager: MonomerLibFileEventManager,
   ) {
-    this._libraryFilesUpdateSubject$.pipe(
-      debounceTime(3000)
-    ).subscribe(async () => {
+    this.eventManager.updateValidLibraryFileListRequested$.subscribe(async () => {
       await this.updateValidLibraryFileList();
     });
   }
 
-  private getValidFilesList(): string[] {
-    return this._libraryFilesUpdateSubject$.getValue();
-  }
-
-  private _libraryFilesUpdateSubject$ = new rxjs.BehaviorSubject<string[]>([]);
-
   private static instance: MonomerLibFileManager | undefined;
 
-  static async getInstance(): Promise<MonomerLibFileManager> {
+  static async getInstance(
+    eventManager: MonomerLibFileEventManager,
+  ): Promise<MonomerLibFileManager> {
     if (MonomerLibFileManager.instance === undefined) {
       const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
       const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
 
       const fileValidator = new MonomerLibFileValidator(helmSchema);
-      MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator);
+      MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator, eventManager);
 
       await MonomerLibFileManager.instance.initialize();
     }
 
     return MonomerLibFileManager.instance;
-  }
-
-  get debouncedMonomerLibFileListChange$(): rxjs.Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
-      debounceTime(1000)
-    );
   }
 
   private async initialize(): Promise<void> {
@@ -116,7 +104,7 @@ export class MonomerLibFileManager {
   }
 
   getRelativePathsOfValidLibraryFiles(): string[] {
-    return this.getValidFilesList();
+    return this.eventManager.getValidFilesPathList();
   }
 
   /** Necessary to prevent sync errors  */
@@ -127,7 +115,7 @@ export class MonomerLibFileManager {
   private async updateValidLibraryFileList(): Promise<void> {
     const invalidFiles = [] as string[];
     // todo: remove after debugging
-    console.log(`files before validation:`, this.getValidFilesList());
+    console.log(`files before validation:`, this.eventManager.getValidFilesPathList());
     const filePaths = await this.getFilePathsAtDefaultLocation();
 
     if (!this.fileListHasChanged(filePaths))
@@ -147,8 +135,8 @@ export class MonomerLibFileManager {
     const validLibraryPaths = filePaths.filter((path) => !invalidFiles.includes(path));
 
     if (this.fileListHasChanged(validLibraryPaths))
-      this._libraryFilesUpdateSubject$.next(validLibraryPaths);
-    console.log(`files after validation:`, this.getValidFilesList());
+      this.eventManager.changeValidFilesPathList(validLibraryPaths);
+    console.log(`files after validation:`, this.eventManager.getValidFilesPathList());
 
     // todo: remove after debugging
     if (validLibraryPaths.some((el) => !el.endsWith('.json')))
@@ -164,7 +152,7 @@ export class MonomerLibFileManager {
   }
 
   private fileListHasChanged(newList: string[]): boolean {
-    const currentList = this.getValidFilesList();
+    const currentList = this.eventManager.getValidFilesPathList();
     return newList.length !== currentList.length || newList.some((el, i) => el !== currentList[i]);
   }
 
