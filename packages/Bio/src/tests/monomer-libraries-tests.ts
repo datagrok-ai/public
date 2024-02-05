@@ -53,7 +53,7 @@ category('monomerLibraries', () => {
     const libSettings = await getUserLibSettings();
     const libFileEventManager = MonomerLibFileEventManager.getInstance();
     const libFileManager = await MonomerLibFileManager.getInstance(libFileEventManager);
-    const libFnList = libFileManager.getRelativePathsOfValidLibraryFiles();
+    const libFnList = libFileManager.getValidLibraryPaths();
     libSettings.exclude = libFnList;
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);

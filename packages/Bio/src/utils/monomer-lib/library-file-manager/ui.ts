@@ -34,10 +34,10 @@ class MonomerLibraryManagerWidget {
 
   private async getWidgetContent(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    const formHandler = new ControlsFormManager(this.eventManager);
+    const formHandler = new LibraryControlsManager(this.eventManager);
     const libControlsForm = await formHandler.createControlsForm();
     $(libControlsForm).addClass('monomer-lib-controls-form');
-    const addLibraryFilesButton: HTMLButtonElement = ui.button('Add', async () => await this.addLibraryFiles());
+    const addLibraryFilesButton: HTMLButtonElement = ui.button('Add', async () => await this.promptToAddLibraryFiles());
     ui.tooltip.bind(addLibraryFilesButton, 'Load new monomer libraries');
     const widgetContent = ui.divV([libControlsForm,
       ui.div([
@@ -47,7 +47,7 @@ class MonomerLibraryManagerWidget {
     return widgetContent;
   }
 
-  private async addLibraryFiles(): Promise<void> {
+  private async promptToAddLibraryFiles(): Promise<void> {
     DG.Utils.openFile({
       accept: '.json',
       open: async (selectedFile) => {
@@ -66,7 +66,7 @@ class MonomerLibraryManagerWidget {
   }
 }
 
-class ControlsFormManager {
+class LibraryControlsManager {
   constructor(private eventManager: MonomerLibFileEventManager) {
     this.eventManager.updateUIControlsRequested$.subscribe(
       async () => await this.updateControlsForm()
@@ -77,8 +77,8 @@ class ControlsFormManager {
 
   async createControlsForm(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    const controlList = await this.getControlsList();
-    const inputsForm = ui.form(controlList);
+    const libraryControls = await this.createLibraryControls();
+    const inputsForm = ui.form(libraryControls);
 
     return inputsForm;
   }
@@ -88,10 +88,10 @@ class ControlsFormManager {
     $(this.inputsForm).replaceWith(updatedForm);
   }
 
-  private async getControlsList(): Promise<DG.InputBase<boolean | null>[]> {
+  private async createLibraryControls(): Promise<DG.InputBase<boolean | null>[]> {
     const settings = await getUserLibSettings();
     const fileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    const libFileNameList: string[] = fileManager.getRelativePathsOfValidLibraryFiles();
+    const libFileNameList: string[] = fileManager.getValidLibraryPaths();
     return libFileNameList.map((libFileName) => this.createLibInput(libFileName, settings));
   }
 
@@ -100,26 +100,26 @@ class ControlsFormManager {
     const libInput = ui.boolInput(
       libFileName,
       isMonomerLibrarySelected,
-      () => this.handleLibInputChange(libInput, libFileName, settings)
+      () => this.updateLibrarySelectionStatus(libInput, libFileName, settings)
     );
-    const deleteIcon = ui.iconFA('trash-alt', () => this.createLibraryFileDeletionDialog(libFileName));
+    const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName));
     ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
     libInput.addOptions(deleteIcon);
     return libInput;
   }
 
-  private async handleLibInputChange(
+  private async updateLibrarySelectionStatus(
     libInput: DG.InputBase<boolean | null>,
     libFileName: string,
     settings: UserLibSettings
   ): Promise<void> {
-    this.updateSettingsBasedOnInput(libInput.value, libFileName, settings);
+    this.updateLibrarySettings(libInput.value, libFileName, settings);
     await setUserLibSettings(settings);
     await MonomerLibManager.instance.loadLibraries(true);
     grok.shell.info('Monomer library user settings saved.');
   }
 
-  private updateSettingsBasedOnInput(
+  private updateLibrarySettings(
     isLibrarySelected: boolean | null,
     libFileName: string,
     settings: UserLibSettings
@@ -133,7 +133,7 @@ class ControlsFormManager {
     }
   }
 
-  private createLibraryFileDeletionDialog(fileName: string): void {
+  private promptForLibraryDeletion(fileName: string): void {
     const dialog = ui.dialog('Warning');
     dialog.add(ui.divText(`Are you sure you want to delete ${fileName}?\nThis will delete the file from ${LIB_PATH}`))
       .onOK(async () => {

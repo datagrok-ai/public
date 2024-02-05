@@ -19,25 +19,25 @@ import {MonomerLibFileValidator} from './file-validator';
  * All files **must** be aligned to the HELM standard before adding. */
 export class MonomerLibFileManager {
   private constructor(
-    private fileValidator: MonomerLibFileValidator,
-    private eventManager: MonomerLibFileEventManager,
+    private libraryFileValidator: MonomerLibFileValidator,
+    private libraryEventManager: MonomerLibFileEventManager,
   ) {
-    this.eventManager.updateValidLibraryFileListRequested$.subscribe(async () => {
-      await this.updateValidLibraryFileList();
+    this.libraryEventManager.updateValidLibraryFileListRequested$.subscribe(async () => {
+      await this.updateValidLibraryList();
     });
   }
 
   private static instance: MonomerLibFileManager | undefined;
 
   static async getInstance(
-    eventManager: MonomerLibFileEventManager,
+    libraryEventManager: MonomerLibFileEventManager,
   ): Promise<MonomerLibFileManager> {
     if (MonomerLibFileManager.instance === undefined) {
       const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
       const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
 
       const fileValidator = new MonomerLibFileValidator(helmSchema);
-      MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator, eventManager);
+      MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator, libraryEventManager);
     }
 
     return MonomerLibFileManager.instance;
@@ -45,14 +45,14 @@ export class MonomerLibFileManager {
 
   /** Add standard .json monomer library  */
   async addLibraryFile(fileContent: string, fileName: string): Promise<void> {
-    if (await this.fileExists(fileName)) {
+    if (await this.libraryFileExists(fileName)) {
       grok.shell.error(`File ${fileName} already exists`);
       return;
     }
 
-    await this.validateLibraryFileAgainstHELM(fileContent, fileName);
+    await this.validateAgainstHELM(fileContent, fileName);
     await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-    await this.updateValidLibraryFileList();
+    await this.updateValidLibraryList();
     const fileExists = await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
     if (!fileExists)
       grok.shell.error(`Failed to add ${fileName} library`);
@@ -63,7 +63,7 @@ export class MonomerLibFileManager {
   async deleteLibraryFile(fileName: string): Promise<void> {
     try {
       await grok.dapi.files.delete(LIB_PATH + `${fileName}`);
-      await this.updateValidLibraryFileList();
+      await this.updateValidLibraryList();
       grok.shell.info(`Deleted ${fileName} library`);
     } catch (e) {
       console.error(e);
@@ -93,18 +93,18 @@ export class MonomerLibFileManager {
     return new MonomerLib(monomers);
   }
 
-  getRelativePathsOfValidLibraryFiles(): string[] {
-    return this.eventManager.getValidFilesPathList();
+  getValidLibraryPaths(): string[] {
+    return this.libraryEventManager.getValidFilesPathList();
   }
 
-  private async fileExists(fileName: string): Promise<boolean> {
+  private async libraryFileExists(fileName: string): Promise<boolean> {
     return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
 
-  private async updateValidLibraryFileList(): Promise<void> {
+  private async updateValidLibraryList(): Promise<void> {
     const invalidFiles = [] as string[];
     // todo: remove after debugging
-    console.log(`files before validation:`, this.eventManager.getValidFilesPathList());
+    console.log(`files before validation:`, this.libraryEventManager.getValidFilesPathList());
     const filePaths = await this.getFilePathsAtDefaultLocation();
 
     if (!this.fileListHasChanged(filePaths))
@@ -117,15 +117,15 @@ export class MonomerLibFileManager {
       }
 
       const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${path}`);
-      if (!this.isValidHELMFormatLibrary(fileContent, path))
+      if (!this.isValidHELMLibrary(fileContent, path))
         invalidFiles.push(path);
     }
 
     const validLibraryPaths = filePaths.filter((path) => !invalidFiles.includes(path));
 
     if (this.fileListHasChanged(validLibraryPaths))
-      this.eventManager.changeValidFilesPathList(validLibraryPaths);
-    console.log(`files after validation:`, this.eventManager.getValidFilesPathList());
+      this.libraryEventManager.changeValidFilesPathList(validLibraryPaths);
+    console.log(`files after validation:`, this.libraryEventManager.getValidFilesPathList());
 
     // todo: remove after debugging
     if (validLibraryPaths.some((el) => !el.endsWith('.json')))
@@ -141,18 +141,18 @@ export class MonomerLibFileManager {
   }
 
   private fileListHasChanged(newList: string[]): boolean {
-    const currentList = this.eventManager.getValidFilesPathList();
+    const currentList = this.libraryEventManager.getValidFilesPathList();
     return newList.length !== currentList.length || newList.some((el, i) => el !== currentList[i]);
   }
 
-  private async validateLibraryFileAgainstHELM(fileContent: string, fileName: string): Promise<void> {
-    const isValid = this.isValidHELMFormatLibrary(fileContent, fileName);
+  private async validateAgainstHELM(fileContent: string, fileName: string): Promise<void> {
+    const isValid = this.isValidHELMLibrary(fileContent, fileName);
     if (!isValid)
       throw new Error(`File ${fileName} does not satisfy HELM standard`);
   }
 
-  private isValidHELMFormatLibrary(fileContent: string, fileName: string): boolean {
-    return this.fileValidator.validateFile(fileContent, fileName);
+  private isValidHELMLibrary(fileContent: string, fileName: string): boolean {
+    return this.libraryFileValidator.validateFile(fileContent, fileName);
   }
 
   /** Get relative paths for files in LIB_PATH  */

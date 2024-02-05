@@ -22,7 +22,7 @@ declare const window: MonomerLibWindowType;
 export async function getLibFileNameList(): Promise<string[]> {
   const fileEventManager = MonomerLibFileEventManager.getInstance();
   const fileManager = await MonomerLibFileManager.getInstance(fileEventManager);
-  return fileManager.getRelativePathsOfValidLibraryFiles();
+  return fileManager.getValidLibraryPaths();
 }
 
 /** Singleton wrapper for MonomerLib, provides API for managing libraries on
