@@ -1156,6 +1156,24 @@ export class tools {
           renderWidth = Math.ceil(element.getBoundingClientRect().width);
         }
 
+        // Get textarea container width
+        if (element.tagName == 'TEXTAREA') {
+          let temp = element as HTMLInputElement;
+          value.textContent = temp.value != undefined ? temp.value : '';
+          renderWidth = Math.ceil(value.getBoundingClientRect().width);
+          if (renderWidth < 120)
+            renderWidth = 120
+          else if (renderWidth > 250) {
+            //IF form has other elements exept textarea limit width to 250px (222+28)
+            //Else expand to 400px (372+28)
+            //28 is input paddings
+            if ($(tempForm).find('.ui-input-editor:not(textarea, .ui-buttons-editor)').length != 0)
+              renderWidth = 222
+            else
+              renderWidth = 372
+          }
+        }
+
         // Get text content width
         if (element.tagName == 'DIV') {
           // If Multi-choice or radio button - get container width
@@ -1251,10 +1269,11 @@ export class tools {
       let rootStyle = item.getAttribute('style');
       let labelStyle = item.firstElementChild?.getAttribute('style');
 
-      if (rootStyle != null) root.setAttribute('style', rootStyle);
+      if (rootStyle != null) {
+        root.setAttribute('style', rootStyle);
+        root.style.maxWidth = String(maxFormWidth)+'px';
+      }
       if (labelStyle != null) label.setAttribute('style', labelStyle);
-
-      root.style.maxWidth = String(maxFormWidth)+'px';
 
       let dataLabel = item.getAttribute('data-label');
       let dataInput = item.getAttribute('data-input');

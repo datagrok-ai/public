@@ -27,7 +27,7 @@ export async function init(): Promise<void> {
 //input: double V3 = 30.0 {caption: peripheral volume; category: PK parameters; min: 0.0001; max: 100} [Peripheral compartment volume]
 //input: double eff = 0.2 {caption: effective rate; category: PD parameters; min: 0.0001; max: 10} [Effective compartment rate]
 //input: double EC50 = 8.0 {caption: EC50; category: PD parameters; min: 0.1; max: 100} [Effect]
-//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]") | Grid(block: 50) }
+//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", block: 50) | Grid(block: 50) }
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true

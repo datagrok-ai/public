@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.20.1 (2024-02-05)
+
+### Features
+
+- HistoryInput now supports DF param skipping
+
 ## 1.20.0 (2024-02-01)
 
 ### Features

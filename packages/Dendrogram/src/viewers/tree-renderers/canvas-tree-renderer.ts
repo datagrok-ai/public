@@ -352,7 +352,15 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
           this.selections = selections;
         }
-      } else { this.current = this.mouseOver; }
+      } else {
+        if (
+          !this.mouseOver || !this.mouseOver.node ||
+          !this.mouseOver.node.children || this.mouseOver.node.children.length == 0
+        )
+          this.current = this.mouseOver;
+        else
+          this.selections = [this.mouseOver];
+      }
     }
   }
 }

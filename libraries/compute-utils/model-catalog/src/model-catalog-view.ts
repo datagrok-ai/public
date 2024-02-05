@@ -101,7 +101,6 @@ export class ModelCatalogView extends DG.CustomCardView {
       });
 
       const helpOpenSub = grok.events.onCurrentViewChanged.subscribe(async () => {
-        console.log('viewChanged', grok.shell.v, this);
         if (grok.shell.v.path === this.path)
           grok.shell.windows.showHelp = this.isHelpOpen;
       });
