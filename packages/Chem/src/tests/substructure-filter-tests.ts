@@ -451,11 +451,11 @@ M  END
   test('1_clone_layout_scenario', async () => {
     const df = await readDataframe('tests/spgi-100.csv');
     const tv1 = await createTableView(df);
-    const filter1 = await openFilterPanel(tv1, 'Structure');
+    const filter1 = await getFilterFromPanel(tv1, 'Structure');
     await initializeFilter(filter1);
     await filterByStructure(df, filter1, molFileForCloneTest1, 5);
     const tv2 = await cloneView(tv1, df);
-    const filter2 = await openFilterPanel(tv2, 'Structure');
+    const filter2 = await getFilterFromPanel(tv2, 'Structure');
     await checkFilterSynchronized(filter2, 'C1CCCCC1');
     await switchToView(tv1);
     const layout = await saveLayout(tv1);
@@ -470,9 +470,9 @@ M  END
   test('2_clone_layout_scenario', async () => {
     const df = await readDataframe('tests/spgi-100.csv');
     const tv1 = await createTableView(df);
-    const filter1 = await openFilterPanel(tv1, 'Structure');
+    const filter1 = await getFilterFromPanel(tv1, 'Structure');
     const tv2 = await cloneView(tv1, df);
-    const filter2 = await openFilterPanel(tv2, 'Structure');
+    const filter2 = await getFilterFromPanel(tv2, 'Structure');
     await switchToView(tv1);
     await initializeFilter(filter1);
     await filterByStructure(df, filter1, molFileForCloneTest1, 5);
@@ -489,14 +489,15 @@ M  END
   test('3_clone_layout_scenario', async () => {
     const df = await readDataframe('tests/spgi-100.csv');
     const tv1 = await createTableView(df);
-    const filter1 = await openFilterPanel(tv1, 'Structure');
+    const filter1 = await getFilterFromPanel(tv1, 'Structure');
     const tv2 = await cloneView(tv1, df);
-    const filter2 = await openFilterPanel(tv2, 'Structure');
+    const filter2 = await getFilterFromPanel(tv2, 'Structure');
     await initializeFilter(filter2);
     await filterByStructure(df, filter2, molFileForCloneTest1, 5);
     await checkFilterSynchronized(filter1, 'C1CCCCC1');
     switchToView(tv1);
     const layout = await saveLayout(tv1);
+    await initializeFilter(filter1, true);
     await filterByStructure(df, filter1, molFileForCloneTest2, 32);
     await applyLayout(tv1, layout, df, 5);
     await checkFilterSynchronized(filter2, 'C1CCCCC1');
@@ -513,21 +514,21 @@ async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
   return tv1;
 }
 
-async function openFilterPanel(tv: DG.TableView, colName: string): Promise<SubstructureFilter> {
+async function getFilterFromPanel(tv: DG.TableView, colName: string): Promise<SubstructureFilter> {
   //open filter panel
   const fg1 = tv.getFiltersGroup();
   //wait for filters added to filter panel
-  await awaitCheck(() => fg1.dart.filters.length !== 0, 'filter panel hasn\'t been created', 3000);
+  await awaitCheck(() => fg1.filters.length !== 0, 'filter panel hasn\'t been created', 3000);
   //get required filter from filter panel
-const filter1 = fg1.dart.filters.filter((it: any) => it?.jsFilter?.columnName === colName)[0].jsFilter as SubstructureFilter;
+const filter1 = fg1.filters.filter((it: any) => it?.columnName === colName)[0] as SubstructureFilter;
 return filter1;
 }
 
 
-async function initializeFilter(filter: SubstructureFilter): Promise<void> {
+async function initializeFilter(filter: SubstructureFilter, withMolecule?: boolean): Promise<void> {
   //open sketcher to initialize sketcher (need for sketcher to send onChanged events)
-  await ui.tools.waitForElementInDom(filter.sketcher.emptySketcherLink); //need to wait for Sketch button to appear in DOM to click it
-  filter.sketcher.emptySketcherLink.click();
+  await ui.tools.waitForElementInDom(withMolecule ? filter.sketcher.extSketcherCanvas : filter.sketcher.emptySketcherLink); //need to wait for Sketch button to appear in DOM to click it
+  withMolecule ? filter.sketcher.extSketcherCanvas.click() : filter.sketcher.emptySketcherLink.click();
   await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 3000);
   //close sketcher
   const sketcherDlg = document.getElementsByClassName('d4-dialog')[0];
@@ -537,7 +538,10 @@ async function initializeFilter(filter: SubstructureFilter): Promise<void> {
 async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
   //setting structure and wait for results
   filter.sketcher.setMolFile(molfile);
-  await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 3000);
+  await awaitCheck(() => {
+    console.log(`****true count in test - ${df.filter.trueCount}`)
+return df.filter.trueCount === trueCount;
+  }, 'df hasn\'t been filtered', 3000);
 }
 
 async function checkFilterSynchronized(filter: SubstructureFilter, smiles: string) {
