@@ -442,6 +442,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   smartsExist: boolean = false;
   current?: DG.TreeViewNode;
   closeAll?: boolean = false;
+  setHighlightTag = true;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -788,7 +789,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.progressBar = null;
   }
 
-  async loadTreeStr(jsonStr: string, triggerUpdateTag = true) {
+  async loadTreeStr(jsonStr: string) {
     this.clear();
     const json = JSON.parse(jsonStr);
     if (json.length > 0 && (json.includes(BitwiseOp.AND) || json.includes(BitwiseOp.OR))) {
@@ -815,8 +816,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateUI();
 
     this.updateFilters();
-    if (triggerUpdateTag)
-      this.updateTag();
+    this.updateTag();
     if (this.dataFrame) {
       updateLabelWithLoaderOrBitset(this); 
     }
@@ -1055,7 +1055,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncodeUpdateInProgress = false;
 
     this.colorCodedScaffolds = [];
-    this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+    if (this.setHighlightTag)
+      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
 
     this.updateUI();
   }
@@ -1069,7 +1070,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.bitset = null;
     if (this.molColumn !== null) {
       removeElementByColor(this.colorCodedScaffolds, '');
-      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+      if (this.setHighlightTag)
+        this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
     }
 
     this.checkBoxesUpdateInProgress = true;
@@ -1093,7 +1095,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+    if (this.setHighlightTag)  
+      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1352,8 +1355,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       updatedTag = colorCodedString;
     } else {
       updatedTag = checkedString;
-    }  
-    this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
+    }
+    if (this.setHighlightTag)  
+      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
   }
   
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
