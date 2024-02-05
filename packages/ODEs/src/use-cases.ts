@@ -148,7 +148,7 @@ ${CONTROL_EXPR.ARG}: t
   stage1 = 60 {units: h; caption: 1-st stage; category: Time; min: 40; max: 80} [Duration of the 1-st stage]
   step = 0.1 {units: h; caption: step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
 
-${CONTROL_EXPR.UPDATE}:
+${CONTROL_EXPR.UPDATE}: 2-nd stage
   duration = stage2
   S += 70
 

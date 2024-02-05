@@ -22,6 +22,7 @@ export const ANNOT_SEPAR = ';';
 const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
 const COMMENT_SEQ = '//';
+export const UPD_COL_NAME = `${SERVICE}Update`
 
 /** Solver package name */
 const PACKAGE_NAME = 'DiffStudio';
@@ -73,6 +74,7 @@ type Loop = {
 
 /** Update specification */
 type Update = {
+  name: string,
   durationFormula: string,
   updates: string[],
 };
@@ -113,7 +115,7 @@ enum ERROR_MSG {
   UPDATE = 'Incorrect update specification',
   DURATION = 'Incorrect update duration',
   BRACES = 'One of the braces ({, }) is missing',
-  COLON = 'Incorrect use of ":"',
+  COLON = `Incorrect use of "${CONTROL_SEP}"`,
   CASE_INSENS = 'Non-unique name (case-insensitive): use other caption for ',
   MISSING_INIT = 'Missing initial value for ',
   UNDEF_NAME = `Missing name of the model: use ${CONTROL_EXPR.NAME}-block`,
@@ -124,6 +126,7 @@ enum ERROR_MSG {
   INTERVAL = `Incorrect limits for`,
   NEGATIVE_STEP = `Incorrect step for`,
   INCOR_STEP = `Step is greater than the length of solution interval ${SEE_ARG}`,
+  MISS_COLON = `Missing "${CONTROL_SEP}"`,
 }
 
 /** Datagrok annatations */
@@ -169,7 +172,7 @@ enum SCRIPT {
   ASYNC_OUTPUT = `let ${DF_NAME} = await _oneStage(`,
   RETURN_OUTPUT = `return call.getParamValue('${DF_NAME}');`,
   EMPTY_OUTPUT = `let ${DF_NAME} = DG.DataFrame.create();`,
-  APPEND_ASYNC = `${DF_NAME}.append(await _oneStage(`,
+  APPEND = `${DF_NAME}.append(`,
   SOLUTION_DF_COM = '// solution dataframe',
   LOOP_INTERVAL_COM = '// loop interval',
   LOOP_INTERVAL = `${SERVICE}interval`,
@@ -177,6 +180,8 @@ enum SCRIPT {
   UPDATE_COM = '// update ',
   CUSTOM_OUTPUT_COM = '// create custom output',
   CUSTOM_COLUMNS = `let ${COLUMNS} = [`,
+  ONE_STAGE = 'await _oneStage(',
+  SEGMENT_COM = '// add segment category',
 }
 
 /** Limits of the problem specification */
@@ -356,7 +361,11 @@ function getLoop(lines: string[], begin: number, end: number): Loop {
 
 /** Get update specification */
 function getUpdate(lines: string[], begin: number, end: number): Update {
-  const source = concatMultilineFormulas(lines.slice(begin, end));
+  const colonIdx = lines[begin].indexOf(CONTROL_SEP);
+  if (colonIdx === -1)
+    throw new Error(`${ERROR_MSG.MISS_COLON}. Check line: "${lines[begin]}"`);
+
+  const source = concatMultilineFormulas(lines.slice(begin + 1, end));
   const size = source.length;
 
   if (size < UPDATE.MIN_LINES_COUNT)
@@ -365,10 +374,10 @@ function getUpdate(lines: string[], begin: number, end: number): Update {
   const eqIdx = source[UPDATE.DURATION_IDX].indexOf(EQUAL_SIGN);
 
   if (eqIdx === -1)
-    throw new Error(`${ERROR_MSG.UPDATE}. Check line: "${source[UPDATE.DURATION_IDX]}"`);
-    
+    throw new Error(`${ERROR_MSG.UPDATE}. Check line: "${source[UPDATE.DURATION_IDX]}"`);    
 
   return {
+    name: lines[begin].slice(colonIdx + 1),
     durationFormula: source[UPDATE.DURATION_IDX].slice(eqIdx + 1).trim(), 
     updates: source.slice(UPDATE.DURATION_IDX + 1)
   };
@@ -509,7 +518,7 @@ export function getIVP(text: string): IVP {
       loop = getLoop(lines, block.begin + 1, block.end);
     }
     else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
-      updates.push(getUpdate(lines, block.begin + 1, block.end));
+      updates.push(getUpdate(lines, block.begin, block.end));
     }
     else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
       outputs = getOutput(lines, block.begin + 1, block.end);
@@ -628,7 +637,7 @@ function getMathArg(funcIdx: number): string {
 }
 
 /** Return custom output lines: no expressions */
-function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Output>): string[] {
+function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Output>, toAddUpdateCol: boolean): string[] {
   const res = [''];    
   
   res.push(SCRIPT.CUSTOM_OUTPUT_COM);
@@ -636,10 +645,19 @@ function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Ou
 
   outputs.forEach((val, key) => {
     if (!val.formula)
-      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${DF_NAME}.col('${key}').getRawData()),`);
+      res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${key}'),`);
   });
 
-  res.push('];');    
+  if (toAddUpdateCol)
+    res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${UPD_COL_NAME}'),`);
+
+  res.push('];');
+
+  outputs.forEach((val, key) => {
+    if (!val.formula)
+      res.push(`${DF_NAME}.col('${key}').name = '${val.caption}';`);
+  });
+
   res.push(`${DF_NAME} = DG.DataFrame.fromColumns(${COLUMNS});`);
   res.push(`${DF_NAME}.name = '${name}';`);
   return res;
@@ -654,7 +672,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   // 1. Solution raw data
   res.push(`const ${ivp.arg.name}RawData = ${DF_NAME}.col('${ivp.arg.name}').getRawData();`);
   res.push(`let ${ivp.arg.name};`);
-  res.push(`const len = ${ivp.arg.name}RawData.length;\n`);  
+  res.push(`const len = ${DF_NAME}.rowCount;\n`);  
 
   ivp.inits.forEach((val, key) => {
     res.push(`const ${key}RawData = ${DF_NAME}.col('${key}').getRawData();`);    
@@ -693,8 +711,11 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   res.push(`${DF_NAME} = DG.DataFrame.fromColumns([`);
   ivp.outputs!.forEach((val, key) => {
     if (!val.formula)
-      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${key}RawData),`);
+      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${key}RawData.slice(0, len)),`);
   });
+
+  if (ivp.updates !== null)
+    res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${UPD_COL_NAME}'),`);
 
   res.push(']);');
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
@@ -709,7 +730,7 @@ function getCustomOutputLines(ivp: IVP): string[] {
       if (ivp.outputs?.has(key))
         return getCustomOutputLinesWithExpressions(ivp);
 
-  return getCustomOutputLinesNoExpressions(ivp.name, ivp.outputs!);
+  return getCustomOutputLinesNoExpressions(ivp.name, ivp.outputs!, (ivp.updates !== null));
 } // getCustomOutputLinesWithExpressions
 
 /** Return main body of JS-script: basic variant */
@@ -892,7 +913,7 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   res.push(SCRIPT.SOLVER_COM);
   res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${LOOP.COUNT_NAME}; ++${SERVICE}idx) {`);
   ivp.loop!.updates.forEach((upd) => res.push(`${SCRIPT.SPACE2}${upd};`));
-  res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND_ASYNC}${funcParamsNames}), true);`);
+  res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND}${funcParamsNames}), true);`);
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}1 += ${SCRIPT.LOOP_INTERVAL};`);
   res.push(`${SCRIPT.SPACE2}${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
@@ -913,12 +934,16 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
   const res = getScriptFunc(ivp, funcParamsNames);
 
   res.push('');
-  //res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`);
 
   res.push(SCRIPT.SOLUTION_DF_COM);
   const dfNames = getSolutionDfColsNames(ivp);
 
-  res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`);  
+  res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`); 
+  
+  res.push('');
+
+  res.push(SCRIPT.SEGMENT_COM);
+  res.push(`${DF_NAME}.columns.add(DG.Column.fromList('string', '${UPD_COL_NAME}', new Array(${DF_NAME}.rowCount).fill('Stage 1')));`);
   
   res.push('');
   res.push(`let ${SCRIPT.LAST_IDX} = 0;`);
@@ -939,7 +964,9 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
     res.push(`${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
     res.push(`${SERVICE}${ivp.arg.name}1 += ${UPDATE.DURATION}${idx + 1};`);
 
-    res.push(`${SCRIPT.APPEND_ASYNC}${funcParamsNames}), true);`);
+    res.push(`const ${SERVICE}DF${idx + 1} = ${SCRIPT.ONE_STAGE}${funcParamsNames});`);
+    res.push(`${SERVICE}DF${idx + 1}.columns.add(DG.Column.fromList('string', '${UPD_COL_NAME}', new Array(${SERVICE}DF${idx + 1}.rowCount).fill('Stage ${idx + 2}')));`);
+    res.push(`${SCRIPT.APPEND}${SERVICE}DF${idx + 1}, true);`);
   });
 
   return res;

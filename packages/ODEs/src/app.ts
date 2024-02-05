@@ -14,7 +14,7 @@ import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
-  BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP} from './scripting-tools';
+  BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP, UPD_COL_NAME} from './scripting-tools';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -139,11 +139,12 @@ function getLineChartOptions(colNames: string[]): Object {
 
   return {
     xColumnName: colNames[0],
-    yColumnNames: (count > 1) ? colNames.slice(1) : colNames[0],     
+    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== UPD_COL_NAME) : colNames[0],     
     showTitle: true,
     sharex: true, 
     multiAxis: count > MAX_LINE_CHART,
     multiAxisLegendPosition: "RightTop",
+    segmentColumnName: colNames.includes(UPD_COL_NAME) ? UPD_COL_NAME: null,
   };
 }
 
@@ -371,7 +372,7 @@ export class Solver {
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
     this.saveIcon = ui.iconFA('save', async () => {await this.saveFn()}, HINT.SAVE_LOC);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
-    this.exportButton = ui.bigButton(TITLE.TO_JS, this.exportToJS, HINT.TO_JS);    
+    this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS()}, HINT.TO_JS);    
   }; // constructor
 
   /** */
@@ -545,7 +546,7 @@ export class Solver {
       // try to call computations - correctness check
       const params = getScriptParams(ivp);    
       const call = script.prepare(params);
-      await call.call();
+      //await call.call();
 
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
