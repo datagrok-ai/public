@@ -38,15 +38,11 @@ class MonomerLibraryManagerWidget {
     $(libControlsForm).addClass('monomer-lib-controls-form');
     const addLibraryFilesButton: HTMLButtonElement = ui.button('Add', async () => await this.addLibraryFiles());
     ui.tooltip.bind(addLibraryFilesButton, 'Load new monomer libraries');
-    const refreshLibraryListIcon = ui.iconFA('sync-alt', async () => {
-      const progressIndicator = DG.TaskBarProgressIndicator.create('Updating monomer library list');
-      await formHandler.updateControlsForm();
-      grok.shell.info('List of monomer libraries updated');
-      progressIndicator.close();
-    });
-    const refreshLibraryListButton = ui.button(refreshLibraryListIcon, () => {} );
-    ui.tooltip.bind(refreshLibraryListIcon, 'Refresh libraries list');
-    const widgetContent = ui.divV([libControlsForm, ui.div([addLibraryFilesButton, refreshLibraryListButton])]);
+    const widgetContent = ui.divV([libControlsForm,
+      ui.div([
+        addLibraryFilesButton,
+      ])
+    ]);
     return widgetContent;
   }
 
@@ -85,7 +81,11 @@ class MonomerLibraryManagerWidget {
 }
 
 class ControlsFormManager {
-  constructor(private eventManager: MonomerLibFileEventManager) { }
+  constructor(private eventManager: MonomerLibFileEventManager) {
+    this.eventManager.updateUIControlsRequested$.subscribe(
+      async () => await this.updateControlsForm()
+    );
+  }
   private monomerLibFileManager: MonomerLibFileManager;
   private inputsForm: HTMLDivElement;
 
@@ -94,9 +94,6 @@ class ControlsFormManager {
     const controlList = await this.getControlList();
     const inputsForm = ui.form(controlList);
 
-    this.eventManager.updateUIControlsRequested$.subscribe(
-      async () => await this.updateControlsForm()
-    );
     return inputsForm;
   }
 

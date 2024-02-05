@@ -38,15 +38,9 @@ export class MonomerLibFileManager {
 
       const fileValidator = new MonomerLibFileValidator(helmSchema);
       MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator, eventManager);
-
-      await MonomerLibFileManager.instance.initialize();
     }
 
     return MonomerLibFileManager.instance;
-  }
-
-  private async initialize(): Promise<void> {
-    await this.updateValidLibraryFileList();
   }
 
   /** Add standard .json monomer library  */

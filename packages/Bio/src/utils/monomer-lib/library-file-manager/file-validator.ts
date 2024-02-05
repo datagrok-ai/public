@@ -45,7 +45,7 @@ export class MonomerLibFileValidator {
           '\nError reason: ',
           this.validateMonomerSchema.errors,
           `\nThere may be other errors in ${fileName} since the validation is stopped after the first error.`,
-          ' Please, verify that the monomer library file satisfies the '
+          ' Please, verify that the monomer library file satisfies the JSON schema'
         );
         break;
       }
