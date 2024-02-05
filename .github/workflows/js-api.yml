@@ -170,6 +170,8 @@ jobs:
         id: datagrok-stand
         env:
           DATAGROK_VERSION: 'bleeding-edge'
+          GROK_SPAWNER_VERSION: 'bleeding-edge'
+          GROK_CONNECT_VERSION: 'bleeding-edge'
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
