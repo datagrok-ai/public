@@ -1229,10 +1229,6 @@ export class tools {
       let maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8;
       let minFormWidth = maxLabelWidth + minInputWidth + 8;
 
-      //If max form width is less than 100px than set to default width (450px)
-      if (maxFormWidth < 100)
-        maxFormWidth = 450
-
       element.style.width = '100%';
       element.style.maxWidth = String(maxFormWidth)+'px';
 
