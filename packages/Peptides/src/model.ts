@@ -10,9 +10,8 @@ import {
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
-import {BitArrayMetrics, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import wu from 'wu';
@@ -39,9 +38,8 @@ import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionWidget, PeptideViewer} from './widgets/distribution';
 import {CLUSTER_TYPE, ILogoSummaryTable, LogoSummaryTable, LST_PROPERTIES} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
-import {_package, getTreeHelperInstance} from './package';
+import {_package} from './package';
 import {calculateMonomerPositionStatistics} from './utils/algorithms';
-import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
 import {MmDistanceFunctionsNames}
@@ -210,17 +208,9 @@ export class PeptidesModel {
 
     if (updateVars.has('sequenceSpaceParams')) {
       const newSeqSpaceOptions = this.settings!.sequenceSpaceParams!;
-      let onlyClusteringChanged = true;
-      for (const [key, value] of Object.entries(newSeqSpaceOptions)) {
-        if (
-          oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
-          key !== 'minPts' && key !== 'clusterEmbeddings'
-        ) {
-          onlyClusteringChanged = false;
-          break;
-        }
-      }
-      if (onlyClusteringChanged) {
+      if (!Object.entries(newSeqSpaceOptions).some(([key, value]) =>
+        oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
+          key !== 'minPts' && key !== 'clusterEmbeddings')) {
         updateVars.delete('sequenceSpaceParams');
         if (this.settings!.sequenceSpaceParams.clusterEmbeddings)
           updateVars.add('clusterParams');
@@ -942,18 +932,28 @@ export class PeptidesModel {
   async addDendrogram(): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Calculating distance matrix...');
     try {
-      const pepColValues: string[] = this.df.getCol(this.settings!.sequenceColumnName).toList();
-      this._dm ??= new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
-      const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
-      const treeHelper: ITreeHelper = getTreeHelperInstance();
-      const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
+      // const pepColValues: string[] = this.df.getCol(this.settings!.sequenceColumnName).toList();
+      // this._dm ??=
+      //new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
+      // const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
+      // const treeHelper: ITreeHelper = getTreeHelperInstance();
+      // // treeHelper.
+      // const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
 
-      this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
-      const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
-      this.analysisView.grid.setRowOrder(leafOrdering);
-      const dendrogramViewer = await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
+      // this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
+      // const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
+      // this.analysisView.grid.setRowOrder(leafOrdering);
+      // const dendrogramViewer =
+      //await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
 
-      this.analysisView.dockManager.dock(dendrogramViewer, DG.DOCK_TYPE.LEFT, null, 'Dendrogram', 0.25);
+      // this.analysisView.dockManager.dock(dendrogramViewer, DG.DOCK_TYPE.LEFT, null, 'Dendrogram', 0.25);
+      const dFunc = DG.Func.find({package: 'Dendrogram', name: 'hierarchicalClustering'})[0];
+      if (!dFunc || dFunc.inputs.length !== 4)
+        throw new Error('Correct dendrogram function is not found');
+      await dFunc.apply({
+        df: this.df, colNameList: [this.settings!.sequenceColumnName],
+        distance: 'euclidean', linkage: 'complete',
+      });
     } catch (e) {
       _package.logger.error(e as string);
     } finally {

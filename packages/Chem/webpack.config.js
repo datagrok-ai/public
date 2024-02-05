@@ -39,7 +39,10 @@ module.exports = (env, options) => ({
     topLevelAwait: true
   },
   resolve: {
-    fallback: { "url": false },
+    fallback: {
+      "url": false,
+      "perf_hooks": false
+    },
     extensions: ['.wasm', '.ts', '.mjs', '.js', '.json', '.tsx']
   },
   module: {

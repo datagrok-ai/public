@@ -10,6 +10,7 @@ import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {TreeColorNames, TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
 
 const TRANS_ALPHA = 0.7;
+const TRANS_ALPHA_LIGHT = 0.5;
 
 /** Draws only nodes/leaves visible in leaf range */
 export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeType> {
@@ -68,8 +69,8 @@ export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeTy
 
     const lightStyler = new TreeStylerBase<MarkupNodeType>('light',
       LINE_WIDTH, NODE_SIZE, false,
-      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA)),
-      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA)));
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA_LIGHT)),
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA_LIGHT)));
 
     const currentStyler = new TreeStylerBase<MarkupNodeType>('current',
       LINE_WIDTH, NODE_SIZE, false,

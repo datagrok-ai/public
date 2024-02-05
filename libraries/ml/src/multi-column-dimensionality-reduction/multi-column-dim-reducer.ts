@@ -144,7 +144,7 @@ class UMAPReducer extends MultiColumnReducer {
       //Umap uses vector indexing, so we need to create an array of vectors as indeces.
       this.vectors = new Array(this.data[0].length).fill(0).map((_, i) => i);
 
-      if (this.data[0].length < 15)
+      if (this.data[0].length <= (options.nNeighbors ?? 15))
         options.nNeighbors = this.data[0].length - 1;
       options.random = randomFn;
       this.reducer = new UMAP(options);

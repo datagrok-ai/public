@@ -466,7 +466,7 @@ export class RichFunctionView extends FunctionView {
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
     const newRibbonPanels = [[
-      ...this.getRibbonPanels().flat().map((elem) => elem.firstChild as HTMLElement),
+      ...super.buildRibbonPanels().flat(),
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
       ...(!this.options.isTabbed &&
         ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],

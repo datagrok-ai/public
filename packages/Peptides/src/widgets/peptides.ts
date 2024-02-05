@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {ILogoSummaryTable} from '../viewers/logo-summary';
+import {ILogoSummaryTable, LogoSummaryTable} from '../viewers/logo-summary';
 
 export type DialogParameters = { host: HTMLElement, callback: () => Promise<boolean> };
 
@@ -247,6 +247,10 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
           activityColumnName: activityColumn.name,
         };
         await model.addLogoSummaryTable(lstProps);
+        setTimeout(() => {
+          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
+          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
+        }, 100);
       }
     }
   }

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.39",
+  "version": "3.7.45",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1236,6 +1236,9 @@
         },
         "1.17.3": {
           "datagrok-api": "^1.17.9"
+        },
+        "1.17.4": {
+          "datagrok-api": "^1.17.9"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1829,6 +1832,12 @@
           "datagrok-api": "^1.17.0"
         },
         "1.19.2": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.20.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.20.1": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -2689,6 +2698,9 @@
         },
         "2.11.27": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.28": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3480,6 +3492,9 @@
         },
         "1.1.10": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.11": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3669,6 +3684,9 @@
           "datagrok-api": "^1.15.0"
         },
         "2.1.4": {
+          "datagrok-api": "^1.15.0"
+        },
+        "2.1.5": {
           "datagrok-api": "^1.15.0"
         }
       },

@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 import './ui/inputs';
+import './ui/input-for-property';
+import './ui/inputform';
 import './ui/forms';
 import './ui/divs';
 import './ui/buttons';

@@ -93,7 +93,7 @@ export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler('Model Catalog', 'modelCatalog', _package));
+  DG.ObjectHandler.register(new ModelHandler());
   
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;

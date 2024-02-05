@@ -2,7 +2,7 @@
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
-import {Menu, ObjectPropertyBag, Widget} from "./widgets";
+import {Menu, ObjectPropertyBag, Widget, Filter} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
 import {toJs} from "./wrappers";
 import {__obs, StreamSubscription} from "./events";
@@ -480,6 +480,11 @@ export class FilterGroup extends Viewer {
 
   getFilterSummary(): Element {
     return api.grok_FilterGroup_GetFilterSummary(this.dart);
+  }
+
+  /** Returns array of filters in FilterGroup. Filter if js filter and dart object if dart filter */
+  get filters(): Array<Filter | any> {
+    return toJs(api.grok_FilterGroup_Get_Filters(this.dart));
   }
 }
 

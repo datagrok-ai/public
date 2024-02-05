@@ -77,7 +77,7 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
   }
 
   override canvasOnWheel(e: WheelEvent): void {
-    console.debug('Dendrogram: GridTreeRendererBase.canvasOnWheel()');
+    // console.debug('Dendrogram: GridTreeRendererBase.canvasOnWheel()');
     // Intercept wheel event handling to prevent CanvasTreeRender.canvasOnWheel() handler zooming the tree
     //super.canvasOnWheel(e);
     e.preventDefault();
@@ -93,21 +93,21 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
 
 
   override canvasOnMouseDown(e: MouseEvent): void {
-    console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseDown()');
+    // console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseDown()');
     // Intercept to prevent handling drag mode
     // super.canvasOnMouseDown();
     e.preventDefault();
   }
 
   override canvasOnMouseUp(e: MouseEvent): void {
-    console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseUp()');
+    // console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseUp()');
     // Intercept to prevent handling drag mode
     // super.canvasOnMouseDown();
     e.preventDefault();
   }
 
   override canvasOnMouseMove(e: MouseEvent): void {
-    console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseMove()');
+    // console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseMove()');
 
     super.canvasOnMouseMove(e); // super handler is required to handle mouse over on nodes
   }

@@ -9,13 +9,16 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 
 class DatabaseService {
-  static getHistoryRuns(funcName: string, includeParams = true): Observable<DG.FuncCall[]> {
+  static getHistoryRuns(funcName: string, includeParams = true, skipDfLoad = false): Observable<DG.FuncCall[]> {
     return from((async () => {
       const res = await historyUtils.pullRunsByName(
         funcName, [
           {author: grok.shell.user},
           // EXPLAIN WHY FUNC.PARAMS
-        ], {order: 'started'}, [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
+        ],
+        {order: 'started'},
+        [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
+        skipDfLoad,
       );
       return res;
     })());
@@ -64,8 +67,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     private _visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
     // Array of grid columns visible in the filter viever
     private _visibleColumnsForFilter: string[] = [],
-    // Load input/output dataframes
+    // Load input/outputs
     private includeParams = true,
+    // Load input/output dataframes
+    private skipDfLoad = false,
   ) {
     const primaryInput = ui.stringInput(label, '', null);
     super(primaryInput.dart);
@@ -77,7 +82,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
     this.store.experimentRuns = this.experimentRunsUpdate.pipe(
       tap(() => this.toggleLoaderExpRuns(true)),
-      switchMap(() => DatabaseService.getHistoryRuns(this._funcName, this.includeParams).pipe(
+      switchMap(() => DatabaseService.getHistoryRuns(this._funcName, this.includeParams, this.skipDfLoad).pipe(
         catchError((e) => {
           console.error(e);
           return EMPTY;
