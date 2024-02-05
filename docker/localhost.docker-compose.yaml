@@ -2,7 +2,7 @@ version: "3"
 services:
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
     environment:
       GROK_PARAMETERS: |
         {
@@ -96,7 +96,7 @@ services:
     profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
     networks:
       datagrok:
         aliases:

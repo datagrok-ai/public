@@ -123,8 +123,9 @@ export function _usersSearch(s: string): Promise<any[]> {
 //description: Protein Data Bank
 //tags: search
 //input: string s
-//output: widget w
-export function _pdbSearch(s: string): Promise<any> {
+//output: dynamic w
+export function _pdbSearch(s: string): Promise<any | null> {
+  //console.log('Starting _pdbSearch function');
   return pdbSearch(s);
 }
 
