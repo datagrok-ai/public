@@ -110,14 +110,16 @@ export class ModelCatalogView extends DG.CustomCardView {
   }
 
   initRibbon() {
-    this.setRibbonPanels([[ui.icons.sync(() => this.refresh())]]);
+    // place additional icons here if necessary
   }
 
   initMenu() {
     this.ribbonMenu
       .group('Help')
-      .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
-      .item('Developing Models', () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
+      .item('Compute Engine',
+        () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
+      .item('Developing Models',
+        () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
       .endGroup();
   }
 }
