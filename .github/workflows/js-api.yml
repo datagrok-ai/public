@@ -217,6 +217,8 @@ jobs:
           do
             sleep 1
             echo -e "\nContainer for ApiTests did not start yet..."
+            docker ps -a
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
             echo -e "\nRetrying..."
           done
 
