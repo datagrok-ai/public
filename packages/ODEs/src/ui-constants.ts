@@ -81,6 +81,7 @@ export enum ERROR_MSG {
   INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',
   OPEN_IN_DIF_STUD = 'To change the model, open it in Diff Studio.',
   FAILED_TO_SAVE = 'Failed to save model to the file',
+  INCORRECT_MODEL = 'Incorrect model',
 };
 
 /** Warning dialog lines */

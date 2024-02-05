@@ -105,7 +105,6 @@ export type IVP = {
 
 /** Specific error messages */
 enum ERROR_MSG {
-  ODES = 'Incorrect definition of the system of ordinary differential equations',
   CTRL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
   ARG = 'Incorrect argument specification',
   LOOP = 'Incorrect loop specification',
@@ -117,7 +116,7 @@ enum ERROR_MSG {
   COLON = 'Incorrect use of ":"',
   CASE_INSENS = 'Non-unique name (case-insensitive): use other caption for ',
   MISSING_INIT = 'Missing initial value for ',
-  UNDEF_NAME = `Undefined name of the model: use ${CONTROL_EXPR.NAME}-block`,
+  UNDEF_NAME = `Missing name of the model: use ${CONTROL_EXPR.NAME}-block`,
   UNDEF_DEQS = `No differential equations: use ${CONTROL_EXPR.DIF_EQ}-block`,
   UNDEF_INITS = `No initial values: use ${CONTROL_EXPR.INITS}-block`,
   UNDEF_ARG = `Undefined argument: use ${CONTROL_EXPR.ARG}-block`,
@@ -195,7 +194,7 @@ function getStartOfProblemDef(lines: string[]): number {
     ++idx;
     
     if (idx === linesCount)
-      throw new Error(ERROR_MSG.ODES);
+      throw new Error(ERROR_MSG.UNDEF_NAME);
   }
 
   return idx;

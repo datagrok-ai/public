@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {ODEs, solveODEs} from './solver';
-import {runSolverApp, runSolverDemoApp, getFilePreview, Solver} from './app';
+import {Solver} from './app';
 
 export const _package = new DG.Package();
 
@@ -40,7 +40,6 @@ export async function DiffStudio(): Promise<void> {
 //meta.demoPath: Compute | Diff Studio
 //test: demoEquaSleekX() //wait: 100
 export async function demoDiffStudio(): Promise<void> {
-  //await runSolverDemoApp();
   const solver = new Solver();
   await solver.runSolverDemoApp();
 }
@@ -51,7 +50,6 @@ export async function demoDiffStudio(): Promise<void> {
 //output: list tables
 //meta.ext: ivp
 export async function ivpFileHandler(content: string) {
-  //await runSolverApp(content);
   const solver = new Solver();
   await solver.runSolverApp(content);
 
@@ -63,7 +61,10 @@ export async function ivpFileHandler(content: string) {
 //input: file file
 //output: view preview
 export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
-  return await getFilePreview(file);
+  console.log('Start prview!');
+  const path = window.location.href;
+  const solver = new Solver(false);
+  return await solver.getFilePreview(file, path);
 }
 
 //name: foo
