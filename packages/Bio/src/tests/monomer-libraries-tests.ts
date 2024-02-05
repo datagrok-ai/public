@@ -6,7 +6,7 @@ import {test, after, before, category, expect} from '@datagrok-libraries/utils/s
 
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLibFileManager} from '../utils/monomer-lib/library-file-manager/file-manager';
 import {MonomerLibFileEventManager} from '../utils/monomer-lib/library-file-manager/event-manager';

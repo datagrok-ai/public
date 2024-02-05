@@ -4,8 +4,9 @@ import * as grok from 'datagrok-api/grok';
 import {after, before, category, test, expect, delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  LibSettings, getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {awaitGrid, readDataframe} from './utils';
 import {BioSubstructureFilter, HelmFilter, SeparatorFilter} from '../widgets/bio-substructure-filter';
@@ -16,7 +17,7 @@ import {_package} from '../package-test';
 category('substructureFilters', async () => {
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibSettings: LibSettings;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();

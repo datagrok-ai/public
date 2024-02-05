@@ -101,11 +101,6 @@ export class MonomerLibFileManager {
     return this.eventManager.getValidFilesPathList();
   }
 
-  /** Necessary to prevent sync errors  */
-  async refreshLibraryFilePaths(): Promise<void> {
-    await this.updateValidLibraryFileList();
-  }
-
   private async updateValidLibraryFileList(): Promise<void> {
     const invalidFiles = [] as string[];
     // todo: remove after debugging

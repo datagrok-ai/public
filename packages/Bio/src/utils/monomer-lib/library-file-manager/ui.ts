@@ -8,6 +8,7 @@ import $ from 'cash-dom';
 import {
   getUserLibSettings, LIB_PATH, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {MonomerLibManager} from '../lib-manager';
 
 import {MonomerLibFileManager} from './file-manager';
@@ -91,7 +92,7 @@ class ControlsFormManager {
 
   async createControlsForm(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    const controlList = await this.getControlList();
+    const controlList = await this.getControlsList();
     const inputsForm = ui.form(controlList);
 
     return inputsForm;
@@ -99,40 +100,54 @@ class ControlsFormManager {
 
   async updateControlsForm(): Promise<void> {
     // WARNING: this is necessary to prevent sync issues with the file system
-    // await this.monomerLibFileManager.refreshValidFilePaths();
     const updatedForm = await this.createControlsForm();
     $(this.inputsForm).replaceWith(updatedForm);
   }
 
-  private async getControlList(): Promise<DG.InputBase<boolean | null>[]> {
+  private async getControlsList(): Promise<DG.InputBase<boolean | null>[]> {
     const settings = await getUserLibSettings();
     const fileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    await fileManager.refreshLibraryFilePaths();
     const libFileNameList: string[] = fileManager.getRelativePathsOfValidLibraryFiles();
-    const libInputList: DG.InputBase<boolean | null>[] = [];
+    return libFileNameList.map((libFileName) => this.createLibInput(libFileName, settings));
+  }
 
-    for (const libFileName of libFileNameList) {
-      const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
-        () => {
-          if (libInput.value == true) {
-            // Checked library remove from excluded list
-            settings.exclude = settings.exclude.filter((l) => l != libFileName);
-          } else {
-            // Unchecked library add to excluded list
-            if (!settings.exclude.includes(libFileName))
-              settings.exclude.push(libFileName);
-          }
-          setUserLibSettings(settings).then(async () => {
-            await MonomerLibManager.instance.loadLibraries(true); // from libraryPanel()
-            grok.shell.info('Monomer library user settings saved.');
-          });
-        });
-      const deleteIcon = ui.iconFA('trash-alt', async () => this.createLibraryFileDeletionDialog(libFileName));
-      ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
-      libInput.addOptions(deleteIcon);
-      libInputList.push(libInput);
+  private createLibInput(libFileName: string, settings: UserLibSettings): DG.InputBase<boolean | null> {
+    const isExcluded = settings.exclude.includes(libFileName);
+    const libInput = ui.boolInput(
+      libFileName,
+      // todo: rename into isIncluded
+      !isExcluded,
+      () => this.handleLibInputChange(libInput, libFileName, settings)
+    );
+    const deleteIcon = ui.iconFA('trash-alt', () => this.createLibraryFileDeletionDialog(libFileName));
+    ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
+    libInput.addOptions(deleteIcon);
+    return libInput;
+  }
+
+  private async handleLibInputChange(
+    libInput: DG.InputBase<boolean | null>,
+    libFileName: string,
+    settings: UserLibSettings
+  ): Promise<void> {
+    this.updateSettingsBasedOnInput(libInput.value, libFileName, settings);
+    await setUserLibSettings(settings);
+    await MonomerLibManager.instance.loadLibraries(true);
+    grok.shell.info('Monomer library user settings saved.');
+  }
+
+  private updateSettingsBasedOnInput(
+    isLibrarySelected: boolean | null,
+    libFileName: string,
+    settings: UserLibSettings
+  ): void {
+    if (isLibrarySelected) {
+      // Remove selected library from exclusion list
+      settings.exclude = settings.exclude.filter((libName) => libName !== libFileName);
+    } else if (!settings.exclude.includes(libFileName)) {
+      // Add unselected library to exclusion list
+      settings.exclude.push(libFileName);
     }
-    return libInputList;
   }
 
   private createLibraryFileDeletionDialog(fileName: string): void {

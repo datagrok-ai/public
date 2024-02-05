@@ -5,8 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {
-  LibSettings, getUserLibSettings, setUserLibSettings, LIB_PATH
+  getUserLibSettings, setUserLibSettings, LIB_PATH
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -51,7 +52,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       // because it will prevent further handling monomer library settings
       // through blocking this.loadLibrariesPromise
       try {
-        const [libFileNameList, settings]: [string[], LibSettings] = await Promise.all([
+        const [libFileNameList, settings]: [string[], UserLibSettings] = await Promise.all([
           getLibFileNameList(),
           getUserLibSettings(),
         ]);
