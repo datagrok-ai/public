@@ -60,10 +60,6 @@ export class MonomerLibFileManager {
       grok.shell.info(`Added ${fileName} HELM library`);
   }
 
-  private async fileExists(fileName: string): Promise<boolean> {
-    return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
-  }
-
   async deleteLibraryFile(fileName: string): Promise<void> {
     try {
       await grok.dapi.files.delete(LIB_PATH + `${fileName}`);
@@ -99,6 +95,10 @@ export class MonomerLibFileManager {
 
   getRelativePathsOfValidLibraryFiles(): string[] {
     return this.eventManager.getValidFilesPathList();
+  }
+
+  private async fileExists(fileName: string): Promise<boolean> {
+    return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
 
   private async updateValidLibraryFileList(): Promise<void> {

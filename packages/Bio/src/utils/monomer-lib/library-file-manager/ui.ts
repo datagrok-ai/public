@@ -48,36 +48,21 @@ class MonomerLibraryManagerWidget {
   }
 
   private async addLibraryFiles(): Promise<void> {
-    const addFilesMenuPopup = DG.Menu.popup();
-    addFilesMenuPopup.item('Add standard', () => {
-      DG.Utils.openFile({
-        accept: '.json',
-        open: async (selectedFile) => {
-          const content = await selectedFile.text();
-          const name = selectedFile.name;
-          const progressIndicator = DG.TaskBarProgressIndicator.create(`Adding ${name} as a monomer library`);
-          try {
-            await this.monomerLibFileManager.addLibraryFile(content, name);
-          } catch (e) {
-            grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM standard`);
-          } finally {
-            progressIndicator.close();
-          }
-        },
-      });
+    DG.Utils.openFile({
+      accept: '.json',
+      open: async (selectedFile) => {
+        const content = await selectedFile.text();
+        const name = selectedFile.name;
+        const progressIndicator = DG.TaskBarProgressIndicator.create(`Adding ${name} as a monomer library`);
+        try {
+          await this.monomerLibFileManager.addLibraryFile(content, name);
+        } catch (e) {
+          grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM JSON schema.`);
+        } finally {
+          progressIndicator.close();
+        }
+      },
     });
-    addFilesMenuPopup.separator();
-    addFilesMenuPopup.item('Add custom', () => {
-      const libFile = DG.Utils.openFile({
-        accept: '.csv',
-        open: async (libFile) => {
-          // const content = await libFile.text();
-          // const name = libFile.name;
-          // await this.monomerLibFileManager.addCustomLibFile(content, name);
-        },
-      });
-    });
-    addFilesMenuPopup.show();
   }
 }
 
@@ -99,7 +84,6 @@ class ControlsFormManager {
   }
 
   async updateControlsForm(): Promise<void> {
-    // WARNING: this is necessary to prevent sync issues with the file system
     const updatedForm = await this.createControlsForm();
     $(this.inputsForm).replaceWith(updatedForm);
   }
@@ -112,11 +96,10 @@ class ControlsFormManager {
   }
 
   private createLibInput(libFileName: string, settings: UserLibSettings): DG.InputBase<boolean | null> {
-    const isExcluded = settings.exclude.includes(libFileName);
+    const isMonomerLibrarySelected = !settings.exclude.includes(libFileName);
     const libInput = ui.boolInput(
       libFileName,
-      // todo: rename into isIncluded
-      !isExcluded,
+      isMonomerLibrarySelected,
       () => this.handleLibInputChange(libInput, libFileName, settings)
     );
     const deleteIcon = ui.iconFA('trash-alt', () => this.createLibraryFileDeletionDialog(libFileName));
