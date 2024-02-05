@@ -68,6 +68,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
       colName: state.columnName,
     });
 
+    if (state.colorCodedScaffolds)
+      this.viewer.setHighlightTag = state.active; //in case applyState is called on disabled filter with existing scaffolds, the highlight is not set
     if (state.savedTree)
       this.viewer.loadTreeStr(state.savedTree);
 
