@@ -448,88 +448,8 @@ M  END
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
-
 });
 
-async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
-  await grok.data.detectSemanticTypes(df);
-  const tv1 = grok.shell.addTableView(df);
-  return tv1;
-}
-
-async function getFilterFromPanel(tv: DG.TableView, colName: string): Promise<SubstructureFilter> {
-  //open filter panel
-  const fg1 = tv.getFiltersGroup();
-  //wait for filters added to filter panel
-  await awaitCheck(() => fg1.filters.length !== 0, 'filter panel hasn\'t been created', 3000);
-  //get required filter from filter panel
-const filter1 = fg1.filters.filter((it: any) => it?.columnName === colName)[0] as SubstructureFilter;
-return filter1;
-}
-
-
-async function initializeFilter(filter: SubstructureFilter, withMolecule?: boolean): Promise<void> {
-  //open sketcher to initialize sketcher (need for sketcher to send onChanged events)
-  await ui.tools.waitForElementInDom(withMolecule ? filter.sketcher.extSketcherCanvas : filter.sketcher.emptySketcherLink); //need to wait for Sketch button to appear in DOM to click it
-  withMolecule ? filter.sketcher.extSketcherCanvas.click() : filter.sketcher.emptySketcherLink.click();
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 3000);
-  //close sketcher
-  const sketcherDlg = document.getElementsByClassName('d4-dialog')[0];
-  Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
-}
-
-async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
-  //setting structure and wait for results
-  filter.sketcher.setMolFile(molfile);
-  await awaitCheck(() => {
-    console.log(`****true count in test - ${df.filter.trueCount}`)
-return df.filter.trueCount === trueCount;
-  }, 'df hasn\'t been filtered', 3000);
-}
-
-async function checkFilterSynchronized(filter: SubstructureFilter, smiles: string) {
-  //check that structure in filter has been updated
-  await awaitCheck(() => filter.sketcher.getSmiles() === smiles, 'structure in filter in cloned view hasn\'t been updated', 3000);
-}
-
-async function cloneView(viewToClone: DG.TableView, df: DG.DataFrame) {
-  //cloning view
-  const l = viewToClone.saveLayout();
-  const tv2 = grok.shell.addTableView(df);
-  await delay(50);
-  tv2.loadLayout(l);
-  await delay(50);
-  return tv2;
-}
-
-async function switchToView(tableView: DG.TableView) {
-  grok.shell.v = tableView;
-  await delay(50);
-}
-
-async function saveLayout(tableView: DG.TableView): Promise<DG.ViewLayout> {  
-  const layout = tableView.saveLayout();
-  return layout;
-}
-
-async function applyLayout(tv: DG.TableView, layout: DG.ViewLayout, df: DG.DataFrame, trueCount: number) {
-     //apply saved layout
-     tv.loadLayout(layout);
-     //waiting for layout to be applied
-     await awaitCheck(() => df.filter.trueCount === trueCount, 'layout hasn\'t been applied', 3000);
-}
-
-async function closeView(tv: DG.TableView) {
-  tv.close();
-  //wait for view to close
-  await awaitCheck(() => {
-    for (let i of grok.shell.tableViews) {
-      if (i.name === 'tests/spgi-100 (2)')
-        return false;
-    }
-    return true;
-  }, 'cloned view hasn\'t been closed', 3000);
-}
 
 async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
   Promise<SubstructureFilter> {
