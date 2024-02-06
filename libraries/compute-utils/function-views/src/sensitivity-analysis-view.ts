@@ -814,7 +814,7 @@ export class SensitivityAnalysisView {
 
       if (!selectedRun) return;
 
-      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const scalarParams = ([...selectedRun.outputParams.values()])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
       const scalarTable = DG.HtmlTable.create(
         scalarParams,
@@ -822,7 +822,7 @@ export class SensitivityAnalysisView {
           [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
       ).root;
 
-      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const dfParams = ([...selectedRun.outputParams.values()])
         .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
       const dfPanes = dfParams.reduce((acc, param) => {
         const configs = getPropViewers(param.property).config;
@@ -970,7 +970,7 @@ export class SensitivityAnalysisView {
 
       if (!selectedRun) return;
 
-      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const scalarParams = ([...selectedRun.outputParams.values()])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
       const scalarTable = DG.HtmlTable.create(
         scalarParams,
@@ -978,7 +978,7 @@ export class SensitivityAnalysisView {
           [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
       ).root;
 
-      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const dfParams = ([...selectedRun.outputParams.values()])
         .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
       const dfPanes = dfParams.reduce((acc, param) => {
         const configs = getPropViewers(param.property).config;
@@ -1137,7 +1137,7 @@ export class SensitivityAnalysisView {
 
       if (!selectedRun) return;
 
-      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const scalarParams = ([...selectedRun.outputParams.values()])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
       const scalarTable = DG.HtmlTable.create(
         scalarParams,
@@ -1145,7 +1145,7 @@ export class SensitivityAnalysisView {
           [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
       ).root;
 
-      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const dfParams = ([...selectedRun.outputParams.values()])
         .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
       const dfPanes = dfParams.reduce((acc, param) => {
         const configs = getPropViewers(param.property).config;
