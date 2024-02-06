@@ -271,6 +271,7 @@ export class SurfacePlot extends EChartViewer {
 
     if (filter) this.option.series[0].data = this.plotFilter().sort(this.sort);
     else this.option.series[0].data = this.rawData.sort(this.sort);
+    this.chart.resize();
     this.chart.setOption(this.option);
   }
 }
