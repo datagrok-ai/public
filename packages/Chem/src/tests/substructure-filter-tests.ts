@@ -448,63 +448,6 @@ M  END
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
-  test('1_clone_layout_scenario', async () => {
-    const df = await readDataframe('tests/spgi-100.csv');
-    const tv1 = await createTableView(df);
-    const filter1 = await getFilterFromPanel(tv1, 'Structure');
-    await initializeFilter(filter1);
-    await filterByStructure(df, filter1, molFileForCloneTest1, 5);
-    const tv2 = await cloneView(tv1, df);
-    const filter2 = await getFilterFromPanel(tv2, 'Structure');
-    await checkFilterSynchronized(filter2, 'C1CCCCC1');
-    await switchToView(tv1);
-    const layout = await saveLayout(tv1);
-    await filterByStructure(df, filter1, molFileForCloneTest2, 32);
-    await applyLayout(tv1, layout, df, 5);
-    await checkFilterSynchronized(filter2, 'C1CCCCC1');
-    await closeView(tv2);
-    //check that filter is still active on df
-    expect(df.filter.trueCount, 5, 'incorrect filter value');
-  });
-
-  test('2_clone_layout_scenario', async () => {
-    const df = await readDataframe('tests/spgi-100.csv');
-    const tv1 = await createTableView(df);
-    const filter1 = await getFilterFromPanel(tv1, 'Structure');
-    const tv2 = await cloneView(tv1, df);
-    const filter2 = await getFilterFromPanel(tv2, 'Structure');
-    await switchToView(tv1);
-    await initializeFilter(filter1);
-    await filterByStructure(df, filter1, molFileForCloneTest1, 5);
-    await checkFilterSynchronized(filter2, 'C1CCCCC1');
-    const layout = await saveLayout(tv1);
-    await filterByStructure(df, filter1, molFileForCloneTest2, 32);
-    await applyLayout(tv1, layout, df, 5);
-    await checkFilterSynchronized(filter2, 'C1CCCCC1');
-    await closeView(tv2);
-    //check that filter is still active on df
-    expect(df.filter.trueCount, 5, 'incorrect filter value');
-  });
-
-  test('3_clone_layout_scenario', async () => {
-    const df = await readDataframe('tests/spgi-100.csv');
-    const tv1 = await createTableView(df);
-    const filter1 = await getFilterFromPanel(tv1, 'Structure');
-    const tv2 = await cloneView(tv1, df);
-    const filter2 = await getFilterFromPanel(tv2, 'Structure');
-    await initializeFilter(filter2);
-    await filterByStructure(df, filter2, molFileForCloneTest1, 5);
-    await checkFilterSynchronized(filter1, 'C1CCCCC1');
-    switchToView(tv1);
-    const layout = await saveLayout(tv1);
-    await initializeFilter(filter1, true);
-    await filterByStructure(df, filter1, molFileForCloneTest2, 32);
-    await applyLayout(tv1, layout, df, 5);
-    await checkFilterSynchronized(filter2, 'C1CCCCC1');
-    await closeView(tv2);
-    //check that filter is still active on df
-    expect(df.filter.trueCount, 5, 'incorrect filter value');
-  });
 
 });
 

@@ -31,6 +31,7 @@ import './tests/chemical-table-parsing';
 import './tests/is-smarts-tests';
 import './tests/fingerprints';
 import './tests/scaffold-tree-tests';
+import './tests/clone-layout-tests';
 
 export const _package = new DG.Package();
 export {tests};
