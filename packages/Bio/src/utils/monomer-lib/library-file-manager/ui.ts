@@ -19,6 +19,24 @@ export async function getLibraryPanelUI(): Promise<DG.Widget> {
   return new MonomerLibraryManagerWidget(eventManager).createWidget();
 }
 
+async function showManageLibrariesDialog() {
+  const eventManager = MonomerLibFileEventManager.getInstance();
+  const widget = await new MonomerLibraryManagerWidget(eventManager).createWidget();
+  const dialog = ui.dialog('Manage monomer libraries');
+  dialog.clear();
+  dialog.add(widget);
+  dialog.show();
+}
+
+export async function getMonomerLibraryManagerLink(): Promise<DG.Widget> {
+  const link = ui.label('Monomer Library Manager');
+  $(link).addClass('d4-link-action');
+  link.onclick = async () => await showManageLibrariesDialog();
+  return new DG.Widget(
+    link
+  );
+}
+
 class MonomerLibraryManagerWidget {
   constructor(
     private eventManager: MonomerLibFileEventManager
