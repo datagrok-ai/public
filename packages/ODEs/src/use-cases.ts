@@ -143,9 +143,9 @@ ${CONTROL_EXPR.EXPR}:
   mu = muM * S / (Ks + S) * O / (Ko + O)
   rX = mu * X
 
-${CONTROL_EXPR.ARG}: t
+${CONTROL_EXPR.ARG}: t, 1-st stage
   start = 0 {units: h; caption: initial; category: Time} [Start of the process]
-  stage1 = 60 {units: h; caption: 1-st stage; category: Time; min: 40; max: 80} [Duration of the 1-st stage]
+  stage1 = 60 {units: h; caption: 1-st stage; category: Stages duration; min: 40; max: 80} [Duration of the 1-st stage]
   step = 0.1 {units: h; caption: step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
 
 ${CONTROL_EXPR.UPDATE}: 2-nd stage
@@ -158,8 +158,15 @@ ${CONTROL_EXPR.INITS}:
   O = 7 {units: kg/m^3; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
   P = 0 {units: kg/m^3; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
 
+${CONTROL_EXPR.OUTPUT}:
+  t {caption: time}
+  X {caption: biomass}
+  S {caption: glucose}
+  O {caption: oxygen}
+  P {caption: acid}
+
 ${CONTROL_EXPR.PARAMS}:
-  stage2 = 60 {units: h; caption: 2-nd stage; category: Time; min: 40; max: 80} [Duration of the 2-nd stage]
+  stage2 = 60 {units: h; caption: 2-nd stage; category: Stages duration; min: 40; max: 80} [Duration of the 2-nd stage]
   muM = 0.668 {units: 1/h; category: Parameters} [Monod type model parameter]
   alpha = 2.92 {category: Parameters} [Monod type model parameter]
   beta = 0.131 {units: 1/h; category: Parameters} [Monod type model parameter]

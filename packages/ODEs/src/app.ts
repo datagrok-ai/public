@@ -14,7 +14,8 @@ import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
-  BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, CONTROL_SEP, UPD_COL_NAME} from './scripting-tools';
+  BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, 
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -117,7 +118,7 @@ const completions = [
   {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: "keyword", info: INFO.CONSTS},
   {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: INFO.TOL},
   {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: INFO.LOOP},
-  {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: INFO.UPDATE},
+  {label: `${CONTROL_EXPR.UPDATE}:  `, type: "keyword", info: INFO.UPDATE},
   {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: "keyword", info: INFO.OUTPUT},
   {label: `${CONTROL_EXPR.COMMENT}: `, type: "keyword", info: INFO.COMMENT},
 ];
@@ -139,12 +140,12 @@ function getLineChartOptions(colNames: string[]): Object {
 
   return {
     xColumnName: colNames[0],
-    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== UPD_COL_NAME) : colNames[0],     
+    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : colNames[0],     
     showTitle: true,
     sharex: true, 
     multiAxis: count > MAX_LINE_CHART,
     multiAxisLegendPosition: "RightTop",
-    segmentColumnName: colNames.includes(UPD_COL_NAME) ? UPD_COL_NAME: null,
+    segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: null,
   };
 }
 
@@ -271,25 +272,13 @@ export class Solver {
       saveBtn.hidden = false;
     });
 
-    try {
-      const ivp = getIVP(equations);
-      const scriptText = getScriptLines(getIVP(equations)).join('\n');    
-      const script = DG.Script.create(scriptText);
-      const params = getScriptParams(ivp);
-      const call = script.prepare(params); 
-      await call.call();
-      this.toRunWhenFormCreated = true;
-      await this.runSolving(true);
-    } catch(error) {
-      this.toRunWhenFormCreated = false;
-      grok.shell.warning(ERROR_MSG.INCORRECT_MODEL);
-      await this.runSolving(false);
-    }
+    this.toRunWhenFormCreated = true;
+    await this.runSolving(true);    
 
     return this.solverView;
   }  // getFilePreview
 
-  static previewedFileID: string | null = null;
+  static isStartingUriProcessed: boolean = false;
 
   private solutionTable: DG.DataFrame;
   private startingPath: string;
@@ -372,7 +361,7 @@ export class Solver {
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
     this.saveIcon = ui.iconFA('save', async () => {await this.saveFn()}, HINT.SAVE_LOC);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank')}, HINT.HELP);
-    this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS()}, HINT.TO_JS);    
+    this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS()}, HINT.TO_JS);
   }; // constructor
 
   /** */
@@ -584,6 +573,11 @@ export class Solver {
       this.solutionTable = call.outputs[DF_NAME];
       this.solverView.dataFrame = call.outputs[DF_NAME];
       this.solverView.name = this.solutionTable.name;
+
+      if (ivp.updates) {
+        this.solverView.grid.columns.setVisible([this.solutionTable.columns.names()[0]]);
+        this.solverView.grid.columns.setVisible(this.solutionTable.columns.names().filter((name) => name !== STAGE_COL_NAME));
+      }
   
       if (!this.solutionViewer) {
         this.solutionViewer = DG.Viewer.lineChart(this.solutionTable, getLineChartOptions(this.solutionTable.columns.names()));
@@ -658,7 +652,6 @@ export class Solver {
 
   /** Return form with model inputs */
   private async getInputsForm(ivp: IVP): Promise<HTMLDivElement> {
-    console.log(this.startingInputs);
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
       let options: DG.PropertyOptions = { 
@@ -753,8 +746,7 @@ export class Solver {
     };
 
     // Inputs for argument
-    for (const key in ivp.arg)
-      if (key !== SCRIPTING.ARG_NAME) {
+    for (const key of ARG_INPUT_KEYS) {
         //@ts-ignore
         options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
@@ -767,7 +759,7 @@ export class Solver {
         });
 
         categorizeInput(options, input);
-      }
+    }
 
     // Inputs for initial values
     ivp.inits.forEach((val, key, map) => {

@@ -61,8 +61,15 @@ export async function ivpFileHandler(content: string) {
 //input: file file
 //output: view preview
 export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
-  console.log('Start prview!');
-  const path = window.location.href;
+  let path: string;
+
+  if (!Solver.isStartingUriProcessed) {
+    Solver.isStartingUriProcessed = true;
+    path = grok.shell.startUri;
+  }
+  else
+    path = window.location.href;
+  
   const solver = new Solver(false);
   return await solver.getFilePreview(file, path);
 }

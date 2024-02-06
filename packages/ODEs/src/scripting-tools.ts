@@ -11,6 +11,7 @@ import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_L
 
 // Scripting specific constants
 export const CONTROL_SEP = ':';
+const COMMA = ',';
 const EQUAL_SIGN = '=';
 const DIV_SIGN = '/';
 const SERVICE = '_';
@@ -22,7 +23,8 @@ export const ANNOT_SEPAR = ';';
 const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
 const COMMENT_SEQ = '//';
-export const UPD_COL_NAME = `${SERVICE}Update`
+export const STAGE_COL_NAME = `${SERVICE}Stage`
+const INCEPTION = 'Inception';
 
 /** Solver package name */
 const PACKAGE_NAME = 'DiffStudio';
@@ -50,8 +52,12 @@ type Arg = {
   name: string,
   initial: Input,
   final: Input,
-  step: Input
+  step: Input,
+  updateName: string | undefined,
 };
+
+/** Input keys of Arg */
+export const ARG_INPUT_KEYS = ['initial', 'final', 'step'];
 
 /** Scripting specific constants */
 export enum SCRIPTING {
@@ -322,11 +328,18 @@ function getArg(lines: string[]): Arg {
   if (lines.length !== 4)
     throw new Error(ERROR_MSG.ARG);
 
+  const sepIdx = lines[0].indexOf(CONTROL_SEP);
+  if (sepIdx === -1)
+    throw new Error(`${ERROR_MSG.MISS_COLON}, see line '${lines[0]}'`);
+
+  const commaIdx = lines[0].indexOf(COMMA);
+
   return {
-    name: lines[0].slice(lines[0].indexOf(CONTROL_SEP) + 1).trim(),
+    name: ((commaIdx > -1) ? lines[0].slice(sepIdx + 1, commaIdx) : lines[0].slice(sepIdx + 1)).trim(),
     initial: getInput(lines[1]),
     final: getInput(lines[2]),
     step: getInput(lines[3]),
+    updateName: (commaIdx > -1) ? lines[0].slice(commaIdx + 1).trim() : undefined,
   }
 }
 
@@ -572,7 +585,9 @@ function getViewersLine(ivp: IVP): string {
   const outputColsCount = (ivp.outputs) ? (ivp.outputs.size - 1) : ivp.inits.size;
   const multiAxis = (outputColsCount > MAX_LINE_CHART) ? 'true' : 'false';
 
-  return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)`;
+  const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
+
+  return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)`;
 }
 
 /** Generate annotation lines */
@@ -649,7 +664,7 @@ function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Ou
   });
 
   if (toAddUpdateCol)
-    res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${UPD_COL_NAME}'),`);
+    res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${STAGE_COL_NAME}'),`);
 
   res.push('];');
 
@@ -715,7 +730,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   });
 
   if (ivp.updates !== null)
-    res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${UPD_COL_NAME}'),`);
+    res.push(`${SCRIPT.SPACE2}${DF_NAME}.col('${STAGE_COL_NAME}'),`);
 
   res.push(']);');
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
@@ -913,7 +928,7 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   res.push(SCRIPT.SOLVER_COM);
   res.push(`for (let ${SERVICE}idx = 0; ${SERVICE}idx < ${LOOP.COUNT_NAME}; ++${SERVICE}idx) {`);
   ivp.loop!.updates.forEach((upd) => res.push(`${SCRIPT.SPACE2}${upd};`));
-  res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND}${funcParamsNames}), true);`);
+  res.push(`${SCRIPT.SPACE2}${SCRIPT.APPEND}${SCRIPT.ONE_STAGE}${funcParamsNames}), true);`);
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}1 += ${SCRIPT.LOOP_INTERVAL};`);
   res.push(`${SCRIPT.SPACE2}${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
@@ -943,7 +958,7 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
   res.push('');
 
   res.push(SCRIPT.SEGMENT_COM);
-  res.push(`${DF_NAME}.columns.add(DG.Column.fromList('string', '${UPD_COL_NAME}', new Array(${DF_NAME}.rowCount).fill('Stage 1')));`);
+  res.push(`${DF_NAME}.columns.add(DG.Column.fromList('string', '${STAGE_COL_NAME}', new Array(${DF_NAME}.rowCount).fill('${ivp.arg.updateName ?? INCEPTION}')));`);
   
   res.push('');
   res.push(`let ${SCRIPT.LAST_IDX} = 0;`);
@@ -964,8 +979,8 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
     res.push(`${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
     res.push(`${SERVICE}${ivp.arg.name}1 += ${UPDATE.DURATION}${idx + 1};`);
 
-    res.push(`const ${SERVICE}DF${idx + 1} = ${SCRIPT.ONE_STAGE}${funcParamsNames});`);
-    res.push(`${SERVICE}DF${idx + 1}.columns.add(DG.Column.fromList('string', '${UPD_COL_NAME}', new Array(${SERVICE}DF${idx + 1}.rowCount).fill('Stage ${idx + 2}')));`);
+    res.push(`const ${SERVICE}DF${idx + 1} = ${SCRIPT.ONE_STAGE}${funcParamsNames});`);    
+    res.push(`${SERVICE}DF${idx + 1}.columns.add(DG.Column.fromList('string', '${STAGE_COL_NAME}', new Array(${SERVICE}DF${idx + 1}.rowCount).fill('${upd.name}')));`);
     res.push(`${SCRIPT.APPEND}${SERVICE}DF${idx + 1}, true);`);
   });
 
