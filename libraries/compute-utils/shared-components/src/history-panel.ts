@@ -272,7 +272,7 @@ export class HistoryPanel {
         dateInput.root.style.removeProperty('display');
 
 
-      return form;
+      return ui.panel([form]);
     });
   };
 
