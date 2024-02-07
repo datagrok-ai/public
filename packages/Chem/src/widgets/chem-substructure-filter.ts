@@ -289,6 +289,13 @@ export class SubstructureFilter extends DG.Filter {
   refresh() {
     if (!this.sketcher.sketcherTypeChanged)
       this.sketcher.sketcher?.refresh();
+    else {
+      //to update molfile in hamburger menu filter in case sketcher type was changed via filter panel while hamburger menu was closed
+      ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+        if (this.sketcher.getMolFile() !== this.currentMolfile)
+          this.sketcher.setMolFile(this.currentMolfile);
+      });
+    }
   }
 
   detach() {
