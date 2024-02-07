@@ -579,7 +579,7 @@ export class DiffStudio {
       await call.call();
 
       if (this.solutionViewer)
-        this.solutionViewer.setOptions({segmentColumnName: null});
+        this.solutionViewer.setOptions({segmentColumnName: (ivp.updates !== null) ? STAGE_COL_NAME: null});
         
       this.solutionTable = call.outputs[DF_NAME];
       this.solverView.dataFrame = call.outputs[DF_NAME];
