@@ -120,6 +120,7 @@ export class SubstructureFilter extends DG.Filter {
     ui.tooltip.bind(this.searchTypeInput.input, () => {
       return searchTypeHints[this.searchTypeInput.value as SubstructureSearchType]
     });
+    this.searchTypeInput.root.classList.add('chem-filter-search-type');
 
     this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
       this.fp = this.fpInput.value;
@@ -151,7 +152,8 @@ export class SubstructureFilter extends DG.Filter {
 
 
     this.optionsIcon = ui.icons.settings(() => {
-      this.onShowOptionsChanged();
+      this.showOptions = !this.showOptions;
+      this.renderShowOptionsDiv();
     });
     $(this.optionsIcon).addClass('chem-search-options-icon');
 
@@ -483,6 +485,7 @@ export class SubstructureFilter extends DG.Filter {
         this.root.appendChild(this.sketcherDiv);
         if (this.searchType === SubstructureSearchType.CONTAINS) {
           this.sketcher.root.appendChild(this.optionsIcon);
+          this.renderShowOptionsDiv();
         } else {
           this.root.prepend(this.searchOptionsDiv);
           this.searchOptionsDiv.append(this.searchTypeInput.root);
@@ -517,20 +520,23 @@ export class SubstructureFilter extends DG.Filter {
       if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()) && this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE)
         this.sketcher.root.appendChild(this.optionsIcon);
     }
-    if (this.searchType === SubstructureSearchType.IS_SIMILAR)
+    if (this.searchType === SubstructureSearchType.IS_SIMILAR) {
+      this.searchOptionsDiv.append(this.searchTypeInput.root);
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
+    }
     else
       this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
       !this.searchTypeSync ? this.searchTypeChanged.next() : this.searchTypeSync = false;
   }
 
-  onShowOptionsChanged() {
-    this.showOptions = !this.showOptions;
+  renderShowOptionsDiv() {
     if (this.showOptions) {
       this.root.prepend(this.searchOptionsDiv);
       this.searchOptionsDiv.append(this.searchTypeInput.root);
-    } else
+    } else {
+      this.removeChildIfExists(this.emptySketcherDiv, this.searchTypeInput.root, 'chem-filter-search-type');
       this.removeChildIfExists(this.root, this.searchOptionsDiv, 'chem-filter-search-options');
+    }
   }
 
   terminatePreviousSearch() {
