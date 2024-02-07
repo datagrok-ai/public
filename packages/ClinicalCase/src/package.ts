@@ -146,7 +146,7 @@ export async function clinicalCaseApp(): Promise<any> {
 //tags: folderViewer
 //input: file folder
 //input: list<file> files
-//output: widget
+//output: widget res
 export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
   if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
     let res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
