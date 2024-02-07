@@ -96,11 +96,18 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
   const uh = UnitsHandler.getOrCreate(macroMolCol);
   const splitter: SplitterFunc = uh.getSplitter();
 
+  let containsEmptyValues = false;
+
   for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);
+    containsEmptyValues ||= macroMolecule === '';
     result[row] = macroMolecule ? wu(splitter(macroMolecule))
       .filter((monomerCode) => monomerCode !== '').toArray() : [];
   }
+
+  if (containsEmptyValues)
+    grok.shell.warning(`Some values in the "${macroMolCol.name}" column are empty`);
+
   return result;
 }
 
