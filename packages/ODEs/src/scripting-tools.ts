@@ -39,7 +39,8 @@ const MATH_CONSTS = ['PI', 'E', ];
 
 /** Default meta */
 const defaultMetas = `//meta.runOnOpen: true
-//meta.runOnInput: true`; 
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true}`; 
 
 /** Numerical input specification */
 export type Input = {

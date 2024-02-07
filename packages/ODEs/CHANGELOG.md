@@ -11,6 +11,7 @@
 * Comments (`//...`) in formulas
 * Expressions usage in the `#output`-block
 * Formulas can be used in the `#update`-block to define the duration
+* Modeling stages are marked with a color
 * Model *ivp*-files handling and preview
 
 ## 1.0.2 (2023-12-21)

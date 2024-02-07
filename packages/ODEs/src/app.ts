@@ -12,7 +12,7 @@ import {autocompletion} from "@codemirror/autocomplete";
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import { USE_CASES } from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH} from './ui-constants';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, WARNING, MISC, demoInfo, INPUT_TYPE, PATH, TIMEOUT} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR, 
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
@@ -166,7 +166,7 @@ const strToVal = (s: string) => {
 };
 
 /** Solver of differential equations */
-export class Solver {
+export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string): Promise<void> {
     this.createEditorView(content, true);
@@ -273,7 +273,8 @@ export class Solver {
     });
 
     this.toRunWhenFormCreated = true;
-    await this.runSolving(true);    
+
+    setTimeout(() => {this.runSolving(true);}, TIMEOUT.PREVIEW_RUN_SOLVING);        
 
     return this.solverView;
   }  // getFilePreview
@@ -312,7 +313,7 @@ export class Solver {
     this.solutionTable = DG.DataFrame.create();
     this.startingPath = window.location.href;
     this.startingInputs = null;
-    this.solverView = toAddTableView ? grok.shell.addTableView(this.solutionTable) : DG.TableView.create(this.solutionTable);
+    this.solverView = toAddTableView ? grok.shell.addTableView(this.solutionTable) : DG.TableView.create(this.solutionTable, false);
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverMainPath = PATH.CUSTOM;
     this.solutionViewer = null;
@@ -338,9 +339,16 @@ export class Solver {
         await this.runSolving(true);
     });
 
-    const node = this.solverView.dockManager.dock(this.tabControl.root, DG.DOCK_TYPE.LEFT);
-    if (node.container.dart.elementTitle)
-      node.container.dart.elementTitle.hidden = true;
+    const dockTabCtrl = () => {
+      const node = this.solverView.dockManager.dock(this.tabControl.root, DG.DOCK_TYPE.LEFT);
+      if (node.container.dart.elementTitle)
+        node.container.dart.elementTitle.hidden = true;
+    };
+
+    if (!toAddTableView)
+      setTimeout(dockTabCtrl, TIMEOUT.PREVIEW_DOCK_EDITOR);
+    else
+      dockTabCtrl();
 
     this.openMenu = DG.Menu.popup()
       .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
@@ -364,7 +372,7 @@ export class Solver {
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS()}, HINT.TO_JS);
   }; // constructor
 
-  /** */
+  /** Create model editor */
   private createEditorView(content?: string, toAddContextMenu?: boolean): void {
     this.editorView = new EditorView({
       doc: content ?? TEMPLATES.BASIC,
@@ -535,7 +543,7 @@ export class Solver {
       // try to call computations - correctness check
       const params = getScriptParams(ivp);    
       const call = script.prepare(params);
-      //await call.call();
+      await call.call();
 
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);

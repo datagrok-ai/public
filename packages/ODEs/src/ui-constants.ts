@@ -153,3 +153,9 @@ export enum PATH {
   AND = '&',
   PARAM = `?params:`,
 };
+
+/** UI timeouts */
+export enum TIMEOUT {
+  PREVIEW_DOCK_EDITOR = 1000,
+  PREVIEW_RUN_SOLVING = 1100,
+};

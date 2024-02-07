@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {ODEs, solveODEs} from './solver';
-import {Solver} from './app';
+import {DiffStudio} from './app';
 
 export const _package = new DG.Package();
 
@@ -29,9 +29,9 @@ export function solve(problem: ODEs): DG.DataFrame {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-export async function DiffStudio(): Promise<void> {  
+export async function runDiffStudio(): Promise<void> {  
   //await runSolverApp();
-  const solver = new Solver();
+  const solver = new DiffStudio();
   await solver.runSolverApp();
 }
 
@@ -39,8 +39,8 @@ export async function DiffStudio(): Promise<void> {
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio
 //test: demoEquaSleekX() //wait: 100
-export async function demoDiffStudio(): Promise<void> {
-  const solver = new Solver();
+export async function runDiffStudioDemo(): Promise<void> {
+  const solver = new DiffStudio();
   await solver.runSolverDemoApp();
 }
 
@@ -50,7 +50,7 @@ export async function demoDiffStudio(): Promise<void> {
 //output: list tables
 //meta.ext: ivp
 export async function ivpFileHandler(content: string) {
-  const solver = new Solver();
+  const solver = new DiffStudio();
   await solver.runSolverApp(content);
 
   return [];
@@ -63,15 +63,15 @@ export async function ivpFileHandler(content: string) {
 export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   let path: string;
 
-  if (!Solver.isStartingUriProcessed) {
-    Solver.isStartingUriProcessed = true;
+  if (!DiffStudio.isStartingUriProcessed) {
+    DiffStudio.isStartingUriProcessed = true;
     path = grok.shell.startUri;
   }
   else
     path = window.location.href;
   
-  const solver = new Solver(false);
-  return await solver.getFilePreview(file, path);
+  const solver = new DiffStudio(false);
+  return solver.getFilePreview(file, path);
 }
 
 //name: foo
