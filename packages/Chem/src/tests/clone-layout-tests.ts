@@ -70,57 +70,57 @@ category('clone and layout tests', async () => {
 
     test('1_clone_layout_scenario', async () => {
         const df = await readDataframe('tests/spgi-100.csv');
-        const tv1 = await createTableView(df);
-        const filter1 = (await getFilterGroupAndFilter(tv1, 'Structure')).filter;
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
         await initializeFilter(filter1);
         await filterByStructure(df, filter1, molFileForCloneTest1, 5);
-        const tv2 = await cloneView(tv1, df);
-        const filter2 = (await getFilterGroupAndFilter(tv2, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
         await checkFilterSynchronized(filter2, 'C1CCCCC1');
-        await switchToView(tv1);
-        const layout = await saveLayout(tv1);
-        await changeFilterBeforeApplyLayout(tv1, 'Core', molFileForCloneTest3, df, 3);
-        await applyLayout(tv1, layout, df, 5);
+        await switchToView(tvInitial);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
         await checkFilterSynchronized(filter2, 'C1CCCCC1');
-        await closeView(tv2);
+        await closeView(tvCloned);
         //check that filter is still active on df
         expect(df.filter.trueCount, 5, 'incorrect filter value');
     });
 
     test('2_clone_layout_scenario', async () => {
         const df = await readDataframe('tests/spgi-100.csv');
-        const tv1 = await createTableView(df);
-        const filter1 = (await getFilterGroupAndFilter(tv1, 'Structure')).filter;
-        const tv2 = await cloneView(tv1, df);
-        const filter2 = (await getFilterGroupAndFilter(tv2, 'Structure')).filter;
-        await switchToView(tv1);
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await switchToView(tvInitial);
         await initializeFilter(filter1);
         await filterByStructure(df, filter1, molFileForCloneTest1, 5);
         await checkFilterSynchronized(filter2, 'C1CCCCC1');
-        const layout = await saveLayout(tv1);
-        await changeFilterBeforeApplyLayout(tv1, 'Core', molFileForCloneTest3, df, 3);
-        await applyLayout(tv1, layout, df, 5);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
         await checkFilterSynchronized(filter2, 'C1CCCCC1');
-        await closeView(tv2);
+        await closeView(tvCloned);
         //check that filter is still active on df
         expect(df.filter.trueCount, 5, 'incorrect filter value');
     });
 
     test('3_clone_layout_scenario', async () => {
         const df = await readDataframe('tests/spgi-100.csv');
-        const tv1 = await createTableView(df);
-        const filter1 = (await getFilterGroupAndFilter(tv1, 'Structure')).filter;
-        const tv2 = await cloneView(tv1, df);
-        const filter2 = (await getFilterGroupAndFilter(tv2, 'Structure')).filter;
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
         await initializeFilter(filter2);
         await filterByStructure(df, filter2, molFileForCloneTest1, 5);
         await checkFilterSynchronized(filter1, 'C1CCCCC1');
-        switchToView(tv1);
-        const layout = await saveLayout(tv1);
-        await changeFilterBeforeApplyLayout(tv1, 'Core', molFileForCloneTest3, df, 3);
-        await applyLayout(tv1, layout, df, 5);
+        switchToView(tvInitial);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
         await checkFilterSynchronized(filter2, 'C1CCCCC1');
-        await closeView(tv2);
+        await closeView(tvCloned);
         //check that filter is still active on df
         expect(df.filter.trueCount, 5, 'incorrect filter value');
     });
@@ -294,12 +294,250 @@ category('clone and layout tests', async () => {
         expect(df.filter.trueCount, 5, 'incorrect filter value');
     });
 
+    test('13_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await switchToView(tvInitial);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('14_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await switchToView(tvInitial);
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('15_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await initializeFilter(filter2);
+        await filterByStructure(df, filter2, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        switchToView(tvInitial);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('16_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        const layout = await saveLayout(tvCloned);
+        await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvCloned, layout, df, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('17_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await switchToView(tvInitial);
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await switchToView(tvCloned);
+        const layout = await saveLayout(tvCloned);
+        await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvCloned, layout, df, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('18_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await initializeFilter(filter2);
+        await filterByStructure(df, filter2, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        const layout = await saveLayout(tvCloned);
+        await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvCloned, layout, df, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('19_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await switchToView(tvInitial);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('20_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await switchToView(tvInitial);
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('21_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await initializeFilter(filter2);
+        await filterByStructure(df, filter2, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await switchToView(tvInitial);
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvInitial, layout, df, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('22_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        const layout = await saveLayout(tvCloned);
+        await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvCloned, layout, df, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('23_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await switchToView(tvInitial);
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await switchToView(tvCloned);
+        const layout = await saveLayout(tvCloned);
+        await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvCloned, layout, df, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
+    test('24_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        const tvCloned = await cloneView(tvInitial, df);
+        const filter2 = (await getFilterGroupAndFilter(tvCloned, 'Structure')).filter;
+        await initializeFilter(filter2);
+        await filterByStructure(df, filter2, molFileForCloneTest1, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        const layout = await saveLayout(tvCloned);
+        await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+        await applyLayout(tvCloned, layout, df, 5);
+        await checkFilterSynchronized(filter1, 'C1CCCCC1');
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        //check that filter is still active on df
+        expect(df.filter.trueCount, 5, 'incorrect filter value');
+    });
+
 });
 
 async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
     await grok.data.detectSemanticTypes(df);
-    const tv1 = grok.shell.addTableView(df);
-    return tv1;
+    const tvInitial = grok.shell.addTableView(df);
+    return tvInitial;
 }
 
 async function getFilterGroupAndFilter(tv: DG.TableView, colName: string): Promise<FilterPanel> {
@@ -340,11 +578,11 @@ async function checkFilterSynchronized(filter: SubstructureFilter, smiles: strin
 async function cloneView(viewToClone: DG.TableView, df: DG.DataFrame) {
     //cloning view
     const l = viewToClone.saveLayout();
-    const tv2 = grok.shell.addTableView(df);
+    const tvCloned = grok.shell.addTableView(df);
     await delay(50);
-    tv2.loadLayout(l);
+    tvCloned.loadLayout(l);
     await delay(50);
-    return tv2;
+    return tvCloned;
 }
 
 async function changeFilterBeforeApplyLayout(tv: DG.TableView, colName: string,
@@ -382,6 +620,11 @@ async function closeView(tv: DG.TableView) {
         }
         return true;
     }, 'cloned view hasn\'t been closed', 3000);
+}
+
+async function closeFilterGroup(fg: DG.FilterGroup) {
+    fg.close();
+    await delay(50);
 }
 
 
