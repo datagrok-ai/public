@@ -128,8 +128,13 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected changeViewName(newName: string) {
     this.name = newName;
-    // TODO: Find a reproducible sample of the bug
-    document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
+    // Workaround for https://reddata.atlassian.net/browse/GROK-14674
+    if (grok.shell.windows.simpleMode)
+      document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
+    else {
+      const tabName = document.querySelector('[name="view-handle: New view"]')?.firstChild;
+      if (tabName) tabName.textContent = newName;
+    }
   }
 
   private getStartId(): string | undefined {
