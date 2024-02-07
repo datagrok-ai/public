@@ -3,6 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
 import * as rxjs from 'rxjs';
 import '../style/translator-app.css';
 
@@ -144,10 +147,17 @@ export class TranslatorLayoutHandler {
       })
     );
 
+    translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
+    translatedColumn.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    const unitsHandler = UnitsHandler.getOrCreate(translatedColumn);
+    UnitsHandler.setUnitsToFastaColumn(unitsHandler);
+
     // add newColumn to the table
     selectedTable.columns.add(translatedColumn);
     // update the view
-    grok.shell.getTableView(selectedTable.name);
+
+    grok.data.detectSemanticTypes(selectedTable);
+    grok.shell.v = grok.shell.getTableView(selectedTable.name);
   }
 
   private constructSingleSequenceControls(): HTMLDivElement {
