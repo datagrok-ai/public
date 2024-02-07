@@ -26,8 +26,11 @@ export class EChartViewer extends DG.JsViewer {
     this.root.appendChild(chartDiv);
     const warn = console.warn.bind(console);
     console.warn = () => {};
-    this.chart = echarts.init(chartDiv);
-    console.warn = warn;
+    try {
+      this.chart = echarts.init(chartDiv);
+    } finally {
+      console.warn = warn;
+    }
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
   }
 

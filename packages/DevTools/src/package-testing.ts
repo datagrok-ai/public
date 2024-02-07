@@ -588,11 +588,14 @@ export class TestManager extends DG.ViewBase {
         col = 'status';
         break;
       }
-
-      const history = await grok.data.query(`DevTools:${query}`, params);
+      const history: DG.DataFrame = await grok.data.query(`DevTools:${query}`, params);
       const arr = history.col(col).toList();
-      this.detailsTable.rows[Object.keys(params).length].cells[1].innerHTML = history.get('date', arr.indexOf(b1));
-      this.detailsTable.rows[Object.keys(params).length + 1].cells[1].innerHTML = history.get('date', arr.indexOf(b2));
+      let ind = arr.indexOf(b1);
+      this.detailsTable.rows[Object.keys(params).length].cells[1]
+        .innerHTML = ind === -1 ? '' : history.get('date', ind);
+      ind = arr.indexOf(b2);
+      this.detailsTable.rows[Object.keys(params).length + 1].cells[1]
+        .innerHTML = ind === -1 ? '' : history.get('date', ind);
       return history.plot.grid().root;
     }), true);
     return acc.root;
