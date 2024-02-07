@@ -3,6 +3,18 @@ import {expect} from '@datagrok-libraries/utils/src/test';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+export function units(name: string, input: DG.InputBase, view: DG.View, selector: string, units: string): void {
+  view.append(input.root);
+  let value: string;
+  try {
+    value = (<HTMLInputElement>view.root.querySelector(selector)).innerText;
+    expect(units, value);
+  } catch (x) {
+    throw new Error(name + ': ' + x);
+  } finally {
+    input.root.remove();
+  }
+}
 
 export function caption(name: string, input: DG.InputBase, view: DG.View, selector: string): void {
   view.append(input.root);
@@ -10,6 +22,17 @@ export function caption(name: string, input: DG.InputBase, view: DG.View, select
   try {
     value = (<HTMLInputElement>view.root.querySelector(selector)).innerText;
     expect(input.caption, value);
+  } catch (x) {
+    throw new Error(name + ': ' + x);
+  } finally {
+    input.root.remove();
+  }
+}
+
+export function customCaption(name: string, input: DG.InputBase, view: DG.View, customCaption: string): void {
+  view.append(input.root);
+  try {
+    expect(input.caption, customCaption);
   } catch (x) {
     throw new Error(name + ': ' + x);
   } finally {
@@ -42,6 +65,42 @@ export function enabled(name: string, input: DG.InputBase, v: DG.View, selector:
     throw new Error(name + ': ' + x);
   } finally {
     input.enabled = true;
+    input.root.remove();
+  }
+}
+
+export function stringValue(name: string, input: DG.InputBase, selector: string, v: DG.View): void {
+  v.root.innerHTML = '';
+  v.append(input.root);
+  let value: string;
+  try {
+    switch (name) {
+    case 'multiChoiceInput':
+      const node = v.root.querySelectorAll('.ui-input-multi-choice-checks>div');
+      value = (<HTMLInputElement>v.root.querySelector('.ui-input-label')).innerText;
+      for (let i = 0; i < node.length; i++) {
+        const input = (<HTMLInputElement>node[i].querySelector('input'));
+        if (input.checked)
+          value = value.concat((<HTMLInputElement>node[i].querySelector('.ui-label')).innerText);
+      }
+      expect(input.stringValue, value);
+      break;
+    case 'columnInput':
+      value = (<HTMLInputElement>v.root.querySelector('.d4-column-selector-column')).innerText;
+      expect(input.stringValue, value);
+      break;
+    case 'columnsInput':
+      value = (<HTMLInputElement>v.root.querySelector('.ui-input-column-names')).innerText.substring(3);
+      expect(input.stringValue, value);
+      break;
+    default:
+      value = (<HTMLInputElement>v.root.querySelector(selector)).value;
+      expect(input.stringValue, value);
+      break;
+    }
+  } catch (x) {
+    throw new Error(name + ': ' + x);
+  } finally {
     input.root.remove();
   }
 }

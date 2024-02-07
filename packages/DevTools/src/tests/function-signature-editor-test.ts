@@ -1,43 +1,48 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {category, before, test, after, expect, delay} from '@datagrok-libraries/utils/src/test';
+// import * as ui from 'datagrok-api/ui';
+import {category, before, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 
-const delayForRender = 500;
-
-category('FSE exists', ()=> {
+category('FSE', ()=> {
   before(async ()=> {
+    grok.shell.windows.simpleMode = false;
+  });
+
+  test('exist', async () => {
+    let b: boolean;
+    for (let i = 0; i < 5; i++) {
+      b = true;
+      try {
+        const v = DG.View.createByType('ScriptView');
+        grok.shell.addView(v);
+        await awaitCheck(() => grok.shell.v != null, '', 1000);
+        await awaitCheck(() => {
+          return !!(grok.shell.v.getRibbonPanels().flat().find(
+            (elem) => !!elem.querySelector('.fa-magic'),
+          )?.lastChild as HTMLElement);
+        }, 'Failed: FSE button does not exist', 1500);
+        break;
+      } catch (e) {
+        b = false;
+      }
+    }
+    if (!b) throw new Error('Failed: FSE button does not exist');
+  });
+
+  test('open', async () => {
     const v = DG.View.createByType('ScriptView');
     grok.shell.addView(v);
-    await delay(delayForRender);
-  });
-
-  test('FSE button exists', async () => {
-    const fseButton = grok.shell.v.getRibbonPanels().flat().find(
-      (elem) => !!elem.querySelector('.fa-magic'),
-    ).lastChild as HTMLElement;
-    if (!fseButton) throw 'Failed: FSE button does not exist';
-  }, { skipReason: 'GROK-11734' });
-
-  after(async () => {
-    grok.shell.v.close();
-  });
-});
-
-category('FSE opens', () => {
-  before(async ()=> {
-    const v = DG.View.createByType('ScriptView');
-    grok.shell.addView(v);
-    await delay(delayForRender);
-  });
-
-  test('FSE button flips view', async () => {
-    const fseButton = grok.shell.v.getRibbonPanels().flat().find(
-      (elem) => !!elem.querySelector('.fa-magic'),
-    ).lastChild as HTMLElement;
+    await awaitCheck(() => grok.shell.v != null, '', 2000);
+    let fseButton: HTMLElement;
+    await awaitCheck(() => {
+      fseButton = grok.shell.v.getRibbonPanels().flat().find(
+        (elem) => !!elem.querySelector('.fa-magic'),
+      )?.lastChild as HTMLElement;
+      return !!fseButton;
+    }, 'Failed: FSE button does not exist', 2000);
     fseButton.click();
-
-    await delay(delayForRender);
+    await awaitCheck(() => !!grok.shell.v.root.querySelector('[name="PARAMETERS"]'),
+      'FSE button did not open view', 2000);
     const currentView = grok.shell.v;
     const allTabsExist =
       !!currentView.root.querySelector('[name="PROPERTIES"]') &&
@@ -45,39 +50,32 @@ category('FSE opens', () => {
       !!currentView.root.querySelector('[name="CODE"]') &&
       !!currentView.root.querySelector('[name="UI"]');
     expect(allTabsExist, true);
-  }, { skipReason: 'GROK-11734' });
-
-  after(async () => {
-    grok.shell.v.close();
   });
-});
 
-category('FSE closes', () => {
-  before(async ()=> {
+  test('close', async () => {
     const v = DG.View.createByType('ScriptView');
     grok.shell.addView(v);
-    await delay(delayForRender);
-  });
-
-  test('FSE button flips view once more', async () => {
-    const fseButton = grok.shell.v.getRibbonPanels().flat().find(
-      (elem) => !!elem.querySelector('.fa-magic'),
-    ).lastChild as HTMLElement;
+    await awaitCheck(() => grok.shell.v != null, '', 2000);
+    let fseButton: HTMLElement;
+    await awaitCheck(() => {
+      fseButton = grok.shell.v.getRibbonPanels().flat().find(
+        (elem) => !!elem.querySelector('.fa-magic'),
+      )?.lastChild as HTMLElement;
+      return !!fseButton;
+    }, 'Failed: FSE button does not exist', 2000);
     fseButton.click();
-    await delay(delayForRender);
-
+    await awaitCheck(() => !!grok.shell.v.root.querySelector('[name="PARAMETERS"]'),
+      'FSE button did not open view', 2000);
     const currentView = grok.shell.v;
-    const editorButton = currentView.getRibbonPanels().flat().find(
-      (elem) => !!elem.querySelector('.fa-code'),
-    ).lastChild as HTMLElement;
+    let editorButton: HTMLElement;
+    await awaitCheck(() => {
+      editorButton = grok.shell.v.getRibbonPanels().flat().find(
+        (elem) => !!elem.querySelector('.fa-code'),
+      )?.lastChild as HTMLElement;
+      return !!editorButton;
+    }, 'Failed: FSE button does not exist', 2000);
     editorButton.click();
-    await delay(delayForRender);
-
-    const editorExists = !!currentView.root.querySelector('.CodeMirror.cm-s-default');
-    expect(editorExists, true);
-  }, { skipReason: 'GROK-11734' });
-
-  after(async () => {
-    grok.shell.v.close();
+    await awaitCheck(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
+      'Code button did not open view', 2000);
   });
 });

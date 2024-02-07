@@ -32,9 +32,10 @@ export namespace UiUtils {
     visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
     visibleColumnsForFilter: string[] = [],
     includeParams = true,
+    skipDfLoad = false,
   ) {
     return new HistoryInputJSON(
-      label, funcName, stringValueFunc, visibleColumnsForGrid, visibleColumnsForFilter, includeParams);
+      label, funcName, stringValueFunc, visibleColumnsForGrid, visibleColumnsForFilter, includeParams, skipDfLoad);
   }
 
   export function historyPanel(objFunc: DG.Func) {

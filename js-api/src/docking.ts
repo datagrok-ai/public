@@ -146,9 +146,9 @@ export class DockManager {
   /**
    * Finds the node of an element.
    * @param {HTMLElement} element - Element to find the node for.
-   * @returns {DockNode}
+   * @returns {DockNode} if node is found, undefined otherwise.
    * */
-  findNode(element: HTMLElement): DockNode {
+  findNode(element: HTMLElement): DockNode | undefined {
     return toJs(api.grok_DockManager_FindNode(this.dart, element));
   }
 

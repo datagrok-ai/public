@@ -13,7 +13,7 @@
     "directory": "packages/DevTools"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.39",
+    "@datagrok-libraries/utils": "^4.1.41",
     "codemirror": "^5.65.15",
     "datagrok-api": "^1.17.3",
     "rxjs": "^6.5.5"
