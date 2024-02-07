@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.46",
+  "version": "3.7.47",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -968,9 +968,12 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.5.2"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.5.2"
         }
       },
-      "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+      "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
