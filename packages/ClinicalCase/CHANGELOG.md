@@ -1,5 +1,11 @@
 # ClinicalCase changelog
 
+## 1.0.6 (2024-02-07)
+
+### Bug fixes
+
+* Timelines viewer not opening
+
 ## 1.0.5 (2024-02-07)
 
 ### Features
