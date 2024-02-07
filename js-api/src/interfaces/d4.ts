@@ -1454,6 +1454,10 @@ export interface IGridLookSettings {
 
   rowHeaderBackColor: number;
 
+  /// true: colors are scaled based on the global min/max in all numerical columns
+  /// false: colors are scaled based on the column min/max.
+  globalColorScaling: boolean;
+
   /// Controls grid tooltip visibility
   showTooltip: string;
 
