@@ -12,7 +12,7 @@ import {SequenceToMolfileConverter} from '../../model/structure-app/sequence-to-
 import {getTranslatedSequences} from '../../model/translator-app/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
-import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/oligo-translator';
+import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, NUCLEOTIDES} from '../const/oligo-translator';
 import {DEFAULT_AXOLABS_INPUT} from '../const/ui';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
@@ -23,7 +23,6 @@ import {DEFAULT_FORMATS} from '../../model/const';
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',
 }
-const NUCLEOTIDES = 'Nucleotides';
 const REQUIRED_COLUMN_LABELS = [ REQUIRED_COLUMN_LABEL.SEQUENCE ];
 
 export class TranslatorLayoutHandler {
@@ -121,8 +120,35 @@ export class TranslatorLayoutHandler {
   }
 
   private processConvertBulkButtonClick(): void {
-  }
+    const selectedTable = this.eventBus.getSelectedTable();
+    if (!selectedTable) {
+      grok.shell.warning('No table selected');
+      return;
+    }
 
+    const inputFormat = this.formatChoiceInput.value;
+    const outputFormat = NUCLEOTIDES;
+    const sequenceColumn = this.eventBus.getSelectedColumn(REQUIRED_COLUMN_LABEL.SEQUENCE);
+    if (!sequenceColumn) {
+      grok.shell.warning('No sequence column selected');
+      return;
+    }
+
+    const newColumnName = `${sequenceColumn.name} (${outputFormat})`;
+    const translatedColumn = DG.Column.fromList(
+      DG.TYPE.STRING,
+      newColumnName,
+      sequenceColumn.toList().map((sequence: string) => {
+        const translatedSequences = getTranslatedSequences(sequence, -1, inputFormat);
+        return translatedSequences[outputFormat];
+      })
+    );
+
+    // add newColumn to the table
+    selectedTable.columns.add(translatedColumn);
+    // update the view
+    grok.shell.getTableView(selectedTable.name);
+  }
 
   private constructSingleSequenceControls(): HTMLDivElement {
     const sequenceColoredInput = new ColoredTextInput(this.sequenceInputBase, highlightInvalidSubsequence);
