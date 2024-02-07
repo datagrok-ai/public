@@ -142,7 +142,7 @@ export async function clinicalCaseApp(): Promise<any> {
   }
 }
 
-
+//name: clinicalCaseFolderLauncher
 //tags: folderViewer
 //input: file folder
 //input: list<file> files
