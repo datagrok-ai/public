@@ -137,7 +137,6 @@ function contrCompletions(context: any) {
 /** Return options of line chart */
 function getLineChartOptions(colNames: string[]): Object {
   const count = colNames.length;
-
   return {
     xColumnName: colNames[0],
     yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : colNames[0],     
@@ -391,6 +390,7 @@ export class DiffStudio {
         this.isSolvingSuccess = false;
         this.runPane.header.hidden = false;
         this.toRunWhenFormCreated = true;
+        this.toChangeSolutionViewerProps = true;
       } 
       else {
         e.stopImmediatePropagation();
@@ -577,6 +577,9 @@ export class DiffStudio {
       const call = script.prepare(params);
   
       await call.call();
+
+      if (this.solutionViewer)
+        this.solutionViewer.setOptions({segmentColumnName: null});
         
       this.solutionTable = call.outputs[DF_NAME];
       this.solverView.dataFrame = call.outputs[DF_NAME];
