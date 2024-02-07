@@ -92,7 +92,7 @@ export class TranslatorLayoutHandler {
 
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
-    const inputFormats = ui.choiceInput('Input format', DEFAULT_FORMATS.AXOLABS, this.inputFormats, () => {});
+    const inputFormats = ui.choiceInput('Input format', DEFAULT_FORMATS.AXOLABS, this.inputFormats, (value: string) => this.eventBus.selectInputFormat(value));
     const outputFormats = ui.choiceInput('Output format', NUCLEOTIDES, [NUCLEOTIDES], () => {});
     const convertBulkButton = this.createConvertBulkButton();
 
@@ -129,7 +129,7 @@ export class TranslatorLayoutHandler {
       return;
     }
 
-    const inputFormat = this.formatChoiceInput.value;
+    const inputFormat = this.eventBus.getSelectedInputFormat();
     const outputFormat = NUCLEOTIDES;
     const sequenceColumn = this.eventBus.getSelectedColumn(REQUIRED_COLUMN_LABEL.SEQUENCE);
     if (!sequenceColumn) {
@@ -461,6 +461,7 @@ export class EventBus {
     const columnSelection$ = new rxjs.BehaviorSubject<DG.Column<string> | null>(null);
     return [columnLabel, columnSelection$];
   }));
+  private _inputFormatSelection$ = new rxjs.BehaviorSubject<string>(DEFAULT_FORMATS.AXOLABS);
 
   private constructor() {}
 
@@ -488,5 +489,13 @@ export class EventBus {
 
   getSelectedColumn(columnLabel: REQUIRED_COLUMN_LABEL): DG.Column<string> | null {
     return this._columnSelection[columnLabel].getValue();
+  }
+  
+  getSelectedInputFormat(): string {
+    return this._inputFormatSelection$.getValue();
+  }
+
+  selectInputFormat(format: string): void {
+    this._inputFormatSelection$.next(format);
   }
 }
