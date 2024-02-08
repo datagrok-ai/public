@@ -413,7 +413,7 @@ jobs:
               image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
             fi
             cache_args="--cache-from type=registry,ref=datagrok/${image_name}:cache"
-            if [ '${{ github.ref }}' == 'refs/heads/master' || '${{ github.ref }}' == 'refs/heads/release/chem-1.8.11' ]; then
+            if [ '${{ github.ref }}' == 'refs/heads/master' ]; then
               cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
             fi
             docker buildx create --use
@@ -459,7 +459,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/release/chem-1.8.11') && matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
 
       - name: Prepare Slack Message
         if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
