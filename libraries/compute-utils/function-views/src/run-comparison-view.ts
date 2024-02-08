@@ -90,6 +90,8 @@ export class RunComparisonView extends DG.TableView {
       };
     }
 
+    const cache = new DG.LruCache();
+
     this.grid.onCellPrepare(async (gc) => {
       if (gc.isColHeader || gc.isRowHeader) return;
 
@@ -117,7 +119,14 @@ export class RunComparisonView extends DG.TableView {
           return viewer.root;
         };
 
-        gc.element = await getElement();
+        const uniqueKey = `${initialValue.id}_${viewerType}`;
+
+        if (!cache.get(uniqueKey)) {
+          const element = await getElement();
+          cache.set(uniqueKey, element);
+          gc.element = element;
+        } else
+          gc.element = cache.get(uniqueKey);
 
         gc.element.style.width = '100%';
         gc.element.style.height = '100%';
