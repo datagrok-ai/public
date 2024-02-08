@@ -1,11 +1,12 @@
-import Ajv, {JSONSchemaType, ValidateFunction} from 'ajv-draft-04';
+import {JSONSchemaType, ValidateFunction} from 'ajv';
+import Ajv2020 from 'ajv/dist/2020';
 import addErrors from 'ajv-errors';
 
 export class MonomerLibFileValidator {
   private validateMonomerSchema: ValidateFunction<any>;
 
   constructor(private helmMonomerSchema: JSONSchemaType<any>) {
-    const ajv = new Ajv({allErrors: true, strictTuples: false});
+    const ajv = new Ajv2020({allErrors: true, strictTuples: false});
     addErrors(ajv);
     this.validateMonomerSchema = ajv.compile(this.helmMonomerSchema);
   }

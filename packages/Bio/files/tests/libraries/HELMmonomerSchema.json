@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "HELM monomer JSON Schema draft v1",
   "type": "object",
   "properties": {
@@ -25,43 +25,41 @@
     },
     "rgroups": {
       "description": "An array of the monomer R groups and required information.",
-	  "type": "array",
-      "items": [
-        {
-          "type": "object",
-          "properties": {
-            "id": {
-              "description": "meaningless identifier for the r group",
-			  "type": "integer"
-            },
-            "alternateId": {
-			  "description": "Descriptive ID for the R group consisting of the label and R group plus number",
-              "type": "string"
-            },
-            "label": {
-			  "description": "R followed by an integer denoting the R group number",
-              "type": "string"
-            },
-            "capGroupName": {
-			  "description": "A list of the atoms in the leaving group. This is descriptive, and exists to show the user the leaving group atoms",
-              "type": "string"
-            },
-            "capGroupSMILES": {
-			  "description": "SMILES of the R group, uses atom mapping notation", 
-              "type": "string"
-            }
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "meaningless identifier for the r group",
+            "type": "integer"
           },
-          "required": [
-            "alternateId",
-            "label",
-            "capGroupName",
-            "capGroupSMILES"
-          ]
-        }
-      ]
+          "alternateId": {
+            "description": "Descriptive ID for the R group consisting of the label and R group plus number",
+            "type": "string"
+          },
+          "label": {
+            "description": "R followed by an integer denoting the R group number",
+            "type": "string"
+          },
+          "capGroupName": {
+            "description": "A list of the atoms in the leaving group. This is descriptive, and exists to show the user the leaving group atoms",
+            "type": "string"
+          },
+          "capGroupSMILES": {
+            "description": "SMILES of the R group, uses atom mapping notation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alternateId",
+          "label",
+          "capGroupName",
+          "capGroupSMILES"
+        ]
+      }
     },
     "smiles": {
-	  "description": "Canonical SMILES of the monomer including connection points.",
+      "description": "Canonical SMILES of the monomer including connection points.",
       "type": "string"
     },
     "polymerType": {
