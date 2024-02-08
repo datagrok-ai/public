@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
-import { delay, filter, map } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval } from 'rxjs';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import { interval, Observable } from 'rxjs';
 
 
 export class PredictiveModelingTutorial extends Tutorial {
@@ -31,10 +32,10 @@ export class PredictiveModelingTutorial extends Tutorial {
     /** Train model actions */
     const trainModel = async (method: string, skipPMVOpening = false): Promise<void> => {
       const pmv = await this.openViewByType(
-        skipPMVOpening ? 'Return to the model training view' :
-        'Click on "ML | Train Model..." to open a dialog for training models',
+        skipPMVOpening ? 'Return to the "Predictive model" tab' :
+        'Click on "ML | Models | Train Model..." to open a dialog for training models',
         'PredictiveModel',
-        this.getMenuItem('ML'),
+        skipPMVOpening ? [] : this.getMenuItem('ML'),
       );
 
       // UI generation delay
@@ -73,7 +74,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       await this.choiceInputAction(pmv.root, `Set "Method" to "${method}"`, 'Method', method);
       await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN');
 
-      await delay(1500); // model training delay
+      await delay(3000); // model training delay
     };
 
     this.title('Train a model');
@@ -82,14 +83,21 @@ export class PredictiveModelingTutorial extends Tutorial {
 
     this.title('Model performance, application, and sharing');
 
-    const funcPaneHints = this.getSidebarHints('Functions', DG.View.MODELS);
-
+    const funcPaneHints = grok.shell.sidebar.getPane('Browse').header;
+    let v = grok.shell.view('Browse');
+    if (v) v.close();
+    await this.action('Open Browse view', new Observable((subscriber: any) => {
+      $(funcPaneHints).one('click', () => subscriber.next(true));
+    }), funcPaneHints);
     const pmBrowserDescription = 'This is Predictive Models Browser. Here, you can browse ' +
       'models that you trained or that were shared with you. In the next steps, we will look ' +
       'at model performance, apply a model to a dataset, and share the model.';
-
-    await this.openViewByType('Click on "Functions | Models" to open the Models Browser',
-      DG.View.MODELS, funcPaneHints, pmBrowserDescription);
+    await this.action('In Browse, click on Platform | Models to open the Models Browser',
+    new Observable((subscriber: any) => {
+      grok.events.onCurrentViewChanged.subscribe(() => {
+        if (grok.shell.v.path === '/models?' || grok.shell.v.path === '/models') subscriber.next(true)
+      });
+    }), [], pmBrowserDescription);
 
     let modelPP: DG.Accordion;
     const modelName = `Predict SEX by AGE, HEIGHT, WEIGHT using ${method}`;
@@ -117,8 +125,17 @@ export class PredictiveModelingTutorial extends Tutorial {
     this.title('Compare models');
 
     await trainModel('Gradient Boosting Machine', true);
-    await this.openViewByType('Click on "Functions | Models" to open the Models Browser',
-      DG.View.MODELS, funcPaneHints);
+    v = grok.shell.view('Browse');
+    if (v) v.close();
+    await this.action('Open Browse view', new Observable((subscriber: any) => {
+      $(funcPaneHints).one('click', () => subscriber.next(true));
+    }), funcPaneHints);
+    await this.action('In Browse, click on Platform | Models to open the Models Browser',
+    new Observable((subscriber: any) => {
+      grok.events.onCurrentViewChanged.subscribe(() => {
+        if (grok.shell.v.path === '/models?') subscriber.next(true)
+      });
+    }));
 
     await this.action('Find the trained models and compare them',
       grok.events.onViewAdded.pipe(filter((view) => view.name == 'Compare models')),

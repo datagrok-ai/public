@@ -363,6 +363,7 @@ export async function runTests(options?:
     if (value.clear) {
       for (let i = 0; i < t.length; i++) {
         res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
+        console.log('CLEARING');
         grok.shell.closeAll();
         DG.Balloon.closeAll();
       }

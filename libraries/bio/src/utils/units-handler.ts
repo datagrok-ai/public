@@ -533,7 +533,10 @@ export class UnitsHandler {
     const convert: ConvertFunc = this.getConverter(tgtNotation, tgtSeparator);
     const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
     // assign the values to the newly created empty column
-    newColumn.init((rowI: number) => { return convert(this.column.get(rowI)); });
+    newColumn.init((rowI: number) => {
+      const sourceSequence = this.column.get(rowI);
+      return sourceSequence ? convert(sourceSequence) : sourceSequence;
+    });
     // newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     return newColumn;
   }

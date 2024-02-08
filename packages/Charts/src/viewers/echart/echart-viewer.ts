@@ -22,9 +22,15 @@ export class EChartViewer extends DG.JsViewer {
     //common properties
     this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
     this.addRowSourceAndFormula();
-    const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+    const chartDiv = ui.div([], {style: {position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}});
     this.root.appendChild(chartDiv);
-    this.chart = echarts.init(chartDiv);
+    const warn = console.warn.bind(console);
+    console.warn = () => {};
+    try {
+      this.chart = echarts.init(chartDiv);
+    } finally {
+      console.warn = warn;
+    }
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
   }
 
@@ -40,7 +46,6 @@ export class EChartViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.addSelectionOrDataSubs();
-
     this.render();
   }
 

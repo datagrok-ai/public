@@ -109,10 +109,17 @@
 }
 
 .tt-reason {
-  position: absolute;
-  right: 10px;
+  margin-right: 0;
+  margin-left: auto;
   max-width: 100px;
   text-overflow: ellipsis;
   overflow: hidden;
   color: var(--grey-4);
+}
+
+#tt-name {
+  align-self: center;
+  margin-right: 8px;
+  margin-left: auto;
+  color: var(--grey-3);
 }

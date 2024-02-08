@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.42",
+  "version": "3.7.49",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -856,6 +856,9 @@
         },
         "1.2.6": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.2.7": {
+          "datagrok-api": "^1.17.4"
         }
       },
       "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -968,9 +971,15 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.5.2"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.5.2"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.5.2"
         }
       },
-      "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+      "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1235,6 +1244,9 @@
           "datagrok-api": "^1.17.9"
         },
         "1.17.3": {
+          "datagrok-api": "^1.17.9"
+        },
+        "1.17.4": {
           "datagrok-api": "^1.17.9"
         }
       },
@@ -1832,6 +1844,9 @@
           "datagrok-api": "^1.17.0"
         },
         "1.20.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.20.1": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -2692,6 +2707,9 @@
         },
         "2.11.27": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.11.28": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3189,6 +3207,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.0.6": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.0.7": {
           "datagrok-api": "^1.15.0"
         }
       },
