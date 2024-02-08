@@ -344,6 +344,15 @@ export class PipelineView extends FunctionView {
       this.subs.push(helpOpenSub);
     });
 
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedId}"`).list();
+      console.log(childRuns);
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
     this.isReady.next(true);
   }
 
