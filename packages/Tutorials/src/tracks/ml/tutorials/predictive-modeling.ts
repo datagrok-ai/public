@@ -61,8 +61,8 @@ export class PredictiveModelingTutorial extends Tutorial {
           $(pmv.root).find('label.d4-link-label.d4-validator-helper-link')[0], missingValuesWarning);
 
         await this.dlgInputAction(dlg, 'Set "Table" to "demog"', 'Table', 'demog');
-        await this.dlgInputAction(dlg, 'Choose ["AGE", "HEIGHT", "WEIGHT"] for "Impute"', 'Impute', 'AGE,HEIGHT,WEIGHT');
-        await this.dlgInputAction(dlg, 'Set "Data" to "DIS_POP"', 'Data', 'DIS_POP');
+        await this.dlgInputAction(dlg, 'Choose ["AGE", "HEIGHT", "WEIGHT"] for "Impute"', 'impute', 'AGE,HEIGHT,WEIGHT');
+        await this.dlgInputAction(dlg, 'Set "Data" to "DIS_POP"', 'data', 'DIS_POP');
         await this.dlgInputAction(dlg, 'Set the number of nearest neighbors to "5"', 'Nearest Neighbours', '5');
   
         await this.action('Click "OK" and wait for the values to be calculated.',
@@ -92,11 +92,18 @@ export class PredictiveModelingTutorial extends Tutorial {
     const pmBrowserDescription = 'This is Predictive Models Browser. Here, you can browse ' +
       'models that you trained or that were shared with you. In the next steps, we will look ' +
       'at model performance, apply a model to a dataset, and share the model.';
+    let currentUrl = location.href;
     await this.action('In Browse, click on Platform | Models to open the Models Browser',
     new Observable((subscriber: any) => {
-      grok.events.onCurrentViewChanged.subscribe(() => {
-        if (grok.shell.v.path === '/models?' || grok.shell.v.path === '/models') subscriber.next(true)
-      });
+      const int = setInterval(() => {
+        if (location.href !== currentUrl) {
+          currentUrl = location.href;
+          if (grok.shell.v.path.startsWith('/models')) {
+            subscriber.next(true);
+            clearInterval(int);
+          }
+        }
+      }, 100);
     }), [], pmBrowserDescription);
 
     let modelPP: DG.Accordion;
@@ -132,9 +139,15 @@ export class PredictiveModelingTutorial extends Tutorial {
     }), funcPaneHints);
     await this.action('In Browse, click on Platform | Models to open the Models Browser',
     new Observable((subscriber: any) => {
-      grok.events.onCurrentViewChanged.subscribe(() => {
-        if (grok.shell.v.path === '/models?') subscriber.next(true)
-      });
+      const int = setInterval(() => {
+        if (location.href !== currentUrl) {
+          currentUrl = location.href;
+          if (grok.shell.v.path.startsWith('/models')) {
+            subscriber.next(true);
+            clearInterval(int);
+          }
+        }
+      }, 100);
     }));
 
     await this.action('Find the trained models and compare them',
