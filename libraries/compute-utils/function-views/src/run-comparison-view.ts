@@ -90,7 +90,7 @@ export class RunComparisonView extends DG.TableView {
       };
     }
 
-    this.grid.onCellPrepare((gc) => {
+    this.grid.onCellPrepare(async (gc) => {
       if (gc.isColHeader || gc.isRowHeader) return;
 
       if (gc.tableColumn!.name === RUN_NAME_COL_LABEL)
@@ -101,21 +101,23 @@ export class RunComparisonView extends DG.TableView {
 
         const viewerConfig = gc.tableColumn.temp[VIEWER_PATH];
         const viewerType = viewerConfig['type'] as string;
-        gc.element =
-          ui.waitBox(async () => {
-            const viewer = Object.values(viewerTypesMapping).includes(viewerType) ?
-              DG.Viewer.fromType(viewerType, initialValue) :
-              await initialValue.plot.fromType(viewerType) as DG.Viewer;
 
-            // Workaround required since getOptions and setOptions are not symmetrical
-            if (!gc.tableColumn!.temp[VIEWER_PATH]['look']) {
-              viewer.setOptions(viewerConfig);
-              gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
-            } else
-              viewer.setOptions(gc.tableColumn!.temp[VIEWER_PATH]['look']);
+        const getElement = async () => {
+          const viewer = Object.values(viewerTypesMapping).includes(viewerType) ?
+            DG.Viewer.fromType(viewerType, initialValue) :
+            await initialValue.plot.fromType(viewerType) as DG.Viewer;
 
-            return viewer.root;
-          });
+          // Workaround required since getOptions and setOptions are not symmetrical
+          if (!gc.tableColumn!.temp[VIEWER_PATH]['look']) {
+            viewer.setOptions(viewerConfig);
+            gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
+          } else
+            viewer.setOptions(gc.tableColumn!.temp[VIEWER_PATH]['look']);
+
+          return viewer.root;
+        };
+
+        gc.element = await getElement();
 
         gc.element.style.width = '100%';
         gc.element.style.height = '100%';
