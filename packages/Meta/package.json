@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.49",
+  "version": "3.7.50",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3211,6 +3211,9 @@
         },
         "1.0.7": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.0.8": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "PKPD simulations tools",
@@ -3457,6 +3460,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.1.5": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.1.6": {
           "datagrok-api": "^1.15.0"
         }
       },
