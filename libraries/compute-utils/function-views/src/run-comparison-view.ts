@@ -109,7 +109,8 @@ export class RunComparisonView extends DG.TableView {
       }
 
       if (gc.tableColumn && gc.tableColumn.temp[VIEWER_PATH]) {
-        const initialValue = gc.cell.value;
+        // Workaround for column init till it is not clear whether it is bug or not
+        const initialValue = DG.toJs(gc.cell.value);
 
         const viewerConfig = gc.tableColumn.temp[VIEWER_PATH];
         const viewerType = viewerConfig['type'] as string;
