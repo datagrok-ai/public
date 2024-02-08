@@ -20,6 +20,15 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2024-02-08 1.17.13
+
+### Addressed Issues
+
+* (Bug) [#2647](https://github.com/datagrok-ai/public/issues/2647): #2647: File refresh breaks structure filter 
+* (Bug) [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases 
+* (Bug) [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases (WIP)
+
+
 ## 2024-01-22 1.17.11
 
 ### Addressed Issues
