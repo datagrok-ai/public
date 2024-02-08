@@ -95,8 +95,18 @@ export class RunComparisonView extends DG.TableView {
     this.grid.onCellPrepare(async (gc) => {
       if (gc.isColHeader || gc.isRowHeader) return;
 
-      if (gc.tableColumn!.name === RUN_NAME_COL_LABEL)
-        gc.style.textVertical = true;
+      if (gc.tableColumn!.name === RUN_NAME_COL_LABEL) {
+        gc.customText = '';
+        const rows = gc.cell.value.split(' - ') as string[];
+        const elems = (rows.length > 1) ? [rows[0], ui.element('br'), rows[1]]: rows;
+        gc.element = ui.div(elems, {style: {
+          'writing-mode': 'vertical-rl',
+          'text-orientation': 'mixed',
+          'margin': 'auto',
+        }});
+        gc.element.parentElement!.style.display = 'flex';
+        return;
+      }
 
       if (gc.tableColumn && gc.tableColumn.temp[VIEWER_PATH]) {
         const initialValue = gc.cell.value;
