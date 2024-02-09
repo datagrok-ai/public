@@ -151,6 +151,7 @@ export class SensitivityAnalysisView {
             (() => {
               const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
+              inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
             value: inputProp.defaultValue,
@@ -160,12 +161,17 @@ export class SensitivityAnalysisView {
               (() => {
                 const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} min`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
+                inp.addPostfix(inputProp.options['units']);
                 return inp;
               })(),
             value: getInputValue(inputProp, 'min'),
           },
           max: {
-            input: ui.floatInput(`${inputProp.caption ?? inputProp.name} max`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v),
+            input: (() => {
+              const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} max`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
+              inp.addPostfix(inputProp.options['units']);
+              return inp;
+            })(),
             value: getInputValue(inputProp, 'max'),
           },
           lvl: {
@@ -262,6 +268,8 @@ export class SensitivityAnalysisView {
           input: (() => {
             const temp = ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: DG.InputBase) => tempDefault.value = v.value});
             temp.root.insertBefore(switchMock, temp.captionLabel);
+
+            temp.addPostfix(inputProp.options['units']);
 
             return temp;
           })(),
