@@ -283,12 +283,17 @@ export class HistoryPanel {
     ui.dialog({title: `Delete ${funcCalls.size} ${funcCalls.size > 1 ? 'runs': 'run'}`})
       .add(ui.divText(`Deleted ${funcCalls.size} ${funcCalls.size > 1 ? 'runs': 'run'} ${funcCalls.size > 1 ? 'are': 'is'} impossible to restore. Are you sure?`))
       .onOK(async () => {
-        funcCalls.forEach(async (funcCall) => {
-          this.beforeRunDeleted.next(funcCall.id);
-          this.selectedCallsSet.delete(funcCall);
-          await historyUtils.deleteRun(funcCall);
-          this.afterRunDeleted.next(funcCall.id);
-        });
+        ui.setUpdateIndicator(this.tabs.root, true);
+        await Promise.all(
+          wu(funcCalls.values()).map(async (funcCall) => {
+            this.beforeRunDeleted.next(funcCall.id);
+            this.selectedCallsSet.delete(funcCall);
+            await historyUtils.deleteRun(funcCall);
+            this.afterRunDeleted.next(funcCall.id);
+
+            return Promise.resolve();
+          }));
+        ui.setUpdateIndicator(this.tabs.root, false);
       })
       .show({center: true});
   };
@@ -530,6 +535,7 @@ export class HistoryPanel {
 
   constructor(
     private func: DG.Func,
+    private isParentFunc = false,
   ) {
     this.tabs.root.style.width = '100%';
     this.tabs.root.style.height = '100%';

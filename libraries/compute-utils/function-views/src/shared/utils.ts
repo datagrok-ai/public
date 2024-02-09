@@ -84,7 +84,7 @@ export const getDfFromRuns = (
         newColumn.init(
           (idx: number) => comparedRuns[idx].inputs[configProp.name] ?? comparedRuns[idx].outputs[configProp.name],
         );
-        const unusedName = `${newColumn.name} (${config['type']})`;
+        const unusedName = comparisonDf.columns.getUnusedName(`${newColumn.name} (${config['type']})`);
         newColumn.name = unusedName;
         columnName = unusedName;
         newColumn.temp[VIEWER_PATH] = config;

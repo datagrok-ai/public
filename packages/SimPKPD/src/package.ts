@@ -31,6 +31,7 @@ export async function init(): Promise<void> {
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
+//meta.features: {"sens-analysis": true}
 export async function simulatePKPD(dose: number, dosesCount: number, doseInterval: number, KA: number, CL: number, V2: number, Q: number, V3: number, eff: number, EC50: number): Promise<DG.DataFrame> {
   return await simPKPD('2 compartment PK', dose, dosesCount, doseInterval, KA, CL, V2, Q, V3, eff, eff, EC50);
 }
@@ -47,7 +48,7 @@ export async function simulatePKPD(dose: number, dosesCount: number, doseInterva
 //input: double V3 = 30.0 {caption: peripheral volume; category: PK parameters; min: 0.0001; max: 100} [Peripheral compartment volume]
 //input: double eff = 0.2 {caption: effective rate; category: PD parameters; min: 0.0001; max: 10} [Effective compartment rate]
 //input: double EC50 = 8.0 {caption: EC50; category: PD parameters; min: 0.1; max: 100} [Effect]
-//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]")}
+//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", block: 100)}
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
