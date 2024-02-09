@@ -746,7 +746,7 @@ export class SensitivityAnalysisView {
 
     // add columns with fixed inputs & mark them as fixed
     for (const col of fixedInputs) {
-      col.name = `${col.name} (fixed)`;
+      col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
       funcEvalResults.columns.add(col);
     }
 
@@ -929,7 +929,7 @@ export class SensitivityAnalysisView {
 
     // add columns with fixed inputs & mark them as fixed
     for (const col of fixedInputs) {
-      col.name = `${col.name} (fixed)`;
+      col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
       funcEvalResults.columns.add(col);
     }
 
@@ -1103,7 +1103,14 @@ export class SensitivityAnalysisView {
       DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)),
       ...variedInputsColumns,
     ];
-    const funcEvalResults = DG.DataFrame.fromColumns(inputsOfInterestColumns);
+
+    const len = inputsOfInterestColumns.length;
+    const funcEvalResults = DG.DataFrame.fromColumns([inputsOfInterestColumns[0]]);
+    
+    for (let i = 1; i < len; ++i) {
+      inputsOfInterestColumns[i].name = funcEvalResults.columns.getUnusedName(inputsOfInterestColumns[i].name);
+      funcEvalResults.columns.add(inputsOfInterestColumns[i]);
+    }
 
     for (let row = 0; row < rowCount; ++row) {
       for (const inputName of Object.keys(this.store.inputs)) {
@@ -1139,15 +1146,17 @@ export class SensitivityAnalysisView {
         }
       });
 
+      outCol.name = funcEvalResults.columns.getUnusedName(outCol.name);
+
       funcEvalResults.columns.add(outCol);
     }
 
     const colNamesToShow = funcEvalResults.columns.names().filter((name) => name !== ID_COLUMN_NAME);
-
+    
     for (const col of fixedInputsColumns) {
-      col.name = `${col.name} (fixed)`;
+      col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
       funcEvalResults.columns.add(col);
-    }    
+    }
 
     this.comparisonView.dataFrame = funcEvalResults;
     this.comparisonView.grid.col(ID_COLUMN_NAME)!.visible = false;

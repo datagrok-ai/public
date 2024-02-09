@@ -149,3 +149,20 @@ export function getInputOutputColumns(inputs: DG.Column[], outputs: DG.Column[])
 
   return inputs.concat(outputs);
 };
+
+export function getDataFrameFromInputsOutputs(inputs: DG.Column[], outputs: DG.Column[]): DG.DataFrame {
+  const cols = getInputOutputColumns(inputs, outputs);
+  const len = cols.length;
+
+  if (len === 0)
+    return DG.DataFrame.create();
+
+  const df = DG.DataFrame.fromColumns([cols[0]]);
+
+  for (let i = 1; i < len; ++i) {
+    cols[i].name = df.columns.getUnusedName(cols[i].name);
+    df.columns.add(cols[i]);
+  }
+
+  return df;
+}
