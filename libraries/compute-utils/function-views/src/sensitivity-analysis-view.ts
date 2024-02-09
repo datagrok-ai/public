@@ -203,8 +203,7 @@ export class SensitivityAnalysisView {
           isChangingInputMin.notify = false;
           isChangingInputMin.value = val;
           isChangingInputMin.notify = true;
-        });
-        ref.isChanging.subscribe((val) => {
+
           isChangingInputConst.notify = false;
           isChangingInputConst.value = val;
           isChangingInputConst.notify = true;
@@ -496,10 +495,10 @@ export class SensitivityAnalysisView {
         );
 
         return container;
-      }, ui.form([
+      }, ui.div([
         this.store.analysisInputs.analysisType.input,
         this.store.analysisInputs.samplesCount.input,
-      ], {style: {'overflow-y': 'scroll', 'padding-right': '4px'}}));
+      ], 'ui-form'));
 
     const outputsTitle = ui.h2('Outputs');
     form.appendChild(outputsTitle);
@@ -555,14 +554,11 @@ export class SensitivityAnalysisView {
       buttons,
     );
 
-    ui.tools.handleResize(form, (w: number) => {
-      if (w < 320)
-        $(form).addClass('ui-form-condensed');
-      else
-        $(form).removeClass('ui-form-condensed');
+    $(form).css({
+      'padding-left': '12px',
+      'overflow-y': 'scroll',
+      'padding-right': '4px',
     });
-
-    $(form).css('padding-left', '12px');
     return form;
   }
 
