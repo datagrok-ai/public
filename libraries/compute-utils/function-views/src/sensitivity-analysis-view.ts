@@ -562,6 +562,7 @@ export class SensitivityAnalysisView {
         $(form).removeClass('ui-form-condensed');
     });
 
+    $(form).css('padding-left', '12px');
     return form;
   }
 
