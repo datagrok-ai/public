@@ -136,3 +136,16 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 
   return table;
 }
+
+export function getInputOutputColumns(inputs: DG.Column[], outputs: DG.Column[]): DG.Column[] {
+  outputs.forEach((outCol) => {
+    inputs.forEach((inCol) => {
+      if (inCol.name === outCol.name) {        
+        inCol.name = `${inCol.name} (input)`;
+        outCol.name = `${outCol.name} (output)`;
+      }
+    })
+  });
+
+  return inputs.concat(outputs);
+};

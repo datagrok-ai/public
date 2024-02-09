@@ -24,7 +24,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForSobolAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine';
+import {OutputInfo, getOutput, SensitivityAnalysisResult, getInputOutputColumns} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -197,25 +197,21 @@ export class SobolAnalysis {
     this.funcCalls = await getCalledFuncCalls(this.funcCalls);
 
     // columns with the varied inputs values
-    const inputColumns = this.variedInputs.map((varInput) => varInput.column as DG.Column);
-
-    // create table with the varied inputs
-    const funcEvalResults = DG.DataFrame.fromColumns(inputColumns);
-    funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
+    const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 
     // extract the required outputs
-    const outputColumns = getOutput(this.funcCalls, this.outputInfo).columns.toList();
+    const outputCols = getOutput(this.funcCalls, this.outputInfo).columns.toList();
 
-    // add columns with outputs
-    for (const col of outputColumns)
-      funcEvalResults.columns.add(col);
+    // create table with the varied inputs
+    const funcEvalResults = DG.DataFrame.fromColumns(getInputOutputColumns(inputCols, outputCols));
+    funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
     // compute 1-st & total order Sobol' indices
-    const sobolIndeces: SobolIndeces[] = outputColumns.map((col) => this.getSobolIndeces(col));
+    const sobolIndeces: SobolIndeces[] = outputCols.map((col) => this.getSobolIndeces(col));
 
     // create dataframes with 1-st & total order Sobol' indices
 
-    const inputNames = DG.Column.fromStrings('input', inputColumns.map((col) => (col.name)));
+    const inputNames = DG.Column.fromStrings('input', inputCols.map((col) => (col.name)));
 
     const firstOrderSobolIndecesCols: DG.Column[] = [inputNames];
     const totalOrderSobolIndecesCols: DG.Column[] = [inputNames];
