@@ -22,6 +22,7 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
   if (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking') {
     grok.log.warning('ADMETox container has not started yet.');
+    grok.shell.warning('ADMETox container has not started yet.');
     return null;
   }
 

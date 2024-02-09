@@ -52,10 +52,11 @@ def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
     
     if malformed_indexes:
         valid_smiles_list = [first_row] + [smiles for smiles in smiles_list if not is_malformed(smiles)]
+    valid_smiles_list = [first_row] + smiles_list
 
     temp_file_path = 'temp'
     with open(temp_file_path, 'w') as file:
-            file.write('\n'.join(valid_smiles_list))
+        file.write('\n'.join(valid_smiles_list))
     command = [
         "chemprop_predict",
         "--test_path", temp_file_path,

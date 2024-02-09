@@ -81,7 +81,6 @@ export function getModels(property: string): string[] {
     .map((model: any) => model.name);;
 }
 
-//top-menu: Chem | Analyze | ADMETox...
 //name: ADMETox
 //tags: HitTriageFunction
 //input: dataframe table
