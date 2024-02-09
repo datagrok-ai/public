@@ -212,7 +212,7 @@ export class SensitivityAnalysisView {
           temp.isChanging, analysisInputs.analysisType.value,
         ]).subscribe(([isChanging, analysisType]) => {
           if (isChanging) {
-            ref.constForm.forEach((input) => $(input.root).show());
+            ref.constForm.forEach((input) => $(input.root).hide());
             ref.saForm.forEach((input) => $(input.root).show());
             simpleSa.forEach((input) => analysisType === ANALYSIS_TYPE.GRID_ANALYSIS ? $(input.root).show(): $(input.root).hide());
           } else {
