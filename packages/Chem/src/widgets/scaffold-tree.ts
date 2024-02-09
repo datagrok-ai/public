@@ -1675,6 +1675,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.highlightCanvas(group, color, substr);
   }
 
+  toggleTreeGenerationVisibility(): void {
+    this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
+    if (this.allowGenerate)
+      setTimeout(() => this.generateTree(), 1000);
+  }
+
   makeNodeActiveAndFilter(node: DG.TreeViewNode) {
     this.checkBoxesUpdateInProgress = true;
     this.selectGroup(node);
@@ -1704,8 +1710,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const div = getMoleculePropertyDiv();
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
-
-      setTimeout(() => this.generateTree(), 1000);
+      this.toggleTreeGenerationVisibility();
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
@@ -1749,9 +1754,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       this.updateUI();
     } else if (p.name === 'allowGenerate') {
-      this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
-      if (this.allowGenerate === true)
-        setTimeout(() => this.generateTree(), 1000);
+      this.toggleTreeGenerationVisibility();
     }
   }
 
