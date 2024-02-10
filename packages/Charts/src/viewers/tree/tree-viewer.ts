@@ -125,9 +125,11 @@ export class TreeViewer extends EChartViewer {
       return;
     }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
+        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
+      if (p?.name === 'hierarchyColumnNames')
+        this.chart.clear();
       this.render();
-    else
+    } else
       super.onPropertyChanged(p, render);
   }
 
