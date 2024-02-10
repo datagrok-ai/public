@@ -102,6 +102,13 @@ export class TreeViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
+    if (p?.name === 'layout') {
+      const layout: layoutType = p.get(this);
+      this.option.series[0].layout = layout;
+      this.option.series[0].label.rotate = layout === 'orthogonal' ? 0 : null;
+      this.render();
+      return;
+    }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
       this.render();
