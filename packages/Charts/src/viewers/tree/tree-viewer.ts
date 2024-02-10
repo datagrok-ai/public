@@ -102,10 +102,25 @@ export class TreeViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
+    if (p?.name === 'edgeShape') {
+      this.getProperty('layout')?.set(this, 'orthogonal');
+      this.option.series[0].layout = 'orthogonal';
+      this.option.series[0].label.rotate = 0;
+      this.chart.clear();
+    }
     if (p?.name === 'layout') {
       const layout: layoutType = p.get(this);
       this.option.series[0].layout = layout;
-      this.option.series[0].label.rotate = layout === 'orthogonal' ? 0 : null;
+      if (layout === 'orthogonal')
+        this.option.series[0].label.rotate = 0;
+      else {
+        this.option.series[0].label.rotate = null;
+        const es = this.getProperty('edgeShape');
+        if (es?.get(this) !== 'curve') {
+          es?.set(this, 'curve');
+          this.option.series[0].edgeShape = 'curve';
+        }
+      }
       this.render();
       return;
     }
