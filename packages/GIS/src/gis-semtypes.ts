@@ -157,11 +157,11 @@ export class GisAreaHandler extends DG.ObjectHandler {
 
   isApplicable(obj: any) {
     // console.log('isApplicable ' + obj + ' = ' + (obj instanceof GisArea));
-    if (obj.hasOwnProperty('semType')) { //TODO: check why we cant find semType in SemanticValue object
+    if (obj?.hasOwnProperty('semType')) { //TODO: check why we cant find semType in SemanticValue object
       console.log(obj + ' semType = ' + (obj.semType));
       if (obj.semType === SEMTYPEGIS.GISAREA) return true;
     }
-    if (obj.hasOwnProperty('value')) { //TODO: check why we cant find value in SemanticValue object
+    if (obj?.hasOwnProperty('value')) { //TODO: check why we cant find value in SemanticValue object
       console.log(obj + ' value = ' + (obj.value));
       if (obj.value instanceof GisArea) return true;
     }
