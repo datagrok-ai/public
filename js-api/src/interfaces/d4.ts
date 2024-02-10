@@ -1559,6 +1559,8 @@ export interface ITrellisPlotLookSettings {
 
   viewerType: string;
 
+  filter: string;
+
   categoryLabelFont: string;
 
   innerViewerLooks: Map<string, any>;
