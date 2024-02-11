@@ -1361,6 +1361,15 @@ export class Color {
   /** Returns the Blue component of the color represented as ARGB-formatted integer. */
   static b(c: number): number { return c & 0xFF; }
 
+  static argb(a: number, r: number, g: number, b: number) {
+    return ((a << 24) | (r << 16) | (g << 8) | b) >>> 0;
+  }
+
+  /** Returns the color with the specified alpha component (0-255). */
+  static setAlpha(color: number, alpha: number) {
+    return Color.argb(alpha, Color.r(color), Color.g(color), Color.b(color));
+  }
+
   /** Returns i-th categorical color (looping over the palette if needed) */
   static getCategoricalColor(i: number): ColorType {
     return Color.categoricalPalette[i % Color.categoricalPalette.length];
