@@ -125,7 +125,7 @@ export class Data {
    *
    * @returns {DataFrame} */
   testData(dataset: DemoDatasetName, rows: number = 10000, columns: number = 3): DataFrame {
-    return new DataFrame(api.grok_TestData(dataset, rows, columns));
+    return toJs(api.grok_TestData(dataset, rows, columns));
   }
 
   getDemoTable(path: string): Promise<DataFrame> {
@@ -139,7 +139,7 @@ export class Data {
    * @returns {DataFrame}
    * */
   parseCsv(csv: string, options?: CsvImportOptions): DataFrame {
-    return new DataFrame(api.grok_ParseCsv(csv, options));
+    return toJs(api.grok_ParseCsv(csv, options));
   }
 
   /**
