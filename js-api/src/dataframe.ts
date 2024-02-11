@@ -652,6 +652,16 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromList(type, name, list));
   }
 
+  /**
+   * Crates a {@link Column} of string type from categories and indexes
+   * @param name
+   * @param categories
+   * @param indexes
+   */
+  static fromIndexes(name: string, categories: string[], indexes: Int32Array): Column {
+    return toJs(api.grok_Column_FromIndexes(name, categories, indexes));
+  }
+
   /** Creates a {Column} from the bitset.
    * @param {string} name
    * @param {BitSet} bitset
