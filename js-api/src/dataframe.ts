@@ -1075,6 +1075,16 @@ export class ObjectColumn extends Column<any> {
   }
 }
 
+
+export class DataFrameColumn extends Column<DataFrame> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): DataFrame | null {
+    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+}
+
 /** Columns in a [DataFrame]. */
 export class ColumnList {
   private readonly dart: any;
