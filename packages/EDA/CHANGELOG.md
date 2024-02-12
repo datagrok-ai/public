@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.12 (WIP)
+
+Fixed PLS and PCA applying to local file.
+
 ## 1.1.11 (2023-12-28)
 
 Add missing values imputation using the KNN method.
