@@ -117,7 +117,7 @@ export function loadingScatterPlot(features: DG.ColumnList, xLoadings: Array<DG.
 export function addPLSvisualization(
   table: DG.DataFrame, samplesNames: DG.Column, features: DG.ColumnList, predict: DG.Column, plsOutput: any,
 ): void {
-  const view = grok.shell.getTableView(table.name);
+  const view = (table.id !== null) ? grok.shell.getTableView(table.name) : grok.shell.addTableView(table);
 
   // 1. Predicted vs Reference scatter plot
   view.addViewer(predictedVersusReferenceScatterPlot(samplesNames, predict, plsOutput[0]));

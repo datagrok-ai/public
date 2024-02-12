@@ -1,8 +1,8 @@
 # EDA changelog
 
-## 1.1.12 (WIP)
+## 1.1.12 (2024-02-12)
 
-Fixed PLS and PCA applying to local file.
+Fixed PLS and PCA applying to table from a local file.
 
 ## 1.1.11 (2023-12-28)
 
