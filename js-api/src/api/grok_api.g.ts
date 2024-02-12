@@ -15,8 +15,8 @@ export interface IDartApi {
   grok_List_Clear(x: any): any;
   grok_List_Insert(x: any, index: Num, element: any): any;
   grok_List_Add(x: any, element: any): any;
-  grok_List_Remove(x: any, element: any): any;
   grok_List_Sort(x: any): any;
+  grok_List_Remove(x: any, element: any): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
   grok_CompleteError(c: any, result: any): any;
@@ -503,7 +503,7 @@ export interface IDartApi {
   grok_ColumnList_Add(cols: any, col: any, notify: Bool): any;
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
-  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
+  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
   grok_ColumnList_Remove(cols: any, name: String, notify: Bool): any;
