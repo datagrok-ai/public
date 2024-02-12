@@ -67,12 +67,20 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //input: int components = 2 {caption: Components} [Number of components.]
 //input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
-//output: dataframe result {action:join(table)}
-export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  center: boolean, scale: boolean): Promise<DG.DataFrame> {
+export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
   const pcaTable = await computePCA(table, features, components, center, scale);
   addPrefixToEachColumnName('PCA', pcaTable.columns);
-  return pcaTable;
+
+  if (table.id === null) // table is loaded from a local file
+    grok.shell.addTableView(pcaTable);
+  else {
+    const cols = table.columns;
+
+    for (const col of pcaTable.columns) {
+      col.name = cols.getUnusedName(col.name);
+      cols.add(col);
+    }
+  }
 }
 
 
