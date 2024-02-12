@@ -1147,6 +1147,7 @@ export class GridCellRenderer extends CanvasRenderer {
       if (this.clip) {
         g.save()
         g.rect(x, y, w, h);
+        g.clip();
       }
       this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
     }

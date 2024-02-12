@@ -20,6 +20,7 @@ import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn'
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {MultiChoiceCellRenderer} from "./cell-types/multi-choice-cell-renderer";
+import {TagsCellRenderer} from "./cell-types/tags-cell-renderer";
 
 export const _package = new DG.Package();
 
@@ -129,6 +130,14 @@ export function smartFormCellRenderer() {
 //output: grid_cell_renderer result
 export function multiChoiceCellRenderer() {
   return new MultiChoiceCellRenderer();
+}
+
+//name: Tags
+//tags: cellRenderer
+//meta.cellType: Tags
+//output: grid_cell_renderer result
+export function tagsCellRenderer() {
+  return new TagsCellRenderer();
 }
 
 //description: Adds a sparkline column for the selected columns
@@ -287,6 +296,11 @@ export function demoCellTypes() {
   dis.set(1, 'Hepatitis A, Glaucoma');
   dis.setTag(DG.TAGS.CHOICES, JSON.stringify(['Anxiety', 'Hepatitis A', 'Glaucoma']));
   dis.setTag(DG.TAGS.CELL_RENDERER, 'MultiChoice');
+
+  const site = t.col('site')!;
+  site.set(0, 'Buffalo, Orlando');
+  site.set(1, 'Buffalo, Los Angeles');
+  site.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
 
   grok.shell.addTableView(t);
 }
