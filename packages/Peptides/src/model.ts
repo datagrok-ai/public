@@ -779,7 +779,7 @@ export class PeptidesModel {
         return;
 
 
-      // grok.shell.o = acc.root;
+      grok.shell.o = acc.root;
     };
 
     selection.onChanged.subscribe(() => {
