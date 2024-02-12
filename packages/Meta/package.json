@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.52",
+  "version": "3.7.53",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -980,6 +980,9 @@
         },
         "1.0.6": {
           "datagrok-api": "^1.5.2"
+        },
+        "1.0.7": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
