@@ -6,6 +6,8 @@ import { SubstructureFilter } from '../widgets/chem-substructure-filter';
 import { readDataframe } from './utils';
 import { _package } from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import { useAsSubstructureFilter } from '../package';
+import { FILTER_SCAFFOLD_TAG, SubstructureSearchType } from '../constants';
 
 type FilterPanel = {
     filter: SubstructureFilter,
@@ -670,6 +672,49 @@ category('clone and layout tests', async () => {
         await checkFilterSynchronized(filter1, 'C1CCCCC1');
     });
 
+    test('31_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        useAsFilter(df, molFileForCloneTest1, 5);
+        const layoutInitial = await saveLayout(tvInitial);
+        const tvCloned = await cloneView(tvInitial, df);
+        const clonedFilterAndFilterGroup = await getFilterGroupAndFilter(tvCloned, 'Structure');
+        const filter2 = clonedFilterAndFilterGroup.filter;
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await switchToView(tvInitial);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+
+        //change search type in initial filter and check that cloned filter is synchronized
+        filter1.searchTypeInput.value = SubstructureSearchType.IS_SIMILAR;
+        filter1.similarityCutOffInput.value = 0.03;
+        await awaitCheck(() => df.filter.trueCount === 25, 'df hasn\'t been filtered after search type changed', 3000);
+        await awaitCheck(() => filter2.searchType === SubstructureSearchType.IS_SIMILAR && filter2.similarityCutOff === 0.03 && filter2.sketcher.getSmiles() === 'C1CCCCC1',
+            'search type hasn\'t been synchronized', 3000);
+        
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+        await switchToView(tvCloned);
+        await applyLayout(tvCloned, layoutInitial, df, 5);
+        await closeFilterGroup(clonedFilterAndFilterGroup.group);
+
+        //check that filter and highlight have been reset
+        await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+        await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null, 'highlight hasn\'t been reset after all filter closed', 3000);
+    });
+
+    test('32_clone_layout_scenario', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const initialFilterAndFilterGroup = await getFilterGroupAndFilter(tvInitial, 'Structure');
+        const filter1 = initialFilterAndFilterGroup.filter;
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+        await closeFilterGroup(initialFilterAndFilterGroup.group);
+         //check that filter and highlight have been reset
+        await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+        await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null, 'highlight hasn\'t been reset after all filter closed', 3000);
+    });
+
 });
 
 async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
@@ -702,10 +747,13 @@ async function initializeFilter(filter: SubstructureFilter, withMolecule?: boole
 async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
     //setting structure and wait for results
     filter.sketcher.setMolFile(molfile);
-    await awaitCheck(() => {
-        console.log(`****true count in test - ${df.filter.trueCount}`)
-        return df.filter.trueCount === trueCount;
-    }, 'df hasn\'t been filtered', 3000);
+    await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 3000);
+}
+
+async function useAsFilter(df: DG.DataFrame, molfile: string, trueCount: number) {
+    const semValue = DG.SemanticValue.fromValueType(molfile, DG.SEMTYPE.MOLECULE);
+    useAsSubstructureFilter(semValue);
+    await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 3000);
 }
 
 async function checkFilterSynchronized(filter: SubstructureFilter, smiles: string) {
