@@ -18,7 +18,7 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 import {oneWayAnova} from './stat-tools';
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
-import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+import {DistanceAggregationMethod, DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 import {MultiColumnDimReductionEditor} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
 import {multiColReduceDimensionality} from
@@ -27,6 +27,8 @@ import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 import {runKNNImputer} from './missing-values-imputation/ui';
+import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
+import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 
 export const _package = new DG.Package();
 
@@ -82,8 +84,9 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //input: string _metric {optional: true}
 //output: object result
 export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
+  const range = col.stats.max - col.stats.min;
   const entries = col.toList();
-  return {entries, options: {}};
+  return {entries, options: {range}};
 }
 
 //name: None (string)
@@ -113,6 +116,51 @@ export async function reduceDimensionality(): Promise<void> {
         fastRowCount: 10000,
       });
   }).show();
+}
+
+//name: GetMCLEditor
+//tags: editor
+//input: funccall call
+export function GetMCLEditor(call: DG.FuncCall): void {
+  try {
+    const funcEditor = new MCLEditor();
+    ui.dialog('Markov clustering')
+      .add(funcEditor.getEditor())
+      .onOK(async () => {
+        const params = funcEditor.params;
+        return call.func.prepare({
+          df: params.table, cols: params.columns, metrics: params.distanceMetrics,
+          weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
+          preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
+        }).call(true);
+      }).show();
+  } catch (err: any) {
+    const errMsg = err instanceof Error ? err.message : err.toString();
+    const errStack = err instanceof Error ? err.stack : undefined;
+    grok.shell.error(`Get region editor error: ${errMsg}`);
+    _package.logger.error(errMsg, undefined, errStack);
+  }
+}
+
+
+//top-menu: ML | Cluster | MCL...
+//name: MCL
+//description: Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.
+//input: dataframe df
+//input: list<column> cols
+//input: list<string> metrics
+//input: list<double> weights
+//input: string aggregationMethod
+//input: list<func> preprocessingFuncs
+//input: object preprocessingFuncArgs
+//input: int threshold = 80
+//input: int maxIterations = 10
+//editor: EDA: GetMCLEditor
+export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
+  weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
+  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10) {
+  return await markovCluster(df, cols, metrics, weights,
+    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations);
 }
 
 //top-menu: ML | Analyze | Multivariate Analysis...
@@ -349,6 +397,6 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //top-menu: ML | Missing Values Imputation ...
 //name: KNN impute
 //desription: Missing values imputation using the k-nearest neighbors method
-export function kNNImputation() {  
-  runKNNImputer();  
+export function kNNImputation() {
+  runKNNImputer();
 }

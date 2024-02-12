@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.12 (2024-02-12)
+
+Add MCL clustering. The method is available in Top Menu > ML > Cluster > MCL.
+
 ## 1.1.11 (2023-12-28)
 
 Add missing values imputation using the KNN method.
