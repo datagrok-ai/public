@@ -437,6 +437,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   dataFrameSwitchgInProgress: boolean = false;
+  bitsetUpdateInProgress: boolean = false;
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
   smartsExist: boolean = false;
@@ -1120,8 +1121,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.bitset === null || this.bitset.length !== this.molColumn.length)
+    if (this.bitset === null || this.bitset.length !== this.molColumn.length) {
+      if (this.bitsetUpdateInProgress) {
+        grok.shell.warning('Filtering starts after the bitset is updated.');
+        return;
+      }
       this.bitset = DG.BitSet.create(this.molColumn.length);
+    }
 
     this.bitset.setAll(this.bitOperation === BitwiseOp.AND, false);
 
@@ -1869,9 +1875,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (thisViewer.tree.items.length < 1)
         return;
       const firstChild = thisViewer.tree.items[0];
-      if (dataFrame.rowCount !== value(firstChild).bitset?.length)
+      if (dataFrame.rowCount !== value(firstChild).bitset?.length) {
+        this.bitsetUpdateInProgress = true;
         await updateAllNodesHits(thisViewer);
+      }
       updateLabelWithLoaderOrBitset(thisViewer);
+      this.bitsetUpdateInProgress = false;
+      this.updateFilters(false);
+      dataFrame.rows.requestFilter();
     }));
 
     this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
