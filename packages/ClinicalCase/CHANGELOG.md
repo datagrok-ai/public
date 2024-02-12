@@ -1,5 +1,11 @@
 # ClinicalCase changelog
 
+## 1.0.7 (2024-02-12)
+
+### Bug fixes
+
+* AE Risk Assessment: removed lines titles from scatter plot
+
 ## 1.0.6 (2024-02-07)
 
 ### Bug fixes
