@@ -24,6 +24,20 @@ category('Dapi: functions calls', async () => {
     expect(savedFuncCall.inputs['x'], funcCall.inputs['x']);
   });
 
+  test('save with DF', async () => {
+    const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    const funcCall = await funcWithDf.prepare({'table': grok.data.demo.demog(30)}).call();
+
+    const savedFuncCall = await GDF.calls.save(funcCall);
+    const loadedFuncCall = await GDF.calls.find(savedFuncCall.id);
+
+    const loadedInputTableId = loadedFuncCall.inputs['table'];
+    const loadedOutputTableId = loadedFuncCall.outputs['tableOut'];
+
+    expectTable(funcCall.inputs[loadedInputTableId], await grok.dapi.tables.getTable(loadedInputTableId));
+    expectTable(funcCall.outputs[loadedOutputTableId], await grok.dapi.tables.getTable(loadedOutputTableId));
+  }, {skipReason: 'GROK-14739'});
+
   test('save options', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
