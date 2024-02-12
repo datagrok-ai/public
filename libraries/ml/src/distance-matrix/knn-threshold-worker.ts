@@ -2,18 +2,16 @@ import {getAggregationFunction, isNil} from './utils';
 import {KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {DistanceAggregationMethod} from './types';
-onmessage = async (event) => {
-  const {values, startIdx, endIdx, sampleLength, fnNames, opts, weights, aggregationMethod}:
-    {values: Array<any[]>, startIdx: number, endIdx: number,
-      sampleLength: number, fnNames: KnownMetrics[], opts: any[],
-      weights: number[], aggregationMethod: DistanceAggregationMethod} = event.data;
-  try {
-    // if (startIdx != -1)
-    //   throw new Error('Error in sparse threshold worker'); // TODO: remove this line
-    let distances: Float32Array = new Float32Array(sampleLength);
-    const chunkSize = endIdx - startIdx;
-    const aggregate = getAggregationFunction(aggregationMethod, weights);
 
+onmessage = async (event) => {
+  const {values, startIdx, endIdx, fnNames, opts, threshold, weights, aggregationMethod}:
+    {values: Array<any[]>, startIdx: number, endIdx: number, fnNames: KnownMetrics[],
+      opts: any[], threshold: number, weights: number[], aggregationMethod: DistanceAggregationMethod} = event.data;
+  try {
+    const knnIndexes = new Array(values[0].length).fill(null).map(() => new Array<number>(0));
+    const knnDistances = new Array(values[0].length).fill(null).map(() => new Array<number>(0));
+    const aggregate = getAggregationFunction(aggregationMethod, weights);
+    const chunkSize = endIdx - startIdx;
     values.forEach((v, colIdx) => {
       if (isBitArrayMetric(fnNames[colIdx])) {
         for (let i = 0; i < v.length; ++i) {
@@ -23,34 +21,36 @@ onmessage = async (event) => {
       }
     });
     let cnt = 0;
-    const increment = Math.floor(chunkSize / sampleLength);
     const distanceFns = new Array(fnNames.length).fill(null).map((_, i) => new Measure(fnNames[i]).getMeasure(opts[i]));
     const startRow = values[0].length - 2 - Math.floor(
       Math.sqrt(-8 * startIdx + 4 * values[0].length * (values[0].length - 1) - 7) / 2 - 0.5);
     const startCol = startIdx - values[0].length * startRow + Math.floor((startRow + 1) * (startRow + 2) / 2);
     let mi = startRow;
     let mj = startCol;
-    let distanceArrayCounter = 0;
-    while (cnt < chunkSize && distanceArrayCounter < sampleLength) {
+    while (cnt < chunkSize) {
       //const value = seq1List[mi] && seq1List[mj] ? hamming(seq1List[mi], seq1List[mj]) : 0;
       const distanceValues = distanceFns.map((fn, idx) => !isNil(values[idx][mi]) && !isNil(values[idx][mj]) ?
         fn(values[idx][mi], values[idx][mj]) : 1);
+      // const value = !isNil(values[mi]) && !isNil(values[mj]) ?
+      //   distanceFn(values[mi], values[mj]) : 1;
       const value = distanceValues.length === 1 ? distanceValues[0] : aggregate(distanceValues);
-      distances[distanceArrayCounter] = value;
-      distanceArrayCounter++;
-      // const currentIncrement = Math.floor(Math.random() * increment) + 1
-      cnt+=increment;
-      mj+=increment;
-      while (mj >= values[0].length && cnt < chunkSize) {
+      // insertSmaller(knnDistances[mi], knnIndexes[mi], value, mj);
+      // insertSmaller(knnDistances[mj], knnIndexes[mj], value, mi);
+      if (1 - value > threshold) {
+        knnDistances[mi].push(value);
+        knnIndexes[mi].push(mj);
+        knnDistances[mj].push(value);
+        knnIndexes[mj].push(mi);
+      }
+      cnt++;
+      mj++;
+      if (mj === values[0].length) {
         mi++;
-        mj = mi + 1 + (mj - values[0].length);
+        mj = mi + 1;
       }
     }
 
-    if (distanceArrayCounter < sampleLength)
-      distances = distances.slice(0, distanceArrayCounter);
-
-    postMessage({distance: distances});
+    postMessage({knnDistances, knnIndexes});
   } catch (e) {
     postMessage({error: e});
   }

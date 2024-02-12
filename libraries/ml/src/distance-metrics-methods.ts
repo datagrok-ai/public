@@ -191,6 +191,11 @@ export function getDistanceFromSimilarity(similarity: number) { //in case simila
   return similarity === 0 ? 3.402823E+38 : (1 / similarity) - 1;
 }
 
-export function numericDistance(x: number, y: number) {
-  return Math.abs(x - y);
+export function numericDistance(args?: {range?: number}) {
+  if (args && args.range != undefined && args.range > 0) {
+    const range = args.range;
+    return (a: number, b: number) => Math.abs(a - b) / range;
+  }
+
+  return (a: number, b: number) => Math.abs(a - b);
 }
