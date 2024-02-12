@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.13 (2024-02-12)
+
+Fix PCA & PLS applying to table from local file
+
 ## 1.1.12 (2024-02-12)
 
 Add MCL clustering. The method is available in Top Menu > ML > Cluster > MCL.
