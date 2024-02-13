@@ -161,8 +161,7 @@ export class SunburstViewer extends EChartViewer {
     if (p?.name === 'hierarchyColumnNames')
       this.render();
     if (p?.name === 'table') {
-      const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
-      this.dataFrame = dataFrame!;
+      this.updateTable();
       this.onTableAttached(true);
     }
     else

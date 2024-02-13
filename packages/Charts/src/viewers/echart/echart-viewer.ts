@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 
@@ -77,5 +78,10 @@ export class EChartViewer extends DG.JsViewer {
 
   getSeriesData() {
     throw new Error('Method not implemented.');
+  }
+
+  updateTable() {
+    const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
+    this.dataFrame = dataFrame!;
   }
 }

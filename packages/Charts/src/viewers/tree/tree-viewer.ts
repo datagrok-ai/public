@@ -124,6 +124,11 @@ export class TreeViewer extends EChartViewer {
       this.render();
       return;
     }
+    if (p?.name === 'table') {
+      this.updateTable();
+      this.onTableAttached(true);
+      this.render();
+    }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
       if (p?.name === 'hierarchyColumnNames')
@@ -133,15 +138,14 @@ export class TreeViewer extends EChartViewer {
       super.onPropertyChanged(p, render);
   }
 
-  onTableAttached() {
+  onTableAttached(propertyChanged?: boolean) {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
 
     if (categoricalColumns.length < 1)
       return;
 
-
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
       this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
 
     super.onTableAttached();
