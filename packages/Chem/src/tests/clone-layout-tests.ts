@@ -715,6 +715,42 @@ category('clone and layout tests', async () => {
         await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null, 'highlight hasn\'t been reset after all filter closed', 3000);
     });
 
+    test('simple layout apply', async () => {
+        const df = await readDataframe('tests/spgi-100.csv');
+        const tvInitial = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 5);;
+        const layout = await saveLayout(tvInitial);
+        await changeFilterBeforeApplyLayout(tvInitial, 'Structure', molFileForCloneTest2, df, 32);
+        await applyLayout(tvInitial, layout, df, 5);
+    });
+
+    test('apply_multiple_layouts_at_once', async () => {
+        const df = await readDataframe('tests/smi10K.csv');
+        const tv1 = await createTableView(df);
+        const filter1 = (await getFilterGroupAndFilter(tv1, 'smiles')).filter;
+        const tv2 = await cloneView(tv1, df);
+        const filter2 = (await getFilterGroupAndFilter(tv2, 'smiles')).filter;
+        const tv3 = await cloneView(tv1, df);
+        const filter3 = (await getFilterGroupAndFilter(tv3, 'smiles')).filter;
+        await switchToView(tv1);
+        await initializeFilter(filter1);
+        await filterByStructure(df, filter1, molFileForCloneTest1, 462);
+        await checkFilterSynchronized(filter2, 'C1CCCCC1');
+        await checkFilterSynchronized(filter3, 'C1CCCCC1');
+        const layout1 = await saveLayout(tv1);
+        const layout2 = await saveLayout(tv2);
+        const layout3 = await saveLayout(tv3);
+        await changeFilterBeforeApplyLayout(tv1, 'smiles', molFileForCloneTest2, df, 8970, true);
+        await checkFilterSynchronized(filter2, 'c1ccccc1');
+        await checkFilterSynchronized(filter3, 'c1ccccc1');
+        tv1.loadLayout(layout1);
+        tv2.loadLayout(layout2);
+        tv3.loadLayout(layout3);
+        await awaitCheck(() => df.filter.trueCount === 462, 'layout hasn\'t been applied', 10000);
+    })
+
 });
 
 async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
@@ -747,7 +783,7 @@ async function initializeFilter(filter: SubstructureFilter, withMolecule?: boole
 async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
     //setting structure and wait for results
     filter.sketcher.setMolFile(molfile);
-    await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 3000);
+    await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 10000);
 }
 
 async function useAsFilter(df: DG.DataFrame, molfile: string, trueCount: number) {
@@ -772,10 +808,11 @@ async function cloneView(viewToClone: DG.TableView, df: DG.DataFrame) {
 }
 
 async function changeFilterBeforeApplyLayout(tv: DG.TableView, colName: string,
-    molfile: string, df: DG.DataFrame, expectedRows: number) {
+    molfile: string, df: DG.DataFrame, expectedRows: number, filterInitialized = false) {
     const panel = await getFilterGroupAndFilter(tv, colName);
     const filter3 = panel.filter;
-    await initializeFilter(filter3);
+    if (!filterInitialized)
+        await initializeFilter(filter3, true);
     await filterByStructure(df, filter3, molfile, expectedRows);
 }
 
