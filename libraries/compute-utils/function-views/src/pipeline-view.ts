@@ -344,15 +344,6 @@ export class PipelineView extends FunctionView {
       this.subs.push(helpOpenSub);
     });
 
-    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
-      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-        .filter(`options.parentCallId="${deletedId}"`).list();
-      console.log(childRuns);
-
-      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
-    });
-    this.subs.push(deletionSub);
-
     this.isReady.next(true);
   }
 
@@ -562,6 +553,21 @@ export class PipelineView extends FunctionView {
   private findCurrentStep() {
     return Object.values(this.steps)
       .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+  }
+
+  public override buildHistoryBlock(): HTMLElement {
+    const hb = super.buildHistoryBlock();
+
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedId}"`).list();
+      console.log(childRuns);
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
+    return hb;
   }
 
   public override buildRibbonPanels(): HTMLElement[][] {
