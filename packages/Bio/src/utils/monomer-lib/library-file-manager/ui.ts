@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
+import * as rxjs from 'rxjs';
 
 import {
   getUserLibSettings, LIB_PATH, setUserLibSettings
@@ -158,7 +159,7 @@ class LibraryControlsManager {
 
   private promptForLibraryDeletion(fileName: string): void {
     const dialog = ui.dialog('Warning');
-    dialog.add(ui.divText(`Are you sure you want to delete ${fileName}?\nThis will delete the file from ${LIB_PATH}`))
+    dialog.add(ui.divText(`Delete file ${fileName}?`))
       .onOK(async () => {
         const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
         await this.monomerLibFileManager.deleteLibraryFile(fileName);
@@ -172,33 +173,37 @@ class DialogWrapper {
   private constructor() { }
 
   private static _instance: DialogWrapper;
-  private dialog: DG.Dialog;
+  private dialog?: DG.Dialog;
+  private closeDialogSubject$ = new rxjs.Subject<void>();
 
   static async showDialog(): Promise<void> {
-    if (!DialogWrapper._instance)
+    if (!DialogWrapper._instance) {
       DialogWrapper._instance = new DialogWrapper();
+      DialogWrapper._instance.closeDialogSubject$.subscribe(
+        () => { DialogWrapper._instance.dialog = undefined; }
+      );
+    }
 
+    if (!DialogWrapper._instance.dialog)
+      DialogWrapper._instance.dialog = await DialogWrapper._instance.getDialog();
 
-    const dialog = await DialogWrapper._instance.getDialog();
-    dialog.show();
+    DialogWrapper._instance.dialog.show();
   }
 
   private async getDialog(): Promise<DG.Dialog> {
-    if (this.dialog)
-      return this.dialog;
-
     const eventManager = MonomerLibFileEventManager.getInstance();
     const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
-    this.dialog = ui.dialog('Manage monomer libraries');
-    $(this.dialog.root).css('width', '400px');
-    this.dialog.clear();
-    this.dialog.addButton(
+    const dialog = ui.dialog('Manage monomer libraries');
+    $(dialog.root).css('width', '400px');
+    dialog.clear();
+    dialog.addButton(
       'Add',
       () => eventManager.addLibraryFile(),
       undefined,
       'Load new monomer libraries'
     );
-    this.dialog.add(widget);
-    return this.dialog;
+    dialog.add(widget);
+    dialog.onClose.subscribe(() => this.closeDialogSubject$.next());
+    return dialog;
   }
 }
