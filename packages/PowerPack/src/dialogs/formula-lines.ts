@@ -322,7 +322,8 @@ class Preview {
       yAxisType: src instanceof DG.Viewer ? src.props.yAxisType : 'linear',
       xAxisType: src instanceof DG.Viewer ? src.props.xAxisType : 'linear',
       invertXAxis: src instanceof DG.Viewer ? src.props.invertXAxis : false,
-      invertYAxis: src instanceof DG.Viewer ? src.props.invertYAxis : false,
+      invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] != DG.VIEWER.LINE_CHART ?
+        src.props.invertYAxis : false,
       showDataframeFormulaLines: false,
       showViewerFormulaLines: true,
       showSizeSelector: false,
