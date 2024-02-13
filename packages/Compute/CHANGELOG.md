@@ -1,5 +1,18 @@
 # Compute changelog
 
+## 1.21.0 (2024-02-13)
+
+### Features
+
+- Wizard: now deletes all steps' funccalls on parent funccall deletion
+- CPV: Design & performance improvements
+- SA: Added units into the form
+
+### Bug fixes
+
+- SA: Fixed bug with identical column names
+- CPV: Fixed bug with viewers of the same type
+
 ## 1.20.1 (2024-02-05)
 
 ### Features
