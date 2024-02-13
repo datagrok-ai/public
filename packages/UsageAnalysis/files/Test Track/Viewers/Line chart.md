@@ -23,11 +23,12 @@
     2. Right-click the line chart and select **Overview > Area Chart** from the context menu
     3. Use the area chart as range sliders and scroll and zoom the line chart.
     4. Save to Layout. Check
-6. Title, Description:
+9. Title, Description:
     1. Add a title and a description.
     2. Change their position
     3. Check the range slider functionality
     4. Save to Layout. Check
+10. Formula lines
 ---
 {
   "order": 5
