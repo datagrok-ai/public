@@ -19,17 +19,6 @@ const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 
-/*enum DISTRIB_TYPE {
-  UNIFORM = 'Uniform',
-  NORMAL = 'Normal',
-  RANDOM = 'Random',
-}
-const DISTRIB_TYPES = [
-  DISTRIB_TYPE.UNIFORM,
-  // DISTRIB_TYPE.NORMAL,
-  // DISTRIB_TYPE.RANDOM,
-];*/
-
 enum ANALYSIS_TYPE {
   GRID_ANALYSIS = 'Grid',
   RANDOM_ANALYSIS = 'Monte Carlo',
@@ -39,7 +28,8 @@ enum ANALYSIS_TYPE {
 enum DF_OPTIONS {
   LAST_ROW = 'Last row',
   FIRST_ROW = 'First row',
-  ALL_COLUMNS = 'All'
+  ALL_COLUMNS = '',
+  BY_COL_VAL = 'By column value',
 }
 
 type AnalysisProps = {
@@ -62,7 +52,6 @@ type SensitivityNumericStore = {
   min: InputWithValue,
   max: InputWithValue,
   lvl: InputWithValue,
-  //distrib: InputWithValue<DISTRIB_TYPE>,
 } & InputValues;
 
 type SensitivityBoolStore = {
@@ -94,11 +83,11 @@ export class SensitivityAnalysisView {
         value: new BehaviorSubject(ANALYSIS_TYPE.RANDOM_ANALYSIS),
       },
       samplesCount: {
-        input: ui.intInput('Samples', 100, (v: number) => {
+        input: ui.intInput('Samples', 10, (v: number) => {
           analysisInputs.samplesCount.value = v;
           this.updateRunButtonText();
         }),
-        value: 100,
+        value: 10,
       },
     } as AnalysisProps;
 
@@ -181,19 +170,15 @@ export class SensitivityAnalysisView {
             }),
             value: 3,
           },
-          /*distrib: {
-            input: ui.choiceInput('Grid', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => (ref as SensitivityNumericStore).distrib.value = v),
-            value: inputProp.defaultValue,
-          },*/
           isChanging: new BehaviorSubject<boolean>(false),
         };
 
-        [temp.max.input, temp.lvl.input/*, temp.distrib.input*/].forEach((input) => {
+        [temp.max.input, temp.lvl.input].forEach((input) => {
           input.root.insertBefore(getSwitchMock(), input.captionLabel);
           $(input.root).removeProp('display');
         });
 
-        const simpleSa = [temp.lvl.input/*, temp.distrib.input*/];
+        const simpleSa = [temp.lvl.input];
         acc[inputProp.name] = {
           ...temp,
           constForm: [temp.const.input],
@@ -294,8 +279,12 @@ export class SensitivityAnalysisView {
         input:
           (() => {
             const input = outputProp.propertyType === DG.TYPE.DATA_FRAME ?
-              ui.choiceInput(outputProp.caption ?? outputProp.name, DF_OPTIONS.LAST_ROW, [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW], (v: DF_OPTIONS) => {
+              ui.choiceInput(outputProp.caption ?? outputProp.name, DF_OPTIONS.LAST_ROW, [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW, DF_OPTIONS.BY_COL_VAL], (v: DF_OPTIONS) => {
                 temp.value.returning = v;
+
+                temp.analysisInputs.forEach((inp) => {
+                  inp.root.hidden = (v !== DF_OPTIONS.BY_COL_VAL);
+                });
               }):
               ui.input.forProperty(outputProp);
 
@@ -303,9 +292,12 @@ export class SensitivityAnalysisView {
 
             const isInterestInput = supportedOutputTypes.includes(outputProp.propertyType) ?
               getSwitchElement(
-                outputProp.propertyType !== DG.TYPE.DATA_FRAME,
+                true,
                 (v: boolean) => {
                   temp.isInterest.next(v);
+                  temp.analysisInputs.forEach((inp) => {
+                    inp.root.hidden = (temp.value.returning !== DF_OPTIONS.BY_COL_VAL);
+                  });
                   this.updateRunButtonText();
                 },
                 false,
@@ -320,13 +312,23 @@ export class SensitivityAnalysisView {
               temp.value.colName = v;
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
+            input.root.hidden = true;
             return input;
-          })()]: [],
+          })(),
+          (() => {
+            const input = ui.floatInput('Value', 0, (v: number) => {temp.value.colValue = v});
+            input.root.insertBefore(getSwitchMock(), input.captionLabel);
+            input.root.hidden = true;
+            return input;            
+          })()
+        ]: [],
+        
         value: {
           returning: DF_OPTIONS.LAST_ROW,
           colName: DF_OPTIONS.ALL_COLUMNS as string,
+          colValue: 0,
         },
-        isInterest: new BehaviorSubject<boolean>(outputProp.propertyType !== DG.TYPE.DATA_FRAME),
+        isInterest: new BehaviorSubject<boolean>(true),
       };
       $(temp.input.input).css('visibility', 'hidden');
 
@@ -346,7 +348,8 @@ export class SensitivityAnalysisView {
       analysisInputs: DG.InputBase[],
       value: {
         returning: DF_OPTIONS,
-        colName: string | null
+        colName: string,
+        colValue: number,
       }
       isInterest: BehaviorSubject<boolean>
     }>);
@@ -411,8 +414,8 @@ export class SensitivityAnalysisView {
       `${this.func.name} - Sensitivity Analysis`,
       0.25,
     );
-    saDock.container.containerElement.style.minWidth = '220px';
-    saDock.container.containerElement.style.maxWidth = '390px';
+    /*saDock.container.containerElement.style.minWidth = '220px';
+    saDock.container.containerElement.style.maxWidth = '390px';*/
 
     this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
   }
@@ -507,7 +510,7 @@ export class SensitivityAnalysisView {
       }, ui.form([
         this.store.analysisInputs.analysisType.input,
         this.store.analysisInputs.samplesCount.input,
-      ], {style: {'overflow-y': 'scroll', 'padding-right': '4px'}}));
+      ], {style: {'overflow-y': 'scroll', 'width': '100%'/*, 'padding-right': '4px'*/}}));
 
     const outputsTitle = ui.h2('Outputs');
     form.appendChild(outputsTitle);
@@ -725,20 +728,7 @@ export class SensitivityAnalysisView {
       samplesCount: this.store.analysisInputs.samplesCount.value || 1,
     };
 
-    const outputsOfInterest = [];
-
-    for (const outputName of Object.keys(this.store.outputs)) {
-      const output = this.store.outputs[outputName];
-
-      if (output.isInterest.value) {
-        outputsOfInterest.push({
-          prop: output.prop,
-          value: {
-            row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
-            columns: output.value.colName,
-          }});
-      }
-    }
+    const outputsOfInterest = this.getOutputsOfInterest();
 
     const analysis = new SobolAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
     const analysisResults = await analysis.perform();
@@ -909,29 +899,14 @@ export class SensitivityAnalysisView {
       samplesCount: this.store.analysisInputs.samplesCount.value || 1,
     };
 
-    const outputsOfInterest = [];
-
-    for (const outputName of Object.keys(this.store.outputs)) {
-      const output = this.store.outputs[outputName];
-
-      if (output.isInterest.value) {
-        outputsOfInterest.push({
-          prop: output.prop,
-          value: {
-            row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
-            columns: output.value.colName,
-          }});
-      }
-    }
-
+    const outputsOfInterest = this.getOutputsOfInterest();
     const analysis = new RandomAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
     const analysiResults = await analysis.perform();
     const funcEvalResults = analysiResults.funcEvalResults;
     const calledFuncCalls = analysiResults.funcCalls;
 
     this.closeOpenedViewers();
-    this.comparisonView.dataFrame = funcEvalResults;
-    //this.comparisonView.grid.col(ID_COLUMN_NAME)!.visible = false;
+    this.comparisonView.dataFrame = funcEvalResults;    
     const colNamesToShow = funcEvalResults.columns.names();
     const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
 
@@ -1130,21 +1105,8 @@ export class SensitivityAnalysisView {
       }
     }
 
-    const outputsOfInterest = [];
-
-    for (const outputName of Object.keys(this.store.outputs)) {
-      const output = this.store.outputs[outputName];
-
-      if (output.isInterest.value) {
-        outputsOfInterest.push({
-          prop: output.prop,
-          elements: [],
-          row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
-        });
-      }
-    }
-
-    const outputsOfInterestColumns = getOutput(calledFuncCalls, outputsOfInterest).columns;    
+    const outputsOfInterest = this.getOutputsOfInterest();
+    const outputsOfInterestColumns = getOutput(calledFuncCalls, outputsOfInterest).columns;
 
     for (const outCol of outputsOfInterestColumns) {
       inputsOfInterestColumns.forEach((inCol) => {
@@ -1279,4 +1241,38 @@ export class SensitivityAnalysisView {
 
     return names[start];
   }
+
+  private getOutputsOfInterest() {
+    const outputsOfInterest = [];
+
+    for (const outputName of Object.keys(this.store.outputs)) {
+      const output = this.store.outputs[outputName];
+
+      if (output.isInterest.value) {
+        let rowVal: number | null;
+
+        switch (output.value.returning) {
+          case DF_OPTIONS.LAST_ROW:
+            rowVal = -1;
+            break;
+          case DF_OPTIONS.FIRST_ROW:
+            rowVal = 1;
+            break;
+          
+          default:
+            rowVal = null;
+        }
+
+        outputsOfInterest.push({
+          prop: output.prop,
+          value: {
+            row: rowVal,
+            colName: output.value.colName,
+            colValue: output.value.colValue, 
+          }});
+      }
+    }
+
+    return outputsOfInterest;
+  }  
 }
