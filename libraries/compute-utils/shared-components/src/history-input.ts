@@ -108,11 +108,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       });
 
       this.store.experimentRunsDf.next(newRunsGridDf);
-      this.setCurrentRow();
     });
 
     this.store.experimentRunsDf.subscribe(() => {
-      this.renderGridFilters();
+      this.renderGridAndFilters();
     });
 
     this.store.isExperimentRunsLoading.subscribe((newValue) => {
@@ -136,11 +135,9 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
   public showSelectionDialog() {
     // Bug: should re-render all viewers inside of the dialog
-    this.renderGridFilters();
+    this.renderGridAndFilters();
 
     (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = (this.store.experimentRunsDf.value.currentRow.idx === -1);
-
-    this.setCurrentRow();
 
     this._historyDialog.show({
       modal: true,
@@ -151,7 +148,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     });
   }
 
-  private renderGridFilters() {
+  private renderGridAndFilters() {
     const newHistoryFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
     this._historyFilters.root.replaceWith(newHistoryFilters.root);
     this._historyFilters = newHistoryFilters;
@@ -162,6 +159,8 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
     this.styleHistoryGrid();
     this.styleHistoryFilters();
+
+    this.setCurrentRow();
   }
 
   private getHistoryDialog() {

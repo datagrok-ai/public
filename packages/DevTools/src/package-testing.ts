@@ -554,7 +554,13 @@ export class TestManager extends DG.ViewBase {
     const grid = obj.info;
     const testInfo = obj.testInfo;
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
-    acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
+    const res = acc.addPane('Results', () => ui.div(grid, {style: {width: '100%'}}), true);
+    res.root.addEventListener('contextmenu', (e) => {
+      DG.Menu.popup()
+        .item('Print to the console', () => console.error(grid.innerText))
+        .show();
+      e.preventDefault();
+    });
     if (testInfo && testInfo.rowCount === 1 && !testInfo.col('name').isNone(0) && testInfo.col('logs')) {
       const logs: string = testInfo.get('logs', 0);
       acc.addPane('Logs', () => ui.divText(logs), logs !== '');
@@ -582,11 +588,14 @@ export class TestManager extends DG.ViewBase {
         col = 'status';
         break;
       }
-
-      const history = await grok.data.query(`DevTools:${query}`, params);
+      const history: DG.DataFrame = await grok.data.query(`DevTools:${query}`, params);
       const arr = history.col(col).toList();
-      this.detailsTable.rows[Object.keys(params).length].cells[1].innerHTML = history.get('date', arr.indexOf(b1));
-      this.detailsTable.rows[Object.keys(params).length + 1].cells[1].innerHTML = history.get('date', arr.indexOf(b2));
+      let ind = arr.indexOf(b1);
+      this.detailsTable.rows[Object.keys(params).length].cells[1]
+        .innerHTML = ind === -1 ? '' : history.get('date', ind);
+      ind = arr.indexOf(b2);
+      this.detailsTable.rows[Object.keys(params).length + 1].cells[1]
+        .innerHTML = ind === -1 ? '' : history.get('date', ind);
       return history.plot.grid().root;
     }), true);
     return acc.root;

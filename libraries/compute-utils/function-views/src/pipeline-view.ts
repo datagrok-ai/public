@@ -555,6 +555,21 @@ export class PipelineView extends FunctionView {
       .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
   }
 
+  public override buildHistoryBlock(): HTMLElement {
+    const hb = super.buildHistoryBlock();
+
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedId}"`).list();
+      console.log(childRuns);
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
+    return hb;
+  }
+
   public override buildRibbonPanels(): HTMLElement[][] {
     const infoIcon = ui.iconFA('info', async () => {
       const currentStep = this.findCurrentStep();

@@ -56,7 +56,7 @@ export const intArrayDistanceMetricsMethods: { [name: string]: (x: Uint32Array, 
   [IntArrayMetricsNames.TanimotoIntArray]: tanimotoDistanceIntArray,
 };
 
-export const numberDistanceMetricsMethods: { [name: string]: (x: number, y: number) => number } = {
+export const numberDistanceMetricsMethods: { [name: string]: (args: any) => (x: number, y: number) => number } = {
   [NumberMetricsNames.Difference]: numericDistance,
 };
 
@@ -134,6 +134,10 @@ export function isMacroMoleculeMetric(name: KnownMetrics) {
   return MetricToDataType[name] == DistanceMetricsSubjects.MacroMolecule.toString();
 }
 
+export function isNumericMetric(name: KnownMetrics) {
+  return MetricToDataType[name] == DistanceMetricsSubjects.Number.toString();
+}
+
 /** Manhattan distance between two sequences (match - 0, mismatch - 1) normalized for length. */
 export function manhattanDistance(s1: string, s2: string): number {
   if (s1.length !== s2.length) {
@@ -177,7 +181,7 @@ export class Measure {
     } = AvailableMetrics;
     if (!dict.hasOwnProperty(this.dataType) || !dict[this.dataType].hasOwnProperty(this.method))
       throw new Error(`Unknown measure ${this.method} for data type ${this.dataType}`);
-    return isMacroMoleculeMetric(this.method) ?
+    return isMacroMoleculeMetric(this.method) || isNumericMetric(this.method) ?
       (dict[this.dataType][this.method] as ((opts: any) => DistanceMetric))(opts) :
       dict[this.dataType][this.method] as DistanceMetric;
   }

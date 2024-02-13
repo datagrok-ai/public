@@ -363,6 +363,7 @@ export async function runTests(options?:
     if (value.clear) {
       for (let i = 0; i < t.length; i++) {
         res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
+        console.log('CLEARING');
         grok.shell.closeAll();
         DG.Balloon.closeAll();
       }
@@ -517,7 +518,7 @@ export async function awaitCheck(checkHandler: () => boolean,
 
 // Returns test execution result or an error in case of timeout
 async function timeout(func: () => Promise<any>, testTimeout: number): Promise<any> {
-  let timeout: Timeout | null = null;
+  let timeout: any = null;
   const timeoutPromise = new Promise<any>((_, reject) => {
     timeout = setTimeout(() => {
       // eslint-disable-next-line prefer-promise-reject-errors

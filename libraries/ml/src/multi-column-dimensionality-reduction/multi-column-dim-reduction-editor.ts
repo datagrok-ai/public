@@ -183,6 +183,10 @@ export class MultiColumnDimReductionEditor {
         ui.empty(this.columnOptEditorsRoot);
         ui.empty(this.weightsEditorRoot);
         const cols = columnsInput.value;
+        if (!cols || cols?.length < 2)
+          this.aggregationMethodInput.root.style.display = 'none';
+        else
+          this.aggregationMethodInput.root.style.display = 'flex';
         if (!cols || cols.length === 0)
           return;
         this.columnOptEditors = cols.map((col) => {
@@ -200,7 +204,7 @@ export class MultiColumnDimReductionEditor {
         else
           this.columnParamsEditorAccordion.root.style.display = 'none';
       }, {available: supportedColNames});
-
+      columnsInput.fireChanged();
       if (!this.columnsInputRoot) {
         this.columnsInputRoot = columnsInput.root;
         this.columnsInput = columnsInput;

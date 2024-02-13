@@ -46,14 +46,16 @@ export function parseHelm(s: string): string[] {
       for (const monomer of ss) {
         if (!monomer || monomer === '') continue;
         if (monomer.startsWith('[') && monomer.includes(']')) {
-          const element = monomer.substring(1, monomer.indexOf(']'));
+          const closingIndex = findClosing(monomer, 1, '[', ']');
+          const element = monomer.substring(1, closingIndex);
           monomers.push(element);
-          const residue = monomer.substring(monomer.indexOf(']') + 1);
+          const residue = monomer.substring(closingIndex + 1);
           ss.push(residue);
         } else if (monomer.includes('[') && monomer.endsWith(']')) {
-          const element = monomer.substring(monomer.lastIndexOf('[') + 1, monomer.length - 1);
+          const openingIndex = findOpening(monomer, monomer.length - 2, '[', ']');
+          const element = monomer.substring(openingIndex + 1, monomer.length - 1);
           monomers.push(element);
-          const residue = monomer.substring(0, monomer.lastIndexOf('['));
+          const residue = monomer.substring(0, openingIndex);
           ss.push(residue);
         } else if (monomer.includes('(') && monomer.includes(')')) {
           // here we only want to split the string at first '(' and last ')'
@@ -64,9 +66,8 @@ export function parseHelm(s: string): string[] {
           const elements = [firstPiece, secondPiece, thirdPiece];
           for (const el of elements)
             ss.push(el);
-        } else {
+        } else
           monomers.push(monomer);
-        }
       }
     }
   }
@@ -111,6 +112,40 @@ export function findMonomers(monomerSymbolList: string[]): Set<string> {
   return new Set(monomerSymbolList.filter((val) => !monomerNames.includes(val)));
 }
 
+function findClosing(s: string, start: number, open: string, close: string) {
+  let i = start;
+  let count = 0;
+  while (i < s.length) {
+    if (s[i] === open)
+      count++;
+
+    if (s[i] === close) {
+      if (count === 0)
+        return i;
+      count--;
+    }
+    i++;
+  }
+  return -1;
+}
+
+function findOpening(s: string, start: number, open: string, close: string) {
+  let i = start;
+  let count = 0;
+  while (i >= 0) {
+    if (s[i] === close)
+      count++;
+
+    if (s[i] === open) {
+      if (count === 0)
+        return i;
+      count--;
+    }
+    i--;
+  }
+  return -1;
+}
+
 function split(s: string, sep: string) {
   const ret = [];
   let frag = '';
@@ -136,19 +171,18 @@ function split(s: string, sep: string) {
       if (c == '\"') {
         if (!(i > 0 && s.substring(i - 1, i) == '\\'))
           quote = quote == 0 ? 1 : 0;
-      } else if (c == '[') {
+      } else if (c == '[')
         ++bracket;
-      } else if (c == ']') {
+      else if (c == ']')
         --bracket;
-      } else if (c == '(') {
+      else if (c == '(')
         ++parentheses;
-      } else if (c == ')') {
+      else if (c == ')')
         --parentheses;
-      } else if (c == '{') {
+      else if (c == '{')
         ++braces;
-      } else if (c == '}') {
+      else if (c == '}')
         --braces;
-      }
     }
   }
   ret.push(frag);

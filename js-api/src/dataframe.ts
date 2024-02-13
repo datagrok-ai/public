@@ -1075,6 +1075,16 @@ export class ObjectColumn extends Column<any> {
   }
 }
 
+
+export class DataFrameColumn extends Column<DataFrame> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): DataFrame | null {
+    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+}
+
 /** Columns in a [DataFrame]. */
 export class ColumnList {
   private readonly dart: any;
@@ -1183,9 +1193,10 @@ export class ColumnList {
    * @param {string} expression
    * @param {ColumnType} type
    * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
+   * @param {bool} subscribeOnChanges - if true, the column will be recalculated when the source columns change
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString);
+  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false, subscribeOnChanges: boolean = true): Promise<Column> {
+    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, subscribeOnChanges);
   }
 
   _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {

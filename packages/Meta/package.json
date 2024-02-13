@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.46",
+  "version": "3.7.56",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -682,6 +682,9 @@
         },
         "1.8.10": {
           "datagrok-api": "^1.17.11"
+        },
+        "1.8.11": {
+          "datagrok-api": "../../js-api"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -856,6 +859,9 @@
         },
         "1.2.6": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.2.7": {
+          "datagrok-api": "^1.17.4"
         }
       },
       "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -968,9 +974,18 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.5.2"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.5.2"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.5.2"
+        },
+        "1.0.7": {
+          "datagrok-api": "^1.17.0"
         }
       },
-      "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+      "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1838,6 +1853,9 @@
           "datagrok-api": "^1.17.0"
         },
         "1.20.1": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.21.0": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -3132,6 +3150,9 @@
         },
         "2.1.24": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.25": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -3201,6 +3222,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.0.7": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.0.8": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -3449,6 +3473,9 @@
         },
         "1.1.5": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Simulation of controlled fab-arm exchange mechanism",
@@ -3497,6 +3524,12 @@
           "datagrok-api": "^1.16.0"
         },
         "1.1.11": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.1.12": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.1.13": {
           "datagrok-api": "^1.16.0"
         }
       },

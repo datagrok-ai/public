@@ -102,22 +102,50 @@ export class TreeViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
-    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
+    if (p?.name === 'edgeShape') {
+      this.getProperty('layout')?.set(this, 'orthogonal');
+      this.option.series[0].layout = 'orthogonal';
+      this.option.series[0].label.rotate = 0;
+      this.chart.clear();
+    }
+    if (p?.name === 'layout') {
+      const layout: layoutType = p.get(this);
+      this.option.series[0].layout = layout;
+      if (layout === 'orthogonal')
+        this.option.series[0].label.rotate = 0;
+      else {
+        this.option.series[0].label.rotate = null;
+        const es = this.getProperty('edgeShape');
+        if (es?.get(this) !== 'curve') {
+          es?.set(this, 'curve');
+          this.option.series[0].edgeShape = 'curve';
+        }
+      }
       this.render();
-    else
+      return;
+    }
+    if (p?.name === 'table') {
+      this.updateTable();
+      this.onTableAttached(true);
+      this.render();
+    }
+    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
+        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
+      if (p?.name === 'hierarchyColumnNames')
+        this.chart.clear();
+      this.render();
+    } else
       super.onPropertyChanged(p, render);
   }
 
-  onTableAttached() {
+  onTableAttached(propertyChanged?: boolean) {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
 
     if (categoricalColumns.length < 1)
       return;
 
-
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
       this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
 
     super.onTableAttached();

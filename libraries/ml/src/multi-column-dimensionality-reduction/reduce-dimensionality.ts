@@ -159,6 +159,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         const embedYCol = table.columns.byName(embedColsNames[1]);
         embedXCol.init((i) => res[0][i]);
         embedYCol.init((i) => res[1][i]);
+        (scatterPlot as DG.ScatterPlotViewer).helpUrl = '/help/compute/sequence-space';
         return scatterPlot as DG.ScatterPlotViewer;
       }
     } catch (e) {

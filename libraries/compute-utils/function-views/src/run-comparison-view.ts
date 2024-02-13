@@ -90,32 +90,53 @@ export class RunComparisonView extends DG.TableView {
       };
     }
 
-    this.grid.onCellPrepare((gc) => {
+    const cache = new DG.LruCache();
+
+    this.grid.onCellPrepare(async (gc) => {
       if (gc.isColHeader || gc.isRowHeader) return;
 
-      if (gc.tableColumn!.name === RUN_NAME_COL_LABEL)
-        gc.style.textVertical = true;
+      if (gc.tableColumn!.name === RUN_NAME_COL_LABEL) {
+        gc.customText = '';
+        const rows = gc.cell.value.split(' - ') as string[];
+        const elems = (rows.length > 1) ? [rows[0], ui.element('br'), rows[1]]: rows;
+        gc.element = ui.div(elems, {style: {
+          'writing-mode': 'vertical-rl',
+          'text-orientation': 'mixed',
+          'margin': 'auto',
+        }});
+        gc.element.parentElement!.style.display = 'flex';
+        return;
+      }
 
       if (gc.tableColumn && gc.tableColumn.temp[VIEWER_PATH]) {
         const initialValue = gc.cell.value;
 
         const viewerConfig = gc.tableColumn.temp[VIEWER_PATH];
         const viewerType = viewerConfig['type'] as string;
-        gc.element =
-          ui.waitBox(async () => {
-            const viewer = Object.values(viewerTypesMapping).includes(viewerType) ?
-              DG.Viewer.fromType(viewerType, initialValue) :
-              await initialValue.plot.fromType(viewerType) as DG.Viewer;
 
-            // Workaround required since getOptions and setOptions are not symmetrical
-            if (!gc.tableColumn!.temp[VIEWER_PATH]['look']) {
-              viewer.setOptions(viewerConfig);
-              gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
-            } else
-              viewer.setOptions(gc.tableColumn!.temp[VIEWER_PATH]['look']);
+        const getElement = async () => {
+          const viewer = Object.values(viewerTypesMapping).includes(viewerType) ?
+            DG.Viewer.fromType(viewerType, initialValue) :
+            await initialValue.plot.fromType(viewerType) as DG.Viewer;
 
-            return viewer.root;
-          });
+          // Workaround required since getOptions and setOptions are not symmetrical
+          if (!gc.tableColumn!.temp[VIEWER_PATH]['look']) {
+            viewer.setOptions(viewerConfig);
+            gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
+          } else
+            viewer.setOptions(gc.tableColumn!.temp[VIEWER_PATH]['look']);
+
+          return viewer.root;
+        };
+
+        const uniqueKey = `${initialValue.id}_${viewerType}`;
+
+        if (!cache.get(uniqueKey)) {
+          const element = await getElement();
+          cache.set(uniqueKey, element);
+          gc.element = element;
+        } else
+          gc.element = cache.get(uniqueKey);
 
         gc.element.style.width = '100%';
         gc.element.style.height = '100%';

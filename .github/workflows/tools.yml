@@ -82,7 +82,7 @@ jobs:
           header="*datagrok-tools* version *${{ needs.check.outputs.version }}* published to <https://www.npmjs.com/package/$(jq -r .name package.json)/v/${{ needs.check.outputs.version }}|NPM>"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
       - name: Send to Slack
