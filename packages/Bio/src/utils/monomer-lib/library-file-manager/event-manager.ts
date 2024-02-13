@@ -15,6 +15,7 @@ export class MonomerLibFileEventManager {
   }
 
   private _libraryFilesUpdateSubject$ = new rxjs.BehaviorSubject<string[]>([]);
+  private _addLibraryFilesSubject$ = new rxjs.Subject<void>();
 
   getValidFilesPathList(): string[] {
     return this._libraryFilesUpdateSubject$.getValue();
@@ -34,5 +35,15 @@ export class MonomerLibFileEventManager {
     return this._libraryFilesUpdateSubject$.pipe(
       debounceTime(3000)
     );
+  }
+
+  get addLibraryFileRequested$(): rxjs.Observable<void> {
+    return this._addLibraryFilesSubject$.pipe(
+      debounceTime(1000)
+    );
+  }
+
+  addLibraryFile(): void {
+    this._addLibraryFilesSubject$.next();
   }
 }

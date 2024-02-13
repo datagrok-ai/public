@@ -16,14 +16,21 @@ import {MonomerLibFileEventManager} from './event-manager';
 
 export async function getLibraryPanelUI(): Promise<DG.Widget> {
   const eventManager = MonomerLibFileEventManager.getInstance();
-  return new MonomerLibraryManagerWidget(eventManager).createWidget();
+  return await MonomerLibraryManagerWidget.getContent(eventManager);
 }
 
 async function showManageLibrariesDialog() {
   const eventManager = MonomerLibFileEventManager.getInstance();
-  const widget = await new MonomerLibraryManagerWidget(eventManager).createWidget();
+  const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
   const dialog = ui.dialog('Manage monomer libraries');
+  $(dialog.root).css('width', '400px');
   dialog.clear();
+  dialog.addButton(
+    'Add',
+    () => eventManager.addLibraryFile(),
+    undefined,
+    'Load new monomer libraries'
+  );
   dialog.add(widget);
   dialog.show();
 }
@@ -38,15 +45,31 @@ export async function getMonomerLibraryManagerLink(): Promise<DG.Widget> {
 }
 
 class MonomerLibraryManagerWidget {
-  constructor(
+  private constructor(
     private eventManager: MonomerLibFileEventManager
   ) { }
 
-  private monomerLibFileManager: MonomerLibFileManager;
+  private static _instance: MonomerLibraryManagerWidget;
 
-  async createWidget() {
+  static async getContent(eventManager: MonomerLibFileEventManager): Promise<DG.Widget> {
+    if (!MonomerLibraryManagerWidget._instance)
+      MonomerLibraryManagerWidget._instance = new MonomerLibraryManagerWidget(eventManager);
+
+    if (!MonomerLibraryManagerWidget._instance.widget)
+      MonomerLibraryManagerWidget._instance.widget = await MonomerLibraryManagerWidget._instance.createWidget();
+
+    return MonomerLibraryManagerWidget._instance.widget;
+  }
+
+  private monomerLibFileManager: MonomerLibFileManager;
+  private widget: DG.Widget | undefined;
+
+  private async createWidget() {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     const content = await this.getWidgetContent();
+    this.eventManager.addLibraryFileRequested$.subscribe(
+      async () => await this.promptToAddLibraryFiles()
+    );
     return new DG.Widget(content);
   }
 
@@ -55,13 +78,7 @@ class MonomerLibraryManagerWidget {
     const formHandler = new LibraryControlsManager(this.eventManager);
     const libControlsForm = await formHandler.createControlsForm();
     $(libControlsForm).addClass('monomer-lib-controls-form');
-    const addLibraryFilesButton: HTMLButtonElement = ui.button('Add', async () => await this.promptToAddLibraryFiles());
-    ui.tooltip.bind(addLibraryFilesButton, 'Load new monomer libraries');
-    const widgetContent = ui.divV([libControlsForm,
-      ui.div([
-        addLibraryFilesButton,
-      ])
-    ]);
+    const widgetContent = ui.divV([libControlsForm]);
     return widgetContent;
   }
 
