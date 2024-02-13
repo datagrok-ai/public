@@ -20,19 +20,7 @@ export async function getLibraryPanelUI(): Promise<DG.Widget> {
 }
 
 async function showManageLibrariesDialog() {
-  const eventManager = MonomerLibFileEventManager.getInstance();
-  const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
-  const dialog = ui.dialog('Manage monomer libraries');
-  $(dialog.root).css('width', '400px');
-  dialog.clear();
-  dialog.addButton(
-    'Add',
-    () => eventManager.addLibraryFile(),
-    undefined,
-    'Load new monomer libraries'
-  );
-  dialog.add(widget);
-  dialog.show();
+  await DialogWrapper.showDialog();
 }
 
 export async function getMonomerLibraryManagerLink(): Promise<DG.Widget> {
@@ -177,5 +165,40 @@ class LibraryControlsManager {
         progressIndicator.close();
       })
       .showModal(false);
+  }
+}
+
+class DialogWrapper {
+  private constructor() { }
+
+  private static _instance: DialogWrapper;
+  private dialog: DG.Dialog;
+
+  static async showDialog(): Promise<void> {
+    if (!DialogWrapper._instance)
+      DialogWrapper._instance = new DialogWrapper();
+
+
+    const dialog = await DialogWrapper._instance.getDialog();
+    dialog.show();
+  }
+
+  private async getDialog(): Promise<DG.Dialog> {
+    if (this.dialog)
+      return this.dialog;
+
+    const eventManager = MonomerLibFileEventManager.getInstance();
+    const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
+    this.dialog = ui.dialog('Manage monomer libraries');
+    $(this.dialog.root).css('width', '400px');
+    this.dialog.clear();
+    this.dialog.addButton(
+      'Add',
+      () => eventManager.addLibraryFile(),
+      undefined,
+      'Load new monomer libraries'
+    );
+    this.dialog.add(widget);
+    return this.dialog;
   }
 }
