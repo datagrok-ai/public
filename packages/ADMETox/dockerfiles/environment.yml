@@ -14,6 +14,7 @@ dependencies:
   - scikit-learn
   - scipy
   - boto3
+  - gunicorn
   - Flask
   - chemprop
   - mkl

@@ -62,6 +62,7 @@ def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
         "--test_path", temp_file_path,
         "--checkpoint_path", checkpoint_path,
         "--preds_path", preds_path,
+        "--gpu", "0",
         "--batch_size", "1024",
         "--empty_cache",
         "--num_workers", "0"
@@ -188,4 +189,4 @@ def df_upload():
     return response
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, threaded=True, debug=False)
+    app.run(host='0.0.0.0', port=8000, debug=False)
