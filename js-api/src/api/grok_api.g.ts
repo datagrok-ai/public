@@ -325,6 +325,8 @@ export interface IDartApi {
   grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any, requestFilter: Bool): any;
   grok_FilterGroup_GetFilterSummary(filterGroup: any): any;
   grok_FilterGroup_Get_Filters(filterGroup: any): any;
+  grok_FilterGroup_SetEnabled(filterGroup: any, filter: any, active: Bool): any;
+  grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
