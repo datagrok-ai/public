@@ -180,18 +180,31 @@ export function viewerDialog(tv: DG.TableView) {
 //description: ViewerGallery
 //tags: autostart
 export function viewerGallery(): void {
-  grok.events.onViewAdded.subscribe((view) => {
-    if (view.type == 'TableView') {
-      const panel = view.getRibbonPanels();
-      panel[0][1].remove();
+  grok.events.onViewAdded.subscribe((view) => _viewerGallery(view));
+  _viewerGallery(grok.shell.v);
+}
 
+function _viewerGallery(view: DG.ViewBase): void {
+  let addViewerIcon: HTMLDivElement | undefined;
+  if (view.type == 'TableView') {
+    for (const p of view.getRibbonPanels()) {
+      for (const d of p) {
+        if (d instanceof HTMLDivElement) {
+          if (d.querySelector('.svg-add-viewer'))
+            addViewerIcon = d;
+        }
+      }
+    }
+    if (addViewerIcon != undefined) {
       const icon = ui.iconFA('',
-        () => {viewersDialog(view as DG.TableView, (view as DG.TableView).table!);}, 'Add viewer');
+        () => {
+          viewersDialog(view as DG.TableView, (view as DG.TableView).table!);
+        }, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
-
       const btn = ui.div([icon]);
       btn.className = 'd4-ribbon-item';
-      panel[0][0].after(btn);
+      addViewerIcon.after(btn);
+      addViewerIcon.remove();
     }
-  });
+  }
 }

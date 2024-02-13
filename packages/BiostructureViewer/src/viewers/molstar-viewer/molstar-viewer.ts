@@ -103,6 +103,7 @@ export enum PROPS {
   showSelectedRowsLigands = 'showSelectedRowsLigands',
   showCurrentRowLigand = 'showCurrentRowLigand',
   showMouseOverRowLigand = 'showMouseOverRowLigand',
+  zoom = 'zoom',
 }
 
 const pdbDefault: string = '';
@@ -118,6 +119,7 @@ export type LigandMap = {
 };
 
 export const DebounceIntervals = {
+  setData: 20,
   currentRow: 20,
   ligands: 20,
 };
@@ -171,6 +173,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   // propsEngine = new class {
   //
   // }(this);
+  [PROPS.zoom]: boolean;
 
   constructor() {
     super();
@@ -254,10 +257,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       {category: PROPS_CATS.BEHAVIOUR});
 
     // --
+    this.zoom = this.bool(PROPS.zoom, false, {userEditable: false});
     this.root.style.textAlign = 'center';
 
     this.logger = _package.logger;
     this.viewSyncer = new PromiseSyncer(this.logger);
+
+    this.setDataRequest = new Subject<void>();
+    this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
+      .subscribe(() => { this.onSetDataRequestDebounced(); }));
   }
 
   private static viewerCounter: number = -1;
@@ -438,7 +446,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.viewSyncer.sync(logPrefix, async () => { // detach
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
-        await this.destroyView(logIndent + 1, callLog);
+        await this.destroyView(true, logIndent + 1, callLog);
         this.viewed = false;
       }
       superDetach();
@@ -450,9 +458,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private _setDataCallCounter = -1;
 
+  private setDataRequest: Subject<void>;
+
   setData(logIndent: number, caller: string): void {
+    const callLog = `setData( <- ${caller})`;
+    this.logger.debug(`${margin(logIndent)}${this.viewerToLog()}.${callLog}`);
+    this.setDataRequest.next();
+  }
+
+  onSetDataRequestDebounced(): void {
+    const logIndent: number = 0;
     const callId = ++this._setDataCallCounter;
-    const callLog = `setData( <- ${caller}, callId = ${callId} )`;
+    const callLog = `onSetDataRequestDebounced( callId = ${callId} )`;
     const logPrefix = `${margin(logIndent)}${this.viewerToLog()}.${callLog}`;
     this.logger.debug(`${logPrefix}, start`);
 
@@ -460,7 +477,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
         if (this.viewed) {
-          await this.destroyView(1, callLog);
+          await this.destroyView(false, 1, callLog);
           this.viewed = false;
         }
 
@@ -519,7 +536,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private viewSubs: Unsubscribable[] = [];
   private onRebuildViewLigandsRequest: Subject<void> = new Subject<void>();
 
-  private async destroyView(logIndent: number, caller: string): Promise<void> {
+  private async destroyView(free: boolean, logIndent: number, caller: string): Promise<void> {
     const callLog: string = `destroyView( <- ${caller} )`;
     const logPrefix: string = `${margin(logIndent)}${this.viewerToLog()}.${callLog}`;
     this.logger.debug(`${logPrefix}, start `);
@@ -533,16 +550,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       delete this.splashDiv;
     }
 
-    if (this.viewerDiv) {
-      if (this.dataFrame && this.ligandColumnName)
-        await this.destroyViewLigands(logIndent + 1, callLog);
+    if (free /* detach */) {
+      if (this.viewerDiv) {
+        if (this.dataFrame && this.ligandColumnName)
+          await this.destroyViewLigands(logIndent + 1, callLog);
 
-      // Clear viewer
-      // await this.viewer.clear();
-      await disposeRcsbViewer(this.viewer!, this.viewerDiv);
-      delete this.viewer;
-      this.viewerDiv.remove();
-      delete this.viewerDiv;
+        // Clear viewer
+        // await this.viewer.clear();
+        await disposeRcsbViewer(this.viewer!, this.viewerDiv);
+        delete this.viewer;
+        this.viewerDiv.remove();
+        delete this.viewerDiv;
+      }
+    } else {
+      if (this.dataEffStructureRefs)
+        await removeVisualsData(this.viewer!.plugin, this.dataEffStructureRefs, callLog);
     }
     this.logger.debug(`${logPrefix}, end `);
   }
@@ -871,7 +893,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
       const selectedLigandData = this.getLigandStrOfRow(selectedLigand.rowIdx);
       ligandTaskList.push(async () => {
-        selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color);
+        selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color, this.zoom);
       });
     }
     if (newLigands.current) {
@@ -880,7 +902,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const currentLigandData = this.getLigandStrOfRow(newLigands.current.rowIdx);
       const currentLigand = newLigands.current;
       ligandTaskList.push(async () => {
-        currentLigand.structureRefs = await addLigandOnStage(plugin, currentLigandData, color);
+        currentLigand.structureRefs = await addLigandOnStage(plugin, currentLigandData, color, this.zoom);
       });
     }
     if (newLigands.hovered) {
@@ -891,7 +913,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const hoveredLigandData = this.getLigandStrOfRow(newLigands.hovered.rowIdx);
       const hoveredLigand = newLigands.hovered;
       ligandTaskList.push(async () => {
-        hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color);
+        hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);
       });
     }
     this.logger.debug(`${logPrefix},\nnewLigands = ${JSON.stringify(newLigands)}`);
@@ -930,6 +952,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }, () => {
       this.invalidate(callLog);
     }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 
   // -- IMolecule3DBrowser --

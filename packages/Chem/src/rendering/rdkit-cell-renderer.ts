@@ -8,6 +8,8 @@ import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, SCAFFOLD_COL, PARENT_MOL_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, REGENERATE_COORDS, SCAFFOLD_TREE_HIGHLIGHT, HIGHLIGHT_BY_SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
 import { hexToPercentRgb } from '../utils/chem-common';
+import {V2K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-v2k-const';
+import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-v3k-const';
 
 export interface ISubstruct {
   atoms?: number[],
@@ -236,7 +238,7 @@ M  END
           }
         }
         molCtx.useMolBlockWedging = molHasOwnCoords;
-        if (mol.has_coords() === 0 || molRegenerateCoords) {
+        if (mol.has_coords() === 0 || molRegenerateCoords || hasNonZeroZCoords(molString, mol.get_num_atoms())) {
           mol.set_new_coords(molRegenerateCoords);
           mol.normalize_depiction(1);
           mol.straighten_depiction();
@@ -499,4 +501,41 @@ M  END
         molString, totalScaffolds, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true, details);
     }
   }
+}
+
+function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
+  const moveCursorToIdx = (steps: number, symbol: string) => {
+    for (let i = 0; i < steps; i++) {
+      dataBeginIdx = molfile.indexOf(symbol, dataBeginIdx) + 1;
+    }
+  }
+  let dataBeginIdx = 0;
+  const headerLinesNum = 4;
+  //jump to atoms block
+  moveCursorToIdx(headerLinesNum, '\n');
+  if (molfile.indexOf(V2K_CONST.HEADER) !== -1) {
+    const zCoordShift = 20;
+    const coordDigitsNum = 10;
+    for (let i = 0; i < numAtoms; i++) {
+      if (parseFloat(molfile.substring(dataBeginIdx + zCoordShift, dataBeginIdx + zCoordShift + coordDigitsNum)))
+        return true;
+      //go to next row
+      dataBeginIdx = molfile.indexOf('\n', dataBeginIdx) + 1;
+    }
+  } else if (molfile.indexOf(V3K_CONST.HEADER) !== -1) {
+    //jump to atoms block
+    const atomCountsLinesNum = 3;
+    moveCursorToIdx(atomCountsLinesNum, '\n');
+    for (let i = 0; i < numAtoms; i++) {
+      //go to z coordinate start
+      moveCursorToIdx(7, ' ');
+      //get z coordinate end
+      const zCoordEnd = molfile.indexOf(' ', dataBeginIdx);
+      if (parseFloat(molfile.substring(dataBeginIdx, zCoordEnd)))
+        return true;
+      //go to next row
+      dataBeginIdx = molfile.indexOf('\n', dataBeginIdx) + 1;
+    }
+  }
+  return false;
 }

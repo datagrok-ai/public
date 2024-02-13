@@ -492,7 +492,7 @@
   visibility: visible;
 }
 
-.empty-filter {
+.chem-empty-filter {
   gap: 5px;
 }
 
@@ -531,4 +531,14 @@
 .sketch-link {
   border: none!important;
   color: var(--blue-1);
+}
+
+.chem-test {
+  position: relative;
+  width: 100%
+}
+
+/* workaround for OCL sketcher to show molecule properties - https://github.com/cheminfo/openchemlib-js/issues/117 */
+.gwt-DialogBox { 
+  z-index: 10000;
 }

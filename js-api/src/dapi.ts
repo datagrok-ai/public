@@ -791,9 +791,9 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   }
 
   /** Gets recent projects datasource
-   * @returns {HttpDataSource<HistoryEntry>} */
-  get recent(): HttpDataSource<HistoryEntry> {
-     return new HttpDataSource<HistoryEntry>(api.grok_Dapi_RecentProjects());
+   * @returns {HttpDataSource<Project>} */
+  get recent(): HttpDataSource<Project> {
+     return new HttpDataSource<Project>(api.grok_Dapi_RecentProjects());
   }
 
   /** Opens the specified project. */

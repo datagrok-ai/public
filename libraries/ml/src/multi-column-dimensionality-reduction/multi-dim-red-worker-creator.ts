@@ -4,6 +4,7 @@ import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT} from './consts';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {DimReductionMethods} from './types';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
+import {isNil} from '../distance-matrix/utils';
 
 export async function createMultiDimRedWorker(data: Array<any[]>, metrics: KnownMetrics[], method: DimReductionMethods,
   weights: number[], aggregationMethod: DistanceAggregationMethod,
@@ -31,7 +32,7 @@ export async function createMultiDimRedWorker(data: Array<any[]>, metrics: Known
       }
     });
     worker.onmessage = ({data: {error, embedding, epochNum, epochsLength}}) => {
-      if (epochNum && epochsLength) {
+      if (!isNil(epochNum) && !isNil(epochsLength)) {
         progressFunc && progressFunc(epochNum, epochsLength, embedding);
         return;
       }
@@ -41,7 +42,7 @@ export async function createMultiDimRedWorker(data: Array<any[]>, metrics: Known
       else
         resolve(embedding);
       // terminate the worker after some time. immidiate termination causes crashes.
-      setTimeout(() => worker.terminate(), 0);
+      setTimeout(() => worker.terminate(), 100);
     };
   });
 }

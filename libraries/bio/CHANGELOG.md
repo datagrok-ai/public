@@ -1,5 +1,17 @@
 # bio changelog
 
+## 5.39.20 (2021-01-29)
+
+### Features
+
+* Routines to check viewer for IViewer, IRenderer
+
+## 5.39.19 (2024-01-26)
+
+### Features
+
+* Store errors of postponed rendering for tests
+
 ## 5.39.0 (2023-10-25)
 
 ### Features

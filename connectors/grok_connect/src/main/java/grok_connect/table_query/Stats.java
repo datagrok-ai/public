@@ -4,7 +4,6 @@ public class Stats {
 
     /// Special case: to be used in the 'group by' statement.
     public static final String KEY = "key";
-
     public static final String TOTAL_COUNT = "count";
     public static final String VALUE_COUNT = "values";
     public static final String MISSING_VALUE_COUNT = "nulls";

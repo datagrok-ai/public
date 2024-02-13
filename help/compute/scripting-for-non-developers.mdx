@@ -454,6 +454,18 @@ populated default values, and created popups with help text.
 After running this script, Datagrok automatically opens the new dataframe.
 It will contain an additional column **ID** with the generated row ID.
 
+:::warning Case-insensitive column names
+
+In Datagrok, unlike `Python`/`R` dataframes, column names are case-insensitive. 
+If you return a dataframe with columns whose names differ only by letter case, 
+Datagrok will automatically add a number to the column header to differentiate them.
+
+
+To prevent any confusion or issues with column names, 
+we recommend using unique names that are distinct regardless of case. 
+
+:::
+
 ### Using column inputs
 
 Datagrok provides you with data inputs to select one or multiple columns from a dataframe.
@@ -691,6 +703,25 @@ To save the file, right-click on the highlighted file link and choose the **Down
 The file name always matches the output variable name.
 Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
 
+:::info
+Some Python functions 
+(for example, Numpy [Save](https://numpy.org/doc/stable/reference/generated/numpy.save.html))
+automatically add an extension to the file name if it is provided without an extension.
+In this case, Datagrok won't be able to locate output file, 
+and you'll see empty file in the Datagrok output.
+
+To override this behavior, you can open the file via the Python `open` function,
+and use the file object instead of the file name.
+
+```python
+#output: file array_file_binary
+...
+with open(array_file_binary, 'wb') as npfile:
+ np.save(npfile, array)
+...
+```
+:::
+
 ### Semantic types
 
 The Datagrok [semantic types](../govern/catalog/semantic-types) is a very powerful concept,
@@ -805,10 +836,14 @@ Most of them are hints to improve the interface for your scripts.
 You should list options in curly braces in corresponding header lines.
 The order of the hints makes no difference. All options are optional.
 
-### Input captions
+### Input captions and hints
 
 You can add an arbitrary caption for an input parameter. 
 Proper caption helps the user to understand the meaning of the parameter.
+
+To add a hint to the input parameter, place the hint text in the square brackets 
+after the parameter annotation.
+
 
 ```mdx-code-block
 <Tabs>
@@ -831,7 +866,7 @@ Proper caption helps the user to understand the meaning of the parameter.
 ```
 
 ```python
-#input: double V1 { caption: Initial volume of liquid }
+#input: double V1 { caption: Initial volume of liquid } [Used to calculate the initial concentration and the volume change]
 ```
 
 ```mdx-code-block

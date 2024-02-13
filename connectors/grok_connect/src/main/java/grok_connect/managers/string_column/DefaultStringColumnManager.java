@@ -9,6 +9,9 @@ import grok_connect.managers.Converter;
 import grok_connect.managers.string_column.converters.*;
 import grok_connect.resultset.ColumnMeta;
 import oracle.sql.ARRAY;
+import oracle.sql.BLOB;
+import oracle.sql.CLOB;
+import oracle.sql.NCLOB;
 import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
 import org.slf4j.Logger;
@@ -28,9 +31,13 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
             : value.toString();
     private final Map<Class<?>, Converter<String>> converterMap;
 
+    // todo: use java.sql superclasses instead of direct implementations in map keys
     {
         converterMap = new HashMap<>();
         Converter<String> clobConverter = new ClobTypeConverter();
+        converterMap.put(CLOB.class, clobConverter);
+        converterMap.put(NCLOB.class, clobConverter);
+        converterMap.put(BLOB.class, new BlobTypeConverter());
         converterMap.put(Clob.class, clobConverter);
         converterMap.put(c9.class, clobConverter);
         Converter<String> xmlTypeConverter = new XMLTypeConverter();

@@ -199,8 +199,9 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
     this.gridCol.grid.invalidate();
   }
 
-  async awaitRendered(timeout: number = 10000): Promise<void> {
-    await testEvent(this._onRendered, () => {}, () => { this.invalidate(); }, timeout);
+  async awaitRendered(timeout: number = 10000, reason: string = `await rendered ${timeout} timeout`): Promise<void> {
+    await testEvent(this._onRendered, () => {}, () => { this.invalidate(); },
+      timeout, reason);
   }
 }
 

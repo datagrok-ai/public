@@ -8,8 +8,9 @@ import {HitDesignTemplate, IComputeDialogResult, INewTemplateResult} from '../ty
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {getCampaignFieldEditors} from './new-template-accordeon';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
+import {HitAppBase} from '../hit-app-base';
 
-export async function newHitDesignTemplateAccordeon(
+export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   preset?: HitDesignTemplate): Promise<INewTemplateResult<HitDesignTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
   const availableTemplates = (await _package.files.list('Hit Design/templates'));
@@ -103,7 +104,7 @@ export async function newHitDesignTemplateAccordeon(
       functions: preset?.compute?.functions ?? [],
     },
   } as unknown as HitDesignTemplate;
-  const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
+  const funcInput = await chemFunctionsDialog(app, (res) => {funcDialogRes = res;}, () => null,
     dummyTemplate, false);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
   const fieldsEditor = getCampaignFieldEditors(preset?.campaignFields);
@@ -174,6 +175,16 @@ export async function newHitDesignTemplateAccordeon(
               return ({
                 name: scriptNameParts[1] ?? '',
                 id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
+          queries: Object.entries(funcDialogRes?.queries ?? {})
+            .filter(([name, _]) => name.startsWith(C.HTQueryPrefix) && name.split(':').length === 3)
+            .map(([queryName, args]) => {
+              const queryNameParts = queryName.split(':');
+              return ({
+                name: queryNameParts[1] ?? '',
+                id: queryNameParts[2] ?? '',
                 args: args,
               });
             }),

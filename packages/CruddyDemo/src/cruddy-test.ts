@@ -1,5 +1,8 @@
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {DbColumn, DbEntity, DbEntityType, DbQueryEntityCrud, DbTable} from "./cruddy";
+import {DbColumn, DbSchema, DbTable} from "./cruddy/table";
+import {DbEntity, DbEntityType} from "./cruddy/entity";
+import {DbQueryEntityCrud} from "./cruddy/crud";
+import {CruddyConfig} from "./cruddy/app";
 
 const customersTable = new DbTable({
   name: 'customers',
@@ -9,6 +12,21 @@ const customersTable = new DbTable({
     new DbColumn({name: 'lastName', type: 'string'}),
   ]
 });
+
+const ordersTable = new DbTable({
+  name: 'orders',
+  columns: [
+    new DbColumn({name: 'id', type: 'int', isKey: true}),
+    new DbColumn({name: 'customerId', type: 'int', ref: 'customer.id'}),
+    new DbColumn({name: 'details', type: 'string'}),
+  ]
+});
+
+const northwindConfig = new CruddyConfig({
+  connection: 'Samples:PostgresNorthwind',
+  schema: new DbSchema('', [ customersTable, ordersTable ])
+});
+
 
 const customerType = new DbEntityType({type: 'customer', table: customersTable});
 

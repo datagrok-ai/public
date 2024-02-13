@@ -1,4 +1,6 @@
-import {CruddyApp, CruddyConfig, CruddyEntityView, DbColumn, DbEntityType, DbTable} from "../cruddy";
+import {DbColumn, DbSchema, DbTable} from "../cruddy/table";
+import {DbEntityType} from "../cruddy/entity";
+import {CruddyApp, CruddyConfig, CruddyEntityView} from "../cruddy/app";
 
 
 const customersTable = new DbTable({
@@ -7,14 +9,14 @@ const customersTable = new DbTable({
     new DbColumn({name: 'customerid', type: 'string', isKey: true}),
     new DbColumn({name: 'companyname', type: 'string'}),
     new DbColumn({name: 'city', type: 'string'}),
-    new DbColumn({name: 'region', type: 'string'}),
+    new DbColumn({name: 'region', type: 'string', nullable: true}),
     new DbColumn({name: 'fax', type: 'string'}),
     new DbColumn({name: 'contacttitle', type: 'string'}),
     new DbColumn({name: 'country', type: 'string'}),
     new DbColumn({name: 'postalcode', type: 'string'}),
     new DbColumn({name: 'contactname', type: 'string'}),
     new DbColumn({name: 'address', type: 'string'}),
-    new DbColumn({name: 'phone', type: 'string'}),
+    new DbColumn({name: 'phone', type: 'string', nullable: true}),
   ]
 });
 
@@ -30,7 +32,6 @@ const employeesTable = new DbTable({
   ]
 });
 
-
 const categoriesTable = new DbTable({
   name: 'categories',
   columns: [
@@ -38,7 +39,6 @@ const categoriesTable = new DbTable({
     new DbColumn({name: 'categoryname', type: 'string'}),
   ]
 });
-
 
 const productsTable = new DbTable({
   name: 'products',
@@ -56,13 +56,12 @@ const ordersTable = new DbTable({
     new DbColumn({name: 'orderid', type: 'int', isKey: true}),
     new DbColumn({name: 'shippeddate', type: 'datetime'}),
     new DbColumn({name: 'shipcountry', type: 'string'}),
-    new DbColumn({name: 'shipregion', type: 'string'}),
+    new DbColumn({name: 'shipregion', type: 'string', nullable: true}),
     new DbColumn({name: 'shipcity', type: 'string'}),
     new DbColumn({name: 'employeeid', type: 'int', ref: 'employees.employeeid'}),
     new DbColumn({name: 'customerid', type: 'string', ref: 'customers.customerid'}),
   ]
 });
-
 
 const orderDetailsTable = new DbTable({
   name: 'order_details',
@@ -74,17 +73,28 @@ const orderDetailsTable = new DbTable({
   ]
 });
 
-
+const northwindSchema: DbSchema = new DbSchema('northwind',
+  [customersTable, employeesTable, categoriesTable, productsTable, ordersTable, orderDetailsTable]);
 
 export const northwindConfig = new CruddyConfig({
   connection: 'Samples:PostgresNorthwind',
-  tables: [ customersTable, employeesTable, categoriesTable, productsTable, ordersTable, orderDetailsTable],
+  schema: northwindSchema,
   entityTypes: [
     new DbEntityType({ type: 'Category', table: categoriesTable }),
     new DbEntityType({ type: 'Product', table: productsTable }),
     new DbEntityType({ type: 'Customer', table: customersTable }),
     new DbEntityType({ type: 'Employee', table: employeesTable }),
-    new DbEntityType({ type: 'Order', table: ordersTable }),
+    new DbEntityType({ type: 'Order', table: ordersTable,
+      gridColumnsNames: [
+        'orderid', 'shippeddate', 'shipcountry', 'shipregion', 'shipcity',
+        'employees.firstname', 'customers.name'
+      ],
+      filters: [
+        { type: 'distinct', column: 'shipcountry'},
+        { type: 'combo', column: 'shipcity'},
+        { type: 'range', column: 'orderid'},
+        { type: 'expression', column: 'shipcity'},
+    ]}),
     new DbEntityType({ type: 'Order Details', table: orderDetailsTable }),
   ]
 });

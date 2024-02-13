@@ -228,7 +228,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = this.validationUpdates.pipe().subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.isRunning).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -282,7 +282,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private getStandardButtons(): HTMLElement[] {
-    const runButton = this.getRunButton();
+    const runButton = this.getRunButton() as HTMLButtonElement;
     const runButtonWrapper = ui.div([runButton]);
     ui.tooltip.bind(
       runButtonWrapper,
@@ -295,32 +295,50 @@ export class RichFunctionView extends FunctionView {
     ];
   }
 
+  private formButtons = ui.div();
+  private buildFormButtons() {
+    const standardButtons = this.getStandardButtons();
+
+    const newFormButtons = ui.buttonsInput();
+    $(newFormButtons.firstChild).css({'display': 'none'});
+    newFormButtons.lastChild?.replaceWith(ui.div([
+      ...this.navBtns,
+      ...this.additionalBtns,
+      ...standardButtons,
+    ], 'ui-input-editor'));
+    $(newFormButtons).addClass('rfv-buttons');
+    $(newFormButtons).css({'max-width': '100%'});
+
+    this.formButtons.replaceWith(newFormButtons);
+    this.formButtons = newFormButtons;
+
+    return newFormButtons;
+  }
+
   /**
    * Override to change additional buttons placed between navigation and run buttons.
    */
-  protected additionalBtns = ui.divH([]) as HTMLElement;
+  protected additionalBtns = [] as HTMLElement[];
   /**
    * Changes additional buttons to provided ones.
    * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
    */
   public setAdditionalButtons(additionalBtns: HTMLElement[]) {
-    const additionalBtnsContainer = ui.divH(additionalBtns);
-    this.additionalBtns.replaceWith(additionalBtnsContainer);
-    this.additionalBtns = additionalBtnsContainer;
+    this.additionalBtns = additionalBtns;
+
+    this.buildFormButtons();
   }
 
   /**
    * Override to change navigation buttons placed next to the additional buttons.
    */
-  protected navBtns = ui.divH([]) as HTMLElement;
+  protected navBtns = [] as HTMLElement[];
   /**
    * Changes navigation buttons to provided ones.
    * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
-    const navBtnsContainer = ui.divH(navBtns);
-    this.navBtns.replaceWith(navBtnsContainer);
-    this.navBtns = navBtnsContainer;
+    this.navBtns = navBtns;
   }
 
   /**
@@ -331,12 +349,11 @@ export class RichFunctionView extends FunctionView {
   public buildIO(): HTMLElement {
     const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
     const inputElements = ([
-      ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
+      ...Array.from(inputForm.childNodes),
       ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
     ]);
 
     ui.tools.handleResize(inputBlock, () => {
-      //if (inputElements.some((child) => $(child).width() < 150) ||
       if ($(inputBlock).width() < 300) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
@@ -372,18 +389,9 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
-    const standardButtons = this.getStandardButtons();
+    this.buildFormButtons();
 
-    const controllsDiv = ui.buttonsInput([
-      this.navBtns as any,
-      ui.divH([
-        this.additionalBtns,
-        ...standardButtons,
-      ], {style: {'gap': '5px'}}),
-    ]);
-    $(controllsDiv).addClass('rfv-buttons');
-
-    const controlsForm = ui.div(controllsDiv, 'ui-form ui-form-wide');
+    const controlsForm = ui.div(this.formButtons, 'ui-form ui-form-wide');
     $(controlsForm).css({
       'padding-left': '0px',
       'padding-bottom': '0px',
@@ -458,7 +466,7 @@ export class RichFunctionView extends FunctionView {
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
     const newRibbonPanels = [[
-      ...this.getRibbonPanels().flat().map((elem) => elem.firstChild as HTMLElement),
+      ...super.buildRibbonPanels().flat(),
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
       ...(!this.options.isTabbed &&
         ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
@@ -774,6 +782,21 @@ export class RichFunctionView extends FunctionView {
 
     this.funcCall.inputs[name] = value;
     this.setInputLockState(input, name, value, state);
+  }
+
+  public getParamChanges<T = any>(name: string): Observable<T | null> {
+    const ptype = this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCallReplaced.pipe(
+      startWith(null),
+      filter(() => !!this.funcCall),
+      switchMap(() => this.funcCall[ptype][name].onChanged.pipe(startWith(null))),
+      map(() => this.funcCall[ptype][name].value as T),
+    );
+  }
+
+  public getParamValue<T = any>(name: string): T | null {
+    const ptype = this.funcCall?.['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCall?.[ptype][name].value;
   }
 
   private setInputLockState(input: FuncCallInput, paramName: string, value: any, state?: INPUT_STATE) {

@@ -170,6 +170,7 @@ export namespace historyUtils {
     filterOptions: FilterOptions[] = [],
     listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {},
     includedFields: string[] = [],
+    skipDfLoad: boolean = false,
   ): Promise<DG.FuncCall[]> {
     let filteringString = ``;
     for (const filterOption of filterOptions) {
@@ -202,7 +203,7 @@ export namespace historyUtils {
     for (const pulledRun of result)
       await augmentCallWithFunc(pulledRun);
 
-    if (includedFields.includes('inputs') || includedFields.includes('func.params')) {
+    if ((includedFields.includes('inputs') || includedFields.includes('func.params')) && !skipDfLoad) {
       for (const pulledRun of result) {
         const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
           .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -211,7 +212,7 @@ export namespace historyUtils {
       }
     }
 
-    if (includedFields.includes('outputs') || includedFields.includes('func.params')) {
+    if ((includedFields.includes('outputs') || includedFields.includes('func.params')) && !skipDfLoad) {
       for (const pulledRun of result) {
         const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
           .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);

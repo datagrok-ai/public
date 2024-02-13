@@ -199,6 +199,11 @@ jobs:
           name: docusaurus
           path: docusaurus/build
           retention-days: 7
+      - name: 'debug'
+        run: |
+          echo ${{ github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true' }}
+          echo ${{ github.ref }}
+          echo ${{ needs.common-check.outputs.continue }}
 #      - name: Commit plugins.json
 #        id: git
 #        if: github.ref == 'refs/heads/master'
@@ -245,7 +250,7 @@ jobs:
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
+    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-22.04
     environment: Help
     steps:
@@ -302,7 +307,7 @@ jobs:
           header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
       - name: Send to Slack
@@ -343,7 +348,7 @@ jobs:
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
+    if: always() && needs.deploy.result == 'success'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout

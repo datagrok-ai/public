@@ -1,5 +1,50 @@
 # Compute changelog
 
+## 1.21.0 (2024-02-13)
+
+### Features
+
+- Wizard: now deletes all steps' funccalls on parent funccall deletion
+- CPV: Design & performance improvements
+- SA: Added units into the form
+
+### Bug fixes
+
+- SA: Fixed bug with identical column names
+- CPV: Fixed bug with viewers of the same type
+
+## 1.20.1 (2024-02-05)
+
+### Features
+
+- HistoryInput now supports DF param skipping
+
+## 1.20.0 (2024-02-01)
+
+### Features
+
+- PLV: Added help icon for steps if help is available
+- RFV: Added "add to favorites" icon for historical runs cards
+- ModelCatalog: Moved help to model's context menu
+- RFV: Moved History panel out from context panel
+
+## 1.19.2 (2024-01-18)
+
+### Bug fixes
+
+- RFV: Run button disabling fix
+
+## 1.19.1 (2024-01-18)
+
+### Features
+
+- SA: Internal refactoring & UI improvements
+
+### Bug fixes
+
+- RFV: Foldable categories design fix
+- RFV: Buttons layout changes
+
 ## 1.19.0 (2024-01-08)
 
 ### Features

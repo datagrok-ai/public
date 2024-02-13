@@ -3,11 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {debounceTime} from 'rxjs/operators';
-import {getDistanceFromSimilarity, getSimilarityFromDistance} from '../distance-metrics-methods';
+import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {Subject} from 'rxjs';
 import {MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import '../../css/styles.css';
-import {BitArrayMetrics, isBitArrayMetric} from '../typed-metrics/typed-metrics';
+import {BitArrayMetrics} from '../typed-metrics/typed-metrics';
 import {dmLinearIndex} from '../distance-matrix';
 import {SparseMatrixResult, SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer} from '@datagrok-libraries/utils/src/render-lines-on-sp';
@@ -72,11 +72,11 @@ interface ISaliLims {
 }
 
 const filterCliffsSubj = new Subject<string>();
-const LINES_DF_ACT_DIFF_COL_NAME = 'act_diff';
-const LINES_DF_SALI_COL_NAME = 'sali';
-const LINES_DF_SIM_COL_NAME = 'sim';
+const LINES_DF_ACT_DIFF_COL_NAME = 'activity_difference';
+const LINES_DF_SALI_COL_NAME = 'SALI_index';
+const LINES_DF_SIM_COL_NAME = 'similarity';
 const LINES_DF_LINE_IND_COL_NAME = 'line_index';
-const LINES_DF_MOL_COLS_NAMES = ['1_seq', '2_seq'];
+const LINES_DF_MOL_COLS_NAMES = ['1_molecule', '2_molecule'];
 const CLIFFS_FILTER_APPLIED = 'filterCliffs';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
@@ -106,11 +106,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   for (let i = 0; i < embeddingsMatrix.length; ++i)
     df.columns.addNewFloat(axesNames[i]).init((idx) => embeddingsMatrix[i][idx]);
 
-  // as the service is counting from distances, and distances ar not counted from 0-1 for bit arrays, we need this conversion
-  const trueSimilarityLimit = isBitArrayMetric(similarityMetric) ? 1 - getDistanceFromSimilarity(similarityLimit) : similarityLimit;
-
   const sparseMatrixRes = await new SparseMatrixService()
-    .calc(encodedColWithOptions.entries, similarityMetric, trueSimilarityLimit, encodedColWithOptions.options);
+    .calc(encodedColWithOptions.entries, similarityMetric, similarityLimit, encodedColWithOptions.options);
   const cliffsMetrics: IActivityCliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, activities);
 
   const sali: DG.Column = getSaliCountCol(seqCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,
@@ -139,6 +136,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
 
   const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
 
+  linesRes.linesDf.col(LINES_DF_SALI_COL_NAME)!.setTag('description', 'Structure−Activity Landscape Index (activity difference divided by 1 minus similarity)');
   //creating scatter plot lines renderer
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);
@@ -146,6 +144,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const linesDfGrid = linesGridFunc ?
     linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
     linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+
+  if (linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME))
+    linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME)!.visible = false;
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {

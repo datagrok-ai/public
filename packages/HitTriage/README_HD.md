@@ -68,7 +68,7 @@ Hit design campaign consists of two views, a main design view and a tiles view. 
 
 HitDesign allows users to define custom compute and submit functions, and these functions can be written in any Datagrok package that is installed in the environment. 
 
-** Compute functions **
+### Compute functions
 
 Compute functions are used to calculate molecular properties. For example, mass, solubility, mutagenicity, partial charges, toxicity risks, etc. By default, Hit design will include compute functions from `Chem` package, which are molecular descriptors, Structural alerts, Toxicity risks and Chemical properties. Users can add additional compute functions by tagging them with `HitDesignFunction` tag and writing them in normal datagrok style. The First two inputs of these functions should be `Dataframe` `table` and `Column` `molecule`, and rest can be any other input. Function should perform a certain task, modify the dataframe in desired way and return the modified dataframe. For example, we can create a function that retrieves the `Chembl` mol registration number by smiles string:
 
@@ -98,7 +98,51 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
 
 This function will go through every molecule in the dataframe, convert them to canonical smiles and call the query from Chembl database, that will retrieve the molregno number. The result will be added as a new column to the dataframe. If this function is defined in the `Chembl` package, after building and deploying it to stand, it will be automatically added to the compute functions list in HitDesign.
 
-** Submit functions **
+Datagrok scripts can also be used as compute functions. For example, you can create a js script that adds a new column to the dataframe. This script also needs to have `HitTriageFunction` tag and should accept `Dataframe` `table` and `Column` `molecules` as first two inputs:
+
+```
+//name: Demo script HT
+//description: Hello world script
+//language: javascript
+//input: dataframe df
+//input: column col
+//input: int a
+//tags: HitTriageFunction
+//output: dataframe res
+
+df.columns.addNewInt('Some number col').init(() => a)
+res = df
+
+```
+
+Similarly, queries with same `HitTriageFunction` tag will be added to the compute functions list. The query needs to have at least one input, first of which must be `list<string>`, representing the list of molecules. The query must return a dataframe, which should contain column `molecules` in order to join result with initial dataframe. `molecules` column will be used as key for joining tables. For example, you can create a query that looks for the molecule in Chembl database and returns the molregno number:
+
+```
+--name: ChemblMolregNoBySmiles
+--friendlyName: Chembl Molregno by smiles
+--input: list<string> molecules
+--tags: HitTriageFunction
+--connection: Chembl
+select molregno, molecules from compound_structures c
+	INNER JOIN unnest(@molecules) molecules
+    ON molecules.molecules
+ = c.canonical_smiles
+```
+
+Or a query that calculates fraction of sp3 hybridized carbons in the molecule using RDKit SQL cartridge:
+
+```
+--name: SP3Fraction
+--friendlyName: SP3 fraction of carbons
+--input: list<string> molecules
+--tags: HitTriageFunction
+--connection: Chembl
+select molecules, mol_fractioncsp3(Cast(molecules as mol))
+from unnest(@molecules) as molecules
+where is_valid_smiles(Cast(molecules as cstring))
+```
+
+### Submit functions
 
 Submit functions are used to save or submit the filtered and computed dataset. This could include saving to a private database or additional calculations. Submit functions are defined in the same way as compute functions, but they are tagged with `HitTriageSubmitFunction` tag. The function should accept only two inputs, `Dataframe` `df` and `String` `molecules`, which are the resulting dataframe and name of molecules column respectively. For example, we can create a function that saves the filtered and computed dataset to a database:
 

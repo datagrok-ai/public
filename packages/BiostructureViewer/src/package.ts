@@ -429,7 +429,7 @@ export function addContextMenu(event: DG.EventData): void {
 //meta.demoPath: Bioinformatics | Docking Conformations
 //descriptions: Display ligand poses along the structure
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
-//test: demoBioDockingConformations() //wait: 1000
+//test: demoBioDockingConformations() //wait: 1000 //timeout: 60000
 export async function demoBioDockingConformations(): Promise<void> {
   await demoBio06NoScript();
 }
@@ -439,9 +439,12 @@ export async function demoBioDockingConformations(): Promise<void> {
 //meta.demoPath: Bioinformatics | Proteins
 //description: View structures PDB in grids
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Proteins
-//test: demoBioProteins() //wait: 3000
+//test: demoBioProteins() //wait: 1000 //timeout: 60000
 export async function demoBioProteins(): Promise<void> {
+  const t1: number = window.performance.now();
   await demoBio07NoScript();
+  const t2: number = window.performance.now();
+  _package.logger.debug(`demoBioProteins(), end ET: ${t2 - t1}`);
 }
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';

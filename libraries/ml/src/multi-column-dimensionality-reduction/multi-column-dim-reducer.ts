@@ -1,9 +1,7 @@
 import {Coordinates, DistanceMetric, Matrix, Options, Vector, Vectors}
   from '@datagrok-libraries/utils/src/type-declarations';
-import {TSNE} from '@keckelt/tsne';
 import {AvailableDataTypes, AvailableMetrics, KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
-import {DistanceMatrixService, distanceMatrixProxy} from '../distance-matrix';
-import {getAggregationFunction} from '../distance-matrix/utils';
+import {DistanceMatrixService} from '../distance-matrix';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {UMAP} from '../umap';
 import {assert, transposeMatrix} from '@datagrok-libraries/utils/src/vector-operations';
@@ -11,6 +9,8 @@ import {SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {DimReductionMethods} from './types';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import seedRandom from 'seedrandom';
+//import {TSNE} from '@keckelt/tsne';
+import {TSNE} from '../t-sne/t-sne';
 
 export interface IUMAPOptions {
     learningRate?: number;
@@ -61,7 +61,7 @@ class TSNEReducer extends MultiColumnReducer {
     protected distanceFnames: KnownMetrics[];
     protected distanceFns: ((a: any, b: any) => number)[];
     protected distanceFnArgs: {[_: string]: any}[];
-
+    protected progressFunc?: (epoc: number, epochsLength: number, embeddings?: number[][]) => void;
     /**
      * Creates an instance of TSNEReducer.
      * @param {Options} options Options to pass to the constructor.
@@ -69,11 +69,15 @@ class TSNEReducer extends MultiColumnReducer {
      */
     constructor(options: Options) {
       super(options);
+      const randomSeed: string = options.randomSeed ?? Date();
+      const randomFn = seedRandom(randomSeed);
+      options.random = randomFn;
       this.reducer = new TSNE(options);
-      this.iterations = options?.iterations ?? 100;
+      this.iterations = options?.iterations ?? this.reducer.getIterSize(this.data[0].length);
       this.distanceFnames = options.distanceFnames;
       this.distanceFns = options.distanceFns;
       this.distanceFnArgs = options.distanceFnArgs;
+      this.progressFunc = options.progressFunc;
     }
 
     /**
@@ -86,21 +90,26 @@ class TSNEReducer extends MultiColumnReducer {
         throw new Error('Maximum number of samples for T-SNE is 10000');
       const matrixService = new DistanceMatrixService(true, false);
       try {
-        const aggregate = getAggregationFunction(this.aggregationMethod, this.weights);
-        const distances: Array<Float32Array> = [];
-        for (let i = 0; i < this.data.length; ++i) {
-          const dist = await matrixService.calc(this.data[i], this.distanceFnames[i], false, this.distanceFnArgs[i]);
-          distances.push(dist);
-        }
-        const distance = new Float32Array(distances[0].length).fill(0);
-        for (let i = 0; i < distances[0].length; ++i)
-          distance[i] = aggregate(distances.map((d) => d[i]));
-        const matrixProxy = distanceMatrixProxy(distance, this.data[0].length);
-        this.reducer.initDataDist(matrixProxy);
-
-        for (let i = 0; i < this.iterations; ++i)
-          this.reducer.step(); // every time you call this, solution gets better
+        // const aggregate = getAggregationFunction(this.aggregationMethod, this.weights);
+        // const distances: Array<Float32Array> = [];
+        // for (let i = 0; i < this.data.length; ++i) {
+        //   const dist = await matrixService.calc(this.data[i], this.distanceFnames[i], false, this.distanceFnArgs[i]);
+        //   distances.push(dist);
+        // }
+        // const distance = new Float32Array(distances[0].length).fill(0);
+        // for (let i = 0; i < distances[0].length; ++i)
+        //   distance[i] = aggregate(distances.map((d) => d[i]));
+        const distance = await matrixService.calcMulti(this.data, this.distanceFnames, false, this.distanceFnArgs,
+          this.weights, this.aggregationMethod);
         matrixService.terminate();
+        // const matrixProxy = distanceMatrixProxy(distance, this.data[0].length);
+        this.reducer.initDataDist(distance, this.data[0].length);
+
+        for (let i = 0; i < this.iterations; ++i) {
+          this.reducer.step(); // every time you call this, solution gets better
+          if (this.progressFunc)
+            this.progressFunc(i, this.iterations, []);
+        }
         return this.reducer.getSolution();
       } catch (e) {
         matrixService.terminate();
@@ -114,7 +123,7 @@ class UMAPReducer extends MultiColumnReducer {
     protected distanceFnames: KnownMetrics[];
     protected distanceFns: Function[];
     protected vectors: number[];
-    protected progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
+    protected progressFunc?: (epoc: number, epochsLength: number, embedding: number[][]) => void;
     protected distanceFnArgs: {[_: string]: any}[];
     /**
      * Creates an instance of UMAPReducer.
@@ -124,8 +133,6 @@ class UMAPReducer extends MultiColumnReducer {
     constructor(options: Options) {
       const randomSeed: string = options.randomSeed ?? Date();
       const randomFn = seedRandom(randomSeed);
-      console.log(randomSeed);
-      console.log(randomFn(), randomFn(), randomFn());
       super(options);
       assert('distanceFnames' in options);
       assert('distanceFns' in options);
@@ -137,7 +144,7 @@ class UMAPReducer extends MultiColumnReducer {
       //Umap uses vector indexing, so we need to create an array of vectors as indeces.
       this.vectors = new Array(this.data[0].length).fill(0).map((_, i) => i);
 
-      if (this.data[0].length < 15)
+      if (this.data[0].length <= (options.nNeighbors ?? 15))
         options.nNeighbors = this.data[0].length - 1;
       options.random = randomFn;
       this.reducer = new UMAP(options);

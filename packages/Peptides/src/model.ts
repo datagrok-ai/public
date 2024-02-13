@@ -10,9 +10,8 @@ import {
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
-import {BitArrayMetrics, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import wu from 'wu';
@@ -39,9 +38,8 @@ import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionWidget, PeptideViewer} from './widgets/distribution';
 import {CLUSTER_TYPE, ILogoSummaryTable, LogoSummaryTable, LST_PROPERTIES} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
-import {_package, getTreeHelperInstance} from './package';
+import {_package} from './package';
 import {calculateMonomerPositionStatistics} from './utils/algorithms';
-import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
 import {MmDistanceFunctionsNames}
@@ -52,6 +50,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {getDbscanWorker} from '@datagrok-libraries/math';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
@@ -172,6 +171,8 @@ export class PeptidesModel {
   set settings(s: type.PartialPeptidesSettings) {
     const newSettingsEntries = Object.entries(s) as ([keyof type.PeptidesSettings, never])[];
     // Holds updated settings categories
+    const oldSeqSpaceOptions: Partial<type.SequenceSpaceParams> =
+      Object.assign({}, this.settings?.sequenceSpaceParams ?? {});
     const updateVars: Set<string> = new Set();
     for (const [key, value] of newSettingsEntries) {
       this.settings![key] = value;
@@ -205,6 +206,16 @@ export class PeptidesModel {
     if (!this.isInitialized)
       return;
 
+    if (updateVars.has('sequenceSpaceParams')) {
+      const newSeqSpaceOptions = this.settings!.sequenceSpaceParams!;
+      if (!Object.entries(newSeqSpaceOptions).some(([key, value]) =>
+        oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
+          key !== 'minPts' && key !== 'clusterEmbeddings')) {
+        updateVars.delete('sequenceSpaceParams');
+        if (this.settings!.sequenceSpaceParams.clusterEmbeddings)
+          updateVars.add('clusterParams');
+      }
+    }
 
     // Apply new settings
     for (const variable of updateVars) {
@@ -247,7 +258,10 @@ export class PeptidesModel {
         mpr.render();
         break;
       case 'sequenceSpaceParams':
-        this.addSequenceSpace();
+        this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
+        break;
+      case 'clusterParams':
+        this.clusterEmbeddings();
         break;
       }
     }
@@ -918,18 +932,28 @@ export class PeptidesModel {
   async addDendrogram(): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Calculating distance matrix...');
     try {
-      const pepColValues: string[] = this.df.getCol(this.settings!.sequenceColumnName).toList();
-      this._dm ??= new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
-      const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
-      const treeHelper: ITreeHelper = getTreeHelperInstance();
-      const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
+      // const pepColValues: string[] = this.df.getCol(this.settings!.sequenceColumnName).toList();
+      // this._dm ??=
+      //new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
+      // const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
+      // const treeHelper: ITreeHelper = getTreeHelperInstance();
+      // // treeHelper.
+      // const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
 
-      this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
-      const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
-      this.analysisView.grid.setRowOrder(leafOrdering);
-      const dendrogramViewer = await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
+      // this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
+      // const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
+      // this.analysisView.grid.setRowOrder(leafOrdering);
+      // const dendrogramViewer =
+      //await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
 
-      this.analysisView.dockManager.dock(dendrogramViewer, DG.DOCK_TYPE.LEFT, null, 'Dendrogram', 0.25);
+      // this.analysisView.dockManager.dock(dendrogramViewer, DG.DOCK_TYPE.LEFT, null, 'Dendrogram', 0.25);
+      const dFunc = DG.Func.find({package: 'Dendrogram', name: 'hierarchicalClustering'})[0];
+      if (!dFunc || dFunc.inputs.length !== 4)
+        throw new Error('Correct dendrogram function is not found');
+      await dFunc.apply({
+        df: this.df, colNameList: [this.settings!.sequenceColumnName],
+        distance: 'euclidean', linkage: 'complete',
+      });
     } catch (e) {
       _package.logger.error(e as string);
     } finally {
@@ -1117,10 +1141,39 @@ export class PeptidesModel {
     return newDf.getTag(DG.TAGS.ID)!;
   }
 
+  private async clusterEmbeddings(): Promise<void> {
+    if (!this._sequenceSpaceCols || this._sequenceSpaceCols.length === 0) {
+      grok.shell.warning('Embeddings columns are not initialized');
+      return;
+    }
+    const embeddingColNames = this._sequenceSpaceCols.filter((colName) => colName.toLowerCase().startsWith('embed_'));
+    if (embeddingColNames.length !== 2) {
+      grok.shell.warning(`Found ${embeddingColNames.length} embeddings columns, expected 2`);
+      return;
+    }
+    const oldClusterCol = this._sequenceSpaceCols.filter((colName) => colName.toLowerCase().startsWith('cluster'));
+    if (oldClusterCol.length > 0)
+      this.df.columns.remove(oldClusterCol[0]);
+    const embed1 = this.df.getCol(embeddingColNames[0]).getRawData() as Float32Array;
+    const embed2 = this.df.getCol(embeddingColNames[1]).getRawData() as Float32Array;
+    const epsilon = this.settings!.sequenceSpaceParams!.epsilon ?? 0.01;
+    const minPts = this.settings!.sequenceSpaceParams!.minPts ?? 4;
+    const clusterRes = await getDbscanWorker(embed1, embed2, epsilon, minPts);
+    const newClusterName = this.df.columns.getUnusedName('Cluster');
+    const clusterCol = this.df.columns.addNewString(newClusterName);
+    clusterCol.init((i) => clusterRes[i].toString());
+    if (this._sequenceSpaceViewer !== null)
+      this._sequenceSpaceViewer.props.colorColumnName = clusterCol.name;
+
+    this._sequenceSpaceCols = [embeddingColNames[0], embeddingColNames[1], clusterCol.name];
+    const gridCol = this.analysisView.grid.col(clusterCol.name);
+    gridCol && (gridCol.visible = false);
+  }
+
   /**
    * Adds Sequence Space viewer to the analysis view
    */
-  async addSequenceSpace(): Promise<void> {
+  async addSequenceSpace(settings: {clusterEmbeddings?: boolean, clusterCol?: DG.Column | null} = {}): Promise<void> {
     if (this._sequenceSpaceViewer !== null) {
       try {
         this._sequenceSpaceViewer?.detach();
@@ -1129,7 +1182,6 @@ export class PeptidesModel {
     }
     if (this._sequenceSpaceCols.length !== 0)
       this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
-
     this._sequenceSpaceCols = [];
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     const uh = UnitsHandler.getOrCreate(seqCol);
@@ -1150,7 +1202,10 @@ export class PeptidesModel {
         return;
       }
     }
-    const seqSpaceSettings = this.settings?.sequenceSpaceParams ?? new type.SequenceSpaceParams();
+    const clusterEmbeddings = !settings.clusterCol && !!settings.clusterEmbeddings;
+    const seqSpaceSettings = this.settings?.sequenceSpaceParams ??
+      new type.SequenceSpaceParams(clusterEmbeddings);
+    seqSpaceSettings.clusterEmbeddings = clusterEmbeddings;
     const seqSpaceParams: {
       table: DG.DataFrame,
       molecules: DG.Column,
@@ -1167,9 +1222,8 @@ export class PeptidesModel {
         methodName: DimReductionMethods.UMAP,
         similarityMetric: seqSpaceSettings.distanceF,
         plotEmbeddings: true,
-        sparseMatrixThreshold: 0.3,
         options: {'bypassLargeDataWarning': true, 'dbScanEpsilon': seqSpaceSettings.epsilon,
-          'dbScanMinPts': seqSpaceSettings.minPts,
+          'dbScanMinPts': seqSpaceSettings.minPts, 'randomSeed': '1',
           'preprocessingFuncArgs': {
             gapOpen: seqSpaceSettings.gapOpen, gapExtend: seqSpaceSettings.gapExtend,
             fingerprintType: seqSpaceSettings.fingerprintType,
@@ -1183,7 +1237,7 @@ export class PeptidesModel {
     const addedColCount = seqSpaceSettings.clusterEmbeddings ? 3 : 2;
     const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
       for (const col of colArgs.columns) {
-        if (col.name.startsWith('Embed_') ||
+        if (col.name.toLowerCase().startsWith('embed_') ||
         ( seqSpaceSettings.clusterEmbeddings && col.name.toLowerCase().startsWith('cluster'))) {
           const gridCol = this.analysisView.grid.col(col.name);
           if (gridCol == null)
@@ -1204,11 +1258,13 @@ export class PeptidesModel {
       return;
 
 
-    if (!seqSpaceSettings.clusterEmbeddings) { // color by activity if clusters are not automatically generated.
+    if (!seqSpaceSettings.clusterEmbeddings && !settings.clusterCol) { // color by activity if no clusters
       seqSpaceViewer.props.colorColumnName = this.getScaledActivityColumn()!.name;
     }
     seqSpaceViewer.props.showXSelector = false;
     seqSpaceViewer.props.showYSelector = false;
+    if (settings.clusterCol)
+      seqSpaceViewer.props.colorColumnName = settings.clusterCol.name;
     this._sequenceSpaceViewer = seqSpaceViewer;
     seqSpaceViewer.onContextMenu.subscribe((menu) => {
       try {

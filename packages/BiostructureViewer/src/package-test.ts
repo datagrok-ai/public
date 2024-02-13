@@ -14,6 +14,7 @@ import './tests/molstar-viewer-tests';
 import './tests/viewers';
 import './tests/pdbqt-tests';
 import './tests/data-provider-tests';
+import './tests/context-menu-tests';
 
 
 // This _package object is for tests only.

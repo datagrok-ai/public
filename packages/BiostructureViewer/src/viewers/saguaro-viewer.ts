@@ -14,7 +14,6 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
 import {_package} from '../package';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -166,11 +165,10 @@ export class SaguaroViewer extends DG.JsViewer {
         // TODO: Data
 
         if (!this.viewed) {
+          await ui.tools.waitForElementInDom(this.root);
           await this.buildView('setData'); // setData
           this.viewed = true;
         }
-      } catch (err: any) {
-        grok.shell.error(err.toString());
       } finally {
         this.setDataInProgress = false;
       }
@@ -197,6 +195,7 @@ export class SaguaroViewer extends DG.JsViewer {
     }
 
     for (const sub of this.viewSubs) sub.unsubscribe();
+    this.viewSubs = [];
 
     if (this.splashDiv) {
       $(this.splashDiv).empty();
@@ -356,12 +355,6 @@ export class SaguaroViewer extends DG.JsViewer {
 
   // -- Handle events --
 
-  private handleError(err: any): void {
-    const [errMsg, errStack] = errInfo(err);
-    grok.shell.error(errMsg);
-    _package.logger.error(errMsg, undefined, errStack);
-  }
-
   private rootOnSizeChanged(_value: any): void {
     _package.logger.debug('BiotrackViewer.rootOnSizeChanged() ');
     this.calcSize();
@@ -385,5 +378,9 @@ export class SaguaroViewer extends DG.JsViewer {
     await testEvent(this.onRendered, () => {}, () => {
       this.invalidate();
     }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }

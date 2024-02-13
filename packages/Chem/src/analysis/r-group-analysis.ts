@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {findRGroups} from '../scripts-api';
+import {findRGroups, findRGroupsWithCore} from '../scripts-api';
 import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -30,8 +30,6 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
   const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
-
-  let prefixIdx = 0;
 
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
@@ -69,22 +67,32 @@ export function rGroupAnalysis(col: DG.Column): void {
       visualAnalysisCheck.root,
     ]))
     .onOK(async () => {
-      col = col.dataFrame.columns.byName(columnInput.value!);
-      const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
-      if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
-        prefixIdx++;  
-        const maxPrefixIdx = 100;
-        for (let i = 0; i < maxPrefixIdx; i++) {
-          const reIdx = new RegExp(`^${columnPrefixInput.value}\\d+_${prefixIdx}$`, 'i');
-          if(!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
-            break;
-          prefixIdx++;       
+      const getPrefixIdx = (colPrefix: string) => {
+        let prefixIdx = 0;
+        col = col.dataFrame.columns.byName(columnInput.value!);
+        const re = new RegExp(`^${colPrefix}$`, 'i');
+        if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+          prefixIdx++;  
+          const maxPrefixIdx = 100;
+          for (let i = 0; i < maxPrefixIdx; i++) {
+            const reIdx = new RegExp(`^${colPrefix}_${prefixIdx}$`, 'i');
+            if(!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
+              break;
+            prefixIdx++;       
+          }
+          if (prefixIdx - 1 === maxPrefixIdx) {
+            grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+            return null;
+          }
         }
-        if (prefixIdx - 1 === maxPrefixIdx) {
-          grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
-          return;
-        }
+        return prefixIdx;
       }
+      const rGroupPrefixRe = `${columnPrefixInput.value}\\d+`;
+      const corePrefixRe = `Core`;
+      const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
+      const corePrefixIdx = getPrefixIdx(corePrefixRe);
+      if (rGroupPrefixIdx === null || corePrefixIdx === null)
+        return;
       const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');
@@ -93,7 +101,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       let progressBar;
       try {
         progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
-        const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
+        const res = await findRGroupsWithCore(col.name, col.dataFrame, core);
         const module = getRdKitModule();
         if (res.rowCount) {
           for (const resCol of res.columns) {
@@ -110,7 +118,8 @@ export function rGroupAnalysis(col: DG.Column): void {
                 mol?.delete();
               }
             }
-            const rColName = prefixIdx ? `${resCol.name}_${prefixIdx}` : resCol.name;
+            const rColName = resCol.name === 'Core' ? corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name :
+              rGroupPrefixIdx ? `${resCol.name}_${rGroupPrefixIdx}` : resCol.name;
             resCol.name = rColName;
             const rCol = DG.Column.fromStrings(rColName, molsArray);
             rCol.semType = DG.SEMTYPE.MOLECULE;
@@ -121,8 +130,8 @@ export function rGroupAnalysis(col: DG.Column): void {
           const view = grok.shell.getTableView(col.dataFrame.name);
           if (visualAnalysisCheck.value && view) {
             view.trellisPlot({
-              xColumnNames: [res.columns.byIndex(0).name],
-              yColumnNames: [res.columns.byIndex(1).name],
+              xColumnNames: [res.columns.byIndex(1).name], // column 0 is Core column
+              yColumnNames: [res.columns.byIndex(2).name],
             });
           }
         } else

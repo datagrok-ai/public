@@ -8,17 +8,27 @@
 }
 
 #tt-test-case-div {
-  height: 200px;
+  height: 270px;
   background-color: var(--grey-1);
   border-radius: 9px;
-  padding: 10px;
+  padding: 10px 10px 0 10px;
   overflow-y: scroll;
   line-height: 1.5;
 }
 
+#tt-test-case-div > .d4-markup > ol {
+  padding-inline-start: 0;
+}
+
+#tt-test-case-div ol {
+  margin-block-start: 0;
+  padding-inline-start: 30px;
+  list-style-position: inside;
+}
+
 #tt-test-case-div-outer {
   position: relative;
-  margin: 10px 10px 0 10px;
+  margin: 0 8px;
 }
 
 #tt-edit-button {
@@ -29,8 +39,6 @@
   margin: 0;
   padding: 4px;
   height: unset;
-  /* box-shadow: 0 0 10px var(--grey-1);
-  background-color: var(--grey-1); */
 }
 
 #tt-test-case-div-outer:hover #tt-edit-button {
@@ -51,13 +59,38 @@
   cursor: default !important;
 }
 
+.tt-history i:nth-child(1) {
+  filter: blur(0.6px);
+  opacity: 0.8;
+}
+
+.tt-history i:nth-child(2) {
+  filter: blur(0.8px);
+  opacity: 0.6;
+}
+
+.tt-history i:nth-child(3) {
+  filter: blur(1px);
+  opacity: 0.4;
+}
+
 .tt-ribbon-button {
   margin: 4px 0 !important;
 }
 
-.tt-ribbon-button:nth-child(1) {
-  margin-left: 2px !important;
+.tt-slack-link {
+  font-size: 0;
 }
+
+.tt-slack-link:after {
+  content: 'SLACK';
+  font-size: 13px;
+  vertical-align: -15%;
+}
+
+/* .tt-ribbon-button:nth-child(1) {
+  margin-left: 2px !important;
+} */
 
 #tt-ribbon-save-button:enabled {
   animation-name: color;
@@ -76,10 +109,17 @@
 }
 
 .tt-reason {
-  position: absolute;
-  right: 10px;
+  margin-right: 0;
+  margin-left: auto;
   max-width: 100px;
   text-overflow: ellipsis;
   overflow: hidden;
   color: var(--grey-4);
+}
+
+#tt-name {
+  align-self: center;
+  margin-right: 8px;
+  margin-left: auto;
+  color: var(--grey-3);
 }

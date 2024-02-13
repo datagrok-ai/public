@@ -129,8 +129,10 @@ Read more about package development in [Datagrok's documentation](https://datagr
   | host           | Specify server alias                                                      |
   | record         | Records the test execution process in mp4 format                          |
   | report         | Sends a report on test results                                            |
-  | skip-build     | Skips package build step                                                   |
-  | skip-publish   | Skips package publish step                                                 |
+  | skip-build     | Skips package build step                                                  |
+  | skip-publish   | Skips package publish step                                                |
   | verbose        | Prints detailed information about passed and skipped tests in the console |
+  | platform       | Runs only platform tests (applicable for ApiTests package only)           |
+  | core           | Runs package & core tests (applicable  for DevTools package only)         |
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.

@@ -14,6 +14,8 @@ export const ViDColFormat = 'V######';
 export const HTcampaignName = 'HTcampaignName';
 export const HDcampaignName = 'HDcampaignName';
 export const HTScriptPrefix = 'HTScript';
+export const HTQueryPrefix = 'HTQuery';
+export const ComputeQueryMolColName = 'molecules';
 export const i18n = {
   startNewCampaign: 'New campaign',
   createNewCampaign: 'New campaign',

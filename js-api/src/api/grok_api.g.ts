@@ -16,6 +16,7 @@ export interface IDartApi {
   grok_List_Insert(x: any, index: Num, element: any): any;
   grok_List_Add(x: any, element: any): any;
   grok_List_Sort(x: any): any;
+  grok_List_Remove(x: any, element: any): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
   grok_CompleteError(c: any, result: any): any;
@@ -157,6 +158,7 @@ export interface IDartApi {
   grok_View_Get_Temp(v: any): any;
   grok_View_Load_Layout(v: any, l: any, pickupColumnsTags: Bool): any;
   grok_View_Save_Layout(v: any): any;
+  grok_View_Get_Info(v: any): any;
   grok_View_Get_DockNode(v: any): any;
   grok_View_Get_RibbonMenu(v: any): any;
   grok_View_Set_RibbonMenu(v: any, menu: any): any;
@@ -320,7 +322,11 @@ export interface IDartApi {
   grok_Viewer_FromJsViewer(jsViewer: any): any;
   grok_FilterGroup_GetStates(filterGroup: any, colName: String, type: String): any;
   grok_FilterGroup_Add(filterGroup: any, state: any): any;
-  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any): any;
+  grok_FilterGroup_UpdateOrAdd(filterGroup: any, state: any, requestFilter: Bool): any;
+  grok_FilterGroup_GetFilterSummary(filterGroup: any): any;
+  grok_FilterGroup_Get_Filters(filterGroup: any): any;
+  grok_FilterGroup_SetEnabled(filterGroup: any, filter: any, active: Bool): any;
+  grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
@@ -350,6 +356,7 @@ export interface IDartApi {
   grok_Viewer_Set_HelpUrl(v: any, s: String): any;
   grok_Viewer_Get_DataFrame(v: any): any;
   grok_Viewer_Set_DataFrame(v: any, df: any): any;
+  grok_Viewer_Get_Filter(v: any): any;
   grok_Viewer_Get_EventBus_Events(v: any): any;
   grok_Viewer_Get_PropertyChanged_Events(v: any): any;
   grok_Viewer_To_Trellis_Look(v: any): any;
@@ -498,7 +505,7 @@ export interface IDartApi {
   grok_ColumnList_Add(cols: any, col: any, notify: Bool): any;
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
-  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
+  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
   grok_ColumnList_Remove(cols: any, name: String, notify: Bool): any;
@@ -1430,6 +1437,8 @@ export interface IDartApi {
   grok_GridCellStyle_Set_imageScale(x: any, v: Num): any;
   grok_GridCellStyle_Get_opacity(x: any): any;
   grok_GridCellStyle_Set_opacity(x: any, v: Num): any;
+  grok_GridCellStyle_Get_clip(x: any): any;
+  grok_GridCellStyle_Set_clip(x: any, v: Bool): any;
   grok_GridCellStyle_Get_element(x: any): any;
   grok_GridCellStyle_Set_element(x: any, v: any): any;
   grok_GridCellStyle_Get_choices(x: any): any;

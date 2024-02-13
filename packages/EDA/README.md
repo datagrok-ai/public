@@ -13,3 +13,5 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * Least-squares support vector machine ([LS-SVM](https://en.wikipedia.org/wiki/Least-squares_support_vector_machine))
 * Analysis of variances (ANOVA)
   * One-way ANOVA ([link](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
+* Missing data imputation
+  * k-nearest neighbors method ([KNN](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm))

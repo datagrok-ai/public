@@ -91,13 +91,15 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     this.volcanoPlot.meta.formulaLines.addLine({
       formula: `\${${this.volcanoPlotYAxis}} = ${-Math.log10(this.pValueLimit)}`,
       color: '#00ff00',
-      width: 0.5
+      width: 0.5,
+      showOnPlot: false
     });
 
     this.volcanoPlot.meta.formulaLines.addLine({
       formula: `\${${this.volcanoPlotXAxis}} = 0`,
       color: '#00ff00',
-      width: 0.5
+      width: 0.5,
+      showOnPlot: false
     });
 
     updateDivInnerHTML(this.riskAssessmentDiv, ui.splitV([this.volcanoPlot.root]))
@@ -171,7 +173,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   private setConfIntLineOptions(lines: DG.FormulaLine[], formula: string, color: string, width: number, max: number, min: number) {
-    const line: DG.FormulaLine = { type: 'line', formula: formula, color: color, width: width, min: min, max: max };
+    const line: DG.FormulaLine = { type: 'line', formula: formula, color: color, width: width, min: min, max: max, showOnPlot: false };
     lines.push(line);
   }
 

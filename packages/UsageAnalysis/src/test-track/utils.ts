@@ -3,20 +3,20 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
+import {colors} from '../utils';
 
+export {colors};
 export const FILENAME = 'test-cases.csv';
 export const PASSED = 'passed';
 export const FAILED = 'failed';
 export const SKIPPED = 'skipped';
-export type Status = typeof PASSED | typeof FAILED | typeof SKIPPED | null;
+export type Status = typeof PASSED | typeof FAILED | typeof SKIPPED;
 
 const map = {
   [PASSED]: {name: 'check', color: 'var(--green-2)'},
   [FAILED]: {name: 'times', color: 'var(--red-3)'},
   [SKIPPED]: {name: 'forward', color: 'var(--orange-2)'},
 };
-
-export const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);

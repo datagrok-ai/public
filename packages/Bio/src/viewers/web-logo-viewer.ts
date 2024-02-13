@@ -457,7 +457,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++WebLogoViewer.viewerCounter;
 
-  private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
+  private viewerToLog(): string { return `WebLogoViewer<${this.viewerId}>`; }
 
   // -- Data --
 

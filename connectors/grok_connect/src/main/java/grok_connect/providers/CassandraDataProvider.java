@@ -143,11 +143,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String _query = matcher.colName +  " LIKE @" + param.name;
-        List<Object> values = matcher.values;
+        List<String> values = matcher.values;
         String value = null;
-        if (values.size() > 0) {
-            value = ((String) values.get(0)).toLowerCase();
-        }
+        if (values.size() > 0)
+            value = values.get(0).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
@@ -249,12 +248,11 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
         try {
             statement.setObject(parameterIndex, localDateTime.toLocalDate());
-            return localDateTime.toString();
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
                     parameterIndex), e);
