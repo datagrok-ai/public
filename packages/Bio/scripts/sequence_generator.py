@@ -34,8 +34,7 @@ from enum import Enum
 
 from typing import List, Tuple, Dict, Iterator, Any
 
-
-# --- Type definitions ---
+# ===== Type definitions =====
 
 Letter = str
 Alphabet = List[str]
@@ -43,25 +42,39 @@ Alphabet = List[str]
 LetterChoice = List[Letter]
 MotifTemplate = List[LetterChoice]
 
-Sequence = List[Letter]  # The sequence in a form of list
+# The sequence in a list of a monomers from the alphabet.
+# We can't use string because monomers can have several letters
+Sequence = List[Letter]
+SequenceList = List[Sequence]
 SequenceSquashed = str  # Sequence, joined together in string form
 
-SequenceRecord = Tuple[int, Sequence, float, bool]
-ClusterSequenceRecord = Tuple[int, str, Sequence, float, bool]
+CliffPair = Tuple[int,int]
+CliffList = List[CliffPair]
 
-# --- constants ---
+
+DataRecord = Tuple[int, Sequence, float, bool]
+
+Activity = float
+ActivityList = List[Activity]
+
+
+# ===== Constants =====
 
 HelmConnectionMode = Enum("HelmConnectionMode", ["linear", "cyclic", "mixed"])
 
 alphabets: Dict[str, str] = {
-    "PT": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y",
-    "DNA": "A,T,G,C",
-    "RNA": "A,U,G,C",
-    "PT_HELM": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y,dA,dC,dD,dE,dF,dH,dI,dK,dL,dM,dN,dP,dQ,dR,dS,dT,dV,dW,dY,meA,meD,meS,meT,meV,meY,meE,meG,meI,meK,meM,meN,meQ,meC,meR,meW,meF,meH,meL,Nle,Nva,Orn,Iva,aIle,gGlu,Hcy,Hse,Hyp,D-gGlu,D-Nle,D-hPhe,D-Hyp,D-Nva,D-Orn,Pyr,Phe_3Cl,Phe_4Cl,Phe_4NH2,Phg,Ser_tBu,Tyr_Bn,Tza,1Nal,Cha,Lys_Boc,aThr,D-2Nal,D-2Thi,D-aHyp,D-aIle,D-Phg,D-Ser_tBu,Cya,Lys_Me3,Pen,Phe_4Me,Ser_Bn,Tyr_tBu,2Nal,Thi,aHyp,Ala_tBu,hPhe,D-1Nal,D-aThr,D-Cha,D-Pen,D-Phe_4Cl,D-Ser_Bn,Wil,Oic_3aS-7aS,Pip,3Pal,4Pal,Abu,Apm,Chg,Dab,Dap,D-3Pal,D-aMeAbu,D-Chg,D-Cit,D-Dab,D-Pip,D-Tic,Aca,Tic,Aad,Cit,Aze,Ac5c,Aib,D-2Pal,D-Abu,D-Dap,Asu,D-Thz,D-Trp_For,D-Tyr_Et,Lys_Ac,Asp_OMe,Phe_ab-dehydro,Sta_3xi4xi,Tyr_ab-dehydroMe,App,Cap,Cys_SEt,Dsu,pnC,pnG,Pqa,Pro_4Me3OH,Met_O2,Phe_2Me,Phe_34diCl,Phe_4Br,Phe_4I,Phe_4Sdihydroorotamido,Pyl,Ser_PO3H2,Thr_PO3H2,Thz,Trp_Me,Tyr_26diMe,Tyr_3I,Tyr_3NO2,Tyr_Ph4OH,Tyr_SO3H,Val_3OH,xiIle,NMe2Abz,NMebAla,aMePhe,aMePro,aMeTyr_3OH,Bmt,Bmt_E,Cys_Bn,Gla,hHis,His_1Me,Gly_allyl,Gly_cPr,Asp_Ph2NH2,Azi,2Abz,3Abz,4Abz,Ac3c,Ac6c,bAla,D-Bmt,D-Bmt_E,D-hArg,D-Phe_4F,D-Trp_2Me,D-Tyr_Me,D-xiIle,Lys_iPr,Phe_ab-dehydro_3NO2,Sta_3S4S,Bux,Dpm,pnA,pnT,seC,Met_O,nTyr,Oic_3aR-7aS,Oic_3axi-7axi,Phe_2F,Phe_3F,Phe_4F,Phe_4NO2,Phe_bbdiMe,Trp_5OH,Trp_Ome,Tyr_35diI,Tyr_3OH,Tyr_Me,Tyr_PO3H2,xiHyp,xiThr,NMe4Abz,aMeTyr,Aoda,Bpa,Cys_Me,Dip,hArg,His_1Bn,His_3Me,Hyl_5xi,Bip,Abu_23dehydro,D-Dip,Dha,D-hArg_Et2,D-Met_S-O,D-His_1Bn,D-nTyr,D-Phe_4ureido",
+    "PT": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y".split(','),
+    "DNA": "A,T,G,C".split(','),
+    "RNA": "A,U,G,C".split(','),
+    "PT_EXT": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y,dA,dC,dD,dE,dF,dH,dI,dK,dL,dM,dN,dP,dQ,dR,dS,dT,dV,dW,dY,meA,meD,meS,meT,meV,meY,meE,meG,meI,meK,meM,meN,meQ,meC,meR,meW,meF,meH,meL,Nle,Nva,Orn,Iva,aIle,gGlu,Hcy,Hse,Hyp,D-gGlu,D-Nle,D-hPhe,D-Hyp,D-Nva,D-Orn,Pyr,Phe_3Cl,Phe_4Cl,Phe_4NH2,Phg,Ser_tBu,Tyr_Bn,Tza,1Nal,Cha,Lys_Boc,aThr,D-2Nal,D-2Thi,D-aHyp,D-aIle,D-Phg,D-Ser_tBu,Cya,Lys_Me3,Pen,Phe_4Me,Ser_Bn,Tyr_tBu,2Nal,Thi,aHyp,Ala_tBu,hPhe,D-1Nal,D-aThr,D-Cha,D-Pen,D-Phe_4Cl,D-Ser_Bn,Wil,Oic_3aS-7aS,Pip,3Pal,4Pal,Abu,Apm,Chg,Dab,Dap,D-3Pal,D-aMeAbu,D-Chg,D-Cit,D-Dab,D-Pip,D-Tic,Aca,Tic,Aad,Cit,Aze,Ac5c,Aib,D-2Pal,D-Abu,D-Dap,Asu,D-Thz,D-Trp_For,D-Tyr_Et,Lys_Ac,Asp_OMe,Phe_ab-dehydro,Sta_3xi4xi,Tyr_ab-dehydroMe,App,Cap,Cys_SEt,Dsu,pnC,pnG,Pqa,Pro_4Me3OH,Met_O2,Phe_2Me,Phe_34diCl,Phe_4Br,Phe_4I,Phe_4Sdihydroorotamido,Pyl,Ser_PO3H2,Thr_PO3H2,Thz,Trp_Me,Tyr_26diMe,Tyr_3I,Tyr_3NO2,Tyr_Ph4OH,Tyr_SO3H,Val_3OH,xiIle,NMe2Abz,NMebAla,aMePhe,aMePro,aMeTyr_3OH,Bmt,Bmt_E,Cys_Bn,Gla,hHis,His_1Me,Gly_allyl,Gly_cPr,Asp_Ph2NH2,Azi,2Abz,3Abz,4Abz,Ac3c,Ac6c,bAla,D-Bmt,D-Bmt_E,D-hArg,D-Phe_4F,D-Trp_2Me,D-Tyr_Me,D-xiIle,Lys_iPr,Phe_ab-dehydro_3NO2,Sta_3S4S,Bux,Dpm,pnA,pnT,seC,Met_O,nTyr,Oic_3aR-7aS,Oic_3axi-7axi,Phe_2F,Phe_3F,Phe_4F,Phe_4NO2,Phe_bbdiMe,Trp_5OH,Trp_Ome,Tyr_35diI,Tyr_3OH,Tyr_Me,Tyr_PO3H2,xiHyp,xiThr,NMe4Abz,aMeTyr,Aoda,Bpa,Cys_Me,Dip,hArg,His_1Bn,His_3Me,Hyl_5xi,Bip,Abu_23dehydro,D-Dip,Dha,D-hArg_Et2,D-Met_S-O,D-His_1Bn,D-nTyr,D-Phe_4ureido".split(','),
 }
 
+# ===== Motif and sequence generation functions =====
 
 def mean_range(mean: int, disp: int) -> int:
+    """
+    Returns random positive value around some mean with selected dispersion
+    """
     return random.randint(max(mean - disp, 0), mean + disp)
 
 
@@ -71,6 +84,9 @@ def generate_motif_template(
     max_variants_cluster: int,
     prob_any: float = 0.2,
 ) -> MotifTemplate:
+    """
+    Generated random template from the alphabet
+    """
     motif_template = []
     for position in range(motif_length):
         # Selecting letters for position i
@@ -91,6 +107,9 @@ def generate_motif(template: MotifTemplate, alphabet: Alphabet) -> Sequence:
 
 
 def motif_notation(motif_template: MotifTemplate) -> str:
+    """
+    Returns string representation of motif notation
+    """
     def motif_notation_code(letter_choice: LetterChoice) -> str:
         if len(letter_choice) == 1:
             return letter_choice[0]
@@ -103,6 +122,9 @@ def motif_notation(motif_template: MotifTemplate) -> str:
 
 
 def generate_random(n: int, alphabet: Alphabet) -> Sequence:
+    """
+    Generate a sequence containing n random letters from the alphabet
+    """
     return [random.choice(alphabet) for i in range(n)]
 
 
@@ -128,12 +150,18 @@ def make_cliff(
 
 
 def sequence_to_fasta(sequence: Sequence, separator: str) -> SequenceSquashed:
+    """
+    Converts the sequence to FASTA format
+    """
     return separator.join(sequence)
 
 
 def sequence_to_helm(
     sequence: Sequence, helm_connection_mode: str = HelmConnectionMode.linear.name
 ) -> SequenceSquashed:
+    """
+    Converts the sequence to HELM format
+    """
     def is_cyclic(helm_connection_mode: str) -> bool:
         return helm_connection_mode == HelmConnectionMode.cyclic.name or (
             helm_connection_mode == HelmConnectionMode.mixed.name
@@ -148,6 +176,46 @@ def sequence_to_helm(
         connection_format = f"PEPTIDE1,PEPTIDE1,{len(sequence_escaped)}:R2-1:R1"
     return f"PEPTIDE1{{{sequence_to_fasta(sequence_escaped,'.')}}}${connection_format}$$$V2.0"
 
+# === Working with activities and activity cliffs
+def generate_ideal_activities(n:int) -> ActivityList:
+    """
+    Generate ideal activities with Gauss disttibution
+    """
+    return [random.gauss(0,1) for _ in range(n)]
+
+def make_activity_cliff(activities: ActivityList, cliffs:List[CliffPair], cliff_strength:float = 5.0, cliff_strength_dispersion:float = 1.0  ) -> ActivityList:
+    """
+    Introduce activity cliffs - make a pair of activities differ for cliff_strength value
+    """
+    cliffed_activities = activities[:]
+    for first, second in cliffs:
+        activity1 = activities[first]
+        activity2 = activities[second]
+        average = (activity1 + activity2) / 2
+        scale = random.gauss(cliff_strength, cliff_strength_dispersion) / abs(activity1 - activity2)
+
+        cliffed_activities[first] = average + (activity1 - average)* scale
+        cliffed_activities[second] = average + (activity2 - average)* scale
+    return cliffed_activities
+
+def generate_assay_activities(
+        activities: ActivityList,
+        noise_level:float = 0.4,
+        assay_scale:float = 10.0,
+        assay_bias:float = 10.0
+) -> ActivityList:
+    """
+    Generates activities measured in assay form some "ideal" activities.
+    Adds noiser and scales the values to emulate some assay scale
+    """
+    assay_activities = []
+    for activity in activities:
+        noise = random.uniform(-3, 3) # some random noize in [-3,3]- 3 sigma
+        # Adding noize and normalizing
+        real_activity = (activity + noise*noise_level)/(1+noise_level) # real activity in [-1,1]
+        assay_result = real_activity*assay_scale + assay_bias
+        assay_activities.append(assay_result)
+    return assay_activities
 
 def generate_cluster(
     n_sequences: int,
@@ -158,59 +226,66 @@ def generate_cluster(
     make_cliffs: bool,
     alphabet: Alphabet,
     cliff_probability: float,
-    cliff_strength: float,
-) -> Iterator[SequenceRecord]:
+) -> Tuple[SequenceList,CliffList]:
+    """
+    Returns set of sequences for one cluster.
+    Also makes activity cliffts
+    """
+
     # Making a motif template
     motif_template = generate_motif_template(
         motif_length, alphabet, max_variants_per_position
     )
-    # Setting average and dispersion for activity
-    activity_average = random.random() * 10
-    activity_dispersion = random.random()
     sys.stderr.write(f"Motif template: {motif_notation(motif_template)}\n")
 
-    for n_seq in range(n_sequences):
-        activity = random.gauss(activity_average, activity_dispersion)
+    n_seq = 0
+    sequences: SequenceList = []
+    cliffs: CliffList = []
 
+    while n_seq < n_sequences:
         motif = generate_motif(motif_template, alphabet)
         prefix = generate_random(prefix_length, alphabet)
         suffix = generate_random(suffix_length, alphabet)
         seq = prefix + motif + suffix
+        sequences.append(seq)
+        n_seq += 1
+        '''
         sequence_record: SequenceRecord = (n_seq, seq, activity, False)
         yield sequence_record
-
+        '''
         is_cliff = make_cliffs and (random.random() <= cliff_probability)
         if is_cliff:
             # Making activity cliff
             cliff_motif = make_cliff(motif_template, alphabet, motif)
             cliff_seq = prefix + cliff_motif + suffix
-            # Recalculating activity
-            cliff_disp = activity_dispersion * cliff_strength * (0.5 + random.random())
-            activity = activity_average - cliff_disp
-            cliff_activity = activity_average + cliff_disp
-
-            # sys.stderr.write(f"Cliff for sequence #{line_number:4}, cluster {n_cluster} \n")
-            # sys.stderr.write(f"{activity_average}\t{motif}\t{activity}\n")
-            # sys.stderr.write(f"{activity_average}\t{cliff_motif}\t{cliff_activity}\n")
+            sequences.append(cliff_seq)
+            cliffs.append((n_seq-1,n_seq))
             n_seq += 1
-            sequence_record = (n_seq, cliff_seq, cliff_activity, is_cliff)
+            # sys.stderr.write(f"Cliff for sequence #{line_number:4}, cluster {n_cluster} \n")
+            '''
+            sequence_record = (n_seq, cliff_seq, cliff_activity, True)
             yield sequence_record
+            '''
 
+    return sequences, cliffs
 
 def generate_sequences(
-    n_clusters: int,
-    n_sequences: int,
-    average_motif_length: int,
-    max_variants_per_position: int,
-    average_random_length: int,
-    dispersion: int,
-    alphabet: Alphabet,
-    make_cliffs: bool,
-    cliff_probability: float,
-    cliff_strength: float,
-) -> Tuple[List[str], List[ClusterSequenceRecord]]:
+        n_clusters: int,
+        n_sequences: int,
+        average_motif_length: int,
+        max_variants_per_position: int,
+        average_random_length: int,
+        dispersion: int,
+        alphabet: Alphabet,
+        n_assays:int = 1,
+        make_cliffs: bool = 0,
+        cliff_probability: float = 0.05,
+        cliff_strength: float = 5.0,
+        cliff_dispersion: float = 1.0,
+
+):
     headers: List[str] = ["cluster", "sequence_id", "sequence", "activity", "is_cliff"]
-    sequences: List[ClusterSequenceRecord] = []
+    sequences  = []
 
     for n_cluster in range(n_clusters):
         motif_length = mean_range(average_motif_length, dispersion)
@@ -220,7 +295,7 @@ def generate_sequences(
         prefix_length = mean_range(average_random_length, dispersion // 2)
         suffix_length = total_length - motif_length - prefix_length
         sys.stderr.write(f"Generating sequences for cluster {n_cluster}\n")
-        for n_seq, seq, activity, is_cliff in generate_cluster(
+        sequences, cliffs = generate_cluster(
             n_sequences,
             motif_length,
             prefix_length,
@@ -229,16 +304,30 @@ def generate_sequences(
             make_cliffs,
             alphabet,
             cliff_probability,
-            cliff_strength,
-        ):
+        )
+        cluster_IDs = [f"c{n_cluster}_s{n:03d}" for n in range(n_sequences)]
+
+        for s in sequences:
+            print(''.join(s))
+        print(cliffs)
+
+        ideal_activities = generate_ideal_activities(n_sequences)
+        cliffed_activities = make_activity_cliff(ideal_activities, cliffs, cliff_strength, cliff_dispersion)
+
+        assay_activities = [generate_assay_activities(cliffed_activities) for n_assay in range(n_assays)]
+
+        data = zip(cluster_IDs, sequences, cliffed_activities, *assay_activities)
+
+        '''
             sequences.append(
                 (n_cluster, f"c{n_cluster}_s{n_seq:03d}", seq, activity, is_cliff)
             )
-    return headers, sequences
+        '''
+    return headers, data
 
 
 def convert_to_fasta(
-    cluster_sequence_records: List[ClusterSequenceRecord], separator: str
+    cluster_sequence_records, separator: str
 ) -> List[Tuple[int, str, str, float, bool]]:
     return [
         (n_cluster, name_cluster, sequence_to_fasta(seq, separator), activity, is_cliff)
@@ -247,7 +336,7 @@ def convert_to_fasta(
 
 
 def convert_to_helm(
-    cluster_sequence_records: List[ClusterSequenceRecord], helm_connection_mode: str
+    cluster_sequence_records, helm_connection_mode: str
 ) -> List[Tuple[int, str, str, float, bool]]:
     return [
         (
@@ -261,16 +350,15 @@ def convert_to_helm(
     ]
 
 
-def is_monomer_suitable(monomer: Any) -> bool:
-    return (
-        monomer["polymerType"] == "PEPTIDE"
-        and monomer["monomerType"] == "Backbone"
-        and len(monomer["rgroups"]) == 2
-    )
-
-
 def alphabet_from_helm(helm_library_file: str) -> Alphabet:
     import json
+
+    def is_monomer_suitable(monomer: Any) -> bool:
+        return (
+                monomer["polymerType"] == "PEPTIDE"
+                and monomer["monomerType"] == "Backbone"
+                and len(monomer["rgroups"]) == 2
+        )
 
     alphabet: Alphabet = []
     with open(helm_library_file) as helm_library:
@@ -287,28 +375,34 @@ def parse_command_line_args() -> Any:
         epilog="Utility author and support: Gennadii Zakharov <Gennadiy.Zakharov@gmail.com>",
     )
 
-    parser.add_argument(
+    cluster_group = parser.add_argument_group('Cluster parameters')
+
+
+    cluster_group.add_argument(
         "-c", "--clusters", type=int, default=5, help="Number of clusters"
     )
-    parser.add_argument(
+    cluster_group.add_argument(
         "-s",
         "--sequences",
         type=int,
         default=50,
         help="Number of sequences in each supercluster",
     )
-    parser.add_argument(
+
+    motif_group = parser.add_argument_group('Motif parameters')
+
+    motif_group.add_argument(
         "-m,", "--motif-length", type=int, default=12, help="Average length of motif"
     )
 
-    parser.add_argument(
+    motif_group.add_argument(
         "-r,",
         "--random-length",
         type=int,
         default=3,
         help="Average length of random sequence parts before and after motif",
     )
-    parser.add_argument(
+    motif_group.add_argument(
         "-d,",
         "--dispersion",
         type=int,
@@ -316,124 +410,174 @@ def parse_command_line_args() -> Any:
         help="Variation of total sequence length",
     )
 
-    parser.add_argument(
-        "-h,",
+    motif_group.add_argument(
+        "--max-variants-position",
+        type=int,
+        default=3,
+        help="Maximum number of different letters in conservative position in motif",
+    )
+
+    cliffs_group = parser.add_argument_group('Activity cliffs')
+
+    cliffs_group.add_argument(
+        "--cliff-probability",
+        type=float,
+        default=0.05,
+        help="Probability to make activity cliff of a sequence",
+    )
+    cliffs_group.add_argument(
+        "--cliff-strength",
+        type=float,
+        default=4.0,
+        help="Strength of cliff",
+    )
+    cliffs_group.add_argument(
+        "--disable-cliffs",
+        type=bool,
+        default=False,
+        help="Disable generation of cliffs",
+    )
+
+    output_group = parser.add_argument_group('Output parameters')
+
+    available_alphabets = ",".join(list(alphabets.keys()) + ["custom"])
+
+    output_group.add_argument(
+        "--alphabet",
+        type=str,
+        default=list(alphabets.keys())[0],
+        help=f"Sequence alphabet: {available_alphabets}" +
+        "Ignored if HELM library specified",
+    )
+
+    output_group.add_argument(
+        "--custom-alphabet",
+        type=str,
+        default='',
+        help=f"Custom sequence alphabet: list of letters separated by comma. Used only if the --alphabet=custom",
+    )
+
+    output_group.add_argument(
+        "--fasta-separator",
+        type=str,
+        default="",
+        help="Separator symbol for FASTA sequence",
+    )
+
+    output_group.add_argument(
+        "-H,",
         "--helm-library-file",
         type=str,
-        help="JSON file containing the HELM monomer library in the same format as used for Datagrok. "
+        help="JSON file containing the HELM monomer library. "
         + "The alphabet property is ignored when helm library is specified.",
     )
 
-    parser.add_argument(
+    output_group.add_argument(
         "--helm-connection-mode",
         type=str,
         default=HelmConnectionMode.linear.value,
         help=f"HELM peptide generation mode: {'/'.join([mode.name for mode in HelmConnectionMode])}",
     )
 
-    available_alphabets = ",".join(list(alphabets.keys()) + ["custom"])
-    parser.add_argument(
-        "--alphabet",
-        type=str,
-        default=list(alphabets.keys())[0],
-        help=f"Sequence alphabet: {available_alphabets}. Custom alphabet is a list of values separated "
-        f"by comma",
-    )
-    parser.add_argument(
-        "--max-variants-position",
-        type=int,
-        default=3,
-        help="Maximum number of different letters in conservative position in motif",
-    )
-    parser.add_argument(
-        "--cliff-probability",
-        type=float,
-        default=0.01,
-        help="Probability to make activity cliff of a sequence",
-    )
-    parser.add_argument(
-        "--cliff-strength",
-        type=float,
-        default=4.0,
-        help="Strength of cliff",
-    )
-    parser.add_argument(
-        "--disable-cliffs",
-        type=bool,
-        default=False,
-        help="Disable generation of cliffs",
-    )
-    parser.add_argument(
-        "--fasta-separator",
-        type=str,
-        default="",
-        help="Separator symbol for FASTA sequence",
-    )
     command_line_args = parser.parse_args()
 
     return command_line_args
 
+# ===== Tests =====
 
-# ====================================================================================
+def test_activities_correlation():
+    import numpy as np
+    ideal_activities = generate_ideal_activities(25)
+    cliffed_activities = make_activity_cliff(ideal_activities, [(0,1)])
+    x = generate_assay_activities(cliffed_activities, 0.4)
+    y = generate_assay_activities(cliffed_activities, 0.4, 150, 100)
 
-grok = "clusters" in globals()
+    print('Assay1: ' + ','.join([str(a) for a in x]))
+    print('Assay2: ' + ','.join([str(a) for a in y]))
+    corr = np.corrcoef(x,y)
+    print('Correlation: ',corr[1,0])
+    assert corr[1,0] >= 0.5
 
-if not grok:
-    # We are not in Datagrok - need to parse command line arguments
-    args = parse_command_line_args()
-    clusters = args.clusters
-    num_sequences = args.sequences
-    motif_length = args.motif_length
-    max_variants_position = args.max_variants_position
-    random_length = args.random_length
-    dispersion = args.dispersion
-    alphabet_key = args.alphabet
-    enable_cliffs = not args.disable_cliffs
-    cliff_probability = args.cliff_probability
-    cliff_strength = args.cliff_strength
-    fasta_separator = args.fasta_separator
-    helm_library_file = args.helm_library_file
-    helm_connection_mode = args.helm_connection_mode
-
-helm_init = "helm_library_file" in globals() and helm_library_file is not None and helm_library_file != ''
-
-if not helm_init:
-    alphabet: Alphabet = (
-        alphabets[alphabet_key].split(",")
-        if alphabet_key in alphabets
-        else alphabet_key.split(",")
+def test_generate_sequences():
+    header, data = generate_sequences(
+        n_clusters=2,
+        n_sequences=10,
+        average_motif_length=8,
+        max_variants_per_position=3,
+        average_random_length=1,
+        dispersion=2,
+        alphabet=alphabets["PT"],
+        n_assays = 2,
+        make_cliffs=True,
+        cliff_probability=0.2,
+        cliff_strength=6.0,
     )
-else:
-    alphabet = alphabet_from_helm(helm_library_file)
+    for line in data:
+        print(line)
 
-# Running sequence generator
-header, data = generate_sequences(
-    clusters,
-    num_sequences,
-    motif_length,
-    max_variants_position,
-    random_length,
-    dispersion,
-    alphabet,
-    enable_cliffs,
-    cliff_probability,
-    cliff_strength,
-)
-if not helm_init:
-    data_formatted = convert_to_fasta(data, fasta_separator)
-else:
-    data_formatted = convert_to_helm(data, helm_connection_mode)
 
-if grok:
-    # Exporting data to Datagrok as a Pandas dataframe
-    import pandas as pd
+# ===== Main part of script =====
 
-    sequences = pd.DataFrame.from_records(data_formatted, columns=header)
-else:
-    # Writing results to stdout - no need to work with big and heavy Pandas
-    import csv
+if __name__ == '__main__':
 
-    csv_writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-    csv_writer.writerow(header)
-    for line in data_formatted:
-        csv_writer.writerow(line)
+    grok = "clusters" in globals()
+
+    if not grok:
+        # We are not in Datagrok - need to parse command line arguments
+        args = parse_command_line_args()
+        clusters = args.clusters
+        num_sequences = args.sequences
+        motif_length = args.motif_length
+        max_variants_position = args.max_variants_position
+        random_length = args.random_length
+        dispersion = args.dispersion
+        enable_cliffs = not args.disable_cliffs
+        cliff_probability = args.cliff_probability
+        cliff_strength = args.cliff_strength
+        alphabet_key = args.alphabet
+        custom_alphabet = args.custom_alphabet
+        fasta_separator = args.fasta_separator
+        helm_library_file = args.helm_library_file
+        helm_connection_mode = args.helm_connection_mode
+
+
+    helm_init = "helm_library_file" in globals() and helm_library_file is not None and helm_library_file != ''
+
+    if helm_init:
+        alphabet = alphabet_from_helm(helm_library_file)
+    elif alphabet_key in alphabets:
+        alphabet = alphabets[alphabet_key]
+    else:
+        pass # TBD: custom alphabet
+
+    # Running sequence generator
+    header, data = generate_sequences(
+        clusters,
+        num_sequences,
+        motif_length,
+        max_variants_position,
+        random_length,
+        dispersion,
+        alphabet,
+        enable_cliffs,
+        cliff_probability,
+        cliff_strength,
+    )
+    if not helm_init:
+        data_formatted = convert_to_fasta(data, fasta_separator)
+    else:
+        data_formatted = convert_to_helm(data, helm_connection_mode)
+
+    if grok:
+        # Exporting data to Datagrok as a Pandas dataframe
+        import pandas as pd
+
+        sequences = pd.DataFrame.from_records(data_formatted, columns=header)
+    else:
+        # Writing results to stdout - no need to work with big and heavy Pandas
+        import csv
+
+        csv_writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow(header)
+        for line in data_formatted:
+            csv_writer.writerow(line)
