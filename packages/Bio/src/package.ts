@@ -42,7 +42,7 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
-import {getLibraryPanelUI, getMonomerLibraryManagerLink} from './utils/monomer-lib/library-file-manager/ui';
+import {getMonomerLibraryManagerLink, showManageLibrariesDialog} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -179,7 +179,7 @@ export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
   return funcEditor.widget();
 }
 
-//name: Manage Libraries
+//name: Manage Monomer Libraries
 //description:
 //tags: panel, exclude-actions-panel
 //input: column seqColumn {semType: Macromolecule}
@@ -866,6 +866,14 @@ export async function sequenceSimilarityScoring(
 ): Promise<DG.Column<number>> {
   const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
   return scores;
+}
+
+
+//top-menu: Bio | Manage | Monomer Libraries
+//name: Manage Monomer Libraries
+//description: Manage HELM monomer libraries
+export async function manageMonomerLibraries(): Promise<void> {
+  showManageLibrariesDialog();
 }
 
 //name: saveAsFasta

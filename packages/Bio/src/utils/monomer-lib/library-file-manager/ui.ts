@@ -16,17 +16,12 @@ import {MonomerLibManager} from '../lib-manager';
 import {MonomerLibFileManager} from './file-manager';
 import {MonomerLibFileEventManager} from './event-manager';
 
-export async function getLibraryPanelUI(): Promise<DG.Widget> {
-  const eventManager = MonomerLibFileEventManager.getInstance();
-  return await MonomerLibraryManagerWidget.getContent(eventManager);
-}
-
-async function showManageLibrariesDialog() {
+export async function showManageLibrariesDialog(): Promise<void> {
   await DialogWrapper.showDialog();
 }
 
 export async function getMonomerLibraryManagerLink(): Promise<DG.Widget> {
-  const link = ui.label('Monomer Library Manager');
+  const link = ui.label('Manage monomer libraries');
   $(link).addClass('d4-link-action');
   link.onclick = async () => await showManageLibrariesDialog();
   return new DG.Widget(
