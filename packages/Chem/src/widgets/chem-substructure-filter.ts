@@ -331,11 +331,13 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
+    _package.logger.debug(`*************entered apply filter, filter id${this.filterId}`);
+    this.active = true;
     //we apply filter bitset only from one active filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
     if (activeFilterId !== this.filterId) {
       if (activeFilterId === -1)
-        this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, molecule: this.currentMolfile};
+        this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary(this.currentMolfile)};
       else {
         _package.logger.debug(`return from apply filter , true count: ${this.bitset?.trueCount}, filter id${this.filterId}`);
         return;
@@ -355,7 +357,6 @@ export class SubstructureFilter extends DG.Filter {
           molecule: this.currentMolfile,
           isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
         }]);
-        this.active = true;
         // if filter was disabled during active search and then enabled -> need to recalculate results
         if (this.searchNotCompleted)
           this._onSketchChanged();
@@ -430,7 +431,7 @@ export class SubstructureFilter extends DG.Filter {
       if (!this.active)
         this.recalculateFilter = true; //in case applyState was called on disabled filter -> need to recalculate results
       else
-        this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, molecule: DG.WHITE_MOLBLOCK}; //sketcher was cleared -> current sketcher becomes the active one
+        this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary('')}; //sketcher was cleared -> current sketcher becomes the active one
       this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null; //TODO
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
@@ -449,7 +450,7 @@ export class SubstructureFilter extends DG.Filter {
       return;
     } else {
       this.recalculateFilter = false;
-      this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, molecule: newMolFile};
+      this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary(newMolFile)};
       this.searchNotCompleted = false;
       this.terminatePreviousSearch();
       this.currentMolfile = newMolFile;
@@ -483,7 +484,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   isFilteringBySameStructure(molecule: string): boolean {
-    return this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].molecule === molecule;
+    return this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].summary === this.getFilterSummary(molecule);
   }
 
   updateExternalSketcher() {
