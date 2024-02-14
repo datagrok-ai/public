@@ -1083,6 +1083,10 @@ export class DataFrameColumn extends Column<DataFrame> {
   get(row: number): DataFrame | null {
     return toJs(api.grok_Column_GetValue(this.dart, row));
   }
+
+  toList(): Array<DataFrame> {
+    return api.grok_Column_ToList(this.dart).map((x: any) => toJs(x));
+  }
 }
 
 /** Columns in a [DataFrame]. */
