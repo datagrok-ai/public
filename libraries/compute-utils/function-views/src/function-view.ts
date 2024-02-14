@@ -356,11 +356,18 @@ export abstract class FunctionView extends DG.ViewBase {
     const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
 
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
+    const defaultView = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
       parentView: cardView,
       parentCall,
     });
-    grok.shell.addView(v);
+
+    const comparatorFunc = this.comparatorFunc;
+    if (comparatorFunc) {
+      await grok.functions.call(comparatorFunc,
+        {params: {'comparedRuns': fullFuncCalls, 'defaultView': defaultView}},
+      );
+    } else
+      grok.shell.addView(defaultView);
   }
 
   protected historyBlock = null as null | HistoryPanel;
@@ -759,6 +766,10 @@ export abstract class FunctionView extends DG.ViewBase {
   protected defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
+
+  protected get comparatorFunc(): string | null {
+    return this.func.options['comparator'] ?? null;
+  }
 
   protected get runningOnInput() {
     return this.func.options['runOnInput'] === 'true';
