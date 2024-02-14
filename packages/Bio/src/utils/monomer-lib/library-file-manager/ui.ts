@@ -97,19 +97,19 @@ class LibraryControlsManager {
     );
   }
   private monomerLibFileManager: MonomerLibFileManager;
-  private inputsForm: HTMLDivElement;
 
   async createControlsForm(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     const libraryControls = await this.createLibraryControls();
     const inputsForm = ui.form(libraryControls);
+    $(inputsForm).addClass('monomer-lib-controls-form');
 
     return inputsForm;
   }
 
-  async updateControlsForm(): Promise<void> {
+  private async updateControlsForm(): Promise<void> {
     const updatedForm = await this.createControlsForm();
-    $(this.inputsForm).replaceWith(updatedForm);
+    $('.monomer-lib-controls-form').replaceWith(updatedForm);
   }
 
   private async createLibraryControls(): Promise<DG.InputBase<boolean | null>[]> {
