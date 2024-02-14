@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.56",
+  "version": "3.7.57",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3153,6 +3153,9 @@
         },
         "2.1.25": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.26": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
