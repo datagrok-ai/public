@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import * as rxjs from 'rxjs';
+import './style.css';
 
 import {
   getUserLibSettings, LIB_PATH, setUserLibSettings
@@ -194,7 +195,7 @@ class DialogWrapper {
     const eventManager = MonomerLibFileEventManager.getInstance();
     const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
     const dialog = ui.dialog('Manage monomer libraries');
-    $(dialog.root).css('width', '400px');
+    $(dialog.root).css('width', '350px');
     dialog.clear();
     dialog.addButton(
       'Add',
