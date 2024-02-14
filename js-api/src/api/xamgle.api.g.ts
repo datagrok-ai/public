@@ -92,6 +92,8 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
+  enableStickyMeta: boolean;
+
   dateFormat: string;
 
   integerNumberFormat: string;
