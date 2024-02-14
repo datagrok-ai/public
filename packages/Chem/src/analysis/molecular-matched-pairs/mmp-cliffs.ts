@@ -51,7 +51,8 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
   return [sp, sliderInputs, sliderInputValueDivs, colorInputs];
 }
 
-function drawMolPair(molecules: string[], substruct: (ISubstruct | null)[], div: HTMLDivElement, tooltip?: boolean) {
+function drawMolPair(molecules: string[], indexes: number[], substruct: (ISubstruct | null)[], div: HTMLDivElement,
+  parentTable: DG.DataFrame, tooltip?: boolean) {
   ui.empty(div);
   const hosts = ui.divH([]);
   if (!tooltip)
@@ -60,6 +61,7 @@ function drawMolPair(molecules: string[], substruct: (ISubstruct | null)[], div:
   const canvasHeight = 75;
   for (let i = 0; i < 2; i++) {
     const imageHost = ui.canvas(canvasWidth, canvasHeight);
+    imageHost.onclick = () => {parentTable.currentRowIdx = indexes[i];};
     drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecules[i], '', undefined, substruct[i]);
     hosts.append(imageHost);
   }
@@ -67,10 +69,10 @@ function drawMolPair(molecules: string[], substruct: (ISubstruct | null)[], div:
 };
 
 export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: number, pairsDf: DG.DataFrame,
-  diffs: Array<Float32Array>, parentTable: DG.DataFrame, molColName: string,
+  diffs: Array<Float32Array>, parentTable: DG.DataFrame,
   rdkitModule: RDModule, propPanelViewer?: FormsViewer):
   HTMLDivElement {
-  const div = ui.divV([], {style: {width: '100%'}});
+  const div = ui.divV([], {style: {width: '100%', height: '100%'}});
   const moleculesDiv = ui.divH([]);
   div.append(moleculesDiv);
   const pairIdx = linesIdxs[line];
@@ -78,9 +80,9 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
   const subsrtTo = pairsDf.get(MMP_STRUCT_DIFF_TO_NAME, pairIdx);
   const moleculeFrom = pairsDf.get(MMP_COLNAME_FROM, pairIdx);
   const moleculeTo = pairsDf.get(MMP_COLNAME_TO, pairIdx);
+  const fromIdx = pairsDf.get(MMP_COL_PAIRNUM_FROM, pairIdx);
+  const toIdx = pairsDf.get(MMP_COL_PAIRNUM_TO, pairIdx);
   if (propPanelViewer) {
-    const fromIdx = pairsDf.get(MMP_COL_PAIRNUM_FROM, pairIdx);
-    const toIdx = pairsDf.get(MMP_COL_PAIRNUM_TO, pairIdx);
     const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
   } else {
@@ -89,7 +91,7 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
     div.append(diff);
   }
   if (subsrtFrom || subsrtTo)
-    drawMolPair([moleculeFrom, moleculeTo], [subsrtFrom, subsrtTo], moleculesDiv, !propPanelViewer);
+    drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx], [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
   else {
     moleculesDiv.append(ui.divText(`Loading...`));
     getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
@@ -98,7 +100,7 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
       pairsDf.set(MMP_STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
       pairsDf.set(MMP_COLNAME_FROM, pairIdx, fromAligned[0]);
       pairsDf.set(MMP_COLNAME_TO, pairIdx, toAligned[0]);
-      drawMolPair([fromAligned[0], toAligned[0]], [inverse1[0], inverse2[0]], moleculesDiv, !!propPanelViewer);
+      drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx], [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
     });
   }
   return div;
@@ -130,7 +132,7 @@ export function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: D
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
       fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, diffs, table, molecules.name, rdkitModule),
+        pairsDf, diffs, table, rdkitModule),
       event.x, event.y);
   });
 

@@ -173,7 +173,7 @@ export class MmpAnalysis {
 
     this.linesRenderer = linesEditor;
 
-    this.refilterCliffs(sliderInputs.map((si) => si.value), true);
+    this.refilterCliffs(sliderInputs.map((si) => si.value), false);
 
     //generated tab
 
@@ -220,7 +220,7 @@ export class MmpAnalysis {
         if (this.lastSelectedPair) {
           grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs,
             this.linesActivityCorrespondance[this.lastSelectedPair],
-            this.casesGrid.dataFrame, this.diffs, this.parentTable, molecules.name, this.rdkitModule);
+            this.casesGrid.dataFrame, this.diffs, this.parentTable, this.rdkitModule);
         }
       }
     });
@@ -240,7 +240,7 @@ export class MmpAnalysis {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
         grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-          casesGrid.dataFrame, diffs, table, molecules.name, rdkitModule, this.propPanelViewer);
+          casesGrid.dataFrame, diffs, table, rdkitModule, this.propPanelViewer);
         this.lastSelectedPair = event.id;
       }
     });
