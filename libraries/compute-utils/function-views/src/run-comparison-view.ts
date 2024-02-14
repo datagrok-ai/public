@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
+import {filter} from 'rxjs/operators';
 import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE,
   SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {getDfFromRuns} from './shared/utils';
@@ -46,10 +47,6 @@ export class RunComparisonView extends DG.TableView {
 
     const defaultView = new this(comparisonDf, options);
 
-    setTimeout(async () => {
-      defaultView.defaultCustomize();
-    }, 0);
-
     return defaultView;
   }
 
@@ -84,7 +81,7 @@ export class RunComparisonView extends DG.TableView {
     this.grid.columns.setVisible(changingColumns);
   }
 
-  private defaultCustomize(): void {
+  public defaultCustomize(): void {
     const showChangingColumnsIcon = ui.iconFA('compress-alt', () => {
       this.showChangingColumns();
       $(showAllColumnsIcon).show();
