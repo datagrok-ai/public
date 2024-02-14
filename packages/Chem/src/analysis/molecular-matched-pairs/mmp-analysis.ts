@@ -13,14 +13,15 @@ import {getSigFigs} from '../../utils/chem-common';
 import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
-import {moleculesPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
+import {fillPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME, MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y} from './mmp-constants';
+  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME,
+  MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y} from './mmp-constants';
 import {drawMoleculeLabels} from '../../rendering/molecule-label';
 import {getGenerations} from './mmp-generations';
-import { FormsViewer } from '@datagrok-libraries/utils/src/viewers/forms-viewer';
+import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -217,7 +218,7 @@ export class MmpAnalysis {
       } else if (tabs.currentPane.name == MMP_TAB_CLIFFS) {
         this.refilterCliffs(sliderInputs.map((si) => si.value), false);
         if (this.lastSelectedPair) {
-          grok.shell.o = moleculesPairInfo(this.lastSelectedPair, this.linesIdxs,
+          grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs,
             this.linesActivityCorrespondance[this.lastSelectedPair],
             this.casesGrid.dataFrame, this.diffs, this.parentTable, molecules.name, this.rdkitModule);
         }
@@ -238,7 +239,7 @@ export class MmpAnalysis {
     this.linesRenderer.lineClicked.subscribe((event: MouseOverLineEvent) => {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
-        grok.shell.o = moleculesPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+        grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
           casesGrid.dataFrame, diffs, table, molecules.name, rdkitModule, this.propPanelViewer);
         this.lastSelectedPair = event.id;
       }
@@ -286,33 +287,21 @@ export class MmpAnalysis {
       tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
-  async refreshPair(rdkitModule: RDModule) {
-    const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
+  findSpecificRule(diffFromSubstrCol: DG.Column) : [idxPairs: number, cases: number[] ] {
     const idxParent = this.parentTable.currentRowIdx;
     let idxPairs = -1;
-
     const idx = this.allPairsGrid.table.currentRowIdx;
 
     const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
     const ruleSmi2 = this.allPairsGrid.table.getCol('To').get(idx);
-
-    //search for numbers in smiles rules
     const ruleSmiNum1 = this.mmpRules.smilesFrags.indexOf(ruleSmi1);
     const ruleSmiNum2 = this.mmpRules.smilesFrags.indexOf(ruleSmi2);
 
-    this.pairsMask.setAll(false);
     let counter = 0;
     const cases: number[] = [];
-    const diffFromSubstrCol = this.casesGrid.dataFrame.getCol(MMP_STRUCT_DIFF_FROM_NAME);
-    const diffToSubstrCol = this.casesGrid.dataFrame.getCol(MMP_STRUCT_DIFF_TO_NAME);
-    const diffFrom = this.casesGrid.dataFrame.getCol(MMP_COLNAME_FROM);
-    const diffTo = this.casesGrid.dataFrame.getCol(MMP_COLNAME_TO);
-
-    //search specific rule
-
     for (let i = 0; i < this.mmpRules.rules.length; i++) {
-      const first = this.mmpRules.rules[i].smilesRule1; //.pairs[j].firstStructure;
-      const second = this.mmpRules.rules[i].smilesRule2; //.pairs[j].secondStructure;
+      const first = this.mmpRules.rules[i].smilesRule1;
+      const second = this.mmpRules.rules[i].smilesRule2;
       for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
         if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
           this.pairsMask.set(counter, true, false);
@@ -325,7 +314,12 @@ export class MmpAnalysis {
       }
     }
 
-    //recover uncalculated highlights
+    return [idxPairs, cases];
+  }
+
+  async recoverHighlights(
+    cases: number[], diffFrom : DG.Column, diffTo: DG.Column,
+    diffFromSubstrCol: DG.Column, diffToSubstrCol: DG.Column, rdkitModule: RDModule) : Promise<void> {
     const pairsFrom = Array<string>(cases.length);
     const pairsTo = Array<string>(cases.length);
     for (let i = 0; i < cases.length; i++) {
@@ -340,6 +334,19 @@ export class MmpAnalysis {
       diffFromSubstrCol.set(cases[i], inverse1[i]);
       diffToSubstrCol.set(cases[i], inverse2[i]);
     }
+  }
+
+  async refreshPair(rdkitModule: RDModule) : Promise<void> {
+    const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
+
+    this.pairsMask.setAll(false);
+    const diffFromSubstrCol = this.casesGrid.dataFrame.getCol(MMP_STRUCT_DIFF_FROM_NAME);
+    const diffToSubstrCol = this.casesGrid.dataFrame.getCol(MMP_STRUCT_DIFF_TO_NAME);
+    const diffFrom = this.casesGrid.dataFrame.getCol(MMP_COLNAME_FROM);
+    const diffTo = this.casesGrid.dataFrame.getCol(MMP_COLNAME_TO);
+
+    const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
+    await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     this.casesGrid.dataFrame.filter.copyFrom(this.pairsMask);
 

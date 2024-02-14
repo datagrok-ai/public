@@ -9,15 +9,15 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
   const rulesColumns = allPairsGrid.dataFrame.columns;
   const rulesFrom = rulesColumns.byName('From');
   const rulesTo = rulesColumns.byName('To');
-  const actN = activityMeanNames.length;
+  const activityN = activityMeanNames.length;
 
   const structures = molecules.toList();
-  const cores = new Array<Array<string>>(actN);
-  const from = new Array<Array<string>>(actN);
-  const to = new Array<Array<string>>(actN);
-  const prediction = new Array<Array<number>>(actN);
+  const cores = new Array<Array<string>>(activityN);
+  const from = new Array<Array<string>>(activityN);
+  const to = new Array<Array<string>>(activityN);
+  const prediction = new Array<Array<number>>(activityN);
 
-  for (let i = 0; i < actN; i ++) {
+  for (let i = 0; i < activityN; i ++) {
     cores[i] = new Array<string>(structures.length);
     from[i] = new Array<string>(structures.length);
     to[i] = new Array<string>(structures.length);
@@ -27,9 +27,9 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
   }
 
   for (let i = 0; i < structures.length; i ++) {
-    const singleActivities = new Array<number>(actN);
-    for (let kk = 0; kk < actN; kk++)
-      singleActivities[kk] = activities.byName(activityMeanNames[kk].replace('Mean Difference ', '')).get(i);
+    const singleActivities = new Array<number>(activityN);
+    for (let j = 0; j < activityN; j++)
+      singleActivities[j] = activities.byName(activityMeanNames[j].replace('Mean Difference ', '')).get(i);
 
     for (let j = 0; j < frags[i].length; j++) {
       const core = frags[i][j][0];
@@ -37,7 +37,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
       if (core != '') {
         for (let k = 0; k < rulesFrom.length; k++) {
           if (subst === rulesFrom.get(k)) {
-            for (let kk = 0; kk <actN; kk++) {
+            for (let kk = 0; kk <activityN; kk++) {
               const activity = singleActivities[kk] + rulesColumns.byName(activityMeanNames[kk]).get(k);
               if (activity > prediction[kk][i]) {
                 prediction[kk][i] = activity;
@@ -52,7 +52,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
     }
   }
 
-  const allStructures = Array(structures.length * actN).fill(0).map((_, i) => structures[i % structures.length]);
+  const allStructures = Array(structures.length * activityN).fill(0).map((_, i) => structures[i % structures.length]);
 
   const colStructure = DG.Column.fromList('string', 'structure', allStructures);
   colStructure.semType = DG.SEMTYPE.MOLECULE;
@@ -64,7 +64,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
   let activityName: Array<string> = [];
   let allPreds: Array<number> = [];
 
-  for (let i = 0; i <actN; i ++) {
+  for (let i = 0; i < activityN; i ++) {
     const name = activityMeanNames[i].replace('Mean Difference ', '');
     allInits = allInits.concat(activities.byName(name).toList());
     activityName = activityName.concat(Array(structures.length).fill(name));

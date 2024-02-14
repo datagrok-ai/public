@@ -8,28 +8,33 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COLNAME_PAIRS, MMP_COL_PAIRNUM, MM
   MMP_COLOR} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';
 
-export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.ColumnList, mmpRules: MmpRules,
-  allCasesNumber: number, palette: PaletteCodes): {
-  maxActs: number[],
-  diffs: Array<Float32Array>,
-  activityMeanNames: Array<string>,
-  linesIdxs: Uint32Array,
-  allPairsGrid: DG.Grid,
-  casesGrid: DG.Grid,
-  lines: ILineSeries,
-  linesActivityCorrespondance: Uint32Array
-} {
-  const variates = activities.length;
-
+function calculateActivityDiffs(molecules: DG.Column, activities: DG.ColumnList,
+  mmpRules: MmpRules, variates: number, allCasesNumber: number) :
+  { maxActs: number [],
+    fromFrag: string[],
+    toFrag: string[],
+    occasions: Int32Array,
+    meanDiffs: Float32Array[],
+    molFrom: string[],
+    molTo: string[],
+    pairNum: Int32Array,
+    molNumFrom: Int32Array,
+    molNumTo: Int32Array,
+    pairsFromSmiles: string[],
+    pairsToSmiles: string[],
+    ruleNum: Int32Array,
+    diffs: Float32Array[],
+    activityPairsIdxs: BitArray[]
+  } {
   const maxActs = new Array<number>(variates);
   for (let i = 0; i < variates; i++)
     maxActs[i] = 0;
   const fromFrag = new Array<string>(mmpRules.rules.length);
   const toFrag = new Array<string>(mmpRules.rules.length);
   const occasions = new Int32Array(mmpRules.rules.length);
-  const meanDiff = new Array<Float32Array>(variates);
+  const meanDiffs = new Array<Float32Array>(variates);
   for (let i = 0; i < variates; i++)
-    meanDiff[i] = new Float32Array(mmpRules.rules.length);
+    meanDiffs[i] = new Float32Array(mmpRules.rules.length);
 
   const molFrom = new Array<string>(allCasesNumber);
   const molTo = new Array<string>(allCasesNumber);
@@ -48,7 +53,6 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
   for (let i = 0; i < variates; i++)
     activityPairsIdxs[i] = new BitArray(allCasesNumber);
 
-  //set activity differences
   let pairIdx = 0;
   for (let i = 0; i < mmpRules.rules.length; i++) {
     fromFrag[i] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule1];
@@ -89,71 +93,20 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
 
     for (let k = 0; k < variates; k++) {
       mean[k] /= occasions[i];
-      meanDiff[k][i] = mean[k];
+      meanDiffs[k][i] = mean[k];
     }
   }
 
-  //creating fragments grid
-  const fromCol = DG.Column.fromList('string', MMP_COLNAME_FROM, fromFrag);
-  const toCol = DG.Column.fromList('string', MMP_COLNAME_TO, toFrag);
-  const occasionsCol = DG.Column.fromInt32Array(MMP_COLNAME_PAIRS, occasions);
-  fromCol.semType = DG.SEMTYPE.MOLECULE;
-  toCol.semType = DG.SEMTYPE.MOLECULE;
-  occasionsCol.semType = DG.TYPE.INT;
+  return {maxActs, fromFrag, toFrag, occasions, meanDiffs, molFrom, molTo,
+    pairNum, molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs};
+}
 
-  const allPairsCols = [fromCol, toCol, occasionsCol];
-  const activityMeanNames = Array<string>(variates);
-  for (let i = 0; i < variates; i++) {
-    const name = MMP_COLNAME_MEANDIFF + ' ' + activities.byIndex(i).name;
-    activityMeanNames[i] = name;
-    allPairsCols.push(DG.Column.fromFloat32Array(name, meanDiff[i]));
-  }
-
-  //TODO: make compatible with trellis
-  const colorsPal = new Int32Array(fromCol.length);
-  for (let i = 0; i < fromCol.length; i++)
-    colorsPal[i] = i < fromCol.length ? 0 : 1;
-
-  const colorCol = DG.Column.fromInt32Array(MMP_COLOR, colorsPal);
-  allPairsCols.push(colorCol);
-
-  const dfAllPairs = DG.DataFrame.fromColumns(allPairsCols);
-  const allPairsGrid = dfAllPairs.plot.grid();
-
-  //creating cases grid
-  const pairsFromCol = DG.Column.fromStrings(MMP_COLNAME_FROM, molFrom);
-  const pairsToCol = DG.Column.fromStrings(MMP_COLNAME_TO, molTo);
-  const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, molFrom.length);
-  const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, molFrom.length);
-  const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);
-  const pairNumberFromCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_FROM, molNumFrom);
-  const pairNumberToCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_TO, molNumTo);
-
-  const pairsFromSmilesCol = DG.Column.fromStrings('~smi1', pairsFromSmiles);
-  const pairsToSmilesCol = DG.Column.fromStrings('~smi2', pairsToSmiles);
-  const ruleNumCol = DG.Column.fromInt32Array('~ruleNum', ruleNum);
-
-  pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsToCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsFromCol.temp[SUBSTRUCT_COL] = MMP_STRUCT_DIFF_FROM_NAME;
-  pairsToCol.temp[SUBSTRUCT_COL] = MMP_STRUCT_DIFF_TO_NAME;
-
-  const allTransformationsCols = [pairsFromCol, pairsToCol,
-    structureDiffFromCol, structureDiffToCol,
-    pairNumberCol, pairNumberFromCol, pairNumberToCol,
-    pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol];
-
-  for (let i = 0; i < variates; i++) {
-    const name = MMP_COLNAME_DIFF + ' ' + activities.byIndex(i).name;
-    allTransformationsCols.push(DG.Column.fromFloat32Array(name, diffs[i]));
-  }
-
-  const pairedTransformations = DG.DataFrame.fromColumns(allTransformationsCols);
-  const casesGrid = pairedTransformations.plot.grid();
-
-  //creating lines for rendering
+function createLines(variates: number, activityPairsIdxs: BitArray[],
+  molNumFrom: Int32Array, molNumTo: Int32Array, palette: PaletteCodes) : {
+    linesIdxs: Uint32Array,
+    lines: ILineSeries,
+    linesActivityCorrespondance: Uint32Array
+  } {
   let allCount = 0;
   for (let i = 0; i < variates; i++)
     allCount += activityPairsIdxs[i].trueCount();
@@ -185,5 +138,99 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
     arrowSize: 10,
   };
 
-  return {maxActs, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance};
+  return {linesIdxs, lines, linesActivityCorrespondance};
+}
+
+function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
+  occasions: Int32Array, activities: DG.ColumnList, meanDiffs: Float32Array[]) : [string[], DG.Grid] {
+  const fromCol = DG.Column.fromList('string', MMP_COLNAME_FROM, fromFrag);
+  const toCol = DG.Column.fromList('string', MMP_COLNAME_TO, toFrag);
+  const occasionsCol = DG.Column.fromInt32Array(MMP_COLNAME_PAIRS, occasions);
+  fromCol.semType = DG.SEMTYPE.MOLECULE;
+  toCol.semType = DG.SEMTYPE.MOLECULE;
+  occasionsCol.semType = DG.TYPE.INT;
+
+  const allPairsCols = [fromCol, toCol, occasionsCol];
+  const activityMeanNames = Array<string>(variates);
+  for (let i = 0; i < variates; i++) {
+    const name = MMP_COLNAME_MEANDIFF + ' ' + activities.byIndex(i).name;
+    activityMeanNames[i] = name;
+    allPairsCols.push(DG.Column.fromFloat32Array(name, meanDiffs[i]));
+  }
+
+  //TODO: make compatible with trellis
+  const colorsPal = new Int32Array(fromCol.length);
+  for (let i = 0; i < fromCol.length; i++)
+    colorsPal[i] = i < fromCol.length ? 0 : 1;
+
+  const colorCol = DG.Column.fromInt32Array(MMP_COLOR, colorsPal);
+  allPairsCols.push(colorCol);
+
+  const dfAllPairs = DG.DataFrame.fromColumns(allPairsCols);
+  return [activityMeanNames, dfAllPairs.plot.grid()];
+}
+
+function getCasesGrid(variates: number, molFrom: string[], molTo: string[], pairNum: Int32Array,
+  molNumFrom: Int32Array, molNumTo: Int32Array, pairsFromSmiles: string[],
+  pairsToSmiles: string[], ruleNum: Int32Array, activities: DG.ColumnList, diffs: Float32Array[]) : DG.Grid {
+  const pairsFromCol = DG.Column.fromStrings(MMP_COLNAME_FROM, molFrom);
+  const pairsToCol = DG.Column.fromStrings(MMP_COLNAME_TO, molTo);
+  const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, molFrom.length);
+  const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, molFrom.length);
+  const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);
+  const pairNumberFromCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_FROM, molNumFrom);
+  const pairNumberToCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_TO, molNumTo);
+
+  const pairsFromSmilesCol = DG.Column.fromStrings('~smi1', pairsFromSmiles);
+  const pairsToSmilesCol = DG.Column.fromStrings('~smi2', pairsToSmiles);
+  const ruleNumCol = DG.Column.fromInt32Array('~ruleNum', ruleNum);
+
+  pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
+  pairsToCol.semType = DG.SEMTYPE.MOLECULE;
+  pairsFromCol.temp[SUBSTRUCT_COL] = MMP_STRUCT_DIFF_FROM_NAME;
+  pairsToCol.temp[SUBSTRUCT_COL] = MMP_STRUCT_DIFF_TO_NAME;
+
+  const allTransformationsCols = [pairsFromCol, pairsToCol,
+    structureDiffFromCol, structureDiffToCol,
+    pairNumberCol, pairNumberFromCol, pairNumberToCol,
+    pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol];
+
+  for (let i = 0; i < variates; i++) {
+    const name = MMP_COLNAME_DIFF + ' ' + activities.byIndex(i).name;
+    allTransformationsCols.push(DG.Column.fromFloat32Array(name, diffs[i]));
+  }
+
+  const pairedTransformations = DG.DataFrame.fromColumns(allTransformationsCols);
+  return pairedTransformations.plot.grid();
+}
+
+export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.ColumnList, mmpRules: MmpRules,
+  allCasesNumber: number, palette: PaletteCodes): {
+  maxActs: number[],
+  diffs: Array<Float32Array>,
+  activityMeanNames: Array<string>,
+  linesIdxs: Uint32Array,
+  allPairsGrid: DG.Grid,
+  casesGrid: DG.Grid,
+  lines: ILineSeries,
+  linesActivityCorrespondance: Uint32Array
+} {
+  const variates = activities.length;
+  const activityDiffs = calculateActivityDiffs(molecules, activities, mmpRules, variates, allCasesNumber);
+
+  const [activityMeanNames, allPairsGrid] = getAllPairsGrid(variates, activityDiffs.fromFrag, activityDiffs.toFrag,
+    activityDiffs.occasions, activities, activityDiffs.meanDiffs);
+
+  const casesGrid = getCasesGrid(variates, activityDiffs.molFrom, activityDiffs.molTo, activityDiffs.pairNum,
+    activityDiffs.molNumFrom, activityDiffs.molNumTo, activityDiffs.pairsFromSmiles,
+    activityDiffs.pairsToSmiles, activityDiffs.ruleNum, activities, activityDiffs.diffs);
+
+  const lines =
+    createLines(variates, activityDiffs.activityPairsIdxs, activityDiffs.molNumFrom, activityDiffs.molNumTo, palette);
+
+  return {maxActs: activityDiffs.maxActs, diffs: activityDiffs.diffs,
+    activityMeanNames, linesIdxs: lines.linesIdxs, allPairsGrid, casesGrid,
+    lines: lines.lines, linesActivityCorrespondance: lines.linesActivityCorrespondance};
 }

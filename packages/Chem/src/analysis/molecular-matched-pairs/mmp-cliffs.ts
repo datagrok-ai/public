@@ -51,7 +51,7 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
   return [sp, sliderInputs, sliderInputValueDivs, colorInputs];
 }
 
-function drawMolPair(molecules: string[], substr: (ISubstruct | null)[], div: HTMLDivElement, tooltip?: boolean) {
+function drawMolPair(molecules: string[], substruct: (ISubstruct | null)[], div: HTMLDivElement, tooltip?: boolean) {
   ui.empty(div);
   const hosts = ui.divH([]);
   if (!tooltip)
@@ -60,14 +60,15 @@ function drawMolPair(molecules: string[], substr: (ISubstruct | null)[], div: HT
   const canvasHeight = 75;
   for (let i = 0; i < 2; i++) {
     const imageHost = ui.canvas(canvasWidth, canvasHeight);
-    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecules[i], '', undefined, substr[i]);
+    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecules[i], '', undefined, substruct[i]);
     hosts.append(imageHost);
   }
   div.append(hosts);
 };
 
-export function moleculesPairInfo(line: number, linesIdxs: Uint32Array, activityNum: number, pairsDf: DG.DataFrame,
-  diffs: Array<Float32Array>, parentTable: DG.DataFrame, molColName: string, rdkitModule: RDModule, propPanelViewer?: FormsViewer):
+export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: number, pairsDf: DG.DataFrame,
+  diffs: Array<Float32Array>, parentTable: DG.DataFrame, molColName: string,
+  rdkitModule: RDModule, propPanelViewer?: FormsViewer):
   HTMLDivElement {
   const div = ui.divV([], {style: {width: '100%'}});
   const moleculesDiv = ui.divH([]);
@@ -80,7 +81,7 @@ export function moleculesPairInfo(line: number, linesIdxs: Uint32Array, activity
   if (propPanelViewer) {
     const fromIdx = pairsDf.get(MMP_COL_PAIRNUM_FROM, pairIdx);
     const toIdx = pairsDf.get(MMP_COL_PAIRNUM_TO, pairIdx);
-    const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx], parentTable, molColName);
+    const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
   } else {
     const diff = ui.tableFromMap({'Diff': getSigFigs(diffs[activityNum][pairIdx], 4)});
@@ -103,7 +104,7 @@ export function moleculesPairInfo(line: number, linesIdxs: Uint32Array, activity
   return div;
 };
 
-function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[], parentTable: DG.DataFrame, molColName: string): HTMLElement {
+function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[]): HTMLElement {
   propPanelViewer.fixedRowNumbers = idxs;
   propPanelViewer.root.classList.add('chem-mmpa-forms-viewer');
 
@@ -121,7 +122,6 @@ export function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: D
     options: {},
   };
 
-  //@ts-ignore
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y,
     lines, ScatterPlotCurrentLineStyle.bold);
@@ -129,7 +129,7 @@ export function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: D
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
-      moleculesPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+      fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
         pairsDf, diffs, table, molecules.name, rdkitModule),
       event.x, event.y);
   });

@@ -18,7 +18,7 @@ export function getPalette(activityNum: number): PaletteCodes {
   const numerical = Array<number>(activityNum);
 
   for (let i = 0; i < activityNum; i++) {
-    const modNum = i%standradPal.length;
+    const modNum = i % standradPal.length;
     hex[i] = DG.Color.toHtml(standradPal[modNum]);
     rgb[i] = DG.Color.toRgb(standradPal[modNum]);
     rgbCut[i] = rgb[i].replace('rgb(', '').replace(')', '');
@@ -31,7 +31,7 @@ export function getPalette(activityNum: number): PaletteCodes {
 async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<string[]> {
   const service = await getRdKitService();
   const molecules: [string, string][] = new Array<[string, string]>(molecules1.length);
-  for (let i = 0; i <molecules1.length; i++)
+  for (let i = 0; i < molecules1.length; i++)
     molecules[i] = [molecules1[i], molecules2[i]];
 
   return await service.mmpGetMcs(molecules);
@@ -53,38 +53,31 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
   for (let i = 0; i < from.length; i++) {
     //aligning molecules
     const mcsMol = module.get_qmol(mcs[i]);
-    mcsMol.set_new_coords();
-    //revise
     const mol1 = module.get_mol(from[i]);
     const mol2 = module.get_mol(to[i]);
-
-    mol1.generate_aligned_coords(mcsMol, JSON.stringify({
+    const opts = JSON.stringify({
       useCoordGen: true,
       allowRGroups: true,
       acceptFailure: false,
       alignOnly: true,
-    }));
+    });
 
-    mol2.generate_aligned_coords(mcsMol, JSON.stringify({
-      useCoordGen: true,
-      allowRGroups: true,
-      acceptFailure: false,
-      alignOnly: true,
-    }));
-
-    fromAligned[i] = mol1.get_molblock();
-    toAligned[i] = mol2.get_molblock();
-
-    mol1?.delete();
-    mol2?.delete();
-
-    const substruct1 = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
-    const substruct2 = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
-
-    res1[i] = substruct1;
-    res2[i] = substruct2;
-
-    mcsMol?.delete();
+    try {
+      mcsMol.set_new_coords();
+      mol1.generate_aligned_coords(mcsMol, opts);
+      mol2.generate_aligned_coords(mcsMol, opts);
+      fromAligned[i] = mol1.get_molblock();
+      toAligned[i] = mol2.get_molblock();
+      res1[i] = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
+      res2[i] = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
+    } catch (e: any) {
+      fromAligned[i] = '';
+      toAligned[i] = '';
+    } finally {
+      mol1?.delete();
+      mol2?.delete();
+      mcsMol?.delete();
+    }
   }
   return {inverse1: res1, inverse2: res2, fromAligned: fromAligned, toAligned: toAligned};
 }

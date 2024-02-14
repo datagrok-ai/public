@@ -288,9 +288,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           for (let j = 0; j < length; j++) {
             try {
               const frag = res.sidechains.next();
-              const fffSplit = frag.get_smiles().split('.');
-              const firstIsFirst = fffSplit[0].length >= fffSplit[1].length;
-              frags[i][j] = [firstIsFirst ? fffSplit[0] : fffSplit[1], firstIsFirst ? fffSplit[1] : fffSplit[0]];
+              const split = frag.get_smiles().split('.');
+              const firstIsFirst = split[0].length >= split[1].length;
+              frags[i][j] = [firstIsFirst ? split[0] : split[1], firstIsFirst ? split[1] : split[0]];
               frag.delete();
             } catch (e: any) {
               frags[i][j] = ['', ''];
