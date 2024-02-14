@@ -206,7 +206,7 @@ export class SensitivityAnalysisView {
           temp.isChanging, analysisInputs.analysisType.value,
         ]).subscribe(([isChanging, analysisType]) => {
           if (isChanging) {
-            ref.constForm.forEach((input) => $(input.root).show());
+            ref.constForm.forEach((input) => $(input.root).hide());
             ref.saForm.forEach((input) => $(input.root).show());
             simpleSa.forEach((input) => analysisType === ANALYSIS_TYPE.GRID_ANALYSIS ? $(input.root).show(): $(input.root).hide());
           } else {
@@ -281,7 +281,6 @@ export class SensitivityAnalysisView {
         input:
           (() => {
             const caption = outputProp.caption ?? outputProp.name;
-            console.log(caption);
             let input: DG.InputBase;
 
             if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
@@ -457,6 +456,8 @@ export class SensitivityAnalysisView {
     const rbnPanels = this.comparisonView.getRibbonPanels();
     rbnPanels.push([this.helpIcon, this.runIcon]);
     this.comparisonView.setRibbonPanels(rbnPanels);
+
+    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
   }
 
   private closeOpenedViewers() {
