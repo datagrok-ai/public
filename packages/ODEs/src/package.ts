@@ -22,14 +22,14 @@ export async function init() {
 //name: solve
 //input: object problem
 //output: dataframe df
-export function solve(problem: ODEs): DG.DataFrame {  
-  return solveODEs(problem); 
+export function solve(problem: ODEs): DG.DataFrame {
+  return solveODEs(problem);
 }
 
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-export async function runDiffStudio(): Promise<void> {  
+export async function runDiffStudio(): Promise<void> {
   //await runSolverApp();
   const solver = new DiffStudio();
   await solver.runSolverApp();
@@ -66,41 +66,9 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   if (!DiffStudio.isStartingUriProcessed) {
     DiffStudio.isStartingUriProcessed = true;
     path = grok.shell.startUri;
-  }
-  else
+  } else
     path = window.location.href;
-  
+
   const solver = new DiffStudio(false);
   return solver.getFilePreview(file, path);
-}
-
-//name: foo
-export async function foo() {
-  const op1 = {
-    "name": "stage",
-    "type": "int",
-    "defaultValue": 0,
-    "caption": 'bla1'
-  };
-const op2 = {
-    "name": "slider",
-    "type": DG.TYPE.FLOAT,
-    "defaultValue": 1,
-    "caption": 'bla2'
-  };
-
-const input1 = ui.input.forProperty(DG.Property.fromOptions(op1));
-const input2 = ui.input.forProperty(DG.Property.fromOptions(op2));
-
-const form = ui.form([]);
-
-const tabControl = ui.tabControl();
-const modelPane = tabControl.addPane('1-st', () => form);
-const runPane = tabControl.addPane('2-nd', () => ui.panel([form]));
-
-form.append(input1.root);
-form.append(input2.root);
-
-const v = grok.shell.addTableView(grok.data.demo.demog(10));
-v.dockManager.dock(tabControl.root, 'left');
 }

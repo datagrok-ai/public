@@ -23,7 +23,7 @@ export const ANNOT_SEPAR = ';';
 const DEFAULT_TOL = '0.00005';
 const COLUMNS = `${SERVICE}columns`;
 const COMMENT_SEQ = '//';
-export const STAGE_COL_NAME = `${SERVICE}Stage`
+export const STAGE_COL_NAME = `${SERVICE}Stage`;
 const INCEPTION = 'Inception';
 
 /** Solver package name */
@@ -33,14 +33,14 @@ const PACKAGE_NAME = 'DiffStudio';
 const SOLVER_FUNC = 'solve';
 
 /** Elementary math tools */
-const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh',];
+const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh'];
 const POW_IDX = MATH_FUNCS.indexOf('pow');
-const MATH_CONSTS = ['PI', 'E', ];
+const MATH_CONSTS = ['PI', 'E'];
 
 /** Default meta */
 const defaultMetas = `//meta.runOnOpen: true
 //meta.runOnInput: true
-//meta.features: {"sens-analysis": true}`; 
+//meta.features: {"sens-analysis": true}`;
 
 /** Numerical input specification */
 export type Input = {
@@ -151,7 +151,7 @@ enum ANNOT {
   ARG_FIN = '{caption: Final; category: Argument}',
   ARG_STEP = '{caption: Step; category: Argument}',
   INITS = 'category: Initial values',
-  PARAMS = 'category: Parameters',  
+  PARAMS = 'category: Parameters',
 }
 
 /** JS-scripting components */
@@ -201,10 +201,10 @@ type Block = {
 function getStartOfProblemDef(lines: string[]): number {
   const linesCount = lines.length;
   let idx = 0;
- 
+
   while (!lines[idx].startsWith(CONTROL_TAG)) {
     ++idx;
-    
+
     if (idx === linesCount)
       throw new Error(ERROR_MSG.UNDEF_NAME);
   }
@@ -238,7 +238,7 @@ function getBlocks(lines: string[], start: number): Block[] {
 
 /** Concatenate multi-line formulas & expressions */
 function concatMultilineFormulas(source: string[]): string[] {
-  const res: string[] = [ source[0] ];
+  const res: string[] = [source[0]];
 
   let idxRes = 0;
   let idxSource = 1;
@@ -263,13 +263,14 @@ function concatMultilineFormulas(source: string[]): string[] {
 /** Get indeces of math functions used in the current text */
 function getUsedMathIds(text: string, mathIds: string[]) {
   const res = [] as number[];
-  const size = mathIds.length;  
+  const size = mathIds.length;
 
-  for (let i = 0; i < size; ++i)
+  for (let i = 0; i < size; ++i) {
     if (text.includes(`${mathIds[i]}`))
       res.push(i);
+  }
 
-  return res;  
+  return res;
 }
 
 /** Get differential equations */
@@ -290,16 +291,16 @@ function getDifEquations(lines: string[]): DifEqs {
 
   return {
     equations: deqs,
-    solutionNames: names
+    solutionNames: names,
   };
 }
 
 /** Get expressions of IVP */
 function getExpressions(lines: string[]): Map<string, string> {
-  const exprs = new Map<string, string>();  
+  const exprs = new Map<string, string>();
   let eqIdx = 0;
 
-  for (const line of lines) {    
+  for (const line of lines) {
     eqIdx = line.indexOf(EQUAL_SIGN);
     exprs.set(line.slice(0, eqIdx).replace(' ', ''), line.slice(eqIdx + 1).trim());
   }
@@ -312,16 +313,17 @@ function getInput(line: string) : Input {
   const str = line.slice(line.indexOf(EQUAL_SIGN) + 1).trim();
   const braceIdx = str.indexOf(BRACE_OPEN);
 
-  if (braceIdx === -1)
+  if (braceIdx === -1) {
     return {
       value: Number(str),
       annot: null,
     };
-  
+  }
+
   return {
     value: Number(str.slice(0, braceIdx)),
     annot: str.slice(braceIdx),
-  }
+  };
 }
 
 /** Get argument (independent variable) of IVP */
@@ -341,7 +343,7 @@ function getArg(lines: string[]): Arg {
     final: getInput(lines[2]),
     step: getInput(lines[3]),
     updateName: (commaIdx > -1) ? lines[0].slice(commaIdx + 1).trim() : undefined,
-  }
+  };
 }
 
 /** Get equalities specification */
@@ -350,7 +352,7 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
   const eqs = new Map<string, Input>();
   let eqIdx = 0;
 
-  for (const line of source) {    
+  for (const line of source) {
     eqIdx = line.indexOf(EQUAL_SIGN);
     eqs.set(line.slice(0, eqIdx).replace(' ', ''), getInput(line.slice(eqIdx + 1).trim()));
   }
@@ -365,9 +367,9 @@ function getLoop(lines: string[], begin: number, end: number): Loop {
 
   if (size < LOOP.MIN_LINES_COUNT)
     throw new Error(ERROR_MSG.LOOP);
-  
+
   const count = getInput(source[LOOP.COUNT_IDX]);
-  if (count.value <  LOOP.MIN_COUNT)
+  if (count.value < LOOP.MIN_COUNT)
     throw new Error(ERROR_MSG.COUNT);
 
   return {count: count, updates: source.slice(LOOP.COUNT_IDX + 1)};
@@ -388,19 +390,19 @@ function getUpdate(lines: string[], begin: number, end: number): Update {
   const eqIdx = source[UPDATE.DURATION_IDX].indexOf(EQUAL_SIGN);
 
   if (eqIdx === -1)
-    throw new Error(`${ERROR_MSG.UPDATE}. Check line: "${source[UPDATE.DURATION_IDX]}"`);    
+    throw new Error(`${ERROR_MSG.UPDATE}. Check line: "${source[UPDATE.DURATION_IDX]}"`);
 
   return {
     name: lines[begin].slice(colonIdx + 1),
-    durationFormula: source[UPDATE.DURATION_IDX].slice(eqIdx + 1).trim(), 
-    updates: source.slice(UPDATE.DURATION_IDX + 1)
+    durationFormula: source[UPDATE.DURATION_IDX].slice(eqIdx + 1).trim(),
+    updates: source.slice(UPDATE.DURATION_IDX + 1),
   };
 }
 
 /** Get output specification */
 function getOutput(lines: string[], begin: number, end: number): Map<string, Output> {
   const res = new Map<string, Output>();
-  
+
   let line: string;
   let token: string;
   let eqIdx: number;
@@ -427,34 +429,32 @@ function getOutput(lines: string[], begin: number, end: number): Map<string, Out
     if (openIdx * colonIdx <= 0)
       throw new Error(`${ERROR_MSG.COLON}. Check the line '${line}' in the output-block.`);
 
-    if (eqIdx === -1) // no formula
+    if (eqIdx === -1) {// no formula
       if (openIdx === -1) { // no annotation
         token = line.trim();
         res.set(token, {
-          caption: token, 
-          formula: null
+          caption: token,
+          formula: null,
         });
-      }
-      else { // there is an annotation
+      } else { // there is an annotation
         token = line.slice(0, openIdx).trim();
         res.set(token, {
-          caption: line.slice(colonIdx + 1, closeIdx).trim(), 
-          formula: null
+          caption: line.slice(colonIdx + 1, closeIdx).trim(),
+          formula: null,
         });
       }
-    else // there is a formula
+    } else // there is a formula
       if (openIdx === -1) { // no annotation
         token = line.slice(0, eqIdx).trim();
         res.set(token, {
-          caption: token, 
-          formula: line.slice(eqIdx + 1)
+          caption: token,
+          formula: line.slice(eqIdx + 1),
         });
-      }
-      else { // there is an annotation
+      } else { // there is an annotation
         token = line.slice(0, eqIdx).trim();
         res.set(token, {
-          caption: line.slice(colonIdx + 1, closeIdx), 
-          formula: line.slice(eqIdx + 1, openIdx)
+          caption: line.slice(colonIdx + 1, closeIdx),
+          formula: line.slice(eqIdx + 1, openIdx),
         });
       }
   } // for i
@@ -476,7 +476,7 @@ export function getIVP(text: string): IVP {
   let params: Map<string, Input> | null = null;
   let tolerance = DEFAULT_TOL;
   let loop: Loop | null = null;
-  let updates = [] as Update[];
+  const updates = [] as Update[];
   const metas = [] as string[];
   let outputs: Map<string, Output> | null = null;
 
@@ -488,7 +488,7 @@ export function getIVP(text: string): IVP {
     })
     .filter((s) => s !== '');
 
-  // 1. Skip first lines without the control tag  
+  // 1. Skip first lines without the control tag
   const start = getStartOfProblemDef(lines);
 
   // 2. Get blocks limits
@@ -498,55 +498,41 @@ export function getIVP(text: string): IVP {
   for (const block of blocks) {
     const firstLine = lines[block.begin];
 
-    if (firstLine.startsWith(CONTROL_EXPR.NAME)) { // the 'name' block      
+    if (firstLine.startsWith(CONTROL_EXPR.NAME)) { // the 'name' block
       name = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.TAGS)) { // the 'tags' block      
+    } else if (firstLine.startsWith(CONTROL_EXPR.TAGS)) { // the 'tags' block
       tags = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.DESCR)) { // the 'description' block      
+    } else if (firstLine.startsWith(CONTROL_EXPR.DESCR)) { // the 'description' block
       descr = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.DIF_EQ)) { // the 'differential equations' block      
-      deqs = getDifEquations(concatMultilineFormulas(lines.slice(block.begin + 1, block.end))); 
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.EXPR)) { // the 'expressions' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.DIF_EQ)) { // the 'differential equations' block
+      deqs = getDifEquations(concatMultilineFormulas(lines.slice(block.begin + 1, block.end)));
+    } else if (firstLine.startsWith(CONTROL_EXPR.EXPR)) { // the 'expressions' block
       exprs = getExpressions(concatMultilineFormulas(lines.slice(block.begin + 1, block.end)));
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.ARG)) { // the 'argument' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.ARG)) { // the 'argument' block
       arg = getArg(concatMultilineFormulas(lines.slice(block.begin, block.end)));
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.INITS)) { // the 'initial values' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.INITS)) { // the 'initial values' block
       inits = getEqualities(lines, block.begin + 1, block.end);
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.CONSTS)) { // the 'constants' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.CONSTS)) { // the 'constants' block
       consts = getEqualities(lines, block.begin + 1, block.end);
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.PARAMS)) { // the 'parameters' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.PARAMS)) { // the 'parameters' block
       params = getEqualities(lines, block.begin + 1, block.end);
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'loop' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'loop' block
       loop = getLoop(lines, block.begin + 1, block.end);
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
       updates.push(getUpdate(lines, block.begin, block.end));
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
       outputs = getOutput(lines, block.begin + 1, block.end);
-    }
-    else if (firstLine.startsWith(CONTROL_EXPR.COMMENT)) { // the 'comment' block
+    } else if (firstLine.startsWith(CONTROL_EXPR.COMMENT)) { // the 'comment' block
       // just skip it
-    }
-    else
+    } else
       metas.push(firstLine.slice(CONTROL_TAG_LEN));
   } // for
 
   // check loop- & update-features: just one is supported
-  if( (loop !== null) && (updates.length > 0))
-    throw new Error(ERROR_MSG.LOOP_VS_UPDATE);   
+  if ( (loop !== null) && (updates.length > 0))
+    throw new Error(ERROR_MSG.LOOP_VS_UPDATE);
 
   // obtained model
   const ivp = {
@@ -588,6 +574,7 @@ function getViewersLine(ivp: IVP): string {
 
   const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
 
+  // eslint-disable-next-line max-len
   return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)`;
 }
 
@@ -604,20 +591,20 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] 
 
   // the 'description' line
   if (ivp.descr)
-    res.push(`${ANNOT.DESCR} ${ivp.descr}`); 
+    res.push(`${ANNOT.DESCR} ${ivp.descr}`);
 
   // the 'language' line
   res.push(ANNOT.LANG);
 
   // the 'loop' lines
   if (ivp.loop)
-    res.push(`${ANNOT.INT_INPUT} ${LOOP.COUNT_NAME} = ${getInputSpec(ivp.loop.count)}`); 
+    res.push(`${ANNOT.INT_INPUT} ${LOOP.COUNT_NAME} = ${getInputSpec(ivp.loop.count)}`);
 
   // argument lines
   const arg = ivp.arg;
   const t0 = `${SERVICE}${arg.name}0`;
   const t1 = `${SERVICE}${arg.name}1`;
-  const h = `${SERVICE}h`
+  const h = `${SERVICE}h`;
   res.push(`${ANNOT.DOUBLE_INPUT} ${t0} = ${getInputSpec(arg.initial)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${t1} = ${getInputSpec(arg.final)}`);
   res.push(`${ANNOT.DOUBLE_INPUT} ${h} = ${getInputSpec(arg.step)}`);
@@ -653,9 +640,10 @@ function getMathArg(funcIdx: number): string {
 }
 
 /** Return custom output lines: no expressions */
-function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Output>, toAddUpdateCol: boolean): string[] {
-  const res = [''];    
-  
+function getCustomOutputLinesNoExpressions(name: string,
+  outputs: Map<string, Output>, toAddUpdateCol: boolean): string[] {
+  const res = [''];
+
   res.push(SCRIPT.CUSTOM_OUTPUT_COM);
   res.push(SCRIPT.CUSTOM_COLUMNS);
 
@@ -681,17 +669,17 @@ function getCustomOutputLinesNoExpressions(name: string, outputs: Map<string, Ou
 
 /** Return custom output lines: with expressions */
 function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
-  const res = [''];    
-  
+  const res = [''];
+
   res.push(SCRIPT.CUSTOM_OUTPUT_COM);
 
   // 1. Solution raw data
   res.push(`const ${ivp.arg.name}RawData = ${DF_NAME}.col('${ivp.arg.name}').getRawData();`);
   res.push(`let ${ivp.arg.name};`);
-  res.push(`const len = ${DF_NAME}.rowCount;\n`);  
+  res.push(`const len = ${DF_NAME}.rowCount;\n`);
 
   ivp.inits.forEach((val, key) => {
-    res.push(`const ${key}RawData = ${DF_NAME}.col('${key}').getRawData();`);    
+    res.push(`const ${key}RawData = ${DF_NAME}.col('${key}').getRawData();`);
   });
 
   res.push('');
@@ -735,22 +723,24 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
 
   res.push(']);');
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
-  
+
   return res;
 }
 
 /** Return custom output lines */
 function getCustomOutputLines(ivp: IVP): string[] {
-  if (ivp.exprs !== null)
-    for (const key of ivp.exprs.keys())
+  if (ivp.exprs !== null) {
+    for (const key of ivp.exprs.keys()) {
       if (ivp.outputs?.has(key))
         return getCustomOutputLinesWithExpressions(ivp);
+    }
+  }
 
   return getCustomOutputLinesNoExpressions(ivp.name, ivp.outputs!, (ivp.updates !== null));
 } // getCustomOutputLinesWithExpressions
 
 /** Return main body of JS-script: basic variant */
-function getScriptMainBodyBasic(ivp: IVP): string[] {  
+function getScriptMainBodyBasic(ivp: IVP): string[] {
   const res = [] as string[];
 
   // 1. Constants lines
@@ -786,7 +776,7 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
 
   if (ivp.exprs !== null) {
     res.push(`\n${SCRIPT.SPACE6}${SCRIPT.EVAL_EXPR}`);
-    ivp.exprs.forEach((val, key, map) => res.push(`${SCRIPT.SPACE6}const ${key} = ${val};`));
+    ivp.exprs.forEach((val, key) => res.push(`${SCRIPT.SPACE6}const ${key} = ${val};`));
   }
 
   res.push(`\n${SCRIPT.SPACE6}${SCRIPT.COMP_OUT}`);
@@ -803,7 +793,9 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
   if (ivp.usedMathFuncs.length > 0) {
     res.push('');
     res.push(SCRIPT.MATH_FUNC_COM);
-    ivp.usedMathFuncs.forEach((i) => res.push(`const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`));
+    ivp.usedMathFuncs.forEach((i) =>
+      res.push(`const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`,
+      ));
   }
 
   // 4. Math constants
@@ -825,7 +817,7 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
 } // getScriptMainBodyBasic
 
 /** Return function for JS-script */
-function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {  
+function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
   const res = [] as string[];
 
   // 0. Function declaration
@@ -864,7 +856,7 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
 
   if (ivp.exprs !== null) {
     res.push(`\n${SCRIPT.SPACE8}${SCRIPT.EVAL_EXPR}`);
-    ivp.exprs.forEach((val, key, map) => res.push(`${SCRIPT.SPACE8}const ${key} = ${val};`));
+    ivp.exprs.forEach((val, key) => res.push(`${SCRIPT.SPACE8}const ${key} = ${val};`));
   }
 
   res.push(`\n${SCRIPT.SPACE8}${SCRIPT.COMP_OUT}`);
@@ -881,15 +873,16 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
   if (ivp.usedMathFuncs.length > 0) {
     res.push('');
     res.push(SCRIPT.SPACE2 + SCRIPT.MATH_FUNC_COM);
+    // eslint-disable-next-line max-len
     ivp.usedMathFuncs.forEach((i) => res.push(`${SCRIPT.SPACE2}const ${MATH_FUNCS[i]} = ${getMathArg(i)} => Math.${MATH_FUNCS[i]}${getMathArg(i)};`));
   }
-  
+
   // 4. Math constants
   if (ivp.usedMathConsts.length > 0) {
     res.push('');
     res.push(SCRIPT.SPACE2 + SCRIPT.MATH_CONST_COM);
     ivp.usedMathConsts.forEach((i) => res.push(`${SCRIPT.SPACE2}const ${MATH_CONSTS[i]} = Math.${MATH_CONSTS[i]};`));
-  }  
+  }
 
   // 5. The 'call solver' lines
   res.push('');
@@ -934,7 +927,7 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   res.push(`${SCRIPT.SPACE2}${SERVICE}${ivp.arg.name}1 += ${SCRIPT.LOOP_INTERVAL};`);
   res.push(`${SCRIPT.SPACE2}${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
 
-  dfNames.forEach((name, idx) => { 
+  dfNames.forEach((name, idx) => {
     if (idx !== 0)
       res.push(`${SCRIPT.SPACE2}${name} = ${DF_NAME}.get('${name}', ${SCRIPT.LAST_IDX});`);
   });
@@ -954,13 +947,14 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
   res.push(SCRIPT.SOLUTION_DF_COM);
   const dfNames = getSolutionDfColsNames(ivp);
 
-  res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`); 
-  
+  res.push(`${SCRIPT.ASYNC_OUTPUT}${funcParamsNames});`);
+
   res.push('');
 
   res.push(SCRIPT.SEGMENT_COM);
+  // eslint-disable-next-line max-len
   res.push(`${DF_NAME}.columns.add(DG.Column.fromList('string', '${STAGE_COL_NAME}', new Array(${DF_NAME}.rowCount).fill('${ivp.arg.updateName ?? INCEPTION}')));`);
-  
+
   res.push('');
   res.push(`let ${SCRIPT.LAST_IDX} = 0;`);
 
@@ -969,8 +963,8 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
     res.push(`${SCRIPT.UPDATE_COM} ${idx + 1}`);
     res.push(`const ${UPDATE.DURATION}${idx + 1} = ${upd.durationFormula};`);
     res.push(`${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
-    
-    dfNames.forEach((name, idx) => { 
+
+    dfNames.forEach((name, idx) => {
       if (idx !== 0)
         res.push(`${name} = ${DF_NAME}.get('${name}', ${SCRIPT.LAST_IDX});`);
     });
@@ -980,7 +974,8 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
     res.push(`${SERVICE}${ivp.arg.name}0 = ${SERVICE}${ivp.arg.name}1;`);
     res.push(`${SERVICE}${ivp.arg.name}1 += ${UPDATE.DURATION}${idx + 1};`);
 
-    res.push(`const ${SERVICE}DF${idx + 1} = ${SCRIPT.ONE_STAGE}${funcParamsNames});`);    
+    res.push(`const ${SERVICE}DF${idx + 1} = ${SCRIPT.ONE_STAGE}${funcParamsNames});`);
+    // eslint-disable-next-line max-len
     res.push(`${SERVICE}DF${idx + 1}.columns.add(DG.Column.fromList('string', '${STAGE_COL_NAME}', new Array(${SERVICE}DF${idx + 1}.rowCount).fill('${upd.name}')));`);
     res.push(`${SCRIPT.APPEND}${SERVICE}DF${idx + 1}, true);`);
   });
@@ -994,15 +989,15 @@ function getScriptMainBody(ivp: IVP): string[] {
     return getScriptMainBodyLoopCase(ivp);
 
   if (ivp.updates)
-    return  getScriptMainBodyUpdateCase(ivp);
-  
+    return getScriptMainBodyUpdateCase(ivp);
+
   return getScriptMainBodyBasic(ivp);
 }
 
 /** Return JS-script lines */
-export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] {  
+export function getScriptLines(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] {
   const res = getAnnot(ivp, toAddViewers, toAddEditor).concat(getScriptMainBody(ivp));
-  
+
   if (ivp.outputs)
     return res.concat(getCustomOutputLines(ivp));
 
@@ -1014,7 +1009,7 @@ export function getScriptParams(ivp: IVP): Record<string, number> {
   const res = {} as Record<string, number>;
 
   if (ivp.loop)
-    res[LOOP.COUNT_NAME] = ivp.loop.count.value;  
+    res[LOOP.COUNT_NAME] = ivp.loop.count.value;
 
   const arg = ivp.arg;
 
@@ -1038,7 +1033,7 @@ function getFuncParamsNames(ivp: IVP): string {
 
   names.push(`${SERVICE}${arg}0`);
   names.push(`${SERVICE}${arg}1`);
-  names.push(`${SERVICE}h`);  
+  names.push(`${SERVICE}h`);
 
   ivp.inits.forEach((val, key) => names.push(key));
 
@@ -1073,7 +1068,7 @@ function checkCorrectness(ivp: IVP): void {
 
   if (ivp.arg === undefined)
     throw new Error(ERROR_MSG.UNDEF_ARG);
-    
+
   // 1. Check initial values
   ivp.deqs.equations.forEach((ignore, name) => {
     if (!ivp.inits.has(name))
@@ -1093,8 +1088,7 @@ function checkCorrectness(ivp: IVP): void {
       else
         usedNames.push(lowCase);
     });
-  }
-  else {
+  } else {
     const usedNames = [ivp.arg.name];
 
     ivp.deqs.solutionNames.forEach((name) => {
@@ -1116,5 +1110,4 @@ function checkCorrectness(ivp: IVP): void {
 
   if (ivp.arg.step.value > ivp.arg.final.value - ivp.arg.initial.value)
     throw new Error(ERROR_MSG.INCOR_STEP);
-
 } // checkCorrectness
