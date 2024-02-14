@@ -932,9 +932,10 @@ export interface IDartApi {
   grok_Entity_Get_Author(p: any): any;
   grok_Entity_Get_nqName(p: any): any;
   grok_Entity_Share(e: any, g: any, isEdit: Bool): Promise<any>;
-  grok_DataConnection_Create(name: String, dataSource: String, server: String, db: String, login: String, password: String): any;
+  grok_DataConnection_Create(name: String, dataSource: String, options: any): any;
   grok_DataConnection_Get_Parameters(c: any): any;
   grok_DataConnection_Query(c: any, name: String, sql: String): any;
+  grok_DataConnection_Get_Credentials(c: any): any;
   grok_DataConnection_Test(c: any): Promise<any>;
   grok_Credentials_Parameters(c: any): any;
   grok_Credentials_Create(json: any): any;
@@ -1355,6 +1356,7 @@ export interface IDartApi {
   grok_Shell_GetClientBuildInfo(): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
+  grok_DataSourceType_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
@@ -1373,6 +1375,7 @@ export interface IDartApi {
   grok_DockerImage_Get_dockerFullName(x: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
+  grok_DataSourceType_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;

@@ -11,7 +11,14 @@ category('Dapi: connection', () => {
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
+    let credentials = dc.credentials;
+    expect(credentials.parameters['login'], dcParams.login);
+    expect(credentials.parameters['password'], dcParams.password);
     dc = await GDC.save(dc);
+    let c = await grok.dapi.credentials.forEntity(dc);
+    let p = c.parameters;
+    credentials = dc.credentials;
+    let params = credentials.parameters;
     expect((dc.parameters as any)['schema'], null);
     expect((dc.parameters as any)['db'], dcParams.db);
     expect(dc.friendlyName, 'Local DG Test');
