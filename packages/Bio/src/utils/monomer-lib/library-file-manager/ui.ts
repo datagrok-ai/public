@@ -196,7 +196,7 @@ class DialogWrapper {
       'Add',
       () => eventManager.addLibraryFile(),
       undefined,
-      'Load new monomer libraries'
+      'Upload new HELM monomer library'
     );
     dialog.add(widget);
     dialog.onClose.subscribe(() => this.closeDialogSubject$.next());

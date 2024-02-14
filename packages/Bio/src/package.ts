@@ -164,7 +164,7 @@ export function getBioLib(): IMonomerLib {
 
 // -- Panels --
 
-//name: Get Region
+//name: Bioinformatics | Get Region
 //description: Creates a new column with sequences of the region between start and end
 //tags: panel
 //input: column seqCol {semType: Macromolecule}
@@ -179,7 +179,7 @@ export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
   return funcEditor.widget();
 }
 
-//name: Manage Monomer Libraries
+//name: Bioinformatics | Manage Monomer Libraries
 //description:
 //tags: panel, exclude-actions-panel
 //input: column seqColumn {semType: Macromolecule}
@@ -290,7 +290,7 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 
 // -- Property panels --
 
-//name: Sequence Renderer
+//name:  Bioinformatics | Sequence Renderer
 //input: column molColumn {semType: Macromolecule}
 //tags: panel
 //output: widget result
@@ -646,18 +646,6 @@ export async function compositionAnalysis(): Promise<void> {
 
   await handler(col);
 }
-
-// 2023-05-17 Representations does not work at BioIT
-// //name: Representations
-// //tags: panel, widgets
-// //input: cell macroMolecule {semType: Macromolecule}
-// //output: widget result
-// export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
-//   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
-//   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-//
-//   return representationsWidget(macroMolecule, monomersLibObject);
-// }
 
 //name: importFasta
 //description: Opens FASTA file

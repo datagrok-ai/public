@@ -3,7 +3,7 @@ import {UserLibSettings} from './types';
 
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
-export const LIB_PATH = 'System:AppData/Bio/libraries/';
+export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
 const LIB_SETTINGS_FOR_TESTS: UserLibSettings = {explicit: ['HELMCoreLibrary.json'], exclude: []};
 
 

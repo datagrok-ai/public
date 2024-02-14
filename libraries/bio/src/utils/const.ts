@@ -2,8 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
-
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
 export const enum HELM_REQUIRED_FIELD {
