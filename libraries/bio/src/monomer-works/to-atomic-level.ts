@@ -102,7 +102,7 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
     const macroMolecule = macroMolCol.get(row);
     containsEmptyValues ||= macroMolecule === '';
     result[row] = macroMolecule ? wu(splitter(macroMolecule))
-      .filter((monomerCode) => monomerCode !== '').toArray() : [];
+      .filter((monomerSymbol) => !uh.isGap(monomerSymbol)).toArray() : [];
   }
 
   if (containsEmptyValues)
@@ -176,7 +176,7 @@ function addMonomerToDict(
 ): void {
   if (!monomersDict.has(sym)) {
     const monomerData: MolGraph | null =
-        getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
+      getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
     if (monomerData)
       monomersDict.set(sym, monomerData);
     else {
