@@ -192,7 +192,7 @@ export class SubstructureFilter extends DG.Filter {
     ui.tools.waitForElementInDom(this.sketcher.root).then(async () => {
       let inplaceSketcher = false;
       try {
-        await awaitCheck(() => this.root.closest('.d4-filter') != null);
+        await awaitCheck(() => this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL);
       } catch(e) {
         inplaceSketcher = true;
       }
