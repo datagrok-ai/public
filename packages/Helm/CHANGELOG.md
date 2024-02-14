@@ -1,6 +1,12 @@
 # Helm changelog
 
-## 2.2.0 (WIP)
+## 2.1.26 (2024-02-14)
+
+### Bug fixes
+
+* Fix Properties panel of Context panel for sequences of MSA with gaps
+
+## 2.1.25 (2024-02-09)
 
 ### Features
 

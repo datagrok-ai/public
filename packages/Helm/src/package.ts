@@ -7,10 +7,12 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {findMonomers, parseHelm} from './utils';
-import {HelmWebEditor} from './helm-web-editor';
 import {HelmCellRenderer} from './cell-renderer';
+import {HelmHelper} from './helm-helper';
+import {getPropertiesWidget} from './widgets/properties-widget';
 
 let monomerLib: IMonomerLib | null = null;
 
@@ -159,29 +161,11 @@ export function openEditor(mol: string): void {
 }
 
 //name: Properties
-//tags: panel, widgets
-//input: string helmString {semType: Macromolecule}
+//tags: panel, bio, helm, widgets
+//input: semantic_value sequence {semType: Macromolecule}
 //output: widget result
-export async function propertiesPanel(helmString: string) {
-  const grid = grok.shell.tv.grid;
-  const parent = grid.root.parentElement!;
-  const host = ui.div([]);
-  parent.appendChild(host);
-  const editor = new JSDraw2.Editor(host, {viewonly: true});
-  host.style.width = '0px';
-  host.style.height = '0px';
-  editor.setHelm(helmString);
-  const formula = editor.getFormula(true);
-  const molWeight = Math.round(editor.getMolWeight() * 100) / 100;
-  const coef = Math.round(editor.getExtinctionCoefficient(true) * 100) / 100;
-  parent.lastChild!.remove();
-  return new DG.Widget(
-    ui.tableFromMap({
-      'formula': formula.replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
-      'molecular weight': molWeight,
-      'extinction coefficient': coef,
-    })
-  );
+export function propertiesWidget(sequence: DG.SemanticValue): DG.Widget {
+  return getPropertiesWidget(sequence);
 }
 
 function webEditor(cell?: DG.Cell, value?: string, units?: string) {
@@ -282,8 +266,10 @@ export function getMolfiles(col: DG.Column): DG.Column {
   return res;
 }
 
-//name: helmWebEditor
+// -- Utils --
+
+//name: getHelmHelper
 //output: object result
-export function helmWebEditor(): HelmWebEditor {
-  return new HelmWebEditor();
+export async function getHelmHelper(): Promise<IHelmHelper> {
+  return HelmHelper.getInstance();
 }
