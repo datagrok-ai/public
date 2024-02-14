@@ -442,8 +442,9 @@ export class SubstructureFilter extends DG.Filter {
           molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
           tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
       this.dataFrame?.rows.requestFilter();
-    } else if (wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) || this.isFilteringBySameStructure(newMolFile)) {
+    } else if ((wu(this.dataFrame!.rows.filters)
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) || this.isFilteringBySameStructure(newMolFile))
+      && !this.recalculateFilter && !this.searchNotCompleted) {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property
       _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolFile)} , ${this.filterId}`);
