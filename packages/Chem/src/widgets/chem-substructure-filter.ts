@@ -235,18 +235,18 @@ export class SubstructureFilter extends DG.Filter {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         /* setting syncEvent to true if base sketcher is initialized or sketcher is in inplace mode and we are setting new molecule.
         If base sketcher is initialized, it will fire onChange event */     
-        _package.logger.debug(`********** sync event sent by filter ${state.filterId} to ${this.filterId}`); 
+       // _package.logger.debug(`********** sync event sent by filter ${state.filterId} to ${this.filterId}`); 
         if (this.currentSearches.size > 0)
           grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
         const updateMolecule = this.currentMolfile != state.molblock!;
-        _package.logger.debug(`update molecule: ${updateMolecule}, filterId: ${this.filterId}`);
+       // _package.logger.debug(`update molecule: ${updateMolecule}, filterId: ${this.filterId}`);
         if ((this.sketcher.sketcher?.isInitialized || this.sketcher._mode == DG.chem.SKETCHER_MODE.INPLACE) && updateMolecule) {
           this.syncEvent = true;
-          _package.logger.debug(`set sync to true syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
+         // _package.logger.debug(`set sync to true syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
         } 
         this.currentMolfile = state.molblock!;
         this.bitset = state.bitset!;
-        _package.logger.debug(`in sync event , true count: ${this.bitset?.trueCount}, syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
+        _package.logger.debug(`in sync event , true count: ${this.bitset?.trueCount}, syncEvent: ${this.syncEvent}, by filter ${state.filterId} to ${this.filterId}`);
         if (this.searchTypeInput.value !== state.searchType) {
           this.searchTypeSync = true;
           this.searchTypeInput.value = state.searchType;
@@ -262,7 +262,7 @@ export class SubstructureFilter extends DG.Filter {
         const molblock = !state.molblock ? DG.WHITE_MOLBLOCK : state.molblock;
         if (updateMolecule) {
           //call setMolFile only in case new molecule differs from previous one
-          _package.logger.debug(`setting new molecule in sync event , syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
+        //  _package.logger.debug(`setting new molecule in sync event , syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
           this.sketcher.setMolFile(molblock);
         }
         this.updateFilterUiOnSketcherChanged(molblock);
@@ -331,7 +331,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
-    _package.logger.debug(`*************entered apply filter, filter id${this.filterId}`);
+   // _package.logger.debug(`*************entered apply filter, filter id${this.filterId}`);
     this.active = true;
     //we apply filter bitset only from one active filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
