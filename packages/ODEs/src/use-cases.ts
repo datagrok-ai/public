@@ -108,7 +108,7 @@ ${CONTROL_EXPR.LOOP}:
 ${CONTROL_EXPR.ARG}: t
   start = 0 {units: h; caption: begin; category: Dosing; min: 0; max: 1} [Begin of dosing interval]
   final = 12 {units: h; caption: end; category: Dosing; min: 5; max: 15} [End of dosing interval]
-  step = 0.01 {units: h; caption: step; category: Dosing; min: 0.01; max: 0.1} [Time step of simlulation]  
+  step = 0.1 {units: h; caption: step; category: Dosing; min: 0.01; max: 0.1} [Time step of simlulation]  
 
 ${CONTROL_EXPR.INITS}:  
   depot = 0 {category: Initial values}
@@ -234,4 +234,4 @@ export enum USE_CASES {
   PK_PD = PK_PD_MODEL,
   ACID_PROD = ACID_PROD_MODEL,
   NIMOTUZUMAB = NIMOTUZUMAB_MODEL,
-};
+}
