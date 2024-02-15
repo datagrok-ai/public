@@ -389,7 +389,7 @@ export function isApplicableDataframe(table: DG.DataFrame, minRows: number = 2):
 }
 
 export function debounce<T extends Array<any>, K>(f: (...args: T) => K, timeout: number = 500): (...args: T) => void {
-  let timer: NodeJS.Timeout | undefined;
+  let timer: NodeJS.Timeout | number | undefined;
   return (...args: T) => {
     clearTimeout(timer);
     timer = setTimeout(() => f(...args), timeout);
