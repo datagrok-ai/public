@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -20,6 +22,38 @@ import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './c
 
 export const _package = new DG.Package();
 
+function initHelmPatchDojo(): void {
+  // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
+  /** get the text width in pixels */
+  // @ts-ignore
+  window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
+    const rawNode = this.rawNode;
+    const oldParent = rawNode.parentNode;
+    const _measurementNode = rawNode.cloneNode(true);
+    _measurementNode.style.visibility = 'hidden';
+
+    // solution to the "orphan issue" in FF
+    let _width = 0;
+    const _text = _measurementNode.firstChild.nodeValue;
+    oldParent.appendChild(_measurementNode);
+
+    // solution to the "orphan issue" in Opera
+    // (nodeValue == "" hangs firefox)
+    if (_text != '') {
+      let watchdogCounter = 100;
+      while (!_width && --watchdogCounter > 0) { // <-- hangs
+        //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
+        if (_measurementNode.getBBox)
+          _width = parseInt(_measurementNode.getBBox().width);
+        else
+          _width = 68;
+      }
+    }
+    oldParent.removeChild(_measurementNode);
+    return _width;
+  };
+}
+
 //tags: init
 export async function initHelm(): Promise<void> {
   //@ts-ignore
@@ -29,6 +63,8 @@ export async function initHelm(): Promise<void> {
     new Promise((resolve, reject) => {
       // @ts-ignore
       dojo.ready(function() { resolve(null); });
+    }).then(() => {
+      initHelmPatchDojo();
     }),
     grok.functions.call('Bio:getBioLib'),
   ])
@@ -107,7 +143,7 @@ function rewriteLibraries() {
   });
 
   // Obsolete
-  const grid: DG.Grid = grok.shell.tv.grid;
+  const grid: DG.Grid = grok.shell.tv?.grid;
   if (grid) grid.invalidate();
 }
 
@@ -249,21 +285,22 @@ function getRS(smiles: string) {
 //input: column col {semType: Macromolecule}
 //output: column res
 export function getMolfiles(col: DG.Column): DG.Column {
-  const grid = grok.shell.tv.grid;
-  const parent = grid.root.parentElement!;
   const res = DG.Column.string('mols', col.length);
-  const host = ui.div([]);
-  parent.appendChild(host);
-  const editor = new JSDraw2.Editor(host, {viewonly: true});
-  host.style.width = '0px';
-  host.style.height = '0px';
-  res.init((i) => {
-    editor.setHelm(col.get(i));
-    const mol = editor.getMolfile();
-    return mol;
-  });
-  parent.lastChild!.remove();
-  return res;
+
+  const host = ui.div([], {style: {width: '0', height: '0'}});
+  document.documentElement.appendChild(host);
+  try {
+    const editor = new JSDraw2.Editor(host, {viewonly: true});
+    res.init((i) => {
+      editor.setHelm(col.get(i));
+      const mol = editor.getMolfile();
+      return mol;
+    });
+    return res;
+  } finally {
+    $(host).empty();
+    host.remove();
+  }
 }
 
 // -- Utils --

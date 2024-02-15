@@ -1,5 +1,13 @@
 # Helm changelog
 
+## 2.1.27 (2024-02-15)
+
+### Bug fixes
+
+* Fix dojo patch dependency on package init
+* Fix getMolfiles without current table view
+* Fix initHelm/rewriteLibraries without current table view
+
 ## 2.1.26 (2024-02-14)
 
 ### Bug fixes
