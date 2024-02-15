@@ -480,6 +480,10 @@ export interface IScatterPlotLookSettings {
 
   categoricalColorScheme: Array<number>;
 
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
+
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
   /// set for the corresponding column.
   axesUseColumnFormat: boolean;
@@ -1354,7 +1358,8 @@ export interface IGridLookSettings {
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Reorder rows by drag-and-dropping
+  /// Mouse drag on the rows header selects rows
+  /// Reorder rows by dragging them
   allowRowReordering: boolean;
 
   /// Mouse drag on the row header selects rows
