@@ -24,6 +24,7 @@ export async function markovCluster(
   const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
 
   const sc = tv.scatterPlot({...scatterPlotProps, title: 'MCL'});
+
   ui.setUpdateIndicator(sc.root, true);
   const distanceFnArgs: Options[] = [];
   const encodedColEntries: PreprocessFunctionReturnType[] = [];
@@ -45,9 +46,18 @@ export async function markovCluster(
     }
   }
 
-
-  const res = await createMCLWorker(encodedColEntries.map((it) => it.entries),
+  const mclWorker = createMCLWorker(encodedColEntries.map((it) => it.entries),
     threshold, weights, aggregationMethod, metrics, distanceFnArgs, maxIterations);
+
+  const terminateSub = grok.events.onViewerClosed.subscribe((args) => {
+    if (args.args.viewer?.props?.title === sc.props.title && sc.type === args.args?.viewer?.type) {
+      terminateSub.unsubscribe();
+      mclWorker.terminate();
+    }
+  });
+  const res = await mclWorker.promise;
+  if (!res)
+    return;
   const clusterColName = df.columns.getUnusedName('Cluster');
   const emberdXColName = df.columns.getUnusedName('EmbedX');
   const emberdYColName = df.columns.getUnusedName('EmbedY');
@@ -65,6 +75,7 @@ export async function markovCluster(
   sc.props.yColumnName = emberdYColName;
   sc.props.colorColumnName = clusterColName;
   sc.props.markerDefaultSize = 5;
+  terminateSub.unsubscribe();
   // const sc = tv.scatterPlot({x: emberdXColName, y: emberdYColName});
   // sc.props.colorColumnName = clusterColName;
   // sc.props.markerDefaultSize = 5;

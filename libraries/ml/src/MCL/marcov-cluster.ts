@@ -28,8 +28,23 @@ export class MCLSparseReducer {
       this.normalize(sparseObject);
     }
     const {clusters, is, js} = this.assignClusters(sparseObject, nRows);
+    this.correctClusters(clusters);
     const embeddings = await this.layout(clusters, sparseObject, nRows);
     return {clusters, embedX: embeddings.embedX, embedY: embeddings.embedY, is, js};
+  }
+
+  private correctClusters(clusters: number[]) {
+    const clusterMap: {[_: number]: number} = {};
+    let curCluster = 1;
+    for (let i = 0; i < clusters.length; i++) {
+      if (!clusterMap[clusters[i]]) {
+        clusterMap[clusters[i]] = curCluster;
+        clusters[i] = curCluster;
+        curCluster++;
+      } else {
+        clusters[i] = clusterMap[clusters[i]];
+      }
+    }
   }
 
   private async layout(clusters: number[], sparseMatrix: SparseMatrixObject, nRows: number) {
