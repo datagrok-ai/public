@@ -219,10 +219,10 @@ export class SensitivityAnalysisView {
         ]).subscribe(([isChanging, analysisType]) => {
           if (isChanging) {
             ref.constForm.forEach((input) => $(input.root).hide());
-            ref.saForm.forEach((input) => $(input.root).show());
-            simpleSa.forEach((input) => analysisType === ANALYSIS_TYPE.GRID_ANALYSIS ? $(input.root).show(): $(input.root).hide());
+            ref.saForm.forEach((input) => $(input.root).css('display', 'flex'));
+            simpleSa.forEach((input) => analysisType === ANALYSIS_TYPE.GRID_ANALYSIS ? $(input.root).css('display', 'flex'): $(input.root).hide());
           } else {
-            ref.constForm.forEach((input) => $(input.root).show());
+            ref.constForm.forEach((input) => $(input.root).css('display', 'flex'));
             ref.saForm.forEach((input) => $(input.root).hide());
           }
         });
