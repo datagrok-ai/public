@@ -348,11 +348,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   /**
    * Override to change behavior on runs comparison
-   * @param funcCallIds FuncCalls to be compared
+   * @param fullFuncCalls FuncCalls to be compared
    */
-  public async onComparisonLaunch(funcCallIds: string[]) {
-    const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
-
+  public async onComparisonLaunch(fullFuncCalls: DG.FuncCall[]) {
     const comparator = this.comparatorFunc;
     if (comparator) {
       const comparatorFunc: DG.Func = await grok.functions.eval(comparator);
@@ -402,7 +400,10 @@ export abstract class FunctionView extends DG.ViewBase {
         await this.loadRun(id);
         ui.setUpdateIndicator(this.root, false);
       }),
-      newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
+      newHistoryBlock.onComparison.subscribe(async (ids) => {
+        const fullFuncCalls = await Promise.all(ids.map((funcCallId) => historyUtils.loadRun(funcCallId)));
+        this.onComparisonLaunch(fullFuncCalls);
+      }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
           if (isHistoryBlockOpened)
@@ -788,7 +789,11 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get comparatorFunc(): string | null {
-    return this.func.options['comparator'] ?? null;
+    return this.func.options['comparatorFunc'] ?? null;
+  }
+
+  protected get uploadFunc(): string | null {
+    return this.func.options['uploadFunc'] ?? null;
   }
 
   protected get runningOnInput() {

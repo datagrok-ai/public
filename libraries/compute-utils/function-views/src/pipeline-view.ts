@@ -421,11 +421,11 @@ export class PipelineView extends FunctionView {
     Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
   }
 
-  public override async onComparisonLaunch(funcCallIds: string[]) {
+  public override async onComparisonLaunch(funcCalls: DG.FuncCall[]) {
     const parentCall = grok.shell.v.parentCall;
 
     const childFuncCalls = await Promise.all(
-      funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
+      funcCalls.map((funcCall) => historyUtils.loadChildRuns(funcCall.id)),
     );
 
     // Main child function should habe `meta.isMain: true` tag or the last function is used

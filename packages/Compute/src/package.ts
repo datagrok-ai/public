@@ -7,6 +7,7 @@ import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import './css/model-card.css';
+import { CustomDataUploader } from './custom-data-uploader/custom-data-uploader';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -86,6 +87,15 @@ function getCookie(name: string): string | undefined{
 //meta.autostartImmediate: true
 export function autostart() {
 
+}
+
+//name: CustomUploader
+//input: object params
+//output: widget uploadWidget
+export function CustomUploader(params: {func: DG.Func}) {
+  const dummyWidget = new CustomDataUploader(params.func);
+
+  return dummyWidget;
 }
 
 //name: CustomCustomizer

@@ -11,13 +11,15 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
-import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
+import {renderCards} from './shared/utils';
+import {historyUtils} from '../../history-utils';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -429,6 +431,57 @@ export class RichFunctionView extends FunctionView {
     };
   }
 
+  private async processCustomDataUpload() {
+    const func = await grok.functions.eval(this.uploadFunc!) as DG.Func;
+    const funcCall = await func.prepare({params: {'func': this.func}}).call();
+    const uploadWidget = funcCall.outputs.uploadWidget;
+
+    const uploadDialog = ui.dialog({'title': 'Upload data'})
+      .add(uploadWidget.root)
+      .addButton('Compare w/ history', async () => {
+        const uploadedFunccalls = await uploadWidget.getFunccalls();
+
+        const historyRuns = renderCards(this.historyBlock!.store.myRuns);
+        const uploadedRuns = renderCards(uploadedFunccalls);
+
+        ui.dialog('Choose runs to compare')
+          .add(ui.divH([
+            ui.divV([
+              ui.label('Uploaded runs'),
+              uploadedRuns.html,
+            ], {style: {width: '150px'}}),
+            ui.divV([
+              ui.label('History'),
+              historyRuns.html,
+            ], {style: {width: '150px'}}),
+          ], {style: {'justify-content': 'space-evenly'}}))
+          .onOK(async () => {
+            const fullHistoryRuns = await Promise.all(this.historyBlock!.store.myRuns.map((funcCall) => historyUtils.loadRun(funcCall.id)));
+            this.onComparisonLaunch([...fullHistoryRuns, ...uploadedFunccalls]);
+          })
+          .show({width: 330});
+
+        uploadDialog.close();
+      })
+      .addButton('Compare w/ current', async () => {
+        const uploadedFunccalls = await uploadWidget.getFunccalls();
+        this.onComparisonLaunch([this.funcCall, ...uploadedFunccalls]);
+
+        uploadDialog.close();
+      })
+      .show();
+
+    $(uploadDialog.getButton('CANCEL')).hide();
+    $(uploadDialog.getButton('OK')).hide();
+    if (!this.isHistorical.value) uploadDialog.getButton('Compare w/ current').disabled = true;
+
+    const closingSub = uploadDialog.onClose.subscribe(() => {
+      this.isUploadMode.next(false);
+
+      closingSub.unsubscribe();
+    });
+  }
+
   buildRibbonPanels(): HTMLElement[][] {
     super.buildRibbonPanels();
 
@@ -448,13 +501,12 @@ export class RichFunctionView extends FunctionView {
     }, this.isUploadMode.value ? 'Save uploaded data': 'Save the last run');
 
     const toggleUploadMode = ui.iconFA('arrow-to-top', async () => {
-      this.isUploadMode.next(!this.isUploadMode.value);
-
-      if (boundImportFunction(this.func)) {
-        const func = await grok.functions.eval(boundImportFunction(this.func)!) as DG.Func;
-        func.prepare().edit();
+      if (this.uploadFunc) {
+        await this.processCustomDataUpload();
         return;
       }
+
+      this.isUploadMode.next(!this.isUploadMode.value);
 
       toggleUploadMode.classList.toggle('d4-current');
     }, 'Upload experimental data');

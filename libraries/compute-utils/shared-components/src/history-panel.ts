@@ -83,7 +83,7 @@ export class HistoryPanel {
   // Emitted when FuncCall is deleted
   public afterRunDeleted = new Subject<string>();
 
-  private store = new HistoryPanelStore();
+  private _store = new HistoryPanelStore();
 
   private myRunsFilter = new Subject<true>();
   private favRunsFilter = new Subject<true>();
@@ -149,11 +149,11 @@ export class HistoryPanel {
           const t = ui.iconFA('square', () => {
             switch (this.tabs.currentPane.name) {
             case MY_PANE_LABEL:
-              this.store.myRuns.forEach((run) => currentSelectedSet.add(run));
+              this._store.myRuns.forEach((run) => currentSelectedSet.add(run));
               this.myRunsFilter.next();
               break;
             case FAVORITES_LABEL:
-              this.store.favoriteRuns.forEach((run) => currentSelectedSet.add(run));
+              this._store.favoriteRuns.forEach((run) => currentSelectedSet.add(run));
               this.favRunsFilter.next();
               break;
             }
@@ -164,10 +164,10 @@ export class HistoryPanel {
             let fullListCount = 0;
             switch (this.tabs.currentPane.name) {
             case MY_PANE_LABEL:
-              fullListCount = this.store.myRuns.length;
+              fullListCount = this._store.myRuns.length;
               break;
             case FAVORITES_LABEL:
-              fullListCount = this.store.favoriteRuns.length;
+              fullListCount = this._store.favoriteRuns.length;
               break;
             }
 
@@ -175,11 +175,11 @@ export class HistoryPanel {
             const t = ui.iconFA(iconType, () => {
               switch (this.tabs.currentPane.name) {
               case MY_PANE_LABEL:
-                this.store.myRuns.forEach((run) => currentSelectedSet.delete(run));
+                this._store.myRuns.forEach((run) => currentSelectedSet.delete(run));
                 this.myRunsFilter.next();
                 break;
               case FAVORITES_LABEL:
-                this.store.favoriteRuns.forEach((run) => currentSelectedSet.delete(run));
+                this._store.favoriteRuns.forEach((run) => currentSelectedSet.delete(run));
                 this.favRunsFilter.next();
                 break;
               }
@@ -203,13 +203,13 @@ export class HistoryPanel {
 
       const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
       DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
-        this.store.filteringOptions.text = textInput.stringValue;
+        this._store.filteringOptions.text = textInput.stringValue;
         this.myRunsFilter.next();
         this.favRunsFilter.next();
       });
 
       const dateInput = ui.dateInput('Started after', dayjs().subtract(1, 'week'), (v: dayjs.Dayjs) => {
-        this.store.filteringOptions.startedAfter = v;
+        this._store.filteringOptions.startedAfter = v;
         this.myRunsFilter.next();
         this.favRunsFilter.next();
       });
@@ -223,9 +223,9 @@ export class HistoryPanel {
 
       filterTagEditor.onChanged(() => {
         //@ts-ignore
-        this.store.filteringOptions.tags = filterTagEditor.tags.filter((tag) => !!tag);
+        this._store.filteringOptions.tags = filterTagEditor.tags.filter((tag) => !!tag);
 
-        if (this.store.filteringOptions.tags!.length === 0)
+        if (this._store.filteringOptions.tags!.length === 0)
           dummyInput.root.style.display = 'none';
         else
           dummyInput.root.style.removeProperty('display');
@@ -234,8 +234,8 @@ export class HistoryPanel {
         this.favRunsFilter.next();
       });
 
-      this.store.allRuns.subscribe(() => {
-        const tags = this.store.allRuns.value
+      this._store.allRuns.subscribe(() => {
+        const tags = this._store.allRuns.value
           .map((run) => run.options['tags'] as string[])
           .reduce((acc, runTags) => {
             if (!!runTags) runTags.forEach((runTag) => {if (!acc.includes(runTag)) acc.push(runTag);});
@@ -496,12 +496,12 @@ export class HistoryPanel {
           ui.setUpdateIndicator(this.tabs.root, true);
           await historyUtils.saveRun(funcCall);
 
-          const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id)!;
+          const editedRun = this._store.allRuns.value.find((call) => call.id === funcCall.id)!;
           editedRun.options['title'] = title !== '' ? title : null;
           editedRun.options['description'] = description !== '' ? description : null;
           editedRun.options['tags'] = [...funcCall.options['tags']];
 
-          this.store.allRuns.next(this.store.allRuns.value);
+          this._store.allRuns.next(this._store.allRuns.value);
           ui.setUpdateIndicator(this.tabs.root, false);
           return;
         }
@@ -540,41 +540,41 @@ export class HistoryPanel {
     this.tabs.root.style.width = '100%';
     this.tabs.root.style.height = '100%';
 
-    this.myRunsFilter.subscribe(() => this.updateMyPane(this.store.filteredMyRuns));
-    this.favRunsFilter.subscribe(() => this.updateFavoritesPane(this.store.filteredFavoriteRuns));
+    this.myRunsFilter.subscribe(() => this.updateMyPane(this._store.filteredMyRuns));
+    this.favRunsFilter.subscribe(() => this.updateFavoritesPane(this._store.filteredFavoriteRuns));
 
-    this.store.allRuns.subscribe(() => {
-      this.updateMyPane(this.store.filteredMyRuns);
-      this.updateFavoritesPane(this.store.filteredFavoriteRuns);
+    this._store.allRuns.subscribe(() => {
+      this.updateMyPane(this._store.filteredMyRuns);
+      this.updateFavoritesPane(this._store.filteredFavoriteRuns);
     });
 
     this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
       const allRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.allRuns.next(allRuns);
+      this._store.allRuns.next(allRuns);
       ui.setUpdateIndicator(this.root, false);
     });
 
     this.afterRunAddToFavorites.subscribe((added) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id)!;
+      const editedRun = this._store.allRuns.value.find((call) => call.id === added.id)!;
       editedRun.options['title'] = added.options['title'];
       editedRun.options['description'] = added.options['description'];
       editedRun.options['tags'] = added.options['tags'];
       editedRun.options['isFavorite'] = true;
-      this.store.allRuns.next(this.store.allRuns.value);
+      this._store.allRuns.next(this._store.allRuns.value);
     });
 
     this.afterRunRemoveFromFavorites.subscribe((removed) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
+      const editedRun = this._store.allRuns.value.find((call) => call.id === removed.id)!;
       editedRun.options['title'] = removed.options['title'];
       editedRun.options['description'] = removed.options['description'];
       editedRun.options['tags'] = removed.options['tags'];
       editedRun.options['isFavorite'] = false;
-      this.store.allRuns.next(this.store.allRuns.value);
+      this._store.allRuns.next(this._store.allRuns.value);
     });
 
     this.afterRunDeleted.subscribe((id) => {
-      this.store.allRuns.next(this.store.allRuns.value.filter((call) => call.id !== id));
+      this._store.allRuns.next(this._store.allRuns.value.filter((call) => call.id !== id));
       this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
     });
 
@@ -601,5 +601,9 @@ export class HistoryPanel {
 
   public get root() {
     return this._root;
+  }
+
+  public get store() {
+    return this._store;
   }
 }

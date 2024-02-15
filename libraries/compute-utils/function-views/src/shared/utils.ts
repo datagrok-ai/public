@@ -21,8 +21,70 @@ export const deepCopy = (call: DG.FuncCall) => {
   return deepClone;
 };
 
-export const boundImportFunction = (func: DG.Func): string | undefined => {
-  return func.options['getRealData'];
+export const renderCards = (funcCalls: DG.FuncCall[]) => {
+  const selectedCallsSet = new Set<DG.FuncCall>();
+
+  const renderCard = (funcCall: DG.FuncCall) => {
+    const cardLabel = ui.label(funcCall.options['title'] ?? 'Uploaded run', {style: {'color': 'var(--blue-1)'}});
+
+    const addToSelected = ui.iconFA('square', (ev) => {
+      ev.stopPropagation();
+      selectedCallsSet.add(funcCall);
+
+      addToSelected.style.display = 'none';
+      removeFromSelected.style.removeProperty('display');
+      // this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
+    }, 'Select this run');
+    addToSelected.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+    const removeFromSelected = ui.iconFA('check-square', (ev) => {
+      ev.stopPropagation();
+      selectedCallsSet.delete(funcCall);
+      removeFromSelected.style.display = 'none';
+
+      // this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
+      addToSelected.style.removeProperty('display');
+    }, 'Unselect this run');
+    removeFromSelected.classList.add('hp-funccall-card-icon');
+
+    if (!selectedCallsSet.has(funcCall)) {
+      addToSelected.style.removeProperty('display');
+      removeFromSelected.style.display = 'none';
+    } else {
+      addToSelected.style.display = 'none';
+      removeFromSelected.style.removeProperty('display');
+    }
+
+    const dateStarted = new Date(funcCall.started.toString())
+      .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+
+    const card = ui.divH([
+      ui.divH([
+        ui.divV([
+          cardLabel,
+          ui.span([dateStarted]),
+          ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
+          ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
+            [ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
+        ], 'hp-card-content'),
+      ]),
+      ui.divH([
+        addToSelected, removeFromSelected,
+      ]),
+    ], 'hp-funccall-card');
+
+    ui.tooltip.bind(card, () => ui.tableFromMap({
+      Author: grok.shell.user.toMarkup(),
+      Date: dateStarted,
+      ...(funcCall.options['title']) ? {'Title': funcCall.options['title']}:{},
+      ...(funcCall.options['description']) ? {'Description': funcCall.options['description']}:{},
+      ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
+        {'Tags': ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor')}:{},
+    }));
+    return card;
+  };
+
+  return {html: ui.divV(funcCalls.map((funcCall) => renderCard(funcCall))), selected: selectedCallsSet};
 };
 
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
