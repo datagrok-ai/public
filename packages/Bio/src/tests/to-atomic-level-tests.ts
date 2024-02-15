@@ -21,22 +21,30 @@ import {_package} from '../package-test';
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
 
-const testNames: { [k: string]: string } = {
-  PT: 'peptides-fasta',
-  DNA: 'dna-fasta',
-  MSA: 'msa-separator',
-};
+const enum Tests {
+  PT = 'peptides-fasta',
+  DNA = 'dna-fasta',
+  MSA_SEPARATOR = 'msa-separator',
+  MSA_FASTA = 'msa-fasta',
+}
 
-const inputPath: { [k: string]: string } = {
-  PT: 'tests/to-atomic-level-peptides-fasta-input.csv',
-  DNA: 'tests/to-atomic-level-dna-fasta-input.csv',
-  MSA: 'tests/to-atomic-level-msa-separator-input.csv',
-};
-
-const outputPath: { [k: string]: string } = {
-  PT: 'tests/to-atomic-level-peptides-fasta-output.csv',
-  DNA: 'tests/to-atomic-level-dna-fasta-output.csv',
-  MSA: 'tests/to-atomic-level-msa-separator-output.csv',
+const TestsData: { [testName: string]: { inPath: string, outPath: string } } = {
+  [Tests.PT]: {
+    inPath: 'tests/to-atomic-level-peptides-fasta-input.csv',
+    outPath: 'tests/to-atomic-level-peptides-fasta-output.csv'
+  },
+  [Tests.DNA]: {
+    inPath: 'tests/to-atomic-level-dna-fasta-input.csv',
+    outPath: 'tests/to-atomic-level-dna-fasta-output.csv'
+  },
+  [Tests.MSA_SEPARATOR]: {
+    inPath: 'tests/to-atomic-level-msa-separator-input.csv',
+    outPath: 'tests/to-atomic-level-msa-separator-output.csv'
+  },
+  [Tests.MSA_FASTA]: {
+    inPath: 'tests/to-atomic-level-msa-fasta-input.csv',
+    outPath: 'tests/to-atomic-level-msa-fasta-output.csv'
+  },
 };
 
 const inputColName = 'sequence';
@@ -57,10 +65,12 @@ category('toAtomicLevel', async () => {
     await setUserLibSettingsForTests();
     await monomerLibHelper.loadLibraries(true);
 
-    for (const key in testNames) {
-      sourceDf[key] = DG.DataFrame.fromCsv((await fileSource.readAsText(inputPath[key])).replace(/\n$/, ''));
-      await grok.data.detectSemanticTypes(sourceDf[key]);
-      targetDf[key] = DG.DataFrame.fromCsv((await fileSource.readAsText(outputPath[key])).replace(/\n$/, ''));
+    for (const [testName, testData] of Object.entries(TestsData)) {
+      const inputPath = testData.inPath;
+
+      sourceDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.inPath)).replace(/\n$/, ''));
+      await grok.data.detectSemanticTypes(sourceDf[testName]);
+      targetDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.outPath)).replace(/\n$/, ''));
     }
   });
 
@@ -79,9 +89,9 @@ category('toAtomicLevel', async () => {
     expectArray(obtainedArray, expectedArray);
   }
 
-  for (const key in testNames) {
-    test(`${testNames[key]}`, async () => {
-      await getTestResult(sourceDf[key], targetDf[key]);
+  for (const [testName, testData] of Object.entries(TestsData)) {
+    test(`${testName}`, async () => {
+      await getTestResult(sourceDf[testName], targetDf[testName]);
     });
   }
 

@@ -1297,6 +1297,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     await testEvent(this.onRendered, () => {}, () => {
       this.invalidate();
     }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }
 

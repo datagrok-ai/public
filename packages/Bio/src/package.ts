@@ -71,11 +71,13 @@ import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
-import {getEmbeddingColsNames, multiColReduceDimensionality} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {
+  getEmbeddingColsNames, multiColReduceDimensionality
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {ITSNEOptions, IUMAPOptions} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {
+  ITSNEOptions, IUMAPOptions
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 
 export const _package = new BioPackage();
 
@@ -557,13 +559,13 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 //top-menu: Bio | Convert | To Atomic Level...
 //name: To Atomic Level
 //description: Converts sequences to molblocks
-//input: dataframe df [Input data table]
-//input: column macroMolecule {semType: Macromolecule}
-//input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
-export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
+//input: dataframe table [Input data table]
+//input: column macroMolecule {caption: Sequence; semType: Macromolecule}
+//input: bool nonlinear =false {description: Slower mode for cycling/branching HELM structures}
+export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
-    await sequenceToMolfile(df, macroMolecule, nonlinear);
+    await sequenceToMolfile(table, seqCol, nonlinear);
   } finally {
     pi.close();
   }
