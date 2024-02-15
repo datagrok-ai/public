@@ -273,6 +273,7 @@ export class SunburstViewer extends EChartViewer {
 
     this.handleStructures(this.getSeriesData()).then((data) => {
       this.option.series[0].data = data;
+      this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
       this.chart.setOption(this.option);
     });
   }
