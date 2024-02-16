@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {getIcon, getStatusIcon, Status, colors, PASSED, FAILED, SKIPPED} from './utils';
 import {_package} from '../package';
 
+const NEW_TESTING = 'New Testing';
+
 interface TestCase extends Options {
   name: string;
   path: string;
@@ -45,6 +47,7 @@ export class TestTrack extends DG.ViewBase {
   version: string = grok.shell.build.client.version;
   uid: string = DG.User.current().id;
   start: string;
+  nameDiv: HTMLDivElement = ui.divText('', {id: 'tt-name'});
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -65,6 +68,8 @@ export class TestTrack extends DG.ViewBase {
     if (start === null) {
       start = Date.now().toString();
       localStorage.setItem('TTState', start);
+      grok.log.usage(`${this.version}_${start}_${this.uid}`,
+        {name: NEW_TESTING, version: this.version, uid: this.uid, start: start}, `tt-new-testing`);
     }
     this.start = start;
   }
@@ -134,8 +139,12 @@ export class TestTrack extends DG.ViewBase {
     ec.classList.add('tt-ribbon-button');
     const start = ui.button(getIcon('plus', {style: 'fas'}), () => this.showStartNewTestingDialog(), 'Start new testing');
     start.classList.add('tt-ribbon-button');
-    const name = ui.divText(await nameP ?? '', {id: 'tt-name'});
-    const ribbon = ui.divH([gh, report, ec, refresh, start, name]);
+    this.nameDiv.innerText = (await nameP) ?? NEW_TESTING;
+    this.nameDiv.oncontextmenu = (e) => {
+      this.showEditTestingNameDialog();
+      e.preventDefault();
+    };
+    const ribbon = ui.divH([gh, report, ec, refresh, start, this.nameDiv]);
 
     // Test case div
     const edit = ui.button(getIcon('edit'), () => this.editTestCase(this.currentNode), 'Edit test case');
@@ -352,14 +361,28 @@ export class TestTrack extends DG.ViewBase {
 
   showStartNewTestingDialog(): void {
     const dialog = ui.dialog('Start new testing');
-    const input = ui.stringInput('Name', 'New Testing');
+    const input = ui.stringInput('Name', NEW_TESTING);
+    input.nullable = false;
     dialog.add(ui.divText('Enter name of the new testing:'));
     dialog.add(input);
     dialog.onOK(() => {
       const start = Date.now().toString();
       localStorage.setItem('TTState', start);
-      grok.log.usage(`${this.version}_${start}_${this.uid}`, {name: input.value}, `tt-new-testing`);
+      grok.log.usage(`${this.version}_${start}_${this.uid}`,
+        {name: input.value, version: this.version, uid: this.uid, start: this.start}, `tt-new-testing`);
       this.refresh();
+    });
+    dialog.show();
+  }
+
+  showEditTestingNameDialog(): void {
+    const dialog = ui.dialog('Edit testing name');
+    const input = ui.stringInput('Name', this.nameDiv.innerText);
+    dialog.add(input);
+    dialog.onOK(() => {
+      this.nameDiv.innerText = input.value;
+      grok.log.usage(`${this.version}_${this.start}_${this.uid}`,
+        {name: input.value, version: this.version, uid: this.uid, start: this.start}, `tt-new-testing`);
     });
     dialog.show();
   }
