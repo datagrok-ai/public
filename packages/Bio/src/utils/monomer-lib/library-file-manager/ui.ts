@@ -8,7 +8,7 @@ import * as rxjs from 'rxjs';
 import './style.css';
 
 import {
-  getUserLibSettings, LIB_PATH, setUserLibSettings
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {MonomerLibManager} from '../lib-manager';
@@ -60,8 +60,7 @@ class MonomerLibraryManagerWidget {
 
   private async getWidgetContent(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    const formHandler = new LibraryControlsManager(this.eventManager);
-    const libControlsForm = await formHandler.createControlsForm();
+    const libControlsForm = await LibraryControlsManager.createControlsForm(this.eventManager);
     $(libControlsForm).addClass('monomer-lib-controls-form');
     const widgetContent = ui.divV([libControlsForm]);
     return widgetContent;
@@ -76,6 +75,7 @@ class MonomerLibraryManagerWidget {
         const progressIndicator = DG.TaskBarProgressIndicator.create(`Adding ${name} as a monomer library`);
         try {
           await this.monomerLibFileManager.addLibraryFile(content, name);
+          // this.eventManager.updateLibrarySelectionStatus(name, true);
         } catch (e) {
           grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM JSON schema.`);
         } finally {
@@ -87,14 +87,25 @@ class MonomerLibraryManagerWidget {
 }
 
 class LibraryControlsManager {
-  constructor(private eventManager: MonomerLibFileEventManager) {
+  private constructor(private eventManager: MonomerLibFileEventManager) {
     this.eventManager.updateUIControlsRequested$.subscribe(
       async () => await this.updateControlsForm()
     );
+    this.eventManager.librarySelectionRequested$.subscribe(
+      async ([fileName, isSelected]) => await this.updateLibrarySelectionStatus(isSelected, fileName)
+    );
   }
   private monomerLibFileManager: MonomerLibFileManager;
+  private userLibSettings: UserLibSettings;
 
-  async createControlsForm(): Promise<HTMLElement> {
+  static async createControlsForm(eventManager: MonomerLibFileEventManager): Promise<HTMLElement> {
+    const manager = new LibraryControlsManager(eventManager);
+    await manager.initialize();
+
+    return await manager._createControlsForm();
+  }
+
+  private async _createControlsForm(): Promise<HTMLElement> {
     this.monomerLibFileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     const libraryControls = await this.createLibraryControls();
     const inputsForm = ui.form(libraryControls);
@@ -103,25 +114,29 @@ class LibraryControlsManager {
     return inputsForm;
   }
 
+  private async initialize(): Promise<void> {
+    this.userLibSettings = await getUserLibSettings();
+  };
+
   private async updateControlsForm(): Promise<void> {
-    const updatedForm = await this.createControlsForm();
+    const updatedForm = await this._createControlsForm();
     $('.monomer-lib-controls-form').replaceWith(updatedForm);
   }
 
   private async createLibraryControls(): Promise<DG.InputBase<boolean | null>[]> {
-    const settings = await getUserLibSettings();
     const fileManager = await MonomerLibFileManager.getInstance(this.eventManager);
     const libFileNameList: string[] = fileManager.getValidLibraryPaths();
-    return libFileNameList.map((libFileName) => this.createLibInput(libFileName, settings));
+    return libFileNameList.map((libFileName) => this.createLibInput(libFileName));
   }
 
-  private createLibInput(libFileName: string, settings: UserLibSettings): DG.InputBase<boolean | null> {
-    const isMonomerLibrarySelected = !settings.exclude.includes(libFileName);
+  private createLibInput(libFileName: string): DG.InputBase<boolean | null> {
+    const isMonomerLibrarySelected = !this.userLibSettings.exclude.includes(libFileName);
     const libInput = ui.boolInput(
       libFileName,
       isMonomerLibrarySelected,
-      () => this.updateLibrarySelectionStatus(libInput, libFileName, settings)
+      (isSelected: boolean) => this.eventManager.updateLibrarySelectionStatus(libFileName, isSelected)
     );
+    ui.tooltip.bind(libInput.root, `Include monomers from ${libFileName}`);
     const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName));
     ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
     libInput.addOptions(deleteIcon);
@@ -129,27 +144,25 @@ class LibraryControlsManager {
   }
 
   private async updateLibrarySelectionStatus(
-    libInput: DG.InputBase<boolean | null>,
-    libFileName: string,
-    settings: UserLibSettings
+    isMonomerLibrarySelected: boolean,
+    libFileName: string
   ): Promise<void> {
-    this.updateLibrarySettings(libInput.value, libFileName, settings);
-    await setUserLibSettings(settings);
+    this.updateLibrarySettings(isMonomerLibrarySelected, libFileName);
+    await setUserLibSettings(this.userLibSettings);
     await MonomerLibManager.instance.loadLibraries(true);
-    grok.shell.info('Monomer library user settings saved.');
+    // grok.shell.info('Monomer library user settings saved.');
   }
 
   private updateLibrarySettings(
     isLibrarySelected: boolean | null,
     libFileName: string,
-    settings: UserLibSettings
   ): void {
     if (isLibrarySelected) {
       // Remove selected library from exclusion list
-      settings.exclude = settings.exclude.filter((libName) => libName !== libFileName);
-    } else if (!settings.exclude.includes(libFileName)) {
+      this.userLibSettings.exclude = this.userLibSettings.exclude.filter((libName) => libName !== libFileName);
+    } else if (!this.userLibSettings.exclude.includes(libFileName)) {
       // Add unselected library to exclusion list
-      settings.exclude.push(libFileName);
+      this.userLibSettings.exclude.push(libFileName);
     }
   }
 
@@ -157,9 +170,15 @@ class LibraryControlsManager {
     const dialog = ui.dialog('Warning');
     dialog.add(ui.divText(`Delete file ${fileName}?`))
       .onOK(async () => {
-        const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
-        await this.monomerLibFileManager.deleteLibraryFile(fileName);
-        progressIndicator.close();
+        try {
+          const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
+          this.updateLibrarySelectionStatus(false, fileName);
+          await this.monomerLibFileManager.deleteLibraryFile(fileName);
+          progressIndicator.close();
+        } catch (e) {
+          console.error(e);
+          grok.shell.error(`Failed to delete ${fileName} library`);
+        }
       })
       .showModal(false);
   }
