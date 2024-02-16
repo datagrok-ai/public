@@ -6,7 +6,11 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemCash, getMarkedString, modifyMetric, setStemmingCash, getClosest, getEmbeddingsAdv} from './stemming-tools';
+import {stemCash, getMarkedString, setStemmingCash,
+  getClosest, getEmbeddingsAdv} from './stemming-tools/stemming-tools';
+import {modifyMetric} from './stemming-tools/stemming-ui';
+import {CLOSEST_COUNT, DELIMETER} from './stemming-tools/constants';
+import '../css/stemming-search.css';
 
 export const _package = new DG.Package();
 
@@ -192,10 +196,9 @@ export async function initAWS() {
   //comprehendMedical = new AWS.ComprehendMedical();
 }
 
-//top-menu: NLP | Get dictionary...
 //name: Compute Embeddings
-//input: dataframe table {caption: Table; category: Data}
-//input: column source {type: string; caption: Table; category: Data}
+//input: dataframe table
+//input: column source {caption: Texts; semType: Text}
 //output: dataframe dictionary
 export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
   setStemmingCash(table, source);
@@ -219,8 +222,9 @@ export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
   ]);
 }
 
-//top-menu: NLP | Compute Embeddings...
-//name: Compute Embeddings
+//top-menu: ML | Text Embeddings...
+//name: Compute Text Embeddings
+//description: Compute text embeddings using UMAP
 //input: dataframe table {caption: Table; category: Data}
 //input: column source {type: string; caption: Table; category: Data}
 //input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
@@ -253,7 +257,6 @@ export function computeEmbds(table: DG.DataFrame, source: DG.Column, components:
   }
 }
 
-//top-menu: NLP | Process...
 //name: Process Embeddings
 //input: dataframe table
 //input: column x {type: numerical}
@@ -308,7 +311,6 @@ export function processEmds(table: DG.DataFrame, x: DG.Column, y: DG.Column) {
   table.columns.add(DG.Column.fromFloat32Array(`angle`, angle));
 }
 
-//top-menu: NLP | Split...
 //name: Split
 //input: dataframe table
 //input: column feature {type: numerical}
@@ -371,12 +373,9 @@ export function distance(query: string): DG.Widget {
   setStemmingCash(df, source);
 
   const uiElem = ui.label('Edit');
-  //@ts-ignore
-  $(uiElem).css({'cursor': 'pointer', 'color': '#3cb173'});
-  uiElem.onclick = () => {modifyMetric(df);};
-
-  ui.tooltip.bind(uiElem, 'Edit text similarity measure.');
-
+  uiElem.classList.add('nlp-stemming-edit');
+  uiElem.onclick = () => modifyMetric(df);
+  ui.tooltip.bind(uiElem, 'Edit text similarity measure');
   const wgt = new DG.Widget(uiElem);
 
   return wgt;
@@ -394,14 +393,14 @@ export function similar(query: string): DG.Widget {
 
   setStemmingCash(df, source);
 
-  const closest = getClosest(df, queryIdx, 6);
+  const closest = getClosest(df, queryIdx, CLOSEST_COUNT);
 
   const uiElements = [] as HTMLElement[];
 
   for (let i = 0; i < closest.length; ++i) {
     const uiElem = ui.inlineText(getMarkedString(closest[i], queryIdx, source.get(closest[i])));
     uiElements.push(uiElem);
-    uiElements.push(ui.divText('________________________________'));
+    uiElements.push(ui.divText(DELIMETER));
   }
 
   return new DG.Widget(ui.divV(uiElements));
