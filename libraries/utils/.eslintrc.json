@@ -23,7 +23,7 @@
     "valid-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",
-    "curly": ["error", "multi-or-nest", "consistent"],
+    "curly": ["error", "multi-or-nest"],
     "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
     "block-spacing": [2, "always"],
     "comma-dangle": [

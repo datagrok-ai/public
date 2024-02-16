@@ -387,3 +387,11 @@ export function isApplicableDataframe(table: DG.DataFrame, minRows: number = 2):
   return table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE).length > 0 &&
     wu(table.columns.numerical).toArray().length > 0 && table.rowCount >= minRows;
 }
+
+export function debounce<T extends Array<any>, K>(f: (...args: T) => K, timeout: number = 500): (...args: T) => void {
+  let timer: NodeJS.Timeout | number | undefined;
+  return (...args: T) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => f(...args), timeout);
+  };
+}

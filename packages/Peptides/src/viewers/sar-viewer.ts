@@ -23,6 +23,7 @@ import {_package} from '../package';
 import {showTooltip} from '../utils/tooltips';
 import {calculateMonomerPositionStatistics, findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import {
+  debounce,
   extractColInfo,
   getTotalAggColumns,
   highlightMonomerPosition,
@@ -91,6 +92,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   maxMutations: number;
   _scaledActivityColumn: DG.Column | null = null;
   doRender: boolean = true;
+  mutationCliffsDebouncer: () => void;
 
   /** Sets common properties for inheritor viewers. */
   protected constructor() {
@@ -111,11 +113,14 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this.minActivityDelta = this.float(SAR_PROPERTIES.MIN_ACTIVITY_DELTA, 0,
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 0, max: 100});
     this.maxMutations = this.int(SAR_PROPERTIES.MAX_MUTATIONS, 1,
-      {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 50});
+      {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 20});
 
     this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.AGGREGATION});
     this.aggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.AGGREGATION, choices: C.AGGREGATION_TYPES});
+
+    this.mutationCliffsDebouncer = debounce(
+      () => this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc), 500);
   }
 
   _viewerGrid: DG.Grid | null = null;
@@ -379,7 +384,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       break;
     }
     if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
-      this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
+      this.mutationCliffsDebouncer();
   }
 
   /**

@@ -73,6 +73,21 @@
 	background-color: #38b738;
 }
 
+.d4-multi-form-molecule-input-small {
+	width: 120px;
+	height: 60px;
+}
+
+.d4-multi-form-molecule-input-normal {
+	width: 200px;
+	height: 100px;
+}
+
+.d4-multi-form-molecule-input-large {
+	width: 300px;
+	height: 150px;
+}
+
 /* TODO: Release these changes with the new core version with changes in the molecular input */
 /* .d4-multi-form-form > .d4-input-molecule-canvas {
 	width: 170px;

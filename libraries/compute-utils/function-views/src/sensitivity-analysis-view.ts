@@ -209,8 +209,7 @@ export class SensitivityAnalysisView {
           isChangingInputMin.notify = false;
           isChangingInputMin.value = val;
           isChangingInputMin.notify = true;
-        });
-        ref.isChanging.subscribe((val) => {
+
           isChangingInputConst.notify = false;
           isChangingInputConst.value = val;
           isChangingInputConst.notify = true;
@@ -219,7 +218,7 @@ export class SensitivityAnalysisView {
           temp.isChanging, analysisInputs.analysisType.value,
         ]).subscribe(([isChanging, analysisType]) => {
           if (isChanging) {
-            ref.constForm.forEach((input) => $(input.root).show());
+            ref.constForm.forEach((input) => $(input.root).hide());
             ref.saForm.forEach((input) => $(input.root).show());
             simpleSa.forEach((input) => analysisType === ANALYSIS_TYPE.GRID_ANALYSIS ? $(input.root).show(): $(input.root).hide());
           } else {
@@ -765,10 +764,10 @@ export class SensitivityAnalysisView {
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
     this.comparisonView.grid.columns.setVisible(colNamesToShow);
 
-    // add correlation plot    
+    // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(
-      funcEvalResults, 
-      {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow}
+      funcEvalResults,
+      {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow},
     ));
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
     this.openedViewers.push(corPlot);
@@ -808,7 +807,7 @@ export class SensitivityAnalysisView {
       value: nameOfNonFixedOutput,
       valueAggrType: 'avg',
       showTitle: true,
-    },);
+    });
 
     // add barchart with total order Sobol' indices
     const bChartSobolT = this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces,
@@ -950,8 +949,8 @@ export class SensitivityAnalysisView {
 
     // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(
-      funcEvalResults, 
-      {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow}
+      funcEvalResults,
+      {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow},
     ));
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
     this.openedViewers.push(corPlot);
@@ -1097,7 +1096,7 @@ export class SensitivityAnalysisView {
       const input = this.store.inputs[inputName];
       const prop = input.prop;
 
-      if (input.isChanging.value) {        
+      if (input.isChanging.value) {
         variedInputsColumns.push(DG.Column.fromType(
           prop.propertyType as unknown as DG.COLUMN_TYPE,
           prop.caption ?? prop.name,
@@ -1114,7 +1113,7 @@ export class SensitivityAnalysisView {
 
     const len = inputsOfInterestColumns.length;
     const funcEvalResults = DG.DataFrame.fromColumns([inputsOfInterestColumns[0]]);
-    
+
     for (let i = 1; i < len; ++i) {
       inputsOfInterestColumns[i].name = funcEvalResults.columns.getUnusedName(inputsOfInterestColumns[i].name);
       funcEvalResults.columns.add(inputsOfInterestColumns[i]);
@@ -1144,7 +1143,7 @@ export class SensitivityAnalysisView {
       }
     }
 
-    const outputsOfInterestColumns = getOutput(calledFuncCalls, outputsOfInterest).columns;    
+    const outputsOfInterestColumns = getOutput(calledFuncCalls, outputsOfInterest).columns;
 
     for (const outCol of outputsOfInterestColumns) {
       inputsOfInterestColumns.forEach((inCol) => {
@@ -1160,7 +1159,7 @@ export class SensitivityAnalysisView {
     }
 
     const colNamesToShow = funcEvalResults.columns.names().filter((name) => name !== ID_COLUMN_NAME);
-    
+
     for (const col of fixedInputsColumns) {
       col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
       funcEvalResults.columns.add(col);
@@ -1219,10 +1218,10 @@ export class SensitivityAnalysisView {
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
     this.comparisonView.grid.columns.setVisible(colNamesToShow);
 
-    // add correlation plot    
+    // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(
-      funcEvalResults, 
-      {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow}
+      funcEvalResults,
+      {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow},
     ));
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
     this.openedViewers.push(corPlot);

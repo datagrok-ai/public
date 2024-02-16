@@ -496,7 +496,8 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
 //input: column col {semType: Molecule}
 //input: string _metric {optional: true}
-//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern']}
+// eslint-disable-next-line max-len
+//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {

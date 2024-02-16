@@ -520,5 +520,9 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     await testEvent(this.onRendered, () => {}, () => {
       this.invalidate();
     }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }

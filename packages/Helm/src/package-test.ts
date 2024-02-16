@@ -7,6 +7,7 @@ import './tests/helm-tests.ts';
 import './tests/findMonomers-tests';
 import './tests/renderers-tests';
 import './tests/get-molfiles';
+import './tests/properties-widget-tests';
 
 export const _package = new DG.Package();
 export {tests};
