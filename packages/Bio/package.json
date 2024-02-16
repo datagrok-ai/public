@@ -44,7 +44,7 @@
     "@datagrok-libraries/math": "^1.0.7",
     "cash-dom": "^8.0.0",
     "css-loader": "^6.7.3",
-    "datagrok-api": "^1.17.12",
+    "datagrok-api": "^1.17.13",
     "dayjs": "^1.11.4",
     "fastest-levenshtein": "^1.0.16",
     "openchemlib": "6.0.1",
