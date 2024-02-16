@@ -47,121 +47,121 @@
                     {
                       "width": 127,
                       "columnName": "CYP1A2-Inhibitor",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 135,
                       "columnName": "CYP2C19-Inhibitor",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 127,
                       "columnName": "CYP2C9-Inhibitor",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 135,
                       "columnName": "CYP2C9-Substrate",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 127,
                       "columnName": "CYP2D6-Inhibitor",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 135,
                       "columnName": "CYP2D6-Substrate",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 127,
                       "columnName": "Pgp-Substrate",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 62,
                       "columnName": "Caco2",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 96,
                       "columnName": "Lipophilicity",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 80,
                       "columnName": "Solubility",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 58,
                       "columnName": "PPBR",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 55,
                       "columnName": "VDss",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 76,
                       "columnName": "CL-Hepa",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 79,
                       "columnName": "CL-Micro",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
                       "width": 76,
                       "columnName": "Half-Life",
-                      "customFormat": "0.000",
+                      "customFormat": "0.00",
                       "cellType": "number",
-                      "format": "0.000",
+                      "format": "0.00",
                       "settings": {}
                     },
                     {
@@ -228,7 +228,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CL-Micro",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -251,7 +251,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "VDss",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -263,7 +263,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CYP2C19-Inhibitor",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -287,7 +287,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CYP2C9-Substrate",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -345,7 +345,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CYP2D6-Substrate",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -368,7 +368,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CYP1A2-Inhibitor",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -380,7 +380,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CYP2D6-Inhibitor",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -403,7 +403,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "Half-Life",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -437,7 +437,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "Solubility",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -461,7 +461,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "smilesColumn",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -473,7 +473,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "Pgp-Substrate",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -519,7 +519,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CL-Hepa",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -575,7 +575,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "Lipophilicity",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -598,7 +598,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "Caco2",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {
@@ -610,7 +610,7 @@
                     "viewerSettings": {
                       "table": "tableName",
                       "column": "CYP2C9-Inhibitor",
-                      "format": "0.000"
+                      "format": "0.00"
                     }
                   },
                   {

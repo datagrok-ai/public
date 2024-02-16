@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/admetox",
   "friendlyName": "ADMETox",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "repository": {
     "type": "git",
@@ -18,6 +18,8 @@
     "webpack": "latest",
     "webpack-cli": "latest",
     "ts-loader": "latest",
+    "css-loader": "latest",
+    "style-loader": "latest",
     "typescript": "latest"
   },
   "scripts": {
