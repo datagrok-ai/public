@@ -456,8 +456,8 @@ export class RichFunctionView extends FunctionView {
             ], {style: {width: '150px'}}),
           ], {style: {'justify-content': 'space-evenly'}}))
           .onOK(async () => {
-            const fullHistoryRuns = await Promise.all(this.historyBlock!.store.myRuns.map((funcCall) => historyUtils.loadRun(funcCall.id)));
-            this.onComparisonLaunch([...fullHistoryRuns, ...uploadedFunccalls]);
+            const fullHistoryRuns = await Promise.all([...historyRuns.selected.values()].map((funcCall) => historyUtils.loadRun(funcCall.id)));
+            this.onComparisonLaunch([...fullHistoryRuns, ...uploadedRuns.selected.values()]);
           })
           .show({width: 330});
 

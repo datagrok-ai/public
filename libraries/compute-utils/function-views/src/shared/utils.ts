@@ -25,7 +25,12 @@ export const renderCards = (funcCalls: DG.FuncCall[]) => {
   const selectedCallsSet = new Set<DG.FuncCall>();
 
   const renderCard = (funcCall: DG.FuncCall) => {
-    const cardLabel = ui.label(funcCall.options['title'] ?? 'Uploaded run', {style: {'color': 'var(--blue-1)'}});
+    const cardLabel = ui.label(
+      funcCall.options['title'] ??
+      funcCall?.author?.friendlyName ??
+      'Uploaded run',
+      {style: {'color': 'var(--blue-1)'}},
+    );
 
     const addToSelected = ui.iconFA('square', (ev) => {
       ev.stopPropagation();
