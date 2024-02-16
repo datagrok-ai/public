@@ -416,7 +416,7 @@ export class RichFunctionView extends FunctionView {
 
     const form = ui.divV([
       inputFormDiv,
-      ...this.hasUploadMode ? [
+      ...this.hasUploadMode && !this.uploadFunc ? [
         ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
