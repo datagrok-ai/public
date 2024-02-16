@@ -30,6 +30,8 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
 
   private viewerToLog(): string { return `HelmBioFilter<${this.viewerId}>`; }
 
+  get type(): string { return 'HelmBioFilter'; }
+
   constructor() {
     super();
     this.logger = _package.logger;

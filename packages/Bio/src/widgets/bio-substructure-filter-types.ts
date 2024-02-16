@@ -81,7 +81,7 @@ export abstract class BioFilterBase<TProps extends BioFilterProps> implements IB
   protected _propsChanging: boolean = false;
   private _propsOnChangedSub: Unsubscribable | null = null;
 
-  get type(): string { return this.constructor.name; };
+  abstract get type(): string;
 
   get props(): TProps {
     if (!this._props) this._props = this.emptyProps;

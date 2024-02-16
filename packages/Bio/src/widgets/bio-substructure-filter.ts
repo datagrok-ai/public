@@ -273,6 +273,8 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
 
   readonly substructureInput: DG.InputBase<string>;
 
+  get type(): string { return 'FastaBioFilter'; }
+
   constructor() {
     super();
 
@@ -309,6 +311,8 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
   readonly substructureInput: DG.InputBase<string>;
   readonly separatorInput: DG.InputBase<string>;
   colSeparator = '';
+
+  get type(): string { return 'SeparatorBioFilter'; }
 
   constructor(colSeparator: string) {
     super();
