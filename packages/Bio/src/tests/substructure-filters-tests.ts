@@ -302,7 +302,8 @@ category('substructureFilters', async () => {
       dlg.close();
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
-  }, {timeout: 80000, skipReason: 'searching Unhandled exception'});
+    await awaitGrid(view.grid);
+  });
 });
 
 async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
