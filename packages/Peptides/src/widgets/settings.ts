@@ -278,7 +278,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const mclFingerprintTypesInput = ui.choiceInput('Fingerprint type', mclParams.fingerprintType,
     ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
     () => onMCLParamsChange('fingerprintType', mclFingerprintTypesInput.value));
-  const mclThresholdInput = ui.intInput('Similarity Threshold', mclParams.threshold ?? 80,
+  const mclThresholdInput = ui.intInput('Similarity threshold', mclParams.threshold ?? 80,
     () => onMCLParamsChange('threshold', mclThresholdInput.value));
   const mclMaxIterationsInput = ui.intInput('Max iterations', mclParams.maxIterations ?? 5,
     () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value));
