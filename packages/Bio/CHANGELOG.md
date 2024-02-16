@@ -2,7 +2,7 @@
 
 ## 2.11.30 (2024-02-15)
 
-## Features
+### Features
 
 * GROK-14598: Bio: Substructure filter sync between cloned views, tests
 

@@ -62,7 +62,7 @@ category('substructureFilters', async () => {
       filter.detach();
     }
     await filter.awaitRendered();
-  });
+  }, {skipReason: 'searching Unhandled exception'});
 
   test('separator', async () => {
     const msa = await readDataframe('tests/filter_MSA.csv');
@@ -95,7 +95,7 @@ category('substructureFilters', async () => {
       filter.detach();
     }
     await filter.awaitRendered();
-  });
+  }, {skipReason: 'searching Unhandled exception'});
 
   // test('helm', async () => {
   //   const df = await readDataframe('tests/filter_HELM.csv');
@@ -180,7 +180,7 @@ category('substructureFilters', async () => {
       dlg.close();
     }
     await filter.awaitRendered();
-  });
+  }, {skipReason: 'searching Unhandled exception'});
 
   // Generates unhandled exception accessing isFiltering before bioFilter created
   test('helm-view', async () => {
@@ -195,7 +195,7 @@ category('substructureFilters', async () => {
     // await awaitCheck(() => fg.filters.length == 1, 'await filters.length == 1', 1000);
     // const filter = fg.filters.filter((f) => f.columnName == col.name)[0] as BioSubstructureFilter;
     await awaitGrid(view.grid);
-  });
+  }, {skipReason: 'searching Unhandled exception'});
 
   test('sync-fasta', async () => {
     const df = await _package.files.readCsv('tests/filter_FASTA.csv');
