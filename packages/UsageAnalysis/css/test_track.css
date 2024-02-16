@@ -60,18 +60,23 @@
 }
 
 .tt-history i:nth-child(1) {
-  filter: blur(0.6px);
-  opacity: 0.8;
+  filter: blur(0.7px);
+  opacity: 0.7;
 }
 
 .tt-history i:nth-child(2) {
-  filter: blur(0.8px);
-  opacity: 0.6;
+  filter: blur(0.9px);
+  opacity: 0.5;
 }
 
 .tt-history i:nth-child(3) {
-  filter: blur(1px);
-  opacity: 0.4;
+  filter: blur(1.1px);
+  opacity: 0.3;
+}
+
+.tt-history i:hover {
+  filter: none;
+  opacity: 1;
 }
 
 .tt-ribbon-button {

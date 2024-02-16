@@ -34,17 +34,27 @@ export class MCLSparseReducer {
   }
 
   private correctClusters(clusters: number[]) {
-    const clusterMap: {[_: number]: number} = {};
-    let curCluster = 1;
-    for (let i = 0; i < clusters.length; i++) {
-      if (!clusterMap[clusters[i]]) {
-        clusterMap[clusters[i]] = curCluster;
-        clusters[i] = curCluster;
-        curCluster++;
-      } else {
-        clusters[i] = clusterMap[clusters[i]];
-      }
+    const clusterSizeMap: {[_: number]: number} = {};
+    for (const cluster of clusters) {
+      if (!clusterSizeMap[cluster])
+        clusterSizeMap[cluster] = 0;
+      clusterSizeMap[cluster]++;
     }
+    const sortedIndexes = Object.keys(clusterSizeMap).map(Number).sort((a, b) => clusterSizeMap[a] - clusterSizeMap[b]);
+    const clusterMap: {[_: number]: number} = {};
+    sortedIndexes.forEach((clusterIdx, i) => clusterMap[clusterIdx] = i + 1);
+    for (let i = 0; i < clusters.length; i++)
+      clusters[i] = clusterMap[clusters[i]];
+    // let curCluster = 1;
+    // for (let i = 0; i < clusters.length; i++) {
+    //   if (!clusterMap[clusters[i]]) {
+    //     clusterMap[clusters[i]] = curCluster;
+    //     clusters[i] = curCluster;
+    //     curCluster++;
+    //   } else {
+    //     clusters[i] = clusterMap[clusters[i]];
+    //   }
+    // }
   }
 
   private async layout(clusters: number[], sparseMatrix: SparseMatrixObject, nRows: number) {

@@ -2,10 +2,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
 import {DimReductionBaseEditor, DimReductionEditorOptions, DimReductionParams} from './dimensionality-reduction-editor';
+import {IDimReductionParam} from '../multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {MCLMethodName} from '../MCL';
 
 export type ActivityCliffsParams = DimReductionParams & {
     activities: DG.Column;
     similarityThreshold: number;
+}
+
+export class MCLOptions {
+    maxIterations: IDimReductionParam =
+    {uiName: 'Max iterations', value: 5, tooltip: 'Maximum iterations for MCL process'};
+    constructor() {}
 }
 
 export class ActivityCliffsEditor extends DimReductionBaseEditor {
@@ -14,13 +22,14 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
     similarityInput: DG.InputBase;
 
     constructor(editorSettings: DimReductionEditorOptions = {}) {
-      super(editorSettings);
+      super({...editorSettings, enableMCL: true});
       const numericalColumns = this.tableInput.value!.columns.numerical;
       this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!,
         DG.Utils.firstOrNull(numericalColumns), null,
         {filter: (col: DG.Column) => Array.from(numericalColumns).includes(col)} as ColumnInputOptions);
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.intInput('Similarity cutoff', 80);
+      this.methodsParams[MCLMethodName] = new MCLOptions() as any;
     }
 
     onTableInputChanged() {

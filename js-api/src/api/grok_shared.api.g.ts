@@ -2,6 +2,90 @@
 import { toDart } from "../wrappers";
 let api = <any>window;
 
+export class DataSourceType {
+  static Access = 'Access';
+
+  static Athena = 'Athena';
+
+  static BigQuery = 'BigQuery';
+
+  static Cassandra = 'Cassandra';
+
+  static DB2 = 'DB2';
+
+  static Excel = 'Excel';
+
+  static Firebird = 'Firebird';
+
+  static HBase = 'HBase';
+
+  static Hive = 'Hive';
+
+  static Hive2 = 'Hive2';
+
+  static MariaDB = 'MariaDB';
+
+  static MongoDB = 'MongoDB';
+
+  static MsSql = 'MS SQL';
+
+  static MySql = 'MySQL';
+
+  static Neo4j = 'Neo4j';
+
+  static Odata = 'ODATA';
+
+  static Odbc = 'ODBC';
+
+  static Oracle = 'Oracle';
+
+  static PostgresDart = 'PostgresDart';
+
+  static Postgres = 'Postgres';
+
+  static Redshift = 'Redshift';
+
+  static SQLite = 'SQLite';
+
+  static Socrata = 'Socrata';
+
+  static Sparql = 'Sparql';
+
+  static Teradata = 'Teradata';
+
+  static Twitter = 'Twitter';
+
+  static Vertica = 'Vertica';
+
+  static Web = 'Web';
+
+  static AzureBlob = 'Azure Blob';
+
+  static Dropbox = 'Dropbox';
+
+  static GitHub = 'GitHub';
+
+  static Ftp = 'FTP';
+
+  static GoogleCloud = 'GoogleCloud';
+
+  static S3 = 'S3';
+
+  static Http = 'HTTP';
+
+  static Files = 'Files';
+
+  static Sftp = 'SFTP';
+
+  static AWSSM = 'AWS';
+
+  static CoreWeave = 'CoreWeave';
+
+  static get fileDataSources(): Array<string> { return api.grok_DataSourceType_Get_fileDataSources(); };
+
+  static get systemDataSources(): Array<string> { return api.grok_DataSourceType_Get_systemDataSources(); };
+
+}
 import {Entity} from '../entities'
 
 export class DockerImage extends Entity {

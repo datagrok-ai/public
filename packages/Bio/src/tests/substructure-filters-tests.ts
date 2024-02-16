@@ -303,7 +303,8 @@ category('substructureFilters', async () => {
       dlg.close();
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
-  }, {timeout: 80000});
+    await awaitGrid(view.grid);
+  });
 });
 
 async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
@@ -319,4 +320,4 @@ async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubst
   filter.columnName = colName;
   //filter.tableName = df.name;
   return filter;
-}
+};

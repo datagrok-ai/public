@@ -19,7 +19,7 @@ import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
-// import './tests/substructure-filters-tests';
+import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
 import './tests/viewers';
 import './tests/units-handler-tests';
