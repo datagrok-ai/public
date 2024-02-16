@@ -12,7 +12,16 @@ export class CustomDataUploader extends DG.Widget {
   }
 
   async getFunccalls(): Promise<DG.FuncCall[]> {
-    const funccall = await this.func.prepare().call();
+    // Replace this code by DB connection / API call / etc.
+    const funccall = await this.func.prepare({
+      'ambTemp': 22,
+      'initTemp': 100,
+      'desiredTemp': 30,
+      'area': 0.06,
+      'heatCap': 4200,
+      'heatTransferCoeff': 8.3,
+      'simTime': 21600,
+      }).call();
 
     return [funccall];
   }
