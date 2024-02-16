@@ -435,12 +435,12 @@ export class RichFunctionView extends FunctionView {
     const func = await grok.functions.eval(this.uploadFunc!) as DG.Func;
     const funcCall = await func.prepare({params: {'func': this.func}}).call();
     const uploadWidget = funcCall.outputs.uploadWidget;
+    const uploadFuncCall = funcCall.outputs.uploadFuncCall as DG.FuncCall;
+    let uploadedFunccalls = [] as DG.FuncCall[];
 
     const uploadDialog = ui.dialog({'title': 'Upload data'})
       .add(uploadWidget.root)
       .addButton('Compare w/ history', async () => {
-        const uploadedFunccalls = await uploadWidget.getFunccalls();
-
         const historyRuns = renderCards(this.historyBlock!.store.myRuns);
         const uploadedRuns = renderCards(uploadedFunccalls);
 
@@ -464,7 +464,6 @@ export class RichFunctionView extends FunctionView {
         uploadDialog.close();
       })
       .addButton('Compare w/ current', async () => {
-        const uploadedFunccalls = await uploadWidget.getFunccalls();
         this.onComparisonLaunch([this.funcCall, ...uploadedFunccalls]);
 
         uploadDialog.close();
@@ -473,11 +472,24 @@ export class RichFunctionView extends FunctionView {
 
     $(uploadDialog.getButton('CANCEL')).hide();
     $(uploadDialog.getButton('OK')).hide();
+    $(uploadDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
     if (!this.isHistorical.value) uploadDialog.getButton('Compare w/ current').disabled = true;
+    if (!this.isHistorical.value) uploadDialog.getButton('Compare w/ history').disabled = true;
+
+    const uploadSub = grok.functions.onAfterRunAction.pipe(
+      filter((fc) => fc.id === uploadFuncCall.id),
+    ).subscribe(() => {
+      uploadDialog.getButton('Compare w/ history').disabled = false;
+
+      uploadedFunccalls = uploadFuncCall.outputs.uploadedCalls;
+
+      if (this.isHistorical.value) uploadDialog.getButton('Compare w/ current').disabled = false;
+    });
 
     const closingSub = uploadDialog.onClose.subscribe(() => {
       this.isUploadMode.next(false);
 
+      uploadSub.unsubscribe();
       closingSub.unsubscribe();
     });
   }
