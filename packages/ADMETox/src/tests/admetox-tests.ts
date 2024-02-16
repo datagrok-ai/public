@@ -2,7 +2,7 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetox, performChemicalPropertyPredictions, addCalculationsToTable } from '../utils/admetox-utils';
+import { runAdmetox, addCalculationsToTable } from '../utils/admetox-utils';
 
 category('Admetox', () => {
 	let v: DG.TableView;
