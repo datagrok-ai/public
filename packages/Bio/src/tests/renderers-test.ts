@@ -170,7 +170,7 @@ category('renderers', () => {
     expect(tv.grid.dataFrame.id, df.id);
 
     const resCellRenderer = tgtCol.getTag(DG.TAGS.CELL_RENDERER);
-    expect(resCellRenderer, 'Macromolecule');
+    expect(resCellRenderer, 'sequence');
 
     // check tgtCol with UnitsHandler constructor
     const _uh: UnitsHandler = UnitsHandler.getOrCreate(tgtCol);

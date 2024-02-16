@@ -53,6 +53,8 @@ export class BioFilterProps implements IFilterProps {
 }
 
 export interface IBioFilter {
+  get type(): string;
+
   get props(): IFilterProps;
   set props(value: IFilterProps);
 
@@ -78,6 +80,8 @@ export abstract class BioFilterBase<TProps extends BioFilterProps> implements IB
   private _props: TProps;
   protected _propsChanging: boolean = false;
   private _propsOnChangedSub: Unsubscribable | null = null;
+
+  get type(): string { return this.constructor.name; };
 
   get props(): TProps {
     if (!this._props) this._props = this.emptyProps;

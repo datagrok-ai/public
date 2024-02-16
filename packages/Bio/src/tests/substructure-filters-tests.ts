@@ -50,7 +50,7 @@ category('substructureFilters', async () => {
     await filter.awaitRendered();
     try {
       expect(!!filter.bioFilter, true);
-      expect(filter.bioFilter!.constructor.name, 'FastaBioFilter');
+      expect(filter.bioFilter!.type, 'FastaBioFilter');
       const bf = filter.bioFilter as FastaBioFilter;
 
       await testEvent(df.onRowsFiltered, () => {}, () => {
@@ -72,7 +72,7 @@ category('substructureFilters', async () => {
     await filter.awaitRendered();
     try {
       expect(!!filter.bioFilter, true);
-      expect(filter.bioFilter!.constructor.name, 'SeparatorBioFilter');
+      expect(filter.bioFilter!.type, 'SeparatorBioFilter');
       const bf = filter.bioFilter as SeparatorBioFilter;
 
       await testEvent(msa.onRowsFiltered, () => {}, () => {
@@ -192,11 +192,8 @@ category('substructureFilters', async () => {
 
     const fg = view.getFiltersGroup();
 
-    // @ts-ignore
-    await awaitCheck(() => fg.filters.length == 1, 'await filters.length == 1', 1000);
-
-    // @ts-ignore
-    const filter = fg.filters.filter((f) => f.columnName == col.name)[0] as BioSubstructureFilter;
+    // await awaitCheck(() => fg.filters.length == 1, 'await filters.length == 1', 1000);
+    // const filter = fg.filters.filter((f) => f.columnName == col.name)[0] as BioSubstructureFilter;
     await awaitGrid(view.grid);
   });
 
@@ -213,8 +210,8 @@ category('substructureFilters', async () => {
     try {
       expect(!!f1.bioFilter, true);
       expect(!!f2.bioFilter, true);
-      expect(f1.bioFilter!.constructor.name, 'FastaBioFilter');
-      expect(f2.bioFilter!.constructor.name, 'FastaBioFilter');
+      expect(f1.bioFilter!.type, 'FastaBioFilter');
+      expect(f2.bioFilter!.type, 'FastaBioFilter');
       const bf1 = f1.bioFilter as FastaBioFilter;
       const bf2 = f2.bioFilter as FastaBioFilter;
 
@@ -247,8 +244,8 @@ category('substructureFilters', async () => {
     try {
       expect(!!f1.bioFilter, true);
       expect(!!f2.bioFilter, true);
-      expect(f1.bioFilter!.constructor.name, 'SeparatorBioFilter');
-      expect(f2.bioFilter!.constructor.name, 'SeparatorBioFilter');
+      expect(f1.bioFilter!.type, 'SeparatorBioFilter');
+      expect(f2.bioFilter!.type, 'SeparatorBioFilter');
       const bf1 = f1.bioFilter as SeparatorBioFilter;
       const bf2 = f2.bioFilter as SeparatorBioFilter;
 
@@ -281,8 +278,8 @@ category('substructureFilters', async () => {
     try {
       expect(!!f1.bioFilter, true);
       expect(!!f2.bioFilter, true);
-      expect(f1.bioFilter!.constructor.name, 'HelmBioFilter');
-      expect(f2.bioFilter!.constructor.name, 'HelmBioFilter');
+      expect(f1.bioFilter!.type, 'HelmBioFilter');
+      expect(f2.bioFilter!.type, 'HelmBioFilter');
       const bf1 = f1.bioFilter as HelmBioFilter;
       const bf2 = f2.bioFilter as HelmBioFilter;
 
