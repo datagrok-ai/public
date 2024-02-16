@@ -18,6 +18,8 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
 
+import './css/app-styles.css';
+
 /** State of IVP code editor */
 enum EDITOR_STATE {
   EMPTY = 'empty',
@@ -33,6 +35,19 @@ enum EDITOR_STATE {
   NIMOTUZUMAB = 'nimotuzumab',
 };
 
+/** State-to-template/use-case map */
+const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
+  [EDITOR_STATE.BASIC_TEMPLATE, TEMPLATES.BASIC],  
+  [EDITOR_STATE.ADVANCED_TEMPLATE, TEMPLATES.ADVANCED],
+  [EDITOR_STATE.EXTENDED_TEMPLATE, TEMPLATES.EXTENDED],
+  [EDITOR_STATE.CHEM_REACT, USE_CASES.CHEM_REACT],  
+  [EDITOR_STATE.ROBERT, USE_CASES.ROBERTSON],  
+  [EDITOR_STATE.FERM, USE_CASES.FERMENTATION],  
+  [EDITOR_STATE.PKPD, USE_CASES.PK_PD],  
+  [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],  
+  [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
+]);
+
 /** Models & templates */
 const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.ADVANCED_TEMPLATE,
@@ -44,41 +59,6 @@ const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.ACID_PROD,
   EDITOR_STATE.NIMOTUZUMAB,
 ];
-
-/** Get problem with respect to IVP editor state */
-function getProblem(state: EDITOR_STATE): string {
-  switch (state) {
-  case EDITOR_STATE.BASIC_TEMPLATE:
-    return TEMPLATES.BASIC;
-
-  case EDITOR_STATE.ADVANCED_TEMPLATE:
-    return TEMPLATES.ADVANCED;
-
-  case EDITOR_STATE.EXTENDED_TEMPLATE:
-    return TEMPLATES.EXTENDED;
-
-  case EDITOR_STATE.CHEM_REACT:
-    return USE_CASES.CHEM_REACT;
-
-  case EDITOR_STATE.ROBERT:
-    return USE_CASES.ROBERTSON;
-
-  case EDITOR_STATE.FERM:
-    return USE_CASES.FERMENTATION;
-
-  case EDITOR_STATE.PKPD:
-    return USE_CASES.PK_PD;
-
-  case EDITOR_STATE.ACID_PROD:
-    return USE_CASES.ACID_PROD;
-
-  case EDITOR_STATE.NIMOTUZUMAB:
-    return USE_CASES.NIMOTUZUMAB;
-
-  default:
-    return TEMPLATES.EMPTY;
-  }
-} // getProblem
 
 /** Return help link with respect to IVP editor state */
 function getLink(state: EDITOR_STATE): string {
@@ -150,9 +130,12 @@ function getLineChartOptions(colNames: string[]): Object {
   };
 }
 
-/**  String to value */
+/**  String-to-value */
 const strToVal = (s: string) => {
   const num = Number(s);
+  return !isNaN(+s) ? num : s === 'true' ? true : s === 'false' ? false : s;
+
+  
 
   if (!isNaN(num))
     return num;
@@ -200,9 +183,11 @@ export class DiffStudio {
           }
 
           await this.setState(model as EDITOR_STATE, false);
-        } else
+        } 
+        else
           await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-      } else
+      } 
+      else
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     }
   } // runSolverApp
@@ -213,10 +198,8 @@ export class DiffStudio {
     this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
-    const divHelp = ui.div([helpMD]);
-    divHelp.style.padding = '10px';
-    divHelp.style.overflow = 'auto';
-    helpMD.style.fontWeight = 'lighter';
+    helpMD.classList.add('demo-app-div-md');
+    const divHelp = ui.div([helpMD], 'demo-app-div-help');
     this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
     await this.runSolving(false);
   } // runSolverDemoApp
@@ -274,7 +257,7 @@ export class DiffStudio {
 
     this.toRunWhenFormCreated = true;
 
-    setTimeout(() => {this.runSolving(true);}, TIMEOUT.PREVIEW_RUN_SOLVING);
+    setTimeout(() => this.runSolving(true), TIMEOUT.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
@@ -414,8 +397,7 @@ export class DiffStudio {
       }
     });
 
-    this.editorView.dom.style.overflow = 'auto';
-    this.editorView.dom.style.height = '100%';
+    this.editorView.dom.classList.add('eqs-editor');
 
     if (toAddContextMenu) {
       this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
@@ -504,7 +486,7 @@ export class DiffStudio {
       this.startingInputs = null;
 
     const newState = EditorState.create({
-      doc: text ?? getProblem(state),
+      doc: text ?? MODEL_BY_STATE.get(state) as string,
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     });
 
@@ -633,13 +615,11 @@ export class DiffStudio {
       }
 
       this.isSolvingSuccess = true;
+      this.runPane.header.hidden = false;
     } catch (error) {
       this.clearSolution();
-
-      if (error instanceof Error)
-        grok.shell.error(error.message);
-      else
-        grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
+      this.isSolvingSuccess = false;
+      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
     }
   }; // solve
 
@@ -662,11 +642,7 @@ export class DiffStudio {
       this.prevInputsNode = null;
       this.tabControl.currentPane = this.modelPane;
       this.clearSolution();
-
-      if (error instanceof Error)
-        grok.shell.error(error.message);
-      else
-        grok.shell.error(ERROR_MSG.UI_ISSUE);
+      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
     }
   }; // runSolving
 
