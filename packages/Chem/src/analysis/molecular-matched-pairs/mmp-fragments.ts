@@ -12,14 +12,16 @@ export type MmpRules = {
   smilesFrags: string[]
 };
 
+/**
+* Runs paralled fragmentation for molecules
+* @param {DG.Column} molecules column with molecules
+*/
 export async function getMmpFrags(molecules: DG.Column): Promise<[string, string][][]> {
   const service = await getRdKitService();
   const res = await service.mmpGetFragments(molecules.toList());
   return res;
 }
 
-
-//returns mmp rules and number of cases
 export function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
   const dim = frags.length;

@@ -15,13 +15,12 @@ import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO, MMP_COLNAME_CHEMSPACE_X,
   MMP_COLNAME_CHEMSPACE_Y, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import $ from 'cash-dom';
 
 export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[]) :
 [sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[]] {
-  const colX = DG.Column.float('~X', table.rowCount);
-  const colY = DG.Column.float('~Y', table.rowCount);
-  table.columns.add(colX);
-  table.columns.add(colY);
+  table.columns.addNewFloat('~X');
+  table.columns.addNewFloat('~Y');
   const sp = DG.Viewer.scatterPlot(table, {
     x: '~X',
     y: '~Y',
@@ -38,7 +37,8 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
 
   for (let i = 0; i < maxActs.length; i ++) {
     const sliderInput = ui.sliderInput(activities.byIndex(i).name, 0, 0, maxActs[i]);
-    sliderInput.root.style.marginLeft = '6px';
+    $(sliderInput.root).css({'margin-left': '6px'});
+
     const sliderInputValueDiv = ui.divText(sliderInput.stringValue, 'ui-input-description');
     sliderInput.addOptions(sliderInputValueDiv);
     sliderInputs[i] = sliderInput;
@@ -72,7 +72,8 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
   diffs: Array<Float32Array>, parentTable: DG.DataFrame,
   rdkitModule: RDModule, propPanelViewer?: FormsViewer):
   HTMLDivElement {
-  const div = ui.divV([], {style: {width: '100%', height: '100%'}});
+  const div = ui.divV([]);
+  $(div).css({'width': '100%', 'height': '100%'});
   const moleculesDiv = ui.divH([]);
   div.append(moleculesDiv);
   const pairIdx = linesIdxs[line];

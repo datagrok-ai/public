@@ -336,6 +336,10 @@ export class MmpAnalysis {
     }
   }
 
+  /**
+  * Prepares all the entities to show for selected pair.
+  * @param {RDModule} rdkitModule RDkit module instance
+  */
   async refreshPair(rdkitModule: RDModule) : Promise<void> {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
@@ -370,6 +374,10 @@ export class MmpAnalysis {
     this.allPairsGrid.dataFrame.filter.copyFrom(consistsBitSet);
   }
 
+  /**
+  * Gets visible all pairs according to selected molecule in the table.
+  * @param {boolean} rowChanged flag if row was changed
+  */
   refilterAllPairs(rowChanged: boolean) {
     let idxTrue = -1;
     if (rowChanged) {
@@ -397,6 +405,11 @@ export class MmpAnalysis {
     }
   }
 
+  /**
+  * Makes the dataset filtering according to user specified cutoofs for each activity.
+  * @param {number[]} cutoffs for each activity the corresponding cuttof is specified by user
+  * @param {boolean} refilter flag if calculation is required before filtering
+  */
   refilterCliffs(cutoffs: number[], refilter: boolean) {
     if (refilter) {
       for (let i = 0; i < this.cutoffMasks.length; i ++)

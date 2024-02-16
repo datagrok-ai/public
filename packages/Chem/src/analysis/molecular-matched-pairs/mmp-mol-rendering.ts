@@ -52,9 +52,9 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
 
   for (let i = 0; i < from.length; i++) {
     //aligning molecules
-    const mcsMol = module.get_qmol(mcs[i]);
-    const mol1 = module.get_mol(from[i]);
-    const mol2 = module.get_mol(to[i]);
+    let mcsMol = null;
+    let mol1 = null;
+    let mol2 = null;
     const opts = JSON.stringify({
       useCoordGen: true,
       allowRGroups: true,
@@ -63,6 +63,9 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
     });
 
     try {
+      mcsMol = module.get_qmol(mcs[i]);
+      mol1 = module.get_mol(from[i]);
+      mol2 = module.get_mol(to[i]);
       mcsMol.set_new_coords();
       mol1.generate_aligned_coords(mcsMol, opts);
       mol2.generate_aligned_coords(mcsMol, opts);

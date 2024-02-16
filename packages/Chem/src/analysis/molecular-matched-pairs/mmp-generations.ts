@@ -76,19 +76,18 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
   }
 
   const generation = new Array<string>(allCores.length);
-
+  let mol = null;
   for (let i = 0; i < allCores.length; i++) {
-    let mol = null;
     let smilesGen = '';
     try {
       const smi = `${allCores[i]}.${allTo[i]}`.replaceAll('([*:1])', '9').replaceAll('[*:1]', '9');
       mol = module.get_mol(smi);
       smilesGen = mol.get_smiles();
       generation[i] = smilesGen;
-      mol!.delete();
     } catch (e: any) {
 
     } finally {
+      mol?.delete();
       generation[i] = smilesGen;
     }
   }
