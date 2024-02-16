@@ -136,7 +136,7 @@ export class ScatterPlotLinesRenderer {
         let bY = pointTo?.y;
         const minAxis = Math.min(this.sp.viewBox.width, this.sp.viewBox.height);
         this.ctx.beginPath();
-        if (aX && aY && bX && bY && Math.hypot(bX! - aX!, bY! - aY!) / minAxis > 0.03) {
+        if (aX && aY && bX && bY && Math.hypot(bX! - aX!, bY! - aY!) / minAxis > 0.01) {
           if (individualLineStyles) {
             const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
             const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
