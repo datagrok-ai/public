@@ -280,7 +280,10 @@ export class DiffStudio {
   private exportButton: HTMLElement;
 
   constructor(toAddTableView: boolean = true) {
-    this.solverView = DG.TableView.create(this.solutionTable, toAddTableView);
+    this.solverView = toAddTableView ?
+      grok.shell.addTableView(this.solutionTable) :
+      DG.TableView.create(this.solutionTable, false);
+
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
     this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => this.modelDiv);
