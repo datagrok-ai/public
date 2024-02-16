@@ -638,6 +638,15 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
   forEntity(e: Entity): Promise<Credentials> {
     return api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart);
   }
+
+  /** Saves a credentials.
+   * Note, that in order to work correct, credentials should be connected
+   * to other entity that owns them. So the best way to modify Credentials is load by {@link forEntity}, change
+   * {@link Credentials.parameters} and after that call this method.
+   */
+  save(c: Credentials): Promise<Credentials> {
+    return api.grok_CredentialsDataSource_Save(this.dart, c.dart);
+  }
 }
 
 /**
