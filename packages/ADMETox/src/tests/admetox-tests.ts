@@ -2,7 +2,7 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { accessServer, addPredictions } from '../admet-analysis/admet-calculation';
+import { runAdmetox, performChemicalPropertyPredictions, addCalculationsToTable } from '../utils/admetox-utils';
 
 category('Admetox', () => {
 	let v: DG.TableView;
@@ -22,7 +22,7 @@ category('Admetox', () => {
 	test('Container. Post request', async () => {
 		const smiles = `smiles
 		O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-		const bbbResults = await accessServer(smiles, 'PPB,VD,BBB');
+		const bbbResults = await runAdmetox(smiles, 'PPB,VD,BBB', 'false');
 		expect(bbbResults != null, true);
 	})
 
@@ -55,7 +55,7 @@ category('Admetox', () => {
 		v = grok.shell.addTableView(molecules);
 		smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
 		const newTableColumn = 'Pgp-Inhibitor';
-		const predictions = addPredictions(molecules, smilesColumn);
+		const predictions = addCalculationsToTable(molecules);
 		await delay(1000);
 		const admetoxDialog = document.querySelector('.d4-dialog');
 		(admetoxDialog!.querySelectorAll('input[type="checkbox"]')[0] as HTMLElement).click();
@@ -92,7 +92,7 @@ category('Admetox', () => {
 		molecules = DG.Test.isInBenchmark 
 		  ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip")
 			: grok.data.demo.molecules();
-		DG.time('ADME/Tox post request', () => accessServer(molecules.toCsv(), 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%)'));
+		DG.time('ADME/Tox post request', () => runAdmetox(molecules.toCsv(), 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%)', 'false'));
 	})
 });
 

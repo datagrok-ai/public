@@ -62,7 +62,7 @@ export async function addFormViewer(molecules: DG.Column) {
   const layout = await _package.files.readAsText('form-layout.json');
   const tableName = df.name;
   const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", molecules.name);
-  const view = grok.shell.tv;
+  const view = grok.shell.tableView(df.name);
   view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
   const finalNames = df.columns.names();
   const difference = finalNames.filter(element => !initialNames.includes(element));
