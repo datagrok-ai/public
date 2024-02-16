@@ -201,6 +201,7 @@ jobs:
           fi
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
+          df -h
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
             DATAGROK_VERSION='latest'
           else
@@ -210,6 +211,7 @@ jobs:
           fi
           export DATAGROK_VERSION
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          df -h
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
