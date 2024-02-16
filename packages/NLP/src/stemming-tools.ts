@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable valid-jsdoc */
 // Stemming-based search (SBS) tools
 
 import * as grok from 'datagrok-api/grok';
@@ -5,13 +7,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {stemmer} from 'stemmer';
-import { UMAP } from 'umap-js';
-import {STR_METRIC_TYPE, MetricInfo, getDefaultMetric, 
+import {UMAP} from 'umap-js';
+import {STR_METRIC_TYPE, MetricInfo, getDefaultMetric,
   getMetricTypesChoicesList, DISTANCE_TYPE, getSingleSourceMetricsMap, getDefaultDistnce, DIST_TYPES_ARR,
   getDistanceFn, getMetricFn} from './metrics';
 
+/** Error messeges. */
+enum ERR_MSG {
+  UNSUPPORTED_METRIC = 'Unsupported metric',
+};
+
 /** Word information: index in the dictionary and frequency. */
-type WordInfo = {  
+type WordInfo = {
   index: number,
   frequency: number,
 };
@@ -30,12 +37,13 @@ type StemCash = {
 
 /** Column (feature) usage specification: type, metric & use. */
 type ColUseInfo = {
-  type: string, 
-  metric: MetricInfo, 
+  type: string,
+  metric: MetricInfo,
   use: boolean,
 };
 
 /** Cash of stemmed text column. */
+// eslint-disable-next-line no-var
 export var stemCash: StemCash = {
   dfName: undefined,
   colName: undefined,
@@ -59,35 +67,36 @@ const TINY = 0.000001;
 const MIN_CHAR_COUNT = 1;
 
 /** Words that are skipped, when applying stemming-based search. */
-const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", 
-  "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", 
-  "could", 
-  "did", "do", "does", "doing", "down", "during", 
-  "each", 
-  "few", "for", "from", "further", 
-  "had", "has", "have", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", 
-  "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "it", "it's", "its", "itself", "i.e",
-  "let's", 
-  "me", "more", "most", "my", "myself", 
-  "nor", 'nan', 'no', 'not',
-  "of", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", 
-  "same", "she", "she'd", "she'll", "she's", "should", "so", "some", "such", 
-  "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too", 
-  "under", "until", "up", 
-  "very", 
-  "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", 
-  "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"];
+const STOP_WORDS = ['a', 'about', 'above', 'after', 'again', 'against',
+  'all', 'am', 'an', 'and', 'any', 'are', 'as', 'at',
+  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by',
+  'could',
+  'did', 'do', 'does', 'doing', 'down', 'during',
+  'each',
+  'few', 'for', 'from', 'further',
+  'had', 'has', 'have', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s', 'her', 'here',
+  'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s',
+  'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'it', 'it\'s', 'its', 'itself', 'i.e',
+  'let\'s',
+  'me', 'more', 'most', 'my', 'myself',
+  'nor', 'nan', 'no', 'not',
+  'of', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own',
+  'same', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should', 'so', 'some', 'such',
+  'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves', 'then',
+  'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll',
+  'they\'re', 'they\'ve', 'this', 'those', 'through', 'to', 'too',
+  'under', 'until', 'up',
+  'very',
+  'was', 'we', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were',
+  'what', 'what\'s', 'when', 'when\'s', 'where', 'where\'s', 'which',
+  'while', 'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'would',
+  'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'];
 
 /** Separator characters. */
 const SEPARATORS = '[].,:;?!(){} \n\t#';
 
-/** Error messeges. */
-enum ERR_MSG {
-  UNSUPPORTED_METRIC = 'Unsupported metric',
-};
-
 /** Feature operating specification. */
-type FeatureSpecification = {  
+type FeatureSpecification = {
   data: any,
   metricFn: (a: any, b: any) => number,
 };
@@ -106,7 +115,8 @@ function getStemmedWords(str: string, minCharCount: number): string[] {
 }
 
 /** Return dictionary of stemmed words & a column of indices. */
-function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
+function stemmColumn(source: DG.Column<string>, minCharCount: number):
+{dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
   const dict = new Map<string, WordInfo>();
   const size = source.length;
   const indices = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, `${source.name} (inds)`, size);
@@ -115,20 +125,19 @@ function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Ma
   for (let i = 0; i < size; ++i) {
     const words = getStemmedWords(source.get(i) ?? '', minCharCount);
     const inds = new Uint16Array(words.length);
-    let j = 0; 
+    let j = 0;
 
     words.forEach((w) => {
       if (!dict.has(w)) {
         dict.set(w, {index: dict.size, frequency: 1});
         inds[j] = dict.size;
-      }
-      else {
+      } else {
         const info = dict.get(w);
         ++(info!.frequency);
         dict.set(w, info!);
         inds[j] = info!.index;
-      }     
-      
+      }
+
       ++j;
     });
 
@@ -137,9 +146,10 @@ function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Ma
 
   const limit = RATIO * dict.size;
 
-  for (const val of dict.values())
+  for (const val of dict.values()) {
     if (val.frequency > limit)
       mostCommon.add(val.index);
+  }
 
   return {dict: dict, indices: indices, mostCommon: mostCommon};
 } // stemmColumn
@@ -152,18 +162,18 @@ function commonItemsCount(arr1: Uint16Array, arr2: Uint16Array): number {
   let i1 = 0;
   let i2 = 0;
 
-  while((i1 < len1) && (i2 < len2))
+  while ((i1 < len1) && (i2 < len2)) {
     if (arr1[i1] === arr2[i2]) {
       if (!stemCash.mostCommon?.has(arr1[i1]))
         ++count;
       ++i1;
       ++i2;
-    }
-    else if (arr1[i1] < arr2[i2])
+    } else if (arr1[i1] < arr2[i2])
       ++i1;
     else
       ++i2;
-  
+  }
+
   return count;
 }
 
@@ -179,36 +189,36 @@ function distFn(arr1: number[], arr2: number[]): number {
   const ref2 = stemCash.indices?.get(idx2) as Uint16Array;
 
   const len1 = ref1.length;
-  const len2 = ref2.length;  
+  const len2 = ref2.length;
 
   if ((len1 === 0) || (len2 === 0))
     return INFTY;
 
-  const common = commonItemsCount(ref1, ref2);  
+  const common = commonItemsCount(ref1, ref2);
 
   if (common < 2)
   //if (common === 0)
     return INFTY;
-  
+
   //return ((len1 < len2) ? len1 : len2) / common - 1;
   return ((len1 < len2) ? 1 : len2) / common - 1;
 }
 
 /** TODO: to remove, old version */
-export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
+export function getEmbeddings(table: DG.DataFrame, source: DG.Column,
+  components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
   if ((stemCash.dfName !== table.name) || (stemCash.colName !== source.name)) {
     console.log('Getting buffer...');
 
     stemCash.dfName = table.name;
     stemCash.colName = source.name;
     stemCash.indices = stemmColumn(source, 1).indices;
-  }
-  else
-    console.log('We have already an appropriate buffer!');  
+  } else
+    console.log('We have already an appropriate buffer!');
 
   const DIM = 10;
 
-  const data = [...Array(stemCash.indices?.length).keys()].map(i => Array(DIM).fill(i));
+  const data = [...Array(stemCash.indices?.length).keys()].map((i) => Array(DIM).fill(i));
 
   //console.log(data);
 
@@ -218,7 +228,7 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
     nNeighbors: neighbors,
     minDist: minDist,
     spread: spread,
-// @ts-ignore
+    // @ts-ignore
     distanceFn: distFn,
   });
 
@@ -226,13 +236,14 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
 
   const rowCount = embeddings.length;
   const range = [...Array(components).keys()];
-  const umapColumnsData = range.map(_ => new Float32Array(rowCount));  
+  const umapColumnsData = range.map((_) => new Float32Array(rowCount));
 
-  for (let i = 0; i < rowCount; ++i)
+  for (let i = 0; i < rowCount; ++i) {
     for (let j = 0; j < components; ++j)
-      umapColumnsData[j][i] = embeddings[i][j];  
+      umapColumnsData[j][i] = embeddings[i][j];
+  }
 
-  return range.map(i => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
+  return range.map((i) => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
 }
 
 /** Return string with marked words and a dictionary of common words. */
@@ -251,71 +262,57 @@ export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked:
   // indeces specifying the current subsequence
   let start = 0;
   let end = 0;
-  
+
   // subsequence type: word or not
   let isWord = !SEPARATORS.includes(strToBeMarked[start]);
 
   const getWgt = (word: string, toMark: boolean) => {
     const p = ui.inlineText([word]);
     //@ts-ignore
-    $(p).css({"cursor": "pointer"});
-    p.onclick = () => { 
-      df.currentCell = df.cell(curIdx, stemCash.colName!) 
+    $(p).css({'cursor': 'pointer'});
+    p.onclick = () => {
+      df.currentCell = df.cell(curIdx, stemCash.colName!);
     };
-    p.oncontextmenu = (e) => {      
+    p.oncontextmenu = (e) => {
       e.stopImmediatePropagation();
       e.preventDefault();
 
       setTimeout(() => {
         if (!stemCash.filters) {
-          let view = grok.shell.getTableView(df.name);
+          const view = grok.shell.getTableView(df.name);
           stemCash.filters = view.filters() as DG.FilterGroup;
           stemCash.filters.updateOrAdd({
-            type: "text",
+            type: 'text',
             column: stemCash.colName,
-            value: word          
+            value: word,
           });
-        } 
-        else {
-          const state = stemCash.filters.getStates(stemCash.colName!, "text")[0];
+        } else {
+          const state = stemCash.filters.getStates(stemCash.colName!, 'text')[0];
           //@ts-ignore
           state.value = word;
           stemCash.filters.updateOrAdd(state as DG.FilterState);
         }
       }, 500);
-
-      /*setTimeout(() => {
-        let view = grok.shell.getTableView(df.name);
-        let filters = view.filters() as DG.FilterGroup;
-        filters.updateOrAdd({
-          type: "text",
-          column: stemCash.colName,
-          value: word          
-        });
-
-        console.log(filters);
-       }, 500);*/
     };
     ui.tooltip.bind(p, 'Click to navigate. Right-click to add to filters');
 
     if (toMark)
       //@ts-ignore
-      $(p).css({"font-weight": "bold"});
-    
+      $(p).css({'font-weight': 'bold'});
+
     return p;
   };
 
   // scan the string that should be marked
   while (start < size) {
     if (isWord) {
-
       while (!SEPARATORS.includes(strToBeMarked[end])) {
         ++end;
 
         if (end === size)
           break;
       }
-      
+
       const word = strToBeMarked.slice(start, end);
       const wordLow = word.toLowerCase();
 
@@ -326,9 +323,9 @@ export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked:
           marked.push(getWgt(word, true));
         else
           marked.push(getWgt(word, false));
-      }
-      else 
+      } else
         marked.push(getWgt(word, false));
+    // eslint-disable-next-line brace-style
     } // if (isWord)
 
     else {
@@ -340,7 +337,7 @@ export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked:
       }
 
       marked.push(getWgt(strToBeMarked.slice(start, end), false));
-    }   
+    }
 
     start = end;
     isWord = !isWord;
@@ -359,7 +356,7 @@ export function modifyMetric(df: DG.DataFrame): void {
 
   const onColumnsChanged = (columns: DG.Column[]) => {
     const names = columns.map((col) => col.name);
-    
+
     distInput.root.hidden = (names.length < 2);
     columnsHeader.hidden = (names.length < 1);
 
@@ -370,23 +367,28 @@ export function modifyMetric(df: DG.DataFrame): void {
         val!.use = true;
         //@ts-ignore
         inputElements.get(key)?.hidden = false;
-      }
-      else {
+      } else {
         val!.use = false;
         //@ts-ignore
         inputElements.get(key)?.hidden = true;
       }
 
       colsData.set(key, val!);
-    }        
+    }
   };
 
-  const colsInput = ui.columnsInput('Features', df, onColumnsChanged, {checked: initCheckedCols});  
+  const colsInput = ui.columnsInput('Features', df, onColumnsChanged, {checked: initCheckedCols});
   colsInput.setTooltip('Features used in computing similarity measure.');
   dlg.add(ui.h3('Source'));
-  dlg.add(colsInput);  
-  
-  const distInput = ui.choiceInput('Distance', stemCash.aggrDistance, DIST_TYPES_ARR, (dist: DISTANCE_TYPE) => { stemCash.aggrDistance = dist;});
+  dlg.add(colsInput);
+
+  const distInput = ui.choiceInput(
+    'Distance',
+    stemCash.aggrDistance,
+    DIST_TYPES_ARR,
+    (dist: DISTANCE_TYPE) => {stemCash.aggrDistance = dist;},
+  );
+
   distInput.setTooltip('Type of distance between elements with the specified features.');
   dlg.add(distInput);
   distInput.root.hidden = (initCheckedCols.length < 2);
@@ -394,20 +396,20 @@ export function modifyMetric(df: DG.DataFrame): void {
   const columnsHeader = ui.h3('Features');
   dlg.add(columnsHeader);
   columnsHeader.hidden = (initCheckedCols.length < 1);
-  
+
   // add an appropriate inputs
   for (const col of df.columns) {
     const name = col.name;
 
     const colData = {
-      type: col.type, 
+      type: col.type,
       metric: getDefaultMetric(col),
       use: false,
     };
 
     if (stemCash.metricDef?.has(name)) {
       const val = stemCash.metricDef.get(name);
-      colData.use = true;      
+      colData.use = true;
       colData.metric.type = val!.type;
       colData.metric.weight = val!.weight;
     }
@@ -430,7 +432,7 @@ export function modifyMetric(df: DG.DataFrame): void {
       colsData.set(name, val!);
     });
     weightInput.setTooltip(`Weight coefficient of the '${name}' feature metric.`);
-    
+
     const inputs = {metricInput: metricInput, weightInput: weightInput};
 
     colsInp.set(name, inputs);
@@ -443,28 +445,28 @@ export function modifyMetric(df: DG.DataFrame): void {
     dlg.add(uiElem);
   } // for
 
-  dlg  
-  .onCancel(() => {})
-  .onOK(() => {
-    const map = new Map<string, MetricInfo>();
+  dlg
+    .onCancel(() => {})
+    .onOK(() => {
+      const map = new Map<string, MetricInfo>();
 
-    for (const key of colsData.keys()) {
-      const val = colsData.get(key);
+      for (const key of colsData.keys()) {
+        const val = colsData.get(key);
 
-      if (val?.use)
-        map.set(key, val.metric);
-    }
+        if (val?.use)
+          map.set(key, val.metric);
+      }
 
-    stemCash.metricDef = map;
-  })
-  .show({x: 300, y: 300});
+      stemCash.metricDef = map;
+    })
+    .show({x: 300, y: 300});
 } // modifyMetric
 
 /** Set stemming cash data. */
 export function setStemmingCash(df: DG.DataFrame, source: DG.Column): void {
   if ((stemCash.dfName !== df.name) || (stemCash.colName !== source.name)) {
     stemCash.dfName = df.name;
-    stemCash.colName = source.name;    
+    stemCash.colName = source.name;
     const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
     stemCash.dictionary = stemmingRes.dict;
     stemCash.indices = stemmingRes.indices;
@@ -478,31 +480,31 @@ export function setStemmingCash(df: DG.DataFrame, source: DG.Column): void {
 /** Return text similarity distance function. */
 function getTextDistFn(metric: MetricInfo): (query: Uint16Array, current: Uint16Array) => number {
   switch (metric.type) {
-    case STR_METRIC_TYPE.STEMMING_BASED:
-      return (query: Uint16Array, current: Uint16Array) => {
-        const curLen = current.length;
-        
-        if (curLen === 0) 
-          return INFTY;
-        
-        return metric.weight * ((query.length < curLen) ? 1 : curLen) / (commonItemsCount(query, current) + TINY);
-      }; 
-    
-    case STR_METRIC_TYPE.EQUALITY:
-      return (query: Uint16Array, current: Uint16Array) => {
-        if (query === current)
-          return metric.weight;
+  case STR_METRIC_TYPE.STEMMING_BASED:
+    return (query: Uint16Array, current: Uint16Array) => {
+      const curLen = current.length;
 
-        return 0;
-      };
-    
-    default:
-      throw new Error(ERR_MSG.UNSUPPORTED_METRIC);
+      if (curLen === 0)
+        return INFTY;
+
+      return metric.weight * ((query.length < curLen) ? 1 : curLen) / (commonItemsCount(query, current) + TINY);
+    };
+
+  case STR_METRIC_TYPE.EQUALITY:
+    return (query: Uint16Array, current: Uint16Array) => {
+      if (query === current)
+        return metric.weight;
+
+      return 0;
+    };
+
+  default:
+    throw new Error(ERR_MSG.UNSUPPORTED_METRIC);
   }
 }
 
 /** Return closest elements indeces array. */
-export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32Array {  
+export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32Array {
   const indices = stemCash.indices!;
   const size = df.rowCount;
   const queryText = indices.get(idx) as Uint16Array;
@@ -525,23 +527,23 @@ export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32
   const queryFeatures = new Map<string, any>();
 
   // define metrics
-  for (const [key, value] of stemCash.metricDef) 
+  for (const [key, value] of stemCash.metricDef) {
     if (key === stemCash.colName!) {
       isTargetColUsed = true;
       textColDistFn = getTextDistFn(value);
-    }
-    else {
+    } else {
       featureMap.set(key, {
         data: df.col(key)?.getRawData(),
         metricFn: getMetricFn(value),
       });
 
       queryFeatures.set(key, featureMap.get(key)?.data[idx]);
-    }  
+    }
+  }
 
   const closestInds = new Uint32Array(count);
   const closestDists = new Float32Array(count);
-  
+
   // basic initialization
   for (let i = 0; i < count; ++i) {
     let j = 0;
@@ -557,9 +559,9 @@ export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32
     closestInds[i] = i;
     closestDists[i] = featureDistance(featuresMetricVals);
   }
-    
+
   let maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
-  
+
   // search for the closest elements
   for (let i = count; i < size; ++i) {
     let j = 0;
@@ -578,10 +580,10 @@ export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32
       closestDists[maxRelIdx] = curDist;
       closestInds[maxRelIdx] = i;
       maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
-    }    
+    }
   }
-  
-  return closestInds.filter(i => i !== idx);
+
+  return closestInds.filter((i) => i !== idx);
 } // getClosest
 
 /** Distance function fo the UMAP algorithm. */
@@ -594,22 +596,24 @@ function umapDistFn(arr1: number[], arr2: number[]): number {
   const featuresCount = stemCash.metricDef!.size;
   const featuresMetricVals = new Float32Array(featuresCount);
 
-  let i = 0;
+  const i = 0;
 
-  for (const [key, value] of stemCash.metricDef!)
+  for (const [key, value] of stemCash.metricDef!) {
     if (key === stemCash.colName)
       featuresMetricVals[i] = getTextDistFn(value)(stemCash.indices!.get(idx1), stemCash.indices!.get(idx2));
     else
       featuresMetricVals[i] = getMetricFn(value)(df.get(key, idx1), df.get(key, idx2));
-  
+  }
+
   return getDistanceFn(stemCash.aggrDistance!, featuresCount)(featuresMetricVals);
 }
 
 /** Compute embeddings using the UMAP algorithm. */
-export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
+export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column,
+  components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
   setStemmingCash(table, source);
 
-  const data = [...Array(table.rowCount).keys()].map(i => Array(10).fill(i));
+  const data = [...Array(table.rowCount).keys()].map((i) => Array(10).fill(i));
 
   console.log(data);
 
@@ -619,7 +623,7 @@ export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column, compone
     nNeighbors: neighbors,
     minDist: minDist,
     spread: spread,
-// @ts-ignore
+    // @ts-ignore
     distanceFn: umapDistFn,
   });
 
@@ -627,11 +631,12 @@ export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column, compone
 
   const rowCount = embeddings.length;
   const range = [...Array(components).keys()];
-  const umapColumnsData = range.map(_ => new Float32Array(rowCount));  
+  const umapColumnsData = range.map((_) => new Float32Array(rowCount));
 
-  for (let i = 0; i < rowCount; ++i)
+  for (let i = 0; i < rowCount; ++i) {
     for (let j = 0; j < components; ++j)
-      umapColumnsData[j][i] = embeddings[i][j];  
+      umapColumnsData[j][i] = embeddings[i][j];
+  }
 
-  return range.map(i => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
+  return range.map((i) => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
 }

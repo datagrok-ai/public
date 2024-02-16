@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -229,9 +230,8 @@ export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
 //input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
 //input: bool inNewView = true {caption: New view; category: Results} [Provide results in a new view?]
 //input: bool showScatter = true {caption: Scatter plot; category: Results} [Add a scatteplot with embeddings.]
-export function computeEmbds(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, 
-  neighbors: number, minDist: number, spread: number, newView: boolean, showScatter: boolean): void 
-{
+export function computeEmbds(table: DG.DataFrame, source: DG.Column, components: number, epochs: number,
+  neighbors: number, minDist: number, spread: number, newView: boolean, showScatter: boolean): void {
   const start = new Date().getTime();
   const embds = getEmbeddingsAdv(table, source, components, epochs, neighbors, minDist, spread);
   const finish = new Date().getTime();
@@ -244,11 +244,10 @@ export function computeEmbds(table: DG.DataFrame, source: DG.Column, components:
 
     if (showScatter)
       view.addViewer(DG.VIEWER.SCATTER_PLOT);
-  }
-  else {
-    embds.forEach(col => table.columns.add(col));
+  } else {
+    embds.forEach((col) => table.columns.add(col));
     const view = grok.shell.getTableView(table.name);
-    
+
     if (showScatter)
       view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: embds[0].name, y: embds[embds.length - 1].name});
   }
@@ -267,7 +266,6 @@ export function processEmds(table: DG.DataFrame, x: DG.Column, y: DG.Column) {
   const getStats = (arr: Float32Array) => {
     let sum = 0;
     let sumOfSq = 0;
-    
 
     for (let i = 0; i < size; ++i) {
       sum += arr[i];
@@ -343,19 +341,19 @@ export function split(table: DG.DataFrame, feature: DG.Column, limit: number) {
   let satIdx = 0;
   let nonSatIdx = 0;
 
-  for (let idx = 0; idx < size; ++idx)
+  for (let idx = 0; idx < size; ++idx) {
     if (featureRaw[idx] > limit) {
       for (const c of cols)
         satDF.set(c.name, satIdx, c.get(idx));
-        
+
       ++satIdx;
-    }
-    else {
-      for (const c of cols) 
+    } else {
+      for (const c of cols)
         nonSatDF.set(c.name, nonSatIdx, c.get(idx));
-      
+
       ++nonSatIdx;
     }
+  }
 
   grok.shell.addTableView(satDF);
   grok.shell.addTableView(nonSatDF);
@@ -371,11 +369,11 @@ export function distance(query: string): DG.Widget {
   const source = df.currentCol;
 
   setStemmingCash(df, source);
-  
+
   const uiElem = ui.label('Edit');
   //@ts-ignore
-  $(uiElem).css({"cursor": "pointer", "color": "#3cb173"});
-  uiElem.onclick = () => { modifyMetric(df); };
+  $(uiElem).css({'cursor': 'pointer', 'color': '#3cb173'});
+  uiElem.onclick = () => {modifyMetric(df);};
 
   ui.tooltip.bind(uiElem, 'Edit text similarity measure.');
 
@@ -396,14 +394,14 @@ export function similar(query: string): DG.Widget {
 
   setStemmingCash(df, source);
 
-  const closest = getClosest(df, queryIdx, 6); 
+  const closest = getClosest(df, queryIdx, 6);
 
   const uiElements = [] as HTMLElement[];
 
   for (let i = 0; i < closest.length; ++i) {
-    const uiElem = ui.inlineText(getMarkedString(closest[i], queryIdx, source.get(closest[i])));    
-    uiElements.push(uiElem);    
-    uiElements.push(ui.divText('________________________________'));    
+    const uiElem = ui.inlineText(getMarkedString(closest[i], queryIdx, source.get(closest[i])));
+    uiElements.push(uiElem);
+    uiElements.push(ui.divText('________________________________'));
   }
 
   return new DG.Widget(ui.divV(uiElements));
