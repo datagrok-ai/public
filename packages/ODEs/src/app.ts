@@ -37,14 +37,14 @@ enum EDITOR_STATE {
 
 /** State-to-template/use-case map */
 const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
-  [EDITOR_STATE.BASIC_TEMPLATE, TEMPLATES.BASIC],  
+  [EDITOR_STATE.BASIC_TEMPLATE, TEMPLATES.BASIC],
   [EDITOR_STATE.ADVANCED_TEMPLATE, TEMPLATES.ADVANCED],
   [EDITOR_STATE.EXTENDED_TEMPLATE, TEMPLATES.EXTENDED],
-  [EDITOR_STATE.CHEM_REACT, USE_CASES.CHEM_REACT],  
-  [EDITOR_STATE.ROBERT, USE_CASES.ROBERTSON],  
-  [EDITOR_STATE.FERM, USE_CASES.FERMENTATION],  
-  [EDITOR_STATE.PKPD, USE_CASES.PK_PD],  
-  [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],  
+  [EDITOR_STATE.CHEM_REACT, USE_CASES.CHEM_REACT],
+  [EDITOR_STATE.ROBERT, USE_CASES.ROBERTSON],
+  [EDITOR_STATE.FERM, USE_CASES.FERMENTATION],
+  [EDITOR_STATE.PKPD, USE_CASES.PK_PD],
+  [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
 ]);
 
@@ -133,20 +133,7 @@ function getLineChartOptions(colNames: string[]): Object {
 /**  String-to-value */
 const strToVal = (s: string) => {
   const num = Number(s);
-  return !isNaN(+s) ? num : s === 'true' ? true : s === 'false' ? false : s;
-
-  
-
-  if (!isNaN(num))
-    return num;
-
-  if (s === 'true')
-    return true;
-
-  if (s === 'false')
-    return false;
-
-  return s;
+  return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
 };
 
 /** Solver of differential equations */
@@ -183,10 +170,10 @@ export class DiffStudio {
           }
 
           await this.setState(model as EDITOR_STATE, false);
-        } 
+        }
         else
           await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-      } 
+      }
       else
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     }
@@ -198,8 +185,8 @@ export class DiffStudio {
     this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
-    helpMD.classList.add('demo-app-div-md');
-    const divHelp = ui.div([helpMD], 'demo-app-div-help');
+    helpMD.classList.add('diff-studio-demo-app-div-md');
+    const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
     this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
     await this.runSolving(false);
   } // runSolverDemoApp
@@ -264,25 +251,25 @@ export class DiffStudio {
 
   static isStartingUriProcessed: boolean = false;
 
-  private solutionTable: DG.DataFrame;
-  private startingPath: string;
-  private startingInputs: Map<string, number> | null;
+  private solutionTable = DG.DataFrame.create();
+  private startingPath = window.location.href;
+  private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
-  private solverMainPath: string;
-  private solutionViewer: DG.Viewer | null;
-  private viewerDockNode: DG.DockNode | null;
-  private toChangeSolutionViewerProps: boolean;
-  private modelDiv: HTMLDivElement;
-  private inputsPanel: HTMLDivElement;
-  private prevInputsNode: Node | null;
-  private tabControl: DG.TabControl;
-  private editorState: EDITOR_STATE;
-  private toShowWarning: boolean;
-  private isModelChanged: boolean;
-  private toChangeInputs: boolean;
-  private isSolvingSuccess: boolean;
-  private toChangePath: boolean;
-  private toRunWhenFormCreated: boolean;
+  private solverMainPath: string = PATH.CUSTOM;
+  private solutionViewer: DG.Viewer | null = null;
+  private viewerDockNode: DG.DockNode | null = null;
+  private toChangeSolutionViewerProps = false;
+  private modelDiv = ui.divV([]);
+  private inputsPanel = ui.panel([]);
+  private prevInputsNode: Node | null = null;
+  private tabControl: DG.TabControl = ui.tabControl();
+  private editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
+  private toShowWarning = true;
+  private isModelChanged = false;
+  private toChangeInputs = false;
+  private isSolvingSuccess = false;
+  private toChangePath = false;
+  private toRunWhenFormCreated = true;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
@@ -293,31 +280,9 @@ export class DiffStudio {
   private exportButton: HTMLElement;
 
   constructor(toAddTableView: boolean = true) {
-    this.solutionTable = DG.DataFrame.create();
-    this.startingPath = window.location.href;
-    this.startingInputs = null;
-
-    this.solverView = toAddTableView ?
-      grok.shell.addTableView(this.solutionTable) :
-      DG.TableView.create(this.solutionTable, false);
-
+    this.solverView = DG.TableView.create(this.solutionTable, toAddTableView);
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
-    this.solverMainPath = PATH.CUSTOM;
-    this.solutionViewer = null;
-    this.viewerDockNode = null;
-    this.toChangeSolutionViewerProps = false;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
-    this.toShowWarning = true;
-    this.isModelChanged = false;
-    this.toChangeInputs = false;
-    this.isSolvingSuccess = false;
-    this.toChangePath = false;
-    this.toRunWhenFormCreated = true;
-    this.modelDiv = ui.divV([]);
-    this.inputsPanel = ui.panel([]);
-    this.prevInputsNode = null;
-    this.tabControl = ui.tabControl();
-    this.editorState = EDITOR_STATE.BASIC_TEMPLATE;
     this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => this.modelDiv);
     this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
 
@@ -397,7 +362,7 @@ export class DiffStudio {
       }
     });
 
-    this.editorView.dom.classList.add('eqs-editor');
+    this.editorView.dom.classList.add('diff-studio-eqs-editor');
 
     if (toAddContextMenu) {
       this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
