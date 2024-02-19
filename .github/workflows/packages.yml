@@ -47,7 +47,6 @@ jobs:
         id: changed-files
         with:
           files: 'packages/**'
-          separator: "\n"
           dir_names: true
       - name: Generate matrix
         id: generate-matrix
