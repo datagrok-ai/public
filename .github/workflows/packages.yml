@@ -49,6 +49,7 @@ jobs:
           files: 'packages/**'
           separator: "\n"
           dir_names: true
+          safe_output: false
       - name: Generate matrix
         id: generate-matrix
         env:
@@ -56,7 +57,7 @@ jobs:
         run: |
           set -x
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            CHANGED_PACKAGES="$(echo ${ALL_CHANGED_FILES} | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo -e "${ALL_CHANGED_FILES}" | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
