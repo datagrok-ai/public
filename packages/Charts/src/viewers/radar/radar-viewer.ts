@@ -292,7 +292,7 @@ export class RadarViewer extends DG.JsViewer {
         color: 'rgba(66, 135, 204, 0.8)',
       },
       label: {
-        show: true,
+        show: this.showValues,
         formatter: function(params: any) {
           return StringUtils.formatNumber(params.value) as string;
         },
