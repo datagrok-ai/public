@@ -5,6 +5,7 @@ import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metri
 import '../../css/chem.css';
 import { Subject } from 'rxjs';
 import { AVAILABLE_FPS } from '../constants';
+import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
@@ -48,7 +49,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumnName = col.name!;
     }
     const header = this.name === DIVERSITY ? `Most diverse structures` : `Most similar structures`;
-    this.metricsDiv = ui.divH([ui.divText(header)], 'similarity-header');
+    this.metricsDiv = ui.divH([ui.divText(header)], 'chem-similarity-header');
   }
 
   init(): void {
@@ -162,8 +163,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const div = ui.divV([], {style: {marginTop: '5px'}});
     for (const key of Object.keys(propsDict)) {
       const labelName = key === SIMILARITY ? '' : key;
-      const label = ui.divText(`${labelName}`, 'similarity-prop-label');
-      const value = ui.divText(`${propsDict[key].val}`, 'similarity-prop-value');
+      const label = ui.divText(`${labelName}`, 'chem-similarity-prop-label');
+      const value = ui.divText(`${propsDict[key].val}`, 'chem-similarity-prop-value');
       ui.tooltip.bind(value, key);
       if (propsDict[key].color) {
         const color = DG.Color.toHtml(propsDict[key].color);
@@ -176,7 +177,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       const item = ui.divH([
         label,
         value,
-      ], 'similarity-prop-item');
+      ], 'chem-similarity-prop-item');
       div.append(item);
     }
     return div;
