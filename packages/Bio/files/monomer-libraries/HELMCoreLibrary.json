@@ -8,13 +8,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -34,19 +34,19 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -66,19 +66,19 @@
         "naturalAnalog": "D", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -98,19 +98,19 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -130,13 +130,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -156,13 +156,13 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -182,13 +182,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -208,13 +208,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -234,19 +234,19 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -266,13 +266,13 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -292,13 +292,13 @@
         "naturalAnalog": "M", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -318,13 +318,13 @@
         "naturalAnalog": "N", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -344,13 +344,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -370,13 +370,13 @@
         "naturalAnalog": "Q", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -396,13 +396,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -422,13 +422,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -448,13 +448,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -474,13 +474,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -500,13 +500,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -526,13 +526,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -552,13 +552,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -578,19 +578,19 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -610,19 +610,19 @@
         "naturalAnalog": "D", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -642,19 +642,19 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -674,13 +674,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -700,13 +700,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -726,13 +726,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -752,19 +752,19 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -784,13 +784,13 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -810,13 +810,13 @@
         "naturalAnalog": "M", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -836,13 +836,13 @@
         "naturalAnalog": "N", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -862,13 +862,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -888,13 +888,13 @@
         "naturalAnalog": "Q", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -914,13 +914,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -940,13 +940,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -966,13 +966,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -992,13 +992,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1018,13 +1018,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1044,13 +1044,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1070,7 +1070,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1090,7 +1090,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -1110,7 +1110,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -1130,13 +1130,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1156,19 +1156,19 @@
         "naturalAnalog": "D", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -1188,13 +1188,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1214,13 +1214,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1240,13 +1240,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1266,13 +1266,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1292,19 +1292,19 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -1324,13 +1324,13 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1350,13 +1350,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1376,19 +1376,19 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -1408,13 +1408,13 @@
         "naturalAnalog": "M", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1434,13 +1434,13 @@
         "naturalAnalog": "N", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1460,13 +1460,13 @@
         "naturalAnalog": "Q", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1486,19 +1486,19 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -1518,13 +1518,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1544,13 +1544,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1570,13 +1570,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1596,13 +1596,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1622,13 +1622,13 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1648,13 +1648,13 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1674,13 +1674,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1700,19 +1700,19 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -1732,13 +1732,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1758,13 +1758,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1784,19 +1784,19 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -1816,19 +1816,19 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -1848,13 +1848,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1874,13 +1874,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1900,19 +1900,19 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -1932,13 +1932,13 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1958,13 +1958,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -1984,13 +1984,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2010,13 +2010,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2036,19 +2036,19 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -2068,13 +2068,13 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2094,7 +2094,7 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2114,13 +2114,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2140,13 +2140,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2166,13 +2166,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2192,13 +2192,13 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2218,13 +2218,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2244,13 +2244,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2270,13 +2270,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2296,13 +2296,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2322,13 +2322,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2348,13 +2348,13 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2374,13 +2374,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2400,13 +2400,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2426,13 +2426,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2452,13 +2452,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2478,13 +2478,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2504,13 +2504,13 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2530,13 +2530,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2556,13 +2556,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2582,13 +2582,13 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2608,19 +2608,19 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -2640,13 +2640,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2666,13 +2666,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2692,13 +2692,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2718,13 +2718,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2744,13 +2744,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2770,13 +2770,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2796,13 +2796,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2822,13 +2822,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2848,13 +2848,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2874,13 +2874,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2900,13 +2900,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2926,19 +2926,19 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -2958,13 +2958,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -2984,13 +2984,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3010,13 +3010,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3036,7 +3036,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3056,13 +3056,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3082,13 +3082,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3108,13 +3108,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3134,13 +3134,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3160,13 +3160,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3186,19 +3186,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -3218,13 +3218,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3244,19 +3244,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -3276,19 +3276,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -3308,13 +3308,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3334,13 +3334,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3360,13 +3360,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3386,13 +3386,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3412,19 +3412,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -3444,13 +3444,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3470,13 +3470,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3496,13 +3496,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3522,13 +3522,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3548,19 +3548,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -3580,13 +3580,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3606,13 +3606,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3632,13 +3632,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3658,13 +3658,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3684,13 +3684,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3710,13 +3710,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3736,19 +3736,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -3768,19 +3768,19 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "O[*:3]", 
+                "capGroupSMILES": "O[*:3]", 
                 "alternateId": "R3-OH", 
                 "capGroupName": "OH", 
                 "label": "R3"
@@ -3800,7 +3800,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3820,7 +3820,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -3840,7 +3840,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -3860,7 +3860,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -3880,7 +3880,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -3900,7 +3900,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -3920,7 +3920,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3940,13 +3940,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3966,7 +3966,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -3986,13 +3986,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -4012,7 +4012,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4032,7 +4032,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4052,7 +4052,7 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4072,7 +4072,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4092,7 +4092,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4112,7 +4112,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4132,7 +4132,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4152,7 +4152,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4172,13 +4172,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4198,7 +4198,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4218,7 +4218,7 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4238,7 +4238,7 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4258,7 +4258,7 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4278,7 +4278,7 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4298,7 +4298,7 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4318,7 +4318,7 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4338,7 +4338,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4358,7 +4358,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4378,7 +4378,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4398,7 +4398,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4418,13 +4418,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4444,13 +4444,13 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4470,7 +4470,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4490,13 +4490,13 @@
         "naturalAnalog": "D", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4516,7 +4516,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4536,13 +4536,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4562,13 +4562,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4588,13 +4588,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4614,13 +4614,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4640,13 +4640,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4666,13 +4666,13 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4692,13 +4692,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4718,13 +4718,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4744,13 +4744,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4770,13 +4770,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4796,13 +4796,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4822,7 +4822,7 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -4842,7 +4842,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4862,7 +4862,7 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4882,7 +4882,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4902,7 +4902,7 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4922,7 +4922,7 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4942,7 +4942,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4962,7 +4962,7 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -4982,7 +4982,7 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5002,7 +5002,7 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5022,7 +5022,7 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5042,7 +5042,7 @@
         "naturalAnalog": "N", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5062,7 +5062,7 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5082,7 +5082,7 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5102,7 +5102,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5122,7 +5122,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5142,13 +5142,13 @@
         "naturalAnalog": "M", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5168,13 +5168,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5194,13 +5194,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5220,13 +5220,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5246,13 +5246,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5272,13 +5272,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5298,13 +5298,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5324,13 +5324,13 @@
         "naturalAnalog": "S", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5350,13 +5350,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5376,13 +5376,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5402,13 +5402,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5428,13 +5428,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5454,13 +5454,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5480,13 +5480,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5506,13 +5506,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5532,13 +5532,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5558,13 +5558,13 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5584,13 +5584,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5610,13 +5610,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5636,13 +5636,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5662,13 +5662,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5688,13 +5688,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5714,13 +5714,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5740,13 +5740,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5766,13 +5766,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5792,13 +5792,13 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5818,19 +5818,19 @@
         "naturalAnalog": "E", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -5850,13 +5850,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5876,13 +5876,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5902,13 +5902,13 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5928,13 +5928,13 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -5954,7 +5954,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -5974,13 +5974,13 @@
         "naturalAnalog": "D", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6000,13 +6000,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6026,13 +6026,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6052,13 +6052,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6078,13 +6078,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6104,13 +6104,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6130,13 +6130,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6156,13 +6156,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6182,13 +6182,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6208,13 +6208,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6234,13 +6234,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6260,13 +6260,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6286,13 +6286,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6312,7 +6312,7 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -6332,13 +6332,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6358,13 +6358,13 @@
         "naturalAnalog": "I", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6384,13 +6384,13 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6410,7 +6410,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -6430,7 +6430,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -6450,7 +6450,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -6470,7 +6470,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6490,13 +6490,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
             }, 
             {
-                "capGroupSmiles": "[*:3][H]", 
+                "capGroupSMILES": "[*:3][H]", 
                 "alternateId": "R3-H", 
                 "capGroupName": "H", 
                 "label": "R3"
@@ -6516,7 +6516,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6536,7 +6536,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6556,7 +6556,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6576,7 +6576,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6596,7 +6596,7 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6616,7 +6616,7 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6636,7 +6636,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6656,7 +6656,7 @@
         "naturalAnalog": "V", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6676,7 +6676,7 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6696,7 +6696,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6716,7 +6716,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6736,7 +6736,7 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6756,7 +6756,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6776,13 +6776,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6802,13 +6802,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6828,13 +6828,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6854,13 +6854,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6880,13 +6880,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6906,13 +6906,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6932,13 +6932,13 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -6958,7 +6958,7 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -6978,7 +6978,7 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -6998,7 +6998,7 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -7018,7 +7018,7 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -7038,7 +7038,7 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -7058,7 +7058,7 @@
         "naturalAnalog": "G", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -7078,7 +7078,7 @@
         "naturalAnalog": "L", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -7098,7 +7098,7 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
@@ -7118,13 +7118,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7144,13 +7144,13 @@
         "naturalAnalog": "M", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7170,13 +7170,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7196,13 +7196,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7222,13 +7222,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7248,13 +7248,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7274,13 +7274,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7300,13 +7300,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7326,13 +7326,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7352,13 +7352,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7378,13 +7378,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7404,13 +7404,13 @@
         "naturalAnalog": "W", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7430,13 +7430,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7456,13 +7456,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7482,13 +7482,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7508,13 +7508,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7534,13 +7534,13 @@
         "naturalAnalog": "P", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7560,13 +7560,13 @@
         "naturalAnalog": "T", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7586,13 +7586,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7612,13 +7612,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7638,13 +7638,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7664,13 +7664,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7690,13 +7690,13 @@
         "naturalAnalog": "C", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7716,13 +7716,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7742,13 +7742,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7768,13 +7768,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7794,13 +7794,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7820,13 +7820,13 @@
         "naturalAnalog": "K", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7846,13 +7846,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7872,13 +7872,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7898,13 +7898,13 @@
         "naturalAnalog": "X", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7924,13 +7924,13 @@
         "naturalAnalog": "A", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7950,13 +7950,13 @@
         "naturalAnalog": "R", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -7976,13 +7976,13 @@
         "naturalAnalog": "M", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -8002,13 +8002,13 @@
         "naturalAnalog": "H", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -8028,13 +8028,13 @@
         "naturalAnalog": "Y", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"
@@ -8054,13 +8054,13 @@
         "naturalAnalog": "F", 
         "rgroups": [
             {
-                "capGroupSmiles": "[*:1][H]", 
+                "capGroupSMILES": "[*:1][H]", 
                 "alternateId": "R1-H", 
                 "capGroupName": "H", 
                 "label": "R1"
             }, 
             {
-                "capGroupSmiles": "O[*:2]", 
+                "capGroupSMILES": "O[*:2]", 
                 "alternateId": "R2-OH", 
                 "capGroupName": "OH", 
                 "label": "R2"

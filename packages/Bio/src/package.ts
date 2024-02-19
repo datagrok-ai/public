@@ -41,10 +41,8 @@ import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
-import {
-  MonomerLibHelper,
-  getLibraryPanelUI
-} from './utils/monomer-lib';
+import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
+import {getMonomerLibraryManagerLink, showManageLibrariesDialog} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -88,7 +86,7 @@ export const _package = new BioPackage();
 //description:
 //output: object result
 export function getMonomerLibHelper(): IMonomerLibHelper {
-  return MonomerLibHelper.instance;
+  return MonomerLibManager.instance;
 }
 
 export let hydrophobPalette: SeqPaletteCustom | null = null;
@@ -110,7 +108,7 @@ export async function initBio() {
   _package.logger.debug('Bio: initBio(), started');
   const module = await grok.functions.call('Chem:getRdKitModule');
   await Promise.all([
-    (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
+    (async () => { await MonomerLibManager.instance.loadLibraries(); })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);
@@ -120,7 +118,7 @@ export async function initBio() {
     _package.completeInit();
   });
 
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  const monomerLib = MonomerLibManager.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
 
@@ -163,12 +161,12 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
 //name: getBioLib
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
-  return MonomerLibHelper.instance.getBioLib();
+  return MonomerLibManager.instance.getBioLib();
 }
 
 // -- Panels --
 
-//name: Get Region
+//name: Bioinformatics | Get Region
 //description: Creates a new column with sequences of the region between start and end
 //tags: panel
 //input: column seqCol {semType: Macromolecule}
@@ -183,13 +181,14 @@ export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
   return funcEditor.widget();
 }
 
-//name: Manage Libraries
+//name: Bioinformatics | Manage Monomer Libraries
 //description:
 //tags: panel, exclude-actions-panel
 //input: column seqColumn {semType: Macromolecule}
 //output: widget result
 export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
-  return getLibraryPanelUI();
+  // return getLibraryPanelUI();
+  return getMonomerLibraryManagerLink();
 }
 
 // -- Func Editors --
@@ -293,7 +292,7 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 
 // -- Property panels --
 
-//name: Sequence Renderer
+//name:  Bioinformatics | Sequence Renderer
 //input: column molColumn {semType: Macromolecule}
 //tags: panel
 //output: widget result
@@ -650,18 +649,6 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-// 2023-05-17 Representations does not work at BioIT
-// //name: Representations
-// //tags: panel, widgets
-// //input: cell macroMolecule {semType: Macromolecule}
-// //output: widget result
-// export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
-//   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
-//   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-//
-//   return representationsWidget(macroMolecule, monomersLibObject);
-// }
-
 //name: importFasta
 //description: Opens FASTA file
 //tags: file-handler
@@ -869,6 +856,14 @@ export async function sequenceSimilarityScoring(
 ): Promise<DG.Column<number>> {
   const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
   return scores;
+}
+
+
+//top-menu: Bio | Manage | Monomer Libraries
+//name: Manage Monomer Libraries
+//description: Manage HELM monomer libraries
+export async function manageMonomerLibraries(): Promise<void> {
+  showManageLibrariesDialog();
 }
 
 //name: saveAsFasta

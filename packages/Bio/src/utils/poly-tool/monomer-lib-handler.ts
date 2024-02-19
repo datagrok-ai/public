@@ -3,10 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {HELM_FIELDS, DUMMY_MONOMER} from '@datagrok-libraries/bio/src/utils/const';
 import {
-  HELM_FIELDS, helmFieldsToPolyToolInputFields, DUMMY_MONOMER, R_GROUP_BLOCK_DUMMY
-} from '../../utils/const';
-import {Monomer, RGroup} from '../../types/index';
+  helmFieldsToPolyToolInputFields, R_GROUP_BLOCK_DUMMY
+} from './const';
+import {Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
 
 export class PolyToolMonomerLibHandler {
   constructor(private rawLib: any[]) { }

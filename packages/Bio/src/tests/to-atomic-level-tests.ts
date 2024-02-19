@@ -11,8 +11,9 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import {toAtomicLevel} from '../package';
@@ -56,7 +57,7 @@ category('toAtomicLevel', async () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibSettings: LibSettings;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
