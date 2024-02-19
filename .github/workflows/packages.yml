@@ -56,7 +56,7 @@ jobs:
         run: |
           set -x
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            CHANGED_PACKAGES="$(echo -e "${ALL_CHANGED_FILES}" | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo -e ${ALL_CHANGED_FILES} | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi

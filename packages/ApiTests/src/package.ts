@@ -79,4 +79,3 @@ export function dummyDataFrameFunction(table: DG.DataFrame) {
   const tableOut = table;
   return {tableOut, count};
 }
-
