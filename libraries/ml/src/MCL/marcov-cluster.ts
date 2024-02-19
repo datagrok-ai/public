@@ -20,12 +20,14 @@ export class MCLSparseReducer {
     // testWorkerMultiply();
     // return new Int32Array(nRows);
     let sparseObject = this.toObjectForm(sparseMatrix);
-    this.addLoops(sparseObject, nRows);
-    this.normalize(sparseObject);
-    for (let i = 0; i < this._options.maxIterations; i++) {
-      sparseObject = this.expand(sparseObject, nRows);
-      this.inflate(sparseObject);
+    if (this._options.maxIterations > 0) {
+      this.addLoops(sparseObject, nRows);
       this.normalize(sparseObject);
+      for (let i = 0; i < this._options.maxIterations; i++) {
+        sparseObject = this.expand(sparseObject, nRows);
+        this.inflate(sparseObject);
+        this.normalize(sparseObject);
+      }
     }
     const {clusters, is, js} = this.assignClusters(sparseObject, nRows);
     this.correctClusters(clusters);
@@ -78,12 +80,12 @@ export class MCLSparseReducer {
     for (const clusterName of sortedClusterNames) {
       const cluster = clusterMap[clusterName as any]!;
       const embeddings = await bioLayout(cluster, sparseMatrix, 0.001);
-      if (clusterNum === perRow) {
+      if (clusterNum === Math.ceil(perRow / 1.5)) {
         clusterNum = 0;
         yOffset += layoutSize / perRow;
         perRow = Math.ceil(perRow * 1.5);
       }
-      const offsetX = (clusterNum % perRow) * layoutSize / perRow;
+      const offsetX = ((clusterNum % perRow) * layoutSize / perRow) * 1.5;
       // const offsetY = Math.floor(clusterNum / perRow) * 2;
 
       for (let i = 0; i < embeddings.embedX.length; i++) {

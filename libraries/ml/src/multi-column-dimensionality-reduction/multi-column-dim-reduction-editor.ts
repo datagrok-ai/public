@@ -227,7 +227,7 @@ export class MultiColumnDimReductionEditor {
           ui.floatInput(param.uiName, param.value as any, () => {
             param.value = input.value;
           });
-        ui.tooltip.bind(input.root, param.tooltip);
+        ui.tooltip.bind(input.input ?? input.root, param.tooltip);
         paramsForm.append(input.root);
       });
       return paramsForm;
