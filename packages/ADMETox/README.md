@@ -1,8 +1,6 @@
 # ADMETox
 
 The ADMETox package provides an outstanding opportunity to evaluate such molecule properties as absorption, distribution, metabolism, excretion and toxicity, also known as ADMET. The main purpose of this package is to make it possible to filter molecules and select those that satisfy a specific criteria of the research.
-
-Models binary files have been taken from the [ADMETlab](https://github.com/ifyoungnet/ADMETlab) repository and are open-source.
  
 With this package/tool you can:
 * Obtain predictions both for a single structure and for the column
@@ -22,8 +20,5 @@ Just go to the top-menu and select Chem | ADME/Tox | Add form…
 
 ![Form](../ADMETox/vendor/AdmetoxForm.gif)
 
-
-
 See also: 
-  * [ADMETlab](https://github.com/ifyoungnet/ADMETlab)
-  * [Docker Containers](https://datagrok.ai/help/develop/how-to/docker_containers)
+* [Docker Containers](https://datagrok.ai/help/develop/how-to/docker_containers)
