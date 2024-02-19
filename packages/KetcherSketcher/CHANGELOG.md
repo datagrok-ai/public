@@ -1,5 +1,11 @@
 # KetcherSketcher changelog
 
+## 2.1.6 (2024-01-31)
+
+### Features
+
+* Saving user defined settings
+
 ## 2.1.5 (2024-01-31)
 
 ### Features
