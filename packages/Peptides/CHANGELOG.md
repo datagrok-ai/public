@@ -1,6 +1,10 @@
 # Peptides changelog
 
-## 1.17.3 (WIP)
+## 1.17.5 (2024-02-15)
+
+Added MCL clustering to peptide analysis.
+
+## 1.17.3 (2024-02-01)
 
 * Sequence space random seeding for reproducibility.
 * Use of generated clusters for summery web logo table.

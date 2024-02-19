@@ -2,7 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import $ from 'cash-dom';
+import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE,
+  SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {getDfFromRuns} from './shared/utils';
 import {RUN_NAME_COL_LABEL} from '../../shared-utils/consts';
 
@@ -42,15 +44,13 @@ export class RunComparisonView extends DG.TableView {
       view.type === FUNCTIONS_VIEW_TYPE);
     if (cardView) grok.shell.v = cardView;
 
-    const view = new this(comparisonDf, options);
-    const comparatorFunc: string = func.options['comparator'];
+    const defaultView = new this(comparisonDf, options);
 
     setTimeout(async () => {
-      view.defaultCustomize();
-      if (comparatorFunc) await grok.functions.call(comparatorFunc, {'comparisonView': view});
+      defaultView.defaultCustomize();
     }, 0);
 
-    return view;
+    return defaultView;
   }
 
   /**
@@ -69,7 +69,37 @@ export class RunComparisonView extends DG.TableView {
     this.parentCall = options.parentCall || grok.functions.getCurrentCall();
   }
 
+  private showAllColumns() {
+    const allColumns = this.dataFrame.columns.names();
+    this.grid.columns.setVisible(allColumns);
+  }
+
+  private showChangingColumns() {
+    const changingColumns =
+        this.dataFrame.columns.names().filter((name) =>
+          (DG.TYPES_SCALAR.has(this.dataFrame.getCol(name).type as DG.TYPE) &&
+          this.dataFrame.getCol(name).categories.length > 1) ||
+          !DG.TYPES_SCALAR.has(this.dataFrame.getCol(name).type as DG.TYPE),
+        );
+    this.grid.columns.setVisible(changingColumns);
+  }
+
   private defaultCustomize(): void {
+    const showChangingColumnsIcon = ui.iconFA('compress-alt', () => {
+      this.showChangingColumns();
+      $(showAllColumnsIcon).show();
+      $(showChangingColumnsIcon).hide();
+    }, 'Hide constant parameters');
+    const showAllColumnsIcon = ui.iconFA('expand-arrows-alt', () => {
+      this.showAllColumns();
+      $(showAllColumnsIcon).hide();
+      $(showChangingColumnsIcon).show();
+    }, 'Show all parameters');
+    $(showChangingColumnsIcon).hide();
+    this.setRibbonPanels([...this.getRibbonPanels(), [showChangingColumnsIcon, showAllColumnsIcon]]);
+
+    this.showChangingColumns();
+
     // By default, view's content has fixed sizes - avoiding this.
     // TO DO: Find a sample for bug report
     this.root.style.removeProperty('width');

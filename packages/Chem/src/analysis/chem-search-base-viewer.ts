@@ -31,7 +31,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   initialized: boolean = false;
   metricsDiv: HTMLElement | null;
   moleculeProperties: string[];
-  applyColorTo: string;
   renderCompleted = new Subject<void>();
   isComputing = false;
 
@@ -45,8 +44,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
       {description: 'Adds selected fields from the grid to similarity search viewer'});
-    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT],
-      description: 'Applies to data added via Molecule Properties control (color-code the column in the grid first)'});
     if (col) {
       this.moleculeColumn = col;
       this.moleculeColumnName = col.name!;
@@ -157,8 +154,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     for (const col of this.moleculeProperties) {
       propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
       const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE];
-      if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF)
+      if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
         propsDict[col].color = grid.cell(col, idx).color;
+        propsDict[col].isTextColorCoded = grid.col(col)?.isTextColorCoded;
+      }
     }
     //const item = ui.divH([], 'similarity-prop-item');
     const div = ui.divV([], {style: {marginTop: '5px'}});
@@ -168,12 +167,12 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       const value = ui.divText(`${propsDict[key].val}`, 'chem-similarity-prop-value');
       ui.tooltip.bind(value, key);
       if (propsDict[key].color) {
-        const bgColor = DG.Color.toHtml(propsDict[key].color);
-        if (this.applyColorTo === BACKGROUND) {
-          value.style.backgroundColor = bgColor,
-          value.style.color = pickTextColorBasedOnBgColor(bgColor, '#FFFFFF', '#000000');
+        const color = DG.Color.toHtml(propsDict[key].color);
+        if (!propsDict[key].isTextColorCoded) {
+          value.style.backgroundColor = color,
+          value.style.color = DG.Color.toHtml(DG.Color.getContrastColor(propsDict[key].color));
         } else
-          value.style.color = bgColor;
+          value.style.color = color;
       }
       const item = ui.divH([
         label,

@@ -1,6 +1,17 @@
 # Bio changelog
 
-## 2.12.0 (WIP)
+## 2.11.30 (2024-02-15)
+
+### Features
+
+* GROK-14598: Bio: Substructure filter sync between cloned views, tests
+
+### Bug fixes
+
+* GROK-14916: Bio: Fix biosubstructure filter for sequences of Helm
+* GROK-14913: Bio: Fix To Atomic Level for sequences with gaps, tests
+
+## 2.11.28 (2024-02-07)
 
 ### Features
 

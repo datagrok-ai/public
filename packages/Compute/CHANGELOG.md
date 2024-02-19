@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.21.2 (2024-02-14)
+
+### Bug fixes
+
+- SA: Fixed bug switch styling
+
 ## 1.21.0 (2024-02-13)
 
 ### Features

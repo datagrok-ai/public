@@ -1071,7 +1071,7 @@ export class ObjectColumn extends Column<any> {
    * Gets [i]-th value.
    */
   get(row: number): any | null {
-    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+    return toJs(api.grok_Column_GetValue(this.dart, row));
   }
 }
 
@@ -1081,7 +1081,11 @@ export class DataFrameColumn extends Column<DataFrame> {
    * Gets [i]-th value.
    */
   get(row: number): DataFrame | null {
-    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+    return toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+
+  toList(): Array<DataFrame> {
+    return api.grok_Column_ToList(this.dart).map((x: any) => toJs(x));
   }
 }
 
@@ -1507,8 +1511,8 @@ export class Cell {
 
   /** Cell value.
    * @returns {*} */
-  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
-  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
+  get value(): any { return toJs(api.grok_Cell_Get_Value(this.dart)); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, toDart(x)); }
 
   /** String representation of the value, if both [column] and [row] are defined;
      otherwise, empty string. */

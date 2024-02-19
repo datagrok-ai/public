@@ -11,7 +11,7 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       super(editorSettings);
       this.similarityThresholdInput = ui.intInput('Similarity threshold', 80);
-      this.maxIterationsInput = ui.intInput('Max iterations', 10);
+      this.maxIterationsInput = ui.intInput('Max iterations', 5);
     }
 
     public getEditor(): HTMLElement {

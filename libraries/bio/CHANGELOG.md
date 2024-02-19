@@ -1,6 +1,16 @@
 # bio changelog
 
-## 5.39.20 (2021-01-29)
+## 5.39.24 (2024-02-14)
+
+### Features
+
+* Add HelmHelper, types for Helm WebEditor
+
+## Bug fixes
+
+* Fix To Atomic Level for sequences with gaps
+
+## 5.39.20 (2024-01-29)
 
 ### Features
 

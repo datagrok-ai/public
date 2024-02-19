@@ -13,9 +13,7 @@ category('Dapi: entities', () => {
     group = DG.Group.create('js-api-test-group1');
     group = await grok.dapi.groups.save(group);
     const properties = {
-      entityId: group.id,
-      property: 'myProp',
-      value: 'value',
+     'myProp': 'value',
     };
     await group.setProperties(properties);
   });
@@ -23,12 +21,12 @@ category('Dapi: entities', () => {
   test('getProperties', async () => {
     const props = await group.getProperties();
     expect(typeof props === 'object', true);
-    expect(Object.keys(props).length, 3);
+    expect(Object.keys(props).length, 1);
   });
 
   test('setProperties', async () => {
     await group.setProperties({testProp1: 'prop1', testProp2: 'prop2'});
-    expect(Object.keys(await group.getProperties()).length, 5);
+    expect(Object.keys(await group.getProperties()).length, 3);
   });
 
   after(async () => {

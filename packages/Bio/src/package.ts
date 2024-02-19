@@ -71,11 +71,13 @@ import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
-import {getEmbeddingColsNames, multiColReduceDimensionality} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {
+  getEmbeddingColsNames, multiColReduceDimensionality
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {ITSNEOptions, IUMAPOptions} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {
+  ITSNEOptions, IUMAPOptions
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 
 export const _package = new BioPackage();
 
@@ -483,7 +485,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
 //input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern']; default: Morgan; optional: true}
+//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; default: Morgan; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
   col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
@@ -557,13 +559,13 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 //top-menu: Bio | Convert | To Atomic Level...
 //name: To Atomic Level
 //description: Converts sequences to molblocks
-//input: dataframe df [Input data table]
-//input: column macroMolecule {semType: Macromolecule}
-//input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
-export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
+//input: dataframe table [Input data table]
+//input: column macroMolecule {caption: Sequence; semType: Macromolecule}
+//input: bool nonlinear =false {description: Slower mode for cycling/branching HELM structures}
+export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
-    await sequenceToMolfile(df, macroMolecule, nonlinear);
+    await sequenceToMolfile(table, seqCol, nonlinear);
   } finally {
     pi.close();
   }

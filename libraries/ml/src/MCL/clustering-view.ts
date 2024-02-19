@@ -15,6 +15,17 @@ export async function markovCluster(
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10
 ): Promise<void | DG.ScatterPlotViewer> {
+  const scatterPlotProps = {
+    showXAxis: false,
+    showYAxis: false,
+    showXSelector: false,
+    showYSelector: false,
+  };
+  const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
+
+  const sc = tv.scatterPlot({...scatterPlotProps, title: 'MCL'});
+
+  ui.setUpdateIndicator(sc.root, true);
   const distanceFnArgs: Options[] = [];
   const encodedColEntries: PreprocessFunctionReturnType[] = [];
   for (let i = 0; i < preprocessingFuncs.length; ++i) {
@@ -35,9 +46,18 @@ export async function markovCluster(
     }
   }
 
-
-  const res = await createMCLWorker(encodedColEntries.map((it) => it.entries),
+  const mclWorker = createMCLWorker(encodedColEntries.map((it) => it.entries),
     threshold, weights, aggregationMethod, metrics, distanceFnArgs, maxIterations);
+
+  const terminateSub = grok.events.onViewerClosed.subscribe((args) => {
+    if (args.args.viewer?.props?.title === sc.props.title && sc.type === args.args?.viewer?.type) {
+      terminateSub.unsubscribe();
+      mclWorker.terminate();
+    }
+  });
+  const res = await mclWorker.promise;
+  if (!res)
+    return;
   const clusterColName = df.columns.getUnusedName('Cluster');
   const emberdXColName = df.columns.getUnusedName('EmbedX');
   const emberdYColName = df.columns.getUnusedName('EmbedY');
@@ -51,14 +71,21 @@ export async function markovCluster(
   df.columns.addNewFloat(emberdYColName).init((i) => res.embedY[i]);
   df.columns.addNewInt(clusterCounterColName).init((i) => clustersCounter[res.clusters[i]]);
   df.columns.addNewString(clusterColName).init((i) => res.clusters[i].toString());
-  const tv = grok.shell.tableView(df.name);
-  if (tv) {
-    const sc = tv.scatterPlot({x: emberdXColName, y: emberdYColName});
-    sc.props.colorColumnName = clusterColName;
-    sc.props.markerDefaultSize = 5;
-    const _scLines = new ScatterPlotLinesRenderer(sc, emberdXColName, emberdYColName,
-      {from: res.is as any, to: res.js as any, drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true},
-      ScatterPlotCurrentLineStyle.none);
-    return sc;
-  }
+  sc.props.xColumnName = emberdXColName;
+  sc.props.yColumnName = emberdYColName;
+  sc.props.colorColumnName = clusterColName;
+  sc.props.markerDefaultSize = 5;
+  terminateSub.unsubscribe();
+  // const sc = tv.scatterPlot({x: emberdXColName, y: emberdYColName});
+  // sc.props.colorColumnName = clusterColName;
+  // sc.props.markerDefaultSize = 5;
+  const _scLines = new ScatterPlotLinesRenderer(sc, emberdXColName, emberdYColName,
+    {from: res.is as any, to: res.js as any, drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true},
+    ScatterPlotCurrentLineStyle.none);
+  ui.setUpdateIndicator(sc.root, false);
+  // sc.close();
+  // const scLinesViewer = new ScatterPlotWithLines(sc, res.is, res.js, emberdXColName, emberdYColName);
+  // tv.addViewer(scLinesViewer);
+  return sc;
 }
+

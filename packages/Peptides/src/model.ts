@@ -51,6 +51,8 @@ import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {getDbscanWorker} from '@datagrok-libraries/math';
+import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
@@ -99,6 +101,8 @@ export class PeptidesModel {
   accordionSource: VIEWER_TYPE | null = null;
   // sequence space viewer
   _sequenceSpaceViewer: DG.ScatterPlotViewer | null = null;
+  //MCL viewer
+  _mclViewer: DG.ScatterPlotViewer | null = null;
   /**
    * @param {DG.DataFrame}dataFrame - DataFrame to use for analysis
    */
@@ -151,6 +155,7 @@ export class PeptidesModel {
   // Peptides analysis settings
   _settings: type.PeptidesSettings | null = null;
   _sequenceSpaceCols: string[] = [];
+  _mclCols: string[] = [];
 
   /**
    * @return {type.PeptidesSettings}- Peptides analysis settings
@@ -185,6 +190,9 @@ export class PeptidesModel {
       case 'showDendrogram':
         updateVars.add('dendrogram');
         break;
+      case 'showSequenceSpace':
+        updateVars.add('showSequenceSpace');
+        break;
       case 'showLogoSummaryTable':
         updateVars.add('logoSummaryTable');
         break;
@@ -199,6 +207,10 @@ export class PeptidesModel {
         break;
       case 'sequenceSpaceParams':
         updateVars.add('sequenceSpaceParams');
+        break;
+      case 'mclSettings':
+        updateVars.add('mclSettings');
+        break;
       }
     }
     // Write updated settings
@@ -216,6 +228,8 @@ export class PeptidesModel {
           updateVars.add('clusterParams');
       }
     }
+    if (updateVars.has('sequenceSpaceParams'))
+      updateVars.delete('clusterParams');
 
     // Apply new settings
     for (const variable of updateVars) {
@@ -258,10 +272,15 @@ export class PeptidesModel {
         mpr.render();
         break;
       case 'sequenceSpaceParams':
-        this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
+      case 'showSequenceSpace':
+        if (this.settings!.showSequenceSpace)
+          this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
         break;
       case 'clusterParams':
         this.clusterEmbeddings();
+        break;
+      case 'mclSettings':
+        this.addMCLClusters();
         break;
       }
     }
@@ -1170,6 +1189,67 @@ export class PeptidesModel {
     gridCol && (gridCol.visible = false);
   }
 
+  async addMCLClusters(): Promise<void> {
+    if (this._mclViewer !== null) {
+      try {
+        this._mclViewer?.detach();
+        this._mclViewer?.close();
+      } catch (_) {}
+    }
+    if (this._mclCols.length !== 0)
+      this._mclCols.forEach((col) => this.df.columns.remove(col));
+    this._mclCols = [];
+    const seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
+    this.settings!.mclSettings ??= new type.MCLSettings();
+    const mclParams = this.settings?.mclSettings;
+
+    let counter = 0;
+    const addedColCount = 4;
+    const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
+      for (const col of colArgs.columns) {
+        if (col.name.toLowerCase().startsWith('embed') ||
+        col.name.toLowerCase().startsWith('cluster')) {
+          const gridCol = this.analysisView.grid.col(col.name);
+          if (gridCol == null || this._mclCols.includes(col.name))
+            continue;
+
+          gridCol.visible = false;
+          this._mclCols.push(col.name);
+          counter++;
+        }
+      }
+      if (counter === addedColCount)
+        columnAddedSub.unsubscribe();
+    });
+    const mclAdditionSub = grok.events.onViewerAdded.subscribe((info) => {
+      try {
+        const v = info.args.viewer as DG.ScatterPlotViewer;
+        if (v.type === DG.VIEWER.SCATTER_PLOT) {
+          if (this._sequenceSpaceViewer && this.analysisView.dockManager.findNode(this._sequenceSpaceViewer.root)) {
+            const rootNode = this.analysisView.dockManager.findNode(this._sequenceSpaceViewer.root);
+            setTimeout(() => {
+              this.analysisView.dockManager.dock(v, DG.DOCK_TYPE.FILL, rootNode);
+            });
+          }
+          mclAdditionSub.unsubscribe();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    const bioPreprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
+    const mclViewer = await markovCluster(
+      this.df, [seqCol], [mclParams!.distanceF], [1],
+      DistanceAggregationMethods.MANHATTAN, [bioPreprocessingFunc], [{
+        gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
+        fingerprintType: mclParams!.fingerprintType,
+      }], mclParams!.threshold, mclParams!.maxIterations,
+    );
+    mclAdditionSub.unsubscribe();
+    this._mclViewer = mclViewer ?? null;
+  }
+
   /**
    * Adds Sequence Space viewer to the analysis view
    */
@@ -1240,7 +1320,7 @@ export class PeptidesModel {
         if (col.name.toLowerCase().startsWith('embed_') ||
         ( seqSpaceSettings.clusterEmbeddings && col.name.toLowerCase().startsWith('cluster'))) {
           const gridCol = this.analysisView.grid.col(col.name);
-          if (gridCol == null)
+          if (gridCol == null || this._sequenceSpaceCols.includes(col.name))
             continue;
 
           gridCol.visible = false;
@@ -1252,8 +1332,25 @@ export class PeptidesModel {
         columnAddedSub.unsubscribe();
     });
 
+    const seqSpaceAdditionSub = grok.events.onViewerAdded.subscribe((info) => {
+      try {
+        const v = info.args.viewer as DG.ScatterPlotViewer;
+        if (v.type === DG.VIEWER.SCATTER_PLOT) {
+          if (this._mclViewer && this.analysisView.dockManager.findNode(this._mclViewer.root)) {
+            const rootNode = this.analysisView.dockManager.findNode(this._mclViewer.root);
+            setTimeout(() => {
+              this.analysisView.dockManager.dock(v, DG.DOCK_TYPE.FILL, rootNode);
+            });
+          }
+          seqSpaceAdditionSub.unsubscribe();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined =
       await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
+    seqSpaceAdditionSub.unsubscribe();
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
 
