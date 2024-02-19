@@ -8,7 +8,7 @@ import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {stemCash, getMarkedString, setStemmingCash,
   getClosest, getEmbeddingsAdv} from './stemming-tools/stemming-tools';
-import {modifyMetric} from './stemming-tools/stemming-ui';
+import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER} from './stemming-tools/constants';
 import '../css/stemming-search.css';
 
@@ -222,8 +222,8 @@ export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
   ]);
 }
 
-//top-menu: ML | Text Embeddings...
-//name: Compute Text Embeddings
+//top-menu: ML | Text Embeddings OLD...
+//name: Compute Text Embeddings OLD
 //description: Compute text embeddings using UMAP
 //input: dataframe table {caption: Table; category: Data}
 //input: column source {type: string; caption: Table; category: Data}
@@ -234,7 +234,7 @@ export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
 //input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
 //input: bool inNewView = true {caption: New view; category: Results} [Provide results in a new view?]
 //input: bool showScatter = true {caption: Scatter plot; category: Results} [Add a scatteplot with embeddings.]
-export function computeEmbds(table: DG.DataFrame, source: DG.Column, components: number, epochs: number,
+export function computeEmbdsOLD(table: DG.DataFrame, source: DG.Column, components: number, epochs: number,
   neighbors: number, minDist: number, spread: number, newView: boolean, showScatter: boolean): void {
   const start = new Date().getTime();
   const embds = getEmbeddingsAdv(table, source, components, epochs, neighbors, minDist, spread);
@@ -255,6 +255,13 @@ export function computeEmbds(table: DG.DataFrame, source: DG.Column, components:
     if (showScatter)
       view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: embds[0].name, y: embds[embds.length - 1].name});
   }
+}
+
+//top-menu: ML | Text Embeddings...
+//name: Compute Text Embeddings
+//description: Compute text embeddings using UMAP
+export function computeEmbds(): void {
+  runTextEmdsComputing();
 }
 
 //name: Process Embeddings

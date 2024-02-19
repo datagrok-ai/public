@@ -9,6 +9,9 @@ export const INFTY = 100000;
 /** A small number. */
 export const TINY = 0.000001;
 
+/** Frequency for polar angle */
+export const POLAR_FREQ = 10;
+
 /** Minimal number of characters in a word. */
 export const MIN_CHAR_COUNT = 1;
 
@@ -49,3 +52,6 @@ export const SEPARATORS = '[].,:;?!(){} \n\t#';
 
 /** Delimeter of stemming-based search results */
 export const DELIMETER = '________________________________';
+
+/** Text semantic type */
+export const TEXT_SEM_TYPE = 'Text';

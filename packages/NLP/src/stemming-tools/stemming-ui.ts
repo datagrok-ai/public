@@ -1,11 +1,13 @@
 /* eslint-disable valid-jsdoc */
 
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MetricInfo, getDefaultMetric, getMetricTypesChoicesList,
   DISTANCE_TYPE, DIST_TYPES_ARR} from './metrics';
-import {stemCash, ColUseInfo} from './stemming-tools';
+import {stemCash, ColUseInfo, getEmbeddingsAdv} from './stemming-tools';
+import {TEXT_SEM_TYPE, TINY, POLAR_FREQ} from './constants';
 
 /** Modify similarity metric. */
 export function modifyMetric(df: DG.DataFrame): void {
@@ -122,3 +124,162 @@ export function modifyMetric(df: DG.DataFrame): void {
     })
     .show({x: 300, y: 300});
 } // modifyMetric
+
+/**  */
+export function runTextEmdsComputing(): void {
+  const df = grok.shell.t;
+
+  if (df === null) {
+    grok.shell.warning('Open dataframe with text column');
+    return;
+  }
+
+  const columns = df.columns;
+  const textColNames = [] as string[];
+
+  for (const col of columns) {
+    if (col.semType === TEXT_SEM_TYPE)
+    textColNames.push(col.name);
+  }
+
+  if (textColNames.length === 0) {
+    grok.shell.warning(`No columns with the "${TEXT_SEM_TYPE}" quality`);
+    return;
+  }
+
+  const computingProps = [
+    {"name": "texts", "inputType": "Choice", choices: textColNames, "description": "Name of target text column", "nullable": false},
+    {"name": "inPlace", "caption": "In-place", "inputType": "Bool", "description": "Defines whether to add results to the current table or provide them in a new view"},
+    {"name": "addVis", "caption": "Visualize", "inputType": "Bool", "description": "Defines whether to add a scatteplot with marked embeddings"},
+  ].map((p) => DG.Property.fromOptions(p));  
+
+  const computingOptions = {
+    texts: textColNames[0],
+    inPlace: true,
+    addVis: true,
+  };
+
+  const computingOptionsForm = ui.input.form(computingOptions, computingProps);
+
+  const umapProps = [
+    {"name": "components", "inputType": "Int", "showPlusMinus": true, min: 2, max: 10, "nullable": false,  "description": "The number of components (dimensions) to project the data to"},
+    {"name": "epochs", "inputType": "Int", "showPlusMinus": true, min: 20, max: 800, step: 20, "nullable": false, "description": "The number of epochs to optimize embeddings"},
+    {"name": "neighbors", "inputType": "Int", "showPlusMinus": true, min: 2, max: 20, "nullable": false, "description": "The number of nearest neighbors to construct the fuzzy manifold"},
+    {"name": "minDist", "caption": "min dist", "inputType": "Float", min: 0.001, max: 2, step: 0.001, "nullable": false, "showSlider": true, "description": "The effective minimum distance between embedded points"},
+    {"name": "spread", "inputType": "Float", min: 1, max: 5, step: 1, "showSlider": true, "nullable": false, "description": "The effective scale of embedded points"},
+  ].map((p) => DG.Property.fromOptions(p));
+
+  const umapOptions = {
+    components: 2,
+    epochs: 100,
+    neighbors: 4,
+    minDist: 0.001,
+    spread: 1,
+  };
+
+  const umapOptionsForm = ui.input.form(umapOptions, umapProps);
+
+  const acc = ui.accordion();
+
+  const umapPane = acc.addPane('UMAP', () => umapOptionsForm);
+  ui.tooltip.bind(umapPane.root, 'Press to edit UMAP settings');
+
+  const distPane = acc.addPane('Distance', () => ui.link('Foo', ''));
+  ui.tooltip.bind(distPane.root, 'Press to edit distance');  
+
+  const dlg = ui.dialog({title: 'Compute embeddings', helpUrl: '/help/explore/text-embeddings'});
+
+  const runComputations = () => {
+    dlg.close();
+
+    try {
+      const targetCol: DG.Column = df.col(computingOptions.texts)!;
+      const embds = getEmbeddingsAdv(
+        df, 
+        targetCol, 
+        umapOptions.components, 
+        umapOptions.epochs, 
+        umapOptions.neighbors, 
+        umapOptions.minDist, 
+        umapOptions.spread,
+      );
+
+      if (computingOptions.inPlace) {
+        for (const col of embds) {
+          col.name = columns.getUnusedName(col.name);
+          columns.add(col);
+        }
+      }
+      else {
+        const embdsTable = DG.DataFrame.fromColumns([targetCol].concat(embds));
+        embdsTable.name = `'${targetCol.name}' embeddings`;
+        grok.shell.addTableView(embdsTable);
+      }
+
+      if (computingOptions.addVis) {
+        const rowCount = df.rowCount;
+
+        const markerSize = new Float32Array(rowCount);
+        const markerColor = new Float32Array(rowCount);
+
+        const xMean = embds[0].stats.avg;
+        const xStd = embds[0].stats.stdev + TINY; // TINY is added to prevent division by zero
+        const xRaw = embds[0].getRawData();
+        const yMean = embds[1].stats.avg;
+        const yStd = embds[1].stats.stdev + TINY;
+        const yRaw = embds[1].getRawData();
+
+        let xNorm: number;
+        let yNorm: number;
+        let radius: number;
+        let angle: number;
+
+        // Marker size & color are specified using polar coordinates
+        for (let i = 0; i < rowCount; ++i) {
+          // get normalized embeddings
+          xNorm = (xRaw[i] - xMean) / xStd;
+          yNorm = (yRaw[i] - yMean) / yStd;
+          
+          // compute polar coordinates
+          radius = Math.sqrt(xNorm**2 + yNorm**2);
+          angle = Math.acos(xNorm / (radius + TINY)) * (yNorm > 0 ? 1 : -1);
+
+          // heuristics
+          markerSize[i] = radius;
+          markerColor[i] = Math.sin(1.0 / (TINY + Math.log(radius + TINY))) * Math.sin(POLAR_FREQ * angle);
+        }
+
+        const sizeCol = DG.Column.fromFloat32Array('embeddings size', markerSize);
+        const colorCol = DG.Column.fromFloat32Array('embeddings color', markerColor);
+
+        sizeCol.name = columns.getUnusedName(sizeCol.name);
+        colorCol.name = columns.getUnusedName(colorCol.name);
+
+        const v = grok.shell.v as DG.TableView;
+        const t = v.table!;
+        t.columns.add(sizeCol);
+        t.columns.add(colorCol);
+        v.grid.columns.setVisible(t.columns.names().filter((name) => ![sizeCol.name, colorCol.name].includes(name)));
+        v.addViewer(DG.VIEWER.SCATTER_PLOT, {
+          xColumnName: embds[0].name,
+          yColumnName: embds[1].name,
+          colorColumnName: colorCol.name,
+          sizeColumnName: sizeCol.name,
+          jitterSize: 6,
+        });
+      }
+    } 
+    catch (error) {
+      grok.shell.error((error instanceof Error) ? error.message : 'Core issue');
+    }
+  };
+
+  dlg.addButton('Run', runComputations, undefined, 'Compute text embeddings using the UMAP method')
+
+  dlg
+    .add(computingOptionsForm)
+    .add(acc)
+    .show();
+
+  grok.shell.v.append(dlg);
+}
