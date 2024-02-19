@@ -14,6 +14,7 @@ import {HELM_JSON_SCHEMA_PATH} from './consts';
 import {MonomerLibFileEventManager} from './event-manager';
 
 import {MonomerLibFileValidator} from './file-validator';
+import {MonomerLibManager} from '../lib-manager';
 
 /** Singleton for adding, validation and reading of monomer library files.
  * All files **must** be aligned to the HELM standard before adding. */
@@ -127,8 +128,10 @@ export class MonomerLibFileManager {
 
     const validLibraryPaths = filePaths.filter((path) => !invalidFiles.includes(path));
 
-    if (this.fileListHasChanged(validLibraryPaths))
+    if (this.fileListHasChanged(validLibraryPaths)) {
       this.libraryEventManager.changeValidFilesPathList(validLibraryPaths);
+      MonomerLibManager.instance.loadLibraries(true);
+    }
     // console.log(`files after validation:`, this.libraryEventManager.getValidFilesPathList());
 
     if (validLibraryPaths.some((el) => !el.endsWith('.json')))
