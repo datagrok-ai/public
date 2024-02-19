@@ -48,7 +48,7 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running ADMETox...');
   const smilesColumn = await extractSmilesColumn(molColumn);
   const csvString = DG.DataFrame.fromColumns([smilesColumn]).toCsv();
-  progressIndicator.update(10, 'Getting predictions...');
+  progressIndicator.update(10, 'Predicting...');
 
   try {
     const admetoxResults = await runAdmetox(csvString, properties, String(includeProbabilities));

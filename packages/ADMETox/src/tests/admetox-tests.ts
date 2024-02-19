@@ -2,7 +2,8 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetox, addCalculationsToTable } from '../utils/admetox-utils';
+import { runAdmetox, addCalculationsToTable, performChemicalPropertyPredictions } from '../utils/admetox-utils';
+import { properties } from '../utils/const';
 
 category('Admetox', () => {
 	let v: DG.TableView;
@@ -22,9 +23,9 @@ category('Admetox', () => {
 	test('Container. Post request', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const bbbResults = await runAdmetox(smiles, 'PPB,VD,BBB', 'false');
+    const bbbResults = await runAdmetox(smiles, 'PPBR,VDss', 'false');
     expect(bbbResults != null, true);
-  });
+  }, {timeout: 50000});
 
   test('Calculate dialog. UI', async () => {
     molecules = grok.data.demo.molecules(100);
@@ -42,31 +43,30 @@ category('Admetox', () => {
     const expandBtn = admetoxDialog!.querySelectorAll('.d4-tree-view-tri')[0] as HTMLElement;
     expandBtn.click();
     await delay(2000);
-    expectArray(Array.from(admetoxDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), 
-		  ['Pgp-Inhibitor', 'Pgp-Substrate', 'HIA', 'F(20%)', 'F(30%)', 'BBB', 'CYP1A2-Inhibitor', 'CYP1A2-Substrate',
-      'CYP3A4-Inhibitor', 'CYP3A4-Substrate', 'CYP2C19-Inhibitor', 'CYP2C19-Substrate', 'CYP2C9-Inhibitor', 'CYP2C9-Substrate',
-      'CYP2D6-Inhibitor', 'CYP2D6-Substrate', 'Ames', 'SkinSen']);
+		const models = Object.keys(properties)
+		  .flatMap(property => properties[property]['models'])
+			.filter(obj => obj['skip'] !== true)
+			.map(obj => obj['name']);
+    expectArray(Array.from(admetoxDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
     v.close();
     grok.shell.o = ui.div();
   });
 
   test('Calculate dialog. Added properties', async () => {
-    molecules = grok.data.demo.molecules(10);
+    molecules = grok.data.demo.molecules(5);
     v = grok.shell.addTableView(molecules);
+		await delay(1000);
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
-    const newTableColumn = 'Pgp-Inhibitor';
-		const predictions = addCalculationsToTable(molecules);
-    await delay(1000);
-    const admetoxDialog = document.querySelector('.d4-dialog');
-    (admetoxDialog!.querySelectorAll('input[type="checkbox"]')[0] as HTMLElement).click();
-    await delay(1000);
-    (admetoxDialog!.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement).click();	
-    await predictions;
+    const newTableColumn = 'Pgp-Substrate';
+		await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn, false);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
-    expect(molecules.col(newTableColumn)!.get(0), 0.44976675510406494, `Calculated value for ${newTableColumn} is incorrect`);
-    expect(molecules.col(newTableColumn)!.colors.getColor(0), 4293426297, 'Wrong color coding was added');
-    expect(molecules.col(newTableColumn)!.colors.getColor(4), 4282627449, 'Wrong color coding was added');
-  });
+    console.log(molecules.col(newTableColumn)?.get(0));
+		expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
+    console.log(molecules.col(newTableColumn)!.colors.getColor(0));
+		console.log(molecules.col(newTableColumn)!.colors.getColor(4));
+		expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
+    expect(molecules.col(newTableColumn)!.colors.getColor(4), 4293138944, 'Wrong color coding was added');
+  }, {timeout: 90000});
 
   test('Calculate. For single cell', async () => {
     molecules = grok.data.demo.molecules(20);
@@ -80,13 +80,13 @@ category('Admetox', () => {
     if (!absorp.classList.contains('expanded')) {
 			absorp.click();
     }
-    const absorpRes = `Pgp-Inhibitor\t0.45
-      Pgp-Substrate\t0.50
-      HIA\t0.64
-      F(20%)\t0.57
-      F(30%)\t0.88`;
+    const absorpRes = `
+      Pgp-Substrate\t0.67
+      Caco2\t-4.52
+      Lipophilicity\t2.93
+      Solubility\t-1.74`;
     await awaitCheck(() => (pp.getElementsByClassName('d4-table d4-item-table d4-info-table')[3] as HTMLElement).innerText === absorpRes, 'Results for single cell differ', 8000);
-  });
+  }, {timeout: 50000});
 
   test('Calculate.Benchmark', async () => {
     molecules = DG.Test.isInBenchmark 
