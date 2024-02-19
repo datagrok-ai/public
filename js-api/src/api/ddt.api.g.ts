@@ -55,8 +55,6 @@ export class Tags {
 
   static CellRenderer = 'cell.renderer';
 
-  static PredefinedCellRenderer = '.predefined.cell.renderer';
-
   /// Comma-separated list of domains the entity belongs to
   static Domains = 'domains';
 
@@ -154,7 +152,7 @@ export class Tags {
 
   static DataQueryName = 'DataQuery.name';
 
-  static DataQueryCall = '.DataQuery.query.call';
+  static DataQueryFinished = '.DataQuery.query.finished';
 
   static Presentation = '.presentation';
 
@@ -213,6 +211,15 @@ export class Tags {
   /// Used for dynamic forms construction, etc
   static Hierarchy = 'hierarchy';
 
+  /// Links column and db property
+  static DbPropertyName = 'dbPropertyName';
+
+  /// Links column and db property schema
+  static DbPropertySchema = 'dbPropertySchema';
+
+  /// Specifies the column that has entity key
+  static DbPropertyReference = 'dbPropertyReference';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
@@ -245,7 +252,10 @@ export class FuncOptions {
   static VisibilityCondition = 'condition';
 
   /// Demo path, such as 'Viewers | Radar'
-  static DemoPath = 'condition';
+  static DemoPath = 'demoPath';
+
+  /// Path in the browse tree, such as 'Oligo'
+  static BrowsePath = 'browsePath';
 
   /// Viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | <ViewerPath>)
   static ViewerPath = 'viewerPath';
@@ -271,6 +281,9 @@ export class FuncOptions {
 
   /// Cron string that specifies when the cache is invalidated
   static CacheInvalidateOn = 'cache.invalidateOn';
+
+  /// Specifies the position of the viewer (top, bottom, left, right, fill, auto)
+  static ViewerPosition = 'viewerPosition';
 
 }
 export class FuncParamOptions {

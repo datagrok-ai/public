@@ -37,7 +37,7 @@ public class DataFrame {
     }
 
     public void addColumns(Column[] cols) {
-        if (cols.length > 0) {
+        if (cols != null && cols.length > 0) {
             Column column = cols[0];
             if (column.getType().equals(Types.COLUMN_LIST)) {
                 Column column1 = (Column) column.get(0);

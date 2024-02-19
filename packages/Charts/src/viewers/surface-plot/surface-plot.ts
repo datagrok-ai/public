@@ -35,8 +35,8 @@ export class SurfacePlot extends EChartViewer {
     const y = this.switch(a, b, 1, this.YArr.type);
     return y || x;
   };
-  filter = () => {
-    const ind = Array.from(this.dataFrame.filter.getSelectedIndexes());
+  plotFilter = () => {
+    const ind = Array.from(this.filter.getSelectedIndexes());
     return ind.map((id) => this.rawData[id]);
   };
   switch = (a: any[], b: any[], n: number, type: string) => {
@@ -150,8 +150,8 @@ export class SurfacePlot extends EChartViewer {
       return;
     }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(() => this.render(false)));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
+    this.colsDict = {};
     const num = Array.from(this.dataFrame.columns);
     num.forEach((c) => {
       let type: string;
@@ -232,6 +232,10 @@ export class SurfacePlot extends EChartViewer {
       case 'wireframe':
         this.wireframe = newVal;
         break;
+      case 'table':
+        this.updateTable();
+        this.onTableAttached();
+        return;
       }
       this.render();
     }
@@ -270,8 +274,9 @@ export class SurfacePlot extends EChartViewer {
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 
-    if (filter) this.option.series[0].data = this.filter().sort(this.sort);
+    if (filter) this.option.series[0].data = this.plotFilter().sort(this.sort);
     else this.option.series[0].data = this.rawData.sort(this.sort);
+    this.chart.resize();
     this.chart.setOption(this.option);
   }
 }

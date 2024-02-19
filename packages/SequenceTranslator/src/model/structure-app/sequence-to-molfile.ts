@@ -219,7 +219,7 @@ export class SequenceToMolfileConverter {
 
 
   private linkV3000(molBlocks: string[], useChirality: boolean = true): string {
-    let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
+    let macroMolBlock = '\n  Datagrok macromolecule handler\n\n';
     macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
     macroMolBlock += 'M  V30 BEGIN CTAB\n';
     let atomBlock = '';

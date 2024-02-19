@@ -83,6 +83,8 @@ Read more about package development in [Datagrok's documentation](https://datagr
 - `api` creates wrapper functions for package scripts and queries. The output is stored in files `/src/scripts-api.ts`
   and `/src/queries-api.ts` respectively.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
+Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.
+For more information on configuring connections, refer to the [Connections](https://datagrok.ai/help/develop#connections) article.
 
   ```shell
   cd <package-name>
@@ -129,8 +131,10 @@ Read more about package development in [Datagrok's documentation](https://datagr
   | host           | Specify server alias                                                      |
   | record         | Records the test execution process in mp4 format                          |
   | report         | Sends a report on test results                                            |
-  | skip-build     | Skips package build step                                                   |
-  | skip-publish   | Skips package publish step                                                 |
+  | skip-build     | Skips package build step                                                  |
+  | skip-publish   | Skips package publish step                                                |
   | verbose        | Prints detailed information about passed and skipped tests in the console |
+  | platform       | Runs only platform tests (applicable for ApiTests package only)           |
+  | core           | Runs package & core tests (applicable  for DevTools package only)         |
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.

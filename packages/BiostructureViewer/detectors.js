@@ -9,14 +9,25 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //meta.skipTest: #2596, Fix for test data in the utils library
   detectPdb(col) {
-    let res = null;
     if (DG.Detector.sampleCategories(col,
-      (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+      // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+      (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
+        (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+    )) {
+      col.setTag(DG.TAGS.UNITS, 'pdb');
+      return 'Molecule3D';
+    } else if (DG.Detector.sampleCategories(col,
+      (s) => s.match(/^MODEL/m) && s.match(/^ENDMDL/m) &&
+        (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+      1)
     ) {
-      res = 'Molecule3D';
+      col.setTag(DG.TAGS.UNITS, 'pdbqt');
+      return 'Molecule3D';
     }
-    return res;
+
+    return null;
   }
 
   //tags: semTypeDetector
@@ -56,7 +67,8 @@ class BiostructureViewerPackageDetectors extends DG.Package {
         ) {
           grok.functions.call('BiostructureViewer:addContextMenu', {event: event})
             .catch((err) => {
-              grok.shell.error(err.message);
+              this.logger.error('addContextMenu must not throw any exception');
+              this.logger.error(error);
             });
         }
       }

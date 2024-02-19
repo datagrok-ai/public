@@ -71,7 +71,7 @@ function uiCensusDialog(): DG.Dialog {
   const txtDatasets = ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}});
   const arr = [inpSearch, inpLocation, choinpPeriod, txtDatasets, inputGrid.root];
 
-  const inputs = ui.inputs(arr as Iterable<DG.InputBase<any>>, 'ui-form-condensed');
+  const inputs = ui.div(arr, 'ui-form-condensed');
   const title = ui.h2('1990 Population Esimates - 1990-2000 Intercensal Esimates: United States, Nevada');
 
   const description = ui.p('Monthly Intercensal Esimates...');

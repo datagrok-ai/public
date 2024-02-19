@@ -2,8 +2,8 @@
   "name": "@datagrok/enamine-store",
   "version": "1.0.2",
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "fullName": "Enamine Store",
   "description": "Integration with Enamine. Allows to search for molecules available in Enamine, and provides contextual information for the current molecule.",

@@ -283,12 +283,17 @@ export class HistoryPanel {
     ui.dialog({title: `Delete ${funcCalls.size} ${funcCalls.size > 1 ? 'runs': 'run'}`})
       .add(ui.divText(`Deleted ${funcCalls.size} ${funcCalls.size > 1 ? 'runs': 'run'} ${funcCalls.size > 1 ? 'are': 'is'} impossible to restore. Are you sure?`))
       .onOK(async () => {
-        funcCalls.forEach(async (funcCall) => {
-          this.beforeRunDeleted.next(funcCall.id);
-          this.selectedCallsSet.delete(funcCall);
-          await historyUtils.deleteRun(funcCall);
-          this.afterRunDeleted.next(funcCall.id);
-        });
+        ui.setUpdateIndicator(this.tabs.root, true);
+        await Promise.all(
+          wu(funcCalls.values()).map(async (funcCall) => {
+            this.beforeRunDeleted.next(funcCall.id);
+            this.selectedCallsSet.delete(funcCall);
+            await historyUtils.deleteRun(funcCall);
+            this.afterRunDeleted.next(funcCall.id);
+
+            return Promise.resolve();
+          }));
+        ui.setUpdateIndicator(this.tabs.root, false);
       })
       .show({center: true});
   };
@@ -309,7 +314,7 @@ export class HistoryPanel {
   }
 
   updateFavoritesPane(favoriteRuns: DG.FuncCall[]) {
-    const favCards = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'hi-no-elements-label');
+    const favCards = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'hp-no-elements-label');
     const favTab = ui.divV([
       this.favoritesPaneFilter,
       this.favActionsSection,
@@ -321,7 +326,7 @@ export class HistoryPanel {
   };
 
   updateMyPane(myRuns: DG.FuncCall[]) {
-    const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'hi-no-elements-label');
+    const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'hp-no-elements-label');
     const newTab = ui.divV([
       this.myPaneFilter,
       this.myActionsSection,
@@ -339,6 +344,14 @@ export class HistoryPanel {
     icon.style.fontSize = '20px';
     const cardLabel = ui.label(funcCall.options['title'] ?? funcCall.author.friendlyName, {style: {'color': 'var(--blue-1)'}});
     ui.bind(funcCall.author, icon);
+
+    const addToFavorites = ui.iconFA('star', async (ev) => {
+      ev.stopPropagation();
+      ui.setUpdateIndicator(this.tabs.root, true);
+      await this.addRunToFavorites(funcCall);
+      ui.setUpdateIndicator(this.tabs.root, false);
+    }, 'Add to favorites');
+    addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const addToSelected = ui.iconFA('square', (ev) => {
       ev.stopPropagation();
@@ -371,7 +384,7 @@ export class HistoryPanel {
     const editIcon = ui.iconFA('edit', (ev) => {
       ev.stopPropagation();
       this.showEditDialog(funcCall);
-    }, 'Edit selected run');
+    }, 'Edit selected run metadata');
     editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
@@ -382,8 +395,13 @@ export class HistoryPanel {
     }, 'Delete selected runs');
     deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
-    const favoritedIcon = ui.iconFA('star', null, 'Unfavorite the run');
-    favoritedIcon.classList.add('fas', 'hp-funccall-card-def-icon');
+    const favoritedIcon = ui.iconFA('star', async (ev) => {
+      ev.stopPropagation();
+      ui.setUpdateIndicator(this.tabs.root, true);
+      await this.removeRunFromFavorites(funcCall);
+      ui.setUpdateIndicator(this.tabs.root, false);
+    }, 'Unfavorite the run');
+    favoritedIcon.classList.add('fas', 'hp-funccall-card-icon');
 
     const dateStarted = new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
 
@@ -399,8 +417,8 @@ export class HistoryPanel {
         ], 'hp-card-content'),
       ]),
       ui.divH([
+        ...(funcCall.options['isFavorite']) ? [favoritedIcon] : [addToFavorites],
         editIcon, deleteIcon,
-        ...(funcCall.options['isFavorite']) ? [favoritedIcon] : [],
         addToSelected, removeFromSelected,
       ]),
     ], 'hp-funccall-card');
@@ -425,7 +443,7 @@ export class HistoryPanel {
   }
 
   showEditDialog(funcCall: DG.FuncCall) {
-    const dlg = ui.dialog({title: 'Edit run'});
+    const dlg = ui.dialog({title: 'Edit run metadata'});
 
     let title = funcCall.options['title'] ?? '';
     let description = funcCall.options['description'] ?? '';
@@ -517,6 +535,7 @@ export class HistoryPanel {
 
   constructor(
     private func: DG.Func,
+    private isParentFunc = false,
   ) {
     this.tabs.root.style.width = '100%';
     this.tabs.root.style.height = '100%';

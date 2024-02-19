@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import {BiostructureData, BiostructureDataJson} from '../pdb/types';
 import {IViewer} from './viewer';
 import {PdbResDataFrameType} from '../pdb/pdb-helper';
 import {TAGS as pdbTAGS} from '../pdb/index';
@@ -33,18 +34,19 @@ export enum PluginLayoutControlsDisplayType {
   REACTIVE = 'reactive'
 }
 
-export type MolstarDataType = {
-  ext: string, data: string | Uint8Array, options?: { dataLabel?: string, },
-};
-
 export const BiostructurePropsDefault = new class {
   // -- Data --
-  dataJson: string = 'null';
+  dataJson: string = BiostructureDataJson.empty;
   pdb: string | null = null;
   pdbTag: string | null = pdbTAGS.PDB;
+
+  biostructureIdColumnName: string | null = null;
+  /** DG.Func nqName */
+  biostructureDataProvider: string | null = null;
+
   ligandColumnName: string | null = null;
-  pdbProvider: string = 'rcsb';
-  emdbProvider: string = 'rcsb';
+  // pdbProvider: string = 'rcsb';
+  // emdbProvider: string = 'rcsb';
 
   // -- Style --
   representation: RepresentationType = RepresentationType.Cartoon;
@@ -102,6 +104,7 @@ export const BiostructurePropsDefault = new class {
 export type BiostructureProps = typeof BiostructurePropsDefault;
 
 export interface IBiostructureViewer extends IViewer {
+  get dataEff(): BiostructureData | null;
   setOptions(options: Partial<BiostructureProps>): void;
 }
 
@@ -115,4 +118,10 @@ declare module 'datagrok-api/dg' {
     // eslint-disable-next-line max-len
     fromType(viewerType: 'Biostructure', options: Partial<BiostructureProps>): Promise<DG.Viewer<BiostructureProps> & IBiostructureViewer>;
   }
+}
+
+export async function viewBiostructure(content: string, format: string = 'pdb', name?: string): Promise<void> {
+  const packageName: string = 'BiostructureViewer';
+  const funcName: string = 'viewBiostructure';
+  await grok.functions.call(`${packageName}:${funcName}`, {content, format, name});
 }

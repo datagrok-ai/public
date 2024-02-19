@@ -3,10 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {_package, sequenceSpaceTopMenu} from '../package';
-import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {getNormalizedEmbeddings} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/embeddings-space';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 enum EMBED_COL_NAMES {
   X = 'Embed_X',
@@ -38,8 +39,8 @@ export async function demoSequenceSpace(
 
       const t1: number = Date.now();
       _package.logger.debug('Bio: demoBio01aUI(), calc reduceDimensionality start...');
-      const redDimRes = await reduceDimensinalityWithNormalization( // TODO: Rename method typo
-        seqList, method, StringMetricsNames.Levenshtein, {});
+      const redDimRes = await getNormalizedEmbeddings( // TODO: Rename method typo
+        [seqList], method as any, [StringMetricsNames.Levenshtein], [1], 'MANHATTAN', {distanceFnArgs: [{}]});
       const t2: number = Date.now();
       _package.logger.debug('Bio: demoBio01aUI(), calc reduceDimensionality ' +
         `ET: ${((t2 - t1) / 1000)} s`);
@@ -47,7 +48,7 @@ export async function demoSequenceSpace(
       for (let embedI: number = 0; embedI < embedColNameList.length; embedI++) {
         const embedColName: string = embedColNameList[embedI];
         const embedCol: DG.Column = df.getCol(embedColName);
-        const embedColData: Float32Array = redDimRes.embedding[embedI];
+        const embedColData: Float32Array = redDimRes[embedI];
         // TODO: User DG.Column.setRawData()
         // embedCol.setRawData(embedColData);
         embedCol.init((rowI) => { return embedColData[rowI]; });
@@ -63,8 +64,9 @@ export async function demoSequenceSpace(
       'lassoTool': true,
     })) as DG.ScatterPlotViewer;
   } else {
+    const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
     resSpaceViewer = (await sequenceSpaceTopMenu(df, df.getCol(colName),
-      DimReductionMethods.UMAP, MmDistanceFunctionsNames.LEVENSHTEIN, true)) as DG.ScatterPlotViewer;
+      DimReductionMethods.UMAP, MmDistanceFunctionsNames.LEVENSHTEIN, true, preprocessingFunc)) as DG.ScatterPlotViewer;
   }
   view.dockManager.dock(resSpaceViewer!, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
   return resSpaceViewer;

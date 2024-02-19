@@ -39,7 +39,10 @@ module.exports = (env, options) => ({
     topLevelAwait: true
   },
   resolve: {
-    fallback: { "url": false },
+    fallback: {
+      "url": false,
+      "perf_hooks": false
+    },
     extensions: ['.wasm', '.ts', '.mjs', '.js', '.json', '.tsx']
   },
   module: {
@@ -70,6 +73,7 @@ module.exports = (env, options) => ({
         test: /\.js$/,
         enforce: 'pre',
         use: ['source-map-loader'],
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,

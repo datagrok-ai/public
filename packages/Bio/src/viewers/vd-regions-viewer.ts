@@ -2,17 +2,20 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {fromEvent, Unsubscribable} from 'rxjs';
+import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {
   IVdRegionsViewer,
   VdRegion, VdRegionType,
   VdRegionsProps, VdRegionsPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+
 
 import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
-import {errInfo} from '../utils/err-info';
 
 import {_package} from '../package';
 
@@ -121,7 +124,14 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // -- Behavior --
     this.filterSource = this.string(PROPS.filterSource, defaults.filterSource,
       {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources)}) as FilterSources;
+
+    this.viewSyncer = new PromiseSyncer(_package.logger);
   }
+
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++VdRegionsViewer.viewerCounter;
+
+  private viewerToLog(): string { return `VdRegionsViewer<${this.viewerId}>`; }
 
   public async init() {
     //#region regionsDF with filter
@@ -153,19 +163,16 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   override detach() {
+    const logPrefix = `${this.viewerToLog()}.detach()`;
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
+    this.viewSyncer.sync(`${logPrefix}`, async () => { // detach
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
       }
       superDetach();
-    })
-      .catch((err: any) => {
-        const [errMsg, errStack] = errInfo(err);
-        _package.logger.error(errMsg, undefined, errStack);
-      });
+    });
   }
 
   override onTableAttached() {
@@ -228,13 +235,14 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
   public setData(regions: VdRegion[]) {
+    const logPrefix = `${this.viewerToLog()}.setData()`;
     // const setDataInId = ++this.setDataInCount;
-    _package.logger.debug('Bio: VdRegionsViewer.setData(), in, ' +
+    _package.logger.debug(`${logPrefix}, in, ` +
       // `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
       `regions.length = ${regions.length}`
     );
 
-    this.viewPromise = this.viewPromise.then(async () => { // setData
+    this.viewSyncer.sync(`${logPrefix}`, async () => { // setData
       // _package.logger.debug('Bio: VdRegionsViewer.setData(), in sync, ' +
       //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
       //   `regions.length = ${regions.length}`);
@@ -261,10 +269,6 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
           await this.buildView('setData');
           this.viewed = true;
         }
-      } catch (err: any) {
-        const [errMsg, errStack] = errInfo(err);
-        grok.shell.error(errMsg);
-        _package.logger.error(errMsg, undefined, errStack);
       } finally {
         // _package.logger.debug('Bio: VdRegionsViewer.setData(), finally, ' +
         //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
@@ -276,7 +280,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   // -- View --
 
-  private viewPromise: Promise<void> = Promise.resolve();
+  private viewSyncer: PromiseSyncer;
   private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
@@ -479,9 +483,10 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   private filterSourceInputOnValueChanged(): void {
+    const logPrefix = `${this.viewerToLog()}.filterSourceInputOnValueChanged()`;
     const filterSourceValue = this.filterSourceInput.value;
     // Using promise to prevent 'Bad state: Cannot fire new event. Controller is already firing an event'
-    this.viewPromise = this.viewPromise.then(() => {
+    this.viewSyncer.sync(`${logPrefix}`, async () => {
       if (this.filterSource !== filterSourceValue) {
         this.props.getProperty(PROPS.filterSource).set(this, filterSourceValue); // to update value in property panel
 
@@ -494,5 +499,30 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         }
       }
     });
+  }
+
+  // -- IRenderer --
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  public get onRendered(): Observable<void> { return this._onRendered; }
+
+  public invalidate(): void {
+    const logPrefix = `${this.viewerToLog()}.invalidate()`;
+    // Put the event trigger in the tail of the synced calls queue.
+    this.viewSyncer.sync(`${logPrefix}`, async () => {
+      // update view / render
+      this._onRendered.next();
+    });
+  }
+
+  public async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+    await testEvent(this.onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }

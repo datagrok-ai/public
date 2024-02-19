@@ -237,8 +237,6 @@ export interface IHistogramLookSettings {
 
   showCharts: boolean;
 
-  legendInViewerFiltering: boolean;
-
   marginLeft: number;
 
   marginTop: number;
@@ -482,6 +480,10 @@ export interface IScatterPlotLookSettings {
 
   categoricalColorScheme: Array<number>;
 
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
+
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
   /// set for the corresponding column.
   axesUseColumnFormat: boolean;
@@ -514,8 +516,6 @@ export interface IScatterPlotLookSettings {
 
   /// Requires *Auto Axis Size* to be turned off.
   yAxisWidth: number;
-
-  legendInViewerFiltering: boolean;
 
   axisFont: string;
 
@@ -715,8 +715,6 @@ export interface ILineChartLookSettings {
 
   rowGroupTooltip: string;
 
-  legendInViewerFiltering: boolean;
-
   innerChartMarginTop: number;
 
   innerChartMarginBottom: number;
@@ -807,6 +805,8 @@ export interface IBarChartLookSettings {
 
   showCategoryValues: boolean;
 
+  showValuesInsteadOfCategories: boolean;
+
   showCategorySelector: boolean;
 
   /// A categorical column to further split data on.
@@ -868,8 +868,6 @@ export interface IBarChartLookSettings {
 
   barBorderLineColor: number;
 
-  legendInViewerFiltering: boolean;
-
   outerMarginLeft: number;
 
   outerMarginRight: number;
@@ -877,6 +875,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
 
   showEmptyBars: boolean;
 
@@ -1086,8 +1088,6 @@ export interface IPieChartLookSettings {
 
   autoLayout: boolean;
 
-  legendInViewerFiltering: boolean;
-
   segmentAngleColumnName: string;
 
   segmentAngleAggrType: string;
@@ -1199,19 +1199,26 @@ export interface IMatrixPlotLookSettings {
 }
 
 export interface ISummaryLookSettings {
+  /// Column to show aggregation on
+  aggrColumnName: string;
+
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
-  /// List of aggregations for the columns
+  /// Aggregation that will be used for the columns
+  aggregation: string;
+
+  /// List of aggregations for the columns (temporarily unavailable from UI)
   aggregations: Array<string>;
 
-  /// Mode to visualize aggregation by filling the cell
-  cellFillMode: boolean;
+  /// Controls the source of the data comparison
+  /// * Row: shows vertical bars based on each row category
+  /// * Column: shows horizontal bars based on each column category
+  /// * Global: shows horizontal bars based on all selected categories
+  normalization: string;
 
-  /// Cell filling direction (left to right or bottom to top)
-  cellFillDirection: string;
-
-  visualizationType: string;
+  /// Visualization type (text, circles or bars)
+  visualization: string;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
@@ -1347,14 +1354,16 @@ export interface IGridLookSettings {
   allowBlockSelection: boolean;
 
   /// Shift+click on a header to select a column
+  /// Shift+mouse drag on the headers to select multiple columns
   /// Ctrl+click to invert selection
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Reorder rows by drag-and-dropping
+  /// Mouse drag on the rows header selects rows
+  /// Reorder rows by dragging them
   allowRowReordering: boolean;
 
-  /// Mouse drag on the row header selects rows
+  /// Mouse drag on the rows headers selects rows
   /// Ctrl+click to invert selection
   /// Shift+mouse drag to select multiple rows
   /// Ctrl+Shift+mouse drag to unselect
@@ -1368,7 +1377,7 @@ export interface IGridLookSettings {
   /// when the mouse is over its header
   allowColumnMenu: boolean;
 
-  /// Automatically scroll current row into view when this column becomes current
+  /// Automatically scroll column into view when this column becomes current
   autoScrollColumnIntoView: boolean;
 
   /// Automatically scroll current row into view when it is set from outside
@@ -1384,7 +1393,7 @@ export interface IGridLookSettings {
   /// when you click on a column header.
   allowChangeCurrentObject: boolean;
 
-  /// Whether row rows can be dragged out of the grid.
+  /// Whether row (rows) can be dragged out of the grid.
   allowRowDragging: boolean;
 
   extendLastColumn: boolean;
@@ -1450,6 +1459,10 @@ export interface IGridLookSettings {
   currentCellTextColor: number;
 
   rowHeaderBackColor: number;
+
+  /// true: colors are scaled based on the global min/max in all numerical columns
+  /// false: colors are scaled based on the column min/max.
+  globalColorScaling: boolean;
 
   /// Controls grid tooltip visibility
   showTooltip: string;
@@ -1552,6 +1565,8 @@ export interface ITrellisPlotLookSettings {
 
   viewerType: string;
 
+  filter: string;
+
   categoryLabelFont: string;
 
   innerViewerLooks: Map<string, any>;
@@ -1560,15 +1575,9 @@ export interface ITrellisPlotLookSettings {
 
   showGridlines: string;
 
-  legendInViewerFiltering: boolean;
-
   showXSelectors: boolean;
 
   showYSelectors: boolean;
-
-  showXAxes: boolean;
-
-  showYAxes: boolean;
 
   showXLabels: boolean;
 

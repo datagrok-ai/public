@@ -1,0 +1,80 @@
+HEADER    PROTEIN                                 30-NOV-23   NONE
+TITLE     NULL
+COMPND    NULL
+SOURCE    NULL
+KEYWDS    NULL
+EXPDTA    NULL
+AUTHOR    Marvin
+REVDAT   1   30-NOV-23         0
+HETATM    1  C   UNK     0       3.655   4.214  50.288  0.00  0.00           C+0
+HETATM    2  C   UNK     0       2.871   2.868  49.921  0.00  0.00           C+0
+HETATM    3  C   UNK     0       2.520   2.949  48.393  0.00  0.00           C+0
+HETATM    4  C   UNK     0       3.937   1.548  50.261  0.00  0.00           C+0
+HETATM    5  O   UNK     0       1.599   2.668  50.765  0.00  0.00           O+0
+HETATM    6  C   UNK     0       0.762   1.513  50.589  0.00  0.00           C+0
+HETATM    7  O   UNK     0      -0.338   1.360  51.214  0.00  0.00           O+0
+HETATM    8  N   UNK     0       1.199   0.575  49.614  0.00  0.00           N+0
+HETATM    9  C   UNK     0       0.571  -0.899  49.353  0.00  0.00           C+0
+HETATM   10  C   UNK     0       1.235  -1.647  47.961  0.00  0.00           C+0
+HETATM   11  C   UNK     0      -1.021  -1.011  49.543  0.00  0.00           C+0
+HETATM   12  C   UNK     0      -1.959  -0.035  48.951  0.00  0.00           C+0
+HETATM   13  C   UNK     0      -3.397  -0.041  49.261  0.00  0.00           C+0
+HETATM   14  C   UNK     0      -4.008  -1.131  50.020  0.00  0.00           C+0
+HETATM   15  C   UNK     0      -3.037  -2.166  50.502  0.00  0.00           C+0
+HETATM   16  C   UNK     0      -1.667  -2.157  50.227  0.00  0.00           C+0
+HETATM   17  O   UNK     0       2.337  -1.348  47.402  0.00  0.00           O+0
+HETATM   18  C   UNK     0       0.342  -2.713  47.122  0.00  0.00           C+0
+HETATM   19  C   UNK     0       4.008   2.191  44.437  0.00  0.00           C+0
+HETATM   20  C   UNK     0       2.398   2.398  44.311  0.00  0.00           C+0
+HETATM   21  C   UNK     0       2.273   4.053  44.451  0.00  0.00           C+0
+HETATM   22  C   UNK     0       1.842   1.773  42.919  0.00  0.00           C+0
+HETATM   23  O   UNK     0       1.732   1.669  45.460  0.00  0.00           O+0
+HETATM   24  C   UNK     0       0.931   0.480  45.444  0.00  0.00           C+0
+HETATM   25  O   UNK     0      -0.182   0.407  46.095  0.00  0.00           O+0
+HETATM   26  N   UNK     0       1.455  -0.642  44.689  0.00  0.00           N+0
+HETATM   27  C   UNK     0       0.636  -1.948  44.349  0.00  0.00           C+0
+HETATM   28  C   UNK     0       0.743  -3.022  45.571  0.00  0.00           C+0
+HETATM   29  C   UNK     0      -0.863  -1.472  43.997  0.00  0.00           C+0
+HETATM   30  C   UNK     0      -1.947  -1.528  44.935  0.00  0.00           C+0
+HETATM   31  C   UNK     0      -3.294  -1.185  44.593  0.00  0.00           C+0
+HETATM   32  C   UNK     0      -3.545  -0.618  43.287  0.00  0.00           C+0
+HETATM   33  C   UNK     0      -2.405  -0.356  42.420  0.00  0.00           C+0
+HETATM   34  C   UNK     0      -1.126  -0.762  42.792  0.00  0.00           C+0
+HETATM   35  O   UNK     0       1.132  -4.214  45.269  0.00  0.00           O+0
+CONECT    1    2
+CONECT    2    4    1    5    3
+CONECT    3    2
+CONECT    4    2
+CONECT    5    2    6
+CONECT    6    5    7    8
+CONECT    7    6
+CONECT    8    6    9
+CONECT    9   10   11    8
+CONECT   10    9   17   18
+CONECT   11    9   16   12
+CONECT   12   13   11
+CONECT   13   12   14
+CONECT   14   13   15
+CONECT   15   14   16
+CONECT   16   11   15
+CONECT   17   10
+CONECT   18   10   28
+CONECT   19   20
+CONECT   20   19   21   23   22
+CONECT   21   20
+CONECT   22   20
+CONECT   23   20   24
+CONECT   24   23   25   26
+CONECT   25   24
+CONECT   26   24   27
+CONECT   27   26   28   29
+CONECT   28   27   18   35
+CONECT   29   27   30   34
+CONECT   30   29   31
+CONECT   31   30   32
+CONECT   32   31   33
+CONECT   33   34   32
+CONECT   34   33   29
+CONECT   35   28
+MASTER        0    0    0    0    0    0    0    0   35    0   72    0
+END

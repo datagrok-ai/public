@@ -8,11 +8,13 @@
     "email": "vdyma@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.3.60",
+  "version": "6.4.8",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.0.11",
+    "@datagrok-libraries/math": "^1.0.7",
+    "@datagrok-libraries/utils": "^4.1.44",
     "@keckelt/tsne": "^1.0.2",
+    "@types/seedrandom": "^3.0.8",
     "cash-dom": "latest",
     "datagrok-api": "^1.16.0",
     "dayjs": "latest",
@@ -20,6 +22,7 @@
     "jaro-winkler-typescript": "^1.0.1",
     "ml-levenberg-marquardt": "^2.0.0",
     "rxjs": "^6.6.7",
+    "seedrandom": "^3.0.5",
     "umap-js": "^1.3.3"
   },
   "devDependencies": {

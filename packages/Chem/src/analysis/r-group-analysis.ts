@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {findRGroups} from '../scripts-api';
+import {findRGroups, findRGroupsWithCore} from '../scripts-api';
 import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
@@ -115,12 +115,32 @@ export function rGroupAnalysis(col: DG.Column): void {
       visualAnalysisCheck.root,
     ]))
     .onOK(async () => {
-      col = col.dataFrame.columns.byName(columnInput.value!);
-      const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
-      if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
-        grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
-        return;
+      const getPrefixIdx = (colPrefix: string) => {
+        let prefixIdx = 0;
+        col = col.dataFrame.columns.byName(columnInput.value!);
+        const re = new RegExp(`^${colPrefix}$`, 'i');
+        if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+          prefixIdx++;  
+          const maxPrefixIdx = 100;
+          for (let i = 0; i < maxPrefixIdx; i++) {
+            const reIdx = new RegExp(`^${colPrefix}_${prefixIdx}$`, 'i');
+            if(!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
+              break;
+            prefixIdx++;       
+          }
+          if (prefixIdx - 1 === maxPrefixIdx) {
+            grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+            return null;
+          }
+        }
+        return prefixIdx;
       }
+      const rGroupPrefixRe = `${columnPrefixInput.value}\\d+`;
+      const corePrefixRe = `Core`;
+      const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
+      const corePrefixIdx = getPrefixIdx(corePrefixRe);
+      if (rGroupPrefixIdx === null || corePrefixIdx === null)
+        return;
       const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');

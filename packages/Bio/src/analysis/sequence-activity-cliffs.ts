@@ -60,7 +60,7 @@ export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
 }
 
 export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivElement {
-  const tooltipElement = ui.divH([]);
+  const tooltipElement = ui.divH([], {style: {gap: '10px'}});
   const columnNames = ui.divV([
     ui.divText(params.seqCol.name),
     ui.divText(params.activityCol.name),
@@ -69,7 +69,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   columnNames.style.display = 'flex';
   columnNames.style.justifyContent = 'space-between';
   tooltipElement.append(columnNames);
-  params.line.mols.forEach((molIdx: number, _idx: number) => {
+  params.points.forEach((molIdx: number) => {
     const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
     activity.style.display = 'flex';
     activity.style.justifyContent = 'left';
@@ -99,7 +99,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 
   const sequencesArray = new Array<string>(2);
   const activitiesArray = new Array<number>(2);
-  params.line.mols.forEach((molIdx, idx) => {
+  params.points.forEach((molIdx, idx) => {
     sequencesArray[idx] = params.seqCol.get(molIdx);
     activitiesArray[idx] = params.activityCol.get(molIdx);
   });

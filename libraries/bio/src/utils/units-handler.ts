@@ -299,12 +299,11 @@ export class UnitsHandler {
    * @param {NOTATION} tgtNotation
    * @return {DG.Column}
    */
-  protected getNewColumn(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column<string> {
+  protected getNewColumn(tgtNotation: NOTATION, tgtSeparator?: string, colName?: string, data?: string[]): DG.Column<string> {
     const col = this.column;
-    const len = col.length;
     const name = tgtNotation.toLowerCase() + '(' + col.name + ')';
-    const newColName = col.dataFrame.columns.getUnusedName(name);
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
+    const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
+    const newColumn = DG.Column.fromList('string', newColName, data ?? new Array(this.column.length).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.setTag(DG.TAGS.UNITS, tgtNotation);
     if (tgtNotation === NOTATION.SEPARATOR) {
@@ -336,6 +335,11 @@ export class UnitsHandler {
 
     return newColumn;
   }
+
+  public getNewColumnFromList(name: string, list: string[]): DG.Column<string> {
+    return this.getNewColumn(this.notation, this.separator, name, list);
+  }
+
 
   /**
    * Create a new empty column using templateCol as a template
@@ -529,7 +533,10 @@ export class UnitsHandler {
     const convert: ConvertFunc = this.getConverter(tgtNotation, tgtSeparator);
     const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
     // assign the values to the newly created empty column
-    newColumn.init((rowI: number) => { return convert(this.column.get(rowI)); });
+    newColumn.init((rowI: number) => {
+      const sourceSequence = this.column.get(rowI);
+      return sourceSequence ? convert(sourceSequence) : sourceSequence;
+    });
     // newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     return newColumn;
   }
@@ -580,17 +587,22 @@ export class UnitsHandler {
     return regCol;
   }
 
+  private _joiner?: JoinerFunc = undefined;
+
   public getJoiner(): JoinerFunc {
-    const srcUh = this;
-    if (this.notation === NOTATION.FASTA)
-      return function(srcS: ISeqSplitted): string { return joinToFasta(srcUh, srcS); };
-    else if (this.notation === NOTATION.SEPARATOR)
-      return function(srcS: ISeqSplitted): string { return joinToSeparator(srcUh, srcS, srcUh.separator!); };
-    else if (this.notation === NOTATION.HELM) {
-      const isDnaOrRna = srcUh.alphabet === ALPHABET.DNA || srcUh.alphabet === ALPHABET.RNA;
-      return function(srcS: ISeqSplitted): string { return joinToHelm(srcUh, srcS, isDnaOrRna); };
-    } else
-      throw new Error();
+    if (this._joiner === undefined) {
+      const srcUh = this;
+      if (this.notation === NOTATION.FASTA)
+        this._joiner = function(srcS: ISeqSplitted): string { return joinToFasta(srcUh, srcS); };
+      else if (this.notation === NOTATION.SEPARATOR)
+        this._joiner = function(srcS: ISeqSplitted): string { return joinToSeparator(srcUh, srcS, srcUh.separator!); };
+      else if (this.notation === NOTATION.HELM) {
+        const isDnaOrRna = srcUh.alphabet === ALPHABET.DNA || srcUh.alphabet === ALPHABET.RNA;
+        this._joiner = function(srcS: ISeqSplitted): string { return joinToHelm(srcUh, srcS, isDnaOrRna); };
+      } else
+        throw new Error();
+    }
+    return this._joiner;
   }
 
   public getConverter(tgtUnits: NOTATION, tgtSeparator: string | undefined = undefined): ConvertFunc {

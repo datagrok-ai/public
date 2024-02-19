@@ -114,28 +114,35 @@ export class TreeHelper implements ITreeHelper {
     return !node ? ';' : `${toNewickInt(node)};`;
   }
 
-  getLeafList<TNode extends NodeType>(node: TNode | null): TNode[] {
+  getLeafList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
     if (!node) return [];
+    if (!list) list = [];
 
     if (isLeaf(node)) {
+      list.push(node);
       return [node]; // node is a leaf
     } else {
-      return ([] as TNode[]).concat(
-        ...(node.children ?? []).map((child) => this.getLeafList(child as TNode)));
+      for (const child of node.children ?? [])
+        this.getLeafList(child as TNode, list);
+      //(node.children ?? []).forEach((child) => this.getLeafList(child as TNode, list));
+      return list;
     }
   }
 
-  getNodeList<TNode extends NodeType>(node: TNode | null): TNode[] {
+  getNodeList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
     if (!node) return [];
-
+    if (!list) list = [];
     if (isLeaf(node)) {
+      list.push(node);
       return [node]; // node is a leaf
     } else {
-      const childNodeListList: TNode[][] = node.children!
-        .map((child) => { return this.getNodeList(child as TNode); });
-      return ([] as TNode[]).concat(
-        [node],
-        ...childNodeListList);
+      // const childNodeListList: TNode[][] = node.children!
+      //   .map((child) => { return this.getNodeList(child as TNode); });
+      // const childNodeListList: TNode[][] = [];
+      for (const child of node.children!)
+        this.getNodeList(child as TNode, list);
+      list.push(node);
+      return list;
     }
   }
 
@@ -160,9 +167,13 @@ export class TreeHelper implements ITreeHelper {
     if (isLeaf(resNode)) {
       return resNode.name in leaves ? resNode : null;
     } else {
-      resNode.children = node.children!
-        .map((child) => this.filterTreeByLeaves(child, leaves))
-        .filter((child) => child != null) as NodeType[];
+      resNode.children = [];
+      for (const child of node.children!) {
+        const resChild = this.filterTreeByLeaves(child, leaves);
+        if (resChild) resNode.children.push(resChild);
+      }
+      // .map((child) => this.filterTreeByLeaves(child, leaves))
+      // .filter((child) => child != null) as NodeType[];
 
       return resNode.children.length > 0 ? resNode : null;
     }
@@ -175,9 +186,14 @@ export class TreeHelper implements ITreeHelper {
       return node.name in leaves ? [node] : [];
     } else {
       const children: TNode[] = node.children as TNode[] ?? [];
-      const childrenRes: TNode[] = children.map((child) => {
-        return this.getNodesByLeaves(child, leaves);
-      }).flat();
+      const childrenRes: TNode[] = [];
+      for (const child of children) {
+        const childRes = this.getNodesByLeaves(child, leaves);
+        childrenRes.push(...childRes);
+      }
+      //  children.map((child) => {
+      //   return this.getNodesByLeaves(child, leaves);
+      // }).flat();
 
       return (childrenRes.length == children.length &&
         children.every((child, i) => child == childrenRes[i])) ? [node] : childrenRes;
@@ -476,6 +492,33 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
+  async encodeSequences(seqs: DG.Column): Promise<string[]> {
+    const ncUH = UnitsHandler.getOrCreate(seqs);
+    const seqList = seqs.toList();
+    const splitter = ncUH.getSplitter();
+    const seqColLength = seqList.length;
+    let charCodeCounter = 36;
+    const charCodeMap = new Map<string, string>();
+    for (let i = 0; i < seqColLength; i++) {
+      const seq = seqList[i];
+      if (seqList[i] === null || seqs.isNone(i)) {
+        seqList[i] = null;
+        continue;
+      }
+      seqList[i] = '';
+      const splittedSeq = splitter(seq);
+      for (let j = 0; j < splittedSeq.length; j++) {
+        const char = splittedSeq[j];
+        if (!charCodeMap.has(char)) {
+          charCodeMap.set(char, String.fromCharCode(charCodeCounter));
+          charCodeCounter++;
+        }
+        seqList[i] += charCodeMap.get(char)!;
+      }
+    }
+    return seqList;
+  }
+
   async calcDistanceMatrix(
     df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean,
   ) {
@@ -486,17 +529,13 @@ export class TreeHelper implements ITreeHelper {
     const columns = colNames.map((name) => df.getCol(name));
     for (const col of columns) {
       let values: Float32Array;
-      let isUsingNeedlemanWunsch: boolean = false;
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
+        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.Difference, false);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = UnitsHandler.getOrCreate(col);
         // Use Hamming distance when sequences are aligned
-        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
-
-        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
-          isUsingNeedlemanWunsch = true;
-        values = await distanceMatrixService.calc(col.toList(), seqDistanceFunction, false);
+        const seqDistanceFunction: MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN;
+        const encodedSeqs = await this.encodeSequences(col);
+        values = await distanceMatrixService.calc(encodedSeqs, seqDistanceFunction, false);
       } else if (col.semType === DG.SEMTYPE.MOLECULE) {
         const fingerPrintCol: DG.Column<DG.BitSet | null> =
           await grok.functions.call('Chem:getMorganFingerprints', {molColumn: col});
@@ -511,9 +550,6 @@ export class TreeHelper implements ITreeHelper {
           out.normalize();
           if (method === DistanceMetric.Euclidean)
             out.square();
-        } else if (isUsingNeedlemanWunsch) {
-          // we need to normalize as needleman wunsch returns negative and positive values as well
-          out.normalize();
         }
       } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);

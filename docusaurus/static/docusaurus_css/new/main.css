@@ -1,0 +1,445 @@
+:root {
+    --brand-primary-dark: #2e4d69;
+    --brand-primary: var(--brand-color);
+    --brand-accent: #4BB2D1;
+}
+.new .navbar-toggler {
+    border: 0px solid var(--ifm-color-gray-200);
+    padding: .6rem;
+}
+.new .navbar-toggler.collapsed > i::before {
+    content: "\f0c9";
+}
+.new  .navbar-toggler > i::before {
+    content: "\f00d";
+}
+.new .navbar {
+    box-shadow: unset;
+    border-bottom: 1px solid var(--ifm-color-gray-200);
+}
+.new .navbar-brand, 
+.new .navbar-brand:focus, 
+.new .navbar-brand:hover {
+    color: var(--brand-color);
+    padding-left: 40px;
+}
+.new .navbar .nav-item > a.nav-link{
+    color: var(--ifm-color-gray-800);
+}
+
+.new .dropdown-toggle::after {
+    content: "\f078";
+    font-family: "Font Awesome 5 Pro";
+    border: none;
+    font-size: 12px;
+    vertical-align: unset;
+}
+.new .navbar .navbar-collapse .nav-item.dropdown .dropdown-menu {
+    border: 1px solid  var(--ifm-color-gray-300);
+    border-radius: 8px;
+    margin-top:-8px;
+    background-color: white;
+}
+.new .nav-item {
+    margin: 0!important;
+    background-color: unset!important;
+    /* border-bottom: 2px solid transparent; */
+}
+.new .nav-item.active > a {background-color: var(--ifm-color-gray-100);}
+.new .nav-item:hover.active > a {background-color: var(--ifm-color-gray-200);}
+.new .nav-item > a { border-radius: 8px; }
+.new .nav-item:hover > a:not(.btn) {
+    background-color: var(--ifm-color-gray-100);
+}
+
+.new a.dropdown-item.active, 
+.new .dropdown-item:active {
+    background-color: var(--ifm-color-gray-100);
+    color:var(--ifm-color-gray-900)
+}
+
+.new .nav-item.dropdown:hover > a.dropdown-toggle::after {
+    rotate: -180deg;
+    transition: rotate 0.35s;
+    transition-timing-function: ease-in-out;
+}
+.new .nav-item.dropdown > .dropdown-menu > a.dropdown-item {
+    border-radius: 8px;
+}
+
+.new .nav-item.dropdown > .dropdown-menu > a.dropdown-item:hover {
+    background-color: var(--ifm-color-gray-100);
+}
+
+.new .nav-item.dropdown > .dropdown-menu > a.dropdown-item.active:hover {
+    background-color: var(--ifm-color-gray-200);
+}
+
+@media (max-width: 992px){
+    .new .navbar-collapse {
+        top: 70px;
+        padding: 0.75rem;
+        margin: 0;
+        border-bottom: 1px solid var(--ifm-color-gray-200);
+    }
+    .new .nav-item > a.nav-link{
+        padding-left: 0.75rem;
+    }
+    .new .navbar .navbar-collapse .nav-item.dropdown .dropdown-menu {
+        padding: 0.75rem!important;
+        margin: 0.5rem;
+    }
+    .new .navbar {
+        position: sticky;
+    }
+}
+
+.new .brand-btn, 
+.new a.brand-btn.nav-link {
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.85rem;
+}
+.new .brand-btn.btn-large {
+    font-size: 1.05rem;
+    padding: 0.65rem 1rem;
+}
+.new .brand-btn.btn-small {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.75rem;
+}
+
+.new .brand-btn-primary {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color:white;
+}
+
+.new .brand-btn-accent {
+    background-color: var(--brand-accent);
+    border-color: var(--brand-accent);
+    color:white;
+}
+
+.new .brand-btn-primary:hover, 
+.new .brand-btn-accent:hover {
+    filter: brightness(115%);
+    transition: filter 0.25s linear;
+    color: white;
+}
+
+.new .brand-btn-primary:active, 
+.new .brand-btn-accent:active {
+    filter: brightness(85%);
+    transition: filter 0.25s linear;
+}
+
+.new .btn-outline, 
+.new a.nav-link.btn-outline {
+    border: 1px solid var(--ifm-color-gray-200);
+    background-color: white;
+    color: var(--ifm-color-gray-800);
+}
+
+.new .btn-outline:hover, 
+.new a.nav-link.btn-outline:hover  {
+    background-color: var(--ifm-color-gray-200);
+    border-color: var(--ifm-color-gray-200);
+    transition: background-color 0.25s linear, border-color 0.25s linear;
+    color: var(--ifm-color-gray-900);
+}
+
+.new .btn-outline:active, 
+.new a.nav-link.btn-outline:active {
+    filter: brightness(85%);
+    transition: filter 0.25s linear;
+    color: var(--ifm-color-gray-900);
+}
+
+.new .brand-btn-outline {
+    border: 1px solid var(--brand-color);
+    background-color: white;
+    color: var(--brand-color);
+}
+
+.new .brand-btn-outline:hover  {
+    background-color: var(--brand-color);
+    border-color: var(--brand-color);
+    filter: brightness(135%);
+    transition: background-color 0.25s linear;
+    transition: border-color 0.25s linear;
+    transition: color 0.25s linear;
+    color: white;
+}
+
+.new .brand-btn-outline:active {
+    filter: brightness(85%);
+    transition: filter 0.25s linear;
+    color: white;
+}
+
+.new h1 { font-size: 3rem; font-weight: 600;}
+.new h2 { font-size: 2.5rem; font-weight: 600;}
+.new h3 { font-size: 2rem; font-weight: 600;}
+.new h4 { font-size: 1.8rem; font-weight: 500;}
+.new h5 { font-size: 1.6rem; font-weight: 500;}
+.new h6 { font-size: 1.4rem; font-weight: 500;}
+
+.new h1, 
+.new h2, 
+.new h3, 
+.new h4, 
+.new h5, 
+.new h6 {
+    color: var(--ifm-color-gray-900);
+    font-family: 'Inter', sans-serif;
+    padding: 0;
+    border: none;
+}
+.new p,
+.new div {
+    color: var(--ifm-color-gray-700);
+    font-family: 'Inter', sans-serif;
+    padding: 0;
+    border: none;
+}
+
+.new h1, 
+.new h2 {
+    color: var(--ifm-color-gray-900);
+    margin: 1.5rem 0;
+    padding: 0;
+    border: none;
+}
+
+.new h3, 
+.new h4 {
+    color: var(--ifm-color-gray-900);
+    margin: 1.25rem 0;
+}
+.new .section {border-radius: 1rem;}
+.new .section-content > h1, 
+.new .section-content > h2, 
+.new .section-content > h3, 
+.new .section-content > h4, 
+.new .section-content > h5, 
+.new .section-content > h6, 
+.new .section-content > p, 
+.new .section-content > span, 
+.new .section-content > blockquote, 
+.new .section-content > ul, 
+.new .section-content > li, 
+.new .section-content > dl, 
+.new .section-content > dt, 
+.new .section-content > dd {
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0.5rem;
+}
+.new .hero-container {
+    background-size: 'cover';
+    background-repeat: no-repeat;
+    background-image: url('/docusaurus_img/new/grid.svg');
+}
+.new .hero-container {
+    position: relative;
+}
+
+.new .browser {
+    border: 1px solid var(--ifm-color-gray-200);
+    overflow: hidden;
+}
+
+.new .browser > .browser-header {
+    width: 100%;
+    background-color: white;
+    text-align: left;
+    padding: 2px 8px;
+}
+
+.new .browser > .browser-header > .dot{
+    height: 8px;
+    width: 8px;
+    margin-right: 4px;
+    background-color: #FDD800;
+    border-radius: 50%;
+    display: inline-block;
+}
+.new .browser > .browser-header > .dot:first-child {background-color: #ED594A;}
+.new .browser > .browser-header > .dot:last-child {background-color: #5AC05A;}
+
+.new #features-nav-tab {
+    justify-content: center;
+    border: none;
+    gap:.5rem;
+}
+
+.new .carousel-indicators {
+    margin-bottom: -15px;
+}
+.new .carousel-indicators > li {
+    background-color: var(--brand-accent);
+}
+.new .carousel {
+    box-shadow: none;
+    border-radius: 16px;
+    border:none;
+}
+.new .carousel img {
+    border-radius: 8px;
+}
+
+.new .nav-tabs > .nav-item > a {
+    padding: 6px 12px;
+}
+
+.new .nav-tabs > .nav-item > a.active, 
+.new .nav-tabs > .nav-item > a.active:hover {
+    background-color: var(--brand-accent);
+    border: 1px solid var(--brand-accent);
+    color: white;
+}
+
+.new .nav-tabs > .nav-item > a:hover {
+    background-color: white;
+    border: 1px solid var(--brand-accent);;
+    color: var(--brand-accent);
+}
+.new .nav.accesscarousel {
+    gap: 4px;
+}
+.new .nav.accesscarousel > .nav-item > .nav-link {
+    color: var(--ifm-color-gray-900);
+    font-weight: 500;
+}
+.new .nav.accesscarousel > .nav-item > .nav-link:hover{
+    transition: background-color 0.25s linear;
+}
+.new .nav.accesscarousel > .nav-item > .nav-link.active:hover, 
+.new .nav.accesscarousel > .nav-item {
+    cursor: pointer;
+}
+.new .nav.accesscarousel > .nav-item > .nav-link.active {
+    background-color: var(--ifm-color-gray-200);
+    color: var(--ifm-color-gray-900);
+}
+
+.new .tab-content > .tab-pane.active {
+    display: block;
+}
+
+.new .tab-body-link {
+    margin-left: 15px;
+    padding-bottom: 5px;
+    color: var(--brand-accent);
+    font-weight: 500;
+    background-image: linear-gradient(var(--brand-accent),var(--brand-accent));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 0.13rem;
+    transition: background-size .25s ease-in-out;
+}
+.new .tab-body-link::after {
+    content: "\f061";
+    font-family: "Font Awesome 5 Pro";
+    font-size: 12px;
+}
+
+.new .tab-body-link:hover {
+    color: var(--brand-accent);
+    filter: brightness(85%);
+    text-decoration: none;
+    background-size: 100% 0.13rem;
+    text-decoration: none;
+}
+
+.new .slider-body-link {
+    padding-bottom: 5px;
+    color: var(--brand-accent);
+    font-weight: 500;
+    background-image: linear-gradient(var(--brand-accent),var(--brand-accent));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 0.13rem;
+    transition: background-size .25s ease-in-out;
+}
+.new .slider-body-link::after {
+    content: "\f061";
+    font-family: "Font Awesome 5 Pro";
+    font-size: 12px;
+}
+
+.new .slider-body-link:hover {
+    color: var(--brand-accent);
+    filter: brightness(85%);
+    text-decoration: none;
+    background-size: 100% 0.13rem;
+    text-decoration: none;
+}
+
+.new .body-link {
+    padding-bottom: 5px;
+    color: var(--brand-accent);
+    font-weight: 500;
+    background-image: linear-gradient(var(--brand-accent),var(--brand-accent));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 0.13rem;
+    transition: background-size .25s ease-in-out;
+}
+
+.new .body-link:hover {
+    color: var(--brand-accent);
+    filter: brightness(85%);
+    text-decoration: none;
+    background-size: 100% 0.13rem;
+    text-decoration: none;
+}
+.new .cpa-container  *:not(a, button) {
+    color: white!important;
+}
+.new .footer-section *{
+    color: white;
+}
+.new .footer-brand > p, 
+.new .footer-bottom *:not(.footer-icons) { color: white; opacity: 0.7; }
+.new .footer-bottom {
+    font-size: .9rem;
+}
+.new .footer-brand > a.navbar-brand {
+    margin-left: 0; 
+    color: white;
+    background-image: url('/docusaurus_img/logo-white.svg');;
+}
+.new .footer-section ul {
+    list-style: none;
+    padding: 0 2px;
+}
+.new .footer-section li {
+    margin-bottom: 4px;
+}
+.new .footer-section a {
+    opacity: 0.75;
+}
+.new .footer-section a:hover {
+    text-decoration: none;
+    color:var(--brand-accent);
+    opacity: 1;
+    transition: opacity 0.25s linear;
+}
+.new .footer-icons ul {
+    list-style: none;
+    display: inline-flex;
+    gap: 12px;
+}
+.new .footer-icons i::before {
+    font-family: "Font Awesome 5 Brands";
+    font-weight: 500;
+    font-size: 20px;
+}
+.new .footer-icons a:hover{
+    cursor: pointer;
+    opacity: 1;
+}

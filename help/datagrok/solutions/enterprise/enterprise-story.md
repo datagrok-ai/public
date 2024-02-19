@@ -6,7 +6,7 @@ title: "Enterprise IT"
 ## Problem
 
 Software is eating the world, and companies that best manage to understand their data better and derive actionable
-insights from it will be tomorrow’s winners. Big organizations are naturally well-positioned to take advantage of the
+insights from it will be tomorrow's winners. Big organizations are naturally well-positioned to take advantage of the
 data they collect for the following reasons:
 
 1. They have a lot of data accumulated already, both in terms of volume and variety
@@ -37,7 +37,7 @@ both server and client APIs are exposed for integration purposes. In a way, Data
 algorithms, with customizations, extensions and applications built on top of it. It is designed in such a way that no
 matter who creates new data, scripts, visualization, or other artifacts, the whole organization benefits from it.
 
-While the platform offers a solution for most of the typical data-related needs, it doesn’t force you to move all your
+While the platform offers a solution for most of the typical data-related needs, it doesn't force you to move all your
 data to a new system. Out-of-the-box, it immediately creates value by providing unmatched data exploratory analysis
 capabilities. From there, you can grow the ecosystem by adding new data connections, pipelines, transformations,
 publishing dashboards, training predictive models, connecting with scripts developed in R, Python, and Julia, building
@@ -65,10 +65,10 @@ hundreds of millions of rows on the client side, right in the browser.
 defining your own custom viewers, ranging from editing custom SVGs to building JavaScript-based viewers with complete
 control over its behavior. Multiple viewers have built-in functionality not typically found in plotting software, such
 as regression lines and confidence intervals for scatter plots, p-values for box plots, or dendrograms for tree maps.
-All viewers have access to the R or Python, and it’s easy to integrate a R-, Python-, or Julia-based viewers into
+All viewers have access to the R or Python, and it's easy to integrate a R-, Python-, or Julia-based viewers into
 Datagrok (it will be less interactive, though). Powerful data transformation and editing capabilities are built-in. It
 is also possible to record macros by simply using the UI, and later apply them to new datasets. We have tools for quick
-inspection of data and drill-down capabilities. An AI-based system mines the platform’s historical usage to make
+inspection of data and drill-down capabilities. An AI-based system mines the platform's historical usage to make
 intelligent suggestions regarding different ways to plot and explore the data; the more you use the system, the better
 it becomes.
 

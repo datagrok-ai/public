@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
   ACTIVITY = 'Activity',
@@ -22,11 +24,6 @@ export enum LST_COLUMN_NAMES {
   CLUSTER = 'Cluster',
 }
 
-export enum CATEGORIES {
-  OTHER = 'Other',
-  ALL = 'All',
-}
-
 export enum TAGS {
   MONOMER = 'monomer',
   POSITION = 'pos',
@@ -41,7 +38,7 @@ export enum TAGS {
   VISIBLE = 'visible',
   SETTINGS = 'settings',
   CUSTOM_CLUSTER = 'customCluster',
-  UUID = 'pep-uuid',
+  // UUID = 'pep-uuid',
   MONOMER_POSITION_MODE = 'monomerPositionMode',
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'Identity template',
@@ -57,10 +54,39 @@ export enum SEM_TYPES {
   MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
 }
 
-export const EMBEDDING_STATUS = 'embeddingStatus';
+export const COLUMN_NAME = 'ColumnName';
 
 export enum SCALING_METHODS {
   NONE = 'none',
   LG = 'lg',
   MINUS_LG = '-lg',
 }
+
+export enum SUFFIXES {
+  LST = 'lst-', // Logo Summary Table
+  MP = 'mp-', // Monomer Position
+  MPR = 'mpr-', // Most Potent Residues
+  WL = 'wl-', // Web Logo
+}
+
+export const AGGREGATION_TYPES = Object.values(DG.AGG)
+  .filter((it) => ![DG.AGG.FIRST, DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(it));
+
+export const AGG_STATS_MAPPING: {[key: string]: string} = {
+  [DG.AGG.TOTAL_COUNT]: 'totalCount',
+  [DG.AGG.VALUE_COUNT]: 'valueCount',
+  [DG.AGG.UNIQUE_COUNT]: 'uniqueCount',
+  [DG.AGG.MISSING_VALUE_COUNT]: 'missingValueCount',
+  [DG.AGG.MIN]: 'min',
+  [DG.AGG.MAX]: 'max',
+  [DG.AGG.SUM]: 'sum',
+  [DG.AGG.MED]: 'med',
+  [DG.AGG.AVG]: 'avg',
+  [DG.AGG.STDEV]: 'stdev',
+  [DG.AGG.VARIANCE]: 'variance',
+  [DG.AGG.SKEW]: 'skew',
+  [DG.AGG.KURT]: 'kurt',
+  [DG.AGG.Q1]: 'q1',
+  [DG.AGG.Q2]: 'q2',
+  [DG.AGG.Q3]: 'q3',
+};

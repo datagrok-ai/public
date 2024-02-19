@@ -9,17 +9,50 @@ import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
+import {DataSourceType} from "./api/grok_shared.api.g";
 
 declare var grok: any;
 const api: IDartApi = <any>window;
 
 
-type PropertyGetter = (a: object) => any;
-type PropertySetter = (a: object, value: any) => void;
+type PropertyGetter<TSource = any, TProp = any> = (a: TSource) => TProp;
+type PropertySetter<TSource = any, TProp = any> = (a: TSource, value: TProp) => void;
 type ValueValidator<T> = (value: T) => string;
-type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
-type DataConnectionParams = {server: string, db: string, port: number, schema: string, indexFiles: boolean,
-  cacheResults: boolean, cacheInvalidateSchedule: boolean};
+
+/**
+ * Represents basic properties of database connection. The list of parameters is not complete. You can find all
+ * supported parameters for every connector on {@link https://datagrok.ai/help/access/databases/connectors/}
+ */
+export interface DatabaseConnectionProperties {
+  server?: string;
+  port?: number;
+  db?: string;
+  connString?: string;
+}
+
+/** Represents connection cache properties
+ *  See also: {@link https://datagrok.ai/help/develop/function_results_cache}
+ *  */
+export interface DataConnectionCacheProperties {
+  cacheResults?: boolean;
+  cacheSchema?: boolean;
+  cacheInvalidateSchedule?: string;
+}
+
+/**
+ * Represents data connection properties. It can have variable number of parameters depending on {@link DataSourceType}.
+ * For a complete list of supported parameters for the data source type use {@link https://datagrok.ai/help/access/databases/connectors/}
+ * or {@link https://datagrok.ai/help/access/files/shares/}
+ */
+export interface DataConnectionProperties extends DatabaseConnectionProperties, DataConnectionCacheProperties {
+  dataSource: string;
+  login?: string;
+  password?: string;
+  accessKey?: string;
+  secretKey?: string;
+  [x: string]: any;
+}
+
 type FieldPredicate = {field: string, pattern: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
@@ -512,10 +545,15 @@ export class DataJob extends Func {
  * */
 export class DataConnection extends Entity {
   parameters: any;
+
   /** @constructs DataConnection */
   constructor(dart: any) {
     super(dart);
     this.parameters = new MapProxy(api.grok_DataConnection_Get_Parameters(this.dart), 'parameters');
+  }
+
+  get credentials(): Credentials {
+    return toJs(api.grok_DataConnection_Get_Credentials(this.dart));
   }
 
   /** Collection of parameters: server, database, endpoint, etc. */
@@ -527,17 +565,22 @@ export class DataConnection extends Entity {
     return api.grok_DataConnection_Test(this.dart);
   }
 
+  /**
+   * Creates {@link DataQuery} using this connection. Can be used only with database connections.
+   * @param name - name of the query
+   * @param sql - text of the query
+   */
   query(name: string, sql: string): DataQuery {
     return toJs(api.grok_DataConnection_Query(this.dart, name, sql));
   }
 
-  /** Creates a database connection
+  /** Creates a data connection. Note that in order to be used, it has to be saved first using {@link DataConnectionsDataSource}
    * @param {string} name - Connection name
-   * @param {DataConnectionDBParams} parameters - Database connection info and credentials
-   * @returns {DataConnection} */
-   static create(name: string, parameters: DataConnectionDBParams): DataConnection {
-    return toJs(api.grok_DataConnection_Create(
-      name, parameters.dataSource, parameters.server, parameters.db, parameters.login, parameters.password));
+   * @param {DataConnectionProperties} parameters - Connection properties
+   * @returns {DataConnection}
+   * */
+   static create(name: string, parameters: DataConnectionProperties): DataConnection {
+    return toJs(api.grok_DataConnection_Create(name, parameters.dataSource, parameters));
   }
 }
 
@@ -658,6 +701,14 @@ export class FileInfo extends Entity {
   readAsBytes(): Promise<Uint8Array> {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
+
+  static fromBytes(data: Uint8Array): FileInfo {
+      return api.grok_FileInfo_FromBytes(data);
+  }
+
+  static fromString(data: string): FileInfo {
+    return api.grok_FileInfo_FromString(data);
+  }
 }
 
 /** @extends Entity
@@ -774,12 +825,24 @@ export class Script extends Func {
  *  See also: {@link https://datagrok.ai/help/govern/security}
  *  */
 export class Credentials extends Entity {
+  /**
+   * Represents credentials parameters that are hidden from other users and when they are used real values
+   * of them will be replaced by values from {@link openParameters}.
+   * Parameters can be filled with key-value entries that are suitable for the entity that owns that Credentials.
+   */
+  public parameters: any;
+
   constructor(dart: any) {
     super(dart);
+    this.parameters = new MapProxy(api.grok_Credentials_Parameters(this.dart), 'parameters');
   }
 
-  /** Collection of parameters: login, password, API key, etc. */
-  get parameters(): Record<string, string> { return api.grok_Credentials_Parameters(this.dart); }
+  /**
+   * Represents opened credential parameters. They will be showed, for example, in the connection edit form.
+   * They are updated when {@link parameters} are changed and instance is saved.
+   * See also {@link CredentialsDataSource}.
+   */
+  get openParameters(): Record<string, string> { return api.grok_Credentials_OpenParameters(this.dart); }
 }
 
 /** Represents a script environment */
@@ -1000,9 +1063,22 @@ export class Package extends Entity {
     return api.grok_Package_Get_Credentials(this.name);
   }
 
-  /** Returns properties for a package. */
-  getProperties(): Promise<Map<string, any>> {
-    return api.grok_Package_Get_Properties(this.name);
+  /**
+   * Deprecated. Use getSettings instead. 
+   *  Returns properties for a package. 
+  */
+  getProperties(): Promise<any> {
+    return this.getSettings();
+  }
+
+  /** Returns settings for a package. */
+  getSettings(): Promise<any> {
+    return api.grok_Package_Get_Settings(this.name);
+  }
+
+  /** Updates settings for a package. */
+  setSettings(props: Map<string, any>, group: Group): Promise<void> {
+    return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
   private _files: FileSource | null = null;
@@ -1097,6 +1173,8 @@ export interface PropertyOptions {
 
   /** Name of the corresponding JavaScript field. No need to specify it if it is the same as name. */
   fieldName?: string;
+
+  tags?: any;
 }
 
 
@@ -1163,6 +1241,21 @@ export class Property {
   /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
   get showPlusMinus(): string { return api.grok_Property_Get_ShowPlusMinus(this.dart); }
   set showPlusMinus(s: string) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
+
+  get format(): string { return api.grok_Property_Get_Format(this.dart); }
+  set format(s: string) { api.grok_Property_Set_Format(this.dart, s); }
+
+  get userEditable(): boolean { return api.grok_Property_Get_UserEditable(this.dart); }
+  set userEditable(s: boolean) { api.grok_Property_Set_UserEditable(this.dart, s); }
+
+  get min(): number { return api.grok_Property_Get_Min(this.dart); }
+  set min(s: number) { api.grok_Property_Set_Min(this.dart, s); }
+
+  get max(): number { return api.grok_Property_Get_Max(this.dart); }
+  set max(s: number) { api.grok_Property_Set_Max(this.dart, s); }
+
+  get step(): number { return api.grok_Property_Get_Step(this.dart); }
+  set step(s: number) { api.grok_Property_Set_Step(this.dart, s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.

@@ -24,6 +24,20 @@ category('Dapi: functions calls', async () => {
     expect(savedFuncCall.inputs['x'], funcCall.inputs['x']);
   });
 
+  test('save with DF', async () => {
+    const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    const funcCall = await funcWithDf.prepare({'table': grok.data.demo.demog(30)}).call();
+
+    const savedFuncCall = await GDF.calls.save(funcCall);
+    const loadedFuncCall = await GDF.calls.find(savedFuncCall.id);
+
+    const loadedInputTableId = loadedFuncCall.inputs['table'];
+    const loadedOutputTableId = loadedFuncCall.outputs['tableOut'];
+
+    expectTable(funcCall.inputs[loadedInputTableId], await grok.dapi.tables.getTable(loadedInputTableId));
+    expectTable(funcCall.outputs[loadedOutputTableId], await grok.dapi.tables.getTable(loadedOutputTableId));
+  }, {skipReason: 'GROK-14739'});
+
   test('save options', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
@@ -46,7 +60,7 @@ category('Dapi: functions calls', async () => {
 
     const loadedFunCall = await GDF.calls.include('parentCall').find(funcCall.id);
     expect(loadedFunCall.parentCall.id, parentFuncCall.id);
-  });
+  }, {skipReason: 'GROK-14488'});
 
   test('load package function call', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -75,8 +89,8 @@ category('Dapi: functions calls', async () => {
     await GDF.calls.save(funcCall);
 
     const loadedCall = await GDF.calls.include('session.user').find(funcCall.id);
-    expect(loadedCall.author, grok.shell.user.id);
-  }, {skipReason: 'GROK-14061'});
+    expect(loadedCall.author.id, grok.shell.user.id);
+  });
 
   test('load package function author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -85,8 +99,8 @@ category('Dapi: functions calls', async () => {
     await GDF.calls.save(funcCall);
 
     const loadedCall = await GDF.calls.include('session.user').find(funcCall.id);
-    expect(loadedCall.author, grok.shell.user.id);
-  }, {skipReason: 'GROK-14061'});
+    expect(loadedCall.author.id, grok.shell.user.id);
+  });
 
   test('load script call inputs & outputs', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -152,6 +166,17 @@ category('Dapi: functions calls', async () => {
     expect(loadedCalls.author.id, grok.shell.user.id);
   });
 
+  test('list package function with params', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    const loadedCalls = 
+      await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
+    expect(loadedCalls.inputs[0].name, 'a');
+  }, {skipReason: 'GROK-14735'});
+
   test('list package functions with author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
@@ -162,6 +187,17 @@ category('Dapi: functions calls', async () => {
       await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
   });
+
+  test('list package function with params', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    const loadedCalls = 
+      await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
+    expect(loadedCalls.inputs[0].name, 'a');
+  }, {skipReason: 'GROK-14735'});
 
   test('find', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -181,6 +217,15 @@ category('Dapi: functions calls', async () => {
     const loadedFuncCall = await GDF.calls.include('options').find(funcCall.id);
     expect(loadedFuncCall.options['testName'], 'testValue');
   });
+
+  test('find func with params', async () => {
+    const func: DG.Func = await grok.functions.eval('Sin');
+    const funcCall = await func.prepare({x: xValue}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedFuncCall = await GDF.calls.include('func.params').find(funcCall.id);
+    expect(loadedFuncCall.func.inputs[0].name, 'x');
+  }, {skipReason: 'GROK-14735'});
 
   test('delete', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');

@@ -92,6 +92,7 @@ jobs:
         if: steps.packages.outputs.bump == 'yes'
         id: upgrade
         working-directory: packages/Meta
+        continue-on-error: true
         run: |
           git pull
           if [ -n "$(git status -s package.json)" ]; then
@@ -112,6 +113,7 @@ jobs:
       - name: Commit Meta package.json
         id: git
         if: steps.upgrade.outputs.changed == 'yes'
+        continue-on-error: true
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'

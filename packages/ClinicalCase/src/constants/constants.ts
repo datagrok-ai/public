@@ -48,4 +48,5 @@ export const DOMAINS_COLOR_PALETTE = {
         'cm': DG.Color.orange,
         'ex': DG.Color.purple
 };
-export const DOMAINS_WITH_EVENT_START_END_DAYS = ['ae', 'cm', 'ex']
+export const DOMAINS_WITH_EVENT_START_END_DAYS = ['ae', 'cm', 'ex'];
+export const TIMELINES_VIEWER = 'Timelines';

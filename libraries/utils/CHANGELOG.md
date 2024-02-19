@@ -1,5 +1,15 @@
 # utils changelog
 
+## 4.1.40 (2024-01-29)
+
+### Features
+
+* utils: Add to testViewer support options.awaitViewer
+
+### Bug fixes 
+
+* utils: Fix testViewer for element selector
+
 ## 4.1.33 (2023-11-30)
 
 ### Bug Fixes

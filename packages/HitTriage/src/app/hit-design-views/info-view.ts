@@ -197,7 +197,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   private async createNewTemplate(preset?: HitDesignTemplate) {
     ui.setUpdateIndicator(this.root, true);
     try {
-      const newTemplateAccordeon = await newHitDesignTemplateAccordeon(preset);
+      const newTemplateAccordeon = await newHitDesignTemplateAccordeon(this.app, preset);
       // hideComponents(toRemove);
       // $(containerDiv).empty();
       // $(templateInputDiv).empty();

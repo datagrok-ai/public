@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
 import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
@@ -17,9 +18,11 @@ import {
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 
 import {AggFunc, getAgg} from '../utils/agg';
-import {errInfo} from '../utils/err-info';
 import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
 import {_package} from '../package';
@@ -291,15 +294,17 @@ enum WlRenderLevel {
   Freqs = 2,
 }
 
+export const Debounces = new class {
+  render: number = 20;
+}();
+
 const POSITION_LABELS_HEIGHT: number = 12;
 
 export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public static residuesSet = 'nucleotides';
-  private static viewerCount: number = 0;
 
   private viewed: boolean = false;
 
-  private readonly viewerId: number = -1;
   private unitsHandler: UnitsHandler | null;
   private initialized: boolean = false;
 
@@ -381,9 +386,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   constructor() {
     super();
 
-    this.viewerId = WebLogoViewer.viewerCount;
-    WebLogoViewer.viewerCount += 1;
-
     this.textBaseline = 'top';
     this.unitsHandler = null;
 
@@ -449,13 +451,20 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.style.width = '100%';
 
     /* this.root.style.background = '#FFEEDD'; */
+    this.viewSyncer = new PromiseSyncer(_package.logger);
   }
+
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++WebLogoViewer.viewerCounter;
+
+  private viewerToLog(): string { return `WebLogoViewer<${this.viewerId}>`; }
 
   // -- Data --
 
   setData(): void {
-    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.setData(), in`);
-    this.viewPromise = this.viewPromise.then(async () => { // setData
+    const logPrefix = `${this.viewerToLog()}.setData()`;
+    _package.logger.debug(`${logPrefix}, in`);
+    this.viewSyncer.sync(`${logPrefix}`, async () => { // setData
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
         if (this.viewed) {
@@ -471,19 +480,16 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           await this.buildView(); //requests rendering
           this.viewed = true;
         }
-      } catch (err: any) {
-        const [errMsg, errStack] = errInfo(err);
-        grok.shell.error(errMsg);
-        _package.logger.error(errMsg, undefined, errStack);
       } finally {
         this.setDataInProgress = false;
       }
     });
+    _package.logger.debug(`${logPrefix}, out`);
   }
 
   // -- View --
 
-  private viewPromise: Promise<void> = Promise.resolve();
+  private viewSyncer: PromiseSyncer;
   private setDataInProgress: boolean = false;
   private viewSubs: Unsubscribable[] = [];
 
@@ -505,7 +511,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView( dataFrame = ${dataFrameTxt} ) start`);
     const dpr = window.devicePixelRatio;
-    this.viewSubs.push(DG.debounce(this.renderRequest)
+    this.viewSubs.push(DG.debounce(this.renderRequest, Debounces.render)
       .subscribe(this.renderRequestOnDebounce.bind(this)));
 
     this.helpUrl = '/help/visualize/viewers/web-logo.md';
@@ -557,7 +563,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.viewSubs.push(
       fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe(this.canvasOnWheel.bind(this)));
 
-    await this.render(WlRenderLevel.Freqs, 'buildView');
+    this.render(WlRenderLevel.Freqs, 'buildView');
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView() end`);
   }
 
@@ -588,7 +594,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
 
           this.palette = pickUpPalette(this.seqCol);
-          this.updatePositions();
+          this.render(WlRenderLevel.Freqs, 'updateSeqCol()');
           this.error = null;
         } catch (err: any) {
           this.seqCol = null;
@@ -605,36 +611,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         }
       }
     }
-  }
-
-  /** Updates {@link positionNames} and calculates {@link startPosition} and {@link endPosition}.
-   * Calls {@link render}() with {@link WlRenderLevel.Freqs}
-   */
-  private updatePositions(): void {
-    if (!this.seqCol) return;
-
-    const dfFilter = this.getFilter();
-    const maxLength: number = dfFilter.trueCount === 0 ? this.unitsHandler!.maxLength :
-      wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
-        return dfFilter.get(rowI) && !!mList ? mList.length : 0;
-      }).reduce((max, l) => Math.max(max, l), 0);
-
-    /** positionNames and positionLabel can be set up through the column's tags only */
-    const positionNamesTxt = this.seqCol.getTag(bioTAGS.positionNames);
-    const positionLabelsTxt = this.seqCol.getTag(bioTAGS.positionLabels);
-    this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
-      [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
-    this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
-      undefined;
-
-    this.startPosition = (this.startPositionName && this.positionNames &&
-      this.positionNames.includes(this.startPositionName)) ?
-      this.positionNames.indexOf(this.startPositionName) : 0;
-    this.endPosition = (this.endPositionName && this.positionNames &&
-      this.positionNames.includes(this.endPositionName)) ?
-      this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
-
-    this.render(WlRenderLevel.Freqs, 'updatePositions');
   }
 
   private getFilter(): DG.BitSet {
@@ -850,13 +826,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       case PROPS.shrinkEmptyTail:
       case PROPS.skipEmptyPositions:
       case PROPS.positionHeight: {
-        this.updatePositions();
+        this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
         break;
       }
 
       case PROPS.valueColumnName:
       case PROPS.valueAggrType: {
-        this.render(WlRenderLevel.Freqs, `onPropertyChanged(${property.name})`);
+        this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
         break;
       }
       // this.positionWidth obtains a new value
@@ -891,22 +867,20 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   /** Remove all handlers when table is a detach  */
-  public override async detach() {
-    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.detach(), `);
+  public override detach() {
+    const logPrefix = `${this.viewerToLog()}.detach()`;
+    _package.logger.debug(`${logPrefix}, in`);
 
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
+    this.viewSyncer.sync(`${logPrefix}`, async () => { // detach
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView();
         this.viewed = false;
       }
       superDetach();
-    })
-      .catch((err: any) => {
-        const [errMsg, errStack] = errInfo(err);
-        _package.logger.error(errMsg, undefined, errStack);
-      });
+    });
+    _package.logger.debug(`${logPrefix}, out`);
   }
 
   private _onSizeChanged: Subject<void> = new Subject<void>();
@@ -985,6 +959,31 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateFreqsInt(), start `);
       if (!this.host || !this.seqCol || !this.dataFrame) return;
 
+      // region updatePositions
+
+      const dfFilter = this.getFilter();
+      const maxLength: number = dfFilter.trueCount === 0 ? this.unitsHandler!.maxLength :
+        wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
+          return dfFilter.get(rowI) && !!mList ? mList.length : 0;
+        }).reduce((max, l) => Math.max(max, l), 0);
+
+      /** positionNames and positionLabel can be set up through the column's tags only */
+      const positionNamesTxt = this.seqCol.getTag(bioTAGS.positionNames);
+      const positionLabelsTxt = this.seqCol.getTag(bioTAGS.positionLabels);
+      this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
+        [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
+      this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
+        undefined;
+
+      this.startPosition = (this.startPositionName && this.positionNames &&
+        this.positionNames.includes(this.startPositionName)) ?
+        this.positionNames.indexOf(this.startPositionName) : 0;
+      this.endPosition = (this.endPositionName && this.positionNames &&
+        this.positionNames.includes(this.endPositionName)) ?
+        this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
+
+      // endregion updatePositions
+
       const length: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
       this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
       const posCount: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
@@ -997,7 +996,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-      const dfFilter = this.getFilter();
       const dfRowCount = this.dataFrame.rowCount;
       const splitted = this.unitsHandler.splitted;
 
@@ -1137,6 +1135,11 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   private renderRequestOnDebounce(renderLevel: WlRenderLevel): void {
+    const logPrefix = `${this.viewerToLog()}.renderRequestOnDebounce()`;
+    if ($(this.root).offsetParent().get()[0]?.tagName === 'HTML') {
+      _package.logger.warning(`${logPrefix}, $(this.root).offsetParent() is the 'HTML' tag.`);
+      return;
+    }
     this.requestedRenderLevel = WlRenderLevel.None;
     this.renderInt(renderLevel)
       .catch((err: any) => {
@@ -1177,7 +1180,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private dataFrameFilterOnChanged(_value: any): void {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()`);
     try {
-      this.updatePositions();
       if (this.filterSource === FilterSources.Filtered)
         this.render(WlRenderLevel.Freqs, 'dataFrameFilterOnChanged');
     } catch (err: any) {
@@ -1274,6 +1276,31 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
+  }
+
+  // -- IRenderer --
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  public get onRendered(): Observable<void> { return this._onRendered; }
+
+  public invalidate(): void {
+    const logPrefix = `${this.viewerToLog()}.invalidate()`;
+    // Put the event trigger in the tail of the synced calls queue.
+    this.viewSyncer.sync(`${logPrefix}`, async () => {
+      this.invalidate();
+      this._onRendered.next();
+    });
+  }
+
+  public async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+    await testEvent(this.onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }
 

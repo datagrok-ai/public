@@ -238,6 +238,8 @@ export class Widget<TSettings = any> {
     return this.getProperties().map((p) => p.dart);
   }
 
+  sourceRowsChanged(): void {};
+
   onFrameAttached(dataFrame: DataFrame): void {
     if (this.props.hasProperty('dataFrame'))
       this.props.set('dataFrame', dataFrame);
@@ -1138,12 +1140,25 @@ export class InputForm extends DartWrapper {
     return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
   }
 
+  static forInputs(inputs: InputBase[]): InputForm {
+    return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
+  }
+
   get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
 
+  get source(): any { return api.grok_InputForm_Get_Source(this.dart); };
+
+  set source(source: any) { api.grok_InputForm_Set_Source(this.dart, toDart(source)); };
+
   /** Occurs when user changes any input value in a form. */
   get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
+
+  /** Occurs after the form is validated, no matter whether it is valid or not. */
+  get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
+
+  get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
 }
 
 
@@ -1350,6 +1365,15 @@ export class Color {
 
   /** Returns the Blue component of the color represented as ARGB-formatted integer. */
   static b(c: number): number { return c & 0xFF; }
+
+  static argb(a: number, r: number, g: number, b: number) {
+    return ((a << 24) | (r << 16) | (g << 8) | b) >>> 0;
+  }
+
+  /** Returns the color with the specified alpha component (0-255). */
+  static setAlpha(color: number, alpha: number) {
+    return Color.argb(alpha, Color.r(color), Color.g(color), Color.b(color));
+  }
 
   /** Returns i-th categorical color (looping over the palette if needed) */
   static getCategoricalColor(i: number): ColorType {

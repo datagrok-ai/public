@@ -5,10 +5,8 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -33,12 +31,11 @@ public class FuncCallBuilder {
         return getBuilder().addQuery(query).build();
     }
 
-    @SuppressWarnings("unchecked")
     public void restore() {
         funcCall = new FuncCall();
         funcCall.func = new DataQuery();
         funcCall.func.params = new ArrayList<>();
-        funcCall.options = new LinkedTreeMap<String, LinkedTreeMap<String, LinkedTreeMap<String, Object>>>();
+        funcCall.options = new LinkedTreeMap<>();
         LinkedTreeMap<String, LinkedTreeMap<String, Object>> map = new LinkedTreeMap<>();
         funcCall.options.put("patterns", map);
     }

@@ -7,7 +7,7 @@
     "css/windows-manager.css",
     "css/formula-lines.css"
   ],
-  "version": "1.1.4",
+  "version": "1.2.0",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -21,7 +21,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.28",
     "cash-dom": "latest",
-    "datagrok-api": "^1.17.5",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5"

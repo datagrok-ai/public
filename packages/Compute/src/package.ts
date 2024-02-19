@@ -93,7 +93,7 @@ export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler('Model Catalog', 'modelCatalog', _package));
+  DG.ObjectHandler.register(new ModelHandler());
   
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
@@ -208,4 +208,14 @@ export function HeatCapValidator(params: any) {
       ]
     });
   };
+}
+
+//name: CustomStringInput
+//input: object params
+//output: object input
+export function CustomStringInput(params: any) {
+  const defaultInput = ui.stringInput('Custom input', '');
+  defaultInput.root.style.backgroundColor = 'aqua';
+  defaultInput.input.style.backgroundColor = 'aqua';
+  return defaultInput;
 }

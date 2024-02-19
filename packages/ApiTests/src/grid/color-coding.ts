@@ -16,11 +16,13 @@ category('Grid: Color Coding', () => {
     demog.col('age')!.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
     demog.col('sex')!.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
     demog.col('started')!.colors.setLinear([DG.Color.white, DG.Color.red]);
-    grid.setOptions({colorCoding: 'All'});
     grid.setOptions({colorCoding: 'None'});
     grid.setOptions({colorCoding: 'Auto'});
     testTags();
-
+    grid.setOptions({colorCoding: 'All'});
+    grid.setOptions({colorScheme: [4294922560, 4294944000, 4283477800]});
+    if (grid.cell('weight', 0).color !== 4288522774)
+      throw new Error('Grid Color Coding > Color Scheme was not applied');
     const layout = v.saveLayout();
     v.close();
     grok.shell.closeTable(demog);

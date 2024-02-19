@@ -43,7 +43,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
 
 * Data visualization and exploration
   * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
-  * [Automatic detection of sequences](../../../../catalog/semantic-types.md) upon data import.
+  * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
   * Customizable [info panes](../../../../explore/data-augmentation/info-panels.md) with information about macromolecules and context actions.
@@ -59,7 +59,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
   * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
-* [Macromolecule format conversion](#sequence-translation).
+* [Oligonucleotides chemical modifications and format conversion](#oligo-toolkit).
 * Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](../../../../compute/scripting.md) in Python, R, Matlab, and other supported languages.
@@ -88,7 +88,7 @@ clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other 
 
 When you open a dataset, Datagrok automatically detects macromolecules and makes available macromolecule-specific context actions. For example, when you open a CSV file containing macromolecules in the FASTA format, the following happens:
 
-* Data is parsed, and the [semantic type](../../../../catalog/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
+* Data is parsed, and the [semantic type](../../../../govern/catalog/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
 * Macromolecules are automatically rendered in the spreadsheet.
 * Column tooltip now shows the sequence composition.
 * Default column filter is now a subsequence search.
@@ -479,139 +479,12 @@ application performs SAR analysis of peptides. The app offers the following feat
 
 <!--replace with a gif-->
 
-<!--We are developing tools that account for the steric and surface features of macromolecules,
-calculations to support the
-knowledge on their properties, homology, toxicity.-->
-
-<!--
-## Sequence design [TBD]
-
-The Datagrok application [Sequence Translator](https://public.datagrok.ai/apps/SequenceTranslator/) facilitates the design and synthesis of oligonucleotides. You can:
-
-* Convert oligonucleotide sequences between notations or formats used by specific synthesizers (HELM, BioSpring, Axolabs, and Mermade12).
-* Modify patterns in multiple ways and share results.
-* [DESCRIBE DUPLEX]
-
-[PNG PLACEHOLDER]
-
-:::tip
-
-You can use the sequence translator alongside a **Table View**. To do so, click the **Hamburger** icon in the top right corner of the app view and select either **Split to Right** or **Split Down** option. By selecting one of these options, your Datagrok workspace is split in two panes. The Sequence Translator app is displayed to the right or below your current view (such as **Table View**.) 
-
-:::
-
-To learn more and how to use, see [Oligonucleotide sequence design].
-
-<!--
-
-<details>
-<summary>How to use</summary>
-
-To open the app, on the **Sidebar**, select **Functions** > **Apps** > **Sequence Translator**. 
-
-The app has three tabs:
-
-<Tabs>
-<TabItem value="translate" label="Sequence" default>
-
-To translate the sequence, paste it in the field provided. The output for different notations is displayed automatically, as well as the visualization of the molecular structure of the corresponding polymer. You can download the sequence in a MOLFILE format or copy it as SMILES.
-
-:::note developers
-
-You can add custom formats.[HOW? SPECIFY ADD LINK]
-
-:::
-
-![](img/st-sequence.png)
-
-</TabItem>
-
-<TabItem value="design" label="Pattern">
-
-Use this tab to upload, modify, convert, and share modification patterns [THE FLOW IS NOT CLEAR FROM THE DESIGN OF THE APP. UPDATE]. 
-
-[Image]
-
-1. Pattern visualization: Defines translation rules. Has pattern name, modifications, PTO linkages for both strands, as well as download options.
-1. Controls for each strand (sense strand ("SS") has the exact nucleotide sequence to the mRNA that encodes for a functional protein; antisense strand (AS) has a non-coding DNA strand of a gene):
-  * PTO (PTO linkage): Indicates whether oligonucleotide has phosphorothioated bond (ps linkage) after the base for each strand.
-  * Modifications: 
-1. Pattern options: Lets you load an existing pattern and set pattern options.
-1. Convert options: Lets you load a new pattern and convert AS SS strands to non-natural sequences. 
-
-<details>
-<summary>Load a pattern [CHECK]</summary>
-
-To load an existing pattern, in the **Pattern options** section, select a pattern to load from the **Load Pattern** dropdown.
-
-To load a pattern from a new file, do the following:
-
-1. In the **Convert options** table, specify the table to load, the **SS Column**, and, if needed, **AS Column** and **ID Column**
-2. Click **Convert Sequences** to initiate the conversion. 
-3. A column with the conversion results is added to the right of the table[WHAT TABLE?]
-4. Save the pattern, if needed[DETAILS?].
-
-</details>
-
-<details>
-<summary> Modify a pattern</summary>
-
-In the modification section on the right, you can choose modifications for each base in your input
-sequence and select PTO after the base, where needed. Modification options are based on the supported synthesizer's sequence format and [CHECK!!!]
-molecule (Gapmers / siRNA). Each modification is color-coded or letter-coded on the pattern visualization.
-
-<details>
-<summary>Modification options</summary>
-
-| Name           | Description                                              | Symbols                              |
-|----------------|----------------------------------------------------------|--------------------------------------|
-| `RNA`          | RNA nucleotides                                          | `A, C, G, U`                         |
-| `DNA`          | DNA nucleotides                                          | `dA, dC, dG, dT`                     |
-| `2'-Fluoro`    | 2'-Fluoro nucleotides                                    | `Af, Cf, Gf, Uf`                     |
-| `2'-O-Methyl`  | 2'-O-Methyl nucleotides                                  | `a, c, g, u`                         |
-| `2'-O-MOE`     | 2'-O-MOE nucleotides (including 5-Methyl C)              | `Am, Cm, Gm, Tm`                     |
-| `GNA`          | Glycol nucleic acid                                      | `(GNA-A), (GNA-C), (GNA-G), (GNA-T)` |
-| `LNA`          | Locked nucleic acid (including 5-Methyl C)               | `Ab, Cb, Gb, Tb`                     |
-| `UNA`          | Unlocked nucleotides                                     | `Ao, Co, Go, Uo`                     |
-| `A`            | Adenine                                                  | `a`                                  |
-| `C`            | Cytosine                                                 | `c`                                  |
-| `G`            | Guanine                                                  | `g`                                  |
-| `U`            | Uracil                                                   | `u`                                  |
-| `X-New`        |                                                          | `X`                                  |
-| `Y-New`        |                                                          | `Y`                                  |
-| `Z-New`        |                                                          | `Z`                                  |
-| `InvAbasic`    | Inverted abasic capped                                   | `(invabasic)`                        |
-| `InvAbasic(o)` | Inverted abasic capped (overhang)                        | `(invabasic)`                        |
-| `2'-OMe-U(o)`  | Nucleotide Uridine with 2’O-Methyl protection (overhang) | `mU`                                 |
-
-</details>
-</details>
-
-</TabItem>
-
-<TabItem value="get-structure" label="Duplex">
-
-Use this tab to visualize the molecular structure for a dimer and prepare it for registration. You can add an extra fragment of the antisense strand.
-
-![](img/st-duplex.png)
-
-</TabItem>
-</Tabs>
-
-</details>
-
--->
-
-<!--
-## Structural biology
-
--->
 
 ## Utilities
 
-### Sequence translation
+### Format conversion
 
-Datagrok convert macromolecules between formats, such as HELM or FASTA.
+Datagrok converts macromolecules between formats, such as HELM or FASTA.
 
 For individual macromolecules, the conversion happens automatically as you interact with them in the dataset. The **Context Panel** shows all supported notations, along with the sequence view <!--in the **Sequence** info pane (**Context Panel** > **Sequence**)-->. You can also perform conversion on the entire column by choosing the corresponding option from the **Bio** > **Convert** menu.
 
@@ -654,7 +527,7 @@ in cycles etc. Structure at atomic level could be saved in available notations.
 
 ### Get region
 
-With Datagrok you can extract a region of sequences in a Macromolecule column.
+With Datagrok, you can extract a region of sequences in a Macromolecule column.
 The Get Region function maintains `.positionNames` and `.positionLabels` for extracted region.
 The Get Region input form shows Region input if a Macromolecule column is annotated with `.regions` tag (JSON format),
 to easy selection region of interest to extract.
@@ -673,6 +546,12 @@ to easy selection region of interest to extract.
    a column. A new column containing sequences of the region of interest is added to the table.
 
 </details>
+
+### Oligo Toolkit
+
+The Oligo Toolkit is a collection of tools helping you to work with oligonucleotide sequences.
+To learn more and how to use, see the [OligoToolkit](oligo-toolkit.md) page.
+
 
 ## Customizing and extending the platform
 

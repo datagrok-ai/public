@@ -27,7 +27,7 @@ import * as C from './constants';
 import {_package, getBioLib} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {errInfo} from './err-info';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 
 type TempType = { [tagName: string]: any };
@@ -215,6 +215,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = tableColTemp[tempTAGS.currentWord];
+      if (tempCurrentWord && tableCol?.dataFrame?.currentRowIdx === -1)
+        tableColTemp[tempTAGS.currentWord] = null;
       const referenceSequence: ISeqSplitted = splitterFunc(
         ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
           tempReferenceSequence : tempCurrentWord ?? '');

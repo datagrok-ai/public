@@ -3,17 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
+import {Observable, Subject} from 'rxjs';
 
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 
+import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
-import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {Observable, Subject} from 'rxjs';
-
 import {_package} from '../package';
-import {IPdbGridCellRenderer} from './types';
 
 async function base64ToImg(base64: string): Promise<HTMLImageElement> {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -34,15 +35,16 @@ export const enum Temps {
 }
 
 export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
-  private readonly _renderComplete: Subject<void> = new Subject<void>();
-  public get renderComplete(): Observable<void> { return this._renderComplete; }
+  private readonly logger: ILogger;
 
   private readonly taskQueueMap = new Map<number, NglGlTask>();
   private readonly imageCache = new Map<number, HTMLImageElement>();
 
   constructor(
     protected readonly gridCol: DG.GridColumn,
-  ) { }
+  ) {
+    this.logger = _package.logger;
+  }
 
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
@@ -54,11 +56,11 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
     if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
 
     const rowIdx: number = gridCell.tableRowIndex;
-    _package.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
+    this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
 
     g.save();
     try {
-      const cacheDisabled: boolean = true;
+      const cacheDisabled: boolean = false;
       const image = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
 
       if (cacheDisabled || !image ||
@@ -82,7 +84,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
           onAfterRender: (canvas: HTMLCanvasElement) => {
             g.save();
             try {
-              _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
+              this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
               service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, canvas);
 
               const imageStr: string = canvas.toDataURL();
@@ -93,7 +95,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
               g.restore();
               this.taskQueueMap.delete(rowIdx);
               if (this.taskQueueMap.size === 0)
-                this._renderComplete.next();
+                this._onRendered.next();
             }
           },
         };
@@ -101,12 +103,12 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
         this.taskQueueMap.set(rowIdx, task);
         service.render(task, rowIdx);
       } else {
-        _package.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
+        this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
         service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
-      _package.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
+      this.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
         err instanceof Error ? err.stack : undefined);
       //throw err; // Do not throw to prevent disabling event handler
     } finally {
@@ -117,6 +119,8 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
+    const callLog = 'onClick()';
+    const logPrefix = `PdbGridCellRenderer.${callLog}`;
     // let twin = new TwinProteinView();
     // let ligandSelection: {[key: string]: any} = {};
     // twin.init(gridCell.cell.value, grok.shell.v as DG.TableView, ligandSelection);
@@ -146,6 +150,7 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
       case DockingRole.target:
       default: {
         let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
+        // eslint-disable-next-line prefer-const
         viewer = wu(tview.viewers).find((v) => {
           return v.type === 'Biostructure' || v.type === 'NGL';
         }) as DG.Viewer & IBiostructureViewer;
@@ -153,11 +158,22 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
         if (!viewer) {
           df.plot.fromType('Biostructure', {pdb: value}).then(
             (value: DG.Widget) => {
-              viewer = value as DG.Viewer & IBiostructureViewer;
-              tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+              const viewer = value as DG.Viewer & IBiostructureViewer;
+              testEvent(viewer.onRendered, () => {
+                this._onClicked.next();
+              }, () => {
+                tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+                viewer.invalidate(callLog); // To trigger viewer.onRendered
+              }, 10000).then(() => {});
             }); // Ignore promise returned
-        } else
-          viewer.setOptions({pdb: value});
+        } else {
+          testEvent(viewer.onRendered, () => {
+            this._onClicked.next();
+          }, () => {
+            viewer!.setOptions({pdb: value});
+            viewer!.invalidate(callLog); // To trigger viewer.onRendered
+          }, 10000).then(() => {});
+        }
       }
     }
   }
@@ -166,6 +182,26 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
     let res: PdbGridCellRendererBack = gridCol.temp[Temps.renderer];
     if (!res) res = gridCol.temp[Temps.renderer] = new PdbGridCellRendererBack(gridCol);
     return res;
+  }
+
+  // -- IPdbGridCellRenderer --
+
+  private _onClicked: Subject<void> = new Subject<void>();
+  get onClicked(): Observable<void> { return this._onClicked; }
+
+  // -- IRenderer --
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  public get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    this.gridCol.grid.invalidate();
+  }
+
+  async awaitRendered(timeout: number = 10000, reason: string = `await rendered ${timeout} timeout`): Promise<void> {
+    await testEvent(this._onRendered, () => {}, () => { this.invalidate(); },
+      timeout, reason);
   }
 }
 

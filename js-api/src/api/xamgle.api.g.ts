@@ -39,6 +39,9 @@ export interface SettingsInterface {
   /// Show user icon on top.
   showUserIcon: boolean;
 
+  /// Always show filters icons, not only on hover
+  showFiltersIconsConstantly: boolean;
+
   /// Auto-apply existing layout after selected rows are extracted
   applyLayoutWhenExtractingRows: boolean;
 
@@ -89,6 +92,8 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
+  enableStickyMeta: boolean;
+
   dateFormat: string;
 
   integerNumberFormat: string;
@@ -121,6 +126,8 @@ export interface SettingsInterface {
   helpBaseUrl: string;
 
   clientFuncCacheEnabled: boolean;
+
+  dataFrameBatchSize: number;
 
 
 }

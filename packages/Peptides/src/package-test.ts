@@ -1,9 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/core';
-//FIXME: fails on CI; crashes browser
-// import './tests/peptide-space-test';
 import './tests/benchmarks';
 import './tests/viewers';
 import './tests/widgets';

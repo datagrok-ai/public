@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.17.0",
+  "version": "1.17.5",
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
   "description": "Advanced tools for analyzing collections of peptides.",
   "repository": {
@@ -13,14 +13,15 @@
     "directory": "packages/Peptides"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.39.7",
-    "@datagrok-libraries/ml": "^6.3.55",
-    "@datagrok-libraries/statistics": "^1.2.10",
-    "@datagrok-libraries/utils": "^4.1.25",
-    "@datagrok-libraries/tutorials": "^1.3.10",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.16.4",
-    "file-loader": "^6.2.0",
+    "@datagrok-libraries/bio": "^5.39.14",
+    "@datagrok-libraries/ml": "^6.4.7",
+    "@datagrok-libraries/statistics": "^1.2.11",
+    "@datagrok-libraries/utils": "^4.1.36",
+    "@datagrok-libraries/tutorials": "^1.3.11",
+    "@datagrok-libraries/math": "^1.0.7",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.17.9",
+    "file-loader": "latest",
     "rxjs": "^6.5.5",
     "wu": "latest",
     "uuid": "latest"
@@ -30,10 +31,10 @@
     "@types/uuid": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
-    "css-loader": "^5.2.4",
+    "css-loader": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
-    "style-loader": "^2.0.0",
+    "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",

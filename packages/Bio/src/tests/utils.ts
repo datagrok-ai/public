@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {delay, expect, testEvent} from '@datagrok-libraries/utils/src/test';
 
+import {startDockerContainer} from '../utils/docker';
+
 import {_package} from '../package-test';
 
 export async function loadFileAsText(name: string): Promise<string> {
@@ -34,10 +36,10 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
 
 /** Waits if container is not started
  * @param {number} ms - time to wait in milliseconds */
-export async function awaitContainerStart(ms: number = 10000): Promise<void> {
-  const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
-  if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking')
-    await delay(ms);
+export async function awaitContainerStart(ms: number = 30000): Promise<void> {
+  const dc = await grok.dapi.docker.dockerContainers.filter('bio').first();
+  const dcId = dc.id;
+  await startDockerContainer(dcId, ms);
 }
 
 export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {

@@ -2,11 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IViewer} from './viewer';
 import {Observable} from 'rxjs';
 import {MjolnirPointerEvent} from 'mjolnir.js';
 import {PickingInfo} from '@deck.gl/core/typed';
+
 import {TAGS as pdbTAGS} from '../pdb/index';
+import {IViewer} from './viewer';
+import {BiostructureDataJson} from '../pdb/types';
 
 
 export type NodeStyleType = { [propName: string]: any };
@@ -23,6 +25,7 @@ export enum RepresentationType {
 
 export const NglPropsDefault = new class {
   // -- Data --
+  dataJson: string = BiostructureDataJson.empty;
   pdb: string | null = null;
   pdbTag: string | null = pdbTAGS.PDB;
   ligandColumnName: string | null = null;
