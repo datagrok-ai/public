@@ -12,7 +12,7 @@ The solver takes a set of the differential equations in a declarative form, and 
 
 Datagrok provides intuitive tools for the rapid solving ODEs.
 
-* Run the solver: 
+* Run the solver:
   * Go to **Apps** and run **Diff Studio**
   * Go to **Run** tab to launch computations
 * Modify a template:
@@ -20,16 +20,16 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Click **F5** or go to **Run** tab
   * Cahnge inputs and explore your model
 * Use an advanced template:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Press **Open** icon on the top panel
   * Select **Templates > Advanced...**
   * Modify formulas and click **F5**
 * Save formulas in a local file:
-  * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
+  * Press **Save** icon on the top panel  
   * Find the *ivp*-file in Downloads, modify it using any text editor
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Press **Open** icon on the top panel
   * Select **From file...**
   * Select a file with formulas
 
@@ -159,9 +159,10 @@ Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 * non-elementary and special functions' use
 * Datagrok packages' functions call
 
+Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-studio).
+
 See also
 
-* [Compute](https://datagrok.ai/help/compute)
 * [Scripting](https://datagrok.ai/help/compute/scripting)
 * [Function annotations](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#parameter-types-and-options)
 * [Viewers gallery](https://datagrok.ai/help/visualize/gallery)

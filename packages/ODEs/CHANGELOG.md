@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## 1.0.3 (2024-02-16)
+## 1.0.3 (2024-02-19)
 
 * Tab control with `Model` and `Run` panes
 * Interactive model exploration via the `Run` pane
