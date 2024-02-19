@@ -23,12 +23,11 @@
 # output: dataframe sequences_data
 
 description = """The utility generates clusters of macromolecule sequences to test SAR functionality. 
-Each cluster contains randomly generated sequence motif.
+Each cluster contains a randomly generated sequence motif.
 Each sequence has activity - a Gauss-distributed random value. 
-All sequences in the cluster has activities from the same distribution. 
 The utility can simulate activity cliffs - random changes in the conservative motif letters,
 leading to the significant change in the activity.
-"""
+Utility can simulate multiple experimental assays measuring activity, with different scales and noise levels."""
 
 import random
 import argparse
@@ -571,9 +570,8 @@ def parse_command_line_args() -> Any:
         "--assay-scales",
         type=str,
         default="(0|10), (0|150.0)",
-        help="Typical scale size for each assay. Assays are separated by comma. Minimum and maximum values are separated by pipe. Brackets are optional"
-        + "\n"
-        "Data outliers may be located outside the scale limit",
+        help="Typical scale size for each assay. Assays are separated by comma. Minimum and maximum values are separated by pipe. Brackets are optional."
+        + "Activity outliers may be located outside the specified scale",
     )
 
     assay_group.add_argument(
