@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { findSimilar, searchSubstructure } from './searches';
+import {findSimilar, searchSubstructure} from './searches';
 
 const WIDTH = 200;
 const HEIGHT = 100;
@@ -12,23 +12,30 @@ export enum SEARCH_TYPE {
   SUBSTRUCTURE = 'substructure',
 }
 
+export enum COLUMN_NAMES {
+  DRUGBANK_ID = 'DRUGBANK_ID',
+  COMMON_NAME = 'COMMON_NAME',
+  MOLECULE = 'molecule',
+  SCORE = 'score',
+}
+
 export async function searchWidget(molString: string, searchType: SEARCH_TYPE, dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
-  const compsHost = ui.div([], 'd4-flex-wrap');
+  const compsHost = ui.div([], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
   try {
     switch (searchType) {
-      case SEARCH_TYPE.SIMILARITY:
-        table = await findSimilar(molString, 20, 0, dbdf);
-        break;
-      case SEARCH_TYPE.SUBSTRUCTURE:
-        table = await searchSubstructure(molString, dbdf);
-        break;
-      default:
-        throw new Error(`DrugBankSearch: No such search type ${searchType}`);
+    case SEARCH_TYPE.SIMILARITY:
+      table = await findSimilar(molString, 20, 0.75, dbdf);
+      break;
+    case SEARCH_TYPE.SUBSTRUCTURE:
+      table = await searchSubstructure(molString, dbdf);
+      break;
+    default:
+      throw new Error(`DrugBankSearch: No such search type ${searchType}`);
     }
   } catch (e) {
     return new DG.Widget(ui.divText('Error occurred during search. Molecule is possible malformed'));
@@ -43,16 +50,22 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
 
   const bitsetIndexes = table.filter.getSelectedIndexes();
   const molCount = Math.min(bitsetIndexes.length, 20);
-  const moleculeCol: DG.Column<string> = table.getCol('molecule');
-  const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
-  const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
+  const moleculeCol: DG.Column<string> = table.getCol(COLUMN_NAMES.MOLECULE);
+  const idCol: DG.Column<string> = table.getCol(COLUMN_NAMES.DRUGBANK_ID);
+  const nameCol: DG.Column<string> = table.getCol(COLUMN_NAMES.COMMON_NAME);
+
+  const similarityCol: DG.Column<number> | null = searchType === SEARCH_TYPE.SIMILARITY ? table.getCol(COLUMN_NAMES.SCORE) : null;
 
   for (let n = 0; n < molCount; n++) {
     const piv = bitsetIndexes[n];
     const molfile = moleculeCol.get(piv)!;
-    const molHost = ui.div();
-    grok.functions.call('Chem:drawMolecule', { 'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true })
-      .then((res: HTMLElement) => molHost.append(res));
+    const molHost = ui.divV([]);
+    grok.functions.call('Chem:drawMolecule', {'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      .then((res: HTMLElement) => {
+        molHost.append(res);
+        if (searchType === SEARCH_TYPE.SIMILARITY)
+          molHost.append(ui.divText(`Score: ${similarityCol?.get(n)?.toFixed(2)}`));
+      });
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));

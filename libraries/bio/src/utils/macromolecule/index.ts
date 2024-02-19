@@ -12,10 +12,11 @@ export {
   NOTATION,
   ALPHABET,
   ALIGNMENT,
+  candidateAlphabets,
+  positionSeparator
 } from './consts';
 
 export {
-  getSplitter,
   splitterAsFasta,
   getSplitterWithSeparator,
   splitterAsHelm,
@@ -25,4 +26,6 @@ export {
   pickUpPalette,
   pickUpSeqCol,
   getPaletteByType,
+  MonomerToShortFunc,
+  getSplitterForColumn
 } from './utils';

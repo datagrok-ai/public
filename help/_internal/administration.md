@@ -227,4 +227,4 @@ dart server.dart deploy -c prod_deploy
 
 See also:
 
-* [Architecture](../develop/admin/architecture.md)
+* [Architecture](../develop/under-the-hood/architecture.md)

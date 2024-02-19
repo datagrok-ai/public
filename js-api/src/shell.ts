@@ -7,11 +7,19 @@ import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
-import {FuncCall} from "./functions";
+import { FuncCall } from "./functions";
+import { SettingsInterface } from './api/xamgle.api.g';
+import {IDartApi} from "./api/grok_api.g";
+import {ComponentBuildInfo} from "./dapi";
 
 declare let ui: any;
 declare let grok: { shell: Shell };
-let api = <any>window;
+const api: IDartApi = <any>window;
+
+class AppBuildInfo {
+  get client(): ComponentBuildInfo { return api.grok_Shell_GetClientBuildInfo(); }
+  server: ComponentBuildInfo = new ComponentBuildInfo();
+}
 
 /**
  * Grok visual shell, use it to get access to top-level views, tables, methods, etc.
@@ -20,7 +28,12 @@ let api = <any>window;
  * */
 export class Shell {
   windows: Windows = new Windows();
-  settings: Settings = new Settings();
+  settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
+  build: AppBuildInfo = new AppBuildInfo();
+
+  testError(s: String): void {
+    return api.grok_Test_Error(s);
+  }
 
   /** Current table, or null. */
   get t(): DataFrame {
@@ -191,13 +204,13 @@ export class Shell {
     api.grok_CloseAll();
   }
 
-  /** Registers a view.
-   * @param {string} viewTypeName
-   * @param {Function} createView - a function that returns {@link ViewBase}
-   * @param {string} viewUrlPath */
-  registerView(viewTypeName: string, createView: (...params: any[]) => ViewBase, viewUrlPath: string = ''): void {
-    api.grok_RegisterView(viewTypeName, createView, viewUrlPath);
-  }
+  // /** Registers a view.
+  //  * @param {string} viewTypeName
+  //  * @param {Function} createView - a function that returns {@link ViewBase}
+  //  * @param {string} viewUrlPath */
+  // registerView(viewTypeName: string, createView: (...params: any[]) => ViewBase, viewUrlPath: string = ''): void {
+  //   api.grok_RegisterView(viewTypeName, createView, viewUrlPath);
+  // }
 
   /** Registers a viewer.
    * Sample: {@link https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers}
@@ -375,16 +388,15 @@ export class Windows {
   set simpleMode(x: boolean) { api.grok_Set_SimpleMode(x); }
 }
 
-
 /** User-specific platform settings. */
 export class Settings {
 
   constructor() {
     return new Proxy({}, {
-      get: function (target: any, prop) {
+      get: function (target: any, prop: string) {
         return toJs(api.grok_PropMixin_GetPropertyValue(api.grok_Get_Settings(), prop));
       },
-      set: function (target, prop, value) {
+      set: function (target, prop: string, value) {
         if (target.hasOwnProperty(prop))
           return target[prop];
         if (target.hasOwnProperty(prop)) {

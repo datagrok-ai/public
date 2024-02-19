@@ -2,12 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as NGL from 'NGL';
-import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import * as ngl from 'NGL';
+
+import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+
+import {awaitNgl} from '../viewers/ngl-viewer-utils';
 
 import {_package} from '../package';
 
-export class NglGlService implements NglGlServiceBase {
+export class NglGlService extends NglGlServiceBase {
   readonly nglDiv: HTMLDivElement;
   private readonly ngl: any;
 
@@ -19,13 +22,22 @@ export class NglGlService implements NglGlServiceBase {
   private _busy: boolean = false;
 
   constructor() {
+    super();
+
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
 
-    this.ngl = new NGL.Stage(this.nglDiv);
+    this.ngl = new ngl.Stage(this.nglDiv);
+    // await awaitNgl(this.ngl); // constructor is not async
     this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     this._queue = [];
     this._queueDict = {};
+  }
+
+  get errorCount(): number { return 0; }
+
+  async reset(): Promise<void> {
+    throw new Error('Not implemented');
   }
 
   render(task: NglGlTask, key?: keyof any): void {

@@ -20,7 +20,7 @@ module.exports = (env, options) => ({
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full': 'OCL',
+    // 'openchemlib/full': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
@@ -39,8 +39,11 @@ module.exports = (env, options) => ({
     topLevelAwait: true
   },
   resolve: {
-    fallback: { "url": false },
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx']
+    fallback: {
+      "url": false,
+      "perf_hooks": false
+    },
+    extensions: ['.wasm', '.ts', '.mjs', '.js', '.json', '.tsx']
   },
   module: {
     rules: [
@@ -70,6 +73,7 @@ module.exports = (env, options) => ({
         test: /\.js$/,
         enforce: 'pre',
         use: ['source-map-loader'],
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,

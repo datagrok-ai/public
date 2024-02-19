@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import * as rxjs from 'rxjs';
 import {
   AGG,
@@ -24,10 +26,11 @@ import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let grok: any;
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
@@ -131,7 +134,7 @@ export class DataFrame {
   }
 
   /** Creates a {@link DataFrame} from the specified properties with the specified row count. */
-  static fromProperties(properties: Property[], rows: number = 0) {
+  static fromProperties(properties: Property[], rows: number = 0): DataFrame {
     let df = DataFrame.create(rows);
     for (let p of properties)
       df.columns.addNew(p.name, <ColumnType>p.propertyType);
@@ -287,6 +290,16 @@ export class DataFrame {
     return api.grok_DataFrame_ToCsv(this.dart, options);
   }
 
+  /** Exports the content to JSON format */
+  toJson(): any[] {
+    return Array.from({length: this.rowCount}, (_, idx) => 
+      this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+        entry[colName] = this.get(colName, idx);
+        return entry;
+      }, {})
+    );
+  }
+
   /** Exports dataframe to binary */
   toByteArray(): Uint8Array {
     return api.grok_DataFrame_ToByteArray(this.dart);
@@ -302,15 +315,8 @@ export class DataFrame {
 
   /** Current row.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get currentRow(): Row {
-    return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart));
-  }
-
-  /** Current row.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  set currentRow(idx) {
-    api.grok_DataFrame_Set_CurrentRowIdx(this.dart, idx);
-  }
+  get currentRow(): Row { return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart)); }
+  set currentRow(row: Row) { api.grok_DataFrame_Set_CurrentRowIdx(this.dart, row.idx); }
 
   /** Index of the current row. */
   get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.dart); }
@@ -805,13 +811,22 @@ export class Column<T = any> {
    * @returns {Column}
    * */
   init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
-    let type = typeof valueInitializer;
-    if (type === 'function')
+    let initType = typeof valueInitializer;
+    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME){
+      // @ts-ignore
+      api.grok_Column_Init(this.dart, (i) => toDart(valueInitializer(i)));
+    }
+    else if (initType === 'function')
       api.grok_Column_Init(this.dart, valueInitializer);
-    else if (type === 'number' || type === 'string' || type === 'boolean')
+
+    else if (initType === 'number' || initType === 'string' || initType === 'boolean')
       api.grok_Column_SetAllValues(this.dart, valueInitializer);
     return this;
   }
+
+  /** Performs deep cloning, optionally taking mask of the rows to be included.
+   * Note that the cloned colum is not added to this column's dataframe. */
+  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, mask)); }
 
   /** FOR EXPERT USE ONLY!
    *
@@ -859,6 +874,13 @@ export class Column<T = any> {
    * @returns {string} */
   getString(i: number): string {
     return api.grok_Column_GetString(this.dart, i);
+  }
+
+  /** Returns i-th value as number
+   * @param {number} i
+   * @returns {number} */
+  getNumber(i: number): number {
+    return api.grok_Column_GetNumber(this.dart, i);
   }
 
   /** Attempts to set i-th value by converting a provided string to the corresponding strongly-typed value.
@@ -974,8 +996,7 @@ export class Column<T = any> {
       return null;
     if (type == null)
       type = this.type;
-    return new Promise((resolve, reject) => api.grok_Column_ApplyFormula(
-      this.dart, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_Column_ApplyFormula(this.dart, formula, type, treatAsString);
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType]. */
@@ -998,6 +1019,8 @@ export class Column<T = any> {
     return api.grok_Column_Aggregate(this.dart, type);
   }
 }
+
+
 export class BigIntColumn extends Column<BigInt> {
   /**
    * Gets [i]-th value.
@@ -1016,6 +1039,7 @@ export class BigIntColumn extends Column<BigInt> {
     api.grok_BigIntColumn_SetValue(this.dart, i, value?.toString(), notify);
   }
 }
+
 
 export class DateTimeColumn extends Column<dayjs.Dayjs> {
   /**
@@ -1047,7 +1071,21 @@ export class ObjectColumn extends Column<any> {
    * Gets [i]-th value.
    */
   get(row: number): any | null {
-    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+    return toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+}
+
+
+export class DataFrameColumn extends Column<DataFrame> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): DataFrame | null {
+    return toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+
+  toList(): Array<DataFrame> {
+    return api.grok_Column_ToList(this.dart).map((x: any) => toJs(x));
   }
 }
 
@@ -1059,7 +1097,7 @@ export class ColumnList {
     this.dart = dart;
   }
 
-  /** Number of elements in the column. */
+  /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
   /** Column with the corresponding name (case-insensitive). */
@@ -1159,13 +1197,14 @@ export class ColumnList {
    * @param {string} expression
    * @param {ColumnType} type
    * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
+   * @param {bool} subscribeOnChanges - if true, the column will be recalculated when the source columns change
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false, subscribeOnChanges: boolean = true): Promise<Column> {
+    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, subscribeOnChanges);
   }
 
   _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString);
   }
 
   /** Creates and adds a string column. */
@@ -1193,7 +1232,7 @@ export class ColumnList {
    * */
   addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
-  /** Creates and adds a boolean column
+  /** Creates and adds a byte array column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
@@ -1283,17 +1322,10 @@ export class ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
   }
 
-  /** @returns {ValueMatcher} */
-  static numerical(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static string(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_String(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static dateTime(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static bool(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_BoolMatcher(pattern)); }
+  static numerical(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
+  static string(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_String(pattern)); }
+  static dateTime(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
+  static bool(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Bool(pattern)); }
 
   get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
   get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }
@@ -1335,7 +1367,7 @@ export class RowList {
   /** Removes specified rows
    * @param {RowPredicate} rowPredicate */
   removeWhere(rowPredicate: RowPredicate): void {
-    api.grok_RowList_RemoveWhere(this.dart, rowPredicate);
+    api.grok_RowList_RemoveWhereIdx(this.dart, (i: number) => rowPredicate(this.get(i)));
   }
 
   /** Removes specified rows
@@ -1479,8 +1511,12 @@ export class Cell {
 
   /** Cell value.
    * @returns {*} */
-  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
-  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
+  get value(): any { return toJs(api.grok_Cell_Get_Value(this.dart)); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, toDart(x)); }
+
+  /** String representation of the value, if both [column] and [row] are defined;
+     otherwise, empty string. */
+  get valueString(): string { return api.grok_Cell_Get_ValueString(this.dart); }
 
   /** Whether the cell is empty */
   isNone(): boolean { return this.column.isNone(this.rowIndex); }
@@ -1732,6 +1768,11 @@ export class Stats {
    * @returns {Stats} */
   static fromColumn(col: Column, mask: BitSet | null = null): Stats {
     return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
+  }
+
+  /** Calculates statistics for the array of values. */
+  static fromValues(values: number[] | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array): Stats {
+    return new Stats(api.grok_Stats_FromValues(values));
   }
 
   /** Total number of values (including missing values). */

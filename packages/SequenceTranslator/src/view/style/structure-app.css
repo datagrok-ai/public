@@ -1,0 +1,39 @@
+/* Naming convention: class names should begin with st and app name to avoid naming collitions */
+
+.st-structure-body {
+  padding-right: 20px;
+}
+
+.st-structure-input-form {
+  text-align: right;
+  vertical-align: top;
+  min-width: 95px;
+}
+
+.st-structure-direction-choice label {
+  min-width: 100px;
+  float: right;
+}
+
+.st-structure-direction-choice div {
+  justify-content: right;
+}
+
+.st-structure-text-input-td { /* Style for td containing textarea */
+  width: 100%;
+}
+
+.st-structure-mol-img {
+  margin-right: 30px;
+  float: right;
+}
+
+.st-structure-bool-button-block {
+  justify-content: right;
+  margin-bottom: 10px;
+}
+
+.st-structure-bottom {
+  flex-direction: row-reverse;
+  padding-top: 20px;
+}

@@ -6,6 +6,9 @@ A bar chart presents grouped data as rectangular bars with lengths proportional 
 Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed
 for categorical values.
 
+> Developers: To add the viewer from the console, use:
+ `grok.shell.tv.addViewer('Bar chart');`
+
 |                |                                   |
 |----------------|-----------------------------------|
 | Click on a bar | [Select or filter](../viewers/viewers.md) |
@@ -39,6 +42,6 @@ values:
 See also:
 
 * [Column selectors](column-selectors.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/table-view.md)
 * [Viewers](../viewers/viewers.md)
 * [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)

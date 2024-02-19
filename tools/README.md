@@ -83,6 +83,8 @@ Read more about package development in [Datagrok's documentation](https://datagr
 - `api` creates wrapper functions for package scripts and queries. The output is stored in files `/src/scripts-api.ts`
   and `/src/queries-api.ts` respectively.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
+Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.
+For more information on configuring connections, refer to the [Connections](https://datagrok.ai/help/develop#connections) article.
 
   ```shell
   cd <package-name>
@@ -118,4 +120,21 @@ Read more about package development in [Datagrok's documentation](https://datagr
   save a test run result, add the `--csv` flag (the report will be saved in a
   CSV file in the package folder). You can find more details in [local package testing
   instructions](https://datagrok.ai/help/develop/how-to/test-packages#local-testing).
+
+  Table with all available flags:
+  | Flag           | Description                                                               |
+  |----------------|---------------------------------------------------------------------------|
+  | catchUnhandled | Whether or not to catch unhandled exceptions during tests                 |
+  | category       | Runs tests of a specific category                                         |
+  | csv            | Saves tests run results as a CSV file in the package folder               |
+  | gui            | Disables the headless browser mode                                        |
+  | host           | Specify server alias                                                      |
+  | record         | Records the test execution process in mp4 format                          |
+  | report         | Sends a report on test results                                            |
+  | skip-build     | Skips package build step                                                  |
+  | skip-publish   | Skips package publish step                                                |
+  | verbose        | Prints detailed information about passed and skipped tests in the console |
+  | platform       | Runs only platform tests (applicable for ApiTests package only)           |
+  | core           | Runs package & core tests (applicable  for DevTools package only)         |
+
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.

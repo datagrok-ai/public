@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/chemspace",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -25,7 +25,7 @@
     "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "datagrok-tools": "latest",
+    "datagrok-tools": "^4.12.9",
     "webpack": "latest",
     "webpack-cli": "latest"
   },

@@ -44,7 +44,7 @@ export async function clinicalCaseApp(): Promise<any> {
   if (Object.keys(study.domains).every((name) => grok.shell.table(name) == null)) {
     let demoFiles = await grok.dapi.projects.filter('clin-demo-files-2').list();
     if (demoFiles.length) {
-      await grok.dapi.projects.open('clin-demo-files-2');
+      await (await grok.dapi.projects.find(demoFiles[0].id)).open();
     } else {
       grok.shell.warning('Please load SDTM data or demo files');
     }
@@ -142,11 +142,11 @@ export async function clinicalCaseApp(): Promise<any> {
   }
 }
 
-
+//name: clinicalCaseFolderLauncher
 //tags: folderViewer
 //input: file folder
 //input: list<file> files
-//output: widget
+//output: widget res
 export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
   if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
     let res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);

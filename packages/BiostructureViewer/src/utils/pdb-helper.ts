@@ -3,8 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
+import * as ngl from 'NGL';
+
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {IPdbHelper, PdbResDataFrameType} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {AtomBase, AtomCoordsBase, LineBase} from '@datagrok-libraries/bio/src/pdb/format/types-base';
+import {PdbAtomCoords, PdbAtomTer} from '@datagrok-libraries/bio/src/pdb/format/types-pdb';
 
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {DefaultPluginSpec, PluginSpec} from 'molstar/lib/mol-plugin/spec';
@@ -13,6 +19,9 @@ import {StateObjectSelector} from 'molstar/lib/mol-state';
 import {Model} from 'molstar/lib/mol-model/structure';
 import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
 import {Sequence} from 'molstar/lib/mol-model/sequence';
+import {Pdbqt} from './pdbqt-parser';
+import {IMPORT} from '../consts-import';
+
 
 /** {@link https://molstar.org/docs/plugin/#plugincontext-without-built-in-react-ui} */
 const MolstarPluginSpec: PluginSpec = {
@@ -76,6 +85,11 @@ export class PdbResDataFrame extends DG.DataFrame implements PdbResDataFrameType
   }
 }
 
+type PdbHelperWindowType = Window & {
+  $pdbHelper?: PdbHelper,
+};
+declare const window: PdbHelperWindowType;
+
 export class PdbHelper implements IPdbHelper {
   //private stage: NGL.Stage;
   private plugin: PluginContext;
@@ -93,6 +107,8 @@ export class PdbHelper implements IPdbHelper {
   async pdbToDf(pdbStr: string, _name: string): Promise<PdbResDataFrameType> {
     //https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html
     // using molstar parser
+    if (!pdbStr) throw new Error('Empty PDB data');
+
     const pdbData: StateObjectSelector = await this.plugin.builders.data.rawData({data: pdbStr});
     const trState = await this.plugin.builders.structure.parseTrajectory(pdbData, 'pdb');
 
@@ -131,14 +147,57 @@ export class PdbHelper implements IPdbHelper {
     return resDf;
   }
 
+  parsePdbqt(pdbqtStr: string, molColName?: string): DG.DataFrame {
+    const data: Pdbqt = Pdbqt.parse(pdbqtStr);
+    const molColNameVal: string = molColName ?? IMPORT[Molecule3DUnits.pdbqt].molColName;
+    const resDf = data.toDataFrame(molColNameVal);
+    return resDf;
+  }
+
+  async molToPdb(mol: string): Promise<string> {
+    // const val = await ngl.autoLoad(mol, {ext: 'sdf'});
+    // const resPdb = (new ngl.PdbWriter(val)).getString();
+    // return resPdb;
+    const resName: string = 'UNK';
+    const chain: string = '';
+    const resNum: number = 0;
+
+    const molH = MolfileHandler.getInstance(mol);
+    const lineList: LineBase[] = new Array<LineBase>(molH.atomCount + 1);
+    for (let atomI = 0; atomI < molH.atomCount; ++atomI) {
+      const atomType = molH.atomTypes[atomI];
+      const atomX: number = molH.x[atomI];
+      const atomY: number = molH.y[atomI];
+      const atomZ: number = molH.z[atomI];
+      // @formatter:off
+      lineList[atomI] = new PdbAtomCoords(new AtomCoordsBase(new AtomBase(new LineBase('HETATM'),
+        (atomI + 1), atomType, '', '', resName, chain, resNum, ''),
+      atomX, atomY, atomZ, 0, 0), '', atomType, '');
+      // @formatter:on
+    }
+    lineList[molH.atomCount] = new PdbAtomTer(new AtomBase(new LineBase('TER'),
+      -1, '', '', '', '', '', -1, ''));
+
+    const resPdb = lineList.map((l) => l.toStr()).join('\n');
+    return resPdb;
+  }
+
+  async pdbqtToMol(srcPdbqt: string): Promise<string> {
+    const srcBlob = new Blob([srcPdbqt]);
+    const valS: ngl.Structure = await ngl.autoLoad(srcBlob, {ext: 'pdbqt'});
+
+    const res = (new ngl.SdfWriter(valS)).getData();
+    return res;
+  }
+
   // -- Instance singleton --
-  private static _instance: PdbHelper | null;
 
   public static async getInstance(): Promise<IPdbHelper> {
-    if (!PdbHelper._instance) {
-      PdbHelper._instance = new PdbHelper();
-      await PdbHelper._instance.init();
+    let res: PdbHelper = window.$pdbHelper!;
+    if (!res) {
+      window.$pdbHelper = res = new PdbHelper();
+      await res.init();
     }
-    return PdbHelper._instance;
+    return res;
   }
 }

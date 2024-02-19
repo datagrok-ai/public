@@ -9,7 +9,7 @@ import $ from 'cash-dom';
 
 
 @grok.decorators.viewer({
-  name: 'Word Cloud Viewer',
+  name: 'Word cloud',
   description: 'Creates a word cloud viewer',
   icon: 'icons/wordcloud-viewer.svg',
   toolbox: true,

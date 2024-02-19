@@ -1,8 +1,7 @@
 package grok_connect.table_query;
 
-import java.util.*;
-import com.google.gson.annotations.*;
-
+import java.util.List;
+import com.google.gson.annotations.SerializedName;
 
 public class AggrFunctionInfo
 {
@@ -27,14 +26,11 @@ public class AggrFunctionInfo
     /// Result type (see [Types])
     public String resType;
 
-    public AggrFunctionInfo(String functionName, String dbFunctionName, List<String> srcTypes, String resType) {
-        this.functionName = functionName;
-        this.dbFunctionName = dbFunctionName;
-        this.srcTypes = srcTypes;
-        this.resType = resType;
+    public AggrFunctionInfo(String functionName, String dbFunctionName, List<String> srcTypes) {
+        this(functionName, dbFunctionName, srcTypes, null);
     }
 
-    public AggrFunctionInfo(String functionName, String dbFunctionName, List<String> srcTypes) {
+    public AggrFunctionInfo(String functionName, String dbFunctionName, List<String> srcTypes, String resType) {
         this.functionName = functionName;
         this.dbFunctionName = dbFunctionName;
         this.srcTypes = srcTypes;

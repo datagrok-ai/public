@@ -1,0 +1,13 @@
+.ui-app-header {
+
+}
+
+.ui-app-header-icon {
+    width: 150px;
+    height: 150px;
+    margin-right: 20px;
+}
+
+.u2-panel {
+    gap: 10px;
+}

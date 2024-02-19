@@ -3,6 +3,7 @@ package grok_connect.utils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
+import grok_connect.connectors_info.DbCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.management.JMX;
@@ -21,7 +22,11 @@ public class HikariDataSourceInformation {
         LOGGER.info("Initializing pool for driver {} with url {}", driverClassName, url);
         Properties propertiesWithoutPass = new Properties();
         propertiesWithoutPass.putAll(properties);
-        propertiesWithoutPass.remove("password");
+        propertiesWithoutPass.remove(DbCredentials.LOGIN);
+        propertiesWithoutPass.remove(DbCredentials.PASSWORD);
+        propertiesWithoutPass.remove(DbCredentials.ACCESS_KEY);
+        propertiesWithoutPass.remove(DbCredentials.SECRET_KEY);
+        propertiesWithoutPass.remove(DbCredentials.ACCOUNT_LOCATOR);
 
         String alphanumeric = "[^A-Za-z0-9./|=]";
         String poolName = "Host - " + url.replaceAll("[:=]", "|").replaceAll(alphanumeric, "") +

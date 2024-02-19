@@ -11,16 +11,21 @@ import {MapProxy} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
+import * as d4 from './../src/api/d4.api.g';
+
 
 import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 import '../css/tags-input.css';
+import {FuncCall} from "./functions";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let grok: any;
 declare let DG: any;
 declare let ui: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
@@ -125,7 +130,7 @@ export class ObjectPropertyBag {
 
   /** Sets the current state of viewer properties as the default configuration used to create new viewer
   * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
-  * Read more about viewer commands: {@link https://datagrok.ai/help/visualize/viewers/#common-actions}
+  * Read more about viewer commands: https://datagrok.ai/help/visualize/viewers/#common-actions
   * @param data indicates if data settings should be copied.
   * @param style indicates if style (non-data) settings should be copied. */
   setDefault(data: boolean = false, style: boolean = true) {
@@ -133,6 +138,10 @@ export class ObjectPropertyBag {
       api.grok_Viewer_Props_SetDefault(this.source.dart, data, style);
     else
       throw 'Call failed: object is not Viewer instance';
+  }
+
+  static setDefaultProperty(viewerType: string, propertyName: string, propertyValue: any) {
+    api.grok_Viewer_Props_SetDefaultProperty(viewerType, propertyName, propertyValue);
   }
 
   /** Clears the previously remembered default settings for viewers of this type. See also: [setDefault] */
@@ -228,6 +237,8 @@ export class Widget<TSettings = any> {
   getDartProperties(): any[] {
     return this.getProperties().map((p) => p.dart);
   }
+
+  sourceRowsChanged(): void {};
 
   onFrameAttached(dataFrame: DataFrame): void {
     if (this.props.hasProperty('dataFrame'))
@@ -474,14 +485,16 @@ export class Accordion extends DartWidget {
   }
 
   /** Adds a pane */
-  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null));
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null,
+    allowDragOut: boolean = true): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null, allowDragOut));
   }
 
   /** Adds a pane with the count indicator next to the title.
    * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount));
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null,
+    allowDragOut: boolean = true): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount, allowDragOut));
   }
 
   /** Removed the specified pane. */
@@ -985,8 +998,8 @@ export class InputBase<T = any> {
   }
 
   /** Creates input for the specified input type */
-  static forInputType(inputType: string): InputBase {
-    return toJs(api.grok_InputBase_ForInputType(inputType));
+  static forInputType(inputType: string | d4.InputType): InputBase {
+    return toJs(api.grok_InputBase_ForInputType(inputType as string));
   }
 
   /** Creates input for the specified column */
@@ -1000,6 +1013,7 @@ export class InputBase<T = any> {
   get caption(): string {
     return api.grok_InputBase_Get_Caption(this.dart);
   }
+  set caption(s: string) { api.grok_InputBase_Set_Caption(this.dart, s); }
 
   /** Property if associated with */
   get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
@@ -1092,6 +1106,12 @@ export class InputBase<T = any> {
     api.grok_InputBase_AddPatternMenu(this.dart, pattern);
   }
 
+  /** Adds a validator that accepts a string representation of the edited value
+   * and returns null if valid, or error message if invalid*/
+  addValidator(validator: (value: string) => string | null): void {
+    api.grok_InputBase_AddValidator(this.dart, validator);
+  }
+
   /** Sets the tooltip */
   setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): InputBase<T> {
     api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
@@ -1099,6 +1119,46 @@ export class InputBase<T = any> {
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
+}
+
+
+export class DartWrapper {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+}
+
+
+/** A form with multiple inputs inside */
+export class InputForm extends DartWrapper {
+  constructor(dart: any) { super(dart); }
+
+  /** Creates an InputForm for the specified function call. */
+  static async forFuncCall(funcCall: FuncCall): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
+  }
+
+  static forInputs(inputs: InputBase[]): InputForm {
+    return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
+  }
+
+  get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
+
+  getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
+
+  get source(): any { return api.grok_InputForm_Get_Source(this.dart); };
+
+  set source(source: any) { api.grok_InputForm_Set_Source(this.dart, toDart(source)); };
+
+  /** Occurs when user changes any input value in a form. */
+  get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
+
+  /** Occurs after the form is validated, no matter whether it is valid or not. */
+  get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
+
+  get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
 }
 
 
@@ -1143,6 +1203,20 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
   set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
+
+export class ChoiceInput<T> extends InputBase<T> {
+  dart: any;
+
+  constructor(dart: any, onChanged: any = null) {
+    super(dart, onChanged);
+  }
+
+  get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
+  set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
+
+}
+
+
 export class ProgressIndicator {
   dart: any;
 
@@ -1158,13 +1232,11 @@ export class ProgressIndicator {
     return api.grok_ProgressIndicator_Get_Percent(this.dart);
   }
 
-  get description(): string {
-    return api.grok_ProgressIndicator_Get_Description(this.dart);
-  }
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
 
-  set description(s: string) {
-    api.grok_ProgressIndicator_Set_Description(this.dart, s);
-  }
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
 
   update(percent: number, description: string): void {
     api.grok_ProgressIndicator_Update(this.dart, percent, description);
@@ -1181,12 +1253,16 @@ export class ProgressIndicator {
   get onLogUpdated(): Observable<any> {
     return observeStream(api.grok_Progress_Log_Updated(this.dart));
   }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
+  }
 }
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-  static create(name?: string): TaskBarProgressIndicator {
-    return toJs(api.grok_TaskBarProgressIndicator_Create(name));
+  static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinner?: boolean }): TaskBarProgressIndicator {
+    return toJs(api.grok_TaskBarProgressIndicator_Create(name, options?.cancelable ?? false, options?.pausable ?? false, options?.spinner ?? false));
   }
 
   close(): any {
@@ -1289,6 +1365,15 @@ export class Color {
 
   /** Returns the Blue component of the color represented as ARGB-formatted integer. */
   static b(c: number): number { return c & 0xFF; }
+
+  static argb(a: number, r: number, g: number, b: number) {
+    return ((a << 24) | (r << 16) | (g << 8) | b) >>> 0;
+  }
+
+  /** Returns the color with the specified alpha component (0-255). */
+  static setAlpha(color: number, alpha: number) {
+    return Color.argb(alpha, Color.r(color), Color.g(color), Color.b(color));
+  }
 
   /** Returns i-th categorical color (looping over the palette if needed) */
   static getCategoricalColor(i: number): ColorType {
@@ -1502,9 +1587,16 @@ export class TreeViewNode<T = any> {
     return api.grok_TreeViewNode_Root(this.dart);
   }
 
+  get rootNode(): TreeViewGroup {
+    let x: TreeViewNode = this;
+    while (x.parent)
+      x = x.parent;
+    return x as TreeViewGroup;
+  }
+
   /* Node's parent */
   get parent(): TreeViewNode {
-    return api.grok_TreeViewNode_Parent(this.dart);
+    return toJs(api.grok_TreeViewNode_Parent(this.dart));
   }
 
   /** Caption label */
@@ -1523,6 +1615,9 @@ export class TreeViewNode<T = any> {
 
   /** Node text */
   get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
+
+  get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
+  set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
@@ -1767,9 +1862,9 @@ export class Legend extends DartWidget {
   get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
   set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column.dart); }
 
-  /** Whether or not to show empty categories */
-  get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
-  set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
+  /** Whether to show empty categories */
+  get showNulls(): boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
+  set showNulls(show: boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
 
   /** Position (left / right / top / bottom) */
   get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }
@@ -1845,11 +1940,10 @@ export class DropDown {
 
     this._label = label;
     this._element = createElement();
-
-    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
     this._dropDownElement.style.visibility = 'hidden';
 
-    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+    this.root = ui.div([this._dropDownElement, this._label], 'ui-drop-down-root');
 
     this._initEventListeners();
   }

@@ -1,10 +1,11 @@
-import { exec } from 'child_process';
+/* eslint-disable max-len */
+import {exec} from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
-import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
+import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -13,15 +14,15 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled',
-    'report', 'skip-build', 'skip-publish', 'category', 'record'];
+  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
+    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
   const confPath = path.join(grokDir, 'config.yaml');
 
   if (nArgs > 1 || options.length > commandOptions.length || (options.length > 0 &&
-    !options.every(op => commandOptions.includes(op))))
+    !options.every((op) => commandOptions.includes(op))))
     return false;
 
   if (!utils.isPackageDir(curDir)) {
@@ -34,7 +35,7 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
-  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
+  const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   if (args.host) {
     if (args.host in config.servers) {
@@ -49,7 +50,7 @@ export function test(args: TestArgs): boolean {
     console.log('Environment variable `HOST` is set to', config.default);
   }
 
-  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), {encoding: 'utf-8'}));
   if (packageData.name) {
     process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
     console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
@@ -58,14 +59,24 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
+  if (args.platform && process.env.TARGET_PACKAGE !== 'ApiTests') {
+    color.error('--platform flag can only be used in the ApiTests package');
+    return false;
+  }
+
+  if (args.core && process.env.TARGET_PACKAGE !== 'DevTools') {
+    color.error('--core flag can only be used in the DevTools package');
+    return false;
+  }
+
   if (args['skip-build']) {
     if (args['skip-publish'])
       test();
     else
       publish(test);
-  } else {
+  } else 
     build(args['skip-publish'] ? test : () => publish(test));
-  }
+  
 
   function build(callback: Function): void {
     exec('npm run build', (err, stdout, stderr) => {
@@ -100,7 +111,8 @@ export function test(args: TestArgs): boolean {
     let browser: Browser;
     let page: Page;
     let recorder: PuppeteerScreenRecorder;
-    type resultObject = { failReport: string, skipReport: string, passReport: string, failed: boolean, csv?: string };
+    type resultObject = { failReport: string, skipReport: string, passReport: string,
+      failed: boolean, csv?: string, countReport: {skip: number, pass: number} };
 
     function init(timeout: number): Promise<void> {
       const params = Object.assign({}, testUtils.defaultLaunchParameters);
@@ -108,48 +120,67 @@ export function test(args: TestArgs): boolean {
         params['headless'] = false;
       return testUtils.runWithTimeout(timeout, async () => {
         try {
-          let out = await testUtils.getBrowserPage(puppeteer, params);
+          const out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
           page = out.page;
           recorder = new PuppeteerScreenRecorder(page, testUtils.recorderConfig);
         } catch (e) {
           throw e;
         }
-      })
+      });
     }
 
-    function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
-      report?: boolean, record?: boolean} = {}): Promise<resultObject> {
+    function runTest(timeout: number, options: {path?: string, catchUnhandled?: boolean, core?: boolean,
+      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         let consoleLog: string = '';
         if (options.record) {
           await recorder.start('./test-record.mp4');
-          page.on('console', msg => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
-          page.on('pageerror', error => {
+          page.on('console', (msg) => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
+          page.on('pageerror', (error) => {
             consoleLog += `CONSOLE LOG ERROR: ${error.message}\n`;
           });
-          page.on('response', response => {
+          page.on('response', (response) => {
             consoleLog += `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`;
           });
         }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
 
-        let r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
-          return new Promise<resultObject>((resolve, reject) => {            
-            (<any>window).grok.functions.call(`${targetPackage}:test`, {
-              'category': options.category,
-              'testContext': testContext,
-            }).then((df: any) => {
+        const r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
+          if (options.benchmark)
+            (<any>window).DG.Test.isInBenchmark = true;
+          return new Promise<resultObject>((resolve, reject) => {     
+            const params: {
+              category?: string,
+              test?: string,
+              testContext: testUtils.TestContext,
+              skipCore?: boolean,
+              verbose?: boolean
+            } = {
+              testContext: testContext,
+            };
+            if (options.path) {
+              const split = options.path.split(' -- ');
+              params.category = split[0];
+              params.test = split[1];
+            }
+            if (targetPackage === 'DevTools') {
+              params.skipCore = options.core ? false : true;
+              params.verbose = options.verbose === true;
+            }
+            (<any>window).grok.functions.call(`${targetPackage}:${options.platform ? 'testPlatform' : 'test'}`, params).then((df: any) => {
               let failed = false;
               let skipReport = '';
               let passReport = '';
               let failReport = '';
+              const countReport = {skip: 0, pass: 0};
 
               if (df == null) {
                 failed = true;
-                failReport = `Fail reason: No package tests found${options.category ? ` for category "${options.category}"` : ''}`;
-                resolve({failReport, skipReport, passReport, failed});
+                failReport = `Fail reason: No package tests found${options.path ? ` for path "${options.path}"` : ''}`;
+                resolve({failReport, skipReport, passReport, failed, countReport});
+                return;
               }
 
               const cStatus = df.columns.byName('success');
@@ -162,23 +193,30 @@ export function test(args: TestArgs): boolean {
                 if (cStatus.get(i)) {
                   if (cSkipped.get(i)) {
                     skipReport += `Test result : Skipped : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                    countReport.skip += 1;
                   } else {
                     passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                    countReport.pass += 1;
                   }
                 } else {
                   failed = true;
                   failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
                 }
               }
+              if (!options.verbose)
+                df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
-              resolve({failReport, skipReport, passReport, failed, csv});
-            }).catch((e: any) => reject(e));
+              resolve({failReport, skipReport, passReport, failed, csv, countReport});
+            }).catch((e: any) => {
+              const stack = (<any>window).DG.Logger.translateStackTrace(e.stack);
+              resolve({failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: {skip: 0, pass: 0}});
+            });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 
         if (options.record) {
           await recorder.stop();
-          fs.writeFileSync('./test-console-output.log', consoleLog)
+          fs.writeFileSync('./test-console-output.log', consoleLog);
         }
         return r;
       });
@@ -193,19 +231,24 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, { category: args.category,
-        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record });
+      const r = await runTest(7200000, {path: args.path, verbose: args.verbose, platform: args.platform,
+        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark,
+        core: args.core});
 
       if (r.csv && args.csv) {
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
         color.info('Saved `test-report.csv`\n');
       }
 
-      if (r.passReport)
+      if (r.passReport && args.verbose)
         console.log(r.passReport);
+      else
+        console.log('Passed tests: ' + r.countReport.pass);
 
-      if (r.skipReport)
+      if (r.skipReport && args.verbose)
         console.log(r.skipReport);
+      else
+        console.log('Skipped tests: ' + r.countReport.skip);
 
       if (r.failed) {
         console.log(r.failReport);
@@ -227,7 +270,8 @@ export function test(args: TestArgs): boolean {
 
 interface TestArgs {
   _: string[],
-  category?: string,
+  // category?: string,
+  path?: string,
   host?: string,
   csv?: boolean,
   gui?: boolean,
@@ -236,4 +280,8 @@ interface TestArgs {
   record?: boolean,
   'skip-build'?: boolean,
   'skip-publish'?: boolean,
+  verbose?: boolean,
+  benchmark?: boolean,
+  platform?: boolean,
+  core?: boolean
 }

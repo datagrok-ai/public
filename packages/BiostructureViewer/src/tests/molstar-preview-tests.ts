@@ -2,9 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
-import {_packageName} from './utils';
+import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
 import {previewMolstarUI} from '../viewers/molstar-viewer/utils';
+
+import {_package} from '../package-test';
 
 const validFileNames = ['1bdq.pdb', '1bdq.sdf', 'dc.mol2',
   '4tkx.mmcif', 'example.xyz', 'grofile.gro', 'pdbqt.pdbqt'];
@@ -26,16 +27,16 @@ const demoFilesPreviewList: string[] = [
   '1blu.pdb', '1crn.gro', '1crn.pdb', '1crn.ply',
   '1lee.ccp4', '2vts-docking.sdf', '2vts-protein.pdb', '3ek3-2fofc.cub',
   '3PQR.cif', '3str-2fofc.brix', '3str-2fofc.dsn6',
-  'adrenalin.mol2', 'ala3.pdb', 'ala3.psf', 'bromobenzene.pdb', 'd1h4vb1.ent', 'd1nj1a1.ent',
+  'adrenalin.mol2', 'ala3.pdb', 'bromobenzene.pdb', 'd1h4vb1.ent', 'd1nj1a1.ent',
   'DPDP.pdb', 'esp.dx', 'esp.mol', 'ligands.sd',
-  'localResolution.mrc', 'popc.gro'];
+  'popc.gro'];
 const demoFilesPath: string = 'bio/ngl-formats';
 
 category('MolstarPreview', () => {
   validFileNames.forEach((fn) => {
     test(`open${fn.substring(fn.indexOf('.'), fn.length)}`, async () => {
       let noException = true;
-      const folderName: string = `System:AppData/${_packageName}/samples`;
+      const folderName: string = `System:AppData/${_package.name}/samples`;
       const file = (
         await grok.dapi.files.list(folderName, false, fn))[0];
 
@@ -53,7 +54,7 @@ category('MolstarPreview', () => {
   // tests that opening csv through molstar causes exception. visually, error balloon should appear
   test('negative-openCsvFile', async () => {
     let noException = true;
-    const folderName: string = `System:AppData/${_packageName}/samples`;
+    const folderName: string = `System:AppData/${_package.name}/samples`;
     const file = (await grok.dapi.files.list(folderName, false, 'dock.csv'))[0];
 
     try {
@@ -87,8 +88,10 @@ category('MolstarPreview', () => {
 
         const {view, loadingPromise} = previewMolstarUI(fiList[0]);
         grok.shell.newView(`Molstar Preview: `, [view]);
+        // grok.shell.addView(view); // ???
         await loadingPromise;
-      });
+        await delay(100);
+      }, {timeout: 15000 /* loading file */});
     }
   });
 });

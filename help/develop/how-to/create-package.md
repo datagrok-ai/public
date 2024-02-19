@@ -7,7 +7,7 @@ This documents explains how to create a simple package that contains an
 
 ## 1. Create a package
 
-Before we start, [set up development environment](../set-up-environment.md) if you haven't done it already.
+Before we start, [set up development environment](../dev-process/set-up-environment.md) if you haven't done it already.
 
 Now, let's create a package:
 
@@ -26,12 +26,12 @@ npm install
 
 Add the actual panel's code at `TextStats/src/package.ts`:
 
-```
-//name: Text Stats
+```typescript
+//name: TextStats
 //tags: panel, widgets
 //input: string str {semType: text}
 //output: widget result
-export function textStats(str) {
+export function textStats(str: string) {
   // for 'gattaca', produces {"g": 1, "a": 3, "t": 2, "c": 1}
   const symbolCounts = Array.from(str).reduce((counts, ch) => {
     counts[ch] = (counts[ch] || 0) + 1;

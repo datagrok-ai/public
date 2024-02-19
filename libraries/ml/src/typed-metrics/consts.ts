@@ -2,6 +2,7 @@ export enum StringMetricsNames {
     Levenshtein = 'Levenshtein',
     JaroWinkler = 'Jaro-Winkler',
     Manhattan = 'Manhattan',
+    Onehot = 'One-Hot',
   }
 
 export enum VectorMetricsNames {
@@ -23,15 +24,20 @@ export enum BitArrayMetricsNames {
     Euclidean = 'Euclidean',
   }
 
+export enum IntArrayMetricsNames {
+  TanimotoIntArray = 'TanimotoIntArray',
+}
+
 export enum DistanceMetricsSubjects {
     Vector = 'Vector',
     String = 'String',
     BitArray = 'BitArray',
     MacroMolecule = 'MacroMolecule',
     Number = 'Number',
+    IntArray = 'IntArray',
   }
 
 export enum NumberMetricsNames {
-  NumericDistance = 'NumericDistance',
+  Difference = 'Difference',
 }
 

@@ -45,8 +45,11 @@ export class DemoView extends DG.ViewBase {
 
     this._closeAll();
 
+    // TODO: change to getElementById('elementContent') when it is fixed
+    const updateIndicatorRoot = document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
+
     if (func.options['isDemoScript'] == 'True') {
-      ui.setUpdateIndicator(grok.shell.tv.root, true);
+      ui.setUpdateIndicator(updateIndicatorRoot, true);
       const pathElements = viewPath.split('|').map((s) => s.trim());  
       grok.shell.newView(pathElements[pathElements.length - 1], [ ui.panel([
           ui.h1(pathElements[pathElements.length - 1]),
@@ -54,11 +57,11 @@ export class DemoView extends DG.ViewBase {
           ui.bigButton('Start', async () => { await func.apply() })
         ], 'demo-app-script-view')
         ])
-      ui.setUpdateIndicator(grok.shell.tv.root, false);
+      ui.setUpdateIndicator(updateIndicatorRoot, false);
     } else {
-      ui.setUpdateIndicator(grok.shell.tv.root, true);
+      ui.setUpdateIndicator(updateIndicatorRoot, true);
       await func.apply();
-      ui.setUpdateIndicator(grok.shell.tv.root, false);
+      ui.setUpdateIndicator(updateIndicatorRoot, false);
     }
     grok.shell.v.path = grok.shell.v.basePath = '';
     if (grok.shell.v.basePath.includes('/apps/Tutorials/Demo')) {
@@ -125,11 +128,6 @@ export class DemoView extends DG.ViewBase {
 
       for (let j = 0; j < directionFuncs.length; ++j) {
         let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
-        fetch(imgPath)
-          .then(res => {
-            imgPath = res.ok ? imgPath : `${_package.webRoot}images/demoapp/emptyImg.jpg`;
-          })
-          .catch();
 
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
@@ -218,9 +216,24 @@ export class DemoView extends DG.ViewBase {
     for (let i = 0; i < directionFuncs.length; i++) {
 
       const path = directionFuncs[i].path.split('|').map((s) => s.trim());
-
-      const img = ui.div('', 'ui-image');
-      img.style.backgroundImage = `url(${directionFuncs[i].imagePath}`;
+      //const img = ui.div('', 'ui-image');
+      
+      const img = ui.div([ui.wait(async () => {
+        let root = ui.div('','img');
+        root.className = 'ui-image';
+        await fetch(`${directionFuncs[i].imagePath}`)
+          .then(response => {
+            if (response.ok) {
+              return Promise.resolve(response.url)
+            } else if(response.status === 404) {
+              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.jpg`)
+            }
+          })
+          .then((data) => root.style.backgroundImage = `url(${data})`)
+          .catch((data) => root.style.backgroundImage = `url(${data})`);
+        return root;
+        })
+      ]);
 
       let item = ui.card(ui.divV([
         img,
@@ -427,7 +440,7 @@ export class DemoView extends DG.ViewBase {
     
     dockRoot.append(this.searchInput.root);
     dockRoot.append(this.tree.root);
-    this.dockPanel = grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Categories');
+    this.dockPanel = grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Categories', 0.2);
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this.tree.root.classList.add('demo-app-tree-group');
@@ -536,4 +549,13 @@ export class DemoView extends DG.ViewBase {
 
     grok.shell.windows.help.syncCurrentObject = false;
   }
+}
+
+function imageExists(image_url: string){
+  var http = new XMLHttpRequest();
+
+  http.open('HEAD', image_url, false);
+  http.send();
+
+  return http.status != 404;
 }

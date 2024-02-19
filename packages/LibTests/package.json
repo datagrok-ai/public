@@ -1,26 +1,32 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "Lib Tests",
-  "version": "1.0.0",
+  "version": "1.0.2",
+  "servicePackage": true,
   "description": "Automated tests for libraries",
   "dependencies": {
-    "datagrok-api": "latest",
-    "cash-dom": "latest",
-    "dayjs": "latest",
+    "@datagrok-libraries/compute-utils": "^1.17.2",
     "@datagrok-libraries/utils": "^4.0.8",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.17.3",
+    "dayjs": "^1.11.7",
+    "deep-equal": "^2.2.1",
     "rxjs": "^6.6.7",
     "wu": "latest"
   },
   "devDependencies": {
+    "@types/deep-equal": "^1.0.1",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
+    "css-loader": "^6.7.1",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
-    "webpack": "latest",
-    "webpack-cli": "latest",
+    "style-loader": "^3.3.1",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",

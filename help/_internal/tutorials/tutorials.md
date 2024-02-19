@@ -19,5 +19,5 @@ Available tutorials:
 * [Platform navigation](platform-navigation.md)
 * [Scripting](scripting.md)
 * [Selecting franchise Locations](selecting-franchise-locations.md)
-* [Predictive modeling](predictive-modeling.md)
+* [Predictive modeling](learn.md)
 * [Projects](projects.md)

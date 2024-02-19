@@ -5,14 +5,36 @@ on:
   workflow_dispatch: { }
   push:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'help/deploy/releases/plugins/**'
+      - 'packages/*/CHANGELOG.md'
   pull_request:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'help/deploy/releases/plugins/**'
+      - 'packages/*/CHANGELOG.md'
 
 jobs:
   common-check:
@@ -24,8 +46,10 @@ jobs:
   lint:
     name: Lint
     needs: common-check
-    runs-on: ubuntu-20.04
-    if: needs.common-check.outputs.continue == 'true'
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true' && github.event_name != 'workflow_dispatch'
+    outputs:
+      result: ${{ steps.check.outputs.result }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,12 +58,50 @@ jobs:
           node-version: 18
       - name: Install markdownlint-cli2
         run: npm install -g markdownlint-cli2
-      - name: Lint Markdown
+      - name: Lint-Fix Markdown
         id: check
         run: |
-          markdownlint-cli2 "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+          markdownlint-cli2 --fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
+#      - name: Commit package-lock.json
+#        id: git
+#        continue-on-error: true
+#        if: steps.check.outcome == 'success'
+#        run: |
+#          git config --global user.name 'github-actions[bot]'
+#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+#          git pull
+#          continue=false
+#          if [ -n "$(git status -s help/)" ]; then
+#            git add help/
+#            skip_ci=""
+#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+#              skip_ci="[skip ci]"
+#            fi
+#            git commit -m "GitHub Actions: Fix markdownlint findings $skip_ci
+#
+#            Workflow ${{ github.workflow }} ${{ github.run_number }}
+#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+#            continue=true
+#          fi
+#          if [[ "${continue}" == "true" ]]; then
+#            count=0
+#            retries=10
+#            until git push; do
+#              exit=$?
+#              wait=$((2 ** count))
+#              count=$((count + 1))
+#              if [ $count -lt "$retries" ]; then
+#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+#                sleep $wait
+#                git pull --rebase
+#              else
+#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+#                exit $exit
+#              fi
+#            done
+#          fi
       - name: Set summary
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
@@ -49,7 +111,7 @@ jobs:
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Markdown Linter errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#markdown-linter)" >> help/_lint-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#markdown-linter)" >> help/_lint-check-report.md
             sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
             cat help/_lint-check-report.md
             cat help/_lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
@@ -57,10 +119,10 @@ jobs:
           fi
 
   convert:
-    name: Convert to HTML
-    needs: [lint, common-check]
-    if: needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    name: Build
+    needs: [ lint, common-check ]
+    if: always() && (needs.lint.result == 'skipped' || needs.lint.result == 'success') && needs.common-check.outputs.continue == 'true'
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -73,15 +135,18 @@ jobs:
             js-api/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
       - name: Install hyperlink
+        if: github.event_name != 'workflow_dispatch'
         run: npm install -g @untitaker/hyperlink
       - name: Install dependencies
         run: npm install
@@ -92,14 +157,23 @@ jobs:
       - name: Build Docusaurus website
         run: npm run build
         working-directory: ./docusaurus
+      - name: Lint-Fix Markdown
+        run: |
+          npm install -g markdownlint-cli2
+          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+        continue-on-error: true
+        if: github.event_name != 'workflow_dispatch' && needs.lint.outputs.result != 'success'
       - name: Check anchors
         id: anchors
         working-directory: ./docusaurus
+        if: github.event_name != 'workflow_dispatch'
         continue-on-error: true
         run: |
           hyperlink --check-anchors build/ --sources ../help/ > ../help/_anchor-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
+        if: github.event_name != 'workflow_dispatch'
+        continue-on-error: true
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
           if [[ "${{ steps.anchors.outputs.result }}" == "success" ]]; then
@@ -107,7 +181,7 @@ jobs:
           else
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Hyperlink link checker errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#links-and-anchors-check)" >> help/_anchor-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#links-and-anchors-check)" >> help/_anchor-check-report.md
             cat help/_anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
             cat help/_anchor-check-report.md
             sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
@@ -125,15 +199,59 @@ jobs:
           name: docusaurus
           path: docusaurus/build
           retention-days: 7
-
+      - name: 'debug'
+        run: |
+          echo ${{ github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true' }}
+          echo ${{ github.ref }}
+          echo ${{ needs.common-check.outputs.continue }}
+#      - name: Commit plugins.json
+#        id: git
+#        if: github.ref == 'refs/heads/master'
+#        continue-on-error: true
+#        run: |
+#          git config --global user.name 'github-actions[bot]'
+#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+#          git pull
+#          continue=false
+#          if [ -n "$(git status -s help/deploy/releases/plugins/)" ]; then
+#            git add help/deploy/releases/plugins/
+#            skip_ci=""
+#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+#              skip_ci="[skip ci]"
+#            fi
+#            git commit -m "GitHub Actions: Update plugins.json $skip_ci
+#
+#            Workflow ${{ github.workflow }} ${{ github.run_number }}
+#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+#            continue=true
+#          fi
+#          if [[ "${continue}" == "true" ]]; then
+#            count=0
+#            retries=10
+#            until git push; do
+#              exit=$?
+#              wait=$((2 ** count))
+#              count=$((count + 1))
+#              if [ $count -lt "$retries" ]; then
+#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+#                sleep $wait
+#                git pull --rebase
+#              else
+#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+#                exit $exit
+#              fi
+#            done
+#          fi
+#
+#
   deploy:
     name: Deploy
-    needs: [convert, common-check]
+    needs: [ convert, common-check ]
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-22.04
     environment: Help
     steps:
       - name: Download artifact
@@ -142,6 +260,7 @@ jobs:
           name: docusaurus
           path: docusaurus/build
       - name: Deploy to server
+        id: deploy
         shell: bash
         run: |
           mkdir -p ~/.ssh/
@@ -174,15 +293,63 @@ jobs:
           REMOTE_USER: ${{ secrets.HELP_USER }}
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
+      - name: Prepare Slack Message
+        if: steps.deploy.outcome == 'success'
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.deploy.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
+
   scrape:
     name: Scrape
-    needs: [deploy, common-check]
+    needs: [ deploy, common-check ]
     environment: Help
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    if: always() && needs.deploy.result == 'success'
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

@@ -126,6 +126,7 @@ a.menu__link.menu__link--sublist.menu__link--sublist-caret.menu__link--active {
 }
 .navbar__link--active {
     color: var(--text-color);
+    font-weight: bolder;
 }
 .navbar__link--active:hover {
     color: var(--text-color);
@@ -196,6 +197,7 @@ button.DocSearch.DocSearch-Button:hover svg.DocSearch-Search-Icon{
 
     .navbar {
         position: absolute;
+        width: 100%;
     }
 
     .sidebar {

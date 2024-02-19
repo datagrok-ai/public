@@ -1,41 +1,41 @@
 {
   "name": "@datagrok/curves",
   "friendlyName": "Curves",
-  "version": "1.1.0",
+  "version": "1.2.15",
   "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "../../libraries/statistics",
-    "@datagrok-libraries/utils": "^4.0.12",
+    "@datagrok-libraries/statistics": "^1.2.11",
+    "@datagrok-libraries/utils": "^4.1.0",
     "@types/wu": "^2.1.42",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
-    "rxjs": "6.5.5",
-    "dayjs": "latest"
+    "datagrok-api": "^1.17.0",
+    "dayjs": "^1.11.7",
+    "rxjs": "6.5.5"
   },
   "devDependencies": {
-    "ts-loader": "latest",
     "css-loader": "^5.0.0",
+    "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
+    "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "source-map-loader": "^4.0.1"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics",
     "debug-curves": "webpack && grok publish",
     "release-curves": "webpack && grok publish --release",
     "build-curves": "webpack",
-    "build": "tsc && webpack",
+    "build": "webpack",
     "debug-curves-dev": "webpack && grok publish dev",
     "release-curves-dev": "webpack && grok publish dev --release",
     "debug-curves-public": "webpack && grok publish public",
     "release-curves-public": "webpack && grok publish public --release",
-    "debug-curves-local": "tsc && webpack && grok publish local",
+    "debug-curves-local": "webpack && grok publish local",
     "test": "grok test",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/statistics run build && npm run build"
   },
@@ -49,5 +49,6 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Curves"
-  }
+  },
+  "category": "Visualizations"
 }

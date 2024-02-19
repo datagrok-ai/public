@@ -2,12 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {TagEditor} from 'datagrok-api/dg';
 
 export function scriptEditor(view: DG.View) {
   setTimeout(function() {
     // @ts-ignore
-    const editor = view.root.lastChild.lastChild.CodeMirror;
+    const editor = view.root.querySelector(".CodeMirror").CodeMirror;
     const doc = editor.getDoc();
 
     if (doc.getLine(2) == '//language: javascript') {

@@ -10,12 +10,6 @@
 	background: white;
 }
 
-.tutorials-demo-container {
-	max-width: 350px;
-	min-width: 350px;
-	width: 350px;
-}
-
 .tutorials-demo-container .panel-content {
 	overflow: auto;
 }

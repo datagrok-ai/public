@@ -25,6 +25,7 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'String', predicate: stringPredicate, checker: eqChecker},
   {name: 'Integer', predicate: integerPredicate, checker: eqChecker},
   {name: 'Float', predicate: floatPredicate, checker: floatChecker},
+  {name: 'ArrayBuffer', predicate: arrayBufferPredicate, checker: arrayBufferChecker},
   {name: 'Array', predicate: arrayPredicate, checker: arrayChecker},
   {name: 'DataFrame', predicate: dataframePredicate, checker: dataframeChecker},
   {name: 'Object', predicate: objectPredicate, checker: objectChecker},
@@ -150,10 +151,20 @@ function dataframeChecker(actual: DG.DataFrame, expected: DG.DataFrame,
     for (let i = 0; i < expected.rowCount; i++) {
       const actualValue = actualColumn.get(i);
       const expectedValue = column.get(i);
-      checkDeep([column.name], actualValue, expectedValue);
+      checkDeep([column.name, String(i)], actualValue, expectedValue);
     }
   }
   return errors;
+}
+
+
+function arrayBufferPredicate(actual: any, expected: any) {
+  return (actual instanceof ArrayBuffer && expected instanceof ArrayBuffer);
+}
+
+function arrayBufferChecker(actual: ArrayBuffer, expected: ArrayBuffer,
+  state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker) {
+  return arrayChecker(Array.from(new Uint8Array(actual)), Array.from(new Uint8Array(expected)), state, checkDeep);
 }
 
 

@@ -3,6 +3,8 @@
 --input: list groups
 --input: list packages
 --connection: System:Datagrok
+--meta.cache: all
+--meta.invalidateOn: 0 0 0 * *
 with recursive selected_groups as (
   select id from groups
   where id = any(@groups)
@@ -12,7 +14,7 @@ with recursive selected_groups as (
 ),
 res AS (
 select u.friendly_name as user, et.source, e.event_time, coalesce(e.description, et.name) as event_description,
- u.group_id as ugid
+ u.group_id as ugid, e.id
  from events e
 inner join event_types et on e.event_type_id = et.id
 left join users_sessions s on e.session_id = s.id

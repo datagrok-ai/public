@@ -14,16 +14,14 @@ on:
 jobs:
   check-merge-commit:
     name: Check merge commit
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       continue: ${{ steps.merge-details.outputs.continue_action }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
       - name: Check merge commit
         id: merge-details
         run: |
-          if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
+          if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ $(echo "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g') == *"Merge branch 'master'"* ]] || [[ "$(echo "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')" == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
             echo "continue_action=false" >> $GITHUB_OUTPUT
             echo "The latest commit is a merge commit. GitHub actions wil be skipped"
             echo "::notice title=Merge commit check::Latest commit is a merge from master. No actions will be run."

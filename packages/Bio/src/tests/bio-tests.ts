@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectObject, expectArray} from '@datagrok-libraries/utils/src/test';
 import {
   getAlphabetSimilarity,
   monomerToShort,
@@ -83,13 +83,43 @@ category('WebLogo.monomerToShort', () => {
     expect(monomerToShort('Short', 5), 'Short');
   });
   test('longMonomerLong56', async () => {
-    expect(monomerToShort('Long56', 5), 'Long5…');
+    expect(monomerToShort('Long56', 6), 'Long56');
   });
   test('longMonomerComplexFirstPartShort', async () => {
     expect(monomerToShort('Long-long', 5), 'Long…');
   });
   test('longMonomerComplexFirstPartLong56', async () => {
-    expect(monomerToShort('Long56-long', 5), 'Long5…');
+    expect(monomerToShort('Long56-long', 6), 'Long5…');
+  });
+  test('monomerToShort', async () => {
+    const pairs = [
+      ['AbC', 'AbC'],
+      ['AbCd', 'Ab…'],
+      ['ABc', 'ABc'],
+      ['ABcd', 'AB…'],
+      ['A_b', 'A_b'],
+      ['A_bc', 'A…'],
+      ['Ab_c', 'Ab…'],
+      ['A1_b', 'A1…'],
+      ['Abc_d', 'Ab…'],
+      ['Abcd_e', 'Ab…'],
+      ['A-b', 'A-b'],
+      ['A-bc', 'A…'],
+      ['Ab-c', 'Ab…'],
+      ['A1-b', 'A1…'],
+      ['Abc-d', 'Ab…'],
+      ['Abcd-e', 'Ab…'],
+      ['A', 'A'],
+      ['Ab', 'Ab'],
+      ['Abc', 'Abc'],
+      ['Ab…', 'Ab…'],
+      ['Abcd', 'Ab…'],
+      ['Abcde', 'Ab…'],
+    ];
+    const src: string[] = pairs.map((p) => p[0]);
+    const tgt: string[] = pairs.map((p) => p[1]);
+    const res: string [] = src.map((m) => monomerToShort(m, 3));
+    expectArray(res, tgt);
   });
 });
 

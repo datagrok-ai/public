@@ -16,7 +16,11 @@ import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-import {PinnedColumn} from "@datagrok-libraries/gridext/src/pinned/PinnedColumn";
+import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
+import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
+import {FormCellRenderer} from './forms/forms';
+import {MultiChoiceCellRenderer} from "./cell-types/multi-choice-cell-renderer";
+import {TagsCellRenderer} from "./cell-types/tags-cell-renderer";
 
 export const _package = new DG.Package();
 
@@ -110,6 +114,32 @@ export function radarCellRenderer() {
   return new RadarChartCellRender();
 }
 
+//name: Smart Form
+//tags: cellRenderer
+//meta.cellType: smartform
+//meta.gridChart: true
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function smartFormCellRenderer() {
+  return new FormCellRenderer();
+}
+
+//name: Multi Choice
+//tags: cellRenderer
+//meta.cellType: MultiChoice
+//output: grid_cell_renderer result
+export function multiChoiceCellRenderer() {
+  return new MultiChoiceCellRenderer();
+}
+
+//name: Tags
+//tags: cellRenderer
+//meta.cellType: Tags
+//output: grid_cell_renderer result
+export function tagsCellRenderer() {
+  return new TagsCellRenderer();
+}
+
 //description: Adds a sparkline column for the selected columns
 //input: list columns { type: numerical }
 //meta.action: Sparklines...
@@ -131,7 +161,8 @@ export function summarizeColumns(columns: DG.Column[]) {
     const options = {gridColumnName: name.value, cellType: sparklineType.value!};
     const gridCol = grid.columns.add(options);
     gridCol.move(grid.columns.byName(columnNames[0])!.idx);
-    gridCol.settings = {columnNames: columnNames};
+    gridCol.settings ??= {};
+    gridCol.settings[sparklineType.value! as SparklineType] = {columnNames: columnNames};
     if (hide.value) {
       for (const name of columnNames)
         grid.columns.byName(name)!.visible = false;
@@ -145,6 +176,46 @@ export function summarizeColumns(columns: DG.Column[]) {
     .create({title: 'Add Summary Column'})
     .add(name)
     .add(sparklineType)
+    .add(columnsSelector)
+    .add(hide)
+    .onOK(addSummaryColumn)
+    .show();
+}
+
+
+//description: Adds a 'form' column for the selected columns
+//input: list columns
+//meta.action: Smart form...
+export function addFormColumn(columns: DG.Column[]) {
+  const table = columns[0].dataFrame;
+  const name = ui.stringInput('Name', table.columns.getUnusedName('Form'));
+  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+    checked: names(columns),
+  });
+  const hide = ui.boolInput('Hide', false);
+  hide.setTooltip('Hide source columns in the grid');
+
+  function addSummaryColumn() {
+    const grid = grok.shell.tv.grid;
+    const left = grid.horzScroll.min;
+    const columnNames = names(columnsSelector.value);
+    const options = {gridColumnName: name.value, cellType: SparklineType.Form};
+    const gridCol = grid.columns.add(options);
+    gridCol.move(grid.columns.byName(columnNames[0])!.idx);
+    gridCol.settings ??= {};
+    gridCol.settings[SparklineType.Form] = {columnNames: columnNames};
+    if (hide.value) {
+      for (const name of columnNames)
+        grid.columns.byName(name)!.visible = false;
+    }
+    grid.horzScroll.scrollTo(left);
+    gridCol.scrollIntoView();
+    grok.shell.o = gridCol;
+  }
+
+  DG.Dialog
+    .create({title: 'Add Form'})
+    .add(name)
     .add(columnsSelector)
     .add(hide)
     .onOK(addSummaryColumn)
@@ -192,4 +263,44 @@ export function demoTestUnitsCellRenderer() {
 export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+}
+
+//name: Forms
+//description: Forms viewer
+//tags: viewer
+//meta.icon: files/icons/formviewer.svg
+//meta.viewerPosition: bottom
+//output: viewer result
+export function formsViewer() {
+  return new FormsViewer();
+}
+
+
+//name: Content
+//description: Image content
+//tags: panel, powergrid, widgets
+//input: string imageUrl { semType: ImageUrl }
+//output: widget result
+export function imgContent(imageUrl: string): DG.Widget {
+  const image = new Image();
+  image.src = imageUrl;
+  return imageUrl !== null ? new DG.Widget(image) : new DG.Widget(ui.divText('No image available'));
+}
+
+
+//name: demoCellTypes
+export function demoCellTypes() {
+  const t = grok.data.demo.demog(100);
+  const dis = t.col('disease')!;
+  dis.set(0, 'Anxiety, Glaucoma');
+  dis.set(1, 'Hepatitis A, Glaucoma');
+  dis.setTag(DG.TAGS.CHOICES, JSON.stringify(['Anxiety', 'Hepatitis A', 'Glaucoma']));
+  dis.setTag(DG.TAGS.CELL_RENDERER, 'MultiChoice');
+
+  const site = t.col('site')!;
+  site.set(0, 'Buffalo, Orlando');
+  site.set(1, 'Buffalo, Los Angeles');
+  site.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
+
+  grok.shell.addTableView(t);
 }

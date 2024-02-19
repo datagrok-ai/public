@@ -297,8 +297,8 @@ category('expectDeepEqual', async () => {
       () => {
         expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
-      `['b'].['c1'].['b'].['0']: Expected 2.1, got 1.1 (tolerance = 0.1)\n` +
-        `['b'].['c1'].['b'].['0']: Expected 3.1, got 2.1 (tolerance = 0.1)`);
+      `['b'].['c1'].['0'].['b'].['0']: Expected 2.1, got 1.1 (tolerance = 0.1)\n` +
+        `['b'].['c1'].['1'].['b'].['0']: Expected 3.1, got 2.1 (tolerance = 0.1)`);
   });
 
   test('custom checker', async () => {

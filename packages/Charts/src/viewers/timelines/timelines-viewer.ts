@@ -154,6 +154,11 @@ export class TimelinesViewer extends EChartViewer {
     if (!this.initialized) return;
     if (property.name === 'axisPointer')
       this.option.tooltip.axisPointer.type = property.get(this);
+      if (property.name === 'table') {
+        this.updateTable();
+        this.onTableAttached();
+        this.render();
+      }
     else if (property.name === 'showZoomSliders') {
       (this.option.dataZoom as echarts.EChartOption.DataZoom[]).forEach((z) => {
         if (z.type === 'slider') (<echarts.EChartOption.DataZoom.Slider>z).show = this.showZoomSliders;
@@ -240,7 +245,7 @@ export class TimelinesViewer extends EChartViewer {
     const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
 
     if (strColumns.length < 1 || numColumns.length < 1) {
-      this.showErrorMessage('Not enough data to produce the result.');
+      this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
 
@@ -523,7 +528,7 @@ export class TimelinesViewer extends EChartViewer {
     else
       this.removeTimeOptions();
 
-    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
+    for (const i of this.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName!, i);
       const color = this.colorByColumnName ? colorCategories![colorBuf![i]] : this.defaultColor;
       let start = startColumn ? this.getSafeValue(this.columnData.startColumnName!, i) : null;
@@ -640,7 +645,7 @@ export class TimelinesViewer extends EChartViewer {
     this.updateContainers();
     if (!this.splitByColumnName || ((!this.startColumnName && !this.endColumnName) &&
         (!this.eventsColumnNames || this.eventsColumnNames.length === 0))) {
-      this.showErrorMessage('Not enough data to produce the result.');
+      this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
     this.option.series[0].data = this.getSeriesData();

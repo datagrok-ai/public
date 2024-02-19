@@ -13,7 +13,6 @@ import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detecto
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
-
 export let c: DG.FuncCall;
 
 //name: renderDevPanel
@@ -82,13 +81,13 @@ export async function testManager(): Promise<void> {
 }
 
 //name: TestDetectors
-//top-menu: Tools | Dev | Test Detectors
+//top-menu: Tools | Dev | Test | Detectors...
 export function testDetectors() {
   _testDetectorsDialog();
 }
 
 //name: TestDetectorsStandard
-//top-menu: Tools | Dev | Test Detectors Standard
+//top-menu: Tools | Dev | Test | Detectors Standard
 export async function TestDetectorsStandard() {
   const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
   const df = await _testDetectorsStandard(detectorsArray);

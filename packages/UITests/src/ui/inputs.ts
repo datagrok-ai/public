@@ -2,7 +2,7 @@ import {after, before, category, expect, test} from '@datagrok-libraries/utils/s
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {caption, enabled, checkHTMLElement} from './utils';
+import {caption, enabled, checkHTMLElement, stringValue} from './utils';
 import dayjs from 'dayjs';
 
 
@@ -55,7 +55,7 @@ category('UI: Inputs', () => {
 
   test('input.stringValue', async () => {
     for (const [key, value] of Object.entries(inputs))
-      stringValue(key, value, '.ui-input-editor');
+      stringValue(key, value, '.ui-input-editor', v);
   });
 
   test('input.enabled', async () => {
@@ -104,45 +104,22 @@ category('UI: Inputs', () => {
     }
   });
 
+  test('floatInput', async () => {
+    const t = ui.floatInput('Label', 0.003567);
+    t.format = '0.0000';
+    const v = grok.shell.newView('Test', [t]);
+    const input = t.input as HTMLInputElement;
+    expect(input.value, '0.0036');
+    t.input.dispatchEvent(new Event('focus'));
+    expect(input.value, '0.0036');
+    t.value = 0.3;
+    expect(input.value, '0.3000');
+    v.close();
+  });
+
   after(async () => {
     grok.shell.closeAll();
   });
-
-  function stringValue(name: string, input: DG.InputBase, selector: string): void {
-    v.root.innerHTML = '';
-    v.append(input.root);
-    let value: string;
-    try {
-      switch (name) {
-      case 'multiChoiceInput':
-        const node = v.root.querySelectorAll('.ui-input-multi-choice-checks>div');
-        value = (<HTMLInputElement>v.root.querySelector('.ui-input-label')).innerText;
-        for (let i = 0; i < node.length; i++) {
-          const input = (<HTMLInputElement>node[i].querySelector('input'));
-          if (input.checked)
-            value = value.concat((<HTMLInputElement>node[i].querySelector('.ui-label')).innerText);
-        }
-        expect(input.stringValue, value);
-        break;
-      case 'columnInput':
-        value = (<HTMLInputElement>v.root.querySelector('.d4-column-selector-column')).innerText;
-        expect(input.stringValue, value);
-        break;
-      case 'columnsInput':
-        value = (<HTMLInputElement>v.root.querySelector('.ui-input-column-names')).innerText.substring(3);
-        expect(input.stringValue, value);
-        break;
-      default:
-        value = (<HTMLInputElement>v.root.querySelector(selector)).value;
-        expect(input.stringValue, value);
-        break;
-      }
-    } catch (x) {
-      throw new Error(name + ': ' + x);
-    } finally {
-      input.root.remove();
-    }
-  }
 
   function readonly(name: string, input: DG.InputBase, selector: string): void {
     v.append(input.root);
@@ -181,4 +158,69 @@ category('UI: Inputs', () => {
     input.fireChanged();
     input.root.remove();
   }
-}, false);
+}, {clear: false});
+
+category('UI: Choice input', () => {
+  test('fromFunction', async () => {
+    const view = grok.shell.newView();
+    const input = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
+    view.root.appendChild(input.root);
+
+    input.value = null;
+    expect(input.value == null);
+    input.value = 'Male';
+    expect(input.value, 'Male');
+    input.value = 'Female';
+    expect(input.value, 'Female');
+    // input.value = '';
+    // expect(input.value, '');
+
+    const select = document.querySelector('select.ui-input-editor') as HTMLSelectElement;
+
+    // select.value = null;
+    // expect(select.value, null);
+    select.value = 'Male';
+    expect(select.value, 'Male');
+    select.value = 'Female';
+    expect(select.value, 'Female');
+    select.value = '';
+    expect(select.value, '');
+  });
+
+  test('fromProperty', async () => {
+    const property = DG.Property.js('showPoints', DG.TYPE.STRING, {category: 'Fitting',
+      description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']});
+    const input = DG.InputBase.forProperty(property, {});
+    const view = grok.shell.newView();
+    view.root.appendChild(input.root);
+
+    input.value = null;
+    expect(input.value == null);
+    input.value = 'points';
+    expect(input.value, 'points');
+    input.value = 'candlesticks';
+    expect(input.value, 'candlesticks');
+    input.value = 'both';
+    expect(input.value, 'both');
+    // input.value = '';
+    // expect(input.value, '');
+
+    const select = document.querySelector('select.ui-input-editor') as HTMLSelectElement;
+
+    // select.value = null;
+    // expect(select.value, null);
+    select.value = 'points';
+    expect(select.value, 'points');
+    select.value = 'candlesticks';
+    expect(select.value, 'candlesticks');
+    select.value = 'both';
+    expect(select.value, 'both');
+    select.value = '';
+    expect(select.value, '');
+  });
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
+});

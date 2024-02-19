@@ -2,22 +2,74 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+import {Subject, Unsubscribable} from 'rxjs';
+
 import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
 import {BuiltInTrajectoryFormat, BuiltInTrajectoryFormats} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
+import {
+  BiostructureProps,
+  PluginLayoutControlsDisplayType, SimpleRegionStateOptionsType,
+} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+
+import {Color as msColor} from 'molstar/lib/mol-util/color';
 import {BuildInStructureFormat} from 'molstar/lib/mol-plugin-state/formats/structure';
 import {BuildInShapeFormat} from 'molstar/lib/mol-plugin-state/formats/shape';
 import {BuildInVolumeFormat} from 'molstar/lib/mol-plugin-state/formats/volume';
-import {Unsubscribable} from 'rxjs';
-import {BiostructureProps, BiostructurePropsDefault} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-import {Color as msColor} from 'molstar/lib/mol-util/color';
 
 import {defaults, molecule3dFileExtensions} from './consts';
 import {parseAndVisualsData} from './molstar-viewer-open';
+import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
+import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../../package';
+
+/** Creates viewer, ensures to complete creation awaiting first render */
+export async function createRcsbViewer(
+  host: HTMLElement, props: Partial<RcsbViewerProps>, callLogPrefix: string = '',
+): Promise<RcsbViewer> {
+  let viewer: RcsbViewer;
+  const onEvent = new Subject<void>();
+  let eventSub: Unsubscribable;
+  const t1 = window.performance.now();
+  await testEvent(onEvent,
+    () => {
+      eventSub.unsubscribe();
+      const t2 = window.performance.now();
+      _package.logger.debug(`${callLogPrefix}, creating Mol* await ${t2 - t1} ms.`);
+    },
+    () => {
+      viewer = new RcsbViewer(host, props);
+      // @ts-ignore
+      eventSub = viewer.plugin.canvas3dInit.subscribe((value) => {
+        if (value)
+          onEvent.next();
+      });
+    });
+  return viewer!;
+}
+
+export async function disposeRcsbViewer(viewer: RcsbViewer, container: HTMLElement): Promise<void> {
+  await viewer.clear(); // alternative free
+  viewer.plugin.dispose();
+  await delay(2000);
+  $(container).empty();
+}
 
 export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer> {
   const view = grok.shell.newView(viewName);
   const viewerContainer = view.root;
-  const viewer = new RcsbViewer(viewerContainer, castProps(defaults));
+  const viewer = await createRcsbViewer(view.root, castProps(defaults), `initViewer()`);
+
+  const subs: Unsubscribable[] = [];
+  subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
+    if (evtView.id === view.id) {
+      for (const sub of subs) sub.unsubscribe();
+      disposeRcsbViewer(viewer, viewerContainer).then(() => {});
+    }
+  }));
+
   return viewer;
 }
 
@@ -49,7 +101,21 @@ export async function byData(data: string, name: string = 'Mol*', format: BuiltI
         binary = false;
       }
 
+      const state: Partial<PluginLayoutStateProps> = {
+        // showControls: false,
+        // isExpanded: false,
+        // regionState: {
+        //   left: SimpleRegionStateOptionsType.FULL,
+        //   top: SimpleRegionStateOptionsType.FULL,
+        //   right: SimpleRegionStateOptionsType.FULL,
+        //   bottom: SimpleRegionStateOptionsType.FULL,
+        // },
+        controlsDisplay: PluginLayoutControlsDisplayType.LANDSCAPE,
+      };
       await viewer.loadStructureFromData(data, format, binary);
+      const plugin = viewer.plugin;
+      // eslint-disable-next-line new-cap
+      await PluginCommands.Layout.Update(plugin, {state: state});
     });
   //v.handleResize();
 }
@@ -74,22 +140,28 @@ export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPro
     throw new Error(`Unsupported format: ${file.extension}`);
   }
 
-  const view = DG.View.create();
-  const viewer = new RcsbViewer(view.root, castProps(defaults));
+  const view = DG.View.create({name: 'Molstar preview'});
+  let viewer: RcsbViewer;
   const subs: Unsubscribable[] = [];
   subs.push(ui.onSizeChanged(view.root).subscribe((value: any) => {
+    if (!viewer) return;
     viewer.handleResize();
   }));
   subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
-    if (evtView.id === view.id)
+    const fallbackPreviewCheck = evtView.root.children[0].children[0].classList.contains('msp-plugin');
+    if (evtView.id === view.id || fallbackPreviewCheck) {
       for (const sub of subs) sub.unsubscribe();
+      disposeRcsbViewer(viewer, view.root).then(() => { });
+    }
   }));
 
   const loadingPromise = new Promise<void>(async (resolve, reject) => {
     try {
-      const { binary} = molecule3dFileExtensions[file.extension];
-      const data: string | Uint8Array = binary ? await file.readAsBytes() : await file.readAsString();
-      await parseAndVisualsData(viewer.plugin, {ext: file.extension, data: data});
+      viewer = await createRcsbViewer(view.root, castProps(defaults), 'previewMolstarUI()');
+      const {binary} = molecule3dFileExtensions[file.extension];
+      const dataValue: string | Uint8Array = binary ? await file.readAsBytes() : await file.readAsString();
+      const data: BiostructureData = {binary: binary, ext: file.extension, data: dataValue};
+      await parseAndVisualsData(viewer.plugin, data);
       resolve();
     } catch (err: any) {
       reject(err);
@@ -119,7 +191,7 @@ function castProps(src: BiostructureProps): Partial<RcsbViewerProps> {
     viewportShowSelectionMode: src.viewportShowSelectionMode,
     volumeStreamingServer: src.volumeStreamingServer,
     modelUrlProviders: [],
-    extensions: []
+    extensions: [],
   };
   return res;
 }

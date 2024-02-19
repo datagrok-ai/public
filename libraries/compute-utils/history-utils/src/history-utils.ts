@@ -11,7 +11,6 @@ type FilterOptions = {
   text?: string,
   date?: DateOptions,
   author?: DG.User,
-  isShared?: boolean,
 };
 
 const getSearchStringByPattern = (datePattern: DateOptions) => {
@@ -38,45 +37,31 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 };
 
 export namespace historyUtils {
-  const scriptsCache = {} as Record<string, DG.Script>;
-  const packagesCache = {} as Record<string, DG.Package>;
+  const scriptsCache = {} as Record<string, DG.Func>;
   // TODO: add users and groups cache
 
-  async function augmentFuncWithPackage(func: DG.Func) {
-    const id = func.package.id;
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13337
-    const funcPackage = packagesCache[id] ?? await grok.dapi.packages.allPackageVersions().find(id);
-
-    if (!packagesCache[id]) packagesCache[id] = funcPackage;
-    // dirty hack to overwrite read-only property
-    func.package.dart = funcPackage.dart;
-  }
-
-  async function augmentCallWithFunc(call: DG.FuncCall) {
+  export async function augmentCallWithFunc(call: DG.FuncCall, useCache: boolean = true) {
     const id = call.func.id;
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-    const func = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
+    const fetchFunc = grok.dapi.functions.include('package').allPackageVersions().find(id);
+    const func = useCache ?
+      (scriptsCache[id] ?? await fetchFunc):
+      await fetchFunc;
 
     if (!scriptsCache[id]) scriptsCache[id] = func;
 
-    if (!func.package.name)
-      await augmentFuncWithPackage(func);
-
     call.func = func;
-    call.options['isHistorical'] = true;
   }
 
   export async function loadChildRuns(
     funcCallId: string,
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
-    parentRun.options['isHistorical'] = true;
 
     await augmentCallWithFunc(parentRun);
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
       .include('func').filter(`options.parentCallId="${funcCallId}"`).list();
-    childRuns.forEach((childRun) => childRun.options['isHistorical'] = true);
 
     await Promise.all(childRuns.map(async (childRun) => augmentCallWithFunc(childRun)));
 
@@ -97,7 +82,6 @@ export namespace historyUtils {
       .include('inputs, outputs, session.user').find(funcCallId);
 
     await augmentCallWithFunc(pulledRun);
-    pulledRun.options['isHistorical'] = true;
 
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
@@ -121,11 +105,14 @@ export namespace historyUtils {
    * @returns Saved FuncCall
    */
   export async function saveRun(callToSave: DG.FuncCall) {
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
     for (const output of dfOutputs) {
       callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+      await grok.dapi.permissions.grant(callToSave.outputs[output.name].getTableInfo(), allGroup, false);
     }
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
@@ -133,6 +120,7 @@ export namespace historyUtils {
     for (const input of dfInputs) {
       callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+      await grok.dapi.permissions.grant(callToSave.inputs[input.name].getTableInfo(), allGroup, false);
     }
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
@@ -182,13 +170,13 @@ export namespace historyUtils {
     filterOptions: FilterOptions[] = [],
     listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {},
     includedFields: string[] = [],
+    skipDfLoad: boolean = false,
   ): Promise<DG.FuncCall[]> {
     let filteringString = ``;
     for (const filterOption of filterOptions) {
       const filterOptionCriteria = [] as string[];
       if (filterOption.author) filterOptionCriteria.push(`session.user.id="${filterOption.author.id}"`);
       if (filterOption.date) filterOptionCriteria.push(getSearchStringByPattern(filterOption.date));
-      if (filterOption.isShared) filterOptionCriteria.push(`options.isShared="true"`);
       if (filterOption.text) {
         filterOptionCriteria.push(
           `((options.title like "${filterOption.text}") or (options.annotation like "${filterOption.text}"))`,
@@ -215,7 +203,7 @@ export namespace historyUtils {
     for (const pulledRun of result)
       await augmentCallWithFunc(pulledRun);
 
-    if (includedFields.includes('inputs') || includedFields.includes('func.params')) {
+    if ((includedFields.includes('inputs') || includedFields.includes('func.params')) && !skipDfLoad) {
       for (const pulledRun of result) {
         const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
           .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -224,7 +212,7 @@ export namespace historyUtils {
       }
     }
 
-    if (includedFields.includes('outputs') || includedFields.includes('func.params')) {
+    if ((includedFields.includes('outputs') || includedFields.includes('func.params')) && !skipDfLoad) {
       for (const pulledRun of result) {
         const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
           .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);

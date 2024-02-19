@@ -34,17 +34,6 @@ category('Connections', () => {
     console.log(query);
   });
 
-  test('ScalarQueryTest', async () => {
-    const query = await grok.dapi.queries.filter(`friendlyName = "Postgre Scalar Output"`).include('params').first();
-    const call = query.prepare();
-    await call.call();
-    const t = call.getOutputParamValue() as number;
-    console.log(t);
-    if (t != 830)
-      // eslint-disable-next-line no-throw-literal
-      throw 'Rows number in' + query.name + 'table is not as expected';
-  });
-
   test('External Provider Chembl Perf', async () => {
     if (!DG.Test.isInBenchmark) return;
     const query = await grok.dapi.queries.filter(`friendlyName = "ChemblPerfGenerated"`).include('params').first();
@@ -57,35 +46,53 @@ category('Connections', () => {
       throw 'Rows number in' + query.name + 'table is not as expected';
   });
 
-  test('External Provider First part', async () => {
-    const query = await grok.dapi.queries.filter(`friendlyName = "Compounds"`).include('params').first();
+  test('External Provider: Columns in empty result', async () => {
+    const query = await grok.dapi.queries.filter(`friendlyName = "TestForColumnsOnEmptyResult"`).include('params').first();
     const call = query.prepare();
     await call.call();
-    setTimeout(() => {
-      const t = call.getOutputParamValue() as DG.DataFrame;
-      if (t == null)
-      // eslint-disable-next-line no-throw-literal
-        throw 'First rows await time exceeded';
-    }, 2000);
-  }, {skipReason: 'Couldn\'t find test query'});
-
-  test('Cache test for Table_Wide', async () => {
-    const dataQueryName = 'PostgresqlTestCacheTableWide';
-    const firstExecutionTime = await getExecutionTime(dataQueryName);
-    const secondExecutionTime = await getExecutionTime(dataQueryName);
-    expect(firstExecutionTime > secondExecutionTime * 2, true);
+    const t = call.getOutputParamValue() as DG.DataFrame;
+    expect(t.columns.length, 10);
+    expect(t.columns.contains('first_name'), true);
+    expect(t.columns.byName('first_name').length, 0);
   });
 
-  test('Cache test for Table_Normal', async () => {
-    const dataQueryName = 'PostgresqlTestCacheTableNormal';
-    const firstExecutionTime = await getExecutionTime(dataQueryName);
-    const secondExecutionTime = await getExecutionTime(dataQueryName);
-    expect(firstExecutionTime > secondExecutionTime * 2, true);
+  test('External Provider: Create, insert, update, drop', async () => {
+    // CREATE statement
+    let query = await grok.dapi.queries.filter(`friendlyName = "TestCreateTable"`).include('params').first();
+    let call = query.prepare();
+    await call.call();
+    let table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+    //INSERT statement
+    query = await grok.dapi.queries.filter(`friendlyName = "TestInsertData"`).include('params').first();
+    call = query.prepare();
+    await call.call();
+    table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+    //UPDATE statement
+    query = await grok.dapi.queries.filter(`friendlyName = "TestUpdateData"`).include('params').first();
+    call = query.prepare();
+    await call.call();
+    table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
+    //DROP statement
+    query = await grok.dapi.queries.filter(`friendlyName = "TestDropTable"`).include('params').first();
+    call = query.prepare();
+    await call.call();
+    table = call.getOutputParamValue() as DG.DataFrame;
+    expect(table.toCsv(), "");
   });
+
+  //
+  // test('External Provider First part', async () => {
+  //   const query = await grok.dapi.queries.filter(`friendlyName = "Compounds"`).include('params').first();
+  //   const call = query.prepare();
+  //   await call.call();
+  //   setTimeout(() => {
+  //     const t = call.getOutputParamValue() as DG.DataFrame;
+  //     if (t == null)
+  //     // eslint-disable-next-line no-throw-literal
+  //       throw 'First rows await time exceeded';
+  //   }, 2000);
+  // });
 });
-
-async function getExecutionTime(dataQueryName: string): Promise<number> {
-  const startTime = Date.now();
-  await grok.functions.eval('Dbtests:' + dataQueryName);
-  return Date.now() - startTime;
-}

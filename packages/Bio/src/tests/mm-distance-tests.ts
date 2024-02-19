@@ -27,23 +27,24 @@ category('Distance', async () => {
   const prot6 = 'FWRRRRY';
 
   const protTable = `seq
-      FWRWYVKHP
-      YNRWYVKHP
-      MWRSWYCKHP`;
+FWRWYVKHPFWRWYVKHP
+YNRWYVKHPYNRWYVKHP
+MWRSWYCKHPMWRSWYCKHP`;
 
   const DNATable = `seq
-      ATAACG
-      ATCGA
-      ATCGA`;
+ATAACGATAACG
+ATCGAATCGA
+ATCGAATCGA`;
 
   const MSATable = `seq
-      ATAAC
-      ATCGA
-      ATCGA`;
+ATAACATAAC
+ATCGAATCGA
+ATCGAATCGA`;
+
   test('protein-distance-function', async () => {
     const uh = await _initMacromoleculeColumn(protTable);
     const distFunc = uh.getDistanceFunctionName();
-    expect(distFunc, MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH);
+    expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('DNA-distance-function', async () => {
@@ -75,13 +76,13 @@ category('Distance', async () => {
   // Note that here the result is actually an inverted value of alignment score, which is coorelated with distance
   // tests using default BLOSUM62 matrix are in agreement with the results of the online tool
   test('needleman-blosum62', async () => {
-    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]();
-    _testDistance(prot1, prot2, df, 0.205);
+    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]({gapOpen: 8, gapExtend: 2});
+    _testDistance(prot1, prot2, df, -6);
   });
 
   test('needleman-blosum62-del', async () => {
-    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]();
-    _testDistance(prot3, prot4, df, 0.65);
+    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]({gapOpen: 8, gapExtend: 2});
+    _testDistance(prot3, prot4, df, -1.8);
   });
 
   test('needleman-custom-sub', async () => {

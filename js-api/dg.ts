@@ -51,5 +51,10 @@ $(function () {
       (<any>window).grok_Unhandled_Error(e.error?.message ?? e.error ?? e.message ?? e, e.error?.stack);
     }
   });
+  window.addEventListener("unhandledrejection", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    (<any>window).grok_Unhandled_Error(e.reason ?? e, e.reason?.stack);
+  });
 
 });

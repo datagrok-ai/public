@@ -13,7 +13,7 @@ The platform is very extensible, and almost anything could be implemented as a p
 * Visualizations, such as [Leaflet](packages/Leaflet/README.md)
 * Importing and previewing files, such as
   [SQLite](packages/SQLite),
-  [PDF](packages/PdfViewer/README.md), or
+  [PDF](packages/FileEditors/README.md), or
   [CIF](packages/NglViewer/README.md)
 * Scientific methods implemented in R, Python, or Julia
 * File metadata extractors, such as [Tika](packages/Tika/README.md)
@@ -82,5 +82,5 @@ our [community forum](https://community.datagrok.ai/).
 ## See also
 
 * [Datagrok home](https://datagrok.ai/)
-* [JavaScript development](https://datagrok.ai/help/develop/develop)
+* [JavaScript development](https://datagrok.ai/help/develop)
 * [Community forum](https://community.datagrok.ai/)

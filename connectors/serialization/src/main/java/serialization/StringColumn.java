@@ -15,23 +15,28 @@ public class StringColumn extends Column<String> {
     private Integer[] idxs;
     private List<String> categories;
 
+    public StringColumn() {
+        data = new String[initColumnSize];
+    }
+
+    public StringColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new String[initColumnSize];
+    }
+
+    public StringColumn(String[] values) {
+        data = new String[initColumnSize];
+        addAll(values);
+    }
+
     public String getType() {
         return TYPE;
     }
 
     public void empty() {
         length = 0;
-        data = new String[100];
+        data = new String[initColumnSize];
         categorize();
-    }
-
-    public StringColumn() {
-        data = new String[100];
-    }
-
-    public StringColumn(String[] values) {
-        data = new String[100];
-        addAll(values);
     }
 
     public void encode(BufferAccessor buf) {
@@ -58,6 +63,11 @@ public class StringColumn extends Column<String> {
         return data[idx];
     }
 
+    @Override
+    public void set(int index, String value) {
+        data[index] = value;
+    }
+
     private void ensureSpace(int extraLength) {
         if (length + extraLength > data.length) {
             String[] newData = new String[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
@@ -67,9 +77,9 @@ public class StringColumn extends Column<String> {
     }
 
     public int comparer(Integer o1, Integer o2) {
-        if (data[o1] == null && data[o2] == null) return 0;
-        if (data[o1] == null) return 1;
-        if (data[o2] == null) return -1;
+        if (data[o1].equals("") && data[o2].equals("")) return 0;
+        if (data[o1].equals("")) return 1;
+        if (data[o2].equals("")) return -1;
         return data[o1].compareTo(data[o2]);
     }
 
@@ -92,6 +102,7 @@ public class StringColumn extends Column<String> {
         idxs = new Integer[length];
         Integer[] order = new Integer[length];
         for (int n = 0; n < length; n++) {
+            data[n] = data[n] == null ? "" : data[n]; 
             idxs[n] = n;
             order[n] = n;
         }
@@ -106,7 +117,7 @@ public class StringColumn extends Column<String> {
             boolean newCat = (i == 0) || (comparer(order[i], order[i - 1]) != 0);
             if (newCat) {
                 String cat = data[order[i]];
-                categories.add(cat == null ? "" : cat);
+                categories.add(cat);
             }
             idxs[order[i]] = categories.size() - 1;
         }

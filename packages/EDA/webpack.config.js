@@ -8,11 +8,12 @@ module.exports = {
     package: './src/package.ts'
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
     ],
   },
   devtool: 'inline-source-map',

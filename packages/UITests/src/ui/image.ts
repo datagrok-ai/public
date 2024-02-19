@@ -45,4 +45,4 @@ category('UI: Image', () => {
 
     root.remove();
   }
-}, false);
+}, {clear: false});

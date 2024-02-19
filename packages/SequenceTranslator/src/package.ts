@@ -2,111 +2,157 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {autostartOligoSdFileSubscription} from './autostart/registration';
-import {OligoSdFileApp} from './apps/oligo-sd-file-app';
+import {AppUIFactory, CombinedAppUI} from './view/app-ui';
+import {tryCatch} from './model/helpers';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getJsonData} from './model/data-loading-utils/json-loader';
+import {SequenceToMolfileConverter} from './model/structure-app/sequence-to-molfile';
+import {linkStrandsV3000} from './model/structure-app/mol-transformations';
+import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
+import {FormatDetector} from './model/parsing-validation/format-detector';
+import {SequenceValidator} from './model/parsing-validation/sequence-validator';
+import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
+import {FormatConverter} from './model/translator-app/format-converter';
+import {APP} from './view/const/ui';
+import {getExternalAppViewFactories} from './plugins/mermade';
 
-// three tabs of the app's view
-import {getMainTab} from './main-tab/main-tab';
-import {getAxolabsTab} from './axolabs-tab/axolabs-tab';
-import {getSdfTab} from './sdf-tab/sdf-tab';
+class StPackage extends DG.Package {
+  private _monomerLib?: IMonomerLib;
 
-const MAIN = 'MAIN';
-const AXOLABS = 'AXOLABS';
-const SDF = 'SDF';
+  get monomerLib(): IMonomerLib {
+    if (!this._monomerLib)
+      throw new Error ('Monomer lib not loaded')
+    return this._monomerLib!;
+  }
 
-const SEQUENCE_TRANSLATOR = 'Sequence Translator';
-const DEFAULT_SEQUENCE = 'fAmCmGmAmCpsmU';
-const DEFAULT_LIB_FILENAME = 'helmLib.json';
+  public async initMonomerLib(): Promise<void> {
+    if (this._monomerLib !== undefined)
+      return;
 
-import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
-
-export const _package = new DG.Package();
-
-const LIB_PATH = 'System:AppData/SequenceTranslator';
-
-let monomerLib: IMonomerLib | null = null;
-export let monomerWorks: MonomerWorks | null = null;
-
-export function getMonomerWorks() {
-  return monomerWorks;
+    const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
+      `Initializing ${APP.COMBINED} monomer library ...`);
+    await tryCatch(async () => {
+      const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
+      this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
+    }, () => pi.close());
+  }
 }
 
-export function getMonomerLib() {
-  return monomerLib;
+export const _package: StPackage = new StPackage();
+
+async function buildLayout(appName: string): Promise<void> {
+  await initSequenceTranslatorLibData();
+  const appUI = AppUIFactory.getUI(appName);
+  await appUI.createAppLayout();
 }
 
-//name: Sequence Translator
+
+//name: Oligo Toolkit
+//meta.icon: img/icons/toolkit.png
+//meta.browsePath: Oligo
 //tags: app
-export async function sequenceTranslator(): Promise<void> {
-  monomerLib = await readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
-
-  if (monomerWorks === null)
-    monomerWorks = new MonomerWorks(monomerLib);
-
-  const windows = grok.shell.windows;
-  windows.showProperties = false;
-  windows.showToolbox = false;
-  windows.showHelp = false;
-
-  let urlParams = new URLSearchParams(window.location.search);
-
-  let mainSeq: string = DEFAULT_SEQUENCE;
-  const view = grok.shell.newView(SEQUENCE_TRANSLATOR, []);
-  view.box = true;
-
-  const tabControl = ui.tabControl({
-    [MAIN]: await getMainTab((seq) => {
-      mainSeq = seq;
-      urlParams = new URLSearchParams();
-      urlParams.set('seq', mainSeq);
-      updatePath();
-    }),
-    [AXOLABS]: getAxolabsTab(),
-    [SDF]: getSdfTab(),
-  });
-
-  tabControl.onTabChanged.subscribe(() => {
-    if (tabControl.currentPane.name !== MAIN)
-      urlParams.delete('seq');
-    else
-      urlParams.set('seq', mainSeq);
-    updatePath();
-  });
-
-  function updatePath() {
-    const urlParamsTxt: string = Object.entries(urlParams)
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-    view.path = '/apps/SequenceTranslator/SequenceTranslator' + `/${tabControl.currentPane.name}/?${urlParamsTxt}`;
-  }
-
-  const pathParts: string[] = window.location.pathname.split('/');
-  if (pathParts.length >= 5) {
-    const tabName: string = pathParts[5];
-    tabControl.currentPane = tabControl.getPane(tabName);
-  }
-
-  view.append(tabControl);
-  // console.debug('SequenceTranslator: app sequenceTranslator() ' + `view.path='${view.path}', view.basePath='${view.basePath}'.`);
+export async function oligoToolkitApp(): Promise<void> {
+  await initSequenceTranslatorLibData();
+  const externalViewFactories = await getExternalAppViewFactories();
+  if (!externalViewFactories)
+    throw new Error('External app view factories not loaded');
+  const appUI = new CombinedAppUI(externalViewFactories!);
+  await appUI.createAppLayout();
 }
 
-//tags: autostart
-export async function autostartST() {
-  autostartOligoSdFileSubscription();
-};
+//name: Oligo Translator
+//meta.icon: img/icons/translator.png
+//meta.browsePath: Oligo
+//tags: app
+export async function oligoTranslatorApp(): Promise<void> {
+  await buildLayout(APP.TRANSLATOR);
+}
 
-//name: oligoSdFileApp
-//description: Test/demo app for oligoSdFile
-export async function oligoSdFileApp() {
-  // console.debug('SequenceTranslator: package.ts oligoSdFileApp()');
+//name: Oligo Pattern
+//meta.icon: img/icons/pattern.png
+//meta.browsePath: Oligo
+//tags: app
+export async function oligoPatternApp(): Promise<void> {
+  await buildLayout(APP.PATTERN);
+}
 
-  const pi = DG.TaskBarProgressIndicator.create('open oligoSdFile app');
-  try {
-    grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
+//name: Oligo Structure
+//meta.icon: img/icons/structure.png
+//meta.browsePath: Oligo
+//tags: app
+export async function oligoStructureApp(): Promise<void> {
+  await buildLayout(APP.STRUCTRE);
+}
 
-    const app = new OligoSdFileApp();
-    await app.init();
-  } finally {
-    pi.close();
-  }
+//name: initSequenceTranslatorLibData
+export async function initSequenceTranslatorLibData(): Promise<void> {
+  await getJsonData();
+  await _package.initMonomerLib();
+}
+
+//name: getCodeToWeightsMap
+//output: object result
+export function getCodeToWeightsMap(): {[key: string]: number} {
+  const map = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+  return Object.fromEntries(map);
+}
+
+//name: validateSequence
+//input: string sequence
+//output: bool result
+export function validateSequence(sequence: string): boolean {
+  const validator = new SequenceValidator(sequence);
+  const format = (new FormatDetector(sequence).getFormat());
+  return (format === null) ? false : validator.isValidSequence(format!);
+}
+
+//name: validateSequence
+//input: string sequence
+//input: bool invert
+//output: string result
+export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): string {
+  return (new SequenceToMolfileConverter(sequence, invert, 'GCRS')).convert();
+}
+
+//name: linkStrands
+//input: object strands
+//output: string result
+export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
+  return linkStrandsV3000(strands, true);
+}
+
+//name: demoOligoTranslator
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
+//description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
+export async function demoTranslateSequence(): Promise<void> {
+  await demoOligoTranslatorUI();
+}
+
+//name: demoOligoPattern
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
+//description: Design a modification pattern for an oligonucleotide sequence
+//meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
+export async function demoOligoPattern(): Promise<void> {
+  await demoOligoPatternUI();
+}
+
+//name: demoOligoStructure
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
+//description: Visualize duplex and save SDF
+//meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
+export async function demoOligoStructure(): Promise<void> {
+  await demoOligoStructureUI();
+}
+
+//name: translateOligonucleotideSequence
+//input: string sequence
+//input: string sourceFormat
+//input: string targetFormat
+//output: string result
+export async function translateOligonucleotideSequence(sequence: string, sourceFormat: string, targetFormat: string): Promise<string> {
+  await initSequenceTranslatorLibData();
+  return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
 }

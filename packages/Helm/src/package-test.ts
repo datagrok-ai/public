@@ -1,7 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+
 import './tests/helm-tests.ts';
+import './tests/findMonomers-tests';
+import './tests/renderers-tests';
+import './tests/get-molfiles';
+import './tests/properties-widget-tests';
 
 export const _package = new DG.Package();
 export {tests};

@@ -1,0 +1,94 @@
+.d4-multi-form {
+	overflow: hidden!important;
+}
+
+.d4-multi-form-header {
+	width: 100px;
+	margin-right: 10px;
+	padding-top: 10px;
+}
+
+.d4-multi-form-column-name {
+	position: absolute;
+	left: 10px;
+	white-space: nowrap;
+	font-weight: bold;
+	/*width: calc(100% - 10px);
+	
+	overflow: hidden;
+    text-overflow: ellipsis;*/
+}
+
+.d4-multi-form-form {
+	min-width: 170px;
+}
+.d4-multi-form-form input {
+	color:var(--grey-6)!important;
+}
+.d4-multi-form > .ui-split-h > .ui-box:first-child:hover::-webkit-scrollbar {
+	display: block;
+}
+
+.d4-multi-form > .ui-split-h > .ui-box:first-child::-webkit-scrollbar {
+	display: none;
+}
+
+.d4-multi-form-form.temp {
+	position: absolute;
+	visibility: hidden;
+}
+
+.d4-multi-form #vlist {
+	height: initial;
+	overflow-x: auto!important;
+}
+
+.d4-multi-form .ui-input-editor {
+	padding: initial;
+}
+
+.d4-multi-form-form > input[type="checkbox"] {
+	height: 13px;
+	margin-top: 15px;
+}
+
+.d4-multi-form-column-name .grok-icon.fal.fa-times {
+	margin-top: 2px;
+	margin-left: 3px;
+	visibility: hidden;
+}
+
+.d4-multi-form-form-indicator {
+	position: absolute;
+    width: 30px;
+    height: 5px;
+	top: -4px;
+}
+
+.d4-multi-form-form-indicator-mouse-over-row {
+	background-color: #aaaaaa;
+}
+
+.d4-multi-form-form-indicator-current-row {
+	background-color: #38b738;
+}
+
+.d4-multi-form-molecule-input-small {
+	width: 120px;
+	height: 60px;
+}
+
+.d4-multi-form-molecule-input-normal {
+	width: 200px;
+	height: 100px;
+}
+
+.d4-multi-form-molecule-input-large {
+	width: 300px;
+	height: 150px;
+}
+
+/* TODO: Release these changes with the new core version with changes in the molecular input */
+/* .d4-multi-form-form > .d4-input-molecule-canvas {
+	width: 170px;
+} */

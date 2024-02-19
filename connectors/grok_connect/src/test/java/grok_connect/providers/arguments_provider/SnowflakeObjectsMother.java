@@ -17,11 +17,12 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
+@SuppressWarnings("unused")
 public class SnowflakeObjectsMother {
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
-                .setColumn(new StringColumn(new String[] {"INFORMATION_SCHEMA", "PUBLIC"}),
+                .setColumn(new StringColumn(new String[] {"PUBLIC", "INFORMATION_SCHEMA"}),
                         "TABLE_SCHEMA")
                 .build();
         return Stream.of(Arguments.of(expected));
@@ -43,11 +44,11 @@ public class SnowflakeObjectsMother {
                 .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
                         table, table, table, table,
                         table, table, table, table})
-                .setColumn(new StringColumn(), thirdColumnName, new String[] {"COUNTRY", "IP_ADDRESS", "GENDER",
-                        "EMAIL", "DATE", "FIRST_NAME", "BOOL", "SOME_NUMBER", "ID", "LAST_NAME"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"TEXT", "TEXT",
-                        "TEXT", "TEXT", "DATE", "TEXT",
-                        "BOOLEAN", "FLOAT", "NUMBER", "TEXT"})
+                .setColumn(new StringColumn(), thirdColumnName, new String[] {"ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "GENDER",
+                        "IP_ADDRESS", "BOOL", "COUNTRY", "DATE", "SOME_NUMBER"})
+                .setColumn(new StringColumn(), fourthColumnName, new String[] {"NUMBER", "TEXT",
+                        "TEXT", "TEXT", "TEXT", "TEXT",
+                        "BOOLEAN", "TEXT", "DATE", "FLOAT"})
                 .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
                 .build();
         return Stream.of(Arguments.of(expected));

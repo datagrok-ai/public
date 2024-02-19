@@ -38,6 +38,8 @@ category('detectors', () => {
     sepUn1 = 'sepUn1',
     sepUn2 = 'sepUn2',
     sepMsaDna1 = 'sepMsaDna1',
+    sepMsaUnWEmpty = 'sepMsaUnWEmpty',
+    sepComplex = 'sepComplex',
     fastaMsaDna1 = 'fastaMsaDna1',
     fastaMsaPt1 = 'fastaMsaPt1',
   }
@@ -69,54 +71,63 @@ CCCCN1C(=O)CN=C(c2cc(F)ccc12)C3CCCCC3
 C1CCCCC1
 CCCCCC`;
     [csvTests.fastaDna1]: string = `seq
-ACGTC
-CAGTGT
-TTCAAC`;
+ACGTCACGTC
+CAGTGTCAGTGT
+TTCAACTTCAAC`;
     [csvTests.fastaRna1]: string = `seq
-ACGUC
-CAGUGU
-UUCAAC`;
+ACGUCACGUC
+CAGUGUCAGUGU
+UUCAACUUCAAC`;
     /** Pure amino acids sequence */
     [csvTests.fastaPt1]: string = `seq
 FWPHEY
 YNRQWYV
 MKPSEYV`;
     [csvTests.fastaUn]: string = `seq
-[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
-[meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
-[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]`;
+[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]DN
+[meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Aca]
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Aca]`;
     [csvTests.sepDna]: string = `seq
-A*C*G*T*C
-C*A*G*T*G*T
-T*T*C*A*A*C`;
+A*C*G*T*C*A*C*G*T*C
+C*A*G*T*G*T*C*A*G*T*G*T
+T*T*C*A*A*C*T*T*C*A*A*C`;
     [csvTests.sepRna]: string = `seq
-A*C*G*U*C
-C*A*G*U*G*U
-U*U*C*A*A*C`;
+A*C*G*U*C*A*C*G*U*C
+C*A*G*U*G*U*C*A*G*U*G*U
+U*U*C*A*A*C*U*U*C*A*A*C`;
     [csvTests.sepPt]: string = `seq
-F-W-P-H-E-Y
-Y-N-R-Q-W-Y-V
-M-K-P-S-E-Y-V`;
+F-W-P-H-E-Y-F-W-P-H-E-Y
+Y-N-R-Q-W-Y-V-Y-N-R-Q-W-Y-V
+M-K-P-S-E-Y-V-M-K-P-S-E-Y-V`;
     [csvTests.sepUn1]: string = `seq
-abc-dfgg-abc1-cfr3-rty-wert
-rut12-her2-rty-wert-abc-abc1-dfgg
-rut12-rty-her2-abc-cfr3-wert-rut12`;
+abc-dfgg-abc1-cfr3-rty-wert-cfr3-rty-wert
+rut12-her2-rty-wert-abc-abc1-dfgg-abc-abc1-dfgg
+rut12-rty-her2-abc-cfr3-wert-rut12-cfr3-wert-rut12`;
     [csvTests.sepUn2]: string = `seq
-abc/dfgg/abc1/cfr3/rty/wert
-rut12/her2/rty/wert//abc/abc1/dfgg
-rut12/rty/her2/abc/cfr3//wert/rut12`;
+abc/dfgg/abc1/cfr3/rty/wert/abc/dfgg/abc1/cfr3/rty/wert
+rut12/her2/rty/wert//abc/abc1/dfgg/rut12/her2/rty/wert//abc/abc1/dfgg
+rut12/rty/her2/abc/cfr3//wert/rut12/rut12/rty/her2/abc/cfr3//wert/rut12`;
     [csvTests.sepMsaDna1]: string = `seq
-A-C--G-T--C-T
-C-A-C--T--G-T
-A-C-C-G-T-A-C-T`;
+A-C--G-T--C-T-A-C--G-T--C-T
+C-A-C--T--G-T-C-A-C--T--G-T
+A-C-C-G-T-A-C-T-A-C-C-G-T-A-C-T`;
+    [csvTests.sepMsaUnWEmpty]: string = `seq
+m1-M-m3-mon4-mon5-N-T-MON8-N9-m1-M-m3-mon4-mon5-N-T-MON8-N9
+m1-mon2-m3-mon4-mon5-Num--MON8-N9-m1-mon2-m3-mon4-mon5-Num--MON8-N9
+
+mon1-M-mon3-mon4-mon5---MON8-N9-mon1-M-mon3-mon4-mon5---MON8-N9`;
+    [csvTests.sepComplex]: string = `seq
+Ac(1)-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
+Ac(1)-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
+Ac(1)-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2`;
     [csvTests.fastaMsaDna1]: string = `seq
-AC-GT-CT
-CAC-T-GT
-ACCGTACT`;
+AC-GT-CTAC-GT-CT
+CAC-T-GTCAC-T-GT
+ACCGTACTACCGTACT`;
     [csvTests.fastaMsaPt1]: string = `seq
-FWR-WYV-KHP
-YNR-WYV-KHP
-MWRSWY-CKHP`;
+FWR-WYV-KHPFWR-WYV-KHP
+YNR-WYV-KHPYNR-WYV-KHP
+MWRSWY-CKHPMWRSWY-CKHP`;
   }();
 
   const enum Samples {
@@ -146,9 +157,9 @@ MWRSWY-CKHP`;
   const samples: { [key: string]: string } = {
     [Samples.fastaFasta]: 'System:AppData/Bio/data/sample_FASTA.fasta',
     [Samples.fastaPtCsv]: 'System:AppData/Bio/data/sample_FASTA_PT.csv',
-    [Samples.msaComplex]: 'System:AppData/Bio/samples/sample_MSA.csv',
-    [Samples.fastaCsv]: 'System:AppData/Bio/samples/sample_FASTA.csv',
-    [Samples.helmCsv]: 'System:AppData/Bio/samples/sample_HELM.csv',
+    [Samples.msaComplex]: 'System:AppData/Bio/samples/MSA.csv',
+    [Samples.fastaCsv]: 'System:AppData/Bio/samples/FASTA.csv',
+    [Samples.helmCsv]: 'System:AppData/Bio/samples/HELM.csv',
     [Samples.peptidesComplex]: 'System:AppData/Bio/tests/peptides_complex_msa.csv',
     [Samples.peptidesSimple]: 'System:AppData/Bio/tests/peptides_simple_msa.csv',
     [Samples.testDemogCsv]: 'System:AppData/Bio/tests/testDemog.csv',
@@ -176,7 +187,10 @@ MWRSWY-CKHP`;
           const df: DG.DataFrame = await readFile(samples[key]);
           // await grok.data.detectSemanticTypes(df);
           return df;
-        })();
+        })().catch((err: any) => {
+          delete _samplesDfs[key];
+          throw err;
+        });
       }
       return _samplesDfs[key];
     };
@@ -225,10 +239,16 @@ MWRSWY-CKHP`;
     await _testPos(readCsv(csvTests.fastaPt1), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);
   });
+  test('FastaPtGaps', () => _testPosList(['FW-PH-EYY', 'FYNRQWYV-', 'FKP-Q-SEYV'],
+    NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false));
+  test('FastaPtGapsMsa', () => _testPosList(['FW-PH-EYY', 'FYNRQWYV-', 'FKP-Q-SEY'],
+    NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.PT, 20, false));
+
   test('FastaUn', async () => {
     await _testPos(readCsv(csvTests.fastaUn), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 12, true);
   });
+
   test('FastaMsaDna1', async () => {
     await _testPos(readCsv(csvTests.fastaMsaDna1), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false);
@@ -263,6 +283,16 @@ MWRSWY-CKHP`;
   test('SepMsaN1', async () => {
     await _testPos(readCsv(csvTests.sepMsaDna1), 'seq',
       NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false, '-');
+  });
+
+  test('SepMsaUnWEmpty', async () => {
+    await _testPos(readCsv(csvTests.sepMsaUnWEmpty), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true);
+  });
+
+  test('SepComplex', async () => {
+    await _testPos(readCsv(csvTests.sepComplex), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true);
   });
 
   test('samplesFastaCsv', async () => {
@@ -384,6 +414,31 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
     const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
     throw new Error(msg);
+  }
+}
+
+export async function _testPosList(list: string[], units: NOTATION,
+  aligned: ALIGNMENT, alphabet: ALPHABET, alphabetSize: number, alphabetIsMultichar: boolean,
+  separator: string | null = null
+): Promise<void> {
+  const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'seq', list);
+  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+  if (semType)
+    col.semType = semType;
+
+  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
+  expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.getTag(bioTAGS.aligned), aligned);
+  expect(col.getTag(bioTAGS.alphabet), alphabet);
+  if (separator)
+    expect(col.getTag(bioTAGS.separator), separator);
+
+  const uh = UnitsHandler.getOrCreate(col);
+  expect(uh.getAlphabetSize(), alphabetSize);
+  expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
+  if (!uh.isHelm()) {
+    expect(uh.aligned, aligned);
+    expect(uh.alphabet, alphabet);
   }
 }
 

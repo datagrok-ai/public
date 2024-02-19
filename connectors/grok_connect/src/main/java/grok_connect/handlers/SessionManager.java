@@ -1,19 +1,29 @@
 package grok_connect.handlers;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
-import grok_connect.utils.QueryManager;
+import java.util.List;
+
+import grok_connect.log.QueryLogger;
+import grok_connect.log.QueryLoggerImpl;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SessionManager {
+    private static final String WRITE_LOG_HEADER = "writeLog";
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionManager.class);
     private static final HashMap<Session, SessionHandler> sessions = new HashMap<>();
 
     static void add(Session session) throws IOException {
         LOGGER.trace("add method was called with parameter: {}", session);
-        sessions.put(session, new SessionHandler(session));
+        QueryLogger logger = new QueryLoggerImpl(session);
+        String writeLog = session.getUpgradeRequest().getHeader(WRITE_LOG_HEADER);
+        if (writeLog == null || writeLog.equals("false"))
+            logger.writeLog(false);
+        sessions.put(session, new SessionHandler(session, logger));
+        logger.getLogger().debug("Sending CONNECTED message to the server...");
         session.getRemote().sendString("CONNECTED");
     }
 
@@ -30,9 +40,8 @@ public class SessionManager {
     static void delete(Session session) throws Throwable {
         LOGGER.trace("delete method was called with parameters: session :{}", session);
         if (sessions.containsKey(session)) {
-            QueryManager queryManager = sessions.get(session).getQueryManager();
-            if (queryManager != null)
-                queryManager.closeConnection();
+            SessionHandler handler = sessions.get(session);
+            handler.onClose();
             sessions.remove(session);
         }
     }

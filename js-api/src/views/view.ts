@@ -12,8 +12,9 @@ import {StreamSubscription} from '../events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
 import {FuncCall} from "../functions";
+import {IDartApi} from "../api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
@@ -290,8 +291,8 @@ export class View extends ViewBase {
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link saveLayout}
    *  @param {ViewLayout} layout */
-  loadLayout(layout: ViewLayout): void {
-    return api.grok_View_Load_Layout(this.dart, layout.dart);
+  loadLayout(layout: ViewLayout, pickupColumnTags?: boolean): void {
+    return api.grok_View_Load_Layout(this.dart, layout.dart, pickupColumnTags);
   }
 
   /** 
@@ -301,6 +302,14 @@ export class View extends ViewBase {
   saveLayout(): ViewLayout {
     return toJs(api.grok_View_Save_Layout(this.dart));
   }
+
+  /**
+   *  Saves view as a ViewInfo. Only applicable to certain views, such as {@link TableView}.
+   *  @returns {ViewInfo} */
+  getInfo(): ViewLayout {
+    return toJs(api.grok_View_Get_Info(this.dart));
+  }
+
 
   /** View name. It gets shown in the tab handle.
    * @type {string} */
@@ -675,7 +684,17 @@ export class TableView extends View {
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
 
+  saveState(): string {
+    return api.grok_TableView_SaveState(this.dart);
+  }
 
+  loadState(x: string, options?: IViewStateApplicationOptions): void {
+    api.grok_TableView_LoadState(this.dart, x, options?.pickupColumnTags);
+  }
+}
+
+export interface IViewStateApplicationOptions {
+  pickupColumnTags?: boolean;
 }
 
 /** Script view */
@@ -712,16 +731,11 @@ export class ViewLayout extends Entity {
   }
 
   static fromJson(json: string): ViewLayout {
-    return new ViewLayout(api.grok_ViewLayout_FromJson(json));
+    return toJs(api.grok_ViewLayout_FromJson(json));
   }
 
   static fromViewState(state: string): ViewLayout {
-    return new ViewLayout(api.grok_ViewLayout_FromViewState(state));
-  }
-
-  /** Only defined within the context of the OnViewLayoutXXX events */
-  get view(): View {
-    return toJs(api.grok_ViewLayout_Get_View(this.dart));
+    return toJs(api.grok_ViewLayout_FromViewState(state));
   }
 
   get viewState(): string {
@@ -750,6 +764,46 @@ export class ViewLayout extends Entity {
 
 }
 
+export class ViewInfo extends Entity {
+
+  /** @constructs ViewInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromJson(json: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromJson(json));
+  }
+
+  static fromViewState(state: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromViewState(state));
+  }
+
+  /** Only defined within the context of the OnViewLayoutXXX events */
+  get view(): View {
+    return toJs(api.grok_ViewInfo_Get_View(this.dart));
+  }
+
+  get viewState(): string {
+    return api.grok_ViewInfo_Get_ViewState(this.dart);
+  }
+
+  set viewState(state: string) {
+    api.grok_ViewInfo_Set_ViewState(this.dart, state);
+  }
+
+  getUserDataValue(key: string): string {
+    return api.grok_ViewInfo_Get_UserDataValue(this.dart, key);
+  }
+
+  setUserDataValue(key: string, value: string) {
+    return api.grok_ViewInfo_Set_UserDataValue(this.dart, key, value);
+  }
+
+  toJson(): string {
+    return api.grok_ViewInfo_ToJson(this.dart);
+  }
+}
 
 /** Represents a virtual view, where visual elements are created only when user
  * scrolls them into view. */

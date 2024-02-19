@@ -6,6 +6,9 @@ Form allows you to customize the appearance of the row by manually positioning t
 elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of
 the [Tile Viewer](tile-viewer.md).
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Form');`
+
 ## Editable forms
 
 To edit values via the form, click on the 'edit' icon on top.
@@ -14,7 +17,7 @@ To edit values via the form, click on the 'edit' icon on top.
 
 To reposition the fields, click on the 'presentation' icon, and then drag-and-drop fields to the new locations. To
 change visual properties of an element, click on it while in the designer mode; properties will appear in
-the [context panel](../../datagrok/navigation.md#context-panel)
+the [Context Panel](../../datagrok/navigation/navigation.md#context-panel)
 on the right.
 
 Field color-coding and format are picked up from the corresponding grid, if possible.

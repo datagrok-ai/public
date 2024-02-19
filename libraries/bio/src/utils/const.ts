@@ -2,11 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
-
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
-export const enum HELM_REQUIRED_FIELDS {
+export const enum HELM_REQUIRED_FIELD {
   SYMBOL = 'symbol',
   NAME = 'name',
   MOLFILE = 'molfile',
@@ -19,11 +17,22 @@ export const enum HELM_REQUIRED_FIELDS {
   CREATE_DATE = 'createDate',
 }
 
+// fields of "rgroups" sub-object in HELM library
+export const enum HELM_RGROUP_FIELDS {
+  CAP_GROUP_SMILES = 'capGroupSMILES',
+  // WARNING: both capitalization variants coexist
+  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES',
+  ALTERNATE_ID = 'alternateId',
+  CAP_GROUP_NAME = 'capGroupName',
+  LABEL = 'label',
+}
+
 export const enum HELM_OPTIONAL_FIELDS {
   NATURAL_ANALOG = 'naturalAnalog',
   META = 'meta', // for SequenceTranslator
 }
 
+// todo: remove
 export const enum HELM_FIELDS {
   MONOMER_TYPE = 'monomerType',
   SMILES = 'smiles',
@@ -36,15 +45,6 @@ export const enum HELM_FIELDS {
   ID = 'id',
   POLYMER_TYPE = 'polymerType',
   SYMBOL = 'symbol'
-}
-
-// fields of "rgroups" sub-object in HELM library
-export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSmiles',
-  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
-  ALTERNATE_ID = 'alternateId',
-  CAP_GROUP_NAME = 'capGroupName',
-  LABEL = 'label',
 }
 
 // possible values of polymers
@@ -86,6 +86,28 @@ export const jsonSdfMonomerLibDict = {
   'symbol': 'MonomerCode'
 };
 
+export const DUMMY_MONOMER = {
+  'monomerType': 'Backbone',
+  'smiles': '',
+  'name': '',
+  'author': 'Datagrok',
+  'molfile': '',
+  'naturalAnalog': '',
+  'rgroups': [],
+  'createDate': null,
+  'id': 0,
+  'polymerType': 'PEPTIDE',
+  'symbol': ''
+};
 // range of hex nubers used in PepSea library to endode monomers
 export const MONOMER_ENCODE_MIN = 0x100;
 export const MONOMER_ENCODE_MAX = 0x40A;
+
+export const RIBOSE_SYMBOL = 'r';
+export const DEOXYRIBOSE_SYMBOL = 'd';
+export const PHOSPHATE_SYMBOL = 'p';
+export const HELM_WRAPPERS_REGEXP = new RegExp(
+  `[${RIBOSE_SYMBOL}${DEOXYRIBOSE_SYMBOL}]\\((\\w)\\)${PHOSPHATE_SYMBOL}?`,
+  'g'
+);
+

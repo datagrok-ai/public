@@ -85,4 +85,5 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 --connection: PostgresTest
 --input: int ProductID = 7
 select * from Products
+where @ProductID = productid
 --end

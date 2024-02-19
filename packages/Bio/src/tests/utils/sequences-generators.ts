@@ -1,7 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {expect} from '@datagrok-libraries/utils/src/test';
+
+import {awaitGrid} from '../utils';
 
 
 export function generateManySequences(): DG.Column[] {
@@ -23,22 +27,16 @@ export function generateLongSequence(): DG.Column[] {
   return columns;
 }
 
-export function setTagsMacromolecule(col: DG.Column) {
-  col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-  col.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-  col.setTag(bioTAGS.alphabet, ALPHABET.UN);
-  col.setTag(bioTAGS.separator, '/');
-  return col;
-}
-
-export function performanceTest(generateFunc: () => DG.Column[], testName: string) {
+export async function performanceTest(generateFunc: () => DG.Column[], testName: string) {
   const columns = generateFunc();
   const df: DG.DataFrame = DG.DataFrame.fromColumns(columns);
+  await grok.data.detectSemanticTypes(df);
   const startTime: number = Date.now();
   const col: DG.Column = df.columns.byName('MSA');
-  setTagsMacromolecule(col);
-  grok.shell.addTableView(df);
+  const view: DG.TableView = grok.shell.addTableView(df);
+
+  await awaitGrid(view.grid);
+  expect(view.grid.dataFrame.id, df.id);
 
   const endTime: number = Date.now();
   const elapsedTime: number = endTime - startTime;

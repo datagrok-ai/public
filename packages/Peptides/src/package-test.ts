@@ -1,13 +1,13 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/core';
-import './tests/peptide-space-test';
-import './tests/algorithms';
+import './tests/benchmarks';
 import './tests/viewers';
 import './tests/widgets';
 import './tests/table-view';
 import './tests/model';
+import './tests/misc';
 
 export const _package = new DG.Package();
 export {tests};

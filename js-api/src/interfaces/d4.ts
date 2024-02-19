@@ -86,6 +86,8 @@ export interface ITreeMapLookSettings {
 
   sizeColumnName: string;
 
+  autoLayout: boolean;
+
   sizeAggrType: string;
 
   defaultColor: number;
@@ -159,6 +161,15 @@ export interface IHistogramLookSettings {
 
   showYAxis: boolean;
 
+  /// Whether the horizontal axis should be zoomed to the range of the visible bins.
+  zoomToRange: boolean;
+
+  /// Whether the values should be normalized to the filter or globally.
+  normalizeToFilter: boolean;
+
+  /// Bin the values that are in the filter range.
+  binToRange: boolean;
+
   /// Whether markers should be drown when multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   showMarkers: boolean;
@@ -204,6 +215,8 @@ export interface IHistogramLookSettings {
   showContextMenu: boolean;
 
   //style
+  autoLayout: boolean;
+
   xAxisHeight: number;
 
   yAxisWidth: number;
@@ -213,6 +226,8 @@ export interface IHistogramLookSettings {
   rowIndicatorSize: number;
 
   backColor: number;
+
+  axisFont: string;
 
   filteredBinsColor: number;
 
@@ -233,6 +248,8 @@ export interface IHistogramLookSettings {
   filterMarginTop: number;
 
   filterMarginBottom: number;
+
+  aggTooltipColumns: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -303,11 +320,12 @@ export interface IFiltersLookSettings {
 
 export interface IScatterPlotLookSettings {
   /// Determines the rows shown on the scatter plot.
-  // Commented until we make UI for formula editor:
-  // @Prop(editor: 'editFormula')
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
+
+  /// Invalid are null values and not positive numbers if axis is logarithmic.
+  filterOutInvalid: boolean;
 
   /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
   showFilteredOutPoints: boolean;
@@ -320,7 +338,7 @@ export interface IScatterPlotLookSettings {
   /// * No action: they are disconnected
   /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
   /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
-  /// * Zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
+  /// * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
   zoomAndFilter: string;
 
   /// A column to use on the X axis. Could be numerical or categorical.
@@ -376,6 +394,7 @@ export interface IScatterPlotLookSettings {
 
   markerType: string;
 
+  // -1 default - automatic sizing based on current dataframe
   markerDefaultSize: number;
 
   markerOpacity: number;
@@ -429,9 +448,15 @@ export interface IScatterPlotLookSettings {
   /// Shows exact X and Y coordinates for the mouse cursor.
   showDropLines: boolean;
 
+  mouseDrag: string;
+
   /// When true, lasso area selector is used instead of the rectangular one.
   /// Toggle this option by pressing L.
   lassoTool: boolean;
+
+  allowZoom: boolean;
+
+  autoLayout: boolean;
 
   backColor: number;
 
@@ -454,6 +479,10 @@ export interface IScatterPlotLookSettings {
   linearColorScheme: Array<number>;
 
   categoricalColorScheme: Array<number>;
+
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
 
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
   /// set for the corresponding column.
@@ -518,11 +547,15 @@ export interface IScatterPlotLookSettings {
 }
 
 export interface ILineChartLookSettings {
-  // Commented until we make UI for formula editor:
-  // @Prop(editor: 'editFormula')
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
+
+  /// Deprecated, use splitColumnNames instead
+  splitColumnName: string;
+
+  /// A categorical column by which lines are split
+  splitColumnNames: Array<string>;
 
   /// Defines a Y column for the chart on the bottom used for zooming
   overviewColumnName: string;
@@ -553,12 +586,13 @@ export interface ILineChartLookSettings {
 
   xAxisLabelOrientation: string;
 
+  xMin: number;
+
+  xMax: number;
+
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
-
-  /// A categorical column by which lines are split
-  splitColumnName: string;
 
   showYAxis: boolean;
 
@@ -609,6 +643,8 @@ export interface ILineChartLookSettings {
 
   /// Show additional chart on the left
   leftPanel: string;
+
+  autoLayout: boolean;
 
   segmentsFont: string;
 
@@ -703,6 +739,8 @@ export interface ILineChartLookSettings {
   /// Requires the PowerPack plugin.
   showViewerFormulaLines: boolean;
 
+  aggTooltipColumns: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -767,6 +805,8 @@ export interface IBarChartLookSettings {
 
   showCategoryValues: boolean;
 
+  showValuesInsteadOfCategories: boolean;
+
   showCategorySelector: boolean;
 
   /// A categorical column to further split data on.
@@ -790,6 +830,8 @@ export interface IBarChartLookSettings {
 
   showMouseOverRect: boolean;
 
+  autoLayout: boolean;
+
   maxCategoryWidth: number;
 
   categoryValueWidth: number;
@@ -805,6 +847,8 @@ export interface IBarChartLookSettings {
   barCornerRadius: number;
 
   font: string;
+
+  axisFont: string;
 
   minTextHeight: number;
 
@@ -831,6 +875,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
 
   showEmptyBars: boolean;
 
@@ -865,6 +913,10 @@ export interface IDensityPlotLookSettings {
 
   /// Columns to be put on the Y axis
   yColumnName: string;
+
+  autoLayout: boolean;
+
+  axisFont: string;
 
   showXAxis: boolean;
 
@@ -901,8 +953,6 @@ export interface IDensityPlotLookSettings {
 
 export interface IBoxPlotLookSettings {
   /// Determines the rows shown on the box plot.
-  // Commented until we make UI for formula editor:
-  // @Prop(editor: 'editFormula')
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
@@ -956,13 +1006,17 @@ export interface IBoxPlotLookSettings {
   /// Show points outside Q2-Q3
   showOutsideValues: boolean;
 
-  showPValue: boolean;
-
-  statistics: Array<string>;
-
   /// Show p-value. Press T to toggle.
   /// Currently works only when there are two categories.
   /// Welch's t-test is used for calculating the p-value.
+  showPValue: boolean;
+
+  showMouseOverPoint: boolean;
+
+  statistics: Array<string>;
+
+  autoLayout: boolean;
+
   axisFont: string;
 
   categoryFont: string;
@@ -1032,6 +1086,8 @@ export interface IPieChartLookSettings {
 
   includeNulls: boolean;
 
+  autoLayout: boolean;
+
   segmentAngleColumnName: string;
 
   segmentAngleAggrType: string;
@@ -1075,6 +1131,8 @@ export interface IPieChartLookSettings {
 
   marginBottom: number;
 
+  aggTooltipColumns: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1109,11 +1167,109 @@ export interface IMatrixPlotLookSettings {
 
   cellPlotType: string;
 
+  autoLayout: boolean;
+
   showXAxes: boolean;
 
   showYAxes: boolean;
 
   backColor: number;
+
+  //StreamController _changes;
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  // Viewer description that gets shown at the *Descriptor Position*.
+  // Markup is supported.
+  description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+}
+
+export interface ISummaryLookSettings {
+  /// Column to show aggregation on
+  aggrColumnName: string;
+
+  /// List of columns to show aggregations on
+  columnNames: Array<string>;
+
+  /// Aggregation that will be used for the columns
+  aggregation: string;
+
+  /// List of aggregations for the columns (temporarily unavailable from UI)
+  aggregations: Array<string>;
+
+  /// Controls the source of the data comparison
+  /// * Row: shows vertical bars based on each row category
+  /// * Column: shows horizontal bars based on each column category
+  /// * Global: shows horizontal bars based on all selected categories
+  normalization: string;
+
+  /// Visualization type (text, circles or bars)
+  visualization: string;
+
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  colorColumnName: string;
+
+  /// Color aggregation type.
+  colorAggrType: string;
+
+  /// Custom color scheme for the color-coding.
+  colorSchemes: Array<Array<number>>;
+
+  invertColorScheme: boolean;
+
+  //StreamController _changes;
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  // Viewer description that gets shown at the *Descriptor Position*.
+  // Markup is supported.
+  description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+}
+
+export interface ISparklinesLookSettings {
+  /// List of columns to show aggregations on
+  columnNames: Array<string>;
+
+  /// List of aggregations for the columns
+  aggregations: Array<string>;
+
+  sparklineType: string;
+
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  colorColumnName: string;
+
+  /// Color aggregation type.
+  colorAggrType: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1175,7 +1331,13 @@ export interface IGridLookSettings {
   /// Indicates current row with the *Current Row Color*.
   showCurrentRowIndicator: boolean;
 
-  pinnedRows: Array<number>;
+  sortByColumnNames: Array<string>;
+
+  sortTypes: Array<boolean>;
+
+  pinnedRowColumnNames: Array<string>;
+
+  pinnedRowValues: Array<string>;
 
   /// Indicates whether the control is in the grid or heatmap mode.
   /// Typically, you don't need to change it manually.
@@ -1192,14 +1354,16 @@ export interface IGridLookSettings {
   allowBlockSelection: boolean;
 
   /// Shift+click on a header to select a column
+  /// Shift+mouse drag on the headers to select multiple columns
   /// Ctrl+click to invert selection
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Reorder rows by drag-and-dropping
+  /// Mouse drag on the rows header selects rows
+  /// Reorder rows by dragging them
   allowRowReordering: boolean;
 
-  /// Mouse drag on the row header selects rows
+  /// Mouse drag on the rows headers selects rows
   /// Ctrl+click to invert selection
   /// Shift+mouse drag to select multiple rows
   /// Ctrl+Shift+mouse drag to unselect
@@ -1213,7 +1377,7 @@ export interface IGridLookSettings {
   /// when the mouse is over its header
   allowColumnMenu: boolean;
 
-  /// Automatically scroll current row into view when this column becomes current
+  /// Automatically scroll column into view when this column becomes current
   autoScrollColumnIntoView: boolean;
 
   /// Automatically scroll current row into view when it is set from outside
@@ -1229,7 +1393,7 @@ export interface IGridLookSettings {
   /// when you click on a column header.
   allowChangeCurrentObject: boolean;
 
-  /// Whether row rows can be dragged out of the grid.
+  /// Whether row (rows) can be dragged out of the grid.
   allowRowDragging: boolean;
 
   extendLastColumn: boolean;
@@ -1245,6 +1409,9 @@ export interface IGridLookSettings {
 
   /// Whether the context menu is shown
   showContextMenu: boolean;
+
+  /// Whether to show notifications when the user tries to edit a read-only table
+  showReadOnlyNotifications: boolean;
 
   frozenColumns: number;
 
@@ -1293,6 +1460,10 @@ export interface IGridLookSettings {
 
   rowHeaderBackColor: number;
 
+  /// true: colors are scaled based on the global min/max in all numerical columns
+  /// false: colors are scaled based on the column min/max.
+  globalColorScaling: boolean;
+
   /// Controls grid tooltip visibility
   showTooltip: string;
 
@@ -1314,6 +1485,9 @@ export interface IGridLookSettings {
   marginRight: number;
 
   marginBottom: number;
+
+  /// Determines whether newly added columns are added to the grid
+  syncNewColumns: boolean;
 
   colorScheme: Array<number>;
 
@@ -1391,19 +1565,35 @@ export interface ITrellisPlotLookSettings {
 
   viewerType: string;
 
+  filter: string;
+
   categoryLabelFont: string;
+
+  innerViewerLooks: Map<string, any>;
 
   globalScale: boolean;
 
   showGridlines: string;
 
-  showXAxes: boolean;
+  showXSelectors: boolean;
 
-  showYAxes: boolean;
+  showYSelectors: boolean;
+
+  showXLabels: boolean;
+
+  showYLabels: boolean;
 
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
+
+  packCategories: boolean;
+
+  useTiledView: boolean;
+
+  tilesPerRow: number;
+
+  autoLayout: boolean;
 
   backColor: number;
 
@@ -1464,6 +1654,8 @@ export interface IPcPlotLookSettings {
   showFilters: boolean;
 
   currentLineWidth: number;
+
+  autoLayout: boolean;
 
   lineWidth: number;
 
@@ -1748,6 +1940,8 @@ export interface INetworkDiagramLookSettings {
 
   node2LabelColumnName: string;
 
+  autoLayout: boolean;
+
   node1Color: number;
 
   ///put url, or url with placeholders ... to apply individual img
@@ -1796,6 +1990,15 @@ export interface INetworkDiagramLookSettings {
   hoverColor: number;
 
   showColumnSelectors: boolean;
+
+  selectRowsOnClick: boolean;
+
+  selectEdgesOnClick: boolean;
+
+  /// Loads external data; called when you double-click on a node.
+  /// The specified function gets called with the node value as a single argument.
+  /// Its signature: `dataframe expand(dynamic nodeId)`.
+  onNodeExpandFunction: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1865,6 +2068,8 @@ export interface ITileViewerLookSettings {
 
   columnsJson: string;
 
+  lanes: Array<string>;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1889,13 +2094,18 @@ export interface ITileViewerLookSettings {
 }
 
 export interface IPivotViewerLookSettings {
+  /// Determines the rows used in pivot viewer.
   showHeader: boolean;
 
-  columnsColumnNames: Array<string>;
+  pivotColumnNames: Array<string>;
 
-  rowsColumnNames: Array<string>;
+  groupByColumnNames: Array<string>;
 
-  measures: Array<string>;
+  aggregateColumnNames: Array<string>;
+
+  aggregateAggTypes: Array<string>;
+
+  viewerSettings: Array<any>;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

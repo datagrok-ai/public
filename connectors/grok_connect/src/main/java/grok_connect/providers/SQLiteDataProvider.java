@@ -6,19 +6,22 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import grok_connect.GrokConnect;
+import java.util.Map;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.datetime_column.SQLiteDateTimeColumnManager;
+import grok_connect.managers.string_column.SQLiteStringColumnManager;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.*;
 
@@ -27,8 +30,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         return false;
     }
 
-    public SQLiteDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public SQLiteDataProvider() {
         driverClassName = "org.sqlite.JDBC";
 
         descriptor = new DataSource();
@@ -57,7 +59,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
 
     @Override
     public String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        boolean exists = Files.exists(Paths.get(String.format("%s", conn.getDb())));
+        boolean exists = Files.exists(Paths.get(conn.getDb()));
         return exists ? DataProvider.CONN_AVAILABLE : "Connection is not available";
     }
 
@@ -91,21 +93,18 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         result.addColumn(columnName);
         result.addColumn(dataType);
         Connection dbConnection = getConnection(connection);
-        ResultSet columns = dbConnection.getMetaData().getColumns(null, null, null, null);
-        while (columns.next()) {
+        ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null);
+        while (columns.next())
             result.addRow(columns.getString(2), columns.getString(3),
                     columns.getString(4), columns.getString(6));
-        }
         return result;
     }
 
     @Override
-    protected boolean isTime(int type, String typeName) {
-        return false;
-    }
-
-    @Override
-    protected boolean isString(int type, String typeName) {
-        return super.isString(type, typeName) || (type == Types.TIMESTAMP);
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.DATE_TIME, new SQLiteDateTimeColumnManager());
+        defaultManagersMap.put(Types.STRING, new SQLiteStringColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

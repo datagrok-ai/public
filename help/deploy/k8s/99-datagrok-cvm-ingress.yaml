@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: datagrok
+  name: cvm
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: cvm.datagrok.internal
+      http:
+        paths:
+          #          - backend:
+          #              service:
+          #                name: grok-compute
+          #                port:
+          #                  number: 5005
+          #            path: /grok_compute
+          #            pathType: ImplementationSpecific
+          #          - backend:
+          #              service:
+          #                name: jupyter-kernel-gateway
+          #                port:
+          #                  number: 8888
+          #            path: /jupyter
+          #            pathType: ImplementationSpecific
+          #          - backend:
+          #              service:
+          #                name: jupyter-kernel-gateway
+          #                port:
+          #                  number: 5005
+          #            path: /jupyter/helper
+          #            pathType: ImplementationSpecific
+          #          - backend:
+          #              service:
+          #                name: jupyter-notebook
+          #                port:
+          #                  number: 8889
+          #            path: /notebook
+          #            pathType: ImplementationSpecific
+          #          - backend:
+          #              service:
+          #                name: jupyter-notebook
+          #                port:
+          #                  number: 5005
+          #            path: /notebook/helper
+          #            pathType: ImplementationSpecific
+          - backend:
+              service:
+                name: cvm-nginx
+                port:
+                  number: 8090
+            path: /
+            pathType: ImplementationSpecific

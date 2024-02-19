@@ -5,5 +5,9 @@ export enum WORKER_CALL {
   SEARCH_SUBSTRUCTURE = 'searchSubstructure',
   CONVERT_MOL_NOTATION = 'convertMolNotation',
   GET_STRUCTURAL_ALERTS = 'getStructuralAlerts',
-  GET_MOL_SAFE = 'getMolSafe',
+  INVALIDATE_CACHE = 'invalidateCache',
+  SET_TERMINATE_FLAG = 'setTerminateFlag',
+  MMP_GET_FRAGMENTS = 'mmpGetFragments',
+  MMP_GET_MCS = 'mmpGetMcs',
+  MOST_COMMON_STRUCTURE = 'mostCommonStructure',
 }

@@ -3,13 +3,20 @@ title: "View layout"
 ---
 
 View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
-a [table view](../datagrok/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
 and later apply it to a different dataset
 (**View | Layout | Open Gallery**).
 
 To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
 choose **Clone**.
+
+:::note developers: DataFrame-synchronized tags
+Sometimes, you want presentation-related tags (such as color coding) to be defined on a table level so
+that all derived table views will pick it. In such cases, these tags need to be saved as part of the layout.
+When such layout is applied, these tags are re-applied back to table/column tags. 
+Such a tag should start with "%", i.e. "%myColorCoding".
+:::
 
 ## Viewer layout
 
@@ -44,10 +51,10 @@ columns could be mapped to the table columns. There are few different ways a lay
 column, which are evaluated in the following order:
 
 1. Column names AND column types match
-2. Both columns have the same [layout-id](../discover/tags.md#layout-id)
-3. Both columns have the same [semantic type](../discover/tags.md#quality)
+2. Both columns have the same [layout-id](../govern/catalog/tags.md#layout-id)
+3. Both columns have the same [semantic type](../govern/catalog/tags.md#quality)
 
 See also:
 
-* [Table view](../datagrok/table-view.md)
-* [Self-learning platform](../learn/self-learning-platform.md)
+* [Table view](../datagrok/navigation/table-view.md)
+* [Self-learning platform](../govern/catalog/self-learning-platform.md)

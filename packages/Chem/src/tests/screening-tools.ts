@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, test, before, after, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, after, expect, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
@@ -29,7 +29,7 @@ category('screening tools', () => {
   test('elementalAnalysis.smiles', async () => {
     let df: DG.DataFrame;
     if (DG.Test.isInBenchmark)
-      df = await grok.data.files.openTable("Demo:Files/chem/smiles_100K.zip");
+      df = await grok.data.files.openTable('Demo:Files/chem/smiles_100K.zip');
     else
       df = molecules.clone();
     const tv = grok.shell.addTableView(df);
@@ -56,7 +56,7 @@ category('screening tools', () => {
     elementalAnalysis(df, df.getCol('smiles'), false, false);
     expect(df.columns.length, 6);
     expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
-  }, {skipReason: 'GROK-12227'});
+  });
 
   test('elementalAnalysis.malformedData', async () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
@@ -77,15 +77,17 @@ category('screening tools', () => {
 // To do: move to separate Benchmarks category
 category('screening tools: benchmarks', () => {
   before(async () => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    chemCommonRdKit.initRdKitModuleLocal();
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
   });
 
   test('structural alerts', async () => {
     const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
     // const rdkitModule = chemCommonRdKit.getRdKitModule();
     const rdkitService = await chemCommonRdKit.getRdKitService();
-    const sarSmall = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip") :
+    const sarSmall = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_200K.zip') :
       DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
     const smilesCol = sarSmall.getCol('smiles');
     const ruleSet: RuleSet = {'BMS': true, 'Dandee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
@@ -94,10 +96,13 @@ category('screening tools: benchmarks', () => {
     await DG.timeAsync('Structural Alerts', async () => {
       await runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitService);
     });
-  });
+  }, {timeout: 120000});
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
+    df.name = 'test';
+    const v = grok.shell.addTableView(df);
+    await awaitCheck(() => v.dataFrame.name === 'test', undefined, 1000);
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
     DG.time('Elemental Analysis', async () => {

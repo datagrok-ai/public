@@ -97,6 +97,7 @@ export enum TYPE {
   COLUMN = 'column',
   COLUMN_LIST = 'column_list',
   GRAPHICS = 'graphics',
+  FILE = 'file',
   ROW_FILTER = 'tablerowfiltercall',
   COLUMN_FILTER = 'colfiltercall',
   BIT_SET = 'bitset',
@@ -285,27 +286,9 @@ export const TAGS = {
 
   CHEM: {
     SCAFFOLD: 'chem-scaffold'
-  }
-}
-    
-export const InputType = {
-  Int: 'Int',
-  BigInt: 'BigInt',
-  Float: 'Float',
-  QNum: 'QNum',
-  Slider: 'Slider',
-  Bool: 'Bool',
-  TextArea: 'TextArea',
-  Text: 'Text',
-  Date: 'Date',
-  Map: 'Map',
-  List: 'List',
-  Color: 'Color',
-  Column: 'Column',
-  Radio: 'Radio',
-  Choice: 'Choice',
-  MultiChoice: 'MultiChoice',
-  Table: 'Table',
+  },
+
+  LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
 
 export const FUNC_TYPES = {
@@ -408,7 +391,8 @@ export enum VIEWER {
   TIMELINES = 'TimelinesViewer',
   RADAR_VIEWER = 'RadarViewer',
   SURFACE_PLOT = 'SurfacePlot',
-  SCAFFOLD_TREE = 'Scaffold Tree'
+  SCAFFOLD_TREE = 'Scaffold Tree',
+  PIVOT_TABLE = 'Pivot table'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */
@@ -589,6 +573,7 @@ export type ElementOptions = {
   id?: string;
   classes?: string;
   style?: object;
+  //tooltip?: string;
   processNode?: (node: HTMLElement) => void;
   onClick?: (event: PointerEvent) => void;
 };

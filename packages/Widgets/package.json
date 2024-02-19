@@ -1,54 +1,54 @@
 {
-	"name": "@datagrok/widgets",
-	"friendlyName": "Widgets",
-	"version": "0.2.2",
-	"author": {
-		"name": "Andrew Skalkin",
-		"email": "askalkin@datagrok.ai"
-	},
-	"description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Widgets"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"Developers"
-	],
-	"dependencies": {
-		"datagrok-api": "^1.0.0",
-		"rxjs": "^6.5.5",
-		"cash-dom": "latest"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"style-loader": "latest",
-		"css-loader": "latest",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"debug-widgets": "grok publish",
-		"release-widgets": "grok publish --release",
-		"build-widgets": "webpack",
-		"build": "webpack",
-		"debug-widgets-dev": "grok publish dev",
-		"release-widgets-dev": "grok publish dev --release",
-		"debug-widgets-local": "grok publish local",
-		"release-widgets-local": "grok publish local --release",
-		"debug-widgets-core": "grok publish core",
-		"release-widgets-core": "grok publish core --release",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
-	},
-	"category": "Visualizations"
+  "name": "@datagrok/widgets",
+  "friendlyName": "Widgets",
+  "version": "0.2.2",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Widgets"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "Developers"
+  ],
+  "dependencies": {
+    "datagrok-api": "^1.17.0",
+    "rxjs": "^6.5.5",
+    "cash-dom": "latest"
+  },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "style-loader": "latest",
+    "css-loader": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "debug-widgets": "grok publish",
+    "release-widgets": "grok publish --release",
+    "build-widgets": "webpack",
+    "build": "webpack",
+    "debug-widgets-dev": "grok publish dev",
+    "release-widgets-dev": "grok publish dev --release",
+    "debug-widgets-local": "grok publish local",
+    "release-widgets-local": "grok publish local --release",
+    "debug-widgets-core": "grok publish core",
+    "release-widgets-core": "grok publish core --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  },
+  "category": "Visualizations"
 }

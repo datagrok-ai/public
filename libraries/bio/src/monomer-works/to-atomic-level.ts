@@ -2,18 +2,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
-import {ALPHABET, NOTATION, TAGS} from '../utils/macromolecule/consts';
-import {NotationConverter} from '../utils/notation-converter';
+import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
 import {IMonomerLib, Monomer} from '../types';
 import {UnitsHandler} from '../utils/units-handler';
-import {getFormattedMonomerLib,
-  keepPrecision} from './to-atomic-level-utils';
+import {
+  getFormattedMonomerLib,
+  keepPrecision
+} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, ITypedArray, MolGraph, MonomerMetadata, NumberWrapper, Point} from './types';
+import {SplitterFunc} from '../utils/macromolecule';
+
 import {monomerWorksConsts as C} from './consts';
-import {errorToConsole} from '@datagrok-libraries/utils';
-import {SplitterFunc, getSplitter} from '../utils/macromolecule';
 
 // todo: verify that all functions have return types
 
@@ -21,7 +26,7 @@ import {SplitterFunc, getSplitter} from '../utils/macromolecule';
  * @param {DG.DataFrame} df - DataFrame containing the column to be converted
  * @param {DG.Column} seqCol - Column containing the macromolecule sequence
  * @param {IMonomerLib} monomerLib - Monomer library
-*/
+ */
 export async function _toAtomicLevel(
   df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib
 ): Promise<{ col: DG.Column | null, warnings: string [] }> {
@@ -42,8 +47,7 @@ export async function _toAtomicLevel(
 
   // convert 'helm' to 'separator' units
   if (seqUh.isHelm()) {
-    const converter = new NotationConverter(seqCol);
-    srcCol = converter.convert(NOTATION.SEPARATOR, '.');
+    srcCol = seqUh.convert(NOTATION.SEPARATOR, '.');
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
 
@@ -53,11 +57,11 @@ export async function _toAtomicLevel(
   // determine the polymer type according to HELM specifications
   let polymerType: HELM_POLYMER_TYPE;
   // todo: an exception from dart comes before this check if the alphabet is UN
-  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN) {
+  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN)
     polymerType = HELM_POLYMER_TYPE.PEPTIDE;
-  } else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA) {
+  else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA)
     polymerType = HELM_POLYMER_TYPE.RNA;
-  } else {
+  else {
     const msg: string = `Unexpected column's '${srcCol.name}' alphabet '${alphabet}'.`;
     return {col: null, warnings: [msg]};
   }
@@ -89,15 +93,21 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
   const result: string[][] = new Array(columnLength);
 
   // split the string into monomers
-  const colUnits = macroMolCol.getTag(DG.TAGS.UNITS);
-  const separator = macroMolCol.getTag(TAGS.separator);
-  const splitterFunc: SplitterFunc = getSplitter(colUnits, separator);
+  const uh = UnitsHandler.getOrCreate(macroMolCol);
+  const splitter: SplitterFunc = uh.getSplitter();
+
+  let containsEmptyValues = false;
 
   for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);
-    // todo: handle the exception case when macroMolecule is null
-    result[row] = macroMolecule ? splitterFunc(macroMolecule).filter((monomerCode) => monomerCode !== '') : [];
+    containsEmptyValues ||= macroMolecule === '';
+    result[row] = macroMolecule ? wu(splitter(macroMolecule))
+      .filter((monomerSymbol) => !uh.isGap(monomerSymbol)).toArray() : [];
   }
+
+  if (containsEmptyValues)
+    grok.shell.warning(`Some values in the "${macroMolCol.name}" column are empty`);
+
   return result;
 }
 
@@ -140,9 +150,10 @@ export async function getMonomersDictFromLib(
         addMonomerToDict(monomersDict, sym, formattedMonomerLib,
           moduleRdkit, polymerType, pointerToBranchAngle);
       } catch (err: any) {
-        const errTxt = errorToConsole(err);
-        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n` + errTxt);
-        const errMsg = `Сan't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
+        const errTxt = err instanceof Error ? err.message : err.toString();
+        const errStack = err instanceof Error ? err.stack : undefined;
+        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n${errTxt}\n${errStack}`);
+        const errMsg = `Can't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
         throw new Error(errMsg);
       }
     }
@@ -165,12 +176,13 @@ function addMonomerToDict(
 ): void {
   if (!monomersDict.has(sym)) {
     const monomerData: MolGraph | null =
-        getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
+      getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
     if (monomerData)
       monomersDict.set(sym, monomerData);
-    else
-      throw new Error(`Monomer with symbol '${sym}' is absent the monomer library`);
+    else {
       // todo: handle exception
+      throw new Error(`Monomer with symbol '${sym}' is absent the monomer library`);
+    }
   }
 }
 
@@ -187,9 +199,9 @@ function getMolGraph(
   moduleRdkit: any, polymerType: HELM_POLYMER_TYPE,
   pointerToBranchAngle: NumberWrapper
 ): MolGraph | null {
-  if (!formattedMonomerLib.has(monomerSymbol)) {
+  if (!formattedMonomerLib.has(monomerSymbol))
     return null;
-  } else {
+  else {
     const libObject = formattedMonomerLib.get(monomerSymbol);
     const capGroups = parseCapGroups(libObject[HELM_FIELDS.RGROUPS]);
     const capGroupIdxMap = parseCapGroupIdxMap(libObject[HELM_FIELDS.MOLFILE]);
@@ -202,9 +214,9 @@ function getMolGraph(
 
     const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
 
-    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
       adjustPeptideMonomerGraph(monomerGraph);
-    } else { // nucleotides
+    else { // nucleotides
       if (monomerSymbol === C.RIBOSE || monomerSymbol === C.DEOXYRIBOSE)
         adjustSugarMonomerGraph(monomerGraph, pointerToBranchAngle);
       else if (monomerSymbol === C.PHOSPHATE)
@@ -380,14 +392,8 @@ function getShiftBetweenNodes(
   molGraph: MolGraph, rightNodeIdx: number, leftNodeIdx: number
 ): number[] {
   return [
-    keepPrecision(
-      molGraph.atoms.x[rightNodeIdx] -
-          molGraph.atoms.x[leftNodeIdx]
-    ),
-    keepPrecision(
-      molGraph.atoms.y[rightNodeIdx] -
-          molGraph.atoms.y[leftNodeIdx]
-    ),
+    keepPrecision(molGraph.atoms.x[rightNodeIdx] - molGraph.atoms.x[leftNodeIdx]),
+    keepPrecision(molGraph.atoms.y[rightNodeIdx] - molGraph.atoms.y[leftNodeIdx]),
   ];
 }
 
@@ -768,9 +774,8 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   if (sugarBranchToOYAngle) {
     rotateCenteredGraph(monomer.atoms,
       Math.PI - baseBranchToOYAngle + sugarBranchToOYAngle);
-  } else {
+  } else
     throw new Error('The value of sugarBranchToOYAngle is null');
-  }
 
   // scale graph in case its size does not fit the scale of phosphate and sugar
   // todo: consider extending to other monomer types
@@ -823,11 +828,11 @@ function flipCarboxylAndRadical(monomer: MolGraph, doubleBondedOxygen: number): 
  * @return {number} angle in radians*/
 function findAngleWithOY(x: number, y: number): number {
   let angle;
-  if (x === 0) {
+  if (x === 0)
     angle = y > 0 ? 0 : Math.PI;
-  } else if (y === 0) {
+  else if (y === 0)
     angle = x > 0 ? -Math.PI / 2 : Math.PI / 2;
-  } else {
+  else {
     const tan = y / x;
     const atan = Math.atan(tan);
     angle = (x < 0) ? Math.PI / 2 + atan : -Math.PI / 2 + atan;
@@ -928,6 +933,7 @@ function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void 
 function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number {
   const bondsMap = constructBondsMap(monomer);
   let doubleBondedOxygen = 0;
+  const sentinel = monomer.atoms.atomTypes.length;
   let i = 0;
   // iterate over the nodes bonded to the carbon and find the double one
   while (doubleBondedOxygen === 0) {
@@ -935,6 +941,8 @@ function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number {
     if (monomer.atoms.atomTypes[node - 1] === C.OXYGEN && node !== monomer.meta.rNodes[1])
       doubleBondedOxygen = node;
     i++;
+    if (i > sentinel)
+      throw new Error(`Search for double-bonded Oxygen in ${monomer} has exceeded the limit of ${sentinel}`);
   }
   return doubleBondedOxygen;
 }

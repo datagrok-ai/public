@@ -68,7 +68,7 @@ async function test() {
 ```
 
 The package files are located in a storage specified in `GROK_PARAMETERS` (see
-[configuration details](../admin/configuration.md)), for example, in an S3 bucket.
+[configuration details](../../deploy/configuration.md)), for example, in an S3 bucket.
 Users can browse these files from `Files | App Data | <Package>`:
 
 ![Browsing files](./app-data.gif "Find package data in the file browser")

@@ -31,6 +31,12 @@ their choice.
 
 ![Filter](../../uploads/gifs/filter-search.gif "Filter")
 
+## Text filter
+
+On the **Filter Panel**, you can search or filter text using keywords. To create a keyword category, enter a word or phrase in the filter tab and press Enter. The filter automatically generates categories based on the entered text. Toggle the categories to include or exclude specific words from the search. By default, the result includes text that contains at least one of the specified keywords. To find text that includes all the specified keywords, at the top of the filter tab, switch the logical operator from `OR` to `AND`.
+
+<img alt="Text filter" src={require('../../uploads/viewers/text-filter.gif').default} width="800px"/>
+
 ## Column tags
 
 * For **molecular columns**, use the **.structure-filter-type** column tag to
@@ -56,7 +62,7 @@ their choice.
 
 To set the column tag value via the UI:
 
-1. Right-click the column’s header and select **Column Properties** from the
+1. Right-click the column's header and select **Column Properties** from the
    context menu. A dialog with column metadata opens.
 1. In the dialog, use the **Plus** icon to add a new tag.
 1. Enter the tag name and value.
@@ -77,5 +83,5 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/table-view.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {findRGroups} from '../scripts-api';
-import {convertMolNotation, getRdKitModule} from '../package';
+import {findRGroups, findRGroupsWithCore} from '../scripts-api';
+import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 
 export function convertToRDKit(smiles: string): string {
@@ -51,7 +52,7 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
-    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis',
+    helpUrl: '/help/datagrok/solutions/domains/chem/chem.md#r-groups-analysis',
   })
     .add(ui.div([
       sketcher,
@@ -66,12 +67,32 @@ export function rGroupAnalysis(col: DG.Column): void {
       visualAnalysisCheck.root,
     ]))
     .onOK(async () => {
-      col = col.dataFrame.columns.byName(columnInput.value!);
-      const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
-      if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
-        grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
-        return;
+      const getPrefixIdx = (colPrefix: string) => {
+        let prefixIdx = 0;
+        col = col.dataFrame.columns.byName(columnInput.value!);
+        const re = new RegExp(`^${colPrefix}$`, 'i');
+        if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+          prefixIdx++;  
+          const maxPrefixIdx = 100;
+          for (let i = 0; i < maxPrefixIdx; i++) {
+            const reIdx = new RegExp(`^${colPrefix}_${prefixIdx}$`, 'i');
+            if(!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
+              break;
+            prefixIdx++;       
+          }
+          if (prefixIdx - 1 === maxPrefixIdx) {
+            grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+            return null;
+          }
+        }
+        return prefixIdx;
       }
+      const rGroupPrefixRe = `${columnPrefixInput.value}\\d+`;
+      const corePrefixRe = `Core`;
+      const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
+      const corePrefixIdx = getPrefixIdx(corePrefixRe);
+      if (rGroupPrefixIdx === null || corePrefixIdx === null)
+        return;
       const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');
@@ -80,23 +101,27 @@ export function rGroupAnalysis(col: DG.Column): void {
       let progressBar;
       try {
         progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
-        const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
+        const res = await findRGroupsWithCore(col.name, col.dataFrame, core);
         const module = getRdKitModule();
         if (res.rowCount) {
           for (const resCol of res.columns) {
             const molsArray = new Array<string>(resCol.length);
             for (let i = 0; i < resCol.length; i++) {
               const molStr = resCol.get(i);
+              let mol: RDMol | null = null;
               try {
-                const mol = module.get_mol(molStr);
+                mol = module.get_mol(molStr);
                 molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-                mol.delete();
               } catch (e) {
-                console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+                //do nothing here, molsArray[i] is empty for invalid molecules
+              } finally {
+                mol?.delete();
               }
             }
-            const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-
+            const rColName = resCol.name === 'Core' ? corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name :
+              rGroupPrefixIdx ? `${resCol.name}_${rGroupPrefixIdx}` : resCol.name;
+            resCol.name = rColName;
+            const rCol = DG.Column.fromStrings(rColName, molsArray);
             rCol.semType = DG.SEMTYPE.MOLECULE;
             rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
             col.dataFrame.columns.add(rCol);
@@ -105,8 +130,8 @@ export function rGroupAnalysis(col: DG.Column): void {
           const view = grok.shell.getTableView(col.dataFrame.name);
           if (visualAnalysisCheck.value && view) {
             view.trellisPlot({
-              xColumnNames: [res.columns.byIndex(0).name],
-              yColumnNames: [res.columns.byIndex(1).name],
+              xColumnNames: [res.columns.byIndex(1).name], // column 0 is Core column
+              yColumnNames: [res.columns.byIndex(2).name],
             });
           }
         } else

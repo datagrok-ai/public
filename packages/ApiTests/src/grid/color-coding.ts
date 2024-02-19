@@ -16,40 +16,42 @@ category('Grid: Color Coding', () => {
     demog.col('age')!.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
     demog.col('sex')!.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
     demog.col('started')!.colors.setLinear([DG.Color.white, DG.Color.red]);
-    grid.setOptions({colorCoding: 'All'});
     grid.setOptions({colorCoding: 'None'});
     grid.setOptions({colorCoding: 'Auto'});
     testTags();
-
+    grid.setOptions({colorCoding: 'All'});
+    grid.setOptions({colorScheme: [4294922560, 4294944000, 4283477800]});
+    if (grid.cell('weight', 0).color !== 4288522774)
+      throw new Error('Grid Color Coding > Color Scheme was not applied');
     const layout = v.saveLayout();
     v.close();
     grok.shell.closeTable(demog);
     demog = grok.data.demo.demog(1000);
     v = grok.shell.addTableView(demog);
     v.loadLayout(layout);
-    testTags();
+    testTags(' after layout');
   });
 
-  function testTags() {
+  function testTags(after: string = '') {
     const ageTags: any[] = Array.from(demog.col('age')!.tags);
     if (!hasTag(ageTags, '.color-coding-type') ||
       !hasTag(ageTags, 'Conditional') ||
       !hasTag(ageTags, '.color-coding-conditional') ||
       !hasTag(ageTags, '{"<30":"#00ff00","30-70":"#ff0000"}'))
-      throw new Error('Conditional Color Coding error on Age column');
+      throw new Error('Conditional Color Coding error on Age column' + after);
 
     const sexTags: any[] = Array.from(demog.col('sex')!.tags);
     if (!hasTag(sexTags, '.color-coding-type') ||
       !hasTag(sexTags, 'Categorical') ||
       !hasTag(sexTags, '.color-coding-categorical') ||
       !hasTag(sexTags, '{"M":4278190335,"F":4286578816}'))
-      throw new Error('Categorical Color Coding error on Sex column');
+      throw new Error('Categorical Color Coding error on Sex column' + after);
    
     const startedTags: any[] = Array.from(demog.col('started')!.tags);
     if (!hasTag(startedTags, '.color-coding-type') ||
       !hasTag(startedTags, 'Linear') ||
       !hasTag(startedTags, '.color-coding-linear') ||
       !hasTag(startedTags, '[4294967295,4294901760]'))
-      throw new Error('Linear Color Coding error on Started column');
+      throw new Error('Linear Color Coding error on Started column' + after);
   }
 });

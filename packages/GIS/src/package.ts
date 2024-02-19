@@ -15,7 +15,6 @@ import {SEMTYPEGIS} from '../src/gis-semtypes';
 
 //ZIP utilities
 //import JSZip from 'jszip';
-import {DataFrame, InputBase} from 'datagrok-api/dg';
 
 //USEFUL
 // contents = fs.readFileSync(detectorsPath, 'utf8');
@@ -72,7 +71,7 @@ function uiCensusDialog(): DG.Dialog {
   const txtDatasets = ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}});
   const arr = [inpSearch, inpLocation, choinpPeriod, txtDatasets, inputGrid.root];
 
-  const inputs = ui.inputs(arr as Iterable<InputBase<any>>, 'ui-form-condensed');
+  const inputs = ui.div(arr, 'ui-form-condensed');
   const title = ui.h2('1990 Population Esimates - 1990-2000 Intercensal Esimates: United States, Nevada');
 
   const description = ui.p('Monthly Intercensal Esimates...');
@@ -251,6 +250,7 @@ export async function getCensusInfo() {
 
   htmlStyle = {style: {'border': 'none', 'width': '100%', 'min-height': '95px'}};
   infoDataset = ui.box(null, htmlStyle);
+  // @ts-ignore
   infoDataset.style.height = '100%';
 
   htmlStyle = {style: {'width': '100%'}};
@@ -281,7 +281,7 @@ export async function getCensusInfo() {
         if (censusRes.toLowerCase().includes('error'))
           throw new Error(censusRes);
 
-        const df = DataFrame.fromCsv(censusRes);
+        const df = DG.DataFrame.fromCsv(censusRes);
         grok.shell.addTableView(df);
       } catch (e) {
         grok.shell.error(`Census request error: ${e}`);

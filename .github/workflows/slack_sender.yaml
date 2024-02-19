@@ -1,5 +1,6 @@
-name: Send slack message about action fail
+name: Report job failure
 on:
+  workflow_dispatch: { }
   workflow_run:
     workflows:
       - '*'
@@ -9,14 +10,73 @@ on:
 jobs:
   notify-on-failure:
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' && github.event.workflow_run.pull_requests[0].user.login != 'dependabot[bot]' }}
     steps:
-      - name: Check for failures and send slack notification
-        if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' }}
+#      - name: Check for failures and send slack notification
+#        if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' }}
+#        run: |
+#          echo ${{ github.event.workflow_run }}
+#          SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
+#          key="${{ github.actor }}"
+#          value=$(echo '${{ secrets.SLACK_ID }}' | jq -r ".${key}")
+#          curl -X POST -H 'Content-type: application/json' -H "Authorization: Bearer ${{ secrets.SLACKBOT_TOKEN }}" \
+#          --data '{"text":"'"${SLACK_MESSAGE}"'", "channel":"'$value'"}' \
+#          https://slack.com/api/chat.postMessage
+
+      - name: Prepare Slack Message
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
-          key="${{ github.actor }}"
-          value=$(echo '${{ secrets.SLACK_ID }}' | jq -r ".${key}")
-          curl -X POST -H 'Content-type: application/json' -H "Authorization: Bearer ${{ secrets.SLACKBOT_TOKEN }}" \
-          --data '{"text":"'"${SLACK_MESSAGE}"'", "channel":"'$value'"}' \
-          https://slack.com/api/chat.postMessage
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          jobs=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            ${{ github.event.workflow_run.jobs_url }})
+          
+          header="GitHub Workflow <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }} ${{ github.event.workflow_run.run_number }}> failed:"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.event.workflow_run.head_branch }}|${{ github.event.workflow_run.head_branch }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }}|$(echo "${{ github.event.workflow_run.head_commit.id }}" | cut -c1-8) $(echo -e "${{ github.event.workflow_run.head_commit.message }}" | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+          echo -e "SLACK_MESSAGE_BODY=$(jq -r '(.jobs[] | select(.conclusion == "failure") | {job: .name, step: (.steps[] | select(.conclusion == "failure").name), url: .html_url}) | "• <" + (.url) + "|" + (.job) + " / " + (.step) +  ">"' <<<$jobs)" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}

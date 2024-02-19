@@ -8,6 +8,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
+const ERROR_CLASS = 'd4-viewer-error';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 @grok.decorators.viewer({
@@ -21,9 +22,9 @@ export class RadarViewer extends DG.JsViewer {
   chart: echarts.ECharts;
   min: MinimalIndicator;
   max: MaximumIndicator;
-  showCurrentRow: boolean;
-  showTooltip: boolean;
+  showOnlyCurrentRow: boolean;
   showAllRows: boolean;
+  showTooltip: boolean;
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
@@ -38,15 +39,16 @@ export class RadarViewer extends DG.JsViewer {
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)' });
-    this.showCurrentRow = this.bool('showCurrentRow', false);
-    this.showTooltip = this.bool('showTooltip', true);
+    this.showOnlyCurrentRow = this.bool('showOnlyCurrentRow', false, {description: 'Hides max and min values'});
     this.showAllRows = this.bool('showAllRows', false);
+    this.showTooltip = this.bool('showTooltip', true);
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFB0D7FF);
     this.backgroundMaxColor = this.int('backgroundMaxColor', 0xFFBCE2F5);
     this.showMin = this.bool('showMin', true);
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
-    this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.NUMERICAL});
+    this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
+      {columnTypeFilter: DG.TYPE.NUMERICAL});
 
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
@@ -62,8 +64,11 @@ export class RadarViewer extends DG.JsViewer {
 
     this.columns = this.getColumns();
     for (const c of this.columns) {
-      let minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-      option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
+      const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
+      if (c.type === 'datetime')
+        option.radar.indicator.push({name: c.name, max: this.getYearFromDate(c.max), min: this.getYearFromDate(c.min)});
+      else
+        option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
     }
     this.updateMin();
     this.updateMax();
@@ -81,13 +86,15 @@ export class RadarViewer extends DG.JsViewer {
       }
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/radar-viewer.md';
+    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
   }
 
   initChartEventListeners() {
     this.dataFrame.onRowsFiltered.subscribe((_) => {
-      this.checkConditions();
-      this.render();
+      if (this.dataFrame) {
+        this.checkConditions();
+        this.render();
+      }
     });
   }
 
@@ -95,8 +102,7 @@ export class RadarViewer extends DG.JsViewer {
     this.init();
     this.initChartEventListeners();
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
-    .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
-    .map((c: DG.Column) => c.name);
+      .map((c: DG.Column) => c.name);
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => {
@@ -136,8 +142,8 @@ export class RadarViewer extends DG.JsViewer {
         this.updateMax();
 
       break;
-    case 'showCurrentRow':
-      if (this.showCurrentRow === true)
+    case 'showOnlyCurrentRow':
+      if (this.showOnlyCurrentRow === true)
         this.clearData([0, 1]);
       else {
         this.clearData([2]);
@@ -153,6 +159,12 @@ export class RadarViewer extends DG.JsViewer {
           data.push({
             name: `row ${i}`,
             value: this.columns.map((c) => Number(c.get(i))),
+            label: {
+              show: this.showValues,
+              formatter: function(params: any) {
+                return StringUtils.formatNumber(params.value) as string;
+              },
+            },
           });
         }
       } else {
@@ -179,9 +191,9 @@ export class RadarViewer extends DG.JsViewer {
 
       break;
     case 'showValues':
-      if (this.showValues === false) {
+      if (this.showValues === false)
         this.updateShowValues();
-      } else
+      else
         this.checkConditions();
 
       break;
@@ -192,6 +204,10 @@ export class RadarViewer extends DG.JsViewer {
       break;
     }
     this.render();
+  }
+
+  getYearFromDate(value: number) {
+    return new Date(Math.floor(value) / 1000).getFullYear()
   }
 
   checkConditions() {
@@ -207,7 +223,8 @@ export class RadarViewer extends DG.JsViewer {
     option.series[2].data.push({
       value: this.columns.map((c) => {
         const value = Number(c.get(this.dataFrame.currentRowIdx));
-        return value != -2147483648 ? value : 0}),
+        return value != -2147483648 ? value : 0;
+      }),
       name: `row ${this.dataFrame.currentRowIdx + 1}`,
       lineStyle: {
         width: 2,
@@ -227,7 +244,7 @@ export class RadarViewer extends DG.JsViewer {
   updateMin() {
     option.series[0].data[0] = {
       value: this.getQuantile(this.columns, this.getOptions(true).look.min / 100),
-      name: `${this.getOptions(true).look.min}th percentile`,
+      name: `min percentile`,
       areaStyle: {
         color: DG.Color.toHtml(this.backgroundMinColor),
         opacity: 0.4,
@@ -243,7 +260,7 @@ export class RadarViewer extends DG.JsViewer {
   updateMax() {
     option.series[1].data[0] = {
       value: this.getQuantile(this.columns, this.getOptions(true).look.max / 100),
-      name: `${this.getOptions(true).look.max}th percentile`,
+      name: `max percentile`,
       areaStyle: {
         color: DG.Color.toHtml(this.backgroundMaxColor),
         opacity: 0.4,
@@ -259,6 +276,8 @@ export class RadarViewer extends DG.JsViewer {
   updateRow() {
     option.series[2].data[0] = {
       value: this.columns.map((c) => {
+        if (c.type === 'datetime')
+          return this.getYearFromDate(c.getRawData()[this.dataFrame.currentRowIdx]);
         const value = Number(c.get(this.dataFrame.currentRowIdx));
         return value != -2147483648 ? value : 0;
       }),
@@ -288,22 +307,33 @@ export class RadarViewer extends DG.JsViewer {
 
   getColumns() : DG.Column<any>[] {
     let columns: DG.Column<any>[] = [];
-    let numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
+    const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
     if (this.valuesColumnNames?.length > 0) {
-      let selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
-      for (let i = 0; i < selectedColumns.length; ++i) 
-        if (numericalColumns.includes(selectedColumns[i])) 
+      const selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
+      for (let i = 0; i < selectedColumns.length; ++i) {
+        if (numericalColumns.includes(selectedColumns[i]))
           columns.push(selectedColumns[i]);
-    } else {
-      columns = numericalColumns.slice(0, 20);
+      }
     }
-    for (let i = 0; i < columns.length; ++i)
-      if (columns[i].type === DG.TYPE.DATE_TIME) 
-        columns.splice(i, 1);
+    else
+      columns = numericalColumns.slice(0, 20);
     return columns;
   }
 
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, ERROR_CLASS));}
+
+  _removeErrorMessage() {
+    const divTextElement = this.root.getElementsByClassName(ERROR_CLASS)[0];
+    if (divTextElement)
+      this.root.removeChild(divTextElement);
+  }
+
   render() {
+    if (this.valuesColumnNames.length < 1) {
+      this._showErrorMessage('The Radar viewer requires a minimum of 1 numerical column.');
+      return;
+    }
+    this._removeErrorMessage();
     this.chart.setOption(option);
   }
 
@@ -311,14 +341,15 @@ export class RadarViewer extends DG.JsViewer {
   getQuantile(columns: DG.Column<any>[], percent: number) {
     const result = [];
     for (const c of columns) {
-      const sortedValues = Array.from(c.values()).filter(value => {
-        if (typeof value === 'bigint') {
-          return value !== BigInt('-2147483648');
-        }
-        return value !== -2147483648;
-      }).sort((a, b) => Number(a) - Number(b));               
+      const datetime = c.getRawData().map((value: number) => this.getYearFromDate(value));
+      const values = c.type === 'datetime' ? datetime : Array.from(c.values());
+      const isValidValue = (value: number) => typeof value === 'bigint' 
+        ? value !== BigInt('-2147483648')
+        : value !== -2147483648;
+      const sortedValues = values.filter(isValidValue).sort((a, b) => Number(a) - Number(b));
+
       const idx = Math.floor(percent * (sortedValues.length - 1));
-      let value = sortedValues[idx]; 
+      const value = sortedValues[idx];
       result.push(Number(value));
     }
     return result;

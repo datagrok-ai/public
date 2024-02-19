@@ -1,16 +1,17 @@
 import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
-import {__obs, _sub, EventData, StreamSubscription} from './events';
+import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
 import {_identityInt32, _toIterable} from './utils';
 import {Observable} from 'rxjs';
-import {RangeSlider} from './widgets';
+import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
 import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
+import {IDartApi} from "./api/grok_api.g";
 
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 let _bytes = new Float64Array(4);
 
 export interface IPoint {
@@ -26,6 +27,11 @@ export class Point implements IPoint {
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
+  }
+
+  /** Creates a point from an [x, y] array */
+  static fromXY(xy: number[]): Point {
+    return new Point(xy[0], xy[1]);
   }
 
   /** Distance to the specified point. */
@@ -569,8 +575,8 @@ export class GridCell {
   /** Grid cell bounds, relative to the document. Useful for showing hints, tooltips, etc.*/
   get documentBounds(): Rect {
     const r = this.bounds;
-    this.grid.root.offsetLeft
-    return this.bounds;
+    const clientRect = this.grid.root.getBoundingClientRect();
+    return new Rect(window.scrollX + clientRect.x + r.x, window.scrollY + clientRect.y + r.y, r.width, r.height);
   }
 
   /** Returns grid cell renderer. */
@@ -581,6 +587,9 @@ export class GridCell {
   /** Gets or sets HTML element for this grid cell. */
   get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
+
+  /** Sets the grid cell value and fires onCellValueEdited if notify is true */
+  setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
 }
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
@@ -667,8 +676,8 @@ export class GridColumn {
   set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
-  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
-  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipColumns(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipColumns(this.dart, x); }
 
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
@@ -695,6 +704,9 @@ export class GridColumn {
 
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
+
+  /** Number of pixels required to render the longest element in the column. */
+  getDataWidth(): number { return api.grok_GridColumn_GetDataWidth(this.dart); }
 
   /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
   scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
@@ -1011,6 +1023,8 @@ export class Grid extends Viewer<IGridLookSettings> {
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
 
+  get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
+
   /** Returns currently visible cells */
   getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
     return _toIterable(api.grok_Grid_GetVisibleCells(this.dart, column?.dart))
@@ -1021,6 +1035,10 @@ export class Grid extends Viewer<IGridLookSettings> {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
   }
 }
+
+
+export type HorzAlign = 'right' | 'center' | 'left';
+export type VertAlign = 'top' | 'center' | 'bottom';
 
 
 /** Represents grid cell style. */
@@ -1039,13 +1057,24 @@ export class GridCellStyle {
   get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
   set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
 
+  get hozrAlign(): string { return api.grok_GridCellStyle_Get_HorzAlign(this.dart) ?? ''; }
+  set horzAlign(x: string) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
+
+  get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
+  set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
+
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
+
   /** Text color (RGBA-encoded) */
   get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }
   set textColor(x: number) { api.grok_GridCellStyle_Set_TextColor(this.dart, x); }
+  get textColorHtml(): string { return Color.toHtml(this.textColor); }
 
   /** Background color (RGBA-encoded) */
   get backColor(): number { return api.grok_GridCellStyle_Get_BackColor(this.dart); }
   set backColor(x: number) { api.grok_GridCellStyle_Set_BackColor(this.dart, x); }
+  get backColorHtml(): string { return Color.toHtml(this.backColor); }
 
   /** DOM Element to put in the cell */
   get element(): HTMLElement { return api.grok_GridCellStyle_Get_Element(this.dart); }
@@ -1101,6 +1130,8 @@ export class CanvasRenderer {
 
 
 export class GridCellRenderer extends CanvasRenderer {
+  clip: boolean = true;
+
   get name(): string {
     throw 'Not implemented';
   }
@@ -1112,7 +1143,18 @@ export class GridCellRenderer extends CanvasRenderer {
   renderSettings(gridColumn: GridColumn): Element | null { return null; }
 
   renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
-    this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    try {
+      if (this.clip) {
+        g.save()
+        g.rect(x, y, w, h);
+        g.clip();
+      }
+      this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    }
+    finally {
+      if (this.clip)
+        g.restore();
+    }
   }
 
   static register(renderer: any): void {

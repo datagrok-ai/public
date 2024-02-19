@@ -1,68 +1,51 @@
 ---
-title: "Multivariate analysis based on partial least squares (PLS)"
+title: "Multivariate analysis based on partial least squares regression"
+sidebar_position: 0
 ---
 
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
 and analysis of more than one statistical outcome variable at a time.
 
-Partial least squares regression (PLS regression) is a statistical method that bears some relation to principal
-components regression; instead of finding hyperplanes of maximum variance between the response and independent
-variables, it finds a linear regression model by projecting the predicted variables and the observable variables to a
-new space. Because both the X and Y data are projected to new spaces, the PLS family of methods are known as bilinear
-factor models.
+Partial least squares regression (PLS regression) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on these components.
 
-## Regress and analyse
+## Regress and analyze
 
 * Open a table
-* Run from the top menu: `ML | Multivariate Analysis (PLS)...`
+* Run from the top menu: `ML | Analyze | Multivariate Analysis...`
 * Select a table that contains features
-* Select an outcome column
 * Select feature columns
+* Select column with sample names
+* Select prediction column
 * Select the number of extracted PLS components
-* Set checkbox to plot `Scores`, if required
-* Set checkbox to plot `Explained Variance`, if required
-* Set checkbox to plot `Correlation Loadings`, if required
-* Set checkbox to plot `Predicted vs. Reference`, if required
-* Set checkbox to plot `Regression Coefficients`, if required
-* Run PLS
+* Press OK
+
+![add-to-workspace](pls.gif)
 
 ## Outputs
 
-### [Scores](plots/scores.md)
+### Loadings
 
-Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
+The loadings plot shows correlations between variables. Comparing the correlation loadings to the scores shows how the variables relate to the observations.
 
-![Scores](../../uploads/features/stats/scores.png "Scores Scatter Plot")
+![loadings.png](loadings.png)
 
-### [Explained variance](plots/explained-variance.md)
+### Reference vs. predicted
 
-Bar chart with explained variance of variables by PLS-components, cumulative sum by each of components.
+A scatter plot and a regression line indicate how the model fits and predicts.
 
-![Explained Variance](../../uploads/features/stats/explained-variance.png "Explained Variance Bar Chart")
+![reference-vs-predicted.png](reference-vs-predicted.png)
 
-### [Correlation loadings](plots/correlation-loadings.md)
+### Scores
 
-Scatter plot of correlations between the variables and the PLS components.
+The scores plot shows object similarities and dissimilarities.
 
-The loadings plot shows correlations between variables. Comparing the correlation loadings to the scores shows how the
-variables relate to the observations.
+![scores.png](scores.png)
 
-![Correlation Loadings](../../uploads/features/stats/correlation-loadings.png "Correlation Loadings Scatter Plot")
+### Regression coefficients
 
-### [Predicted vs. reference](plots/predicted-vs-reference.md)
+A bar chart illustrates features influence on the predicted value.
 
-Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
-
-The scores plot shows correlations between observations (how observations related to each other, occurrence groups or
-trends).
-
-![Predicted vs. Reference](../../uploads/features/stats/predicted-vs-reference.png "Predicted vs. Reference Scatter Plot")
-
-### [Regression coefficients](plots/regression-coefficients.md)
-
-Bar chart with regression coefficients (used with the original data scale).
-
-![Regression Coefficients](../../uploads/features/stats/regression-coefficients.png "Regression Coefficients Bar Chart")
+![regression-coefficients.png](regression-coefficients.png)
 
 See also:
 

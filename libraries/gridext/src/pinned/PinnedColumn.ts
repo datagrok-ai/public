@@ -85,6 +85,7 @@ export class PinnedColumn {
   private static MAX_ROW_HEIGHT = 500;
   private static SELECTION_COLOR = ColorUtils.toRgb(ColorUtils.colSelection); //"rgba(237, 220, 88, 0.15)";
   private static ACTIVE_CELL_COLOR = ColorUtils.toRgb(ColorUtils.currentRow); //"rgba(153, 237, 82, 0.25)";
+  private static MOUSE_OVER_COLOR = ColorUtils.toRgb(ColorUtils.mouseOverRow);
   private static SORT_ARROW_COLOR = ColorUtils.toRgb(ColorUtils.sortArrow);
   private static Y_RESIZE_SENSITIVITY = 2;
   private static X_RESIZE_SENSITIVITY = 5;
@@ -101,8 +102,14 @@ export class PinnedColumn {
   private m_handlerColNameChanged : rxjs.Subscription | null;
   private m_handlerVScroll : rxjs.Subscription | null;
   private m_handlerRowsFiltering : rxjs.Subscription | null;
+  private _rowsFilteringTimer: number | null = null;
   private m_handlerCurrRow : rxjs.Subscription | null;
+  private m_handlerMouseOverRow : rxjs.Subscription | null;
+  private _mouseOverRowsTimer: number | null = null;
+  private m_handlerMouseOverGroup : rxjs.Subscription | null;
   private m_handlerSel : rxjs.Subscription | null;
+  private m_handlerData : rxjs.Subscription | null;
+  private m_handlerDartProperty : rxjs.Subscription | null;
   //private m_handlerFilter : any;
   private m_handlerRowsResized : rxjs.Subscription | null;
   private m_handlerRowsSorted : rxjs.Subscription | null;
@@ -213,6 +220,8 @@ export class PinnedColumn {
     eCanvasThis.style.top = grid.canvas.offsetTop + "px";
     eCanvasThis.style.width = nW + "px";
     eCanvasThis.style.height = Math.round(nHeight/window.devicePixelRatio) + "px";
+    eCanvasThis.style.zIndex = '1';
+    grid.horzScroll.root.style.zIndex = '2';
 
     //console.log("h " + grid.canvas.height + " offset " + grid.canvas.offsetHeight);
 
@@ -325,22 +334,52 @@ export class PinnedColumn {
     });
 
     this.m_handlerRowsFiltering = dframe.onRowsFiltering.subscribe(() => {
-      setTimeout(() => {
+      clearTimeout(this._rowsFilteringTimer!);
+      this._rowsFilteringTimer = window.setTimeout(() => {
         const g = eCanvasThis.getContext('2d');
         headerThis.paint(g, grid);
       }, 100);
-
     });
 
     this.m_handlerCurrRow = dframe.onCurrentRowChanged.subscribe(() => {
-          const g = eCanvasThis.getContext('2d');
-          headerThis.paint(g, grid);
+          setTimeout(() => {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }, 20);
         }
     );
 
-    this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
+    this.m_handlerMouseOverRow = DG.debounce(dframe.onMouseOverRowChanged, 50).subscribe(() => {
+      clearTimeout(this._mouseOverRowsTimer!);  
+      this._mouseOverRowsTimer = window.setTimeout(() => {
           const g = eCanvasThis.getContext('2d');
           headerThis.paint(g, grid);
+        }, 20);
+      }
+    );
+
+    this.m_handlerMouseOverGroup = dframe.onMouseOverRowGroupChanged.subscribe(() =>{
+      setTimeout(() => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+      }, 20);
+    });
+
+    this.m_handlerData = dframe.onDataChanged.subscribe(() => {
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
+    });
+
+    this.m_handlerDartProperty = grid.onDartPropertyChanged.subscribe((p: any) => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+    });
+
+    this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
+          setTimeout(() => {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }, 20);
         }
     );
 
@@ -462,6 +501,18 @@ export class PinnedColumn {
     this.m_handlerCurrRow?.unsubscribe();
     this.m_handlerCurrRow = null;
 
+    this.m_handlerData?.unsubscribe();
+    this.m_handlerData = null;
+
+    this.m_handlerMouseOverRow?.unsubscribe();
+    this.m_handlerMouseOverRow = null;
+
+    this.m_handlerMouseOverGroup?.unsubscribe();
+    this.m_handlerMouseOverGroup = null;
+
+    this.m_handlerDartProperty?.unsubscribe();
+    this.m_handlerDartProperty = null;
+
     this.m_handlerPinnedRowsChanged?.unsubscribe();
     this.m_handlerPinnedRowsChanged = null;
 
@@ -541,9 +592,29 @@ export class PinnedColumn {
     this.m_colGrid = null;
   }
 
+  invalidate() {
+    const g = this.getRoot()!.getContext('2d');
+    this.paint(g, this.getGridColumn()!.grid);
+  }
+
   public onMouseEnter(e : MouseEvent) : void {
     if(DEBUG)
       console.log('Mouse Enter Pinned Column: ' + this.getGridColumn()?.name);
+
+    if(this.m_colGrid === null || this.m_root === null)
+      return;
+
+    const grid = this.m_colGrid.grid;
+    const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false);
+    if(nRowGrid >= 0) {
+      const cell = grid.cell(this.m_colGrid.name, nRowGrid);
+      const nRecord = cell.tableRowIndex;
+      grid.dataFrame.mouseOverRowIdx = nRecord ?? -1;
+      grid.invalidate();
+      const g = this.m_root.getContext('2d');
+      this.paint(g, grid);
+    }
+    else grid.dataFrame.mouseOverRowIdx = -1;
   }
 
   public onMouseMove(e : MouseEvent) : void {
@@ -564,8 +635,16 @@ export class PinnedColumn {
     let nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, arXYOnCell);
     if(nRowGrid >= 0) {
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
-      const renderer = getRenderer(cell);
 
+      const nRecord = cell.tableRowIndex; //mouse over event
+      if (nRecord !== grid.dataFrame.mouseOverRowIdx) {
+        grid.dataFrame.mouseOverRowIdx = nRecord ?? -1;
+        grid.invalidate();
+        const g = this.m_root.getContext('2d');
+        this.paint(g, grid);
+      }
+
+      const renderer = getRenderer(cell);
       if (renderer != null) {
 
         if (this.m_cellCurrent === null)
@@ -912,6 +991,18 @@ export class PinnedColumn {
       const renderer = getRenderer(cell);
       if (renderer !== null)
         renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
+      else {
+        const rendererdg = cell.renderer;
+        if (rendererdg.name == 'bool') {
+          const value = cell.cell.value;
+          const tableRowIdx = cell.tableRowIndex;
+          if (tableRowIdx !== null) {
+            this.m_colGrid.column!.set(tableRowIdx, !value);
+            const g = this.getRoot()!.getContext('2d');
+            this.paint(g, grid);
+          }
+        }
+      }
     }
 
     this.m_bResizeColPinMoving = false;
@@ -1168,7 +1259,7 @@ export class PinnedColumn {
   }
 
 
-   paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
+  paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
     //const nWDiv = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
     if(g === null)
       return;
@@ -1248,6 +1339,7 @@ export class PinnedColumn {
 
     //Regular cells
     const nRowCurrent =  dframe.currentRow.idx;
+    const nRowMouserOver = dframe.mouseOverRowIdx;
     const bitsetSel = dframe.selection;
 
     const arRowsMinMax = [-1,-1];
@@ -1389,10 +1481,19 @@ export class PinnedColumn {
         g.fillRect(0, nYY, nWW, nHRowGrid);
         g.globalAlpha = 1;
       }
+
+      if(nRowMouserOver === nRowTable)
+      {
+        g.globalAlpha = 0.2;
+        g.fillStyle = PinnedColumn.MOUSE_OVER_COLOR;
+        g.fillRect(0, nYY, nWW, nHRowGrid);
+        g.globalAlpha = 1;
+      }
+
     }//for
   }
 
-  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined) : number
+  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined = undefined) : number
   {
     const rect = eCanvasPinned.getBoundingClientRect();
     const scrollLeft= window.pageXOffset || document.documentElement.scrollLeft;

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: datagrok
+  labels:
+    service: datagrok
+  name: datagrok
+spec:
+  ports:
+    - name: "nginx"
+      port: 8080
+      targetPort: 8080
+  selector:
+    service: datagrok

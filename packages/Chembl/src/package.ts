@@ -43,7 +43,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.div([]);
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
@@ -56,11 +56,15 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     const moleculeCol = table.getCol('smiles');
     const molregnoCol = table.getCol('molregno');
     const molCount = Math.min(table.rowCount, 20);
-  
+
     for (let i = 0; i < molCount; i++) {
-      const molHost = ui.div();
+      const molHost = ui.divV([]);
       grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-        .then((res: HTMLElement) => molHost.append(res));
+        .then((res: HTMLElement) => {
+          molHost.append(res);
+          if (!substructure)
+            molHost.append(ui.divText(`Score: ${table.getCol('similarity').get(i).toFixed(2)}`));
+        });
 
       ui.tooltip.bind(molHost,
         () => ui.divText(`ChEMBL ID: ${molregnoCol.get(i)}\nClick to open in ChEMBL Database`));
@@ -103,8 +107,51 @@ export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Chembl Browser
-//tags: app
+//name: Chembl targets by organism
+//tags: HitTriageDataSource
+//input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
+//input: string organism = "Shigella" [Organism name]
+//output: dataframe compounds
+export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number, organism: string): Promise<DG.DataFrame> {
+  const df = await grok.data.query('Chembl:StructuresByOrganism', {maxNumberOfMolecules: maxNumberOfMolecules, organism: organism});
+  return df;
+}
+
+//name: Chembl Compounds
+//tags: HitTriageDataSource
+//input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
+//output: dataframe compounds
+export async function getChemblCompounds(maxNumberOfMolecules: number): Promise<DG.DataFrame> {
+  const df = await grok.data.query('Chembl:ChemblNumberOfStructures', {maxNumberOfMolecules: maxNumberOfMolecules});
+  return df;
+}
+
+//name: Chembl molregno
+//tags: HitTriageFunction
+//input: dataframe table [Input data table] {caption: Table}
+//input: column molecules {caption: Molecules; semType: Molecule}
+//output: dataframe result
+export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column): Promise<DG.DataFrame> {
+  const name = table.columns.getUnusedName('CHEMBL molregno');
+  table.columns.addNewInt(name);
+  for (let i = 0; i < molecules.length; i++) {
+    const smile = molecules.get(i);
+    if (!smile) {
+      table.set(name, i, null);
+      continue;
+    }
+    const canonical = grok.chem.convert(smile, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+    const resDf: DG.DataFrame = await grok.data.query('Chembl:ChemblMolregNoBySmiles', {smiles: canonical});
+    const res: number = resDf.getCol('molregno').toList()[0];
+    table.set(name, i, res);
+  }
+  return table;
+}
+
+
+/*
+//name_: Chembl Browser
+//tags_: app
 export async function Browser() {
   // Filter inputs
   const molecule = ui.moleculeInput('Substructure', 'C1CCCCC1');
@@ -394,3 +441,4 @@ export async function Browser() {
     },
   };
 }
+*/

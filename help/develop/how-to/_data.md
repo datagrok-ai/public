@@ -10,7 +10,7 @@ work with huge datasets in the browser. Essentially, it is a columnar in-memory 
 scratch and optimized for the purpose of exploratory data analysis, interactive visualizations, and machine learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on our
-[compute server](../admin/infrastructure.md#compute-components). However, it's possible to pass dataframes to scripts (in Python, R and others)
+[compute server](../under-the-hood/infrastructure.md#compute-components). However, it's possible to pass dataframes to scripts (in Python, R and others)
 which run on the server, and get dataframes in return.
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view, a new
@@ -58,7 +58,7 @@ demog.set('age', 1, 44);
 
 ### Tags
 
-When annotating dataframes and columns with [metadata](../../discover/tags.md), take a moment to consider whether you
+When annotating dataframes and columns with [metadata](../../govern/catalog/tags.md), take a moment to consider whether you
 want a tag to be shown to the user. If metadata is attached to facilitate other parts of the data workflow, or you find
 it difficult to read the value stored in a tag, it makes sense to discard it from tooltips where people can see it. To
 do this, simply start a tag name with the `.` prefix.

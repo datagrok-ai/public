@@ -16,8 +16,8 @@ limit @maxRows
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
---input: string threshold = "0.6"
-select set_config('rdkit.tanimoto_threshold', @threshold, true);
+--input: double threshold = 0.6 { min: 0, max: 1 }
+select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch
 select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 --end
@@ -29,4 +29,51 @@ select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 --input: int maxRows = 1000
  select molregno,m as smiles from rdk.mols where m@>@pattern::qmol
  limit @maxRows
+--end
+
+--name: ChemblNumberOfStructures
+--friendlyName: Browse | Specified number of ChEMBL structures
+--input: int maxNumberOfMolecules = 1000
+--connection: Chembl
+select
+  canonical_smiles, molregno
+from
+  compound_structures
+limit @maxNumberOfMolecules
+--end
+
+--name: ChemblMolregNoBySmiles
+--friendlyName: Chembl Molregno by smiles
+--input: string smiles {semType: Molecule}
+--connection: Chembl
+select
+  molregno
+from
+  compound_structures
+where
+  canonical_smiles = @smiles
+limit 1
+--end
+
+--name: StructuresByOrganism
+--friendlyName: Chembl Targets by organism
+--input: int maxNumberOfMolecules = 1000
+--input: string organism = "Shigella" {suggestions: Chembl:organisms}
+--connection: Chembl
+SELECT md.chembl_id AS compound_chembl_id,
+cs.canonical_smiles,
+act.standard_type,
+act.standard_value,
+act.standard_units,
+td.chembl_id AS target_chembl_id,
+td.organism,   td.pref_name
+FROM target_dictionary td
+  JOIN assays a ON td.tid = a.tid
+  JOIN activities act ON a.assay_id = act.assay_id
+  JOIN molecule_dictionary md ON act.molregno = md.molregno
+  JOIN compound_structures cs ON md.molregno   = cs.molregno
+  JOIN organism_class oc ON td.tax_id = oc.tax_id
+    AND td.organism = @organism
+    AND oc.L1 = 'Bacteria'
+limit @maxNumberOfMolecules;
 --end

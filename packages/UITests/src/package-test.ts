@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 import './ui/inputs';
+import './ui/input-for-property';
+import './ui/inputform';
 import './ui/forms';
 import './ui/divs';
 import './ui/buttons';
@@ -30,6 +32,9 @@ import './views/files-view';
 import './viewers/viewers';
 import './viewers/filters';
 import './gui/viewers/scatter-plot';
+import './shell/windows';
+
+// import './gui/apps';
 
 // import './gui/viewers/bar-chart';
 // import './gui/viewers/box-plot';
@@ -53,6 +58,7 @@ export {tests};
 //input: object testContext {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
+  testContext = new TestContext(false, false);
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }

@@ -152,14 +152,15 @@ export class MouseDispatcher {
 
         this.m_handlerMouseWheel = rxjs.fromEvent<WheelEvent>(document, 'wheel').subscribe((e : WheelEvent) => {
             const colPinned = this.getCurrentPinnedColumn();
-            if(colPinned !== null)
+            if(colPinned !== null) {
                 colPinned.onMouseWheel(e);
 
-            //e.preventDefault();
-            //e.stopPropagation();
-            e.stopImmediatePropagation();
+                // event source is the document element
+                //e.preventDefault();
+                //e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
         });
-
     }
 
     private getCurrentElement() : Element | null {

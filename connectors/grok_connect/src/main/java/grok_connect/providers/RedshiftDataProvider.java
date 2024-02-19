@@ -15,12 +15,10 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 public class RedshiftDataProvider extends JdbcDataProvider {
-    public RedshiftDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public RedshiftDataProvider() {
         driverClassName = "com.amazon.redshift.jdbc.Driver";
 
         descriptor = new DataSource();

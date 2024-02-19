@@ -1,25 +1,26 @@
 package grok_connect.providers;
 
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.ClickHouseBigIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
-import java.lang.reflect.Array;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import serialization.Types;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
 
 public class ClickHouseProvider extends JdbcDataProvider {
-    public ClickHouseProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public ClickHouseProvider() {
         driverClassName = "com.clickhouse.jdbc.ClickHouseDriver";
-
         descriptor = new DataSource();
         descriptor.type = "ClickHouse";
         descriptor.description = "Query ClickHouse database";
@@ -113,54 +114,22 @@ public class ClickHouseProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return type == Types.BIGINT
-                || typeName.equalsIgnoreCase("UInt32")
-                || typeName.equalsIgnoreCase("UInt64")
-                || typeName.equalsIgnoreCase("UInt128")
-                || typeName.equalsIgnoreCase("UInt256")
-                || typeName.equalsIgnoreCase("Int64")
-                || typeName.equalsIgnoreCase("Int128")
-                || typeName.equalsIgnoreCase("Int256");
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BIG_INT, new ClickHouseBigIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 
     @Override
-    protected boolean isDecimal(int type, String typeName, int scale) {
-        return type == Types.DECIMAL;
-    }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return type == Types.INTEGER
-                || type == Types.SMALLINT
-                || type == Types.TINYINT
-                || typeName.equalsIgnoreCase("UInt16")
-                || typeName.equalsIgnoreCase("UInt8");
-    }
-
-    @Override
-    protected Object convertArrayType(Object value) {
-        if (value == null) {
-            return Arrays.toString(new Object[]{});
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        try {
+            statement.setTimestamp(parameterIndex, ts);
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
+                    parameterIndex), e);
         }
-        return getStringArrayRepresentation(value);
-    }
-
-    private String getStringArrayRepresentation(Object array) {
-        int length = Array.getLength(array);
-        StringBuilder builder = new StringBuilder("[");
-        for (int i = 0; i < length; i++) {
-            Object o = Array.get(array, i);
-            if (o.getClass().isArray()) {
-                builder.append(getStringArrayRepresentation(o));
-            } else {
-                builder.append(o);
-            }
-            if (i != length - 1) {
-                builder.append(", ");
-            }
-        }
-        builder.append("]");
-        return builder.toString();
     }
 }

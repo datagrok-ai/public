@@ -1,13 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-export function getMacromoleculeColumn(): DG.Column | any {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-  if (col === null) {
+export function getMacromoleculeColumns(): DG.Column<any>[] | any {
+  const columns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+  if (columns === null) {
     grok.shell.error('Current table does not contain macromolecules');
     return;
   }
-  return col;
+  return columns;
 }
 
 export function updateDivInnerHTML(div: HTMLElement, content: string | Node): void {

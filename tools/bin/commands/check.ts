@@ -3,72 +3,80 @@ import path from 'path';
 import walk from 'ignore-walk';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
-import { PackageFile } from '../utils/interfaces';
+import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
+import {PackageFile} from '../utils/interfaces';
+import * as testUtils from '../utils/test-utils';
 
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
     return false;
-
   const curDir = process.cwd();
 
-  if (args.recursive) {
-    function runChecksRec(dir: string) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        const filepath = path.join(dir, file);
-        const stats = fs.statSync(filepath);
-        if (stats.isDirectory()) {
-          if (utils.isPackageDir(filepath))
-            runChecks(filepath);
-          else {
-            if (file !== 'node_modules' && !file.startsWith('.'))
-              runChecksRec(path.join(dir, file));
-          }
-        }
-      }
-    }
-    runChecksRec(curDir);
-  } else {
+  if (args.recursive)
+    return runChecksRec(curDir);
+  else {
     if (!utils.isPackageDir(curDir)) {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
+    return runChecks(curDir);
+  }
+}
 
-    runChecks(curDir);
+function runChecks(packagePath: string): boolean {
+  const files = walk.sync({path: packagePath, ignoreFiles: ['.npmignore', '.gitignore']});
+  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+  const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
+    'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
+  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  const warnings: string[] = [];
+  const packageFilePath = path.join(packagePath, 'package.json');
+  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, {encoding: 'utf-8'}));
+
+  const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
+  const isWebpack = fs.existsSync(webpackConfigPath);
+  let externals: { [key: string]: string } | null = null;
+  if (isWebpack) {
+    const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
+    externals = extractExternals(content);
+    if (externals)
+      warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
 
-  function runChecks(packagePath: string) {
-    const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-    const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
-    const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
-      'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
-    const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-    const warnings: string[] = [];
+  warnings.push(...checkFuncSignatures(packagePath, funcFiles));
+  warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
+  warnings.push(...checkChangelog(packagePath, json));
 
-    const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
-    const isWebpack = fs.existsSync(webpackConfigPath);
-    let externals: { [key: string]: string } | null = null;
-    if (isWebpack) {
-      const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
-      externals = extractExternals(content);
-      if (externals)
-        warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
-    }
-
-    warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-    warnings.push(...checkPackageFile(packagePath, { isWebpack, externals }));
-
-    if (warnings.length) {
-      console.log(`Checking package ${path.basename(packagePath)}...`);
-      warn(warnings);
-    } else
-      console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
+  if (warnings.length) {
+    console.log(`Checking package ${path.basename(packagePath)}...`);
+    warn(warnings);
+    if (json.version.startsWith('0') || (warnings.every((w) => warns.some((ww) => w.includes(ww)))))
+      return true;
+    testUtils.exitWithCode(1);
   }
-
+  console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
+}
+
+const warns = ['Latest package version', 'Datagrok API version should contain'];
+
+function runChecksRec(dir: string): boolean {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filepath = path.join(dir, file);
+    const stats = fs.statSync(filepath);
+    if (stats.isDirectory()) {
+      if (utils.isPackageDir(filepath))
+        return runChecks(filepath);
+      else {
+        if (file !== 'node_modules' && !file.startsWith('.'))
+          runChecksRec(path.join(dir, file));
+      }
+    }
+  }
+  return false;
 }
 
 export function extractExternals(config: string): {}|null {
@@ -83,7 +91,7 @@ export function extractExternals(config: string): {}|null {
     try {
       const externals = JSON.parse(externalStr);
       return externals;
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   }
@@ -102,15 +110,15 @@ export function checkImportStatements(packagePath: string, files: string[], exte
   const warnings: string[] = [];
 
   function validateImport(file: string, s: string): ValidationResult {
-    let value = validImportRegex.test(s);
-    let message = value ? '' : 'Pay attention to file ' + file + ': import statement `' +
+    const value = validImportRegex.test(s);
+    const message = value ? '' : 'Pay attention to file ' + file + ': import statement `' +
       s + '` differs from the path given in the webpack config as an external module. ' +
       'It can increase the bundle size.';
-    return { value, message };
+    return {value, message};
   }
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
+    const content = fs.readFileSync(path.join(packagePath, file), {encoding: 'utf-8'});
     const matchedImports = content.match(importRegex);
     if (matchedImports) {
       for (const match of matchedImports) {
@@ -143,7 +151,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         }
       }
 
-      return { value, message };
+      return {value, message};
     },
     semTypeDetector: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
       let value = true;
@@ -159,7 +167,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         message += 'Semantic type detectors must have one output of type "string"\n';
       }
 
-      return { value, message };
+      return {value, message};
     },
     cellRenderer: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
       let value = true;
@@ -175,7 +183,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         message += 'Cell renderer functions must have one output of type "grid_cell_renderer"\n';
       }
 
-      return { value, message };
+      return {value, message};
     },
     viewer: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
       let value = true;
@@ -191,7 +199,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         message += 'Viewers must have one output of type "viewer"\n';
       }
 
-      return { value, message };
+      return {value, message};
     },
     fileViewer: ({inputs, outputs, tags}: {inputs: FuncParam[], outputs: FuncParam[], tags?: string[]}) => {
       let value = true;
@@ -212,7 +220,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         message += 'File viewers must have one output of type "view"\n';
       }
 
-      return { value, message };
+      return {value, message};
     },
     fileExporter: ({description}: {description?: string}) => {
       let value = true;
@@ -223,30 +231,52 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         message += 'File exporters should have a description parameter\n';
       }
 
-      return { value, message };
+      return {value, message};
     },
     packageSettingsEditor: ({outputs}: {outputs: FuncParam[]}) => {
       let value = true;
       let message = '';
 
-      if (outputs.length === 1 && outputs[0].type === 'widget') {
+      if (!(outputs.length === 1 && outputs[0].type === 'widget')) {
         value = false;
         message += 'Package settings editors must have one output of type "widget"\n';
       }
 
-      return { value, message };
+      return {value, message};
+    },
+    params: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
+      let value = true;
+      let message = '';
+
+      for (const input of inputs) {
+        if (!(input.name && input.type)) {
+          value = false;
+          message += `Function has no name or type of input parameter\n`;
+        }
+      }
+      for (const output of outputs) {
+        if (!(output.name && output.type)) {
+          value = false;
+          message += `Function has no name or type of output parameter\n`;
+        }
+      }
+
+      return {value, message};
     },
   };
   const functionRoles = Object.keys(checkFunctions);
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
+    const content = fs.readFileSync(path.join(packagePath, file), {encoding: 'utf-8'});
     const functions = getFuncMetadata(content);
     for (const f of functions) {
+      const paramsCheck = checkFunctions.params(f);
+      if (!paramsCheck.value)
+        warnings.push(`File ${file}, function ${f.name}:\n${paramsCheck.message}`);
       const roles = functionRoles.filter((role) => f.tags?.includes(role));
-      if (roles.length > 1) {
+      if (roles.length > 1) 
         warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
-      } else if (roles.length === 1) {
+      else if (roles.length === 1) {
         const vr = checkFunctions[roles[0]](f);
         if (!vr.value)
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
@@ -258,18 +288,16 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
 }
 
 const sharedLibExternals: {[lib: string]: {}} = {
-  'common/html2canvas.min.js': { 'exceljs': 'ExcelJS' },
-  'common/exceljs.min.js': { 'html2canvas': 'html2canvas' },
-  'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
-  'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
-  'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
+  'common/html2canvas.min.js': {'exceljs': 'ExcelJS'},
+  'common/exceljs.min.js': {'html2canvas': 'html2canvas'},
+  'common/ngl_viewer/ngl.js': {'NGL': 'NGL'},
+  'common/openchemlib-full.js': {'openchemlib/full': 'OCL'},
+  'common/codemirror/codemirror.js': {'codemirror': 'CodeMirror'},
 };
 
-export function checkPackageFile(packagePath: string, options?: { externals?:
+export function checkPackageFile(packagePath: string, json: PackageFile, options?: { externals?:
   { [key: string]: string } | null, isWebpack?: boolean }): string[] {
   const warnings: string[] = [];
-  const packageFilePath = path.join(packagePath, 'package.json');
-  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
   const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
     path.basename(path.dirname(path.dirname(packagePath))) === 'public';
 
@@ -293,6 +321,21 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
   if (json.author == null && isPublicPackage)
     warnings.push('File "package.json": add the "author" field.');
 
+  if (json.version.includes('beta') && isPublicPackage)
+    warnings.push('File "package.json": public package cannot be beta version.');
+
+  const api = json.dependencies?.['datagrok-api'];
+  if (api) {
+    if (api === '../../js-api') {} else if (api === 'latest')
+      warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
+    else if (!/^(\^|>|<|~).+/.test(api))
+      warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
+  }
+
+  const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
+  if (dt && dt !== 'latest')
+    warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
+
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
       if (typeof source !== 'string')
@@ -308,9 +351,9 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
                 warnings.push(`Webpack config parsing: Consider adding source "${source}" to webpack externals:\n` +
                   `'${lib}': '${name}'\n`);
               }
-            } else {
+            } else 
               warnings.push(`File "package.json": source "${source}" not in the list of shared libraries`);
-            }
+            
           } else {
             warnings.push('Webpack config parsing: External modules not found.\n' +
               `Consider adding source "${source}" to webpack externals` + (source in sharedLibExternals ? ':\n' +
@@ -319,13 +362,40 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
         }
         continue;
       }
-      if (source.startsWith('src/') && fs.existsSync(path.join(packagePath, 'webpack.config.js')))
+      if (source.startsWith('src/') && fs.existsSync(path.join(packagePath, 'webpack.config.js'))) {
         warnings.push('File "package.json": Sources cannot include files from the \`src/\` directory. ' +
           `Move file ${source} to another folder.`);
+      }
       if (!(fs.existsSync(path.join(packagePath, source))))
         warnings.push(`Source ${source} not found in the package.`);
     }
   }
+
+  return warnings;
+}
+
+export function checkChangelog(packagePath: string, json: PackageFile) {
+  if (json.servicePackage) return [];
+  const warnings: string[] = [];
+  let clf: string;
+  try {
+    clf = fs.readFileSync(path.join(packagePath, 'CHANGELOG.md'), {encoding: 'utf-8'});
+  } catch (e) {
+    return ['CHANGELOG.md file does not exist\n'];
+  }
+  let regex = /^##[^#].*$/gm;
+  const h2 = clf.match(regex);
+  if (!h2) return ['No versions found in CHANGELOG.md\n'];
+  regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
+  for (const h of h2) {
+    if (!regex.test(h))
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<yyyy-mm-dd> | WIP)\n`);
+  }
+  regex = /^## (\d+\.\d+\.\d+)/;
+  const v1 = h2[0].match(regex)?.[1];
+  const v2 = h2[1]?.match(regex)?.[1];
+  if (v1 !== json.version && v2 !== json.version)
+    warnings.push(`Latest package version (${json.version}) is not in CHANGELOG\n`);
 
   return warnings;
 }
@@ -337,7 +407,7 @@ function warn(warnings: string[]): void {
 function getFuncMetadata(script: string): FuncMetadata[] {
   const funcData: FuncMetadata[] = [];
   let isHeader = false;
-  let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
+  let data: FuncMetadata = {name: '', inputs: [], outputs: []};
 
   for (const line of script.split('\n')) {
     if (!line)
@@ -349,22 +419,22 @@ function getFuncMetadata(script: string): FuncMetadata[] {
         isHeader = true;
       const param = match[1];
       if (param === 'name')
-        data.name = match[2];
+        data.name = line.match(utils.nameAnnRegex)?.[2];
       else if (param === 'description')
         data.description = match[2];
       else if (param === 'input')
-        data.inputs.push({ type: match[2] });
+        data.inputs.push({type: match[2], name: match[3]});
       else if (param === 'output')
-        data.outputs.push({ type: match[2] });
+        data.outputs.push({type: match[2], name: match[3]});
       else if (param === 'tags')
         data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
     }
     if (isHeader) {
       const nm = line.match(utils.nameRegex);
-      if (nm && !line.match(utils.paramRegex)) {
+      if (nm && !match) {
         data.name = data.name || nm[1];
         funcData.push(data);
-        data = { name: '', inputs: [], outputs: [] };
+        data = {name: '', inputs: [], outputs: []};
         isHeader = false;
       }
     }

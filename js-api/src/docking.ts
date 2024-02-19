@@ -2,10 +2,11 @@ import {toJs} from './wrappers';
 import {_toIterable} from './utils';
 import {DockType} from './const';
 import { Viewer } from './viewer';
+import {IDartApi} from "./api/grok_api.g";
 
 
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * Dock node.
@@ -113,7 +114,7 @@ export class DockManager {
    * 3D view in a modeling package, etc.)
    */
   get documentContainer(): DockContainer {
-    return new DockContainer(api.grok_DockManaget_Get_DocumentContainer(this.dart));
+    return new DockContainer(api.grok_DockManager_Get_DocumentContainer(this.dart));
   }
 
   /**
@@ -145,9 +146,9 @@ export class DockManager {
   /**
    * Finds the node of an element.
    * @param {HTMLElement} element - Element to find the node for.
-   * @returns {DockNode}
+   * @returns {DockNode} if node is found, undefined otherwise.
    * */
-  findNode(element: HTMLElement): DockNode {
+  findNode(element: HTMLElement): DockNode | undefined {
     return toJs(api.grok_DockManager_FindNode(this.dart, element));
   }
 

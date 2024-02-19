@@ -1,6 +1,6 @@
 # BiostructureViewer
 
-BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for
+BiostructureViewer is a [package](https://datagrok.ai/help/develop/#packages) for
 the [Datagrok](https://datagrok.ai/) platform that enables visualization of biological structures.
 
 ## Supported Formats
@@ -69,8 +69,8 @@ See also:
 
 - [NGL Viewer](https://nglviewer.org/)
 - [Scripting](https://datagrok.ai/help/compute/scripting)
-- [Files](https://datagrok.ai/help/access/connectors/files)
-- [File Shares](https://datagrok.ai/help/access/file-shares)
+- [Files](https://datagrok.ai/help/access/databases/connectors/files)
+- [File Shares](https://datagrok.ai/help/access/files/#file-sharing-and-access-control)
 - [RCSB PDB implementation](https://github.com/molstar/rcsb-molstar)
 
 ## Versions

@@ -23,6 +23,8 @@
 		"require-jsdoc": "off",
 		"spaced-comment": "off",
 		"linebreak-style": "off",
+		"no-unused-vars": "off",
+		"@typescript-eslint/no-unused-vars": "warn",
 		"curly": [
 			"error",
 			"multi-or-nest"
@@ -34,7 +36,9 @@
 				"allowSingleLine": true
 			}
 		],
-		"block-spacing": 2
+		"block-spacing": 2,
+		"no-unused-vars": "off",
+		"@typescript-eslint/no-unused-vars": "warn"
 	},
 	"parser": "@typescript-eslint/parser",
 	"plugins": [

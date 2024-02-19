@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: datagrok
+  name: datagrok
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      service: datagrok
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: datagrok
+        network: "datagrok"
+    spec:
+      initContainers:
+        - name: init-wait-for-db
+          image: alpine
+          command: ["/bin/sh", "-c", "for i in $(seq 1 300); do nc -zvw1 database 5432 && exit 0 || sleep 3; done; exit 1"]
+      containers:
+        - env:
+            - name: GROK_PARAMETERS
+              value: '{
+                "deployDemo": false,
+                "dbServer": "database",
+                "db": "datagrok",
+                "dbAdminLogin": "postgres",
+                "dbAdminPassword": "postgres",
+                "dbLogin": "dg",
+                "dbPassword": "dg",
+                "adminPassword": "admin",
+                "isolatesCount": 2
+              }'
+          image: datagrok/datagrok:latest
+          imagePullPolicy: Always
+          name: datagrok
+          ports:
+            - containerPort: 8080
+          tty: true
+          volumeMounts:
+            - mountPath: /home/grok/data
+              name: datagrok-data
+            - mountPath: /home/grok/cfg
+              name: datagrok-cfg
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 120
+      volumes:
+        - name: datagrok-data
+          persistentVolumeClaim:
+            claimName: datagrok-data
+        - name: datagrok-cfg
+          persistentVolumeClaim:
+            claimName: datagrok-cfg

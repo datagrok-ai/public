@@ -2,12 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, delay} from '@datagrok-libraries/utils/src/test';
-import * as C from '../utils/constants';
-import {_package, getHelmMonomers} from '../package';
-import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {splitToMonomersUI} from '../utils/split-to-monomers';
+import {
+  after, before, category, test, expect, expectArray, delay, awaitCheck
+} from '@datagrok-libraries/utils/src/test';
+import {
+  TAGS as bioTAGS,
+  splitterAsFasta,
+  splitterAsHelm,
+  NOTATION
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
+import {splitToMonomersUI} from '../utils/split-to-monomers';
+import {awaitGrid} from './utils';
+import * as C from '../utils/constants';
+
+import {getHelmMonomers} from '../package';
 
 category('splitters', async () => {
   before(async () => {
@@ -26,6 +35,12 @@ category('splitters', async () => {
       ['M', 'MeI', 'Y', 'K', 'E', 'T', 'L', 'L', 'MeF', 'P',
         'K', 'T', 'D', 'F', 'P', 'M', 'R', 'G', 'G', 'L', 'MeA'],
     ],
+    fastaFromHelm: [
+      '[meI][Pip][dK][Thr_PO3H2][L-hArg(Et,Et)][D-Tyr_Et][Tyr_ab-dehydroMe][dV]EN[D-Orn][D-aThr][Phe_4Me]',
+      ['meI', 'Pip', 'dK', 'Thr_PO3H2', 'L-hArg(Et,Et)', 'D-Tyr_Et', 'Tyr_ab-dehydroMe', 'dV', 'E', 'N', 'D-Orn',
+        'D-aThr', 'Phe_4Me'],
+    ],
+
     helm1: [
       'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$',
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dE', 'Thr_PO3H2', 'Aca', 'D-Tyr_Et',
@@ -59,6 +74,7 @@ category('splitters', async () => {
   };
 
   test('fastaMulti', async () => { await _testFastaSplitter(data.fastaMulti[0], data.fastaMulti[1]); });
+  test('fastaFromHelm', async () => { await _testFastaSplitter(data.fastaFromHelm[0], data.fastaFromHelm[1]); });
 
   test('helm1', async () => { await _testHelmSplitter(data.helm1[0], data.helm1[1]); });
   test('helm2', async () => { await _testHelmSplitter(data.helm2[0], data.helm2[1]); });
@@ -69,8 +85,9 @@ category('splitters', async () => {
   test('testHelm2', async () => { await _testHelmSplitter(data.testHelm2[0], data.testHelm2[1]); });
   test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
 
+
   test('splitToMonomers', async () => {
-    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/sample_MSA.csv');
+    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/MSA.csv');
 
     const seqCol = df.getCol('MSA');
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
@@ -80,13 +97,14 @@ category('splitters', async () => {
 
     const newDf = await splitToMonomersUI(df, seqCol);
     expect(newDf.columns.names().includes('17'), true);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(newDf);
 
     // TODO: Check cell.renderer for columns of monomers
-    // const _tv: DG.TableView = grok.shell.addTableView(df);
-    // await delay(500); // needed to account for table adding
-    // // call to calculate 'cell.renderer' tag
-    // await grok.data.detectSemanticTypes(df);
-  }, {skipReason: 'GROK-13300'});
+    const tv: DG.TableView = grok.shell.addTableView(newDf);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
+  });
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(
@@ -112,6 +130,16 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
       throw new Error(msgs.join(' '));
     }
   });
+
+  // test('helmAsFasta', async () => {
+  //   // The columns can't be empty for UnitsHandler
+  //   /* eslint-disable max-len */
+  //   const srcSeq = '[meI][Pip][dK][Thr_PO3H2][L-hArg(Et,Et)][D-Tyr_Et][Tyr_ab-dehydroMe][dV]EN[D-Orn][D-aThr][Phe_4Me]';
+  //   const tgtSeqA = ['meI', 'Pip', 'dK', 'Thr_PO3H2', 'L-hArg(Et,Et)', 'D-Tyr_Et', 'Tyr_ab-dehydroMe', 'dV', 'E', 'N', 'D-Orn', 'D-aThr', 'Phe_4Me'];
+  //   /* eslint-enable max-len */
+  //   const resSeqA = splitterAsFasta(srcSeq);
+  //   expectArray(resSeqA, tgtSeqA);
+  // });
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {

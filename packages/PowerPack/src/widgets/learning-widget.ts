@@ -21,29 +21,15 @@ export class LearningWidget extends DG.Widget {
 
     let tabs = ui.tabControl();
 
-    grok.functions
-    .call("Tutorials:demoAppWidget")
-    .then((res) => {
-      tabs.addPane('DEMO',()=>res._root)
-    })
-    .catch((error) => {
-      console.log('TutorialWidget not found. \n'+error);
-    }).finally(() => {
-      tabs.addPane('VIDEO', ()=> ui.panel([videoList]));
-      tabs.addPane('WIKI', ()=> ui.panel([wikiList]));
-    }
-    );
+    tabs.addPane('VIDEO', ()=> ui.panel([videoList]));
+    tabs.addPane('WIKI', ()=> ui.panel([wikiList]));
+    const daw = DG.Func.find({name: 'demoAppWidget', package: 'Tutorials'})[0];
+    const tw = DG.Func.find({name: 'tutorialWidget', package: 'Tutorials'})[0];
+    if (daw)
+      tabs.addPane('DEMO', () => ui.waitBox(async () => (await daw.apply()).root));
+    if (tw)
+      tabs.addPane('TUTORIALS', () => ui.waitBox(async () => (await tw.apply()).root));
 
-    
-    grok.functions
-    .call("Tutorials:tutorialWidget")
-    .then((res) => {
-      tabs.addPane('TUTORIALS',()=>res._root)
-    })
-    .catch((error) => {
-      console.log('TutorialWidget not found. \n'+error);
-    });
-    
     this.root.append(tabs.root);
 
     // properties
@@ -126,55 +112,59 @@ let playlists = [
 
 let help = [
   {
+    'title': 'Cheminformatics',
+    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/chem/'
+  },
+  {
+    'title': 'Bioinformatics',
+    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/bio/'
+  },
+  {
+    'title': 'Overview',
+    'url': 'https://datagrok.ai/help/datagrok/'
+  },
+  {
     'title': 'Access',
-    'url': 'https://datagrok.ai/help/access/databases.md#database-manager'
+    'url': 'https://datagrok.ai/help/access/'
   },
   {
-    'title':'Collaborate',
-    'url': 'https://datagrok.ai/help/collaborate/chat'
+    'title': 'Transform',
+    'url': 'https://datagrok.ai/help/transform/'
   },
   {
-    'title': 'Develop',
-    'url': 'https://datagrok.ai/help/develop/getting-started'
-  },
-  {
-    'title': 'Discover',
-    'url': 'https://datagrok.ai/help/discover/data-augmentation'
-  },
-  {
-    'title': 'Domains',
-    'url': 'https://datagrok.ai/help/domains/chem/chemically-aware-viewers'
+    'title': 'Visualize',
+    'url': 'https://datagrok.ai/help/visualize/viewers/'
   },
   {
     'title': 'Explore',
     'url': 'https://datagrok.ai/help/explore/cluster-data'
   },
   {
+    'title':'Compute',
+    'url': 'https://datagrok.ai/help/compute/'
+  },
+  {
+    'title': 'Predict',
+    'url': 'https://datagrok.ai/help/learn/'
+  },
+  {
+    'title': 'Discover',
+    'url': 'https://datagrok.ai/help/explore/data-augmentation/'
+  },
+  // {
+  //   'title':'Collaborate',
+  //   'url': 'https://datagrok.ai/help/collaborate/chat'
+  // },
+  {
+    'title': 'Develop',
+    'url': 'https://datagrok.ai/help/develop/'
+  },
+  {
     'title': 'Govern',
     'url': 'https://datagrok.ai/help/govern/audit'
   },
   {
-    'title': 'Learn',
-    'url': 'https://datagrok.ai/help/learn/data-science'
-  },
-  {
-    'title': 'Overview',
-    'url': 'https://datagrok.ai/help/datagrok/create-project'
-  },
-  {
-    'title': 'Stories',
-    'url': 'https://datagrok.ai/help/solutions/life-sciences'
-  },
-  {
-    'title': 'Transform',
-    'url': 'https://datagrok.ai/help/transform/add-new-column'
-  },
-  {
-    'title': 'Visualize',
-    'url': 'https://datagrok.ai/help/visualize/add-custom-form'
-  },
-  {
     'title': 'Acknowledgments',
-    'url': 'https://datagrok.ai/help/acknowledgements'
+    'url': 'https://datagrok.ai/help/datagrok/resources/acknowledgements'
   }
 ];

@@ -109,7 +109,7 @@ class Host {
  */
 class Table {
   items: DG.FormulaLine[];
-  get root(): HTMLElement { return this._grid.root; }
+  get root(): HTMLElement {return this._grid.root;}
   get currentItem(): DG.FormulaLine | null {
     return this._currentItemIdx < 0 ? null : this.items[this._currentItemIdx];
   }
@@ -117,10 +117,10 @@ class Table {
   _grid: DG.Grid;
   _onItemChangedAction: Function;
 
-  get _dataFrame(): DG.DataFrame { return this._grid.dataFrame!; }
+  get _dataFrame(): DG.DataFrame {return this._grid.dataFrame!;}
 
-  get _currentItemIdx(): number { return this._dataFrame.currentRowIdx; }
-  set _currentItemIdx(rowIdx: number) { this._dataFrame.currentRowIdx = rowIdx; }
+  get _currentItemIdx(): number {return this._dataFrame.currentRowIdx;}
+  set _currentItemIdx(rowIdx: number) {this._dataFrame.currentRowIdx = rowIdx;}
 
   /** Used to prevent onValuesChanged event when the grid changes itself */
   _notify: boolean = true;
@@ -259,8 +259,8 @@ class Preview {
   /** Source Scatter Plot axes */
   _scrAxes?: AxisNames;
 
-  set height(h: number) { this.scatterPlot.root.style.height = `${h}px`; }
-  get root(): HTMLElement { return this.scatterPlot.root; }
+  set height(h: number) {this.scatterPlot.root.style.height = `${h}px`;}
+  get root(): HTMLElement {return this.scatterPlot.root;}
 
   /** Returns the current columns pair of the preview Scatter Plot */
   get axisCols(): AxisColumns {
@@ -308,8 +308,8 @@ class Preview {
     else if (src instanceof DG.Viewer) {
       if (src.getOptions()['type'] == DG.VIEWER.LINE_CHART) {
         this.dataFrame = new DG.DataFrame(new DG.LineChartViewer(src.dart).activeFrame!);
-        let yCols: string[] = src.props.yColumnNames;
-        let yCol = this.dataFrame.columns.toList().find(col => col.name != src.props.xColumnName && yCols.some(n => col.name.includes(n)));   
+        const yCols: string[] = src.props.yColumnNames;
+        const yCol = this.dataFrame.columns.toList().find(col => col.name != src.props.xColumnName && yCols.some(n => col.name.includes(n)));   
         this._scrAxes = { x: src.props.xColumnName, y: yCol == undefined ? src.props.xColumnName : yCol.name };
       } else {
         this.dataFrame = src.dataFrame!;
@@ -319,6 +319,11 @@ class Preview {
       throw 'Host is not DataFrame or Viewer.';
 
     this.scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
+      yAxisType: src instanceof DG.Viewer ? src.props.yAxisType : 'linear',
+      xAxisType: src instanceof DG.Viewer ? src.props.xAxisType : 'linear',
+      invertXAxis: src instanceof DG.Viewer ? src.props.invertXAxis : false,
+      invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] != DG.VIEWER.LINE_CHART ?
+        src.props.invertYAxis : false,
       showDataframeFormulaLines: false,
       showViewerFormulaLines: true,
       showSizeSelector: false,
@@ -377,7 +382,7 @@ class Preview {
  */
 class Editor {
   items: DG.FormulaLine[];
-  get root(): HTMLElement { return this._form; }
+  get root(): HTMLElement {return this._form;}
 
   _form: HTMLElement;
   _dataFrame: DG.DataFrame;
@@ -391,7 +396,7 @@ class Editor {
   }
 
   constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onItemChangedAction: Function) {
-    this._form = ui.form();
+    this._form = ui.form([]);
     this.items = items;
     this._dataFrame = dataFrame;
     this._onItemChangedAction = onItemChangedAction;
@@ -410,14 +415,14 @@ class Editor {
     let [itemY, itemX, expression] = ['', '', ''];
 
     if (itemIdx >= 0 && item.type != ITEM_TYPE.BAND) {
-      let itemMeta = DG.FormulaLinesHelper.getMeta(item);
+      const itemMeta = DG.FormulaLinesHelper.getMeta(item);
       [itemY, itemX, expression] = [itemMeta.funcName!, itemMeta.argName!, itemMeta.expression!];
       caption = itemX ? ITEM_CAPTION.LINE : ITEM_CAPTION.CONST_LINE;
     }
 
-    const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px'}});
-    const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px'}});
-    const tooltipPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px'}});
+    const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
+    const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
+    const tooltipPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
 
     if (itemIdx >= 0) {
       /** Preparing the "Main" panel */
@@ -457,16 +462,17 @@ class Editor {
 
     const ibFormula = ui.textInput('', item.formula ?? '',
       (value: string) => {
-        let oldFormula = item.formula!;
+        const oldFormula = item.formula!;
         item.formula = value;
-        let resultOk = this._onItemChangedAction(itemIdx);
+        const resultOk = this._onItemChangedAction(itemIdx);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
         this._setTitleIfEmpty(oldFormula, item.formula);
       });
 
     const elFormula = ibFormula.input as HTMLInputElement;
     elFormula.placeholder = 'Formula';
-    elFormula.setAttribute('style', 'width: 360px; height: 60px; margin-right: -6px;');
+    //elFormula.setAttribute('style', 'width: 360px; height: 60px; margin-right: -6px;');
+    elFormula.setAttribute('style', 'height: 60px;');
 
     ui.tools.initFormulaAccelerators(ibFormula, this._dataFrame);
 
@@ -485,7 +491,7 @@ class Editor {
 
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = '#000000';
-    elColor.setAttribute('style', 'width: 204px; max-width: none;');
+    // elColor.setAttribute('style', 'width: 204px; max-width: none;');
 
     return ui.divH([ibColor.root]);
   }
@@ -503,7 +509,8 @@ class Editor {
       item.opacity = parseInt(elOpacity.value);
       this._onItemChangedAction(itemIdx);
     });
-    elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
+    // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
+    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
 
     const label = ui.label('Opacity', 'ui-label ui-input-label');
 
@@ -522,21 +529,22 @@ class Editor {
       });
 
     const elStyle = ibStyle.input as HTMLInputElement;
-        elStyle.style.width = '135px';
+    //elStyle.style.width = '135px';
 
     const ibWidth = ui.intInput('', item.width ?? 1,
       (value: number) => {
         item.width = value;
         this._onItemChangedAction(itemIdx);
       });
+    ibWidth.addPostfix('px');
 
     const elWidth = ibWidth.input as HTMLInputElement;
     elWidth.placeholder = '1';
     elWidth.setAttribute('style', 'width: 61px; padding-right: 24px;');
 
-    const unit = ui.divText('px', {style: {marginTop: '10px', marginLeft: '-24px', zIndex: '1000'} });
+    // const unit = ui.divText('px', {style: {marginTop: '10px', marginLeft: '-24px', zIndex: '1000'} });
 
-    return ui.divH([ibStyle.root, ibWidth.root, unit]);
+    return ui.divH([ibStyle.root, ibWidth.root]);
   }
 
   /** Creates text inputs for min-max values of item */
@@ -650,7 +658,8 @@ class Editor {
 
     const elDescription = ibDescription.input as HTMLInputElement;
     elDescription.setAttribute('style',
-      'width: 194px; height: 40px; padding-left: 6px; margin-right: -8px; font-family: inherit; font-size: inherit;');
+      'height: 40px; font-family: inherit; font-size: inherit;');
+    // 'width: 194px; height: 40px; padding-left: 6px; margin-right: -8px; font-family: inherit; font-size: inherit;');
 
     return ibDescription.root;
   }
@@ -667,7 +676,7 @@ class Editor {
       });
 
     const elColumn2 = ibColumn2.input as HTMLInputElement;
-    elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
+    //elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
 
     return ui.divH([ibColumn2.root]);
   }
@@ -685,7 +694,7 @@ class Editor {
       });
 
     const elColumn = ibColumn.input as HTMLInputElement;
-    elColumn.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
+    //elColumn.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
 
     const ibValue = ui.stringInput('Value', value, (value: string) => {
       const oldFormula = item.formula!;
@@ -696,9 +705,9 @@ class Editor {
     ibValue.nullable = false;
 
     const elValue = ibValue.input as HTMLInputElement;
-    elValue.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
+    //elValue.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
 
-    return ui.div([ibColumn.root, ibValue.root]);
+    return ui.div([ibColumn.root, ibValue.root], 'ui-form');
   }
 }
 
@@ -714,7 +723,7 @@ class CreationControl {
   _historyItems: DG.FormulaLine[];           // Stores session history
   _justCreatedItems: DG.FormulaLine[] = [];  // Stores history of the currently open dialog
 
-  _loadHistory(): DG.FormulaLine[] { return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : []; }
+  _loadHistory(): DG.FormulaLine[] {return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : [];}
 
   saveHistory() {
     /** Remove duplicates from just created items (formula comparison) */
@@ -725,7 +734,7 @@ class CreationControl {
     this._historyItems = this._historyItems.filter(arr =>
       !this._justCreatedItems.find(val => (val.formula === arr.formula)));
 
-    let newHistoryItems = this._justCreatedItems.concat(this._historyItems);
+    const newHistoryItems = this._justCreatedItems.concat(this._historyItems);
     newHistoryItems.splice(HISTORY_LENGTH);
 
     localStorage[HISTORY_KEY] = JSON.stringify(newHistoryItems);
@@ -910,11 +919,12 @@ export class FormulaLinesDialog {
     tabs.root.style.height = '230px';
 
     /** Init Viewer Table (in the first tab) */
-    if (this.host.viewerItems)
+    if (this.host.viewerItems) {
       tabs.addPane(ITEM_SOURCE.VIEWER, () => {
         this.viewerTable = this._initTable(this.host.viewerItems!);
         return this.viewerTable.root;
       });
+    }
 
     /** Init DataFrame Table (in the second tab) */
     if (this.options.allowEditDFLines && this.host.dframeItems) {
@@ -925,7 +935,7 @@ export class FormulaLinesDialog {
     }
     // Overrides the standard component logic that hides the header containing only one tab
     tabs.header.style.removeProperty('display');
-    
+
 
     /** Display "Add new" button */
     tabs.header.append(this.creationControl.button);

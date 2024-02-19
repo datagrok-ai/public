@@ -1,9 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
 
-const GDC = grok.dapi.connections;
 
 category('Dapi: connection', () => {
   const dcParams = {
@@ -11,14 +10,47 @@ category('Dapi: connection', () => {
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
-    dc = await GDC.save(dc);
+    expect(dc.credentials.parameters['login'], dcParams.login);
+    expect(dc.credentials.parameters['password'], dcParams.password);
+    dc = await grok.dapi.connections.save(dc);
     expect((dc.parameters as any)['schema'], null);
     expect((dc.parameters as any)['db'], dcParams.db);
     expect(dc.friendlyName, 'Local DG Test');
-    expect((await GDC.find(dc.id)).id, dc.id);
-    await GDC.delete(dc);
-    expect(await GDC.find(dc.id) == undefined);
+    expect((await grok.dapi.connections.find(dc.id)).id, dc.id);
+
+    // changing credentials
+    dc.credentials.parameters['login'] = 'changed_login';
+    dc = await grok.dapi.connections.save(dc);
+    expect(dc.credentials.openParameters['login'], 'changed_login');
+
+    // changing credentials forEntity
+    let credentials = await grok.dapi.credentials.forEntity(dc);
+    credentials.parameters['login'] = 'datagrok_dev';
+    credentials = await grok.dapi.credentials.save(credentials);
+    expect(credentials.openParameters['login'], 'datagrok_dev');
+
+    await grok.dapi.connections.delete(dc);
+    expect(await grok.dapi.connections.find(dc.id) == undefined);
   });
+
+  test('JS postprocess', async () => {
+    const script = `
+    //language: javascript
+    //input: dataframe result
+    //output: int rowCount
+    //output: int columns
+    rowCount = result.rowCount;
+    columns = result.columns.length;
+    console.log(rowCount, columns);
+    `;
+    const dc = (await grok.dapi.connections.filter('NorthwindTest').list())[0];
+    const q = dc.query('JS postprocess query test', 'select * from orders');
+    const query = await grok.dapi.queries.save(q);
+    await query.setProperties({jsScript: script});
+    expect((await query.getProperties()).jsScript, script);
+    await query.executeTable();
+    await grok.dapi.queries.delete(query);
+  }, {skipReason: 'GROK-11670'});
 });
 
 category('Dapi: TableQuery', () => {
@@ -50,6 +82,10 @@ category('Dapi: TableQuery', () => {
       login: 'datagrok', password: 'datagrok'};
     dc = DG.DataConnection.create('test', dcParams);
     dc = await grok.dapi.connections.save(dc);
+  });
+
+  after(async () => {
+    await grok.dapi.connections.delete(dc);
   });
 
   test('Create', async () => {
@@ -103,7 +139,7 @@ category('Dapi: TableQuery', () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
   }, {skipReason: 'GROK-11670'});
-}, false);
+});
 
 /*
 category('Dapi: TableQueryBuilder', () => {

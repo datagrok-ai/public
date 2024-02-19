@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgresNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 54322,
+    "db": "northwind"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "WZNFYTSDwu8TTfN6RQ2Yp5VKvbJD0Fddslpm"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

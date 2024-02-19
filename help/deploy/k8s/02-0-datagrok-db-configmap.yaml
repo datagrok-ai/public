@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: datagrok
+  name: database-credentials
+  labels:
+    service: database
+data:
+  # User DB
+  POSTGRES_DB: "postgres"
+  # Db user
+  POSTGRES_USER: "postgres"
+  # Db password
+  POSTGRES_PASSWORD: "postgres"
