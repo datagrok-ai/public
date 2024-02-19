@@ -6,7 +6,7 @@ import { runAdmetox, addCalculationsToTable, performChemicalPropertyPredictions 
 import { properties } from '../utils/const';
 
 category('Admetox', () => {
-	let v: DG.TableView;
+  let v: DG.TableView;
   let molecules: DG.DataFrame;
   let smilesColumn: DG.Column;
     
@@ -19,8 +19,8 @@ category('Admetox', () => {
     const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetox').first();
     expect(admetDockerfile != null, true);
   });
-	
-	test('Container. Post request', async () => {
+
+  test('Container. Post request', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const bbbResults = await runAdmetox(smiles, 'PPBR,VDss', 'false');
@@ -43,10 +43,10 @@ category('Admetox', () => {
     const expandBtn = admetoxDialog!.querySelectorAll('.d4-tree-view-tri')[0] as HTMLElement;
     expandBtn.click();
     await delay(2000);
-		const models = Object.keys(properties)
-		  .flatMap(property => properties[property]['models'])
-			.filter(obj => obj['skip'] !== true)
-			.map(obj => obj['name']);
+    const models = Object.keys(properties)
+      .flatMap(property => properties[property]['models'])
+      .filter(obj => obj['skip'] !== true)
+      .map(obj => obj['name']);
     expectArray(Array.from(admetoxDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
     v.close();
     grok.shell.o = ui.div();
@@ -55,16 +55,13 @@ category('Admetox', () => {
   test('Calculate dialog. Added properties', async () => {
     molecules = grok.data.demo.molecules(5);
     v = grok.shell.addTableView(molecules);
-		await delay(1000);
+    await delay(1000);
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Pgp-Substrate';
-		await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn, false);
+    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn, false);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
-    console.log(molecules.col(newTableColumn)?.get(0));
-		expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
-    console.log(molecules.col(newTableColumn)!.colors.getColor(0));
-		console.log(molecules.col(newTableColumn)!.colors.getColor(4));
-		expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
+    expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
+    expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
     expect(molecules.col(newTableColumn)!.colors.getColor(4), 4293138944, 'Wrong color coding was added');
   }, {timeout: 90000});
 
@@ -78,7 +75,7 @@ category('Admetox', () => {
     const absorp = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Absorption') as HTMLElement;
     if (!absorp.classList.contains('expanded')) {
-			absorp.click();
+      absorp.click();
     }
     const absorpRes = `
       Pgp-Substrate\t0.67
