@@ -25,6 +25,7 @@ category('Viewers: Basic', () => {
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, df.clone(), {detectSemanticTypes: true, arbitraryDfTest: false});
+      await delay(1000);
     });
   }
 });

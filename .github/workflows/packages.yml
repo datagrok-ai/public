@@ -39,11 +39,11 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
       - name: Get changed files
-        uses: tj-actions/changed-files@v37
+        uses: tj-actions/changed-files@v42
         id: changed-files
         with:
           files: 'packages/**'
@@ -161,7 +161,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Get build info
@@ -217,7 +217,7 @@ jobs:
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
           df -h
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
@@ -254,7 +254,7 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: webpack cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
           key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
@@ -362,7 +362,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}.test-results
           path: |
@@ -514,7 +514,7 @@ jobs:
 #        with:
 #          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         with:
           path: ${{ steps.build-docker.outputs.image_tars }}

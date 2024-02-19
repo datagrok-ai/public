@@ -1,7 +1,6 @@
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-import {GridColumn} from "datagrok-api/dg";
+// import * as grok from 'datagrok-api/grok';
 
 
 /**
@@ -18,9 +17,13 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
+    // somehow dart comes null here, will need to investigate it and fix it, now just a workaround
+    if (!gridCell.gridColumn.dart)
+      return;
     const values: string[] = gridCell.cell.valueString.split(',').map((s) => s.trim());
 
-    let cx = 2, cy = 3;
+    let cx = 2;
+    let cy = 3;
     g.textBaseline = 'top';
 
     const getColor = (tag: string) => {
@@ -30,7 +33,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
 
       const keys = Object.keys(colors);
       colors[tag] ??= DG.Color.getCategoricalColor(keys.length);
-    }
+    };
 
     for (const tag of values) {
       const width = g.measureText(tag).width;
@@ -42,7 +45,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
 
         g.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
         g.fillText(tag, x + cx + 2, y + cy + 1);
-      }
+      };
 
       if (cx + width <= w) {
         drawTag();
