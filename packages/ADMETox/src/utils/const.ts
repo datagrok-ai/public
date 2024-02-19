@@ -1,6 +1,6 @@
 export const properties: any = {
   "Absorption": {
-		"name": "Absorption",
+    "name": "Absorption",
     "description": "Models to predict absorbtion",
     "models": [
     {
