@@ -47,13 +47,16 @@ jobs:
         id: changed-files
         with:
           files: 'packages/**'
+          separator: "\n"
           dir_names: true
       - name: Generate matrix
         id: generate-matrix
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           set -x
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            CHANGED_PACKAGES="$(echo -e "${{ steps.changed-files.outputs.all_changed_files }}" | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo -e "${ALL_CHANGED_FILES}" | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
