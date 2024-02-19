@@ -271,6 +271,7 @@ export function modifySelection(selection: type.Selection, clusterOrMonomerPosit
  */
 export function highlightMonomerPosition(monomerPosition: type.SelectionItem, dataFrame: DG.DataFrame,
   monomerPositionStats: MonomerPositionStats): void {
+  if (!dataFrame) return;
   const bitArray = new BitArray(dataFrame.rowCount);
   if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
     const positionStats = Object.values(monomerPositionStats);
