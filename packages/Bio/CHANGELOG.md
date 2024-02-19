@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.11.31 (2024-02-19)
+
+### Features
+
+* GROK-14230: Bio: Add basic UI for monomer lib files adding / validation
+
 ## 2.11.30 (2024-02-15)
 
 ### Features
