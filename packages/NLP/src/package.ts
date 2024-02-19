@@ -7,7 +7,7 @@ import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {stemCash, getMarkedString, setStemmingCash,
-  getClosest, getEmbeddingsAdv} from './stemming-tools/stemming-tools';
+  getClosest, getEmbeddings} from './stemming-tools/stemming-tools';
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER} from './stemming-tools/constants';
 import '../css/stemming-search.css';
@@ -196,176 +196,11 @@ export async function initAWS() {
   //comprehendMedical = new AWS.ComprehendMedical();
 }
 
-//name: Compute Embeddings
-//input: dataframe table
-//input: column source {caption: Texts; semType: Text}
-//output: dataframe dictionary
-export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
-  setStemmingCash(table, source);
-
-  const dict = stemCash.dictionary;
-  const size = dict?.size ?? 0;
-  const words = Array<string>(size);
-  const freqs = new Int32Array(size);
-
-  let idx = 0;
-
-  for (const item of dict!) {
-    words[idx] = item[0];
-    freqs[idx] = item[1].frequency;
-    ++idx;
-  }
-
-  return DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Stemmed words', words),
-    DG.Column.fromInt32Array('Frequency', freqs),
-  ]);
-}
-
-//top-menu: ML | Text Embeddings OLD...
-//name: Compute Text Embeddings OLD
-//description: Compute text embeddings using UMAP
-//input: dataframe table {caption: Table; category: Data}
-//input: column source {type: string; caption: Table; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
-//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
-//input: int neighbors = 4 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
-//input: double minDist = 0.001 {caption: Minimum distance; category: Hyperparameters} [The effective minimum distance between embedded points.]
-//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
-//input: bool inNewView = true {caption: New view; category: Results} [Provide results in a new view?]
-//input: bool showScatter = true {caption: Scatter plot; category: Results} [Add a scatteplot with embeddings.]
-export function computeEmbdsOLD(table: DG.DataFrame, source: DG.Column, components: number, epochs: number,
-  neighbors: number, minDist: number, spread: number, newView: boolean, showScatter: boolean): void {
-  const start = new Date().getTime();
-  const embds = getEmbeddingsAdv(table, source, components, epochs, neighbors, minDist, spread);
-  const finish = new Date().getTime();
-  console.log(`${table.name}:\n${components} components, ${epochs} epochs, ${neighbors} neibs, min_dist ${minDist}\nTime is ${finish - start}`);
-
-  if (newView) {
-    const res = DG.DataFrame.fromColumns([source, ...embds]);
-    res.name = `${table.name}: ${components}D, ${epochs}E, ${neighbors}N, MD ${minDist}`;
-    const view = grok.shell.addTableView(res);
-
-    if (showScatter)
-      view.addViewer(DG.VIEWER.SCATTER_PLOT);
-  } else {
-    embds.forEach((col) => table.columns.add(col));
-    const view = grok.shell.getTableView(table.name);
-
-    if (showScatter)
-      view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: embds[0].name, y: embds[embds.length - 1].name});
-  }
-}
-
 //top-menu: ML | Text Embeddings...
 //name: Compute Text Embeddings
 //description: Compute text embeddings using UMAP
 export function computeEmbds(): void {
   runTextEmdsComputing();
-}
-
-//name: Process Embeddings
-//input: dataframe table
-//input: column x {type: numerical}
-//input: column y {type: numerical}
-export function processEmds(table: DG.DataFrame, x: DG.Column, y: DG.Column) {
-  const size = x.length;
-  const xRaw = x.getRawData() as Float32Array;
-  const yRaw = y.getRawData() as Float32Array;
-
-  const getStats = (arr: Float32Array) => {
-    let sum = 0;
-    let sumOfSq = 0;
-
-    for (let i = 0; i < size; ++i) {
-      sum += arr[i];
-      sumOfSq += arr[i] ** 2;
-    }
-
-    const mean = sum / size;
-
-    return {mean: mean, std: Math.sqrt(sumOfSq / size - mean ** 2)};
-  };
-
-  const xStats = getStats(xRaw);
-  const yStats = getStats(yRaw);
-
-  const xMean = xStats.mean;
-  const yMean = yStats.mean;
-
-  const xStd = xStats.std;
-  const yStd = yStats.std;
-
-  const xNorm = new Float32Array(size);
-  const yNorm = new Float32Array(size);
-  const radius = new Float32Array(size);
-  const angle = new Float32Array(size);
-
-  const tiny = 0.000000001;
-
-  for (let i = 0; i < size; ++i) {
-    xNorm[i] = (xRaw[i] - xMean) / xStd;
-    yNorm[i] = (yRaw[i] - yMean) / yStd;
-
-    radius[i] = Math.sqrt(xNorm[i]**2 + yNorm[i]**2);
-    angle[i] = Math.acos(xNorm[i] / (radius[i] + tiny)) * (yNorm[i] > 0 ? 1 : -1);
-  }
-
-  table.columns.add(DG.Column.fromFloat32Array(`${x.name}(norm)`, xNorm));
-  table.columns.add(DG.Column.fromFloat32Array(`${y.name}(norm)`, yNorm));
-
-  table.columns.add(DG.Column.fromFloat32Array(`radius`, radius));
-  table.columns.add(DG.Column.fromFloat32Array(`angle`, angle));
-}
-
-//name: Split
-//input: dataframe table
-//input: column feature {type: numerical}
-//input: double limit = 1.0
-export function split(table: DG.DataFrame, feature: DG.Column, limit: number) {
-  const featureRaw = feature.getRawData();
-  const size = feature.length;
-  let satisf = 0;
-
-  featureRaw.forEach((val, idx, arr) => satisf += (val > limit ? 1 : 0));
-
-  const nonSat = size - satisf;
-
-  const cols = table.columns;
-
-  const satCols = [] as DG.Column[];
-  const nonSatCols = [] as DG.Column[];
-
-  for (const c of cols) {
-    satCols.push(DG.Column.fromType(c.type, c.name, satisf));
-    nonSatCols.push(DG.Column.fromType(c.type, c.name, nonSat));
-  }
-
-  const satDF = DG.DataFrame.fromColumns(satCols);
-  satDF.name = `${feature.name} > ${limit}`;
-
-  const nonSatDF = DG.DataFrame.fromColumns(nonSatCols);
-  nonSatDF.name = `${feature.name} <= ${limit}`;
-
-  let satIdx = 0;
-  let nonSatIdx = 0;
-
-  for (let idx = 0; idx < size; ++idx) {
-    if (featureRaw[idx] > limit) {
-      for (const c of cols)
-        satDF.set(c.name, satIdx, c.get(idx));
-
-      ++satIdx;
-    } else {
-      for (const c of cols)
-        nonSatDF.set(c.name, nonSatIdx, c.get(idx));
-
-      ++nonSatIdx;
-    }
-  }
-
-  grok.shell.addTableView(satDF);
-  grok.shell.addTableView(nonSatDF);
 }
 
 //name: Distance

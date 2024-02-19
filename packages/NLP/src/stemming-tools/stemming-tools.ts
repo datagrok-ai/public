@@ -37,6 +37,15 @@ export type ColUseInfo = {
   use: boolean,
 };
 
+/** UMAP Settings */
+export type UmapSettings = {
+  components: number, 
+  epochs: number, 
+  neighbors: number, 
+  minDist: number, 
+  spread: number,
+};
+
 /** Cash of stemmed text column. */
 // eslint-disable-next-line no-var
 export var stemCash: StemCash = {
@@ -157,48 +166,6 @@ function distFn(arr1: number[], arr2: number[]): number {
 
   //return ((len1 < len2) ? len1 : len2) / common - 1;
   return ((len1 < len2) ? 1 : len2) / common - 1;
-}
-
-/** TODO: to remove, old version */
-export function getEmbeddings(table: DG.DataFrame, source: DG.Column,
-  components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
-  if ((stemCash.dfName !== table.name) || (stemCash.colName !== source.name)) {
-    console.log('Getting buffer...');
-
-    stemCash.dfName = table.name;
-    stemCash.colName = source.name;
-    stemCash.indices = stemmColumn(source, 1).indices;
-  } else
-    console.log('We have already an appropriate buffer!');
-
-  const DIM = 10;
-
-  const data = [...Array(stemCash.indices?.length).keys()].map((i) => Array(DIM).fill(i));
-
-  //console.log(data);
-
-  const umap = new UMAP({
-    nComponents: components,
-    nEpochs: epochs,
-    nNeighbors: neighbors,
-    minDist: minDist,
-    spread: spread,
-    // @ts-ignore
-    distanceFn: distFn,
-  });
-
-  const embeddings = umap.fit(data!);
-
-  const rowCount = embeddings.length;
-  const range = [...Array(components).keys()];
-  const umapColumnsData = range.map((_) => new Float32Array(rowCount));
-
-  for (let i = 0; i < rowCount; ++i) {
-    for (let j = 0; j < components; ++j)
-      umapColumnsData[j][i] = embeddings[i][j];
-  }
-
-  return range.map((i) => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
 }
 
 /** Return string with marked words and a dictionary of common words. */
@@ -448,8 +415,7 @@ function umapDistFn(arr1: number[], arr2: number[]): number {
 }
 
 /** Compute embeddings using the UMAP algorithm. */
-export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column,
-  components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
+export function getEmbeddings(table: DG.DataFrame, source: DG.Column, settings: UmapSettings): DG.Column[] {
   setStemmingCash(table, source);
 
   const data = [...Array(table.rowCount).keys()].map((i) => Array(10).fill(i));
@@ -457,11 +423,11 @@ export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column,
   console.log(data);
 
   const umap = new UMAP({
-    nComponents: components,
-    nEpochs: epochs,
-    nNeighbors: neighbors,
-    minDist: minDist,
-    spread: spread,
+    nComponents: settings.components,
+    nEpochs: settings.epochs,
+    nNeighbors: settings.neighbors,
+    minDist: settings.minDist,
+    spread: settings.spread,
     // @ts-ignore
     distanceFn: umapDistFn,
   });
@@ -469,11 +435,11 @@ export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column,
   const embeddings = umap.fit(data!);
 
   const rowCount = embeddings.length;
-  const range = [...Array(components).keys()];
+  const range = [...Array(settings.components).keys()];
   const umapColumnsData = range.map((_) => new Float32Array(rowCount));
 
   for (let i = 0; i < rowCount; ++i) {
-    for (let j = 0; j < components; ++j)
+    for (let j = 0; j < settings.components; ++j)
       umapColumnsData[j][i] = embeddings[i][j];
   }
 

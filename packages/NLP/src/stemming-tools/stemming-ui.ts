@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {MetricInfo, getDefaultMetric, getMetricTypesChoicesList,
   DISTANCE_TYPE, DIST_TYPES_ARR} from './metrics';
-import {stemCash, ColUseInfo, getEmbeddingsAdv} from './stemming-tools';
+import {stemCash, ColUseInfo, getEmbeddings} from './stemming-tools';
 import {TEXT_SEM_TYPE, TINY, POLAR_FREQ} from './constants';
 
 /** Modify similarity metric. */
@@ -125,7 +125,7 @@ export function modifyMetric(df: DG.DataFrame): void {
     .show({x: 300, y: 300});
 } // modifyMetric
 
-/**  */
+/** Run computation of text embeddings */
 export function runTextEmdsComputing(): void {
   const df = grok.shell.t;
 
@@ -150,13 +150,13 @@ export function runTextEmdsComputing(): void {
   const computingProps = [
     {"name": "texts", "inputType": "Choice", choices: textColNames, "description": "Name of target text column", "nullable": false},
     {"name": "inPlace", "caption": "In-place", "inputType": "Bool", "description": "Defines whether to add results to the current table or provide them in a new view"},
-    {"name": "addVis", "caption": "Visualize", "inputType": "Bool", "description": "Defines whether to add a scatteplot with marked embeddings"},
+    {"name": "visualize", "caption": "Visualize", "inputType": "Bool", "description": "Defines whether to add a scatteplot with marked embeddings"},
   ].map((p) => DG.Property.fromOptions(p));  
 
   const computingOptions = {
     texts: textColNames[0],
     inPlace: true,
-    addVis: true,
+    visualize: true,
   };
 
   const computingOptionsForm = ui.input.form(computingOptions, computingProps);
@@ -180,12 +180,8 @@ export function runTextEmdsComputing(): void {
   const umapOptionsForm = ui.input.form(umapOptions, umapProps);
 
   const acc = ui.accordion();
-
-  const umapPane = acc.addPane('UMAP', () => umapOptionsForm);
-  ui.tooltip.bind(umapPane.root, 'Press to edit UMAP settings');
-
-  const distPane = acc.addPane('Distance', () => ui.link('Foo', ''));
-  ui.tooltip.bind(distPane.root, 'Press to edit distance');  
+  const umapPane = acc.addPane('UMAP', () => umapOptionsForm);  
+  ui.tooltip.bind(umapPane.root, 'Edit UMAP settings');
 
   const dlg = ui.dialog({title: 'Compute embeddings', helpUrl: '/help/explore/text-embeddings'});
 
@@ -194,15 +190,7 @@ export function runTextEmdsComputing(): void {
 
     try {
       const targetCol: DG.Column = df.col(computingOptions.texts)!;
-      const embds = getEmbeddingsAdv(
-        df, 
-        targetCol, 
-        umapOptions.components, 
-        umapOptions.epochs, 
-        umapOptions.neighbors, 
-        umapOptions.minDist, 
-        umapOptions.spread,
-      );
+      const embds = getEmbeddings(df, targetCol, umapOptions);
 
       if (computingOptions.inPlace) {
         for (const col of embds) {
@@ -216,7 +204,7 @@ export function runTextEmdsComputing(): void {
         grok.shell.addTableView(embdsTable);
       }
 
-      if (computingOptions.addVis) {
+      if (computingOptions.visualize) {
         const rowCount = df.rowCount;
 
         const markerSize = new Float32Array(rowCount);
@@ -259,7 +247,10 @@ export function runTextEmdsComputing(): void {
         const t = v.table!;
         t.columns.add(sizeCol);
         t.columns.add(colorCol);
-        v.grid.columns.setVisible(t.columns.names().filter((name) => ![sizeCol.name, colorCol.name].includes(name)));
+        const visibleColNames = t.columns.names().filter((name) => ![sizeCol.name, colorCol.name].includes(name));
+        v.grid.columns.setVisible([visibleColNames[0]]);
+        v.grid.columns.setVisible(visibleColNames);
+
         v.addViewer(DG.VIEWER.SCATTER_PLOT, {
           xColumnName: embds[0].name,
           yColumnName: embds[1].name,
@@ -274,7 +265,7 @@ export function runTextEmdsComputing(): void {
     }
   };
 
-  dlg.addButton('Run', runComputations, undefined, 'Compute text embeddings using the UMAP method')
+  dlg.addButton('Run', runComputations, undefined, 'Compute text embeddings using UMAP')
 
   dlg
     .add(computingOptionsForm)
