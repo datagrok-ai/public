@@ -113,7 +113,7 @@ export class SunburstViewer extends EChartViewer {
           this.handleDataframeSelection(path, params.event.event);
         }
       } else {
-        return;
+        this.handleDataframeSelection(path, params.event.event);
       }
     });
     this.chart.on('mouseover', (params: any) => {
