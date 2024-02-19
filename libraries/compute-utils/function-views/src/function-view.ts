@@ -63,8 +63,9 @@ export abstract class FunctionView extends DG.ViewBase {
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-      parentCall?: DG.FuncCall
-    } = {historyEnabled: true, isTabbed: false},
+      parentCall?: DG.FuncCall,
+      skipInit?: boolean
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super();
     this.box = true;
@@ -76,7 +77,8 @@ export abstract class FunctionView extends DG.ViewBase {
       if (this.parentCall?.func)
         this.basePath = `/${this.parentCall.func.name}`;
     }
-    this.init();
+    if (!options.skipInit)
+      this.init();
   }
 
   /**

@@ -1,0 +1,890 @@
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import cloneDeepWith from 'lodash.clonedeepwith';
+import {BehaviorSubject, Observable} from 'rxjs';
+import {PipelineView, RichFunctionView} from '../../function-views';
+
+//
+// State values
+
+const primitiveTypes = ['bool', 'int', 'number', 'string'] as const;
+type SupportedPrimitives = typeof primitiveTypes[number];
+const containerTypes = ['dataframe', 'object'] as const;
+type SupportedContainers = typeof primitiveTypes[number];
+const supportedTypes = [...primitiveTypes, ...containerTypes] as const;
+type SupportedTypes = typeof supportedTypes[number];
+export type TypeSpec = {
+  [key: string]: SupportedTypes | { type: SupportedContainers, spec?: TypeSpec };
+}
+
+//
+// Common interfaces
+
+export type ItemName = string;
+export type ItemPath = ItemName[];
+export type NqName = string;
+
+export interface RuntimeController {
+  enableLink(path: ItemPath): void;
+  disableLink(path: ItemPath): void;
+  enableStep(path: ItemPath): void;
+  disableStep(path: ItemPath): void;
+  getState<T = any>(path: ItemPath): T | void;
+  updateState<T>(path: ItemPath, state: T, inputState?: 'disabled' | 'restricted' | 'user input'): void;
+  getView(path: ItemPath): RichFunctionView | void;
+  goToStep(path: ItemPath): void;
+}
+
+//
+// CompositionPipeline individual RFV configurations
+
+export type ExportConfig = {
+  export?: ((format: string) => Promise<Blob>);
+  filename?: ((format: string) => string);
+  supportedFormats?: string[];
+  supportedExtensions?: Record<string, string>;
+}
+
+export type StateType = 'input' | 'output' | 'state';
+
+export type StateItemConfiguration = {
+  id: ItemName;
+  type?: TypeSpec;
+  stateType?: StateType; // system field
+}
+
+export type Handler = ((params: { controller: RuntimeController }) => Promise<void>) | NqName;
+
+export type PipelineLinkConfiguration = {
+  id: ItemName;
+  from: ItemPath | ItemPath[];
+  to: ItemPath | ItemPath[];
+  handler?: Handler;
+  activeOnStart?: boolean;
+  activeOnLoad?: boolean;
+}
+
+export type ActionConfiguraion = PipelineLinkConfiguration & {
+  position: 'buttons' | 'menu';
+  runStepOnComplete?: boolean;
+}
+
+export type PipelinePopupConfiguration = {
+  id: ItemName;
+  nqName: NqName;
+  position: 'buttons' | 'menu';
+  helpUrl?: string;
+  states?: StateItemConfiguration[];
+  actions?: ActionConfiguraion[];
+}
+
+export type PipelineStepConfiguration = {
+  id: ItemName;
+  nqName: NqName;
+  friendlyName?: string;
+  helpUrl?: string;
+  states?: StateItemConfiguration[];
+  actions?: ActionConfiguraion[];
+  popups?: PipelinePopupConfiguration[];
+}
+
+//
+// Composition Pipeline configuration
+
+
+export type PipelineHookConfiguration = PipelineLinkConfiguration;
+
+export type PipelineHooks = {
+  beforeInit?: PipelineHookConfiguration[];
+  afterInit?: PipelineHookConfiguration[];
+  beforeFuncCallReady?: PipelineHookConfiguration[];
+  afterFuncCallReady?: PipelineHookConfiguration[];
+  beforeLoadRun?: PipelineHookConfiguration[];
+  afterLoadRun?: PipelineHookConfiguration[];
+  onViewReady?: PipelineHookConfiguration[];
+}
+
+export type PipelineConfiguration = {
+  id: ItemName;
+  nqName: NqName;
+  // composable
+  steps: PipelineStepConfiguration[];
+  hooks?: PipelineHooks;
+  links?: PipelineLinkConfiguration[];
+  // non-composable
+  states?: StateItemConfiguration[];
+  exportConfig?: ExportConfig;
+  helpUrl?: string;
+}
+
+//
+// Composition configuration
+
+export type ItemsToAdd = {
+  stepsToAdd?: [PipelineStepConfiguration, ItemPath][];
+  popupsToAdd?: [PipelinePopupConfiguration, ItemPath][];
+  actionsToAdd?: [ActionConfiguraion, ItemPath][];
+}
+
+export type ItemsToRemove = {
+  itemsToRemove?: ItemPath[];
+}
+
+export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguration & ItemsToRemove;
+
+//
+// Internal config
+
+export type PipelineConfigVariants = PipelineConfiguration | CompositionGraphConfig;
+
+export interface CompositionGraphConfig {
+  id: ItemName;
+  nqName: NqName;
+  config: PipelineConfiguration | PipelineCompositionConfiguration;
+  nestedPipelines?: {
+    [key: ItemName]: PipelineConfiguration | CompositionGraphConfig;
+  };
+}
+
+export function isCompositionGraphConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is CompositionGraphConfig {
+  return (config as any)?.config;
+}
+
+export function isCompositionConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is PipelineCompositionConfiguration {
+  return (config as any)?.nestedPipelines;
+}
+
+export function isPipelineConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is PipelineConfiguration {
+  return !(config as any)?.nestedPipelines;
+}
+
+export function cloneConfig<T>(config: T): T {
+  return cloneDeepWith(config, (val) => {
+    if (typeof val === 'function')
+      return val;
+  });
+}
+
+export type PathKey = string;
+
+export function pathToKey(path: ItemPath): PathKey {
+  return path.join('/');
+}
+
+export function pathItemToKey(path: ItemPath, item: { id: ItemName }): string {
+  return [...path, item.id].join('/');
+}
+
+export function keyToPath(key: PathKey) {
+  return key.split('/');
+}
+
+export function keysJoin(...keys: PathKey[]) {
+  return keys.join('/');
+}
+
+export function pathsToKeys(paths: ItemPath | ItemPath[]): PathKey[] {
+  if (Array.isArray(paths[0]))
+    return paths.map((path) => pathToKey(path as ItemPath));
+  else
+    return [pathToKey(paths as ItemPath)];
+}
+
+export function traverseConfigPipelines<T>(
+  graph: CompositionGraphConfig,
+  nodeHandler: (
+    acc: T,
+    nodeConf: PipelineConfiguration,
+    path: ItemPath,
+    mergeConf?: PipelineCompositionConfiguration) => T,
+  acc: T,
+  mergeNodeHandler?: (
+    acc: T,
+    mergeConf: PipelineCompositionConfiguration,
+    path: ItemPath,
+  ) => T,
+) {
+  const stk: [{
+    node: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration,
+    path: ItemPath,
+    mergeConfig?: PipelineCompositionConfiguration
+  }] = [{
+    node: graph,
+    path: [] as ItemPath,
+  }];
+  while (stk.length) {
+    const {node, path, mergeConfig} = stk.pop()!;
+    if (isCompositionConfig(node) && mergeNodeHandler)
+      acc = mergeNodeHandler(acc, node, path);
+    else if (isCompositionGraphConfig(node)) {
+      const {id} = node;
+      if (mergeNodeHandler)
+        stk.push({node: node.config, path});
+      for (const nextNode of Object.values(node.nestedPipelines ?? {}))
+        stk.push({node: nextNode, path: [...path, id], mergeConfig});
+    } else if (isPipelineConfig(node))
+      acc = nodeHandler(acc, node, path, mergeConfig);
+  }
+  return acc;
+}
+
+//
+// Internal runtime state
+
+export type ItemsToMerge = {
+  step?: PipelineStepConfiguration[];
+  popup?: PipelinePopupConfiguration[];
+  action?: ActionConfiguraion[];
+}
+export type AddNodeConf = ActionConfiguraion | PipelinePopupConfiguration | PipelineStepConfiguration;
+export type NodeConf = AddNodeConf | PipelineConfiguration;
+export type AddNodeConfTypes = 'action' | 'popup' | 'step';
+export type NodeConfTypes = AddNodeConfTypes | 'pipeline';
+
+export type NodeItemState<T = any> = StateItemConfiguration & {
+  value: BehaviorSubject<T>,
+  inputState?: 'disabled' | 'restricted' | 'user input',
+}
+
+export class NodeState {
+  public controllerConfig?: ControllerConfig;
+  public states?: Map<ItemName, NodeItemState>;
+  public enabled = new BehaviorSubject(true);
+
+  constructor(
+    public conf: NodeConf,
+    public type: NodeConfTypes,
+    public pipelinePrefix: PathKey,
+  ) {
+    if (type === 'step' || type === 'popup') {
+      const states = (conf as PipelineStepConfiguration | PipelinePopupConfiguration).states;
+      for (const state of states ?? [])
+        this.states?.set(state.id, {...state, value: new BehaviorSubject<any>(undefined)});
+    }
+    if (type = 'action') {
+      const link = conf as ActionConfiguraion;
+      this.controllerConfig = new ControllerConfig(pipelinePrefix, link.from, link.to);
+    }
+  }
+}
+
+export class LinkState {
+  public controllerConfig: ControllerConfig;
+  public enabled = new BehaviorSubject(true);
+
+  constructor(
+    public link: PipelineLinkConfiguration,
+    public pipelinePrefix: PathKey,
+  ) {
+    this.controllerConfig = new ControllerConfig(pipelinePrefix, link.from, link.to);
+  }
+}
+
+export class ControllerConfig {
+  public from?: Set<PathKey>;
+  public to?: Set<PathKey>;
+
+  constructor(
+    public pipelinePrefix: PathKey,
+    from?: ItemPath | ItemPath[],
+    to?: ItemPath | ItemPath[],
+  ) {
+    if (from)
+      this.from = new Set(pathsToKeys(from));
+
+    if (to)
+      this.to = new Set(pathsToKeys(to));
+  }
+}
+
+export class PipelineRuntime {
+  constructor(
+    private nodes: Map<PathKey, NodeState>,
+    private links: Map<PathKey, LinkState>,
+    private compositionPipelineView: CompositionPipelineView,
+  ) {}
+
+  setLinkState(path: ItemPath, enabled: boolean): void {
+    const k = pathToKey(path);
+    const link = this.links.get(k);
+    if (link)
+      link.enabled.next(enabled);
+  }
+
+  setStepState(path: ItemPath, enabled: boolean): void {
+    const k = pathToKey(path);
+    const conf = this.nodes.get(k)?.conf;
+    if (!conf)
+      return;
+
+
+    if (enabled)
+      this.compositionPipelineView.showSteps((conf as PipelineStepConfiguration).nqName);
+    else
+      this.compositionPipelineView.hideSteps((conf as PipelineCompositionConfiguration).nqName);
+  }
+
+  getState<T = any>(path: ItemPath): T | void {
+    const nodePath = path.slice(0, path.length - 2);
+    const stateName = path[path.length - 1];
+    const k = pathToKey(nodePath);
+    const node = this.nodes.get(k);
+    if (node && node.states) {
+      const state = node.states.get(stateName);
+      if (state)
+        return state.value.value;
+    }
+  }
+
+  updateState<T>(path: ItemPath, value: T, inputState: 'disabled' | 'restricted' | 'user input' = 'user input'): void {
+    const nodePath = path.slice(0, path.length - 2);
+    const stateName = path[path.length - 1];
+    const k = pathToKey(nodePath);
+    const node = this.nodes.get(k);
+    if (node && node.states) {
+      const state = node.states.get(stateName);
+      if (state) {
+        state.inputState = inputState;
+        state.value.next(value);
+      }
+    }
+  }
+
+  getView(path: ItemPath): RichFunctionView | void {
+    const k = pathToKey(path);
+    const conf = this.nodes.get(k)?.conf;
+    if (conf)
+      return this.compositionPipelineView.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName);
+  }
+
+  goToStep(path: ItemPath): void {
+    console.log('TODO: goToStep not implemented');
+  }
+}
+
+export interface StepSpec {
+  funcName: string;
+  friendlyName?: string;
+  helpUrl?: string | HTMLElement;
+}
+
+export interface HookSpec {
+  hooks: PipelineHooks;
+  pipelinePrefix: string;
+}
+
+
+export class RuntimeControllerImpl implements RuntimeController {
+  constructor(private config: ControllerConfig, private rt: PipelineRuntime) {
+  }
+
+  enableLink(path: ItemPath): void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    return this.rt.setLinkState(fullPath, true);
+  }
+
+  disableLink(path: ItemPath): void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    return this.rt.setLinkState(fullPath, false);
+  }
+
+  enableStep(path: ItemPath): void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    return this.rt.setStepState(fullPath, true);
+  }
+
+  disableStep(path: ItemPath): void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    return this.rt.setStepState(fullPath, false);
+  }
+
+  getState<T = any>(path: ItemPath): T | void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    if (!this.checkInput(fullPath)) {
+      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePrefix}`);
+      return;
+    }
+    return this.rt.getState(fullPath);
+  }
+
+  updateState<T>(path: ItemPath, value: T, inputState?: 'disabled' | 'restricted' | 'user input'): void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    if (!this.checkOutput(fullPath)) {
+      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePrefix}`);
+      return;
+    }
+    return this.rt.updateState(fullPath, value, inputState);
+  }
+
+  getView(path: ItemPath): RichFunctionView | void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    return this.rt.getView(fullPath);
+  }
+
+  goToStep(path: ItemPath): void {
+    const fullPath = [...this.config.pipelinePrefix, ...path];
+    return this.rt.goToStep(fullPath);
+  }
+
+  private checkInput(path: ItemPath) {
+    // TODO: check if has an active link
+    return true;
+  }
+
+  private checkOutput(path: ItemPath) {
+    // TODO: check if has an active link
+    return true;
+  }
+}
+
+
+//
+// Pipeline classes
+
+export class CompositionPipelineView extends PipelineView {
+  private hooks: HookSpec[] = [];
+  private rt?: PipelineRuntime;
+
+  constructor(funcName: string) {
+    super(funcName, [], {historyEnabled: true, isTabbed: false, skipInit: true});
+  }
+
+  public injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig) {
+    if (exportConfig)
+      this.exportConfig = {...this.exportConfig, ...exportConfig};
+
+    this.initialConfig = steps;
+    this.hooks = hooks;
+    this.rt = rt;
+  }
+
+  override async init() {
+    await this.execHooks('beforeInit');
+    await super.init();
+    await this.execHooks('afterInit');
+  }
+
+  override async onBeforeStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, editorFunc: DG.Func) {
+    await this.execHooks('beforeFuncCallReady', {nqName, scriptCall, editorFunc});
+  }
+
+  override async onAfterStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, view: RichFunctionView) {
+    await this.execHooks('afterFuncCallReady', {nqName, scriptCall, view});
+  }
+
+  override async onBeforeLoadRun() {
+    await super.onBeforeLoadRun();
+    await this.execHooks('beforeLoadRun');
+  }
+
+  override async onAfterLoadRun(run: DG.FuncCall) {
+    await super.onAfterLoadRun(run);
+    await this.execHooks('afterLoadRun', {run});
+  }
+
+  override build() {
+    super.build();
+    this.execHooks('onViewReady');
+  }
+
+  private async execHooks(category: keyof PipelineHooks, additionalParams: Record<string, any> = {}) {
+    for (const {hooks, pipelinePrefix} of this.hooks!) {
+      const items = hooks[category];
+      for (const item of items ?? []) {
+        const handler = item.handler!;
+        const ctrlConf = new ControllerConfig(pipelinePrefix, item.from, item.to);
+        const controller = new RuntimeControllerImpl(ctrlConf, this.rt!);
+        const params = {...additionalParams, controller};
+        await callHandler(handler, params);
+      }
+    }
+  }
+}
+
+export class CompositionPipeline {
+  private id: ItemName;
+  private nqName: NqName;
+  private exportConfig?: ExportConfig;
+
+  private config: CompositionGraphConfig;
+  private ioInfo = new Map<NqName, StateItemConfiguration[]>();
+  private nodes = new Map<PathKey, NodeState>();
+  private links = new Map<PathKey, LinkState>();
+  private hooks: HookSpec[] = [];
+  private rt?: PipelineRuntime;
+  private steps: { funcName: string, friendlyName?: string, helpUrl?: string | HTMLElement }[] = [];
+
+  private viewInst?: CompositionPipelineView;
+  private isInit = false;
+
+  static compose(
+    id: ItemName,
+    nqName: NqName,
+    items: PipelineConfigVariants[],
+    config: PipelineCompositionConfiguration,
+  ): CompositionGraphConfig {
+    const nestedPipelines: {
+      [key: PathKey]: PipelineConfigVariants;
+    } = {};
+    for (const conf of items) {
+      const {id} = conf;
+      nestedPipelines[id] = cloneConfig(conf);
+    }
+    return {id, nqName, config, nestedPipelines};
+  }
+
+  constructor(conf: PipelineConfigVariants) {
+    if (!isCompositionGraphConfig(conf)) {
+      conf = {
+        id: conf.id,
+        nqName: conf.nqName,
+        config: conf,
+      };
+    }
+    this.config = cloneConfig(conf);
+    this.id = this.config.id;
+    this.nqName = this.config.nqName;
+    this.exportConfig = this.config.config.exportConfig;
+  }
+
+  public makePipelineView() {
+    if (this.viewInst)
+      throw new Error(`View has been already created for pipeline ${this.nqName} ${this.id}`);
+
+    this.viewInst = new CompositionPipelineView(this.nqName);
+    return this.viewInst;
+  }
+
+  public async init() {
+    if (this.isInit)
+      throw new Error(`Double init for pipeline ${this.nqName} ${this.id}`);
+
+    this.isInit = true;
+    if (!this.viewInst)
+      throw new Error(`No view for pipeline ${this.nqName} ${this.id}`);
+
+    await this.loadFuncCallsIO();
+    this.addScriptStatesToConfig();
+    this.processConfig();
+    this.rt = new PipelineRuntime(this.nodes, this.links, this.viewInst);
+    this.viewInst.injectConfiguration(this.steps, this.hooks, this.rt, this.exportConfig);
+    this.isInit = true;
+    await this.viewInst.init();
+  }
+
+  private async loadFuncCallsIO() {
+    const names = await this.gatherIONqNames();
+    for (const name of names) {
+      const spec = await this.getFuncIOSpec(name);
+      this.ioInfo.set(name, spec);
+    }
+  }
+
+  private getPipelineHooks(node: PipelineConfiguration, path: ItemPath, toRemove: Set<string>) {
+    node.hooks = node.hooks ?? {};
+    for (const [type, hooks] of Object.entries(node.hooks ?? {})) {
+      const filteredHooks = [];
+      for (const hook of hooks ?? []) {
+        const fullPath = [...path, node.id, type];
+        const id = pathToKey(fullPath);
+        if (toRemove.has(id))
+          continue;
+
+        this.updateFullPathLink(hook, [...path, type]);
+        filteredHooks.push(hook);
+      }
+      node.hooks[type as keyof PipelineHooks] = filteredHooks;
+    }
+    return node.hooks;
+  }
+
+  private processConfig() {
+    // global remove add/items
+    const {toRemove, toAdd} = traverseConfigPipelines(
+      this.config,
+      (acc) => acc,
+      {
+        toRemove: new Set<string>(),
+        toAdd: new Map<string, ItemsToMerge>(),
+      },
+      (acc, mergeNode, path) => {
+        this.processMergeConfig(mergeNode, path, acc.toRemove, acc.toAdd);
+        return acc;
+      });
+    console.dir({toRemove, toAdd}, {depth: 100});
+
+    // process hoooks
+    this.hooks = traverseConfigPipelines(
+      this.config,
+      (acc, node, path) => {
+        const hooks = this.getPipelineHooks(node, path, toRemove);
+        const pipelinePrefix = pathToKey(path);
+        acc.unshift({hooks, pipelinePrefix});
+        return acc;
+      },
+      [] as HookSpec[],
+      (acc, node, path) => {
+        const hooks = this.getPipelineHooks(node, path, toRemove);
+        const pipelinePrefix = pathToKey(path);
+        acc.unshift({hooks, pipelinePrefix});
+        return acc;
+      });
+
+    console.dir(this.hooks, {depth: 100});
+
+    // process node items
+    traverseConfigPipelines(
+      this.config,
+      (acc, node, path) => {
+        this.processPipelineConfig(node, path, toRemove, toAdd);
+        return acc;
+      },
+      undefined,
+      (acc, node, path) => {
+        this.processPipelineConfig(node, path, toRemove, toAdd);
+        return acc;
+      },
+    );
+    console.dir(this.config, {depth: 100});
+
+    // get steps sequence
+    this.steps = traverseConfigPipelines(
+      this.config,
+      (acc, node) => {
+        acc.unshift(...node.steps.map((s) => ({funcName: s.nqName, friendlyName: s.friendlyName, helpUrl: s.helpUrl})));
+        return acc;
+      },
+      [] as StepSpec[],
+      (acc, node) => {
+        acc.unshift(...node.steps.map((s) => ({funcName: s.nqName, friendlyName: s.friendlyName, helpUrl: s.helpUrl})));
+        return acc;
+      },
+    );
+    console.dir(this.steps, {depth: 100});
+  }
+
+  private processPipelineConfig(pipelineConf: PipelineConfiguration, path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+    const pipelinePrefix = pathItemToKey(path, pipelineConf);
+    const steps: PipelineStepConfiguration[] = [];
+    for (const stepConf of this.processSteps(pipelineConf.steps, pipelinePrefix, pipelinePrefix, toRemove, toAdd)) {
+      const sKey = stepConf.id;
+      const popups: PipelinePopupConfiguration[] = [];
+      for (const popupConf of this.getAllConfItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
+        const pPopupConf = this.processNodeConfig(popupConf, sKey, pipelinePrefix, toRemove, 'action');
+        if (!pPopupConf)
+          continue;
+
+        const actions: ActionConfiguraion[] = [];
+        for (const actionConf of this.getAllConfItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
+          const pActionConf = this.processActionNodeConfig(actionConf, pPopupConf.id, pipelinePrefix, toRemove);
+          if (!pActionConf)
+            continue;
+
+          actions.push(pActionConf);
+        }
+        popupConf.actions = actions;
+        popups.push(popupConf);
+      }
+      const actions: ActionConfiguraion[] = [];
+      for (const actionConf of this.getAllConfItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
+        const pActionConf = this.processActionNodeConfig(actionConf, sKey, pipelinePrefix, toRemove);
+        if (!pActionConf)
+          continue;
+
+        actions.push(pActionConf);
+      }
+      stepConf.popups = popups;
+      stepConf.actions = actions;
+      steps.push(stepConf);
+    }
+    const links: PipelineLinkConfiguration[] = [];
+    for (const link of pipelineConf.links ?? []) {
+      const plink = this.processLinkConfig(link, path, pipelinePrefix, toRemove);
+      if (!plink)
+        continue;
+
+      links.push(plink);
+    }
+    pipelineConf.steps = steps;
+    pipelineConf.links = links;
+  }
+
+  private processSteps(data: PipelineStepConfiguration[], prefix: string, pipelinePrefix: PathKey, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+    const nData: PipelineStepConfiguration[] = data.flatMap((conf) => {
+      const pconf = this.processNodeConfig<PipelineStepConfiguration>(conf, prefix, pipelinePrefix, toRemove, 'step');
+      // TODO: fix prev step suffix
+      const addConfs = (toAdd.get(conf.id)?.step ?? [])
+        .map((step) => this.processNodeConfig(step, prefix, pipelinePrefix, toRemove, 'step'))
+        .filter((x) => x) as PipelineStepConfiguration[];
+      return [...(pconf ? [pconf] : []), ...addConfs];
+    });
+    return nData;
+  }
+
+  private getAllConfItems<T extends AddNodeConf>(data: T[], prefix: string,
+    toAdd: Map<string, ItemsToMerge>, type: AddNodeConfTypes,
+  ) {
+    const moreItems = toAdd.get(prefix)?.[type] ?? [];
+    return [...data, ...moreItems] as T[];
+  }
+
+  private processMergeConfig(mergeConf: PipelineCompositionConfiguration,
+    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>,
+  ) {
+    const prefix = pathItemToKey(path, mergeConf);
+    for (const item of mergeConf.itemsToRemove ?? []) {
+      const path = keysJoin(prefix, pathToKey(item));
+      toRemove.add(path);
+    }
+    delete mergeConf.itemsToRemove;
+    const {stepsToAdd, popupsToAdd, actionsToAdd} = mergeConf;
+    this.processMergeNodeList(stepsToAdd ?? [], prefix, toAdd, 'step');
+    this.processMergeNodeList(popupsToAdd ?? [], prefix, toAdd, 'popup');
+    this.processMergeNodeList(actionsToAdd ?? [], prefix, toAdd, 'action');
+    delete mergeConf.stepsToAdd;
+    delete mergeConf.popupsToAdd;
+    delete mergeConf.actionsToAdd;
+  }
+
+  private processMergeNodeList(itemsToAdd: [AddNodeConf, ItemPath?][], prefix: string,
+    toAdd: Map<string, ItemsToMerge>, type: AddNodeConfTypes,
+  ) {
+    for (const [item, path] of itemsToAdd) {
+      const tagetKey = keysJoin(prefix, pathToKey(path ?? []));
+      const addConf = toAdd.get(tagetKey) ?? {};
+      const addArray = addConf[type] ?? [];
+      addArray.unshift(item as any);
+      addConf[type] = addArray as any;
+      toAdd.set(tagetKey, addConf);
+    }
+  }
+
+  private processActionNodeConfig(conf: ActionConfiguraion, prefix: string, pipelinePrefix: PathKey, toRemove: Set<string>) {
+    const path = keyToPath(prefix);
+    const nodeKey = this.updateFullPathLink(conf, path);
+    if (toRemove.has(nodeKey))
+      return;
+
+    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePrefix));
+    return conf;
+  }
+
+  private processNodeConfig<T extends NodeConf>(conf: T, prefix: string, pipelinePrefix: PathKey, toRemove: Set<string>, type: NodeConfTypes) {
+    const nodeKey = this.updateFullPathNode(conf, prefix);
+    if (toRemove.has(nodeKey))
+      return;
+
+    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePrefix));
+    return conf;
+  }
+
+  private processLinkConfig(conf: PipelineLinkConfiguration, path: ItemPath, pipelinePrefix: PathKey, toRemove: Set<string>) {
+    const linkKey = this.updateFullPathLink(conf, path);
+    if (toRemove.has(linkKey))
+      return;
+
+    this.links.set(linkKey, new LinkState(conf, pipelinePrefix));
+    return conf;
+  }
+
+  private updateFullPathLink(target: { id: string, from: ItemPath | ItemPath[], to?: ItemPath | ItemPath[] }, currentPath: ItemPath) {
+    const prefix = pathToKey(currentPath);
+    if (Array.isArray(target.from[0]))
+      target.from = target.from.map((path) => [...currentPath, ...path]);
+    else
+      target.from = [...currentPath, ...(target.from as ItemPath)];
+
+    if (target.to) {
+      if (Array.isArray(target.to[0]))
+        target.to = target.to.map((path) => [...currentPath, ...path]);
+      else
+        target.to = [...currentPath, ...(target.to as ItemPath)];
+    }
+
+    target.id = keysJoin(prefix, target.id);
+    return target.id;
+  }
+
+  private updateFullPathNode(target: { id: string }, prefix: string) {
+    target.id = keysJoin(prefix, target.id);
+    return target.id;
+  }
+
+  private addScriptStatesToConfig() {
+    traverseConfigPipelines(
+      this.config,
+      (acc, nodeConf) => {
+        for (const conf of nodeConf.steps) {
+          this.addNodeIOInfo(conf);
+          for (const pconf of conf.popups ?? [])
+            this.addNodeIOInfo(pconf);
+        }
+        return acc;
+      },
+      undefined,
+      (acc, mergeNode) => {
+        for (const [conf] of mergeNode.stepsToAdd ?? [])
+          this.addNodeIOInfo(conf);
+
+        for (const [conf] of mergeNode.popupsToAdd ?? [])
+          this.addNodeIOInfo(conf);
+
+        return acc;
+      },
+    );
+  }
+
+  private addNodeIOInfo(conf: PipelineStepConfiguration | PipelinePopupConfiguration) {
+    const info = cloneConfig(this.ioInfo.get(conf.nqName)) ?? [];
+    if (!conf.states)
+      conf.states = info;
+    else
+      conf.states.push(...info);
+  }
+
+  private async getFuncIOSpec(nqName: NqName): Promise<StateItemConfiguration[]> {
+    const func: DG.Func = await grok.functions.eval(nqName);
+    const inputs = func.inputs.map((input) => ({id: input.name, type: input.propertyType as any, stateType: 'input' as StateType}));
+    const outputs = func.outputs.map((output) => ({id: output.name, type: output.propertyType as any, stateType: 'output' as StateType}));
+    const io = [...inputs, ...outputs];
+    return io;
+  }
+
+  private async gatherIONqNames() {
+    const names = new Set<string>();
+    traverseConfigPipelines(
+      this.config,
+      (acc, nodeConf) => {
+        for (const conf of nodeConf.steps) {
+          names.add(conf.nqName);
+          for (const pconf of conf.popups ?? [])
+            names.add(pconf.nqName);
+        }
+        return acc;
+      },
+      names,
+      (acc, mergeNode) => {
+        for (const [conf] of mergeNode.stepsToAdd ?? [])
+          names.add(conf.nqName);
+
+        for (const [conf] of mergeNode.popupsToAdd ?? [])
+          names.add(conf.nqName);
+
+        return acc;
+      },
+    );
+    return names;
+  }
+}
+
+async function callHandler(fn: string | Function, params: Record<string, any>) {
+  if (typeof fn === 'string') {
+    const f: DG.Func = await grok.functions.eval(fn);
+    const call = f.prepare({params});
+    await call.call();
+    return call.outputs;
+  } else {
+    const res = await fn(params);
+    return res;
+  }
+}

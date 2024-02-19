@@ -139,7 +139,7 @@ export class PipelineView extends FunctionView {
 
   constructor(
     funcName: string,
-    private initialConfig: {
+    protected initialConfig: {
       funcName: string,
       friendlyName?: string,
       hiddenOnInit?: VISIBILITY_STATE,
@@ -148,7 +148,8 @@ export class PipelineView extends FunctionView {
     options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-    } = {historyEnabled: true, isTabbed: false},
+      skipInit?: boolean,
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super(
       funcName,
