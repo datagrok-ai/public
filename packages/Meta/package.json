@@ -684,7 +684,7 @@
           "datagrok-api": "^1.17.11"
         },
         "1.8.11": {
-          "datagrok-api": "../../js-api"
+          "datagrok-api": "^1.17.13"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
