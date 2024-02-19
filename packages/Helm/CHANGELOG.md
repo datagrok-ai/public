@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.1.28 (2024-02-19)
+
+* Fix TS config file.
+
 ## 2.1.27 (2024-02-15)
 
 ### Bug fixes
