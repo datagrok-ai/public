@@ -17,9 +17,9 @@ export async function init(): Promise<void> {
 //name: PK-PD
 //description: Two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
 //tags: model
-//input: double dose = 10000.0 {units: um; caption: dose; category: Dosing; min: 1; max: 1000000} [Dosage]
-//input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 1000} [Number of doses]
-//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 1200} [Dosing interval]
+//input: double dose = 10000.0 {units: um; caption: dose; category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
+//input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 15; step: 1} [Number of doses]
+//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 48; step: 1} [Dosing interval]
 //input: double KA = 0.3 {caption: rate constant; category: PK parameters; min: 0.0001; max: 10}
 //input: double CL = 2.0 {caption: clearance; category: PK parameters; min: 0.0001; max: 1000}
 //input: double V2 = 4.0 {caption: central volume; category: PK parameters; min: 0.0001; max: 100} [Central compartment volume]
@@ -38,9 +38,9 @@ export async function simulatePKPD(dose: number, dosesCount: number, doseInterva
 
 //name: PKPD Demo
 //description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation
-//input: double dose = 10000.0 {units: um; caption: dose; category: Dosing; min: 1; max: 1000000} [Dosage]
-//input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 1000} [Number of doses]
-//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 1200} [Dosing interval]
+//input: double dose = 10000.0 {units: um; caption: dose; category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
+//input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 15; step: 1} [Number of doses]
+//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 48; step: 1} [Dosing interval]
 //input: double KA = 0.3 {caption: rate constant; category: PK parameters; min: 0.0001; max: 10}
 //input: double CL = 2.0 {caption: clearance; category: PK parameters; min: 0.0001; max: 1000}
 //input: double V2 = 4.0 {caption: central volume; category: PK parameters; min: 0.0001; max: 100} [Central compartment volume]
