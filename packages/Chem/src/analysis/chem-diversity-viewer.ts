@@ -13,6 +13,7 @@ import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
 import {getRdKitModule} from '../package';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
+import { _fpParamsMap } from '../fingerprints-settings/fp-settings';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -111,10 +112,8 @@ export async function chemDiversitySearch(
       const mol = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
       if (mol) {
         try {
-          const fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
-            radius: defaultMorganFpRadius,
-            nBits: defaultMorganFpLength,
-          }));
+          const params = _fpParamsMap.get(fingerprint) ? _fpParamsMap.get(fingerprint)!.paramsAsString : '';
+          const fp = mol.get_morgan_fp_as_uint8array(params);
           fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
         } catch (e) {
         } finally {

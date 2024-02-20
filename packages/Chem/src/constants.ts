@@ -1,4 +1,5 @@
 import { Fingerprint } from "./utils/chem-common";
+import { _fpParamsMap } from "./fingerprints-settings/fp-settings";
 
 export const V2000_ATOM_NAME_POS = 30;
 export const V2000_ATOM_NAME_LEN = 3;
@@ -56,3 +57,12 @@ export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerpr
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';
 export const CHEM_APPLY_FILTER_SYNC = '.chem-apply-filter-sync';
+export const FP_SETTINGS_STORAGE_KEY = 'fp-settings-storage';
+export const FP_SETTINGS_KEY = 'fp-settings';
+export const getFpWithParamsColumnName = (fpType: Fingerprint) => _fpParamsMap.get(fpType) ?
+  `${fpType}_${_fpParamsMap.get(fpType)!.paramsAsString}`: fpType;
+export const getFpWithoutParamsColName = (fullColName: string) => {
+  const indexOfUnderscore = fullColName.lastIndexOf('_');
+  return indexOfUnderscore === -1 ? fullColName : fullColName.substring(0, indexOfUnderscore);
+}; 
+

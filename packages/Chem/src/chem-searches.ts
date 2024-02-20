@@ -17,9 +17,10 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import {getMolSafe} from './utils/mol-creation_rdkit';
 import {_package} from './package';
 import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
-import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from './constants';
+import {SubstructureSearchType, getFpWithParamsColumnName, getFpWithoutParamsColName, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { _fpParamsMap } from './fingerprints-settings/fp-settings';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -128,6 +129,12 @@ function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.C
     const savedCol = col.dataFrame.columns.byName(savedColName);
     return savedCol;
   }
+  //in case we changed params of fp, we remove previously created column with the same fp, but different params
+  if (col.dataFrame) {
+    const colToRemove = col.dataFrame.columns.names().filter((it) => it.startsWith(getFpWithoutParamsColName(savedColName)));
+    if(colToRemove.length)
+      colToRemove.forEach((colName) => col.dataFrame.columns.remove(colName));
+  }
   return null;
 }
 
@@ -170,9 +177,9 @@ async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fin
   returnSmiles?: boolean): Promise<IFpResult> {
   const fpRes = await (await getRdKitService()).getFingerprints(fingerprintsType, molCol.toList(), returnSmiles);
   returnSmiles ?
-    saveColumns(molCol, [fpRes.fps, fpRes.smiles!], [fingerprintsType, canonicalSmilesColName],
+    saveColumns(molCol, [fpRes.fps, fpRes.smiles!], [getFpWithParamsColumnName(fingerprintsType), canonicalSmilesColName],
       [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-    saveColumns(molCol, [fpRes.fps], [fingerprintsType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+    saveColumns(molCol, [fpRes.fps], [getFpWithParamsColumnName(fingerprintsType)], [DG.COLUMN_TYPE.BYTE_ARRAY]);
   return fpRes;
 }
 
@@ -181,7 +188,7 @@ async function getUint8ArrayFingerprints(
   returnSmiles = false): Promise<IFpResult> {
   await chemBeginCriticalSection();
   try {
-    const fgsCheck = checkForSavedColumn(molCol, fingerprintsType);
+    const fgsCheck = checkForSavedColumn(molCol, getFpWithParamsColumnName(fingerprintsType));
     if (returnSmiles) {
       const smilesCheck = checkForSavedColumn(molCol, canonicalSmilesColName);
       if (fgsCheck && smilesCheck)
@@ -301,7 +308,7 @@ export async function chemSubstructureSearchLibrary(
     const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ??
       new Array<string | null>(molStringsColumn.length).fill(null);
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
-    const fgsList = getSavedCol(fpType)?.toList() ??
+    const fgsList = getSavedCol(getFpWithParamsColumnName(fpType))?.toList() ??
       new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
 
     if (invalidateCacheFlag) //invalidating cache in case column has been changed
@@ -321,8 +328,8 @@ export async function chemSubstructureSearchLibrary(
       try {
         !columnIsCanonicalSmiles ?
           saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
-            [fpType, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-          saveColumns(molStringsColumn, [result.fpsRes!.fps], [fpType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+            [getFpWithParamsColumnName(fpType), canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
+          saveColumns(molStringsColumn, [result.fpsRes!.fps], [getFpWithParamsColumnName(fpType)], [DG.COLUMN_TYPE.BYTE_ARRAY]);
           _package.logger.debug(`in chemSubstructureSearchLibrary, saveProcessedColumns: ${currentSearch}`);
       } catch {
 
@@ -374,21 +381,19 @@ export async function chemSubstructureSearchLibrary(
 }
 
 export function getRDKitFpAsUint8Array(mol: RDMol, fingerprint: Fingerprint): Uint8Array {
+  const params = _fpParamsMap.get(fingerprint) ? _fpParamsMap.get(fingerprint)!.paramsAsString : undefined;
   if (fingerprint == Fingerprint.Morgan) {
-    return mol.get_morgan_fp_as_uint8array(JSON.stringify({
-      radius: defaultMorganFpRadius,
-      nBits: defaultMorganFpLength,
-    }));
+    return mol.get_morgan_fp_as_uint8array(params);
   } else if (fingerprint == Fingerprint.Pattern)
     return mol.get_pattern_fp_as_uint8array();
   else if (fingerprint == Fingerprint.AtomPair)
-    return mol.get_atom_pair_fp_as_uint8array();
+    return mol.get_atom_pair_fp_as_uint8array(params);
   else if (fingerprint == Fingerprint.MACCS)
     return mol.get_maccs_fp_as_uint8array();
   else if (fingerprint == Fingerprint.RDKit)
-    return mol.get_rdkit_fp_as_uint8array();
+    return mol.get_rdkit_fp_as_uint8array(params);
   else if (fingerprint == Fingerprint.TopologicalTorsion)
-    return mol.get_topological_torsion_fp_as_uint8array();
+    return mol.get_topological_torsion_fp_as_uint8array(params);
   else
     throw new Error(`${fingerprint} does not match any fingerprint`);
 }

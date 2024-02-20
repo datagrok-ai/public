@@ -72,6 +72,7 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import { drawMoleculeLabels } from './rendering/molecule-label';
 import { getMCS } from './utils/most-common-subs';
+import { FingerprintsSettingsEditor, getStoredFpSettings, storeFpSettings } from './fingerprints-settings/fp-settings-editor';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -133,6 +134,7 @@ export async function initChem(): Promise<void> {
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
   _renderers = new Map();
+  await getStoredFpSettings();
 }
 
 //tags: autostart
@@ -1438,6 +1440,18 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
 //meta.role: canonicalizer
 export function canonicalize(molecule: string): string {
   return convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+}
+
+//top-menu: Chem | Fingerprints...
+//name: FpSettingsEditor
+export function FpSettingsEditor(call: DG.FuncCall): void {
+  const fpEditor = new FingerprintsSettingsEditor();
+  ui.dialog({title: 'Fingerprints'})
+    .add(fpEditor.getEditor())
+    .onOK(async () => {
+      storeFpSettings();     
+    })
+    .show();
 }
 
 export {getMCS};

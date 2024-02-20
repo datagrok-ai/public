@@ -10,6 +10,7 @@ import {getRdKitModule} from '../package';
 import { SubstructureSearchType } from '../constants';
 import { tanimotoSimilarity } from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import { getRDKitFpAsUint8Array } from '../chem-searches';
+import { _fpParamsMap } from '../fingerprints-settings/fp-settings';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -248,6 +249,7 @@ export class RdKitService {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
+    const fpParams = _fpParamsMap.get(fpType) ? _fpParamsMap.get(fpType)!.paramsAsString : undefined;
     if (!queryMol)
       throw new Error(`Chem | Invalid search pattern: ${query}`);
     let fpRdKit: Uint8Array;
@@ -286,7 +288,7 @@ export class RdKitService {
       _workerCount, batchStartIdx) => {
       let fpResult: IFpResult;
       if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx + batch.length - 1])
-        fpResult = await this.parallelWorkers[workerIdx].getFingerprints(fpType, batch, createSmiles);
+        fpResult = await this.parallelWorkers[workerIdx].getFingerprints(fpType, batch, createSmiles, fpParams);
       else {
         fpResult = {
           fps: result.fpsRes.fps.slice(batchStartIdx, batchStartIdx + batch.length),
@@ -401,15 +403,16 @@ export class RdKitService {
         smiles: getCanonicalSmiles ? ([] as Array<string | null>).concat(...data.map(((it) => it.smiles))) : null,
       };
     };
+    const fpParams = _fpParamsMap.get(fingerprintType) ? _fpParamsMap.get(fingerprintType)!.paramsAsString : undefined;
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles),
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles, fpParams),
       (data: IFpResult[]) => {
         return getResult(data);
       }) :
       await this._doParallel(
         (i: number, _: number) => {
-          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles);
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles, fpParams);
         },
         (data: IFpResult[]) => {
           return getResult(data);
