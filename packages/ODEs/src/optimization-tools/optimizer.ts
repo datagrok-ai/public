@@ -7,7 +7,7 @@ export const FitErrorModel = {
   PROPORTIONAL: 'proportional',
 };
 
-type Likelihood = {
+export type Likelihood = {
   likelihood: number,
   likelihoodYs: number[],
   residualSquaresSums: number[]
@@ -21,7 +21,10 @@ export abstract class FitFunction {
 }
 
 export abstract class Optimizer {
-  abstract optimize(params: Float32Array, data: {ys: Float32Array[], xs: Float32Array[]}, func: FitFunction): Likelihood
+  abstract optimize(
+    params: Float32Array,
+    objectiveFunc: (params: Float32Array) => Likelihood
+  ): Likelihood
 }
 
 export type NumericalSolution = {
@@ -75,13 +78,17 @@ export function getLikelihood(
 
 export function fit(func: FitFunction, params: Float32Array, sigmaTypes: string[],
   data: {ys: Float32Array[], xs: Float32Array[]}, optimizer: Optimizer) {
-  let convergenceIndicator = INFINITY - 5;
+  let convergenceIndicator = INFINITY / 2;
   let convergenceIndicatorOld = INFINITY;
   const dimYtypes = data.ys.length;
   const sigmaValues = new Array<number>(dimYtypes).fill(1);
 
-  while (convergenceIndicator - convergenceIndicatorOld > 0.001) {
-    const optimizedLikelihood = optimizer.optimize(params, data, func);
+  const objectiveFunc = (params: Float32Array) => {
+    return getLikelihood(func, params, sigmaTypes, sigmaValues, data);
+  };
+
+  while (Math.abs(convergenceIndicator - convergenceIndicatorOld) > 0.001) {
+    const optimizedLikelihood = optimizer.optimize(params, objectiveFunc);
 
     for (let i = 0; i < dimYtypes; i++)
       sigmaValues[i] = Math.sqrt(optimizedLikelihood.residualSquaresSums[i]/data.ys[i].length);
