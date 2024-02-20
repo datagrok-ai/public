@@ -21,6 +21,18 @@ export function serialize(obj: any, space = 2) {
           value: Array.from(new Uint8Array(value))
         };
       }
+      if (value instanceof Map) {
+        return {
+          [customTypeKey]: 'Map',
+          value: Array.from(value)
+        };
+      }
+      if (value instanceof Set) {
+        return {
+          [customTypeKey]: 'Set',
+          value: Array.from(value)
+        };
+      }
       return value;
     },
     space
@@ -46,6 +58,10 @@ export function transform(_key: string, value: any) {
       return DG.DataFrame.fromByteArray(new Uint8Array(value.value));
     case 'ArrayBuffer':
       return new Uint8Array(value.value).buffer;
+    case 'Map':
+      return new Map(value.value);
+    case 'Set':
+      return new Set(value.value);
     }
   }
   return value;
