@@ -2,6 +2,7 @@ import {LOG_LEVEL} from './const';
 import {toDart} from './wrappers';
 import {Package} from './entities';
 import {IDartApi} from "./api/grok_api.g";
+import dayjs from "dayjs";
 
 const api: IDartApi = <any>window;
 
@@ -87,7 +88,7 @@ export class Logger {
     const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
       const std = f.bind(console);
       return (...args: any[]) => {
-        try { this.consoleLogs.push(args.map((x) => `${x}`).join(' ')); }
+        try { this.consoleLogs.push(dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]') + ' | ' + args.map((x) => `${x}`).join(' ')); }
         catch (_) {}
         std(...args);
       }
