@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.6 (2024-02-20)
+
+Fix NW Distance function.
+
 ## 1.17.5 (2024-02-15)
 
 Added MCL clustering to peptide analysis.

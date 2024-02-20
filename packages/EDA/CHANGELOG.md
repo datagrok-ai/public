@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.14 (2024-02-20)
+
+Fix NW distance function
+
 ## 1.1.13 (2024-02-12)
 
 Fix PCA & PLS applying to table from local file
