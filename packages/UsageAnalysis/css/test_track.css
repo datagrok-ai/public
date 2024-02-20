@@ -14,6 +14,7 @@
   padding: 10px 10px 0 10px;
   overflow-y: scroll;
   line-height: 1.5;
+  user-select: text;
 }
 
 #tt-test-case-div > .d4-markup > ol {

@@ -264,11 +264,13 @@ export class TestTrack extends DG.ViewBase {
 
   setContextMenu(node: DG.TreeViewNode): void {
     node.captionLabel.addEventListener('contextmenu', (e) => {
-      DG.Menu.popup()
+      const menu = DG.Menu.popup();
+      menu
         .group('Status').items(['Passed', 'Failed', 'Skipped'],
           (i) => {
             const status = i.toLowerCase() as Status;
             if (node.value.status === status) return;
+            menu.dart.childMenuContainer.remove();
             if (status === FAILED || status === SKIPPED)
               this.showNodeDialog(node, status);
             else
