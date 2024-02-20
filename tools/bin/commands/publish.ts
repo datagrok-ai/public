@@ -149,7 +149,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     console.log(`Adding ${canonicalRelativePath}...`);
   });
   if (errs.length) {
-    errs.forEach((e) => console.log('\x1b[31m%s\x1b[0m', e));
+    errs.forEach((e) => color.error(e));
     return 1;
   }
 
@@ -185,6 +185,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (log['#type'] === 'ApiError') {
       color.error(log['message']);
       console.error(log['innerMessage']);
+      console.log(log);
       return 1;
     } else {
       console.log(log);
