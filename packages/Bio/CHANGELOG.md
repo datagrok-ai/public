@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.11.32 (2024-02-20)
+
+### Bug fixes
+
+* GROK-11982: Bio: Fix duplicates WebLogo on layout, test
+* GROK-11983: Bio: Fix duplicates WebLogo on project, test
+
 ## 2.11.31 (2024-02-19)
 
 ### Features

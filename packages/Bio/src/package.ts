@@ -164,6 +164,13 @@ export function getBioLib(): IMonomerLib {
   return MonomerLibManager.instance.getBioLib();
 }
 
+//name: getUnitsHandler
+//input: column sequence { semType: Macromolecule }
+//output: object result
+export function getUnitsHandler(sequence: DG.Column<string>): UnitsHandler {
+  return UnitsHandler.getOrCreate(sequence);
+}
+
 // -- Panels --
 
 //name: Bioinformatics | Get Region

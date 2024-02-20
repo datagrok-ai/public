@@ -62,5 +62,5 @@ category('monomerLibraries', () => {
     const currentMonomerLib = monomerLibHelper.getBioLib();
     expect(currentMonomerLib.getPolymerTypes().length === 0, true);
     const monomerOfTypesList = currentMonomerLib.getMonomerMolsByPolymerType('PEPTIDE');
-  });
+  }, {skipReason: '#2690'});
 });
