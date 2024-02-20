@@ -13,6 +13,7 @@ type LoggerPutCallback = (logRecord: LogMessage) => void;
 export class Logger {
   putCallback?: LoggerPutCallback;
   private readonly dart: any;
+  private static consoleLogs: string[] = [];
 
   constructor(putCallback?: LoggerPutCallback, options?: {staticLogger?: boolean, params?: object}) {
     this.putCallback = putCallback;
@@ -76,6 +77,26 @@ export class Logger {
       this.putCallback(msg);
     msg.stackTrace ??= new Error().stack;
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
+  }
+
+  static getConsoleOutput(): string[] {
+    return this.consoleLogs;
+  }
+
+  static interceptConsoleOutput(): void {
+    const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
+      const std = f.bind(console);
+      return (...args: any[]) => {
+        try { this.consoleLogs.push(args.map((x) => `${x}`).join(' ')); }
+        catch (_) {}
+        std(...args);
+      }
+    };
+
+    console.log = intercept(console.log);
+    console.info = intercept(console.info);
+    console.warn = intercept(console.warn);
+    console.error = intercept(console.error);
   }
 }
 
