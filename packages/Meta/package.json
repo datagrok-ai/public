@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.67",
+  "version": "3.7.68",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1595,6 +1595,9 @@
         },
         "1.0.6": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.7": {
+          "datagrok-api": "^1.17.3"
         }
       },
       "description": "Natural Language Processing Package",
