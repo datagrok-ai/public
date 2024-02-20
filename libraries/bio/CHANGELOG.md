@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.39.26 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version to 1.17.4
+
 ## 5.39.24 (2024-02-14)
 
 ### Features
