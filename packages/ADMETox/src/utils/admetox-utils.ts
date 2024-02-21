@@ -121,7 +121,7 @@ export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.Da
   }
 }
 
-function getQueryParams(): string {
+export function getQueryParams(): string {
   return Object.keys(properties)
     .flatMap(property => properties[property]['models'])
     .filter(obj => obj['skip'] !== true)

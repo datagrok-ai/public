@@ -143,7 +143,7 @@ def handle_model(model, test_data_path, add_probability):
     
   return current_df
 
-def handle_uploaded_file(test_data_path, models, add_probability, batch_size=100):
+def handle_uploaded_file(test_data_path, models, add_probability, batch_size=1000):
   models_res = models.split(",")
   result_dfs = []
   with open(test_data_path, 'r') as file:
