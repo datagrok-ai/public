@@ -93,7 +93,7 @@ jobs:
                 if [[ $npm_version != ${current_version} ]]; then
                   if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
                     if [[ $unpublished_deps == "" ]]; then
-                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]] || [[ '${{ github.ref }}' == 'refs/heads/release/chem-1.8.11') ]]; then
+                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]] || [[ '${{ github.ref }}' == 'refs/heads/release/chem-1.8.11' ]]; then
                         publish="publish"
                         MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                         job_name+=' and publish to NPM'
