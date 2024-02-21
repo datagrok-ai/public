@@ -15,7 +15,7 @@
      [3] Negative Sobol indices, https://github.com/SALib/SALib/issues/102
 
      [4] Unexpected Sobol indices,
-         https://www.researchgate.net/post/Is-it-ever-possible-to-have-the-sum-of-first-order-Sobol-indices-greater-than-one
+         www.researchgate.net/post/Is-it-ever-possible-to-have-the-sum-of-first-order-Sobol-indices-greater-than-one
 */
 
 import * as grok from 'datagrok-api/grok';
@@ -24,7 +24,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForSobolAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {getOutput, OutputDataFromUI, SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
+import {getOutput, OutputDataFromUI,
+  SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
