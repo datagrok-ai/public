@@ -5,6 +5,8 @@ import joblib
 import torch
 import chemprop
 import numpy as np
+import logging
+from time import time
 from numpy.linalg import norm
 import jaqpotpy
 from jaqpotpy import jaqpot
@@ -17,6 +19,9 @@ from flask import Flask, request
 from constants import mean_vectors
 
 app = Flask(__name__)
+
+logging_level = logging.DEBUG
+logging.basicConfig(level=logging_level)
 
 models_extensions = [
   "Pgp-Inhibitor.pkl", "Pgp-Substrate.pt", "Caco2.pt", "Lipophilicity.pt", 
@@ -176,7 +181,10 @@ def df_upload():
     
   models = request.args.get('models')
   add_probability = request.args.get('probability', 'false')
+  start = time()
   response = handle_uploaded_file(test_data_path, models, add_probability)
+  end = time()
+  logging.debug(f'Time required: {end - start}')
   os.remove(test_data_path)
   return response
 
