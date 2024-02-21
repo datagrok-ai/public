@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-## 2.1.13 (2024-01-19) (WIP)
+## 2.1.14 (2024-02-21) (WIP)
+
+* Increase WebSocket max size of incoming string message
+
+## 2.1.13 (2024-01-19)
 
 ### Bug fixes
 
