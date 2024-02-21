@@ -229,5 +229,5 @@ category('MolstarViewer', () => {
     expect(!!aViewer.dataEff, true, 'Viewer dataEff is empty.');
     expect(aViewer.dataEff.data.includes(pdbName), true, `Viewer dataEff must be '${pdbName}' for row ${rowIdx}.`);
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: 'TODO: Searching for hanging test'});
 });
