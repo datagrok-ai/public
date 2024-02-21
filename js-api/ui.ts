@@ -1323,7 +1323,12 @@ export class tools {
 
     let label = buttons.querySelector('label') as HTMLElement;
     let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
-    
+
+    if (element.querySelector('.ui-input-root:not(.ui-input-buttons)') == null) {
+      element.style.removeProperty('max-width');
+      editor.style.removeProperty('max-width');
+    }
+
     if (label != null) label.remove();
 
     if (editor != null) {
