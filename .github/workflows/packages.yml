@@ -172,6 +172,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@x
+      - name: npm version
+        run: npm version
+      - name: unpublished dependencies in package-lock.json
+        id: package-lock
+        if: ${{ matrix.unpublished_deps == '' }}
+        run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
+        working-directory: packages/${{ matrix.package }}
+      - name: npm install
+        run: npm install
+        id: install
+        working-directory: packages/${{ matrix.package }}
       - name: Get build info
         id: info
         run: |
@@ -185,7 +204,7 @@ jobs:
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
           profiles='--profile datagrok --profile db'
           echo "Check if Grok Connect is required for the package"
-          if [ -d "packages/${{ matrix.package }}/connections" ]; then
+          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
             profiles+=' --profile grok_connect'
           fi
           echo "Check if CVM is required for the package"
@@ -228,25 +247,6 @@ jobs:
           echo "Notify about version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
           df -h
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@datagrok'
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - name: npm version
-        run: npm version
-      - name: unpublished dependencies in package-lock.json
-        id: package-lock
-        if: ${{ matrix.unpublished_deps == '' }}
-        run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
-        working-directory: packages/${{ matrix.package }}
-      - name: npm install
-        run: npm install
-        id: install
-        working-directory: packages/${{ matrix.package }}
       - name: js api dependency for unpublished dependencies
         if: ${{ matrix.unpublished_deps != '' }}
         run: |
