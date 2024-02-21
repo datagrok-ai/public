@@ -103,6 +103,13 @@ export class MonomerLibFileManager {
     return this.libraryEventManager.getValidFilesPathList();
   }
 
+  // TODO: remove after adding init from user data storage
+  // WARNING: a temporary solution
+  async getValidLibraryPathsAsynchronously(): Promise<string[]> {
+    return await this.libraryEventManager.getValidLibraryPathsAsynchronously();
+  }
+
+
   private async libraryFileExists(fileName: string): Promise<boolean> {
     return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
