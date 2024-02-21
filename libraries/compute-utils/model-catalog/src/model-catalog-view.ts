@@ -11,7 +11,6 @@ export class ModelCatalogView extends DG.CustomCardView {
     funcName: string,
     currentPackage: DG.Package,
   ): ModelCatalogView {
-
     // this should make it a view app
     //return this.findModelCatalogView(funcName) ?? this.createModelCatalogView(viewName, funcName, currentPackage);
 

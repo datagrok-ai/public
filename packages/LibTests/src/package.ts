@@ -7,7 +7,7 @@ import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/inpu
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
-import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} 
+import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult}
   from '@datagrok-libraries/compute-utils/shared-utils/validation';
 
 export const _package = new DG.Package();
@@ -58,9 +58,9 @@ export async function CustomInputMock(params: any): Promise<FuncCallInput> {
 export function RangeValidatorFactory(params: any) {
   const {min, max} = params;
   return (val: number) => {
-    if (val < min || val > max) 
+    if (val < min || val > max)
       return makeValidationResult({errors: [`Out of range [${min}, ${max}] value: ${val}`]});
-    
+
   };
 }
 
@@ -70,9 +70,9 @@ export function RangeValidatorFactory(params: any) {
 export function AsyncValidatorDemoFactory(params: any) {
   return async (val: number) => {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    if (val === 0) 
+    if (val === 0)
       return makeValidationResult({warnings: [`Try non-null value`]});
-    
+
   };
 }
 
@@ -115,4 +115,78 @@ export function ValidatorActionsDemoFactory(params: any) {
     }
     return makeValidationResult({notifications});
   };
+}
+
+
+//name: MockHook1
+//input: object params
+export function MockHook1(params: any) {
+  return;
+}
+
+//name: MockHandler1
+//input: object params
+export function MockHandler1(params: any) {
+  return;
+}
+
+
+//name: TestFn1
+//input: double a
+//input: double b
+//input: double c
+//output: double res
+export function TestFn1(a: number, b: number, c: number) {
+  return a + b + c;
+}
+
+//name: TestFn2
+//input: double a
+//input: double b
+//input: double c
+//output: double res
+export function TestFn2(a: number, b: number, c: number) {
+  return a * b * c;
+}
+
+//name: TestFn3
+//input: double a
+//input: double b
+//input: double c
+//input: double d
+//output: double res
+export function TestFn3(a: number, b: number, c: number, d: number) {
+  return a + b + c + d;
+}
+
+//name: TestFn4
+//input: double a
+//input: double b
+//input: double c
+//input: double d
+//output: double res
+export function TestFn4(a: number, b: number, c: number, d: number) {
+  return a * b * c * d;
+}
+
+//name: TestFn5
+//input: double a
+//input: double b
+//input: double c
+//input: double d
+//input: double e
+//output: double res
+export function TestFn5(a: number, b: number, c: number, d: number, e: number) {
+  return a + b + c + d + e;
+}
+
+//name: TestFn6
+//input: double a
+//input: double b
+//input: double c
+//input: double d
+//input: double e
+//output: double res
+export function TestFn6(a: number, b: number, c: number, d: number, e: number) {
+  return a * b * c * d * e;
 }

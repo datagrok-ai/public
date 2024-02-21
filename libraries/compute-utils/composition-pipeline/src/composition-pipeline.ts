@@ -60,8 +60,14 @@ export type PipelineLinkConfiguration = {
   from: ItemPath | ItemPath[];
   to: ItemPath | ItemPath[];
   handler?: Handler;
-  activeOnStart?: boolean;
-  activeOnLoad?: boolean;
+  updateAfterLoadRun?: boolean;
+}
+
+export type PipelineHookConfiguration = {
+  id: ItemName;
+  from?: ItemPath | ItemPath[];
+  to?: ItemPath | ItemPath[];
+  handler: Handler;
 }
 
 export type ActionConfiguraion = PipelineLinkConfiguration & {
@@ -88,12 +94,6 @@ export type PipelineStepConfiguration = {
   popups?: PipelinePopupConfiguration[];
 }
 
-//
-// Composition Pipeline configuration
-
-
-export type PipelineHookConfiguration = PipelineLinkConfiguration;
-
 export type PipelineHooks = {
   beforeInit?: PipelineHookConfiguration[];
   afterInit?: PipelineHookConfiguration[];
@@ -118,7 +118,7 @@ export type PipelineConfiguration = {
 }
 
 //
-// Composition configuration
+// Composition Pipeline configuration
 
 export type ItemsToAdd = {
   stepsToAdd?: [PipelineStepConfiguration, ItemPath][];
@@ -511,8 +511,8 @@ export class CompositionPipeline {
   private nodes = new Map<PathKey, NodeState>();
   private links = new Map<PathKey, LinkState>();
   private hooks: HookSpec[] = [];
-  private rt?: PipelineRuntime;
   private steps: { funcName: string, friendlyName?: string, helpUrl?: string | HTMLElement }[] = [];
+  private rt?: PipelineRuntime;
 
   private viewInst?: CompositionPipelineView;
   private isInit = false;
@@ -787,12 +787,14 @@ export class CompositionPipeline {
     return conf;
   }
 
-  private updateFullPathLink(target: { id: string, from: ItemPath | ItemPath[], to?: ItemPath | ItemPath[] }, currentPath: ItemPath) {
+  private updateFullPathLink(target: { id: string, from?: ItemPath | ItemPath[], to?: ItemPath | ItemPath[] }, currentPath: ItemPath) {
     const prefix = pathToKey(currentPath);
-    if (Array.isArray(target.from[0]))
-      target.from = target.from.map((path) => [...currentPath, ...path]);
-    else
-      target.from = [...currentPath, ...(target.from as ItemPath)];
+    if (target.from) {
+      if (Array.isArray(target.from[0]))
+        target.from = target.from.map((path) => [...currentPath, ...path]);
+      else
+        target.from = [...currentPath, ...(target.from as ItemPath)];
+    }
 
     if (target.to) {
       if (Array.isArray(target.to[0]))

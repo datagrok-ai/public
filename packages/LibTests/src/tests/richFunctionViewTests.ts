@@ -6,7 +6,7 @@ import {applyTransformations, serialize} from '@datagrok-libraries/utils/src/jso
 import {getFuncCallIO} from './utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
-import fc1 from './mocks/fc1.json';
+import fc1 from './snapshots/fc1.json';
 
 category('RichFunctionView Inputs', async () => {
   before(async () => {
@@ -23,7 +23,7 @@ category('RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     view.funcCall.setParamValue('a', 1);
     view.funcCall.setParamValue('b', 2.2);
     view.funcCall.setParamValue('c', 'test');
@@ -76,7 +76,7 @@ category('RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];
@@ -131,7 +131,7 @@ category('RichFunctionView Inputs', async () => {
       inputsMap[prop.name] = input;
     });
 
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     await view.doRun();
     view.funcCall.setParamValue('a', 2);
@@ -185,7 +185,7 @@ category('RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     await view.doRun();
     await delay(100);
@@ -263,7 +263,7 @@ category('RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
@@ -287,7 +287,7 @@ category('RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     view.funcCall.setParamValue('df', inputValuesPre['df']);
     view.funcCall.setParamValue('data', inputValuesPre['data']);
     await view.doRun();
@@ -317,7 +317,7 @@ category('RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     inputsMap['data'].value = inputValuesPre['data'];
     // TODO: test df input, not rly used rn
@@ -348,7 +348,7 @@ category('RichFunctionView Validation', async () => {
 
   test('Validate on start', async () => {
     const view = new RichFunctionView('Libtests:validationTest');
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(1500);
     const results = view.getValidationState();
     expectDeepEqual(
@@ -408,7 +408,7 @@ category('RichFunctionView Validation', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(1500);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];
@@ -443,7 +443,7 @@ category('RichFunctionView Validation', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(1500);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];

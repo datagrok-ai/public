@@ -113,7 +113,7 @@ category('expectDeepEqual', async () => {
       () => {
         expectDeepEqual(new Map([['a', 1], ['b', 2]]), new Map([['a', 1], ['b', 2]]));
       },
-    )
+    );
   });
 
   test('map deel equal', async () => {
@@ -121,47 +121,47 @@ category('expectDeepEqual', async () => {
       () => {
         expectDeepEqual(new Map([['a', {a: 1}], ['b', {b: 2}]]), new Map([['a', {a: 1}], ['b', {b: 2}]]));
       },
-    )
+    );
   });
 
   test('map different size', async () => {
     throwTester(
       () => {
         expectDeepEqual(new Map([['a', 1], ['b', 2], ['c', 3]]), new Map([['a', 1], ['b', 2]]));
-      }, 'Maps are of different size: actual map size is 3 and expected map size is 2'
-    )
+      }, 'Maps are of different size: actual map size is 3 and expected map size is 2',
+    );
   });
 
   test('map deep non-equal', async () => {
     throwTester(
       () => {
         expectDeepEqual(new Map([['a', {a: 1}], ['b', {b: 2}]]), new Map([['a', {a: 1}], ['b', {b: 3}]]));
-      }, `['b'].['b']: Expected 3, got 2`
-    )
+      }, `['b'].['b']: Expected 3, got 2`,
+    );
   });
 
   test('set equal', async () => {
     throwTester(
       () => {
-        expectDeepEqual(new Set([1,2,3]), new Set([1,2,3]))
+        expectDeepEqual(new Set([1, 2, 3]), new Set([1, 2, 3]));
       },
-    )
+    );
   });
 
   test('set different size', async () => {
     throwTester(
       () => {
-        expectDeepEqual(new Set([1,2,3,4]), new Set([1,2,3]))
-      }, 'Sets are of different size: actual set size is 4 and expected set size is 3'
-    )
+        expectDeepEqual(new Set([1, 2, 3, 4]), new Set([1, 2, 3]));
+      }, 'Sets are of different size: actual set size is 4 and expected set size is 3',
+    );
   });
 
   test('set non-equal', async () => {
     throwTester(
       () => {
-        expectDeepEqual(new Set([1,2,4]), new Set([1,2,3]))
-      }, `['3']: Expected true, got false`
-    )
+        expectDeepEqual(new Set([1, 2, 4]), new Set([1, 2, 3]));
+      }, `['3']: Expected true, got false`,
+    );
   });
 
   test('array equal', async () => {
