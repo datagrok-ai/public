@@ -202,6 +202,7 @@ jobs:
           if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
             profiles+=' --profile grok_spawner'
           fi
+          profiles='--profile datagrok --profile db --profile grok_connect --profile grok_compute'
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
