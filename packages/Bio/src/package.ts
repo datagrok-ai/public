@@ -60,6 +60,7 @@ import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widge
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
 import {getPolyToolDialog} from './utils/poly-tool/ui';
+import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
@@ -1016,6 +1017,17 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
 export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
   _setPeptideColumn(macroMolecule);
   await grok.data.detectSemanticTypes(df);
+}
+
+//name: createMonomerLibraryForPolyTool
+//input: file file
+export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
+  const fileContent = await file.readAsString();
+  const libHandler = new PolyToolCsvLibHandler(file.fileName, fileContent);
+  const libObject = await libHandler.getJson();
+  const jsonFileName = file.fileName.replace(/\.csv$/, '.json');
+  const jsonFileContent = JSON.stringify(libObject, null, 2);
+  DG.Utils.download(jsonFileName, jsonFileContent);
 }
 
 //name: SDF to JSON Library
