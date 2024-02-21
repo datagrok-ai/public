@@ -18,7 +18,7 @@
 
 * Add HelmHelper, types for Helm WebEditor
 
-## Bug fixes
+### Bug fixes
 
 * Fix To Atomic Level for sequences with gaps
 
@@ -100,7 +100,7 @@ This release introduces chemical sequence similarity functionality.
 Optimize with splitterAsFastaSimple returning ISeqSplitted allowing to speed up processing of
 single character alphabets.
 
-## Breaking changes
+### Breaking changes
 
 * SplitterFunc now returns `ISeqSplitted` instead of `string[]`.
 
