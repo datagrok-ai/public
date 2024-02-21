@@ -100,6 +100,7 @@ jobs:
                       else
                         echo "It is an action for branch other than 'master'. Publish will be skipped."
                         echo "::notice title=${PACKAGE}::It is an action for branch other than 'master'. Publish will be skipped."
+                      fi
                     else
                       echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps. It is not going to be published"
                       echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies and is not going to be published"
