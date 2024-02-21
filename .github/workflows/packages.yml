@@ -93,9 +93,13 @@ jobs:
                 if [[ $npm_version != ${current_version} ]]; then
                   if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
                     if [[ $unpublished_deps == "" ]]; then
-                      publish="publish"
-                      MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
-                      job_name+=' and publish to NPM'
+                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]] || [[ '${{ github.ref }}' == 'refs/heads/release/chem-1.8.11') ]]; then
+                        publish="publish"
+                        MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+                        job_name+=' and publish to NPM'
+                      else
+                        echo "It is an action for branch other than 'master'. Publish will be skipped."
+                        echo "::notice title=${PACKAGE}::It is an action for branch other than 'master'. Publish will be skipped."
                     else
                       echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps. It is not going to be published"
                       echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies and is not going to be published"
@@ -467,7 +471,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/release/chem-1.8.11') && matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
+        if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
 
       - name: Prepare Slack Message
         if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
