@@ -59,6 +59,12 @@ have a form of `column name` `operation` `value`. The following operations are s
   * `started `
 * bool columns: `true`, `false`
 
+### Logical conditions
+
+Free-text filter also understands (very basic) logical conditions. Here are some examples:
+* `age > 30 and height > 190`
+* `age > 30 and sex = F`
+
 Unfortunately, at the moment free-text filter does not work with columns that have space in the name. 
 We are working on developing another filter that would let you specify column/operation/value in a more structured form.
 
