@@ -60,7 +60,7 @@ export class TestTrack extends DG.ViewBase {
     super();
     this.name = 'Test Track';
     this.testingName = testingName ?? '';
-    // this.root.style.overflow = 'hidden';
+    this.root.classList.add('test-track');
     this.path = '/TestTrack';
     this.tree = ui.tree();
     this.tree.root.id = 'tt-tree';
@@ -149,6 +149,7 @@ export class TestTrack extends DG.ViewBase {
       e.preventDefault();
     };
     const ribbon = ui.divH([gh, report, ec, refresh, start, this.nameDiv]);
+    ribbon.style.flexGrow = '0';
 
     // Test case div
     const edit = ui.button(getIcon('edit'), () => this.editTestCase(this.currentNode), 'Edit test case');
