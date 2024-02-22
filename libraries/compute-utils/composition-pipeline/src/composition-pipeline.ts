@@ -168,11 +168,11 @@ export function cloneConfig<T>(config: T): T {
 export type PathKey = string;
 
 export function pathToKey(path: ItemPath): PathKey {
-  return path.join('/');
+  return path.filter(x => x).join('/');
 }
 
 export function pathItemToKey(path: ItemPath, item: { id: ItemName }): string {
-  return [...path, item.id].join('/');
+  return [...path, item.id].filter(x => x).join('/');
 }
 
 export function keyToPath(key: PathKey) {
@@ -204,14 +204,21 @@ export function traverseConfigPipelines<T>(
     path: ItemPath,
   ) => T,
 ) {
+  const startNode = isCompositionConfig(graph) ? graph.config : graph;
+  const startPath = [] as ItemPath;
   const stk: [{
     node: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration,
     path: ItemPath,
     mergeConfig?: PipelineCompositionConfiguration
   }] = [{
-    node: graph,
-    path: [] as ItemPath,
+    node: startNode,
+    path: startPath,
   }];
+
+  if (isCompositionConfig(graph)) {
+    for (const nextNode of Object.values(graph.nestedPipelines ?? {}))
+      stk.push({node: nextNode, path: [graph.id], mergeConfig: graph});
+  }
   while (stk.length) {
     const {node, path, mergeConfig} = stk.pop()!;
     if (isCompositionConfig(node) && mergeNodeHandler)
@@ -316,7 +323,6 @@ export class PipelineRuntime {
     const conf = this.nodes.get(k)?.conf;
     if (!conf)
       return;
-
 
     if (enabled)
       this.compositionPipelineView.showSteps((conf as PipelineStepConfiguration).nqName);
@@ -518,8 +524,6 @@ export class CompositionPipeline {
   private isInit = false;
 
   static compose(
-    id: ItemName,
-    nqName: NqName,
     items: PipelineConfigVariants[],
     config: PipelineCompositionConfiguration,
   ): CompositionGraphConfig {
@@ -530,7 +534,7 @@ export class CompositionPipeline {
       const {id} = conf;
       nestedPipelines[id] = cloneConfig(conf);
     }
-    return {id, nqName, config, nestedPipelines};
+    return {id: config.id, nqName: config.nqName, config, nestedPipelines};
   }
 
   constructor(conf: PipelineConfigVariants) {
@@ -580,17 +584,19 @@ export class CompositionPipeline {
     }
   }
 
-  private getPipelineHooks(node: PipelineConfiguration, path: ItemPath, toRemove: Set<string>) {
+  private getPipelineHooks(node: PipelineConfiguration, toRemove: Set<string>) {
     node.hooks = node.hooks ?? {};
+    const pipelinePrefix = node.id;
+    const path = keyToPath(pipelinePrefix);
     for (const [type, hooks] of Object.entries(node.hooks ?? {})) {
       const filteredHooks = [];
       for (const hook of hooks ?? []) {
-        const fullPath = [...path, node.id, type];
+        const fullPath = [...path, type, node.id];
         const id = pathToKey(fullPath);
         if (toRemove.has(id))
           continue;
 
-        this.updateFullPathLink(hook, [...path, type]);
+        this.updateFullPathLink(hook, path);
         filteredHooks.push(hook);
       }
       node.hooks[type as keyof PipelineHooks] = filteredHooks;
@@ -599,7 +605,6 @@ export class CompositionPipeline {
   }
 
   private processConfig() {
-    // global remove add/items
     const {toRemove, toAdd} = traverseConfigPipelines(
       this.config,
       (acc) => acc,
@@ -610,27 +615,8 @@ export class CompositionPipeline {
       (acc, mergeNode, path) => {
         this.processMergeConfig(mergeNode, path, acc.toRemove, acc.toAdd);
         return acc;
-      });
-    console.dir({toRemove, toAdd}, {depth: 100});
-
-    // process hoooks
-    this.hooks = traverseConfigPipelines(
-      this.config,
-      (acc, node, path) => {
-        const hooks = this.getPipelineHooks(node, path, toRemove);
-        const pipelinePrefix = pathToKey(path);
-        acc.unshift({hooks, pipelinePrefix});
-        return acc;
-      },
-      [] as HookSpec[],
-      (acc, node, path) => {
-        const hooks = this.getPipelineHooks(node, path, toRemove);
-        const pipelinePrefix = pathToKey(path);
-        acc.unshift({hooks, pipelinePrefix});
-        return acc;
-      });
-
-    console.dir(this.hooks, {depth: 100});
+      }
+    );
 
     // process node items
     traverseConfigPipelines(
@@ -645,7 +631,22 @@ export class CompositionPipeline {
         return acc;
       },
     );
-    console.dir(this.config, {depth: 100});
+
+    // process hoooks
+    this.hooks = traverseConfigPipelines(
+      this.config,
+      (acc, node, path) => {
+        const hooks = this.getPipelineHooks(node, toRemove);
+        acc.unshift({hooks, pipelinePrefix: node.id});
+        return acc;
+      },
+      [] as HookSpec[],
+      (acc, node, path) => {
+        const hooks = this.getPipelineHooks(node, toRemove);
+        acc.unshift({hooks, pipelinePrefix: node.id});
+        return acc;
+      }
+    );
 
     // get steps sequence
     this.steps = traverseConfigPipelines(
@@ -660,7 +661,6 @@ export class CompositionPipeline {
         return acc;
       },
     );
-    console.dir(this.steps, {depth: 100});
   }
 
   private processPipelineConfig(pipelineConf: PipelineConfiguration, path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
@@ -699,7 +699,7 @@ export class CompositionPipeline {
     }
     const links: PipelineLinkConfiguration[] = [];
     for (const link of pipelineConf.links ?? []) {
-      const plink = this.processLinkConfig(link, path, pipelinePrefix, toRemove);
+      const plink = this.processLinkConfig(link, pipelinePrefix, toRemove);
       if (!plink)
         continue;
 
@@ -778,7 +778,8 @@ export class CompositionPipeline {
     return conf;
   }
 
-  private processLinkConfig(conf: PipelineLinkConfiguration, path: ItemPath, pipelinePrefix: PathKey, toRemove: Set<string>) {
+  private processLinkConfig(conf: PipelineLinkConfiguration, pipelinePrefix: PathKey, toRemove: Set<string>) {
+    const path = keyToPath(pipelinePrefix);
     const linkKey = this.updateFullPathLink(conf, path);
     if (toRemove.has(linkKey))
       return;
