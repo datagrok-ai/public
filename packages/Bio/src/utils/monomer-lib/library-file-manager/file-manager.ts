@@ -151,7 +151,7 @@ export class MonomerLibFileManager {
       `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
 
       console.warn(message);
-      grok.shell.warning(message);
+      // grok.shell.warning(message);
     }
   }
 
