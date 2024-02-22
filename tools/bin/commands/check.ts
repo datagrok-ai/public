@@ -397,6 +397,9 @@ export function checkChangelog(packagePath: string, json: PackageFile) {
   if (v1 !== json.version && v2 !== json.version)
     warnings.push(`Latest package version (${json.version}) is not in CHANGELOG\n`);
 
+  if (warnings.length)
+    warnings.push('Changelog guideline: https://datagrok.ai/help/develop/dev-process/changelog-policy#changelog-guideline');
+
   return warnings;
 }
 

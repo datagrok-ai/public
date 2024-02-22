@@ -83,6 +83,8 @@ export class PipelineView extends FunctionView {
     }
 
     if (format === 'Single Excel') {
+      DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+
       const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
       const exportWorkbook = new ExcelJS.Workbook();
 
@@ -326,7 +328,37 @@ export class PipelineView extends FunctionView {
     this.subs.push(plvHistorySub);
 
     await this.onFuncCallReady();
+    this.loadHelp().then(() => {
+      this.buildRibbonPanels();
+
+      const helpOpenSub = grok.events.onCurrentViewChanged.pipe(
+        filter(() => grok.shell.v == this),
+      ).subscribe(async () => {
+        if (this.isStepHelpOpen) {
+          const currentStep = this.findCurrentStep();
+
+          if (currentStep)
+            await this.showHelpWithDelay(currentStep);
+        } else
+          grok.shell.windows.help.visible = false;
+      });
+      this.subs.push(helpOpenSub);
+    });
+
     this.isReady.next(true);
+  }
+
+  private isStepHelpOpen = grok.shell.windows.help.visible;
+  private helpFiles = {} as Record<string, string>;
+  private async loadHelp() {
+    return Promise.all(Object.values(this.steps).map(async (step) => {
+      const helpUrl = step.options?.helpUrl;
+      if (helpUrl) {
+        const path = `System:AppData/${this.func.package.name}/${helpUrl}`;
+        const file = await grok.dapi.files.readAsText(path);
+        this.helpFiles[step.func.nqName] = file;
+      }
+    }));
   }
 
   private syncNavButtons(currentStep: StepState, backBtn: HTMLButtonElement, nextBtn: HTMLButtonElement) {
@@ -502,40 +534,6 @@ export class PipelineView extends FunctionView {
       );
     });
 
-    const updateHelpPanel = async () => {
-      const newHelpUrl = Object.values(this.steps)
-        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name)
-        ?.options?.helpUrl;
-
-
-      if (newHelpUrl) {
-        const path = `System:AppData/${this.func.package.name}/${newHelpUrl}`;
-        const file = await grok.dapi.files.readAsText(path);
-        grok.shell.windows.help.showHelp(ui.markdown(file));
-      }
-    };
-
-    const updateRibbonPanels = () => {
-      const currentStep = Object.values(this.steps)
-        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
-
-      if (currentStep) {
-        this.setRibbonPanels([
-          ...this.buildRibbonPanels(),
-          ...currentStep.view.buildRibbonPanels(),
-        ]);
-      }
-    };
-
-    if (!this.options.isTabbed) {
-      this.stepTabs.onTabChanged.subscribe(async () => {
-        updateHelpPanel();
-        updateRibbonPanels();
-      });
-      grok.shell.windows.help.visible = true;
-      updateHelpPanel();
-    }
-
     this.hideSteps(
       ...this.initialConfig
         .filter((config) => config.hiddenOnInit === VISIBILITY_STATE.HIDDEN)
@@ -543,6 +541,69 @@ export class PipelineView extends FunctionView {
     );
 
     return pipelineTabs.root;
+  }
+
+  private async showHelpWithDelay(currentStep: StepState) {
+    grok.shell.windows.help.visible = true;
+    // Workaround to deal with help panel bug
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
+    this.isStepHelpOpen = true;
+  }
+
+  private findCurrentStep() {
+    return Object.values(this.steps)
+      .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+  }
+
+  public override buildHistoryBlock(): HTMLElement {
+    const hb = super.buildHistoryBlock();
+
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedId}"`).list();
+      console.log(childRuns);
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
+    return hb;
+  }
+
+  public override buildRibbonPanels(): HTMLElement[][] {
+    const infoIcon = ui.iconFA('info', async () => {
+      const currentStep = this.findCurrentStep();
+
+      if (currentStep && this.helpFiles[currentStep.func.nqName])
+        await this.showHelpWithDelay(currentStep);
+    });
+
+    const updateInfoIconAndRibbons = () => {
+      const currentStep = this.findCurrentStep();
+
+      const newRibbonPanels = [
+        [
+          ...super.buildRibbonPanels().flat(),
+          ...currentStep && this.helpFiles[currentStep.func.nqName] ? [infoIcon]: [],
+        ],
+        ...currentStep ? currentStep.view.buildRibbonPanels(): [],
+      ];
+
+      this.setRibbonPanels(newRibbonPanels);
+
+      if (grok.shell.windows.help.visible && currentStep && this.helpFiles[currentStep.func.nqName])
+        grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
+
+      return newRibbonPanels;
+    };
+
+    const tabSub = this.stepTabs.onTabChanged.subscribe(updateInfoIconAndRibbons);
+    this.subs.push(tabSub);
+
+    const newRibbonPanels = updateInfoIconAndRibbons();
+
+    return newRibbonPanels;
   }
 
   public override async run(): Promise<void> {

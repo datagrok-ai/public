@@ -1,21 +1,16 @@
 import * as grok from 'datagrok-api/grok';
-
-/** Type for user settings of monomer library set to use. */
-export type LibSettings = {
-  exclude: string[],
-  explicit: string[],
-}
+import {UserLibSettings} from './types';
 
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
-export const LIB_PATH = 'System:AppData/Bio/libraries/';
-const LIB_SETTINGS_FOR_TESTS: LibSettings = {explicit: ['HELMCoreLibrary.json'], exclude: []};
+export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
+const LIB_SETTINGS_FOR_TESTS: UserLibSettings = {explicit: ['HELMCoreLibrary.json'], exclude: []};
 
 
 let userLibSettingsPromise: Promise<void> = Promise.resolve();
 
-export async function getUserLibSettings(): Promise<LibSettings> {
-  let res: LibSettings;
+export async function getUserLibSettings(): Promise<UserLibSettings> {
+  let res: UserLibSettings;
   userLibSettingsPromise = userLibSettingsPromise.then(async () => {
     const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
     res = resStr ? JSON.parse(resStr) : {exclude: [], explicit: []};
@@ -29,7 +24,7 @@ export async function getUserLibSettings(): Promise<LibSettings> {
   return res!;
 }
 
-export async function setUserLibSettings(value: LibSettings): Promise<void> {
+export async function setUserLibSettings(value: UserLibSettings): Promise<void> {
   userLibSettingsPromise = userLibSettingsPromise.then(async () => {
     console.debug(`Bio: setUserLibSettings()\n${JSON.stringify(value, undefined, 2)}`);
     await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);

@@ -136,3 +136,33 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 
   return table;
 }
+
+export function getInputOutputColumns(inputs: DG.Column[], outputs: DG.Column[]): DG.Column[] {
+  outputs.forEach((outCol) => {
+    inputs.forEach((inCol) => {
+      if (inCol.name === outCol.name) {        
+        inCol.name = `${inCol.name} (input)`;
+        outCol.name = `${outCol.name} (output)`;
+      }
+    })
+  });
+
+  return inputs.concat(outputs);
+};
+
+export function getDataFrameFromInputsOutputs(inputs: DG.Column[], outputs: DG.Column[]): DG.DataFrame {
+  const cols = getInputOutputColumns(inputs, outputs);
+  const len = cols.length;
+
+  if (len === 0)
+    return DG.DataFrame.create();
+
+  const df = DG.DataFrame.fromColumns([cols[0]]);
+
+  for (let i = 1; i < len; ++i) {
+    cols[i].name = df.columns.getUnusedName(cols[i].name);
+    df.columns.add(cols[i]);
+  }
+
+  return df;
+}

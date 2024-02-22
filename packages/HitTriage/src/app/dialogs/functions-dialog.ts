@@ -74,26 +74,31 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     !!template?.compute?.descriptors?.enabled && template?.compute?.descriptors?.args?.length > 0;
   // handling package functions
   for (const func of functions) {
-    const f = DG.Func.find({package: func.package, name: func.name})[0];
-    const funcCall = f.prepare(func.args);
-    const keyName = `${func.package}:${func.name}`;
-    funcInputsMap[keyName] = funcCall;
-    const editor = ui.div();
-    const inputs = await funcCall.buildEditor(editor, {condensed: false});
-    editor.classList.add('oy-scroll');
-    editor.style.marginLeft = '15px';
-    tabControlArgs[f.friendlyName ?? f.name] = editor;
-    funcNamesMap[f.friendlyName ?? f.name] = keyName;
-    calculatedFunctions[keyName] = template?.compute?.functions?.some(
-      (f) => f.name === func.name && f.package === func.package,
-    ) ?? false;
-    (editor.children[0] as HTMLElement).style.display = 'none'; // table input
-    (editor.children[1] as HTMLElement).style.display = 'none'; // column input
-    inputs.forEach((input) => {
-      if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
-        input.value = func.args[input.property.name];
-      input.fireChanged();
-    });
+    try {
+      const f = DG.Func.find({package: func.package, name: func.name})[0];
+      const funcCall = f.prepare(func.args);
+      const keyName = `${func.package}:${func.name}`;
+      funcInputsMap[keyName] = funcCall;
+      const editor = ui.div();
+      const inputs = await funcCall.buildEditor(editor, {condensed: false});
+      editor.classList.add('oy-scroll');
+      editor.style.marginLeft = '15px';
+      tabControlArgs[f.friendlyName ?? f.name] = editor;
+      funcNamesMap[f.friendlyName ?? f.name] = keyName;
+      calculatedFunctions[keyName] = template?.compute?.functions?.some(
+        (f) => f.name === func.name && f.package === func.package,
+      ) ?? false;
+      (editor.children[0] as HTMLElement).style.display = 'none'; // table input
+      (editor.children[1] as HTMLElement).style.display = 'none'; // column input
+      inputs.forEach((input) => {
+        if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
+          input.value = func.args[input.property.name];
+        input.fireChanged();
+      });
+    } catch (e) {
+      console.error(e);
+      continue;
+    }
   }
 
   // handling scripts

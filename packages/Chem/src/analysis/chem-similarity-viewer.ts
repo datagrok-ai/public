@@ -54,7 +54,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         })
         .show();
     });
-    this.sketchButton.classList.add('similarity-search-edit');
+    this.sketchButton.classList.add('chem-similarity-search-edit');
     this.sketchButton.classList.add('chem-mol-view-icon');
     this.updateMetricsLink(this, {});
   }

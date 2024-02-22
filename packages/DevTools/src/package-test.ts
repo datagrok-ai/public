@@ -14,9 +14,10 @@ export {tests};
 //input: string test {optional: true}
 //input: object testContext {optional: true}
 //input: bool skipCore {optional: true}
+//input: bool verbose {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string,
-  testContext: TestContext, skipCore: boolean = false): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext}, skipCore ? ['Core'] : undefined);
+  testContext: TestContext, skipCore: boolean = false, verbose = true): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, exclude: skipCore ? ['Core'] : undefined, verbose});
   return DG.DataFrame.fromObjects(data)!;
 }

@@ -90,7 +90,8 @@ export class TreeUtils {
             data[`${prop}-meta`] = { min: Infinity, max: -Infinity };
             continue;
           }
-          node[prop] = node[prop] ?? paths[node.path][prop];
+          if (paths[node.path])
+            node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);

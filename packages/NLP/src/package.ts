@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -5,6 +6,11 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
+import {stemCash, getMarkedString, setStemmingCash,
+  getClosest, getEmbeddings} from './stemming-tools/stemming-tools';
+import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
+import {CLOSEST_COUNT, DELIMETER} from './stemming-tools/constants';
+import '../css/stemming-search.css';
 
 export const _package = new DG.Package();
 
@@ -188,4 +194,56 @@ export async function initAWS() {
   });
   translate = new AWS.Translate();
   //comprehendMedical = new AWS.ComprehendMedical();
+}
+
+//top-menu: ML | Text Embeddings...
+//name: Compute Text Embeddings
+//description: Compute text embeddings using UMAP
+export function computeEmbds(): void {
+  runTextEmdsComputing();
+}
+
+//name: Distance
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function distance(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+
+  setStemmingCash(df, source);
+
+  const uiElem = ui.label('Edit');
+  uiElem.classList.add('nlp-stemming-edit');
+  uiElem.onclick = () => modifyMetric(df);
+  ui.tooltip.bind(uiElem, 'Edit text similarity measure');
+  const wgt = new DG.Widget(uiElem);
+
+  return wgt;
+}
+
+//name: Similar
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function similar(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+  const queryIdx = df.currentRowIdx;
+
+  setStemmingCash(df, source);
+
+  const closest = getClosest(df, queryIdx, CLOSEST_COUNT);
+
+  const uiElements = [] as HTMLElement[];
+
+  for (let i = 0; i < closest.length; ++i) {
+    const uiElem = ui.inlineText(getMarkedString(closest[i], queryIdx, source.get(closest[i])));
+    uiElements.push(uiElem);
+    uiElements.push(ui.divText(DELIMETER));
+  }
+
+  return new DG.Widget(ui.divV(uiElements));
 }

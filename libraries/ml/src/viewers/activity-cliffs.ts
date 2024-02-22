@@ -14,6 +14,8 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlo
 import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
 import {getNormalizedEmbeddings} from '../multi-column-dimensionality-reduction/embeddings-space';
 import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
+import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
+import {MCLMethodName, createMCLWorker} from '../MCL';
 
 export let activityCliffsIdx = 0;
 
@@ -99,8 +101,16 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
     await encodingFunc.apply({[encodingFuncInputs[0].name]: seqCol,
       [encodingFuncInputs[1].name]: similarityMetric, ...(seqSpaceOptions.preprocessingFuncArgs ?? {})});
 
-  const embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
-    [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});
+  let embeddingsMatrix: Matrix = [];
+  if (methodName as any === MCLMethodName) {
+    const mclRes = await createMCLWorker([encodedColWithOptions.entries], similarity, [1], 'MANHATTAN',
+      [similarityMetric], [encodedColWithOptions.options??{}], seqSpaceOptions?.maxIterations ?? 5).promise;
+    df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
+    embeddingsMatrix = [mclRes.embedX, mclRes.embedY];
+  } else {
+    embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
+      [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});
+  }
   if (embeddingsMatrix.length !== axesNames.length)
     throw new Error('Number of axes names should be equal to number of embedding dimensions');
   for (let i = 0; i < embeddingsMatrix.length; ++i)
@@ -135,7 +145,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   }) as DG.ScatterPlotViewer;
 
   const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
-
+  linesRes.lines.skipMultiLineCalculation = true;
   linesRes.linesDf.col(LINES_DF_SALI_COL_NAME)!.setTag('description', 'Structure−Activity Landscape Index (activity difference divided by 1 minus similarity)');
   //creating scatter plot lines renderer
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,

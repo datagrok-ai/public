@@ -9,13 +9,16 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 
 class DatabaseService {
-  static getHistoryRuns(funcName: string, includeParams = true): Observable<DG.FuncCall[]> {
+  static getHistoryRuns(funcName: string, includeParams = true, skipDfLoad = false): Observable<DG.FuncCall[]> {
     return from((async () => {
       const res = await historyUtils.pullRunsByName(
         funcName, [
           {author: grok.shell.user},
           // EXPLAIN WHY FUNC.PARAMS
-        ], {order: 'started'}, [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
+        ],
+        {order: 'started'},
+        [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
+        skipDfLoad,
       );
       return res;
     })());
@@ -64,8 +67,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     private _visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
     // Array of grid columns visible in the filter viever
     private _visibleColumnsForFilter: string[] = [],
-    // Load input/output dataframes
+    // Load input/outputs
     private includeParams = true,
+    // Load input/output dataframes
+    private skipDfLoad = false,
   ) {
     const primaryInput = ui.stringInput(label, '', null);
     super(primaryInput.dart);
@@ -77,7 +82,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
     this.store.experimentRuns = this.experimentRunsUpdate.pipe(
       tap(() => this.toggleLoaderExpRuns(true)),
-      switchMap(() => DatabaseService.getHistoryRuns(this._funcName, this.includeParams).pipe(
+      switchMap(() => DatabaseService.getHistoryRuns(this._funcName, this.includeParams, this.skipDfLoad).pipe(
         catchError((e) => {
           console.error(e);
           return EMPTY;
@@ -103,11 +108,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       });
 
       this.store.experimentRunsDf.next(newRunsGridDf);
-      this.setCurrentRow();
     });
 
     this.store.experimentRunsDf.subscribe(() => {
-      this.renderGridFilters();
+      this.renderGridAndFilters();
     });
 
     this.store.isExperimentRunsLoading.subscribe((newValue) => {
@@ -131,11 +135,9 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
   public showSelectionDialog() {
     // Bug: should re-render all viewers inside of the dialog
-    this.renderGridFilters();
+    this.renderGridAndFilters();
 
     (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = (this.store.experimentRunsDf.value.currentRow.idx === -1);
-
-    this.setCurrentRow();
 
     this._historyDialog.show({
       modal: true,
@@ -146,7 +148,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     });
   }
 
-  private renderGridFilters() {
+  private renderGridAndFilters() {
     const newHistoryFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
     this._historyFilters.root.replaceWith(newHistoryFilters.root);
     this._historyFilters = newHistoryFilters;
@@ -157,6 +159,8 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
     this.styleHistoryGrid();
     this.styleHistoryFilters();
+
+    this.setCurrentRow();
   }
 
   private getHistoryDialog() {

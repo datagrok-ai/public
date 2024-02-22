@@ -42,8 +42,12 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
 /// Example: functions
 function viewsSearch(s: string, host: HTMLDivElement): boolean {
   if (DG.View.ALL_VIEW_TYPES.includes(s)) {
-    host.appendChild(DG.View.createByType(s).root);
-    return true;
+    try {
+      host.appendChild(DG.View.createByType(s).root);
+      return true;
+    } catch (x) {
+      return false;
+    }
   }
   return false;
 }

@@ -1,6 +1,34 @@
 # bio changelog
 
-## 5.39.19 (2023-10)
+## 5.39.27 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version fixed to 1.17.4
+
+## 5.39.26 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version to 1.17.4
+
+## 5.39.24 (2024-02-14)
+
+### Features
+
+* Add HelmHelper, types for Helm WebEditor
+
+### Bug fixes
+
+* Fix To Atomic Level for sequences with gaps
+
+## 5.39.20 (2024-01-29)
+
+### Features
+
+* Routines to check viewer for IViewer, IRenderer
+
+## 5.39.19 (2024-01-26)
 
 ### Features
 
@@ -72,7 +100,7 @@ This release introduces chemical sequence similarity functionality.
 Optimize with splitterAsFastaSimple returning ISeqSplitted allowing to speed up processing of
 single character alphabets.
 
-## Breaking changes
+### Breaking changes
 
 * SplitterFunc now returns `ISeqSplitted` instead of `string[]`.
 

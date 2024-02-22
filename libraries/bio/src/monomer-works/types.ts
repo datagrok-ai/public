@@ -4,6 +4,12 @@ export interface ITypedArray {
     [key: number]: any;
 }
 
+/** Type for user settings of monomer library set to use. */
+export type UserLibSettings = {
+  exclude: string[],
+  explicit: string[],
+}
+
 /** Stores necessary data about atoms of a monomer parsed from Molfile */
 export type Atoms = {
     /** Element symbols for monomer's atoms */

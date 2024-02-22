@@ -268,19 +268,8 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     setTimeout(async () => {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000));
-      // const ribbons = view.getRibbonPanels();
-      // ribbons[0].push(ui.div(ui.icons.add(() => null), {classes: 'd4-ribbon-item'}));
-      // console.log(ribbons);
-      // we need to wait for chem package to be initialized first to be able to use chem filters
 
-      //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
-      // loading layout
-      // const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
-      //   .find((l) => l && l.getUserDataValue(HTcampaignName) === this._campaignId);
-      // if (layout)
-      //   view.loadLayout(layout);
-      //console.log('layout loaded');
 
       if (this._campaign?.layout) {
         try {

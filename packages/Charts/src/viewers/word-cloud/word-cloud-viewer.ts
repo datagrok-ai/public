@@ -106,6 +106,9 @@ export class WordCloudViewer extends DG.JsViewer {
 
     $(this.root).empty();
 
+    if (this.strColumnName === null || this.strColumnName === '')
+      return;
+
     const margin = { top: 10, right: 10, bottom: 10, left: 10 };
     const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
     const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;

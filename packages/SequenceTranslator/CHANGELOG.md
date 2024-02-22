@@ -1,5 +1,17 @@
 # Sequence Translator changelog
 
+## 1.2.7 (2024-01-29)
+### Features
+
+* Bulk translation for formats
+
+## 1.2.6 (2024-01-29)
+
+### Bug fixes
+
+* Fixed column input in Pattern
+* Fixed whitespaces in molfiles
+
 ## 1.2.0 (2023-10-27)
 
 ### Features

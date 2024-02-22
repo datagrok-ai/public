@@ -582,6 +582,7 @@ LIMIT 50
   ], {style: {height: '100%', width: '100%'}});
 
   const view = grok.shell.addView(DG.View.create());
+  view.name = 'Chemical Databases';
   view.root.append(totalDiv);
   setTimeout(() => runQuery(), 0);
 }

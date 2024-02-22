@@ -351,16 +351,39 @@ export abstract class FunctionView extends DG.ViewBase {
    * @param funcCallIds FuncCalls to be compared
    */
   public async onComparisonLaunch(funcCallIds: string[]) {
-    const parentCall = grok.shell.v.parentCall;
-
     const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
 
+    const comparator = this.comparatorFunc;
+    if (comparator) {
+      const comparatorFunc: DG.Func = await grok.functions.eval(comparator);
+      const comparatorCall = await comparatorFunc.prepare(
+        {params: {'comparedRuns': fullFuncCalls}},
+      ).call();
+      const customView = comparatorCall.outputs.comparisonView;
+      grok.shell.addView(customView);
+
+      return;
+    }
+
+    const parentCall = grok.shell.v.parentCall;
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
+    const defaultView = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
       parentView: cardView,
       parentCall,
     });
-    grok.shell.addView(v);
+
+    grok.shell.addView(defaultView);
+    defaultView.defaultCustomize();
+
+    const compareCustomizer = this.compareCustomizer;
+    if (compareCustomizer) {
+      const compareCustomizerFunc: DG.Func = await grok.functions.eval(compareCustomizer);
+      await compareCustomizerFunc.prepare(
+        {params: {'defaultView': defaultView}},
+      ).call();
+
+      return;
+    }
   }
 
   protected historyBlock = null as null | HistoryPanel;
@@ -371,6 +394,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
+    let isHistoryBlockOpened = false;
 
     this.subs.push(
       newHistoryBlock.onRunChosen.subscribe(async (id) => {
@@ -380,10 +404,16 @@ export abstract class FunctionView extends DG.ViewBase {
       }),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
       grok.events.onCurrentViewChanged.subscribe(() => {
-        if (grok.shell.v === this) {
-          setTimeout(() => {
-            grok.shell.o = this.historyRoot;
-          });
+        if (grok.shell.v == this) {
+          if (isHistoryBlockOpened)
+            grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
+        } else {
+          const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
+          if (historyPanel) {
+            grok.shell.dockManager.close(historyPanel);
+            isHistoryBlockOpened = true;
+          } else
+            isHistoryBlockOpened = false;
         }
       }),
     );
@@ -392,7 +422,6 @@ export abstract class FunctionView extends DG.ViewBase {
     this.historyRoot.style.removeProperty('justify-content');
     this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
-    grok.shell.o = this.historyRoot;
     this.historyBlock = newHistoryBlock;
     return newHistoryBlock.root;
   }
@@ -404,13 +433,9 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
-      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
-      historyButton.classList.toggle('d4-current');
-      grok.shell.o = this.historyRoot;
+      if (!grok.shell.dockManager.findNode(this.historyRoot))
+        grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
     });
-
-    historyButton.classList.add('d4-toggle-button');
-    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
 
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
@@ -422,7 +447,7 @@ export abstract class FunctionView extends DG.ViewBase {
       if (!this.historyBlock || !this.lastCall) return;
 
       this.historyBlock.showEditDialog(this.lastCall);
-    }, 'Edit this run');
+    }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
@@ -757,6 +782,14 @@ export abstract class FunctionView extends DG.ViewBase {
   protected defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
+
+  protected get compareCustomizer(): string | null {
+    return this.func.options['compareCustomizer'] ?? null;
+  }
+
+  protected get comparatorFunc(): string | null {
+    return this.func.options['comparator'] ?? null;
+  }
 
   protected get runningOnInput() {
     return this.func.options['runOnInput'] === 'true';

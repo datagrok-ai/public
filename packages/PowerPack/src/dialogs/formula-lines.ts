@@ -319,6 +319,11 @@ class Preview {
       throw 'Host is not DataFrame or Viewer.';
 
     this.scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
+      yAxisType: src instanceof DG.Viewer ? src.props.yAxisType : 'linear',
+      xAxisType: src instanceof DG.Viewer ? src.props.xAxisType : 'linear',
+      invertXAxis: src instanceof DG.Viewer ? src.props.invertXAxis : false,
+      invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] != DG.VIEWER.LINE_CHART ?
+        src.props.invertYAxis : false,
       showDataframeFormulaLines: false,
       showViewerFormulaLines: true,
       showSizeSelector: false,

@@ -39,21 +39,24 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
       - name: Get changed files
-        uses: tj-actions/changed-files@v37
+        uses: tj-actions/changed-files@v42
         id: changed-files
         with:
           files: 'packages/**'
           separator: "\n"
           dir_names: true
+          safe_output: false
       - name: Generate matrix
         id: generate-matrix
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            CHANGED_PACKAGES="$(echo -e "${{ steps.changed-files.outputs.all_changed_files }}" | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo -e "${ALL_CHANGED_FILES}" | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
@@ -161,7 +164,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Get build info
@@ -217,7 +220,7 @@ jobs:
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
           df -h
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
@@ -254,7 +257,7 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: webpack cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
           key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
@@ -362,7 +365,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}.test-results
           path: |
@@ -475,7 +478,7 @@ jobs:
           header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
       - name: Send to Slack
@@ -514,7 +517,7 @@ jobs:
 #        with:
 #          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         with:
           path: ${{ steps.build-docker.outputs.image_tars }}

@@ -43,6 +43,7 @@ export const molecule3dFileExtensions: {
 
   // extra
   'cif': {binary: false},
+  'bcif': {binary: true},
   'ply': {binary: false},
   'ccp4': {binary: true},
   'cub': {binary: false},

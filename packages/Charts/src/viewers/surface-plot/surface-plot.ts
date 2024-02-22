@@ -151,6 +151,7 @@ export class SurfacePlot extends EChartViewer {
     }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
+    this.colsDict = {};
     const num = Array.from(this.dataFrame.columns);
     num.forEach((c) => {
       let type: string;
@@ -231,6 +232,10 @@ export class SurfacePlot extends EChartViewer {
       case 'wireframe':
         this.wireframe = newVal;
         break;
+      case 'table':
+        this.updateTable();
+        this.onTableAttached();
+        return;
       }
       this.render();
     }
@@ -271,6 +276,7 @@ export class SurfacePlot extends EChartViewer {
 
     if (filter) this.option.series[0].data = this.plotFilter().sort(this.sort);
     else this.option.series[0].data = this.rawData.sort(this.sort);
+    this.chart.resize();
     this.chart.setOption(this.option);
   }
 }

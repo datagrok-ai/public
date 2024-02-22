@@ -88,12 +88,22 @@ export function autostart() {
 
 }
 
+//name: CustomCustomizer
+//input: object params
+export function CustomCustomizer(params: {defaultView: DG.TableView}) {
+  const comparisonView = params.defaultView;
+  comparisonView.scatterPlot({
+    "xColumnName": "Initial temperature",
+    "yColumnName": "Time to cool",
+  });
+}
+
 //tags: init
 export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler('Model Catalog', 'modelCatalog', _package));
+  DG.ObjectHandler.register(new ModelHandler());
   
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;

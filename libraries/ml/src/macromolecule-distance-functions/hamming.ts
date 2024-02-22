@@ -1,7 +1,6 @@
 import {mmDistanceFunctionArgs, mmDistanceFunctionType} from './types';
 
 export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceFunctionType {
-
   function getDistanceF(): (a: string, b: string) => number {
     if (!args || !args.scoringMatrix || !args.alphabetIndexes)
       return (a: string, b: string) => a === b ? 0 : 1;
@@ -11,7 +10,7 @@ export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceF
     const matrix = args.scoringMatrix;
     //const matrixMap = new Map<string, Map<string, number>>();
     //const map2: any = {};
-    const minCharCode = Math.min(...Object.keys(indexes).map(k => k.charCodeAt(0))) + 1;
+    const minCharCode = Math.min(...Object.keys(indexes).map((k) => k.charCodeAt(0))) + 1;
 
     const scorringArray = new Float32Array((matrix.length + minCharCode) * (matrix.length + minCharCode));
     Object.entries(indexes).forEach(([key, index]) => {
@@ -26,7 +25,7 @@ export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceF
     });
     return (a: string, b: string) => {
       return scorringArray[a.charCodeAt(0) * matrix.length + b.charCodeAt(0)];
-    }
+    };
   }
   const distanceF = getDistanceF();
 
