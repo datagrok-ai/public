@@ -48,16 +48,18 @@ function getCellCoordinatesFromRow(df: DG.DataFrame, spec: OutputDataFromUI): Ce
 
     return df.columns.names().map((colName) => ({idx: idx, columnName: colName}));
   }
-  
-  // By value in column  
+
+  // By value in column
   const col = df.col(spec.value.colName);
 
   if (col === null) {
+    // eslint-disable-next-line max-len
     grok.shell.warning(`Output dataframe "${df.name}" doesn't contain the "${spec.value.colName}" column. The last row is analyzed.`);
     return df.columns.names().map((colName) => ({idx: rowCount - 1, columnName: colName}));
   }
 
   if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT)) {
+    // eslint-disable-next-line max-len
     grok.shell.warning(`Non-supported type of the "${spec.value.colName}" column: ${col.type}. Last row of the output dataframe "${df.name}" is analyzed.`);
     return df.columns.names().map((colName) => ({idx: rowCount - 1, columnName: colName}));
   }
@@ -80,7 +82,8 @@ function getCellCoordinatesFromRow(df: DG.DataFrame, spec: OutputDataFromUI): Ce
   return df.columns.names().map((colName) => ({idx: closestIdx, columnName: colName}));
 } // getCellCoordinatesFromRow
 
-function getExtendedOutputsSpecification(funcCall: DG.FuncCall, outputsSpecification: OutputDataFromUI[]): OutputInfo[] {
+function getExtendedOutputsSpecification(funcCall: DG.FuncCall,
+  outputsSpecification: OutputDataFromUI[]): OutputInfo[] {
   const extendedOutputsSpecification = [] as OutputInfo[];
 
   for (const spec of outputsSpecification) {
@@ -89,17 +92,19 @@ function getExtendedOutputsSpecification(funcCall: DG.FuncCall, outputsSpecifica
         prop: spec.prop,
         elements: getCellCoordinatesFromRow(funcCall.outputs[spec.prop.name], spec),
       });
-    } else
+    } else {
       extendedOutputsSpecification.push({
         prop: spec.prop,
         elements: [],
       });
+    }
   }
 
   return extendedOutputsSpecification;
 }
 
-function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: OutputInfo[], rowCount: number): DG.DataFrame {
+function getEmptyOutputTable(funcCall: DG.FuncCall,
+  outputsSpecification: OutputInfo[], rowCount: number): DG.DataFrame {
   const columns = [] as DG.Column[];
 
   for (const item of outputsSpecification) {
@@ -119,7 +124,7 @@ function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: Output
         for (const elem of item.elements) {
           columns.push(DG.Column.fromType(
               df.col(elem.columnName)?.type as DG.COLUMN_TYPE,
-              elem.columnName,              
+              elem.columnName,
               rowCount,
           ));
         }
@@ -180,11 +185,11 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 export function getInputOutputColumns(inputs: DG.Column[], outputs: DG.Column[]): DG.Column[] {
   outputs.forEach((outCol) => {
     inputs.forEach((inCol) => {
-      if (inCol.name === outCol.name) {        
+      if (inCol.name === outCol.name) {
         inCol.name = `${inCol.name} (input)`;
         outCol.name = `${outCol.name} (output)`;
       }
-    })
+    });
   });
 
   return inputs.concat(outputs);

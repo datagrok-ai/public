@@ -11,7 +11,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForRandomAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputDataFromUI, getOutput, SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
+import {OutputDataFromUI, getOutput,
+  SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -71,12 +72,12 @@ export class RandomAnalysis {
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 
     // columns with outputs
-    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();    
+    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
 
     // create table with the varied inputs
     const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);
 
-    funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`; 
+    funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
     return {funcEvalResults: funcEvalResults, funcCalls: this.funcCalls};
   }

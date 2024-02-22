@@ -14,21 +14,11 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
-
-/** Dock ratios */
-enum DOCK_RATIO {
-  COR_PLOT = 0.5,
-  PC_PLOT = 0.6,
-  GRAPH = PC_PLOT,
-  BAR_CHART = 0.2,
-}
-
-/** Size constants */
-const ROW_HEIGHT = 25;
 
 enum ANALYSIS_TYPE {
   GRID_ANALYSIS = 'Grid',
@@ -472,7 +462,10 @@ export class SensitivityAnalysisView {
 
     this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
     this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
-    this.helpMdNode = this.comparisonView.dockManager.dock(ui.markdown('TO ADD'), DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+    const helpMD = ui.markdown(STARTING_HELP);
+    helpMD.style.padding = '10px';
+    helpMD.style.overflow = 'auto';
+    this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
   }
 
   private closeOpenedViewers() {
@@ -713,8 +706,8 @@ export class SensitivityAnalysisView {
       const propConfig = this.store.inputs[propName];
       const name = propConfig.prop.caption ?? propConfig.prop.name;
       propConfig.const.input.setTooltip(`'${name}' value`);
-      (propConfig as SensitivityNumericStore).min.input.setTooltip(`Min values of '${name}'`);
-      (propConfig as SensitivityNumericStore).max.input.setTooltip(`Max values of '${name}'`);
+      (propConfig as SensitivityNumericStore).min.input.setTooltip(`Min value of '${name}'`);
+      (propConfig as SensitivityNumericStore).max.input.setTooltip(`Max value of '${name}'`);
       (propConfig as SensitivityNumericStore).lvl.input.setTooltip(`Number of samples along the axis '${name}'`);
     }
   }
