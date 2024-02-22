@@ -86,9 +86,19 @@ category('Admetox', () => {
   }, {timeout: 100000});
 
   test('Calculate.Benchmark column', async () => {
-    molecules = grok.data.demo.molecules(1000);
-    await DG.timeAsync('ADME/Tox post request', async () => await runAdmetox(molecules.toCsv(), getQueryParams(), 'false'));
-  }, {timeout: 1000000});
+    const runAdmetoxBenchmark = async (moleculesCount: number) => {
+        const molecules = grok.data.demo.molecules(moleculesCount);
+        const iterations = DG.Test.isInBenchmark ? 100 : 5;
+        const args = [molecules.toCsv(), getQueryParams(), 'false'];
+        return await runInLoop(iterations, runAdmetox, ...args);
+    };
+
+    const mol1k = await runAdmetoxBenchmark(1000);
+    const mol5k = await runAdmetoxBenchmark(5000);
+    const mol10k = await runAdmetoxBenchmark(10000);
+
+    return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
+}, {timeout: 10000000000});
 
   test('Calculate.Benchmark cell', async () => {
     const smiles = `smiles
@@ -98,7 +108,8 @@ category('Admetox', () => {
       .filter((model: any) => model.skip !== true)
       .map((model: any) => model.name);
     const args = [smiles, distributionModels, 'false'];
-    await runInLoop(iterations, runAdmetox, ...args);
+    const cellResults = await runInLoop(iterations, runAdmetox, ...args);
+    return DG.toDart({"results": cellResults});
   }, {timeout: 1000000});
 });
 
@@ -108,7 +119,7 @@ async function runInLoop(iterations: number, func: (...args: string[]) => Promis
     const startTime = performance.now();
     await func(...args);
     const endTime = performance.now();
-    results.push(endTime - startTime);
+    results[i] = (endTime - startTime) / 1000;
   }
   const sum = results.reduce((p, c) => p + c, 0);
   return {'Iterations' : results.length, 'Average time': sum / results.length,
