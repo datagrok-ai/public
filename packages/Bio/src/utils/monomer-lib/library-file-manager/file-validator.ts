@@ -41,7 +41,7 @@ export class MonomerLibFileValidator {
       isValid = this.validateMonomerSchema(monomer);
       if (!isValid) {
         console.warn(
-          `Bio: Monomer Library File Validator:\nfile${fileName}\n monomer violating JSON schema:`,
+          `Bio: Monomer Library File Validator:\nfile ${fileName}\n monomer violating JSON schema:`,
           monomer,
           '\nError reason: ',
           this.validateMonomerSchema.errors,
