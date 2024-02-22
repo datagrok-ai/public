@@ -88,6 +88,7 @@ category('Admetox', () => {
   test('Calculate.Benchmark column', async () => {
     const runAdmetoxBenchmark = async (moleculesCount: number) => {
         const molecules = grok.data.demo.molecules(moleculesCount);
+        molecules.columns.remove('logD');
         const iterations = DG.Test.isInBenchmark ? 100 : 5;
         const args = [molecules.toCsv(), getQueryParams(), 'false'];
         return await runInLoop(iterations, runAdmetox, ...args);
