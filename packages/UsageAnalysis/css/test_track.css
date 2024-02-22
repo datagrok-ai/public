@@ -15,6 +15,7 @@
   overflow-y: scroll;
   line-height: 1.5;
   user-select: text;
+  resize: vertical;
 }
 
 #tt-test-case-div > .d4-markup > ol {

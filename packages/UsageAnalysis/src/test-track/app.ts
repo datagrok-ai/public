@@ -48,6 +48,7 @@ export class TestTrack extends DG.ViewBase {
   uid: string = DG.User.current().id;
   start: string;
   nameDiv: HTMLDivElement = ui.divText('', {id: 'tt-name'});
+  testingName: string;
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -55,9 +56,11 @@ export class TestTrack extends DG.ViewBase {
     return TestTrack.instance;
   }
 
-  constructor() {
+  constructor(testingName?: string) {
     super();
     this.name = 'Test Track';
+    this.testingName = testingName ?? '';
+    // this.root.style.overflow = 'hidden';
     this.path = '/TestTrack';
     this.tree = ui.tree();
     this.tree.root.id = 'tt-tree';
@@ -82,7 +85,7 @@ export class TestTrack extends DG.ViewBase {
 
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
-    const nameP: Promise<string> = grok.functions.call('UsageAnalysis:TestingName',
+    const nameP: string | Promise<string> = this.testingName || grok.functions.call('UsageAnalysis:TestingName',
       {id: `${this.version}_${this.start}_${this.uid}`});
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
       {version: this.version, uid: this.uid, start: this.start});
@@ -139,7 +142,8 @@ export class TestTrack extends DG.ViewBase {
     ec.classList.add('tt-ribbon-button');
     const start = ui.button(getIcon('plus', {style: 'fas'}), () => this.showStartNewTestingDialog(), 'Start new testing');
     start.classList.add('tt-ribbon-button');
-    this.nameDiv.innerText = (await nameP) ?? NEW_TESTING;
+    this.testingName = (await nameP) ?? NEW_TESTING;
+    this.nameDiv.innerText = this.testingName;
     this.nameDiv.oncontextmenu = (e) => {
       this.showEditTestingNameDialog();
       e.preventDefault();
@@ -290,7 +294,7 @@ export class TestTrack extends DG.ViewBase {
       node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
   }
 
-  updateGroupStatus(group: DG.TreeViewGroup) {
+  updateGroupStatus(group: DG.TreeViewGroup): void {
     group.value.icon.innerHTML = '';
     const statuses = group.value.children.map((el: TestCase | Category) => el.status);
     if (statuses.includes(null)) {
@@ -303,13 +307,13 @@ export class TestTrack extends DG.ViewBase {
     group.value.icon.append(icon);
   }
 
-  updateGroupStatusRecursiveUp(group: DG.TreeViewGroup) {
+  updateGroupStatusRecursiveUp(group: DG.TreeViewGroup): void {
     if (group === this.tree) return;
     this.updateGroupStatus(group);
     this.updateGroupStatusRecursiveUp(group.parent as DG.TreeViewGroup);
   }
 
-  updateGroupStatusRecursiveDown(group: DG.TreeViewGroup) {
+  updateGroupStatusRecursiveDown(group: DG.TreeViewGroup): void {
     group.children.forEach((c) => {
       if (c.constructor === DG.TreeViewGroup)
         this.updateGroupStatusRecursiveDown(c);
@@ -369,9 +373,10 @@ export class TestTrack extends DG.ViewBase {
     dialog.add(input);
     dialog.onOK(() => {
       const start = Date.now().toString();
+      this.testingName = input.value;
       localStorage.setItem('TTState', start);
       grok.log.usage(`${this.version}_${start}_${this.uid}`,
-        {name: input.value, version: this.version, uid: this.uid, start: this.start}, `tt-new-testing`);
+        {name: this.testingName, version: this.version, uid: this.uid, start: this.start}, `tt-new-testing`);
       this.refresh();
     });
     dialog.show();
@@ -379,12 +384,13 @@ export class TestTrack extends DG.ViewBase {
 
   showEditTestingNameDialog(): void {
     const dialog = ui.dialog('Edit testing name');
-    const input = ui.stringInput('Name', this.nameDiv.innerText);
+    const input = ui.stringInput('Name', this.testingName);
     dialog.add(input);
     dialog.onOK(() => {
-      this.nameDiv.innerText = input.value;
+      this.testingName = input.value;
+      this.nameDiv.innerText = this.testingName;
       grok.log.usage(`${this.version}_${this.start}_${this.uid}`,
-        {name: input.value, version: this.version, uid: this.uid, start: this.start}, `tt-new-testing`);
+        {name: this.testingName, version: this.version, uid: this.uid, start: this.start}, `tt-new-testing`);
     });
     dialog.show();
   }
@@ -392,7 +398,7 @@ export class TestTrack extends DG.ViewBase {
   refresh(): void {
     const oldRoot = this.root;
     ui.setUpdateIndicator(oldRoot);
-    TestTrack.instance = new TestTrack();
+    TestTrack.instance = new TestTrack(this.testingName);
     TestTrack.getInstance().init().then(() => grok.shell.dockManager.close(oldRoot));
   }
 
