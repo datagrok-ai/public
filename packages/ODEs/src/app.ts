@@ -286,7 +286,13 @@ export class DiffStudio {
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
-    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => this.modelDiv);
+    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
+      setTimeout(() => {
+        this.modelDiv.style.height = '100%';
+        this.editorView!.dom.style.height = '100%';
+      }, 10);
+      return this.modelDiv;
+    });
     this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
@@ -796,13 +802,17 @@ export class DiffStudio {
       inputsByCategories.forEach((inputs, category) => {
         if (category !== TITLE.MISC) {
           form.append(ui.h2(category));
-          inputs.forEach((inp) => form.append(inp.root));
+          inputs.forEach((inp) => {
+            form.append(inp.root);
+          });
         }
       });
 
       if (inputsByCategories.get(TITLE.MISC)!.length > 0) {
         form.append(ui.h2(TITLE.MISC));
-        inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
+        inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+          form.append(inp.root);
+        });
       }
     }
 
