@@ -93,19 +93,15 @@
   margin: 4px 0 !important;
 }
 
-.tt-slack-link {
+.tt-link {
   font-size: 0;
 }
 
-.tt-slack-link:after {
-  content: 'SLACK';
+.tt-link:after {
+  content: attr(data-label);
   font-size: 13px;
   vertical-align: -15%;
 }
-
-/* .tt-ribbon-button:nth-child(1) {
-  margin-left: 2px !important;
-} */
 
 #tt-ribbon-save-button:enabled {
   animation-name: color;
@@ -137,4 +133,7 @@
   margin-right: 8px;
   margin-left: auto;
   color: var(--grey-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }

@@ -176,7 +176,9 @@ export class TestTrack extends DG.ViewBase {
           df.rows.removeAt(0);
         else if (df.rowCount === 4)
           df.rows.removeAt(3);
+        const n = Math.min(df.rowCount, 3 - node.value.history.children.length);
         for (const row of df.rows) {
+          if (row.idx === n) break;
           const icon = getStatusIcon(row.get('status'));
           node.value.history.append(icon);
           const user = await grok.dapi.users.find(row.get('uid'));
@@ -276,10 +278,10 @@ export class TestTrack extends DG.ViewBase {
             const status = i.toLowerCase() as Status;
             if (node.value.status === status) return;
             // menu.dart.childMenuContainer.remove();
-            if (status === FAILED || status === SKIPPED)
-              this.showNodeDialog(node, status);
-            else
+            if (status === PASSED)
               this.changeNodeStatus(node, status);
+            else
+              this.showNodeDialog(node, status);
           },
           {radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
         .endGroup()
@@ -325,7 +327,7 @@ export class TestTrack extends DG.ViewBase {
   showNodeDialog(node: DG.TreeViewNode, status: typeof FAILED | typeof SKIPPED, edit: boolean = false): void {
     const name = `${edit ? 'Edit' : 'Specify'} ${status === FAILED ? 'ticket' : 'skip reason'}`;
     const dialog = ui.dialog(name);
-    const input = ui.stringInput(status === FAILED ? 'Key' : 'Reason', node.value.reason?.innerText ?? '', () => {});
+    const input = ui.stringInput(status === FAILED ? 'Key' : 'Reason', edit ? node.value.reason?.innerText : '', () => {});
     input.nullable = false;
     dialog.add(input);
     dialog.onOK(() => edit ? this.changeNodeReason(node, input.value, status) : this.changeNodeStatus(node, status, input.value));
@@ -359,6 +361,7 @@ export class TestTrack extends DG.ViewBase {
       grok.shell.warning('Test case status was changed');
       return;
     }
+    if (reason === node.value.reason.innerText) return;
     node.value.reason.innerHTML = '';
     node.value.reason.append(this.getReason(reason));
     const params = {success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
@@ -404,18 +407,23 @@ export class TestTrack extends DG.ViewBase {
   }
 
   getReason(reason: string): HTMLElement {
-    const jira = reason.match(/GROK-\d{5}\b/);
-    if (jira)
-      return ui.link(reason, 'https://reddata.atlassian.net/browse/' + jira[0], reason);
-    const gh = reason.match(/#(\d{4})\b/);
-    if (gh)
-      return ui.link(reason, 'https://github.com/datagrok-ai/public/issues/' + gh[1], reason);
+    const jira = reason.match(/GROK-\d{1,6}\b/);
+    if (jira) return this.getReasonLink(reason, 'https://reddata.atlassian.net/browse/' + jira[0], jira[0]);
+    const gh1 = reason.match(/#(\d{3,5})\b/);
+    if (gh1) return this.getReasonLink(reason, 'https://github.com/datagrok-ai/public/issues/' + gh1[1], gh1[0]);
+    const gh2 = reason.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
+    if (gh2) return this.getReasonLink(reason, reason, `#${gh2[1]}`);
     const slack = reason.includes('datagrok.slack.com');
-    if (slack)
-      return ui.link(reason, reason, reason, 'tt-slack-link');
+    if (slack) return this.getReasonLink(reason, reason, 'SLACK');
     const el = ui.divText(reason);
     ui.tooltip.bind(el, () => reason);
     return el;
+  }
+
+  getReasonLink(reason: string, target: string, label: string): HTMLAnchorElement {
+    const link = ui.link(reason, target, reason, 'tt-link');
+    link.setAttribute('data-label', label);
+    return link;
   }
 
   setContextPanelPreview(el: HTMLAnchorElement): void {
