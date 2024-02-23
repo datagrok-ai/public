@@ -68,8 +68,6 @@ export async function _testSearchSubstructureAllParameters(foo: any): Promise<vo
   await foo();
 }
 
-export const malformedSmiles = 'COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc3';
-
 export const malformedMolblock = `
 Accelrys05311914342D 1   1.00000     0.00000     0
 

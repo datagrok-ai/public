@@ -62,7 +62,7 @@ import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {malformedDataWarning} from './utils/malformed-data-utils';
 import {DimReductionBaseEditor} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
 import {getEmbeddingColsNames}
@@ -927,7 +927,7 @@ export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Not
 //description: Molecule
 //input: grid_cell cell
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
-  const sketcher = new Sketcher();
+  const sketcher = new Sketcher(undefined, validateMolecule);
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   let molecule = cell.cell.value;
   if (unit === DG.chem.Notation.Smiles) {
@@ -1438,6 +1438,26 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
 //meta.role: canonicalizer
 export function canonicalize(molecule: string): string {
   return convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+}
+
+//name: validateMolecule
+//input: string s
+//output: object result
+export function validateMolecule(s: string): string | null {
+  let logHandle: RDLog | null = null;
+  let mol: RDMol | null = null;;
+  try {
+    logHandle = _rdKitModule.set_log_capture("rdApp.error");
+    mol = getMolSafe(s, {}, _rdKitModule, true).mol;
+    let logBuffer = logHandle?.get_buffer();
+    logHandle?.clear_buffer();
+    if (!mol && !logBuffer)
+      logBuffer = 'unknown error';
+    return logBuffer ?? null;
+  } finally {
+    logHandle?.delete();
+    mol?.delete();
+  }
 }
 
 export {getMCS};
