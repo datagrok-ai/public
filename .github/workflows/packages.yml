@@ -360,7 +360,7 @@ jobs:
         run: |
           if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
             key="$TEST_TEST_DEV_KEY"
-          else if [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
             key="$DEV_TEST_DEV_KEY"
           else
             key='admin'
