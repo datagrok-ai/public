@@ -238,8 +238,15 @@ jobs:
 
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] ||
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-            echo 'Use dev stand for tests'
-            apiUrl='https://dev.datagrok.ai/api'
+            if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
+              echo 'Use test stand for tests'
+              apiUrl='https://test.datagrok.ai/api'
+              alias=test
+            else
+              echo 'Use dev stand for tests'
+              apiUrl='https://dev.datagrok.ai/api'
+              alias=dev
+            fi
           else
             profiles='--profile datagrok --profile db'
             echo "Check if Grok Connect is required for the package"
@@ -287,8 +294,10 @@ jobs:
             echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
             df -h
             apiUrl='http://127.0.0.1:8080/api'
+            alias=${HOST}
           fi
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
+          echo "alias=$alias" >> $GITHUB_OUTPUT
       - name: js api dependency for unpublished dependencies
         if: ${{ matrix.unpublished_deps != '' }}
         run: |
@@ -347,16 +356,16 @@ jobs:
         id: grok-config
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
+          TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
         run: |
-          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            key='admin'
-            alias="${HOST}"
+          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"
+          else if [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"
           else
-            key=$DEV_TEST_DEV_KEY
-            alias=dev
+            key='admin'
           fi
-          echo "alias=$alias" >> $GITHUB_OUTPUT
-          grok config add --default --alias ${alias} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
+          grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
         run: |
@@ -367,16 +376,16 @@ jobs:
               cd node_modules/$dep
               count=0
               retries=5
-              echo "Publishing $dep to ${{ steps.grok-config.outputs.alias }}..."
-              until grok publish ${{ steps.grok-config.outputs.alias }}; do
+              echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
+              until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
                 if [ $count -lt "$retries" ]; then
-                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.grok-config.outputs.alias }}' for $dep in $wait seconds..."
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for $dep in $wait seconds..."
                   sleep $wait
                 else
-                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.grok-config.outputs.alias }}' for $dep."
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for $dep."
                   exit $exit
                 fi
               done
@@ -389,7 +398,7 @@ jobs:
         run: |
           count=0
           retries=5
-          until grok publish ${{ steps.grok-config.outputs.alias }}; do
+          until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
             exit=$?
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
               docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
@@ -397,10 +406,10 @@ jobs:
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
-              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.grok-config.outputs.alias }}' in $wait seconds..."
+              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' in $wait seconds..."
               sleep $wait
             else
-              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.grok-config.outputs.alias }}'."
+              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}'."
               exit $exit
             fi
           done
@@ -409,12 +418,15 @@ jobs:
         if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
+          TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
         timeout-minutes: 5
         run: |
-          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            key='admin'
+          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"
+          else if [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"
           else
-            key=$DEV_TEST_DEV_KEY
+            key='admin'
           fi
           token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
           until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
@@ -428,7 +440,7 @@ jobs:
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 30
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.grok-config.outputs.alias }}
+        run: npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }}
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
