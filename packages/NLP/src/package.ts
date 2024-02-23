@@ -6,8 +6,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemCash, getMarkedString, setStemmingCash,
-  getClosest, getEmbeddings} from './stemming-tools/stemming-tools';
+import {getMarkedString, setStemmingCash, getClosest} from './stemming-tools/stemming-tools';
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER} from './stemming-tools/constants';
 import '../css/stemming-search.css';
