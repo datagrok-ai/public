@@ -102,10 +102,10 @@ jobs:
                 fi
                 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-                  job_test_env+=',CVM'
+                  job_test_env+=',Compute'
                 fi
                 if [ -d "${DIR}/dockerfiles" ]; then
-                  job_test_env+=',Dockers'
+                  job_test_env+=',Spawner'
                 fi
                 if [[ "${unpublished_deps}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" != *"tests"* ]]; then
                   job_test_env+=' latest version'
@@ -235,51 +235,60 @@ jobs:
         run: |
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
-          profiles='--profile datagrok --profile db'
-          echo "Check if Grok Connect is required for the package"
-          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
-            profiles+=' --profile grok_connect'
-          fi
-          echo "Check if CVM is required for the package"
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "cvmtests" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "samples" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
-            echo "Add Scripting as dependency for package ${{ matrix.package }}"
-            profiles+=' --profile scripting'
-          fi
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] ||
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
-            profiles+=' --profile grok_compute'
-          fi
-          echo "Check if Grok Spawner is required for the package"
-          if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
-            profiles+=' --profile grok_spawner'
-          fi
-          echo "Run datagrok stand with profiles ${profiles}"
-          docker system prune -af --volumes
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='latest'
+            echo 'Use dev stand for tests'
+            apiUrl='https://dev.datagrok.ai/api'
           else
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
+            profiles='--profile datagrok --profile db'
+            echo "Check if Grok Connect is required for the package"
+            if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
+              profiles+=' --profile grok_connect'
+            fi
+            echo "Check if CVM is required for the package"
+            if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "cvmtests" ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "samples" ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
+              echo "Add Scripting as dependency for package ${{ matrix.package }}"
+              profiles+=' --profile scripting'
+            fi
+            if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
+              echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
+              profiles+=' --profile grok_compute'
+            fi
+            echo "Check if Grok Spawner is required for the package"
+            if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
+              profiles+=' --profile grok_spawner'
+            fi
+            echo "Run datagrok stand with profiles ${profiles}"
+            docker system prune -af --volumes
+            if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
+              DATAGROK_VERSION='latest'
+            else
+              DATAGROK_VERSION='bleeding-edge'
+              export GROK_SPAWNER_VERSION='bleeding-edge'
+              export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
+            fi
+            export DATAGROK_VERSION
+            docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+            echo "Set docker_sha"
+            docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
+            echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+            echo "Notify about version used for tests"
+            echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+            df -h
+            apiUrl='http://127.0.0.1:8080/api'
           fi
-          export DATAGROK_VERSION
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
-          echo "Set docker_sha"
-          docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
-          echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
-          echo "Notify about version used for tests"
-          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
-          df -h
+          echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
       - name: js api dependency for unpublished dependencies
         if: ${{ matrix.unpublished_deps != '' }}
         run: |
@@ -323,19 +332,31 @@ jobs:
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
         run: |
-          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
+          until .github/scripts/check-output.sh "curl -s ${{ steps.docker_name_ver.outputs.apiUrl }}/info/server" '"Http Server"'
           do
             sleep 1
-            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            fi
             echo -e "\nRetrying..."
           done
-          curl -s http://127.0.0.1:8080/api/info/server
-          curl -s http://127.0.0.1:8080/api/admin/health
+          curl -s ${{ steps.docker_name_ver.outputs.apiUrl }}/info/server
+          curl -s ${{ steps.docker_name_ver.outputs.apiUrl }}/admin/health
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
+        id: grok-config
+        env:
+          DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
         run: |
-          grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
-          cat /home/runner/.grok/config.yaml
+          if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            key='admin'
+            alias="${HOST}"
+          else
+            key=$DEV_TEST_DEV_KEY
+            alias=dev
+          fi
+          echo "alias=$alias" >> $GITHUB_OUTPUT
+          grok config add --default --alias ${alias} --server '${{ steps.docker_name_ver.outputs.apiUrl }}' --key "$key"
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
         run: |
@@ -346,16 +367,16 @@ jobs:
               cd node_modules/$dep
               count=0
               retries=5
-              echo "Publishing $dep to ${HOST}..."
-              until grok publish ${HOST}; do
+              echo "Publishing $dep to ${{ steps.grok-config.outputs.alias }}..."
+              until grok publish ${{ steps.grok-config.outputs.alias }}; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
                 if [ $count -lt "$retries" ]; then
-                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' for $dep in $wait seconds..."
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.grok-config.outputs.alias }}' for $dep in $wait seconds..."
                   sleep $wait
                 else
-                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}' for $dep."
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.grok-config.outputs.alias }}' for $dep."
                   exit $exit
                 fi
               done
@@ -368,42 +389,46 @@ jobs:
         run: |
           count=0
           retries=5
-          until grok publish ${HOST}; do
+          until grok publish ${{ steps.grok-config.outputs.alias }}; do
             exit=$?
-            docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            fi
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
-              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.grok-config.outputs.alias }}' in $wait seconds..."
               sleep $wait
             else
-              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.grok-config.outputs.alias }}'."
               exit $exit
             fi
           done
         working-directory: packages/${{ matrix.package }}
       - name: Wait for published docker to become available
         if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
+        env:
+          DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
         timeout-minutes: 5
         run: |
-          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+          if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            key='admin'
+          else
+            key=$DEV_TEST_DEV_KEY
+          fi
+          token=$(curl -s -X POST ${{ steps.docker_name_ver.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.docker_name_ver.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
           do
             sleep 1
             echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
             echo -e "\nRetrying..."
           done
-
-          echo -e "\nGet admin session token...\n"
-          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
-          echo -e "\nGet ALL containers from datlas API...\n"
-          curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 30
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --csv
+        run: npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.grok-config.outputs.alias }}
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
@@ -419,7 +444,11 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
-          docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+          if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+          else
+            echo 'Check dev logs'
+          fi
           echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
