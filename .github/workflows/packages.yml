@@ -237,7 +237,9 @@ jobs:
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
 
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] ||
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] ||
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "ketchersketcher" ]] ||
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"ketchersketcher"* ]]; then
             if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
               echo 'Use test stand for tests'
               apiUrl='https://test.datagrok.ai/api'
