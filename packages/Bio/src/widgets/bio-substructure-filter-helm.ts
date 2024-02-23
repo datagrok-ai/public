@@ -110,7 +110,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
 
   applyProps() {
     if (!this.helmEditor) return; // helmEditor is not created, the filter is not in dom yet
-    this.helmEditor.editor.setHelm(this.props.substructure);
+      this.updateFilterPanel(this.props.substructure);
   }
 
   get filterPanel() {
