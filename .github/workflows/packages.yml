@@ -332,23 +332,23 @@ jobs:
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
         run: |
-          until .github/scripts/check-output.sh "curl -s ${{ steps.docker_name_ver.outputs.apiUrl }}/info/server" '"Http Server"'
+          until .github/scripts/check-output.sh "curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server" '"Http Server"'
           do
             sleep 1
-            if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
               docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             fi
             echo -e "\nRetrying..."
           done
-          curl -s ${{ steps.docker_name_ver.outputs.apiUrl }}/info/server
-          curl -s ${{ steps.docker_name_ver.outputs.apiUrl }}/admin/health
+          curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
+          curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
         id: grok-config
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
         run: |
-          if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             key='admin'
             alias="${HOST}"
           else
@@ -356,7 +356,7 @@ jobs:
             alias=dev
           fi
           echo "alias=$alias" >> $GITHUB_OUTPUT
-          grok config add --default --alias ${alias} --server '${{ steps.docker_name_ver.outputs.apiUrl }}' --key "$key"
+          grok config add --default --alias ${alias} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
         run: |
@@ -391,7 +391,7 @@ jobs:
           retries=5
           until grok publish ${{ steps.grok-config.outputs.alias }}; do
             exit=$?
-            if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
               docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             fi
             wait=$((2 ** count))
@@ -411,13 +411,13 @@ jobs:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
         timeout-minutes: 5
         run: |
-          if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             key='admin'
           else
             key=$DEV_TEST_DEV_KEY
           fi
-          token=$(curl -s -X POST ${{ steps.docker_name_ver.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.docker_name_ver.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
           do
             sleep 1
             echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
@@ -444,7 +444,7 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
-          if [[ "${{ steps.docker_name_ver.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
           else
             echo 'Check dev logs'
