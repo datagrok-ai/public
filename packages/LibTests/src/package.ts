@@ -130,6 +130,14 @@ export function MockHandler1(params: any) {
   return;
 }
 
+//name: MockPopup1
+//input: double a
+//input: double b
+//input: double c
+//output: double res
+export function MockPopup1(a: number, b: number, c: number) {
+  return a * b * c;
+}
 
 //name: TestFn1
 //input: double a

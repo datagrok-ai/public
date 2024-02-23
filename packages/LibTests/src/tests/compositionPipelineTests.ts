@@ -101,47 +101,270 @@ category('CompositionPipeline single config', async () => {
 });
 
 category('CompositionPipeline composition config', async () => {
-  test('2 simple configs', async () => {
-    const config1: PipelineConfiguration = {
-      id: 'testPipeline1',
-      nqName: 'LibTests:MockWrapper',
-      steps: [
-        {
-          id: 'step1',
-          nqName: 'LibTests:AddMock',
-        },
-        {
-          id: 'step2',
-          nqName: 'LibTests:MulMock',
-        },
-      ],
-      links: [{
-        id: 'link1',
-        from: ['step1', 'a'],
-        to: ['step2', 'a'],
-      }]
-    };
-    const config2: PipelineConfiguration = {
-      id: 'testPipeline2',
-      nqName: 'LibTests:MockWrapper',
-      steps: [
-        {
-          id: 'step1',
-          nqName: 'LibTests:TestFn1',
-        },
-        {
-          id: 'step2',
-          nqName: 'LibTests:TestFn2',
-        },
-      ],
-      links: [{
-        id: 'link1',
-        from: ['step1', 'a'],
-        to: ['step2', 'a'],
-      }]
+  const sconfig1: PipelineConfiguration = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }]
+  };
+  const sconfig2: PipelineConfiguration = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn1',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestFn2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }]
 
-    };
-    const composedConfig = CompositionPipeline.compose([config1], config2);
+  };
+
+  const sconfig3: PipelineConfiguration = {
+    id: 'testPipeline3',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn1',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestFn2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }]
+
+  };
+
+  const conf1: PipelineConfiguration = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn1',
+        states: [{id: 'state11'}, {id: 'state12'}],
+        actions: [{
+          id: 'action1',
+          from: [['step1', 'a'], ['step1', 'b']],
+          to: ['step2', 'b'],
+          handler: 'LibTests:MockHandler1',
+          position: 'buttons',
+        }],
+        popups: [{
+          id: 'popup1',
+          nqName: 'LibTests:MockPopup1',
+          position: 'menu',
+          states: [{id: 'state111'}, {id: 'state112'}],
+          actions: [{
+            id: 'action11',
+            from: [['step1', 'popup1', 'a'], ['step1', 'popup1', 'b']],
+            to: ['step2', 'b'],
+            handler: 'LibTests:MockHandler1',
+            position: 'buttons',
+          }],
+        }],
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestFn2',
+      },
+    ],
+    states: [{id: 'state1'}, {id: 'state2'}],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }],
+    hooks: {
+      beforeFuncCallReady: [
+        {
+          id: 'hook1',
+          handler: 'LibTests:MockHook1',
+          from: ['step2', 'a'],
+          to: ['step2', 'b'],
+        },
+      ],
+    },
+  };
+
+  const conf2: PipelineConfiguration = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn3',
+        states: [{id: 'state11'}, {id: 'state12'}],
+        actions: [{
+          id: 'action1',
+          from: [['step1', 'a'], ['step1', 'b']],
+          to: ['step2', 'b'],
+          handler: 'LibTests:MockHandler1',
+          position: 'buttons',
+        }],
+        popups: [{
+          id: 'popup1',
+          nqName: 'LibTests:MockPopup1',
+          position: 'menu',
+          states: [{id: 'state111'}, {id: 'state112'}],
+          actions: [{
+            id: 'action11',
+            from: [['step1', 'popup1', 'a'], ['step1', 'popup1', 'b']],
+            to: ['step2', 'b'],
+            handler: 'LibTests:MockHandler1',
+            position: 'buttons',
+          }],
+        }],
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestFn4',
+      },
+    ],
+    states: [{id: 'state1'}, {id: 'state2'}],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }],
+    hooks: {
+      beforeFuncCallReady: [
+        {
+          id: 'hook1',
+          handler: 'LibTests:MockHook1',
+          from: ['step2', 'a'],
+          to: ['step2', 'b'],
+        },
+      ],
+    },
+  };
+
+  const conf3: PipelineConfiguration = {
+    id: 'testPipeline3',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn5',
+        states: [{id: 'state11'}, {id: 'state12'}],
+        actions: [{
+          id: 'action1',
+          from: [['step1', 'a'], ['step1', 'b']],
+          to: ['step2', 'b'],
+          handler: 'LibTests:MockHandler1',
+          position: 'buttons',
+        }],
+        popups: [{
+          id: 'popup1',
+          nqName: 'LibTests:MockPopup1',
+          position: 'menu',
+          states: [{id: 'state111'}, {id: 'state112'}],
+          actions: [{
+            id: 'action11',
+            from: [['step1', 'popup1', 'a'], ['step1', 'popup1', 'b']],
+            to: ['step2', 'b'],
+            handler: 'LibTests:MockHandler1',
+            position: 'buttons',
+          }],
+        }],
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestFn6',
+      },
+    ],
+    states: [{id: 'state1'}, {id: 'state2'}],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }],
+    hooks: {
+      beforeFuncCallReady: [
+        {
+          id: 'hook1',
+          handler: 'LibTests:MockHook1',
+          from: ['step2', 'a'],
+          to: ['step2', 'b'],
+        },
+      ],
+    },
+  };
+
+  test('2 simple configs', async () => {
+    const composedConfig = CompositionPipeline.compose([sconfig1], sconfig2);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 simple configs', async () => {
+    const composedConfig = CompositionPipeline.compose([sconfig1, sconfig2], sconfig3);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 simple nested composition',  async () => {
+    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([sconfig1], sconfig2)], sconfig3);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('2 configs', async () => {
+    const composedConfig = CompositionPipeline.compose([conf1], conf2);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 configs', async () => {
+    const composedConfig = CompositionPipeline.compose([conf1, conf2], conf3);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 nested composition',  async () => {
+    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], conf2)], conf3);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();

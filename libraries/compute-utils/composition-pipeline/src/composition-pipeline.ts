@@ -167,20 +167,16 @@ export function cloneConfig<T>(config: T): T {
 
 export type PathKey = string;
 
-export function pathToKey(path: ItemPath): PathKey {
-  return path.filter(x => x).join('/');
+export function pathJoin(path: ItemPath, ...restPaths: ItemPath[]): ItemPath {
+  return path.concat(...restPaths);
 }
 
-export function pathItemToKey(path: ItemPath, item: { id: ItemName }): string {
-  return [...path, item.id].filter(x => x).join('/');
+export function pathToKey(path: ItemPath): PathKey {
+  return path.filter((x) => x).join('/');
 }
 
 export function keyToPath(key: PathKey) {
   return key.split('/');
-}
-
-export function keysJoin(...keys: PathKey[]) {
-  return keys.join('/');
 }
 
 export function pathsToKeys(paths: ItemPath | ItemPath[]): PathKey[] {
@@ -204,7 +200,7 @@ export function traverseConfigPipelines<T>(
     path: ItemPath,
   ) => T,
 ) {
-  const startNode = isCompositionConfig(graph) ? graph.config : graph;
+  const startNode = graph.config;
   const startPath = [] as ItemPath;
   const stk: [{
     node: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration,
@@ -215,10 +211,9 @@ export function traverseConfigPipelines<T>(
     path: startPath,
   }];
 
-  if (isCompositionConfig(graph)) {
-    for (const nextNode of Object.values(graph.nestedPipelines ?? {}))
-      stk.push({node: nextNode, path: [graph.id], mergeConfig: graph});
-  }
+  for (const nextNode of Object.values(graph.nestedPipelines ?? {}))
+    stk.push({node: nextNode, path: [graph.id], mergeConfig: graph.config});
+
   while (stk.length) {
     const {node, path, mergeConfig} = stk.pop()!;
     if (isCompositionConfig(node) && mergeNodeHandler)
@@ -261,7 +256,7 @@ export class NodeState {
   constructor(
     public conf: NodeConf,
     public type: NodeConfTypes,
-    public pipelinePrefix: PathKey,
+    public pipelinePath: ItemPath,
   ) {
     if (type === 'step' || type === 'popup') {
       const states = (conf as PipelineStepConfiguration | PipelinePopupConfiguration).states;
@@ -270,7 +265,7 @@ export class NodeState {
     }
     if (type = 'action') {
       const link = conf as ActionConfiguraion;
-      this.controllerConfig = new ControllerConfig(pipelinePrefix, link.from, link.to);
+      this.controllerConfig = new ControllerConfig(pipelinePath, link.from, link.to);
     }
   }
 }
@@ -281,9 +276,9 @@ export class LinkState {
 
   constructor(
     public link: PipelineLinkConfiguration,
-    public pipelinePrefix: PathKey,
+    public pipelinePath: ItemPath,
   ) {
-    this.controllerConfig = new ControllerConfig(pipelinePrefix, link.from, link.to);
+    this.controllerConfig = new ControllerConfig(pipelinePath, link.from, link.to);
   }
 }
 
@@ -292,7 +287,7 @@ export class ControllerConfig {
   public to?: Set<PathKey>;
 
   constructor(
-    public pipelinePrefix: PathKey,
+    public pipelinePath: ItemPath,
     from?: ItemPath | ItemPath[],
     to?: ItemPath | ItemPath[],
   ) {
@@ -376,7 +371,7 @@ export interface StepSpec {
 
 export interface HookSpec {
   hooks: PipelineHooks;
-  pipelinePrefix: string;
+  pipelinePath: ItemPath;
 }
 
 
@@ -385,50 +380,50 @@ export class RuntimeControllerImpl implements RuntimeController {
   }
 
   enableLink(path: ItemPath): void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setLinkState(fullPath, true);
   }
 
   disableLink(path: ItemPath): void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setLinkState(fullPath, false);
   }
 
   enableStep(path: ItemPath): void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setStepState(fullPath, true);
   }
 
   disableStep(path: ItemPath): void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setStepState(fullPath, false);
   }
 
   getState<T = any>(path: ItemPath): T | void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkInput(fullPath)) {
-      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePrefix}`);
+      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePath}`);
       return;
     }
     return this.rt.getState(fullPath);
   }
 
   updateState<T>(path: ItemPath, value: T, inputState?: 'disabled' | 'restricted' | 'user input'): void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkOutput(fullPath)) {
-      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePrefix}`);
+      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePath}`);
       return;
     }
     return this.rt.updateState(fullPath, value, inputState);
   }
 
   getView(path: ItemPath): RichFunctionView | void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.getView(fullPath);
   }
 
   goToStep(path: ItemPath): void {
-    const fullPath = [...this.config.pipelinePrefix, ...path];
+    const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.goToStep(fullPath);
   }
 
@@ -494,11 +489,11 @@ export class CompositionPipelineView extends PipelineView {
   }
 
   private async execHooks(category: keyof PipelineHooks, additionalParams: Record<string, any> = {}) {
-    for (const {hooks, pipelinePrefix} of this.hooks!) {
+    for (const {hooks, pipelinePath} of this.hooks!) {
       const items = hooks[category];
       for (const item of items ?? []) {
         const handler = item.handler!;
-        const ctrlConf = new ControllerConfig(pipelinePrefix, item.from, item.to);
+        const ctrlConf = new ControllerConfig(pipelinePath, item.from, item.to);
         const controller = new RuntimeControllerImpl(ctrlConf, this.rt!);
         const params = {...additionalParams, controller};
         await callHandler(handler, params);
@@ -584,27 +579,8 @@ export class CompositionPipeline {
     }
   }
 
-  private getPipelineHooks(node: PipelineConfiguration, toRemove: Set<string>) {
-    node.hooks = node.hooks ?? {};
-    const pipelinePrefix = node.id;
-    const path = keyToPath(pipelinePrefix);
-    for (const [type, hooks] of Object.entries(node.hooks ?? {})) {
-      const filteredHooks = [];
-      for (const hook of hooks ?? []) {
-        const fullPath = [...path, type, node.id];
-        const id = pathToKey(fullPath);
-        if (toRemove.has(id))
-          continue;
-
-        this.updateFullPathLink(hook, path);
-        filteredHooks.push(hook);
-      }
-      node.hooks[type as keyof PipelineHooks] = filteredHooks;
-    }
-    return node.hooks;
-  }
-
   private processConfig() {
+    // process merge config
     const {toRemove, toAdd} = traverseConfigPipelines(
       this.config,
       (acc) => acc,
@@ -615,7 +591,23 @@ export class CompositionPipeline {
       (acc, mergeNode, path) => {
         this.processMergeConfig(mergeNode, path, acc.toRemove, acc.toAdd);
         return acc;
-      }
+      },
+    );
+
+    // process hoooks
+    this.hooks = traverseConfigPipelines(
+      this.config,
+      (acc, node, path) => {
+        const hooks = this.getPipelineHooks(node, toRemove, path);
+        acc.unshift({hooks, pipelinePath: pathJoin(path, [node.id])});
+        return acc;
+      },
+      [] as HookSpec[],
+      (acc, node, path) => {
+        const hooks = this.getPipelineHooks(node, toRemove, path);
+        acc.unshift({hooks, pipelinePath: pathJoin(path, [node.id])});
+        return acc;
+      },
     );
 
     // process node items
@@ -630,22 +622,6 @@ export class CompositionPipeline {
         this.processPipelineConfig(node, path, toRemove, toAdd);
         return acc;
       },
-    );
-
-    // process hoooks
-    this.hooks = traverseConfigPipelines(
-      this.config,
-      (acc, node, path) => {
-        const hooks = this.getPipelineHooks(node, toRemove);
-        acc.unshift({hooks, pipelinePrefix: node.id});
-        return acc;
-      },
-      [] as HookSpec[],
-      (acc, node, path) => {
-        const hooks = this.getPipelineHooks(node, toRemove);
-        acc.unshift({hooks, pipelinePrefix: node.id});
-        return acc;
-      }
     );
 
     // get steps sequence
@@ -663,20 +639,41 @@ export class CompositionPipeline {
     );
   }
 
-  private processPipelineConfig(pipelineConf: PipelineConfiguration, path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
-    const pipelinePrefix = pathItemToKey(path, pipelineConf);
+  // deal with hooks
+
+  private getPipelineHooks(node: PipelineConfiguration, toRemove: Set<string>, path: ItemPath) {
+    node.hooks = node.hooks ?? {};
+    for (const [type, hooks] of Object.entries(node.hooks ?? {})) {
+      const filteredHooks = [];
+      for (const hook of hooks ?? []) {
+        const hookPath = this.updateFullPathLink(hook, pathJoin(path, [node.id]));
+        const id = pathToKey(hookPath);
+        if (toRemove.has(id))
+          continue;
+
+        filteredHooks.push(hook);
+      }
+      node.hooks[type as keyof PipelineHooks] = filteredHooks;
+    }
+    return node.hooks;
+  }
+
+  // pipeline config processing
+
+  private processPipelineConfig(pipelineConf: PipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+    const subPath = this.updateFullPathNode(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
-    for (const stepConf of this.processSteps(pipelineConf.steps, pipelinePrefix, pipelinePrefix, toRemove, toAdd)) {
+    for (const stepConf of this.processSteps(pipelineConf.steps, subPath, toRemove, toAdd)) {
       const sKey = stepConf.id;
       const popups: PipelinePopupConfiguration[] = [];
       for (const popupConf of this.getAllConfItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
-        const pPopupConf = this.processNodeConfig(popupConf, sKey, pipelinePrefix, toRemove, 'action');
+        const pPopupConf = this.processNodeConfig(popupConf, keyToPath(sKey), subPath, toRemove, 'action');
         if (!pPopupConf)
           continue;
 
         const actions: ActionConfiguraion[] = [];
         for (const actionConf of this.getAllConfItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
-          const pActionConf = this.processActionNodeConfig(actionConf, pPopupConf.id, pipelinePrefix, toRemove);
+          const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(pPopupConf.id), subPath, toRemove);
           if (!pActionConf)
             continue;
 
@@ -687,7 +684,7 @@ export class CompositionPipeline {
       }
       const actions: ActionConfiguraion[] = [];
       for (const actionConf of this.getAllConfItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
-        const pActionConf = this.processActionNodeConfig(actionConf, sKey, pipelinePrefix, toRemove);
+        const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(sKey), subPath, toRemove);
         if (!pActionConf)
           continue;
 
@@ -699,7 +696,7 @@ export class CompositionPipeline {
     }
     const links: PipelineLinkConfiguration[] = [];
     for (const link of pipelineConf.links ?? []) {
-      const plink = this.processLinkConfig(link, pipelinePrefix, toRemove);
+      const plink = this.processLinkConfig(link, subPath, toRemove);
       if (!plink)
         continue;
 
@@ -709,12 +706,12 @@ export class CompositionPipeline {
     pipelineConf.links = links;
   }
 
-  private processSteps(data: PipelineStepConfiguration[], prefix: string, pipelinePrefix: PathKey, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+  private processSteps(data: PipelineStepConfiguration[], pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const nData: PipelineStepConfiguration[] = data.flatMap((conf) => {
-      const pconf = this.processNodeConfig<PipelineStepConfiguration>(conf, prefix, pipelinePrefix, toRemove, 'step');
+      const pconf = this.processNodeConfig<PipelineStepConfiguration>(conf, pipelinePath, pipelinePath, toRemove, 'step');
       // TODO: fix prev step suffix
       const addConfs = (toAdd.get(conf.id)?.step ?? [])
-        .map((step) => this.processNodeConfig(step, prefix, pipelinePrefix, toRemove, 'step'))
+        .map((step) => this.processNodeConfig(step, pipelinePath, pipelinePath, toRemove, 'step'))
         .filter((x) => x) as PipelineStepConfiguration[];
       return [...(pconf ? [pconf] : []), ...addConfs];
     });
@@ -728,68 +725,38 @@ export class CompositionPipeline {
     return [...data, ...moreItems] as T[];
   }
 
-  private processMergeConfig(mergeConf: PipelineCompositionConfiguration,
-    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>,
-  ) {
-    const prefix = pathItemToKey(path, mergeConf);
-    for (const item of mergeConf.itemsToRemove ?? []) {
-      const path = keysJoin(prefix, pathToKey(item));
-      toRemove.add(path);
-    }
-    delete mergeConf.itemsToRemove;
-    const {stepsToAdd, popupsToAdd, actionsToAdd} = mergeConf;
-    this.processMergeNodeList(stepsToAdd ?? [], prefix, toAdd, 'step');
-    this.processMergeNodeList(popupsToAdd ?? [], prefix, toAdd, 'popup');
-    this.processMergeNodeList(actionsToAdd ?? [], prefix, toAdd, 'action');
-    delete mergeConf.stepsToAdd;
-    delete mergeConf.popupsToAdd;
-    delete mergeConf.actionsToAdd;
-  }
 
-  private processMergeNodeList(itemsToAdd: [AddNodeConf, ItemPath?][], prefix: string,
-    toAdd: Map<string, ItemsToMerge>, type: AddNodeConfTypes,
-  ) {
-    for (const [item, path] of itemsToAdd) {
-      const tagetKey = keysJoin(prefix, pathToKey(path ?? []));
-      const addConf = toAdd.get(tagetKey) ?? {};
-      const addArray = addConf[type] ?? [];
-      addArray.unshift(item as any);
-      addConf[type] = addArray as any;
-      toAdd.set(tagetKey, addConf);
-    }
-  }
-
-  private processActionNodeConfig(conf: ActionConfiguraion, prefix: string, pipelinePrefix: PathKey, toRemove: Set<string>) {
-    const path = keyToPath(prefix);
-    const nodeKey = this.updateFullPathLink(conf, path);
+  private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
+    const nodePath = this.updateFullPathLink(conf, path);
+    const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePrefix));
+    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath));
     return conf;
   }
 
-  private processNodeConfig<T extends NodeConf>(conf: T, prefix: string, pipelinePrefix: PathKey, toRemove: Set<string>, type: NodeConfTypes) {
-    const nodeKey = this.updateFullPathNode(conf, prefix);
+  private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: NodeConfTypes) {
+    const nodePath = this.updateFullPathNode(conf, path);
+    const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePrefix));
+    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath));
     return conf;
   }
 
-  private processLinkConfig(conf: PipelineLinkConfiguration, pipelinePrefix: PathKey, toRemove: Set<string>) {
-    const path = keyToPath(pipelinePrefix);
-    const linkKey = this.updateFullPathLink(conf, path);
+  private processLinkConfig(conf: PipelineLinkConfiguration, pipelinePath: ItemPath, toRemove: Set<string>) {
+    const linkPath= this.updateFullPathLink(conf, pipelinePath);
+    const linkKey = pathToKey(linkPath);
     if (toRemove.has(linkKey))
       return;
 
-    this.links.set(linkKey, new LinkState(conf, pipelinePrefix));
+    this.links.set(linkKey, new LinkState(conf, pipelinePath));
     return conf;
   }
 
   private updateFullPathLink(target: { id: string, from?: ItemPath | ItemPath[], to?: ItemPath | ItemPath[] }, currentPath: ItemPath) {
-    const prefix = pathToKey(currentPath);
     if (target.from) {
       if (Array.isArray(target.from[0]))
         target.from = target.from.map((path) => [...currentPath, ...path]);
@@ -804,14 +771,51 @@ export class CompositionPipeline {
         target.to = [...currentPath, ...(target.to as ItemPath)];
     }
 
-    target.id = keysJoin(prefix, target.id);
-    return target.id;
+    return this.updateFullPathNode(target, currentPath);
   }
 
-  private updateFullPathNode(target: { id: string }, prefix: string) {
-    target.id = keysJoin(prefix, target.id);
-    return target.id;
+  private updateFullPathNode(target: { id: string }, path: ItemPath) {
+    const nPath = pathJoin(path, [target.id]);
+    target.id = pathToKey(nPath);
+    return nPath;
   }
+
+  // merge config processing
+
+  private processMergeConfig(mergeConf: PipelineCompositionConfiguration,
+    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>,
+  ) {
+    const subPath = pathJoin(path, [mergeConf.id]);
+    for (const item of mergeConf.itemsToRemove ?? []) {
+      const itemPath = pathJoin(subPath, item);
+      const itemKey = pathToKey(itemPath);
+      toRemove.add(itemKey);
+    }
+    delete mergeConf.itemsToRemove;
+    const {stepsToAdd, popupsToAdd, actionsToAdd} = mergeConf;
+    this.processMergeNodeList(stepsToAdd ?? [], path, toAdd, 'step');
+    this.processMergeNodeList(popupsToAdd ?? [], path, toAdd, 'popup');
+    this.processMergeNodeList(actionsToAdd ?? [], path, toAdd, 'action');
+    delete mergeConf.stepsToAdd;
+    delete mergeConf.popupsToAdd;
+    delete mergeConf.actionsToAdd;
+  }
+
+  private processMergeNodeList(itemsToAdd: [AddNodeConf, ItemPath?][], pipelinePath: ItemPath,
+    toAdd: Map<string, ItemsToMerge>, type: AddNodeConfTypes,
+  ) {
+    for (const [item, path] of itemsToAdd) {
+      const itemPath = pathJoin(pipelinePath, path ?? []);
+      const tagetKey = pathToKey(itemPath);
+      const addConf = toAdd.get(tagetKey) ?? {};
+      const addArray = addConf[type] ?? [];
+      addArray.unshift(item as any);
+      addConf[type] = addArray as any;
+      toAdd.set(tagetKey, addConf);
+    }
+  }
+
+  // funcall states
 
   private addScriptStatesToConfig() {
     traverseConfigPipelines(
