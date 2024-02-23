@@ -59,11 +59,6 @@
   display: none;
 }
 
-.tt-new-test-case-input {
-  width: 300px;
-  height: 200px;
-}
-
 .tt-status-icon {
   margin-left: 5px !important;
   cursor: default !important;
@@ -136,4 +131,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.tt-dialog .ui-input-label {
+  width: unset !important;
+  min-width: unset !important;
+  max-width: unset !important;
+}
+
+.tt-reason-dialog {
+  min-width: 500px;
+}
+
+.tt-dialog .ui-input-textarea {
+  height: 100%;
 }

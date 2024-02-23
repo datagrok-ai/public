@@ -324,12 +324,31 @@ export class TestTrack extends DG.ViewBase {
     this.updateGroupStatus(group);
   }
 
+  // To Do: fix styles
   showNodeDialog(node: DG.TreeViewNode, status: typeof FAILED | typeof SKIPPED, edit: boolean = false): void {
     const name = `${edit ? 'Edit' : 'Specify'} ${status === FAILED ? 'ticket' : 'skip reason'}`;
     const dialog = ui.dialog(name);
-    const input = ui.stringInput(status === FAILED ? 'Key' : 'Reason', edit ? node.value.reason?.innerText : '', () => {});
-    input.nullable = false;
-    dialog.add(input);
+    dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
+    const value = edit ? node.value.reason?.innerText : '';
+    const stringInput = ui.stringInput(status === FAILED ? 'Key' : 'Reason', value, () => {});
+    stringInput.nullable = false;
+    const textInput = ui.textInput(status === FAILED ? 'Keys' : 'Reasons', value, () => {});
+    textInput.nullable = false;
+    let input = stringInput;
+    const tabControl = ui.tabControl({
+      'String': stringInput.root,
+      'List': textInput.root,
+    });
+    dialog.root.addEventListener('keydown', (e) => {
+      if (e.key == 'Enter' && tabControl.currentPane.name === 'List') {
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+      }
+    });
+    tabControl.root.style.width = 'unset';
+    tabControl.header.style.marginBottom = '15px';
+    tabControl.onTabChanged.subscribe((tab: DG.TabPane) => input = tab.name === 'String' ? stringInput : textInput);
+    dialog.add(tabControl.root);
     dialog.onOK(() => edit ? this.changeNodeReason(node, input.value, status) : this.changeNodeStatus(node, status, input.value));
     dialog.show({resizable: true});
     dialog.initDefaultHistory();
@@ -371,6 +390,7 @@ export class TestTrack extends DG.ViewBase {
 
   showStartNewTestingDialog(): void {
     const dialog = ui.dialog('Start new testing');
+    dialog.root.classList.add('tt-dialog');
     const input = ui.stringInput('Name', NEW_TESTING);
     input.nullable = false;
     dialog.add(ui.divText('Enter name of the new testing:'));
@@ -388,6 +408,7 @@ export class TestTrack extends DG.ViewBase {
 
   showEditTestingNameDialog(): void {
     const dialog = ui.dialog('Edit testing name');
+    dialog.root.classList.add('tt-dialog');
     const input = ui.stringInput('Name', this.testingName);
     dialog.add(input);
     dialog.onOK(() => {
@@ -415,7 +436,7 @@ export class TestTrack extends DG.ViewBase {
     if (gh2) return this.getReasonLink(reason, reason, `#${gh2[1]}`);
     const slack = reason.includes('datagrok.slack.com');
     if (slack) return this.getReasonLink(reason, reason, 'SLACK');
-    const el = ui.divText(reason);
+    const el = ui.label(reason);
     ui.tooltip.bind(el, () => reason);
     return el;
   }
