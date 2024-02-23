@@ -55,6 +55,28 @@ The `Text Statistics` info panel calculates two common formulas:
 
 ![Calculate text statistics](./gif/nlp-text-statistics.gif)
 
+## Search
+
+The package has search tools for similar texts.
+
+Open table and select a cell of text column. If not specified, set the `Text` quality in properties of the selected column:
+
+* Right-click on the column and select `Column Properties...`. A dialog opens
+* Press `+` in `Tags` and add the *quality* tag with the value *Text*. Now, a tooltip of the column contains `quality: Text`
+
+![Add quality text](./gif/add-text-quality.gif)
+
+Select any cell of the column and expand `Similar` in `Context Panel`. You will get a set of **similar** elements of the column. Search results are separated with a line, and common words are in bold:
+
+![Similar panel](./gif/similar-panel.gif)
+
+Explore the obtained search results in the `Similar` panel:
+
+* Click to navigate directly to the grid cell containing the text of interest
+* Right-click to add a word to filters
+
+![Navigate and filters](./gif/similar-navigate-and-filters.gif)
+
 ## Videos
 
 [User Meeting 9: Natural Language Processing](https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s)
