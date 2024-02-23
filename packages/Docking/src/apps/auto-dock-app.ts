@@ -78,18 +78,14 @@ export class AutoDockApp {
 
   async buildView(): Promise<void> {
     this.view = grok.shell.tv;
-    this.setRibbonPanels();
 
     const adSvc: IAutoDockService = await getAutoDockService();
     if (!adSvc.ready) {
-      this.runBtn.disabled = true;
       ui.tooltip.bind(this.runBtn, 'AutoDock docker container is not ready');
 
       await adSvc.startDockerContainer();
       if (adSvc.ready) {
         grok.shell.info('AutoDock docker container is ready.');
-        this.runBtn.disabled = false;
-        ui.tooltip.bind(this.runBtn, 'Run AutoDock');
       }
     }
   }
@@ -118,18 +114,15 @@ export class AutoDockApp {
 
   /** Handles {@link runBtn} click */
   async getAutodockResults(): Promise<DG.DataFrame | undefined> {
-    this.runBtn.disabled = true;
     const pi = DG.TaskBarProgressIndicator.create('AutoDock running...');
     try {
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
       const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
       if (posesAllDf !== undefined) {
-        this.downloadPosesBtn.disabled = false;
         //@ts-ignore
         CACHED_DOCKING.K.push(this.data);
         //@ts-ignore
         CACHED_DOCKING.V.push(posesAllDf);
-        //CACHED_DOCKING.set(this.data, posesAllDf);
         return posesAllDf;
       }
     } catch (err: any) {
@@ -138,7 +131,6 @@ export class AutoDockApp {
       _package.logger.error(errMsg, undefined, errStack);
     } finally {
       pi.close();
-      this.runBtn.disabled = false;
     }
   }
 
@@ -190,21 +182,13 @@ async function runAutoDock(
     const pdbqtCol = posesDf.getCol(poseColName);
     pdbqtCol.name = poseColName;
     pdbqtCol.semType = DG.SEMTYPE.MOLECULE3D;
-    pdbqtCol.setTag(DG.TAGS.UNITS, 'pdbqt');
+
     // endregion: add extra columns to AutoDock output
 
-    if (posesAllDf === undefined) {
-      posesAllDf = posesDf.clone(
-        DG.BitSet.create(posesDf.rowCount, (_i) => false));
-      for (let colI = 0; colI < posesAllDf!.columns.length; ++colI) {
-        const srcCol = posesDf.columns.byIndex(colI);
-        const tgtCol = posesAllDf!.columns.byIndex(colI);
-        // for (const [tagName, tagValue] of Object.entries(srcCol.tags)) {
-        //   tgtCol.setTag(tagName, tagValue);
-        // }
-      }
-    }
-    posesAllDf!.append(posesDf, true);
+    if (posesAllDf === undefined)
+      posesAllDf = posesDf;
+    else
+      posesAllDf!.append(posesDf, true);
     pi.update(100 * lRowI / ligandRowCount, 'AutoDock running...');
   }
 

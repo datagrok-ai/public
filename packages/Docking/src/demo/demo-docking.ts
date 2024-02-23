@@ -43,7 +43,7 @@ export async function _demoDocking(): Promise<void> {
         receptor: receptorData,
         gpfFile: (await grok.dapi.files.readAsText('System:AppData/Docking/targets/BACE1/BACE1.gpf')),
         confirmationNum: 10,
-        ligandDfString: table.toCsv(),
+        ligandDfString: table.columns.byName('SMILES').toString(),
       };
       //@ts-ignore
       CACHED_DOCKING.K.push(data);
