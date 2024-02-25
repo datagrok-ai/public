@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.4 (2024-02-26)
+
+Styles are improved
+
 ## 1.0.3 (2024-02-19)
 
 * Tab control with `Model` and `Run` panes
