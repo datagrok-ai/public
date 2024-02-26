@@ -94,7 +94,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
-    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
+    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
   const clustersColumnChoice = ui.columnInput('Clusters', df, null, () => {
     if (clustersColumnChoice.value) {
