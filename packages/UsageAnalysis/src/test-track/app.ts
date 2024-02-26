@@ -109,6 +109,7 @@ export class TestTrack extends DG.ViewBase {
     this.list.forEach((c) => this.sortCategoryRecursive(c));
     this.list.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
     this.tree.children.forEach((c) => this.updateGroupStatusRecursiveDown(c as DG.TreeViewGroup));
+    this.setContextMenu();
 
     // Ribbon
     const gh = ui.button(getIcon('github', {style: 'fab'}), () => {
@@ -256,8 +257,11 @@ export class TestTrack extends DG.ViewBase {
   initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {
     if ('text' in obj) {
       const node = parent.item(obj.name, obj);
-      this.setContextMenu(node);
-      node.value.reason.oncontextmenu = () => this.showNodeDialog(node, node.value.status, true);
+      node.value.reason.oncontextmenu = (e: PointerEvent) => {
+        this.showNodeDialog(node, node.value.status, true);
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      };
       node.captionLabel.after(node.value.reason);
       node.captionLabel.after(node.value.history);
       node.captionLabel.after(node.value.icon);
@@ -269,15 +273,16 @@ export class TestTrack extends DG.ViewBase {
       this.initTreeGroupRecursive(child, group);
   }
 
-  setContextMenu(node: DG.TreeViewNode): void {
-    node.captionLabel.addEventListener('contextmenu', (e) => {
-      const menu = DG.Menu.popup();
-      menu
+  setContextMenu(): void {
+    this.tree.onNodeContextMenu.subscribe((data: any) => {
+      const node = data.args.item;
+      if (node.constructor === DG.TreeViewGroup) return;
+      (data.args.menu as DG.Menu)
         .group('Status').items(['Passed', 'Failed', 'Skipped'],
           (i) => {
             const status = i.toLowerCase() as Status;
             if (node.value.status === status) return;
-            // menu.dart.childMenuContainer.remove();
+            data.args.menu.dart?.childMenuContainer?.remove();
             if (status === PASSED)
               this.changeNodeStatus(node, status);
             else
@@ -285,10 +290,7 @@ export class TestTrack extends DG.ViewBase {
           },
           {radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty')})
         .endGroup()
-        .item('Edit', () => this.editTestCase(node))
-        .show();
-      e.preventDefault();
-      e.stopPropagation();
+        .item('Edit', () => this.editTestCase(node));
     });
   }
 
@@ -339,11 +341,13 @@ export class TestTrack extends DG.ViewBase {
       'String': stringInput.root,
       'List': textInput.root,
     });
+    if (value.includes('\n')) {
+      tabControl.currentPane = tabControl.getPane('List');
+      input = textInput;
+    }
     dialog.root.addEventListener('keydown', (e) => {
-      if (e.key == 'Enter' && tabControl.currentPane.name === 'List') {
+      if (e.key == 'Enter' && tabControl.currentPane.name === 'List')
         e.stopImmediatePropagation();
-        e.stopPropagation();
-      }
     });
     tabControl.root.style.width = 'unset';
     tabControl.header.style.marginBottom = '15px';
@@ -428,6 +432,12 @@ export class TestTrack extends DG.ViewBase {
   }
 
   getReason(reason: string): HTMLElement {
+    if (reason.includes('\n')) {
+      const el = ui.divText(reason, 'tt-link tt-link-list');
+      el.setAttribute('data-label', 'LIST');
+      ui.tooltip.bind(el, () => ui.list(reason.split('\n')));
+      return el;
+    }
     const jira = reason.match(/GROK-\d{1,6}\b/);
     if (jira) return this.getReasonLink(reason, 'https://reddata.atlassian.net/browse/' + jira[0], jira[0]);
     const gh1 = reason.match(/#(\d{3,5})\b/);

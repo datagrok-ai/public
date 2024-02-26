@@ -98,6 +98,10 @@
   vertical-align: -15%;
 }
 
+.tt-link-list:after {
+  vertical-align: -30%;
+}
+
 #tt-ribbon-save-button:enabled {
   animation-name: color;
   animation-duration: 1.5s;
@@ -121,6 +125,10 @@
   text-overflow: ellipsis;
   overflow: hidden;
   color: var(--grey-4);
+}
+
+.tt-reason br {
+  content: '';
 }
 
 #tt-name {
