@@ -1,8 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {BehaviorSubject, Observable, merge} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
+import {withLatestFrom, filter, map} from 'rxjs/operators';
 
 //
 // State values
@@ -60,7 +61,8 @@ export type PipelineLinkConfiguration = {
   from: ItemPath | ItemPath[];
   to: ItemPath | ItemPath[];
   handler?: Handler;
-  updateAfterLoadRun?: boolean;
+  enableOnStart?: boolean;
+  enableOnLoadRun?: boolean;
 }
 
 export type PipelineHookConfiguration = {
@@ -197,7 +199,6 @@ export function traverseConfigPipelines<T>(
     path: [] as ItemPath,
   }];
 
-
   const queuedNested = new Set<object>();
 
   while (stk.length) {
@@ -214,6 +215,7 @@ export function traverseConfigPipelines<T>(
     } else if (isPipelineConfig(node))
       acc = nodeHandler(acc, node, path);
   }
+
   return acc;
 }
 
@@ -257,15 +259,42 @@ export class NodeState {
   }
 }
 
+export class PipelineState {
+  initialLoading = new BehaviorSubject<boolean>(true);
+  runChanging = new BehaviorSubject<boolean>(false);
+}
+
 export class LinkState {
   public controllerConfig: ControllerConfig;
   public enabled = new BehaviorSubject(true);
+  public valueChanges?: Observable<any>;
 
   constructor(
-    public link: PipelineLinkConfiguration,
+    public globalState: PipelineState,
+    public config: PipelineLinkConfiguration,
     public pipelinePath: ItemPath,
   ) {
-    this.controllerConfig = new ControllerConfig(pipelinePath, link.from, link.to);
+    this.controllerConfig = new ControllerConfig(pipelinePath, config.from, config.to);
+  }
+
+  public linkValues(sources: Observable<any>[]) {
+    this.valueChanges = merge(sources);
+  }
+
+  public getValuesChanges() {
+    return this.valueChanges!.pipe(
+      withLatestFrom(this.enabled, this.globalState.initialLoading, this.globalState.runChanging),
+      filter(([_val, enabled, initialLoading, runChanging]) => {
+        if (!enabled)
+          return false;
+
+        if ((initialLoading && !this.config.enableOnStart) || (runChanging && !this.config.enableOnLoadRun))
+          return false;
+
+        return true;
+      }),
+      map(() => true),
+    );
   }
 }
 
@@ -494,6 +523,8 @@ export class CompositionPipeline {
   private nqName: NqName;
   private exportConfig?: ExportConfig;
 
+  private pipelineState = new PipelineState();
+
   private config: CompositionGraphConfig;
   private ioInfo = new Map<NqName, StateItemConfiguration[]>();
   private nodes = new Map<PathKey, NodeState>();
@@ -718,7 +749,7 @@ export class CompositionPipeline {
     if (toRemove.has(linkKey))
       return;
 
-    this.links.set(linkKey, new LinkState(conf, pipelinePath));
+    this.links.set(linkKey, new LinkState(this.pipelineState, conf, pipelinePath));
     return conf;
   }
 

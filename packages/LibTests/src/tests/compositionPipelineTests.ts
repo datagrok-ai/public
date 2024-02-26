@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {serialize, deserialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {CompositionPipeline, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import { CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
 
 function pickPipelineConfData(obj: any) {
   const res = {};
@@ -318,7 +318,7 @@ category('CompositionPipeline composition config', async () => {
     },
   };
 
-  test('2 simple configs', async () => {
+  test('2 configs simple', async () => {
     const composedConfig = CompositionPipeline.compose([sconfig1], sconfig2);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
@@ -327,7 +327,7 @@ category('CompositionPipeline composition config', async () => {
     console.log(actual);
   });
 
-  test('3 simple configs', async () => {
+  test('3 configs simple configs', async () => {
     const composedConfig = CompositionPipeline.compose([sconfig1, sconfig2], sconfig3);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
@@ -336,7 +336,7 @@ category('CompositionPipeline composition config', async () => {
     console.log(actual);
   });
 
-  test('3 simple nested composition',  async () => {
+  test('3 configs simple nested composition',  async () => {
     const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([sconfig1], sconfig2)], sconfig3);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
@@ -363,7 +363,7 @@ category('CompositionPipeline composition config', async () => {
     console.log(actual);
   });
 
-  test('3 nested composition',  async () => {
+  test('3 configs nested composition',  async () => {
     const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], conf2)], conf3);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
@@ -371,4 +371,43 @@ category('CompositionPipeline composition config', async () => {
     const actual = pickPipelineConfData(pipeline);
     console.log(actual);
   });
+
+  test('3 configs remove items', async () => {
+    const cconf: PipelineCompositionConfiguration = {
+      ...conf3,
+      itemsToRemove: [
+        ['testPipeline1', 'step1', 'popup1', 'action11'],
+        ['testPipeline1', 'step2'],
+        ['testPipeline2', 'step1', 'popup1'],
+        ['testPipeline2', 'link1']
+      ]
+    };
+    const composedConfig = CompositionPipeline.compose([conf1, conf2], cconf);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+
+  });
+
+  test('3 configs nested remove items', async () => {
+    const cconf: PipelineCompositionConfiguration = {
+      ...conf3,
+      itemsToRemove: [
+        ['testPipeline2', 'testPipeline1', 'step1', 'popup1', 'action11'],
+        ['testPipeline2', 'testPipeline1', 'step2'],
+        ['testPipeline2', 'step1', 'popup1'],
+        ['testPipeline2', 'link1']
+      ]
+    };
+    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], conf2)], cconf);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+
 });
