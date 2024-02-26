@@ -1,28 +1,61 @@
 # Docking
 
-Docking [package](https://datagrok.ai/help/develop/develop#packages) is a robust bioinformatics tool for the [Datagrok](https://datagrok.ai) platform. It is designed for conducting molecular docking simulations. Molecular docking is a crucial technique in computational biology and drug discovery. It allows researchers to predict the binding interactions between small molecules (ligands) and macromolecules (receptors). The primary purpose of the Docking package is to provide a user-friendly interface for performing these simulations efficiently and accurately.
+The [Docking package](https://datagrok.ai/help/develop/develop#packages) 
+is a plugin that integrates 
+the [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) utility
+with the [Datagrok](https://datagrok.ai) platform.
 
-The Docking package seamlessly integrates with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock), a widely-used software for molecular docking simulations. This integration ensures high-performance and reliable results in predicting the binding configurations of ligands to target macromolecules.
+[Autodock](https://autodock.scripps.edu/)
+is widely used software for ligand-receptor docking 
+that allows researchers to predict the binding interactions between small molecules (ligands) and macromolecule 
+(receptor). 
+The **Autodock-GPU** is a GPU-accelerated version of the Autodock software. 
+
+This package also provides a good example of Datagrok integration 
+with external utilities.
+You can find more in the 
+[Datagrok Docker container howto](https://datagrok.ai/help/develop/how-to/docker_containers).
 
 ## How To
 
+### Prepare macromolecule (target)
+
+Autodock plugin contains one pre-created target.
+To add your own macromolecule to the list of targets,
+prepare the macromolecule using 
+[AutoDock tools](https://ccsb.scripps.edu/mgltools/downloads/).
+You require the macromolecule in the `PDBQT` format 
+and Autodock grid parameter file.
+Review the Autodock tutorials
+([first](https://www.chem.uwec.edu/chem491_w01/Chem491-Molecules%20and%20Medicine%202008/AutoDock%20Tutorial.pdf),
+[second](https://omicstutorials.com/a-comprehensive-bioinformatics-tutorial-mastering-ligand-protein-docking-with-autodock/))
+for the details.
+
+Put these files in a folder under **System:AppData/Docking/targets**.
+The folder make will be the name of your target in the Datagrok plugin UI.
+
 ### Prepare data
 
-Create or load a dataframe containig the ligands to be docked. For demonstration purposes, consider using the provided demo data located under **System:AppData/Docking/demo_files**.
-
-### Prepare macromolecule
-
-Utilize [AutoDock tools](https://www.chem.uwec.edu/chem491_w01/Chem491-Molecules%20and%20Medicine%202008/AutoDock%20Tutorial.pdf) to prepare the target protein and docking configurations files. Locate these files in a folder under **System:AppData/Docking/targets**.
+Create or load a dataframe containing the ligands to be docked. 
+For demonstration purposes, consider using the provided demo data located under 
+**System:AppData/Docking/demo_files**.
 
 ### Run docking
 
 1. Navigate to Chem > Autodock. A dialog appears.
-
 2. Configure the parameters:
+   * `Ligands`: Specify the column within the provided dataframe that contains the small molecules to be docked.
+   * `Target`: Choose the folder containing the docking configurations and the macromolecule for simulation.
+   * `Conformations`: Define the number of conformations to search.
+3. Run the calculations
 
-* `Ligands`: Specify the column within the provided dataframe that contains the small molecules to be docked.
-* `Target`: Provide the folder containing the docking configurations and the macromolecule for simulation.
-* `Conformations`: Define the number of conformations for the simulation.
+**Performance note:** During the first run for a target Autodock calculates the 
+macromolecule grids.
+Grid calculation works on a single CPU core, so it can take about a minute.
+Datagrok caches calculated grids, so subsequent runs with the same 
+target will be much faster.
+
+### Analyze results
 
 When the results are ready, you can:
 
