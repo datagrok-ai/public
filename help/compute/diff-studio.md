@@ -145,12 +145,9 @@ Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.
 #tolerance: 0.00005
 ```
 
-### Multi-stage model
+### Cyclic process simulation
 
-The multi-stage model is a model where parameters and function values can vary for different
-ranges of argument values.
-
-Datagrok provides a special capabilities for multi-stage simulation.
+Datagrok provides a special capabilities for modeling cyclic processes and phenomena.
 
 Use the `#loop` feature to specify several modeling cycles.
 Define the number of repetitions in the mandatory `count` variable and
@@ -171,18 +168,32 @@ You can set new values for parameters and change values for functions.
 
 ![Multi-stage model - loop](pics/DiffStudio-loop.gif)
 
-Apply the `#update` feature to obtain acyclic simulation.
-Set the length of the new modeling stage in the mandatory `length` variable.
-Inside you can use any mathematical expression to modify functions and parameters,
-same as for the `#loop` section.
+### Multi-stage model
+
+The multi-stage model is a model where parameters and function values can vary for different
+ranges of argument values.
+
+Add name of the first stage in the `#argument` block:
 
 ```python
-#update:
-  length = 6
-  y = 1
+#argument: t, 1-st stage
+  t0 = 0.01
+  t1 = 15
+  h = 0.01
 ```
 
-Use any valid expression, when specifying the updates of inputs.
+Add the `#update` block. Input name of the stage right after the colon. Set the duration of the new modeling stage in the next line using
+the mandatory `duration` variable. Add lines with model inputs updates. Inside you can use any valid mathematical expression to modify functions and parameters.
+
+```python
+#update: 2-nd stage
+  duration = 23
+  p = p * 2
+```
+
+You can add any number of `update` blocks. Simulation stages are marked with a color:
+
+![Multi-stage model - update](pics/DiffStudio-update.gif)
 
 ## Usability improvements
 
