@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.8 (2024-02-22)
+
+Allow using qnum activity columns when running SAR analysis from top menu.
+
 ## 1.17.7 (2024-02-22)
 
 Allow using qnum activity columns.
