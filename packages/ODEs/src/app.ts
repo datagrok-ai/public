@@ -127,6 +127,7 @@ function getLineChartOptions(colNames: string[]): Object {
     multiAxis: count > MAX_LINE_CHART,
     multiAxisLegendPosition: 'RightTop',
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: null,
+    showAggrSelectors: false,
   };
 }
 
@@ -664,7 +665,7 @@ export class DiffStudio {
   } // clearSolution
 
   /** Return form with model inputs */
-  private async getInputsForm(ivp: IVP): Promise<HTMLDivElement> {
+  private async getInputsForm(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
       const options: DG.PropertyOptions = {
@@ -823,34 +824,9 @@ export class DiffStudio {
       categorizeInput(options, input);
     }
 
-    // Inputs form
-    const form = ui.form([]);
-
-    if (inputsByCategories.size === 1)
-      inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
-    else {
-      inputsByCategories.forEach((inputs, category) => {
-        if (category !== TITLE.MISC) {
-          form.append(ui.h2(category));
-          inputs.forEach((inp) => {
-            form.append(inp.root);
-          });
-        }
-      });
-
-      if (inputsByCategories.get(TITLE.MISC)!.length > 0) {
-        form.append(ui.h2(TITLE.MISC));
-        inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
-          form.append(inp.root);
-        });
-      }
-    }
-
     if (this.toRunWhenFormCreated)
       await this.solve(ivp, getInputsPath());
 
     this.inputsByCategories = inputsByCategories;
-
-    return form;
   } // getInputsUI
 };

@@ -2,7 +2,8 @@
 
 ## 1.0.4 (2024-02-26)
 
-Styles are improved
+* Styles improvement
+* Linechart options update
 
 ## 1.0.3 (2024-02-19)
 
