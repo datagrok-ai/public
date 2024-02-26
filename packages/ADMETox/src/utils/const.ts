@@ -6,42 +6,38 @@ export const properties: any = {
     {
       "skip": true,
       "specific": false,
+      "units": "-",
       "name": "Pgp-Inhibitor"
     },
 		{
       "skip": false,
       "specific": false,
+      "units": "-",
       "name": "Pgp-Substrate"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
       "name": "HIA"
     },
     {
-      "skip": true,
-      "specific": true,
-      "name": "F(20%)"
-    },
-    {
-      "skip": true,
-      "specific": true,
-      "name": "F(30%)"
+      "skip": false,
+      "specific": false,
+      "units": "cm/s",
+      "name": "Caco2"
     },
     {
       "skip": false,
       "specific": false,
-      "name": "Caco2",
-    },
-    {
-      "skip": false,
-      "specific": false,
-      "name": "Lipophilicity",
+      "units": "log-ratio",
+      "name": "Lipophilicity"
     },
     {
       "skip": false,
       "specific": true,
-      "name": "Solubility",
+      "units": "log mol/L",
+      "name": "Solubility"
     }]
   },
   "Distribution": {
@@ -51,16 +47,19 @@ export const properties: any = {
     {
       "skip": false,
       "specific": false,
+      "units": "%",
       "name": "PPBR"
     },
     {
       "skip": false,
       "specific": false,
+      "units": "L/kg",
       "name": "VDss"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
       "name": "BBB"
     }]
   },
@@ -71,51 +70,61 @@ export const properties: any = {
     {
       "skip": false,
       "specific": true,
+      "units": "-",
       "name": "CYP1A2-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
       "name": "CYP1A2-Substrate"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
       "name": "CYP3A4-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
       "name": "CYP3A4-Substrate"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
       "name": "CYP2C19-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
       "name": "CYP2C19-Substrate"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
       "name": "CYP2C9-Inhibitor"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
       "name": "CYP2C9-Substrate"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
       "name": "CYP2D6-Inhibitor"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
       "name": "CYP2D6-Substrate"
     }]
   },
@@ -126,16 +135,19 @@ export const properties: any = {
     {
       "skip": false,
       "specific": true,
+      "units": "mL/min",
       "name": "CL-Hepa"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "μL/min/million cells",
       "name": "CL-Micro"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "hours",
       "name": "Half-Life"
     }]
   },

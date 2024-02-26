@@ -148,6 +148,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
     for (const key in models) {
       if (modelNames[i].includes(key)) {
         column.setTag(DG.TAGS.DESCRIPTION, models[key]);
+        column.setTag(DG.TAGS.UNITS, getModelUnits(key));
         break;
       }
     }
@@ -158,6 +159,12 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
 
   addColorCoding(viewTable, updatedModelNames);
 }
+
+export function getModelUnits(modelName: string): string {
+  const modelCategories = Object.values(properties);
+  const model = modelCategories.flatMap((category: any) => category.models).find((m: any) => m.name === modelName);
+  return model.units;
+};
 
 export function getModelsSingle(smiles: string): DG.Accordion {
   const acc = ui.accordion('ADME/Tox');
