@@ -147,7 +147,7 @@ Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.
 
 ### Cyclic process simulation
 
-Datagrok provides a special capabilities for modeling cyclic processes and phenomena.
+Datagrok provides special capabilities for modeling cyclic processes.
 
 Use the `#loop` feature to specify several modeling cycles.
 Define the number of repetitions in the mandatory `count` variable and
@@ -168,10 +168,9 @@ You can set new values for parameters and change values for functions.
 
 ![Multi-stage model - loop](pics/DiffStudio-loop.gif)
 
-### Multi-stage model
+### Multistage model
 
-The multi-stage model is a model where parameters and function values can vary for different
-ranges of argument values.
+Use the `#update` feature to construct models with multiple sequential processes (stages).
 
 Add name of the first stage in the `#argument` block:
 
@@ -182,8 +181,7 @@ Add name of the first stage in the `#argument` block:
   h = 0.01
 ```
 
-Add the `#update` block. Input name of the stage right after the colon. Set the duration of the new modeling stage in the next line using
-the mandatory `duration` variable. Add lines with model inputs updates. Inside you can use any valid mathematical expression to modify functions and parameters.
+Add the `#update` block. Enter name of the stage and set its duration. Add lines with model inputs updates. Use any valid mathematical expression to define them.
 
 ```python
 #update: 2-nd stage
@@ -294,7 +292,7 @@ PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their
 
 ### Acid production
 
-`Acid production` models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the `update` feature for multi-stage simulation
+`Acid production` models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the `update` feature for multistage simulation
 
 ![add-to-workspace](pics/DiffStudio-acid-production.gif)
 
