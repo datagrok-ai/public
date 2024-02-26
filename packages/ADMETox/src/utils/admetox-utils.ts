@@ -129,6 +129,40 @@ export function getQueryParams(): string {
     .join(',');
 }
 
+function addCustomTooltip(table: string) {
+  const view = grok.shell.tableView(table);
+  view.grid.onCellTooltip(function (cell, x, y) {
+    if (cell.isTableCell) {
+      const subgroup = cell.tableColumn!.name;
+      const value = cell.cell.value;
+      const model = Object.values(properties).flatMap((category: any) => category.models).find((m: any) => m.name === subgroup);
+      const interpretation = model.interpretation;
+  
+      let tooltipContent = '';
+      if (interpretation && interpretation.range) {
+        for (let rangeKey in interpretation.range) {
+          const rangeParts = rangeKey.split('_');
+          const rangeType = rangeParts[0];
+          const rangeStart = parseFloat(rangeParts[1]);
+          const rangeEnd = parseFloat(rangeParts[2]);
+          if ((rangeType === 'to' && value >= rangeStart && value <= rangeEnd) ||
+              (rangeType === 'below' && value < rangeStart) ||
+              (rangeType === 'above' && value > rangeStart)) {
+            tooltipContent += `${interpretation.range[rangeKey]}\n`;
+            break;
+          }
+        }
+      } else
+        tooltipContent += `${interpretation}\n`;
+    
+      ui.tooltip.show(ui.divV([
+        ui.divText(tooltipContent)
+      ]), x, y);
+      return true;
+    }
+  });
+}
+
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
   if (table.columns.length === 0)
     return;
@@ -158,6 +192,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
   }
 
   addColorCoding(viewTable, updatedModelNames);
+  addCustomTooltip(viewTable.name);
 }
 
 export function getModelUnits(modelName: string): string {

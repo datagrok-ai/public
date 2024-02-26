@@ -7,36 +7,54 @@ export const properties: any = {
       "skip": true,
       "specific": false,
       "units": "-",
+      "interpretation": "",
       "name": "Pgp-Inhibitor"
     },
 		{
       "skip": false,
       "specific": false,
       "units": "-",
+      "interpretation": "Lower is better",
       "name": "Pgp-Substrate"
     },
     {
       "skip": true,
       "specific": true,
       "units": "-",
+      "interpretation": "",
       "name": "HIA"
     },
     {
       "skip": false,
       "specific": false,
       "units": "cm/s",
+      "interpretation": {
+        "range": {
+          "below_-6": "Bad",
+          "to_-6_-5.5": "Intermediate",
+          "above_-5.5": "Good",
+        }
+      },
       "name": "Caco2"
     },
     {
       "skip": false,
       "specific": false,
       "units": "log-ratio",
+      "interpretation": {
+        "range": {
+          "below_0": "Bad",
+          "to_2_3": "Ideal",
+          "above_5": "Bad",
+        }
+      },
       "name": "Lipophilicity"
     },
     {
       "skip": false,
       "specific": true,
       "units": "log mol/L",
+      "interpretation": "The higher the better",
       "name": "Solubility"
     }]
   },
@@ -48,18 +66,33 @@ export const properties: any = {
       "skip": false,
       "specific": false,
       "units": "%",
+      "interpretation": {
+        "range": {
+          "below_40": "Low",
+          "to_40_90": "Moderate",
+          "above_90": "High",
+        }
+      },
       "name": "PPBR"
     },
     {
       "skip": false,
       "specific": false,
       "units": "L/kg",
+      "interpretation": {
+        "range": {
+          "below_1": "Low",
+          "to_1_2": "Moderate",
+          "above_2": "High",
+        }
+      },
       "name": "VDss"
     },
     {
       "skip": true,
       "specific": true,
       "units": "-",
+      "interpretation": "",
       "name": "BBB"
     }]
   },
@@ -71,60 +104,70 @@ export const properties: any = {
       "skip": false,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP1A2-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP1A2-Substrate"
     },
     {
       "skip": true,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP3A4-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP3A4-Substrate"
     },
     {
       "skip": false,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP2C19-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP2C19-Substrate"
     },
     {
       "skip": false,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP2C9-Inhibitor"
     },
     {
       "skip": false,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP2C9-Substrate"
     },
     {
       "skip": false,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP2D6-Inhibitor"
     },
     {
       "skip": false,
       "specific": true,
       "units": "-",
+      "interpretation": "No good or bad values",
       "name": "CYP2D6-Substrate"
     }]
   },
@@ -136,18 +179,33 @@ export const properties: any = {
       "skip": false,
       "specific": true,
       "units": "mL/min",
+      "interpretation": {
+        "range": {
+          "below_10": "Low",
+          "to_10_100": "Moderate",
+          "above_100": "Bad",
+        }
+      },
       "name": "CL-Hepa"
     },
     {
       "skip": false,
       "specific": true,
       "units": "μL/min/million cells",
+      "interpretation": {
+        "range": {
+          "below_10": "Low",
+          "to_10_100": "Moderate",
+          "above_100": "Bad",
+        }
+      },
       "name": "CL-Micro"
     },
     {
       "skip": false,
       "specific": true,
       "units": "hours",
+      "interpretation": "No good or bad values",
       "name": "Half-Life"
     }]
   },
