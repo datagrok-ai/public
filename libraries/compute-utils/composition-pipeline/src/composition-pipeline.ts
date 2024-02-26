@@ -137,17 +137,12 @@ export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguratio
 
 export type PipelineConfigVariants = PipelineConfiguration | CompositionGraphConfig;
 
-export interface CompositionGraphConfig {
+export type CompositionGraphConfig = (PipelineConfiguration | PipelineCompositionConfiguration) & {
   id: ItemName;
   nqName: NqName;
-  config: PipelineConfiguration | PipelineCompositionConfiguration;
   nestedPipelines?: {
     [key: ItemName]: PipelineConfiguration | CompositionGraphConfig;
   };
-}
-
-export function isCompositionGraphConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is CompositionGraphConfig {
-  return (config as any)?.config;
 }
 
 export function isCompositionConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is PipelineCompositionConfiguration {
@@ -190,42 +185,34 @@ export function traverseConfigPipelines<T>(
   graph: CompositionGraphConfig,
   nodeHandler: (
     acc: T,
-    nodeConf: PipelineConfiguration,
-    path: ItemPath,
-    mergeConf?: PipelineCompositionConfiguration) => T,
+    node: CompositionGraphConfig,
+    path: ItemPath) => T,
   acc: T,
-  mergeNodeHandler?: (
-    acc: T,
-    mergeConf: PipelineCompositionConfiguration,
-    path: ItemPath,
-  ) => T,
 ) {
-  const startNode = graph.config;
-  const startPath = [] as ItemPath;
   const stk: [{
-    node: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration,
+    node: CompositionGraphConfig,
     path: ItemPath,
-    mergeConfig?: PipelineCompositionConfiguration
   }] = [{
-    node: startNode,
-    path: startPath,
+    node: graph,
+    path: [] as ItemPath,
   }];
 
-  for (const nextNode of Object.values(graph.nestedPipelines ?? {}))
-    stk.push({node: nextNode, path: [graph.id], mergeConfig: graph.config});
+
+  const queuedNested = new Set<object>();
 
   while (stk.length) {
-    const {node, path, mergeConfig} = stk.pop()!;
-    if (isCompositionConfig(node) && mergeNodeHandler)
-      acc = mergeNodeHandler(acc, node, path);
-    else if (isCompositionGraphConfig(node)) {
-      const {id} = node;
-      if (mergeNodeHandler)
-        stk.push({node: node.config, path});
-      for (const nextNode of Object.values(node.nestedPipelines ?? {}))
-        stk.push({node: nextNode, path: [...path, id], mergeConfig});
+    const {node, path} = stk.pop()!;
+    if (isCompositionConfig(node)) {
+      if (queuedNested.has(node))
+        acc = nodeHandler(acc, node, path);
+      else {
+        stk.push({node: node, path});
+        for (const nextNode of Object.values(node.nestedPipelines ?? {}))
+          stk.push({node: nextNode, path: [...path, node.id]});
+        queuedNested.add(node);
+      }
     } else if (isPipelineConfig(node))
-      acc = nodeHandler(acc, node, path, mergeConfig);
+      acc = nodeHandler(acc, node, path);
   }
   return acc;
 }
@@ -529,21 +516,14 @@ export class CompositionPipeline {
       const {id} = conf;
       nestedPipelines[id] = cloneConfig(conf);
     }
-    return {id: config.id, nqName: config.nqName, config, nestedPipelines};
+    return {...config, nestedPipelines};
   }
 
   constructor(conf: PipelineConfigVariants) {
-    if (!isCompositionGraphConfig(conf)) {
-      conf = {
-        id: conf.id,
-        nqName: conf.nqName,
-        config: conf,
-      };
-    }
     this.config = cloneConfig(conf);
     this.id = this.config.id;
     this.nqName = this.config.nqName;
-    this.exportConfig = this.config.config.exportConfig;
+    this.exportConfig = this.config.exportConfig;
   }
 
   public makePipelineView() {
@@ -583,14 +563,13 @@ export class CompositionPipeline {
     // process merge config
     const {toRemove, toAdd} = traverseConfigPipelines(
       this.config,
-      (acc) => acc,
+      (acc, node, path) => {
+        this.processMergeConfig(node, path, acc.toRemove, acc.toAdd);
+        return acc;
+      },
       {
         toRemove: new Set<string>(),
         toAdd: new Map<string, ItemsToMerge>(),
-      },
-      (acc, mergeNode, path) => {
-        this.processMergeConfig(mergeNode, path, acc.toRemove, acc.toAdd);
-        return acc;
       },
     );
 
@@ -603,11 +582,6 @@ export class CompositionPipeline {
         return acc;
       },
       [] as HookSpec[],
-      (acc, node, path) => {
-        const hooks = this.getPipelineHooks(node, toRemove, path);
-        acc.unshift({hooks, pipelinePath: pathJoin(path, [node.id])});
-        return acc;
-      },
     );
 
     // process node items
@@ -618,10 +592,6 @@ export class CompositionPipeline {
         return acc;
       },
       undefined,
-      (acc, node, path) => {
-        this.processPipelineConfig(node, path, toRemove, toAdd);
-        return acc;
-      },
     );
 
     // get steps sequence
@@ -632,10 +602,6 @@ export class CompositionPipeline {
         return acc;
       },
       [] as StepSpec[],
-      (acc, node) => {
-        acc.unshift(...node.steps.map((s) => ({funcName: s.nqName, friendlyName: s.friendlyName, helpUrl: s.helpUrl})));
-        return acc;
-      },
     );
   }
 
@@ -820,24 +786,22 @@ export class CompositionPipeline {
   private addScriptStatesToConfig() {
     traverseConfigPipelines(
       this.config,
-      (acc, nodeConf) => {
-        for (const conf of nodeConf.steps) {
+      (acc, node) => {
+        for (const conf of node.steps) {
           this.addNodeIOInfo(conf);
           for (const pconf of conf.popups ?? [])
             this.addNodeIOInfo(pconf);
         }
+        if (isCompositionConfig(node)) {
+          for (const [conf] of node.stepsToAdd ?? [])
+            this.addNodeIOInfo(conf);
+
+          for (const [conf] of node.popupsToAdd ?? [])
+            this.addNodeIOInfo(conf);
+        }
         return acc;
       },
       undefined,
-      (acc, mergeNode) => {
-        for (const [conf] of mergeNode.stepsToAdd ?? [])
-          this.addNodeIOInfo(conf);
-
-        for (const [conf] of mergeNode.popupsToAdd ?? [])
-          this.addNodeIOInfo(conf);
-
-        return acc;
-      },
     );
   }
 
@@ -861,24 +825,22 @@ export class CompositionPipeline {
     const names = new Set<string>();
     traverseConfigPipelines(
       this.config,
-      (acc, nodeConf) => {
-        for (const conf of nodeConf.steps) {
+      (acc, node) => {
+        for (const conf of node.steps) {
           names.add(conf.nqName);
           for (const pconf of conf.popups ?? [])
             names.add(pconf.nqName);
         }
+        if (isCompositionConfig(node)) {
+          for (const [conf] of node.stepsToAdd ?? [])
+            names.add(conf.nqName);
+
+          for (const [conf] of node.popupsToAdd ?? [])
+            names.add(conf.nqName);
+        }
         return acc;
       },
       names,
-      (acc, mergeNode) => {
-        for (const [conf] of mergeNode.stepsToAdd ?? [])
-          names.add(conf.nqName);
-
-        for (const [conf] of mergeNode.popupsToAdd ?? [])
-          names.add(conf.nqName);
-
-        return acc;
-      },
     );
     return names;
   }
