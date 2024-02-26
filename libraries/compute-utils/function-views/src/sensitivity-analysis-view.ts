@@ -1214,9 +1214,7 @@ export class SensitivityAnalysisView {
     // other vizualizations depending on the varied inputs dimension
     const graphViewer = (variedInputsColumns.length === 1) ?
       DG.Viewer.lineChart(funcEvalResults, this.getLineChartOpt(colNamesToShow)) :
-      (variedInputsColumns.length === 2) ?
-        this.comparisonView.addViewer(DG.VIEWER.SURFACE_PLOT, this.getSurfPlotOpt(colNamesToShow, nameOfNonFixedOutput)) :
-        DG.Viewer.scatterPlot(funcEvalResults, this.getScatterOpt(colNamesToShow, nameOfNonFixedOutput));
+      DG.Viewer.scatterPlot(funcEvalResults, this.getScatterOpt(colNamesToShow, nameOfNonFixedOutput));
 
     this.openedViewers.push(graphViewer);
     this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
@@ -1288,14 +1286,6 @@ export class SensitivityAnalysisView {
       sharex: true,
       multiAxis: true,
       multiAxisLegendPosition: 'RightCenter',
-    };
-  }
-
-  private getSurfPlotOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Object {
-    return {
-      X: colNamesToShow[0], // here, captials are used due to features of surface plot
-      Y: colNamesToShow[1],
-      Z: nameOfNonFixedOutput,
     };
   }
 
