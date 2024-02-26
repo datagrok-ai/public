@@ -239,7 +239,7 @@ export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.
     return new DG.Widget(ui.divText('Docking has not been run'));
   }
 
-  const autodockResults = matchingValue;
+  const autodockResults = matchingValue.clone();
 
   const widget = new DG.Widget(ui.div([]));
   const targetViewer = await currentTable!.plot.fromType('Biostructure', {
