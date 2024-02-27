@@ -16,6 +16,7 @@ import {
   tanimotoDistance,
   numericDistance,
   tanimotoDistanceIntArray,
+  inverseCommonItemsCount,
 } from '../distance-metrics-methods';
 
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
@@ -23,7 +24,8 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import {DistanceMetricsSubjects, BitArrayMetricsNames,
-  StringMetricsNames, VectorMetricsNames, NumberMetricsNames, IntArrayMetricsNames} from './consts';
+  StringMetricsNames, VectorMetricsNames, NumberMetricsNames, IntArrayMetricsNames,
+  NumberArrayMetricsNames} from './consts';
 
 
 export const vectorDistanceMetricsMethods: { [name: string]: (x: Vector, y: Vector) => number } = {
@@ -60,6 +62,11 @@ export const numberDistanceMetricsMethods: { [name: string]: (args: any) => (x: 
   [NumberMetricsNames.Difference]: numericDistance,
 };
 
+export const numberArrayDistanceMetrics:
+{ [name: string]: (args: any) => (x: ArrayLike<number>, y: ArrayLike<number>) => number } = {
+  [NumberArrayMetricsNames.CommonItems]: inverseCommonItemsCount,
+};
+
 export const AvailableMetrics = {
   [DistanceMetricsSubjects.Vector]: {
     [VectorMetricsNames.Euclidean]: vectorDistanceMetricsMethods[VectorMetricsNames.Euclidean],
@@ -94,7 +101,10 @@ export const AvailableMetrics = {
   },
   [DistanceMetricsSubjects.IntArray]: {
     [IntArrayMetricsNames.TanimotoIntArray]: intArrayDistanceMetricsMethods[IntArrayMetricsNames.TanimotoIntArray],
-  }
+  },
+  [DistanceMetricsSubjects.NumberArray]: {
+    [NumberArrayMetricsNames.CommonItems]: numberArrayDistanceMetrics[NumberArrayMetricsNames.CommonItems],
+  },
 };
 
 export const MetricToDataType: StringDictionary = Object.keys(AvailableMetrics)
@@ -109,8 +119,11 @@ export type AvailableDataTypes = keyof typeof AvailableMetrics;
 export type VectorMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.Vector];
 export type StringMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.String];
 export type BitArrayMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.BitArray];
+export type NumberMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.Number];
+export type IntArrayMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.IntArray];
+export type NumberArrayMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.NumberArray];
 export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics |
-  MmDistanceFunctionsNames | NumberMetricsNames | IntArrayMetricsNames;
+  MmDistanceFunctionsNames | NumberMetricsNames | IntArrayMetricsNames | NumberArrayMetricsNames;
 
 export type ValidTypes =
   { data: string[], metric: StringMetrics | MmDistanceFunctionsNames } |
@@ -136,6 +149,10 @@ export function isMacroMoleculeMetric(name: KnownMetrics) {
 
 export function isNumericMetric(name: KnownMetrics) {
   return MetricToDataType[name] == DistanceMetricsSubjects.Number.toString();
+}
+
+export function isNumberArrayMetric(name: KnownMetrics) {
+  return MetricToDataType[name] == DistanceMetricsSubjects.NumberArray.toString();
 }
 
 /** Manhattan distance between two sequences (match - 0, mismatch - 1) normalized for length. */
@@ -170,6 +187,15 @@ export class Measure {
   }
 
   /**
+   * Returns true if the metric needs arguments to be calculated.
+   * @param {KnownMetrics} method Metric to check if it needs arguments.
+   * @return {boolean} True if the metric needs arguments.
+   * @memberof Measure
+   */
+  public metricNeedsArgs(method: KnownMetrics): boolean {
+    return isMacroMoleculeMetric(method) || isNumericMetric(method) || isNumberArrayMetric(method);
+  }
+  /**
    * Returns custom string distance function specified.
    * @param {opts} opts Options for the measure. used for macromolecule distances
    * @return {DistanceMetric} Callback of the measure chosen.
@@ -181,7 +207,7 @@ export class Measure {
     } = AvailableMetrics;
     if (!dict.hasOwnProperty(this.dataType) || !dict[this.dataType].hasOwnProperty(this.method))
       throw new Error(`Unknown measure ${this.method} for data type ${this.dataType}`);
-    return isMacroMoleculeMetric(this.method) || isNumericMetric(this.method) ?
+    return this.metricNeedsArgs(this.method) ?
       (dict[this.dataType][this.method] as ((opts: any) => DistanceMetric))(opts) :
       dict[this.dataType][this.method] as DistanceMetric;
   }

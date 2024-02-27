@@ -199,3 +199,35 @@ export function numericDistance(args?: {range?: number}) {
 
   return (a: number, b: number) => Math.abs(a - b);
 }
+
+export function commonItemsCount(args?: {mostCommon?: Set<number>}) {
+  const mostCommon = args?.mostCommon ?? new Set<number>();
+  return (arr1: ArrayLike<number>, arr2: ArrayLike<number>) => {
+    const len1 = arr1.length;
+    const len2 = arr2.length;
+    let count = 0;
+    let i1 = 0;
+    let i2 = 0;
+
+    while ((i1 < len1) && (i2 < len2)) {
+      if (arr1[i1] === arr2[i2]) {
+        if (!mostCommon?.has(arr1[i1]))
+          ++count;
+        ++i1;
+        ++i2;
+      } else if (arr1[i1] < arr2[i2]) { ++i1; } else { ++i2; }
+    }
+
+    return count;
+  };
+}
+
+export function inverseCommonItemsCount(args?: {mostCommon?: Set<number>}) {
+  const f = commonItemsCount(args);
+  return (arr1: ArrayLike<number>, arr2: ArrayLike<number>) => {
+    if (arr2.length === 0 || arr1.length === 0)
+      return 10000;
+
+    return Math.min(arr1.length, arr2.length) / (f(arr1, arr2) + 0.0001);
+  };
+}
