@@ -10,7 +10,7 @@ import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
-import {HistoryPanel} from '../../shared-components/src/history-panel';
+import {HistoricalRunEdit, HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
@@ -447,7 +447,7 @@ export abstract class FunctionView extends DG.ViewBase {
     const editBtn = ui.iconFA('edit', () => {
       if (!this.historyBlock || !this.lastCall) return;
 
-      this.historyBlock.showEditDialog(this.lastCall);
+      new HistoricalRunEdit(this.lastCall);
     }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
@@ -612,7 +612,9 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
 
-    if (this.options.historyEnabled && this.isHistoryEnabled) this.buildHistoryBlock();
+    if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
+      this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
+
     this.isHistorical.next(true);
 
     await this.onAfterSaveRun(savedCall);
@@ -759,7 +761,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public isHistorical = new BehaviorSubject<boolean>(false);
 
-  protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
+  protected historyRoot: HTMLDivElement = ui.box();
 
   public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
 

@@ -79,7 +79,12 @@ export namespace historyUtils {
    */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
-      .include('inputs, outputs, session.user').find(funcCallId);
+      .include('inputs, outputs').find(funcCallId);
+    // Workaorund for https://reddata.atlassian.net/browse/GROK-14061
+    const pulledRunAuthor = (await grok.dapi.functions.calls.allPackageVersions()
+      .include('session.user').filter(`id="${funcCallId}"`).list())[0].author;
+
+    pulledRun.dart.A.a = pulledRunAuthor.dart;
 
     await augmentCallWithFunc(pulledRun);
 

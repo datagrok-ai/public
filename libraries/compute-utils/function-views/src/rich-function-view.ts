@@ -13,12 +13,12 @@ import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
-import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
+import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {renderCards} from './shared/utils';
+import {getObservable, renderCards} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 
 const FILE_INPUT_TYPE = 'file';
@@ -26,15 +26,6 @@ const VALIDATION_DEBOUNCE_TIME = 250;
 const RUN_WAIT_TIME = 500;
 
 export type InputVariants = DG.InputBase | FuncCallInput;
-
-function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
-  return new Observable((observer: any) => {
-    const sub = onInput((val: T) => {
-      observer.next(val);
-    });
-    return () => sub.unsubscribe();
-  });
-}
 
 export interface AfterInputRenderPayload {
   prop: DG.Property;
@@ -441,7 +432,7 @@ export class RichFunctionView extends FunctionView {
     const uploadDialog = ui.dialog({'title': 'Upload data'})
       .add(uploadWidget.root)
       .addButton('Compare w/ history', async () => {
-        const historyRuns = renderCards(this.historyBlock!.store.myRuns);
+        const historyRuns = renderCards(this.historyBlock!.store.historyRuns);
         const uploadedRuns = renderCards(uploadedFunccalls);
 
         ui.dialog('Choose runs to compare')
