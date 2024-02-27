@@ -79,7 +79,7 @@ function getStemmedWords(str: string, minCharCount: number): string[] {
 }
 
 /** Return dictionary of stemmed words & a column of indices. */
-function stemmColumn(source: DG.Column<string>, minCharCount: number):
+export function stemmColumn(source: DG.Column<string>, minCharCount: number):
 {dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
   const dict = new Map<string, WordInfo>();
   const size = source.length;
