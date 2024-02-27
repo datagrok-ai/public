@@ -18,8 +18,9 @@ import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {getObservable, renderCards} from './shared/utils';
+import {getObservable} from './shared/utils';
 import {historyUtils} from '../../history-utils';
+import {HistoricalRunsList} from '../../shared-components/src/history-panel';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -432,25 +433,28 @@ export class RichFunctionView extends FunctionView {
     const uploadDialog = ui.dialog({'title': 'Upload data'})
       .add(uploadWidget.root)
       .addButton('Compare w/ history', async () => {
-        const historyRuns = renderCards(this.historyBlock!.store.historyRuns);
-        const uploadedRuns = renderCards(uploadedFunccalls);
+        const historyRuns = new HistoricalRunsList(uploadedFunccalls, {fallbackText: 'No historical runs found'});
+        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {fallbackText: 'No runs uploaded'});
 
         ui.dialog('Choose runs to compare')
           .add(ui.divH([
             ui.divV([
-              ui.label('Uploaded runs'),
-              uploadedRuns.html,
-            ], {style: {width: '150px'}}),
+              ui.label('Uploaded runs', {style: {'padding': '0px 12px'}}),
+              ui.element('div', 'splitbar-horizontal'),
+              uploadedRuns,
+            ], {style: {width: '185px'}}),
+            ui.element('div', 'splitbar-vertical'),
             ui.divV([
-              ui.label('History'),
-              historyRuns.html,
-            ], {style: {width: '150px'}}),
+              ui.label('History', {style: {'padding': '0px 12px'}}),
+              ui.element('div', 'splitbar-horizontal'),
+              historyRuns,
+            ], {style: {width: '185px'}}),
           ], {style: {'justify-content': 'space-evenly'}}))
           .onOK(async () => {
             const fullHistoryRuns = await Promise.all([...historyRuns.selected.values()].map((funcCall) => historyUtils.loadRun(funcCall.id)));
             this.onComparisonLaunch([...fullHistoryRuns, ...uploadedRuns.selected.values()]);
           })
-          .show({width: 330});
+          .show({width: 400});
 
         uploadDialog.close();
       })

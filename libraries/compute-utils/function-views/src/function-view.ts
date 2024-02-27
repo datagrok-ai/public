@@ -407,7 +407,7 @@ export abstract class FunctionView extends DG.ViewBase {
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
           if (isHistoryBlockOpened)
-            grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
+            grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
         } else {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
@@ -435,7 +435,7 @@ export abstract class FunctionView extends DG.ViewBase {
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
       if (!grok.shell.dockManager.findNode(this.historyRoot))
-        grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
+        grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
     });
 
     const exportBtn = ui.comboPopup(
