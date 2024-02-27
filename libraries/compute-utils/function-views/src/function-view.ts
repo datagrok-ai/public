@@ -12,10 +12,11 @@ import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
 import {HistoricalRunEdit, HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
-import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
+import {delay, distinctUntilChanged, filter, take, timestamp} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
+import {properUpdateIndicator} from './shared/utils';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -404,6 +405,10 @@ export abstract class FunctionView extends DG.ViewBase {
         const fullFuncCalls = await Promise.all(ids.map((funcCallId) => historyUtils.loadRun(funcCallId)));
         this.onComparisonLaunch(fullFuncCalls);
       }),
+      newHistoryBlock.onRunEdited.subscribe((editedCall) => {
+        if (editedCall.id === this.funcCall.id && editedCall.options['title'])
+          this.changeViewName(editedCall.options['title']);
+      }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
           if (isHistoryBlockOpened)
@@ -447,7 +452,30 @@ export abstract class FunctionView extends DG.ViewBase {
     const editBtn = ui.iconFA('edit', () => {
       if (!this.historyBlock || !this.lastCall) return;
 
-      new HistoricalRunEdit(this.lastCall);
+      const editDialog = new HistoricalRunEdit(this.funcCall);
+
+      const onEditSub = editDialog.onMetadataEdit.subscribe(async (editOptions) => {
+        ui.setUpdateIndicator(this.root, true);
+        return historyUtils.loadRun(this.funcCall.id, false)
+          .then((fullCall) => {
+            if (editOptions.title) fullCall.options['title'] = editOptions.title;
+            if (editOptions.description) fullCall.options['description'] = editOptions.description;
+            if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
+            if (editOptions.favorite !== 'same') fullCall.options['isFavorite'] = (editOptions.favorite === 'favorited');
+
+            return historyUtils.saveRun(fullCall);
+          })
+          .then((fullCall) => {
+            this.historyBlock?.historyList.updateItem(fullCall);
+            onEditSub.unsubscribe();
+          })
+          .catch((err) => {
+            grok.shell.error(err);
+          }).finally(() => {
+            ui.setUpdateIndicator(this.root, false);
+          });
+      });
+      editDialog.show({center: true, width: 500});
     }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {

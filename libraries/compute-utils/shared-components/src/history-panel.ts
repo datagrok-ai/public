@@ -474,6 +474,7 @@ class HistoricalRunCard extends DG.Widget {
 
   updateCard(updatedFunccall: DG.FuncCall) {
     this.onFuncCallChanged.next(updatedFunccall);
+    this.onMetadataEdit.next(updatedFunccall);
   }
 
   async deleteCard(showDialog = true) {
@@ -632,6 +633,9 @@ export class HistoryPanel extends DG.Widget {
   // Emitted when FuncCalls are called for comparison. Contains FuncCalls' IDs
   public onComparison = new Subject<string[]>();
 
+  // Emitted when FuncCall is edited
+  public onRunEdited = new Subject<DG.FuncCall>();
+
   // Emitted when FuncCall is deleted
   public afterRunDeleted = new Subject<DG.FuncCall>();
 
@@ -699,6 +703,8 @@ export class HistoryPanel extends DG.Widget {
         const run = this.allRuns.value.find((call) => call.id === editedCall.id);
         if (run) run.options = {...editedCall.options};
       }
+
+      this.onRunEdited.next(editedCall);
 
       this.historyFilter.addTag(editedCall);
     });
