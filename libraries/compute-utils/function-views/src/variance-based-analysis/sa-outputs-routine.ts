@@ -34,20 +34,11 @@ export type SensitivityAnalysisResult = {
 
 function getCellCoordinatesFromRow(df: DG.DataFrame, spec: OutputDataFromUI): CellCoordinates[] {
   const rowCount = df.rowCount;
-  let idx: number = 0;
   const row = spec.value.row;
 
   // Last/first row case
-  if (row !== null) {
-    if ((row >= 1) && (row <= rowCount))
-      idx = row - 1;
-    else if (row == -1)
-      idx = rowCount - 1;
-    else
-      throw new Error(INCORRECT_ROW_MSG);
-
-    return df.columns.names().map((colName) => ({idx: idx, columnName: colName}));
-  }
+  if (row !== null)
+    return df.columns.names().map((colName) => ({idx: row, columnName: colName}));
 
   // By value in column
   const col = df.col(spec.value.colName);
@@ -162,12 +153,13 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 
       case DG.TYPE.DATA_FRAME:
         const df = funcCall.outputs[name] as DG.DataFrame;
+        const lastIdx = df.rowCount - 1;
 
         if (item.elements) {
           for (const elem of item.elements) {
             table.col(elem.columnName)?.set(
               row,
-              df.col(elem.columnName)?.get(elem.idx),
+              df.col(elem.columnName)?.get((elem.idx !== -1) ? elem.idx : lastIdx),
             );
           }
         }

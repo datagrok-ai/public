@@ -1273,7 +1273,7 @@ export class SensitivityAnalysisView {
           rowVal = -1;
           break;
         case DF_OPTIONS.FIRST_ROW:
-          rowVal = 1;
+          rowVal = 0;
           break;
 
         default:
