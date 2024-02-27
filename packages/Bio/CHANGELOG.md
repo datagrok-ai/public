@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.11.35 (2024-02-26)
+
+### Features
+
+* #2706: Polytool: init rule based generation
+
 ## 2.11.34 (2024-02-20)
 
 ### Bug fixes
