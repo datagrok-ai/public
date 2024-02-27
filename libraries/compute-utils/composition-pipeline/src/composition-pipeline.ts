@@ -72,7 +72,7 @@ export type PipelineHookConfiguration = {
   handler: Handler;
 }
 
-export type ActionConfiguraion = PipelineLinkConfiguration & {
+export type ActionConfiguraion = PipelineHookConfiguration & {
   position: 'buttons' | 'menu';
   runStepOnComplete?: boolean;
 }
@@ -790,9 +790,9 @@ export class CompositionPipeline {
     }
     delete mergeConf.itemsToRemove;
     const {stepsToAdd, popupsToAdd, actionsToAdd} = mergeConf;
-    this.processMergeNodeList(stepsToAdd ?? [], path, toAdd, 'step');
-    this.processMergeNodeList(popupsToAdd ?? [], path, toAdd, 'popup');
-    this.processMergeNodeList(actionsToAdd ?? [], path, toAdd, 'action');
+    this.processMergeNodeList(stepsToAdd ?? [], subPath, toAdd, 'step');
+    this.processMergeNodeList(popupsToAdd ?? [], subPath, toAdd, 'popup');
+    this.processMergeNodeList(actionsToAdd ?? [], subPath, toAdd, 'action');
     delete mergeConf.stepsToAdd;
     delete mergeConf.popupsToAdd;
     delete mergeConf.actionsToAdd;

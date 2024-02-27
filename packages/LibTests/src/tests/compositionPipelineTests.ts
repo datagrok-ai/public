@@ -388,7 +388,6 @@ category('CompositionPipeline composition config', async () => {
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
     console.log(actual);
-
   });
 
   test('3 configs nested remove items', async () => {
@@ -402,6 +401,141 @@ category('CompositionPipeline composition config', async () => {
       ]
     };
     const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], conf2)], cconf);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 configs add items', async () => {
+    const cconf: PipelineCompositionConfiguration = {
+      ...conf3,
+      actionsToAdd: [
+        [{
+          id: 'addedAction1',
+          handler: 'LibTests:MockHandler2',
+          position: 'buttons',
+        }, ['step2']],
+        [{
+          id: 'addedAction2',
+          handler: 'LibTests:MockHandler2',
+          position: 'menu',
+        }, ['testPipeline2', 'step2', 'addedPopup1']]
+      ],
+      popupsToAdd: [
+        [{
+          id: 'addedPopup1',
+          nqName: 'LibTests:MockPopup2',
+          position: 'buttons',
+        }, ['testPipeline2', 'step2']]
+      ]
+    };
+    const composedConfig = CompositionPipeline.compose([conf1, conf2], cconf);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 configs nested add items', async () => {
+    const cconf3: PipelineCompositionConfiguration = {
+      ...conf3,
+      actionsToAdd: [
+        [{
+          id: 'addedAction1',
+          handler: 'LibTests:MockHandler2',
+          position: 'buttons',
+        }, ['step2']],
+        [{
+          id: 'addedAction2',
+          handler: 'LibTests:MockHandler2',
+          position: 'menu',
+        }, ['testPipeline2', 'testPipeline1', 'step2', 'addedPopup1']]
+      ],
+    };
+    const cconf2: PipelineCompositionConfiguration = {
+      ...conf2,
+      popupsToAdd: [
+        [{
+          id: 'addedPopup1',
+          nqName: 'LibTests:MockPopup2',
+          position: 'buttons',
+        }, ['testPipeline1', 'step2']]
+      ]
+    };
+    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], cconf2)], cconf3);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('2 configs add steps', async () => {
+    const cconf: PipelineCompositionConfiguration = {
+      ...sconfig2,
+      stepsToAdd: [[
+        {
+          id: 'addedStep1',
+          nqName: 'LibTests:MockPopup2'
+        },
+        ['testPipeline1', 'step1'],
+      ]]
+    };
+    const composedConfig = CompositionPipeline.compose([sconfig1], cconf);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('2 configs add/remove steps', async () => {
+    const cconf: PipelineCompositionConfiguration = {
+      ...sconfig2,
+      stepsToAdd: [[
+        {
+          id: 'addedStep1',
+          nqName: 'LibTests:MockPopup2'
+        },
+        ['testPipeline1', 'step2'],
+      ]],
+      itemsToRemove: [[
+        'testPipeline1', 'step2'
+      ]]
+    };
+    const composedConfig = CompositionPipeline.compose([sconfig1], cconf);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    console.log(actual);
+  });
+
+  test('3 configs nested add steps',  async () => {
+    const cconf3: PipelineCompositionConfiguration = {
+      ...conf3,
+      stepsToAdd: [[
+        {
+          id: 'addedStep1',
+          nqName: 'LibTests:MockPopup2'
+        },
+        ['testPipeline2', 'step2'],
+      ]],
+    };
+    const cconf2: PipelineCompositionConfiguration = {
+      ...conf2,
+      stepsToAdd: [[
+        {
+          id: 'addedStep2',
+          nqName: 'LibTests:MockPopup2'
+        },
+        ['testPipeline1', 'step2'],
+      ]],
+    };
+    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], cconf2)], cconf3);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();

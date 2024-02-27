@@ -124,11 +124,24 @@ export function MockHook1(params: any) {
   return;
 }
 
+//name: MockHook2
+//input: object params
+export function MockHook2(params: any) {
+  return;
+}
+
 //name: MockHandler1
 //input: object params
 export function MockHandler1(params: any) {
   return;
 }
+
+//name: MockHandler2
+//input: object params
+export function MockHandler2(params: any) {
+  return;
+}
+
 
 //name: MockPopup1
 //input: double a
@@ -138,6 +151,16 @@ export function MockHandler1(params: any) {
 export function MockPopup1(a: number, b: number, c: number) {
   return a * b * c;
 }
+
+//name: MockPopup2
+//input: double a
+//input: double b
+//input: double c
+//output: double res
+export function MockPopup2(a: number, b: number, c: number) {
+  return a + b + c;
+}
+
 
 //name: TestFn1
 //input: double a
