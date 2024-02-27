@@ -385,6 +385,7 @@ export class SensitivityAnalysisView {
   private helpIcon: HTMLElement;
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
+  private gridSubscription: any = null;
 
   store = this.generateInputFields(this.func);
   comparisonView: DG.TableView;
@@ -478,6 +479,11 @@ export class SensitivityAnalysisView {
       this.helpMdNode.detachFromParent();
       this.helpMdNode.container.destroy();
       this.helpMdNode = undefined;
+    }
+
+    if (this.gridSubscription) {
+      this.gridSubscription.unsubscribe();
+      this.gridSubscription = null;
     }
   }
 
@@ -804,9 +810,6 @@ export class SensitivityAnalysisView {
       funcEvalResults.columns.add(col);
     }
 
-    const ID_COLUMN_NAME = 'ID';
-    funcEvalResults.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)));
-
     // hide columns with fixed inputs
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
     this.comparisonView.grid.columns.setVisible(colNamesToShow);
@@ -842,11 +845,8 @@ export class SensitivityAnalysisView {
 
     this.openedViewers = this.openedViewers.concat([bChartSobol1, bChartSobolT]);
 
-    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
-      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
-
-      if (!selectedRun) return;
+    this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
       const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -876,17 +876,29 @@ export class SensitivityAnalysisView {
         return acc;
       }, {} as {[name: string]: HTMLElement[]});
 
-      const overviewPanelConfig = {
-        'Output scalars': [scalarTable],
-        ...dfPanes,
-      };
+      let overviewPanelConfig: Object;
+      let paneToExpandIdx: number;
+
+      if (scalarParams.length > 0) {
+        paneToExpandIdx = 1;
+        overviewPanelConfig = {
+          'Output scalars': [scalarTable],
+          ...dfPanes,
+        };
+      } else {
+        paneToExpandIdx = 0;
+        overviewPanelConfig = {
+          ...dfPanes,
+        };
+      }
+
       const overviewPanel = ui.accordion();
       $(overviewPanel.root).css({'width': '100%'});
       Object.entries(overviewPanelConfig).map((e) => {
         overviewPanel.addPane(e[0], () => ui.divV(e[1]));
       });
 
-      this.comparisonView.grid.props.rowHeight = 25;
+      overviewPanel.panes[paneToExpandIdx].expanded = true;
 
       grok.shell.o = overviewPanel.root;
     });
@@ -946,9 +958,6 @@ export class SensitivityAnalysisView {
       funcEvalResults.columns.add(col);
     }
 
-    const ID_COLUMN_NAME = 'ID';
-    funcEvalResults.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)));
-
     // hide columns with fixed inputs
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
     this.comparisonView.grid.columns.setVisible(colNamesToShow);
@@ -974,11 +983,8 @@ export class SensitivityAnalysisView {
     this.openedViewers.push(graphViewer);
     this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
 
-    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
-      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
-
-      if (!selectedRun) return;
+    this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
       const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1008,15 +1014,29 @@ export class SensitivityAnalysisView {
         return acc;
       }, {} as {[name: string]: HTMLElement[]});
 
-      const overviewPanelConfig = {
-        'Output scalars': [scalarTable],
-        ...dfPanes,
-      };
+      let overviewPanelConfig: Object;
+      let paneToExpandIdx: number;
+
+      if (scalarParams.length > 0) {
+        paneToExpandIdx = 1;
+        overviewPanelConfig = {
+          'Output scalars': [scalarTable],
+          ...dfPanes,
+        };
+      } else {
+        paneToExpandIdx = 0;
+        overviewPanelConfig = {
+          ...dfPanes,
+        };
+      }
+
       const overviewPanel = ui.accordion();
       $(overviewPanel.root).css({'width': '100%'});
       Object.entries(overviewPanelConfig).map((e) => {
         overviewPanel.addPane(e[0], () => ui.divV(e[1]));
       });
+
+      overviewPanel.panes[paneToExpandIdx].expanded = true;
 
       grok.shell.o = overviewPanel.root;
     });
@@ -1097,11 +1117,7 @@ export class SensitivityAnalysisView {
       }
     }
 
-    const ID_COLUMN_NAME = 'ID';
-    const inputsOfInterestColumns = [
-      DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)),
-      ...variedInputsColumns,
-    ];
+    const inputsOfInterestColumns = [...variedInputsColumns];
 
     const len = inputsOfInterestColumns.length;
     const funcEvalResults = DG.DataFrame.fromColumns([inputsOfInterestColumns[0]]);
@@ -1137,7 +1153,7 @@ export class SensitivityAnalysisView {
       funcEvalResults.columns.add(outCol);
     }
 
-    const colNamesToShow = funcEvalResults.columns.names().filter((name) => name !== ID_COLUMN_NAME);
+    const colNamesToShow = funcEvalResults.columns.names();
 
     for (const col of fixedInputsColumns) {
       col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
@@ -1145,12 +1161,9 @@ export class SensitivityAnalysisView {
     }
 
     this.comparisonView.dataFrame = funcEvalResults;
-    this.comparisonView.grid.col(ID_COLUMN_NAME)!.visible = false;
-    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
-      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
 
-      if (!selectedRun) return;
+    this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
       const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1180,15 +1193,29 @@ export class SensitivityAnalysisView {
         return acc;
       }, {} as {[name: string]: HTMLElement[]});
 
-      const overviewPanelConfig = {
-        'Output scalars': [scalarTable],
-        ...dfPanes,
-      };
+      let overviewPanelConfig: Object;
+      let paneToExpandIdx: number;
+
+      if (scalarParams.length > 0) {
+        paneToExpandIdx = 1;
+        overviewPanelConfig = {
+          'Output scalars': [scalarTable],
+          ...dfPanes,
+        };
+      } else {
+        paneToExpandIdx = 0;
+        overviewPanelConfig = {
+          ...dfPanes,
+        };
+      }
+
       const overviewPanel = ui.accordion();
       $(overviewPanel.root).css({'width': '100%'});
       Object.entries(overviewPanelConfig).map((e) => {
         overviewPanel.addPane(e[0], () => ui.divV(e[1]));
       });
+
+      overviewPanel.panes[paneToExpandIdx].expanded = true;
 
       grok.shell.o = overviewPanel.root;
     });
