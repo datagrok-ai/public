@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 export const properties: any = {
   "Absorption": {
     "name": "Absorption",
@@ -8,6 +10,7 @@ export const properties: any = {
       "specific": false,
       "units": "-",
       "interpretation": "",
+      "coloring": "",
       "name": "Pgp-Inhibitor"
     },
 		{
@@ -15,6 +18,12 @@ export const properties: any = {
       "specific": false,
       "units": "-",
       "interpretation": "Lower is better",
+      "coloring": {
+        "type": "Linear",
+        "min": "0",
+        "max": "1",
+        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+      },
       "name": "Pgp-Substrate"
     },
     {
@@ -22,6 +31,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "",
+      "coloring": "",
       "name": "HIA"
     },
     {
@@ -34,6 +44,12 @@ export const properties: any = {
           "to_-6_-5.5": "Intermediate",
           "above_-5.5": "Good",
         }
+      },
+      "coloring": {
+        "type": "Linear",
+        "min": "-6",
+        "max": "-5.5",
+        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
       },
       "name": "Caco2"
     },
@@ -48,6 +64,7 @@ export const properties: any = {
           "above_5": "Bad",
         }
       },
+      "coloring": "",
       "name": "Lipophilicity"
     },
     {
@@ -55,6 +72,12 @@ export const properties: any = {
       "specific": true,
       "units": "log mol/L",
       "interpretation": "The higher the better",
+      "coloring": {
+        "type": "Linear",
+        "min": "-4.5",
+        "max": "-1",
+        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+      },
       "name": "Solubility"
     }]
   },
@@ -73,6 +96,12 @@ export const properties: any = {
           "above_90": "High",
         }
       },
+      "coloring": {
+        "type": "Conditional",
+        "> 90": `${DG.Color.toHtml(DG.Color.cyan)}`,
+        "40-90": `${DG.Color.toHtml(DG.Color.maroon)}`,
+        "< 40": `${DG.Color.toHtml(DG.Color.yellow)}`,
+      },
       "name": "PPBR"
     },
     {
@@ -86,6 +115,12 @@ export const properties: any = {
           "above_2": "High",
         }
       },
+      "coloring": {
+        "type": "Conditional",
+        "> 2": `${DG.Color.toHtml(DG.Color.cyan)}`,
+        "1-2": `${DG.Color.toHtml(DG.Color.maroon)}`,
+        "< 1": `${DG.Color.toHtml(DG.Color.yellow)}`,
+      },
       "name": "VDss"
     },
     {
@@ -93,6 +128,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "",
+      "coloring": "",
       "name": "BBB"
     }]
   },
@@ -105,6 +141,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP1A2-Inhibitor"
     },
     {
@@ -112,6 +149,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP1A2-Substrate"
     },
     {
@@ -119,6 +157,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP3A4-Inhibitor"
     },
     {
@@ -126,6 +165,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP3A4-Substrate"
     },
     {
@@ -133,6 +173,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C19-Inhibitor"
     },
     {
@@ -140,6 +181,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C19-Substrate"
     },
     {
@@ -147,6 +189,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C9-Inhibitor"
     },
     {
@@ -154,6 +197,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C9-Substrate"
     },
     {
@@ -161,6 +205,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2D6-Inhibitor"
     },
     {
@@ -168,6 +213,7 @@ export const properties: any = {
       "specific": true,
       "units": "-",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2D6-Substrate"
     }]
   },
@@ -186,6 +232,12 @@ export const properties: any = {
           "above_100": "Bad",
         }
       },
+      "coloring": {
+        "type": "Linear",
+        "min": "10",
+        "max": "100",
+        "colors": `[${DG.Color.green}, ${DG.Color.red}]`,
+      },
       "name": "CL-Hepa"
     },
     {
@@ -199,6 +251,12 @@ export const properties: any = {
           "above_100": "Bad",
         }
       },
+      "coloring": {
+        "type": "Linear",
+        "min": "10",
+        "max": "100",
+        "colors": `[${DG.Color.green}, ${DG.Color.red}]`,
+      },
       "name": "CL-Micro"
     },
     {
@@ -206,6 +264,7 @@ export const properties: any = {
       "specific": true,
       "units": "hours",
       "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "Half-Life"
     }]
   },
