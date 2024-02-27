@@ -5,6 +5,7 @@ import {ISeqSplitted} from '../../utils/macromolecule/types';
 import {splitAlignedSequences} from '../splitter';
 import {getSplitter} from './utils';
 import {TAGS as bioTAGS} from '../../utils/macromolecule';
+import {UnitsHandler} from '../units-handler';
 
 export enum SCORE {
   IDENTITY = 'identity',
@@ -21,8 +22,10 @@ export async function calculateScores(
   table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE
 ): Promise<DG.Column<number>> {
   const splitSeqDf = splitAlignedSequences(col);
-  const splitter = getSplitter(col.getTag(DG.TAGS.UNITS), col.getTag(bioTAGS.separator));
-  const refSplitted = splitter(ref);
+  const srcUh = UnitsHandler.getOrCreate(col);
+  const refCol = srcUh.getNewColumnFromList('ref', [ref]);
+  const refUh = UnitsHandler.getOrCreate(refCol);
+  const refSplitted = refUh.splitted[0]; // ref is at 0
 
   const scoresCol = scoring === SCORE.IDENTITY ? calculateIdentity(refSplitted, splitSeqDf) :
     scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf) : null;
@@ -47,7 +50,7 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
     const posCol = positionsDf.columns.byIndex(posIdx);
     positionCols[posIdx] = posCol.getRawData() as Uint32Array;
     positionEmptyCategories[posIdx] = posCol.categories.indexOf('');
-    categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(reference[posIdx] ?? '');
+    categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(reference[posIdx].original ?? '');
   }
 
   const identityScoresCol = DG.Column.float('Identity', positionsDf.rowCount);

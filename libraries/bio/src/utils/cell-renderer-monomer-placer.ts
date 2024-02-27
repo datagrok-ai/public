@@ -5,7 +5,7 @@ import {Unsubscribable} from 'rxjs';
 import wu from 'wu';
 
 import {UnitsHandler} from './units-handler';
-import {SplitterFunc, MonomerToShortFunc, getSplitterForColumn, ALPHABET} from './macromolecule';
+import {MonomerToShortFunc, ALPHABET} from './macromolecule';
 import {IMonomerLib, Monomer} from '../types';
 import {HELM_POLYMER_TYPE} from './const';
 
@@ -24,7 +24,6 @@ const polymerTypeMap = {
 };
 
 export class MonomerPlacer {
-  private readonly _splitter: SplitterFunc;
   private _monomerLengthList: number[][] | null = null;
 
   // width of separator symbol
@@ -45,7 +44,6 @@ export class MonomerPlacer {
     public readonly col: DG.Column<string>,
     private readonly propsProvider: () => MonomerPlacerProps
   ) {
-    this._splitter = getSplitterForColumn(this.col);
     this.props = this.propsProvider();
     this._rowsProcessed = DG.BitSet.create(this.col.length);
     if (this.grid) {
@@ -120,8 +118,10 @@ export class MonomerPlacer {
     const {startIdx, endIdx} = (() => {
       try {
         if (this.grid && this.grid.dart) {
-          return {startIdx: Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0),
-            endIdx: Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length)};
+          return {
+            startIdx: Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0),
+            endIdx: Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length)
+          };
         } else return {startIdx: 0, endIdx: Math.min(this.col.length, 10)};
       } catch (_e) {
         return {startIdx: 0, endIdx: Math.min(this.col.length, 10)};
@@ -148,8 +148,9 @@ export class MonomerPlacer {
   /** Returns seq position for pointer x */
   public getPosition(rowIdx: number, x: number): number | null {
     const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
+    const uh = UnitsHandler.getOrCreate(this.col);
     const seq: string = this.col.get(rowIdx)!;
-    const seqMonList: string[] = wu(this._splitter(seq)).toArray();
+    const seqMonList: string[] = wu(uh.splitted[rowIdx]).map((m) => m.canonical).toArray();
     if (seqMonList.length === 0) return null;
 
     let iterationCount: number = 100;
@@ -182,7 +183,8 @@ export class MonomerPlacer {
 
   getSeqMonList(rowIdx: number): string[] {
     const seq: string | null = this.col.get(rowIdx);
-    return seq ? wu(this._splitter(seq)).toArray() : [];
+    const uh = UnitsHandler.getOrCreate(this.col);
+    return seq ? wu(uh.splitted[rowIdx]).map((m) => m.canonical).toArray() : [];
   }
 
   public getMonomer(symbol: string): Monomer | null {

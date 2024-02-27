@@ -2,21 +2,22 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {
   after, before, category, test, expect, expectArray, delay, awaitCheck
 } from '@datagrok-libraries/utils/src/test';
-import {
-  TAGS as bioTAGS,
-  splitterAsFasta,
-  splitterAsHelm,
-  NOTATION
-} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, NOTATION, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import {splitToMonomersUI} from '../utils/split-to-monomers';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
-
 import {getHelmMonomers} from '../package';
+
+import {_package} from '../package-test';
+import {SeqMonomer, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 category('splitters', async () => {
   before(async () => {
@@ -143,13 +144,13 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {
-  const res: string[] = splitterAsFasta(src);
+  const res: ISeqSplitted = splitterAsFasta(src, (m, j) => new SeqMonomer(m));
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(res, tgt);
+  expectArray(wu(res).map((m) => m.original).toArray(), tgt);
 }
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
-  const res: string[] = splitterAsHelm(src);
+  const res: ISeqSplitted = splitterAsHelm(src, (m, j) => new SeqMonomer(m));
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(res, tgt);
+  expectArray(wu(res).map((m) => m.original).toArray(), tgt);
 }

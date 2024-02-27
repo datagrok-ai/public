@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {monomerToShort} from './macromolecule/utils';
-import {ISeqSplitted} from './macromolecule/types';
+import {ISeqMonomer, ISeqSplitted} from './macromolecule/types';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
@@ -61,11 +61,11 @@ export function printLeftOrCentered(
     highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
   }
 
-  const currentMonomer: string = referenceSequence[wordIdx];
+  const currentMonomer: ISeqMonomer = referenceSequence[wordIdx];
   if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference'))
-    transparencyRate = (colorPart == currentMonomer) ? 0.3 : transparencyRate;
+    transparencyRate = (colorPart == currentMonomer.canonical) ? 0.3 : transparencyRate;
   if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal'))
-    transparencyRate = (colorPart != currentMonomer) ? 0.3 : transparencyRate;
+    transparencyRate = (colorPart != currentMonomer.canonical) ? 0.3 : transparencyRate;
   if (maxLengthOfMonomer != null)
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
 

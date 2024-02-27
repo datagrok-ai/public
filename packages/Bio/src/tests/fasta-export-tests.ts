@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {saveAsFastaDo, wrapSequence} from '../utils/save-as-fasta';
-import {splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 type SaveAsFastaTestArgs = { srcCsv: string, idCols: string [], seqCol: string, lineWidth: number, tgtFasta: string };
 
@@ -87,10 +88,13 @@ MRGGL
   });
 
   function _testWrapSequence(testKey: string, lineWidth: number = 10) {
-    const splitter = splitterAsFasta;
-
     const srcSeq: string = wrapData[testKey].src;
-    const wrapRes: string[] = wrapSequence(srcSeq, splitter, lineWidth);
+    const col = DG.Column.fromStrings('src', [srcSeq]);
+    col.semType = DG.SEMTYPE.MACROMOLECULE;
+    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    const uh = UnitsHandler.getOrCreate(col);
+    const srcSS = uh.splitted[0];
+    const wrapRes: string[] = wrapSequence(srcSS, lineWidth);
     const wrapTgt: string[] = wrapData[testKey].tgt;
 
     expectArray(wrapRes, wrapTgt);

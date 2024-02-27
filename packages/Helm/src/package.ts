@@ -156,17 +156,17 @@ export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();
 }
 
-function checkMonomersAndOpenWebEditor(cell?: DG.Cell, value?: string, units?: string) {
+function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {
   const cellValue: string = !!cell && units === undefined ? cell.value : value;
   const monomerList: string[] = parseHelm(cellValue);
-  const monomers = findMonomers(monomerList);
-  if (monomers.size === 0)
+  const missedMonomerSet = findMonomers(monomerList);
+  if (missedMonomerSet.size === 0)
     webEditor(cell, value, units);
-  else if (monomers.size === 1 && monomers.has(GapSymbols[NOTATION.HELM]))
+  else if (missedMonomerSet.size === 1 && missedMonomerSet.has(GapSymbols[NOTATION.HELM].original))
     grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapSymbols[NOTATION.HELM]}'.`);
   else {
     grok.shell.warning(
-      `Monomers ${Array.from(monomers).map((m) => `'${m}'`).join(', ')} are absent! <br/>` +
+      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are absent! <br/>` +
       `Please, upload the monomer library! <br/>` +
       `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
   }
@@ -204,11 +204,13 @@ export function propertiesWidget(sequence: DG.SemanticValue): DG.Widget {
   return getPropertiesWidget(sequence);
 }
 
-function webEditor(cell?: DG.Cell, value?: string, units?: string) {
+function webEditor(cell: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
-  const df = grok.shell.tv.grid.dataFrame;
-  const col = df.columns.bySemType('Macromolecule')!;
+  // const df = grok.shell.tv.grid.dataFrame;
+  // const col = df.columns.bySemType('Macromolecule')!;
+  const col = cell.column;
   const uh = UnitsHandler.getOrCreate(col);
+  const rowIdx = cell.rowIndex;
   // @ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
   // @ts-ignore
@@ -244,13 +246,13 @@ function webEditor(cell?: DG.Cell, value?: string, units?: string) {
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
-      const helmValue = app.canvas.getHelm(true).replace(/<\/span>/g, '')
+      const helmValue: string = app.canvas.getHelm(true).replace(/<\/span>/g, '')
         .replace(/<span style='background:#bbf;'>/g, '');
       if (!!cell) {
         if (units === undefined)
           cell.value = helmValue;
         else {
-          const convertedRes = uh.convertHelmToFastaSeparator(helmValue, units!);
+          const convertedRes = uh.convertHelmToFastaSeparator(helmValue, units!, uh.separator);
           cell.value = convertedRes;
         }
       }

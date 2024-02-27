@@ -4,11 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {getSplitterForColumn} from './macromolecule/utils';
+import {UnitsHandler} from './units-handler';
 
 
 export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.DataFrame {
-  const splitter = getSplitterForColumn(sequenceColumn);
   const getCol = (index: number): DG.Column<string> | null => columnList[index] ?? null;
   const createCol = (index: number): DG.Column<string> => {
     const positionCol = resultDf.columns.addNewString((index + 1).toString());
@@ -20,15 +19,19 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
   const rowCount = sequenceColumn.length;
   const resultDf = DG.DataFrame.create(rowCount);
 
-  for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-    const sequence = sequenceColumn.get(rowIndex);
+  const uh = UnitsHandler.getOrCreate(sequenceColumn);
+  const colCats = sequenceColumn.categories;
+  const colRawData = sequenceColumn.getRawData();
+  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+    const catI = colRawData[rowIdx];
+    const sequence = colCats[catI];
     if (sequence == null)
       continue;
 
-    const currentMonomerList = splitter(sequence);
+    const currentMonomerList = uh.splitted[rowIdx];
     for (const [monomer, positionIndex] of wu.enumerate(currentMonomerList)) {
       const col = getCol(positionIndex) || createCol(positionIndex);
-      col.set(rowIndex, monomer || '-', false);
+      col.set(rowIdx, monomer.canonical, false);
     }
   }
 

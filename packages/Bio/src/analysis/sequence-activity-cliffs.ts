@@ -97,18 +97,15 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 
   propPanel.append(ui.divText(params.seqCol.name, {style: {fontWeight: 'bold'}}));
 
-  const sequencesArray = new Array<string>(2);
   const activitiesArray = new Array<number>(2);
   params.points.forEach((molIdx, idx) => {
-    sequencesArray[idx] = params.seqCol.get(molIdx);
     activitiesArray[idx] = params.activityCol.get(molIdx);
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
   const uh = UnitsHandler.getOrCreate(params.seqCol);
-  const splitter = uh.getSplitter();
-  const subParts1 = splitter(sequencesArray[0]);
-  const subParts2 = splitter(sequencesArray[1]);
+  const subParts1 = uh.splitted[params.points[0]]; // splitter(sequencesArray[0], {uh, rowIdx: -1});
+  const subParts2 = uh.splitted[params.points[1]]; // splitter(sequencesArray[1], {uh, rowIdx: -1});
   const canvas = createDifferenceCanvas(subParts1, subParts2, uh.units, molDifferences);
   propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
 

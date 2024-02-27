@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
   monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
@@ -17,7 +17,7 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {GAP_SYMBOL, ISeqMonomer, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
@@ -172,8 +172,7 @@ export class PositionInfo {
     }
   }
 
-  calcScreen(
-    isGap: (m: string) => boolean, posIdx: number, firstVisiblePosIdx: number,
+  calcScreen(posIdx: number, firstVisiblePosIdx: number,
     absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
     positionWidthWithMargin: number, positionWidth: number, dpr: number, positionLabelsHeight: number
   ): void {
@@ -184,13 +183,13 @@ export class PositionInfo {
 
     const entries = Object.entries(this._freqs)
       .sort((a, b) => {
-        if (!isGap(a[0]) && !isGap(b[0]))
+        if (a[0] !== GAP_SYMBOL && b[0] !== GAP_SYMBOL)
           return b[1].value - a[1].value;
-        else if (isGap(a[0]) && isGap(b[0]))
+        else if (a[0] === GAP_SYMBOL && b[0] === GAP_SYMBOL)
           return 0;
-        else if (isGap(a[0]))
+        else if (a[0] === GAP_SYMBOL)
           return -1;
-        else /* (isGap(b[0])) */
+        else /* (b[0] === GAP_SYMBOL) */
           return +1;
       });
     for (const [_m, pmi] of entries) {
@@ -204,11 +203,10 @@ export class PositionInfo {
   }
 
   render(g: CanvasRenderingContext2D,
-    isGap: (m: string) => boolean,
     fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number, cp: SeqPalette
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
-      if (!isGap(monomer)) {
+      if (monomer !== GAP_SYMBOL) {
         const monomerTxt = monomerToShort(monomer, 5);
         const b = pmInfo.bounds!;
         const left = b.left;
@@ -616,13 +614,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private getFilter(): DG.BitSet {
     let dfFilterRes: DG.BitSet;
     switch (this.filterSource) {
-      case FilterSources.Filtered:
-        dfFilterRes = this.dataFrame.filter;
-        break;
+    case FilterSources.Filtered:
+      dfFilterRes = this.dataFrame.filter;
+      break;
 
-      case FilterSources.Selected:
-        dfFilterRes = this.dataFrame.selection.trueCount === 0 ? this.dataFrame.filter : this.dataFrame.selection;
-        break;
+    case FilterSources.Selected:
+      dfFilterRes = this.dataFrame.selection.trueCount === 0 ? this.dataFrame.filter : this.dataFrame.selection;
+      break;
     }
     return dfFilterRes;
   }
@@ -816,45 +814,45 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     super.onPropertyChanged(property);
 
     switch (property.name) {
-      case PROPS.sequenceColumnName:
-        this.updateSeqCol();
-        break;
-      case PROPS.sequenceColumnName:
-      case PROPS.startPositionName:
-      case PROPS.endPositionName:
-      case PROPS.filterSource:
-      case PROPS.shrinkEmptyTail:
-      case PROPS.skipEmptyPositions:
-      case PROPS.positionHeight: {
-        this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
-        break;
-      }
+    case PROPS.sequenceColumnName:
+      this.updateSeqCol();
+      break;
+    case PROPS.sequenceColumnName:
+    case PROPS.startPositionName:
+    case PROPS.endPositionName:
+    case PROPS.filterSource:
+    case PROPS.shrinkEmptyTail:
+    case PROPS.skipEmptyPositions:
+    case PROPS.positionHeight: {
+      this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
+      break;
+    }
 
-      case PROPS.valueColumnName:
-      case PROPS.valueAggrType: {
-        this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
-        break;
-      }
+    case PROPS.valueColumnName:
+    case PROPS.valueAggrType: {
+      this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
+      break;
+    }
       // this.positionWidth obtains a new value
       // this.updateSlider updates this._positionWidth
-      case PROPS.minHeight:
-      case PROPS.maxHeight:
-      case PROPS.positionWidth:
-      case PROPS.showPositionLabels:
-      case PROPS.fixWidth:
-      case PROPS.fitArea:
-      case PROPS.horizontalAlignment:
-      case PROPS.verticalAlignment:
-      case PROPS.positionMargin:
-      case PROPS.positionMarginState: {
-        this.render(WlRenderLevel.Layout, `onPropertyChanged(${property.name})`);
-        break;
-      }
+    case PROPS.minHeight:
+    case PROPS.maxHeight:
+    case PROPS.positionWidth:
+    case PROPS.showPositionLabels:
+    case PROPS.fixWidth:
+    case PROPS.fitArea:
+    case PROPS.horizontalAlignment:
+    case PROPS.verticalAlignment:
+    case PROPS.positionMargin:
+    case PROPS.positionMarginState: {
+      this.render(WlRenderLevel.Layout, `onPropertyChanged(${property.name})`);
+      break;
+    }
 
-      case PROPS.backgroundColor: {
-        this.render(WlRenderLevel.Render, `onPropertyChanged(${property.name})`);
-        break;
-      }
+    case PROPS.backgroundColor: {
+      this.render(WlRenderLevel.Render, `onPropertyChanged(${property.name})`);
+      break;
+    }
     }
   }
 
@@ -927,9 +925,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
+      const gapSymbol: ISeqMonomer = this.unitsHandler!.defaultGapSymbol;
       this.positions = wu(this.positions).filter((pi) => {
-        const gapSymbol: string = this.unitsHandler!.defaultGapSymbol;
-        return !pi.hasMonomer(gapSymbol) || pi.getFreq(gapSymbol).rowCount !== pi.sumRowCount;
+        return !pi.hasMonomer(gapSymbol.canonical) || pi.getFreq(gapSymbol.canonical).rowCount !== pi.sumRowCount;
       }).toArray();
     }
   }
@@ -1004,9 +1002,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) {
             const seqMList: ISeqSplitted = splitted[rowI];
-            const m: string = seqMList[this.startPosition + jPos] || this.unitsHandler.defaultGapSymbol;
+            const m: ISeqMonomer = seqMList[this.startPosition + jPos];
             const pi = this.positions[jPos];
-            const pmi = pi.getFreq(m);
+            const pmi = pi.getFreq(m.canonical);
             ++pi.sumRowCount;
             pmi.value = ++pmi.rowCount;
           }
@@ -1025,9 +1023,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) { // respect the filter
             const seqMList: ISeqSplitted = splitted[rowI];
-            const m: string = seqMList[this.startPosition + jPos] || this.unitsHandler.defaultGapSymbol;
+            const m: ISeqMonomer = seqMList[this.startPosition + jPos];
             const value: number | null = valueCol.get(rowI);
-            this.positions[jPos].getFreq(m).push(value);
+            this.positions[jPos].getFreq(m.canonical).push(value);
           }
         }
         this.positions[jPos].aggregate(this.valueAggrType);
@@ -1066,7 +1064,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
             `this.positions.length = ${this.positions.length}, jPos = ${jPos}`);
           continue;
         }
-        this.positions[jPos].calcScreen((m) => { return this.unitsHandler!.isGap(m); },
+        this.positions[jPos].calcScreen(
           jPos, this.slider.min, absoluteMaxHeight, this.positionHeight,
           alphabetSizeLog, this._positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
       }
@@ -1124,8 +1122,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
       for (let jPos = firstPos; jPos <= lastPos; jPos++) {
-        this.positions[jPos].render(g, (m) => { return this.unitsHandler!.isGap(m); },
-          fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, this.palette);
+        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, this.palette);
       }
     } finally {
       g.restore();
@@ -1340,11 +1337,11 @@ function renderPositionLabels(g: CanvasRenderingContext2D,
 }
 
 export function checkSeqForMonomerAtPos(
-  df: DG.DataFrame, unitsHandler: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
+  df: DG.DataFrame, uh: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
-  const seqMList: ISeqSplitted = unitsHandler.splitted[rowI];
+  const seqMList: ISeqSplitted = uh.splitted[rowI];
   const seqM = at.pos < seqMList.length ? seqMList[at.pos] : null;
-  return ((seqM === monomer) || (seqM === '' && monomer === unitsHandler.defaultGapSymbol));
+  return seqM !== null && seqM.canonical === monomer;
 }
 
 export function countForMonomerAtPosition(
@@ -1355,8 +1352,8 @@ export function countForMonomerAtPosition(
   while ((rowI = filter.findNext(rowI, true)) != -1) {
     const seqMList: ISeqSplitted = uh.splitted[rowI];
     const seqMPos: number = at.pos;
-    const seqM: string | null = seqMPos < seqMList.length ? seqMList[seqMPos] : null;
-    if (seqM === monomer) count++;
+    const seqM: ISeqMonomer | null = seqMPos < seqMList.length ? seqMList[seqMPos] : null;
+    if (seqM !== null && seqM.canonical === monomer) count++;
   }
   return count;
 }

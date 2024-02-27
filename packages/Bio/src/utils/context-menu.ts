@@ -14,10 +14,14 @@ export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu): void {
 
   menu.group('Copy')
     .items(tgtNotationList, (tgtNotation) => {
-      const ncUH = UnitsHandler.getOrCreate(cell.column);
+      const srcCol = cell.column;
+      const srcRowIdx = cell.rowIndex;
+      const srcUh = UnitsHandler.getOrCreate(srcCol);
       const separator = tgtNotation === NOTATION.SEPARATOR ? _package.properties.DefaultSeparator : undefined;
-      const converter = ncUH.getConverter(tgtNotation as NOTATION, separator);
-      const tgtSeq = converter(cell.value);
+      const joiner = srcUh.getJoiner({notation: tgtNotation as NOTATION, separator});
+      const srcSS = srcUh.splitted[srcRowIdx];
+      const tgtSeq = joiner(srcSS);
+
 
       if (!navigator.clipboard) {
         grok.shell.warning('The clipboard functionality requires a secure origin — either HTTPS or localhost');

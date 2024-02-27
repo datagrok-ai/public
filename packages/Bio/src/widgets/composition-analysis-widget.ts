@@ -17,24 +17,25 @@ export function getCompositionAnalysisWidget(val: DG.SemanticValue): DG.Widget {
   const alphabet = val.cell.column.tags[bioTAGS.alphabet];
   let palette: SeqPalette = UnknownSeqPalettes.Color;
   switch (alphabet) {
-    case ALPHABET.DNA:
-    case ALPHABET.RNA:
-      palette = getPaletteByType(ALPHABET.DNA);
-      break;
-    case ALPHABET.PT:
-      palette = getPaletteByType(ALPHABET.PT);
-      break;
-    default:
-      break;
+  case ALPHABET.DNA:
+  case ALPHABET.RNA:
+    palette = getPaletteByType(ALPHABET.DNA);
+    break;
+  case ALPHABET.PT:
+    palette = getPaletteByType(ALPHABET.PT);
+    break;
+  default:
+    break;
   }
 
   const counts: { [m: string]: number } = {};
   const uh = UnitsHandler.getOrCreate(val.cell.column);
-  const splitter = uh.getSplitter();
-  const parts = splitter(val.value);
-  wu(parts).filter((p) => !!p && p !== '').forEach((m: string) => {
-    const count = counts[m] || 0;
-    counts[m] = count + 1;
+  const rowIdx = val.cell.rowIndex;
+  const parts = uh.splitted[rowIdx];
+  wu(parts).filter((p) => !uh.isGap(p)).forEach((m) => {
+    const cm = m.canonical;
+    const count = counts[cm] || 0;
+    counts[cm] = count + 1;
   });
   const table = buildCompositionTable(palette, counts);
   Array.from(table.rows).forEach((row) => {

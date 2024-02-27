@@ -30,7 +30,7 @@ export async function getMonomericMols(
   } else {
     molV3000Array = new Array<string>(mcol.length);
     for (let i = 0; i < mcol.length; i++) {
-      const sequenceMonomers = wu(uh.splitted[i]).filter((it) => it !== '').toArray();
+      const sequenceMonomers = wu(uh.splitted[i]).filter((m) => !uh.isGap(m)).toArray();
       const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
       molV3000Array[i] = molV3000;
     }
@@ -52,8 +52,8 @@ M  V30 BEGIN CTAB
 
   for (let atomRowI = 0; atomRowI < monomers.length; atomRowI++) {
     molV3000 += pattern ?
-      `M  V30 ${atomRowI + 1} R${monomersDict.get(monomers[atomRowI])} 0.000 0.000 0 0\n` :
-      `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(monomers[atomRowI])}\n`;
+      `M  V30 ${atomRowI + 1} R${monomersDict.get(monomers[atomRowI].canonical)} 0.000 0.000 0 0\n` :
+      `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(monomers[atomRowI].canonical)}\n`;
   }
 
   molV3000 += 'M  V30 END ATOM\n';

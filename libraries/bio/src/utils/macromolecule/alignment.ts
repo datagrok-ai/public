@@ -1,25 +1,30 @@
+import {GapSeqMonomer, ISeqMonomer, ISeqSplitted} from './types';
+import {GapSymbols} from '../units-handler';
+import {NOTATION} from './consts';
+
 export type AlignmentOptions = {
-    gapPenalty: number,
-    matchScore: number,
-    gapSymbol: string,
-    localAlignment: boolean,
+  gapPenalty: number,
+  matchScore: number,
+  gapSymbol: ISeqMonomer,
+  localAlignment: boolean,
 }
 
 export const defaultAlignmentOptions: AlignmentOptions = {
   gapPenalty: 1,
   matchScore: 1,
-  gapSymbol: '-',
+  gapSymbol: GapSymbols[NOTATION.FASTA],
   localAlignment: false,
 };
 
-export function alignSequencePair<T extends string | string[]>(template: T, seq: T,
+export function alignSequencePair(template: ISeqSplitted, seq: ISeqSplitted,
   alignmentOptions: Partial<AlignmentOptions> = {},
-): {seq1: string, seq2: string, seq1Splitted: string[], seq2Splitted: string[]} {
+): { seq1: string, seq2: string, seq1Splitted: ISeqMonomer[], seq2Splitted: ISeqMonomer[] } {
   const options = {...defaultAlignmentOptions, ...alignmentOptions};
 
-  function compare(c1: string, c2: string) {
-    return c1 === c2 ? options.matchScore : -options.matchScore;
+  function compare(c1: ISeqMonomer, c2: ISeqMonomer) {
+    return c1.canonical === c2.canonical ? options.matchScore : -options.matchScore;
   }
+
   const templateLen = template.length;
   const seqLen = seq.length;
 
@@ -42,10 +47,10 @@ export function alignSequencePair<T extends string | string[]>(template: T, seq:
 
   let i = options.localAlignment ? index[0] : templateLen;
   let j = options.localAlignment ? index[1] : seqLen;
-  let alignedTemplate = new Array<string>(0);
-  let alignedSeq = new Array<string>(0);
+  let alignedTemplate = new Array<ISeqMonomer>(0);
+  let alignedSeq = new Array<ISeqMonomer>(0);
 
-  while ( i > 0 && j > 0) {
+  while (i > 0 && j > 0) {
     const mx = Math.max(matrix[i - 1][j - 1], matrix[i - 1][j], matrix[i][j - 1]);
 
     if (matrix[i][j] == matrix[i - 1][j - 1] + options.matchScore && mx == matrix[i - 1][j - 1]) {
@@ -55,12 +60,12 @@ export function alignSequencePair<T extends string | string[]>(template: T, seq:
       j -= 1;
     } else {
       if (matrix[i][j] == matrix[i - 1][j] - options.gapPenalty) {
-        alignedSeq.push(options.gapSymbol.valueOf());
+        alignedSeq.push(options.gapSymbol);
         alignedTemplate.push(template[i - 1]);
         i -= 1;
       } else {
         if (matrix[i][j] == matrix[i][j - 1] - options.gapPenalty) {
-          alignedTemplate.push(options.gapSymbol.valueOf());
+          alignedTemplate.push(options.gapSymbol);
           alignedSeq.push(seq[j - 1]);
           j -= 1;
         } else {
@@ -73,9 +78,9 @@ export function alignSequencePair<T extends string | string[]>(template: T, seq:
     }
   }
   alignedTemplate = [...Array.from(template).splice(0, i), ...alignedTemplate.reverse(),
-    ...(options.localAlignment ? Array.from(template).splice(index[0], templateLen) : [] as string[])];
+    ...(options.localAlignment ? Array.from(template).splice(index[0], templateLen) : [])];
   alignedSeq = [...Array.from(seq).splice(0, j), ...alignedSeq.reverse(),
-    ...(options.localAlignment ? Array.from(seq).splice(index[1], seqLen) : [] as string[])];
+    ...(options.localAlignment ? Array.from(seq).splice(index[1], seqLen) : [])];
 
   const templateStart = i;
   const seqStart = j;
@@ -91,6 +96,8 @@ export function alignSequencePair<T extends string | string[]>(template: T, seq:
   else
     alignedSeq.push(...new Array(alignedTemplate.length - alignedSeq.length).fill(options.gapSymbol.valueOf()));
 
-  return {seq1: alignedTemplate.join(''), seq2: alignedSeq.join(''),
-    seq1Splitted: alignedTemplate, seq2Splitted: alignedSeq};
+  return {
+    seq1: alignedTemplate.join(''), seq2: alignedSeq.join(''),
+    seq1Splitted: alignedTemplate, seq2Splitted: alignedSeq
+  };
 }

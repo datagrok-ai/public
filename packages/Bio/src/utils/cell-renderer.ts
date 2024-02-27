@@ -16,7 +16,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import {
   Temps as mmcrTemps, Tags as mmcrTags,
@@ -25,8 +25,8 @@ import {
 import * as C from './constants';
 
 import {_package, getBioLib} from '../package';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
-import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {ISeqMonomer, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {getSplitter, SeqMonomer} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 
@@ -41,14 +41,14 @@ function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: n
 
 export function processSequence(subParts: ISeqSplitted): [string[], boolean] {
   const simplified = !wu.enumerate(subParts).some(([amino, index]) =>
-    amino.length > 1 &&
+    amino.canonical.length > 1 &&
     index != 0 &&
     index != subParts.length - 1);
 
   const text: string[] = [];
   const gap = simplified ? '' : ' ';
   for (const [amino, index] of wu.enumerate(subParts)) {
-    let aminoRes = amino;
+    let aminoRes = amino.canonical;
     if (index < subParts.length)
       aminoRes += `${amino ? '' : '-'}${gap}`;
 
@@ -193,6 +193,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const dpr = window.devicePixelRatio;
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
       const value: any = gridCell.cell.value;
+      const rowIdx = gridCell.cell.rowIndex;
       const paletteType = tableCol.getTag(bioTAGS.alphabet);
       const minDistanceRenderer = 50;
       w = getUpdatedWidth(grid, g, x, w, dpr);
@@ -211,17 +212,21 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
       const splitLimit = w / 5;
       const uh = UnitsHandler.getOrCreate(tableCol);
-      const splitterFunc: SplitterFunc = uh.getSplitter(splitLimit);
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = tableColTemp[tempTAGS.currentWord];
       if (tempCurrentWord && tableCol?.dataFrame?.currentRowIdx === -1)
         tableColTemp[tempTAGS.currentWord] = null;
-      const referenceSequence: ISeqSplitted = splitterFunc(
-        ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
-          tempReferenceSequence : tempCurrentWord ?? '');
 
-      const subParts: ISeqSplitted = splitterFunc(value);
+      const referenceSequence: ISeqSplitted = (() => {
+        // @ts-ignore
+        const splitterFunc: SplitterFunc = uh.getSplitter(splitLimit);
+        return splitterFunc(
+          ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
+            tempReferenceSequence : tempCurrentWord ?? '', (m, jPos) => new SeqMonomer(m));
+      })();
+
+      const subParts: ISeqSplitted = uh.splitted[rowIdx];
       /* let x1 = x; */
       let color = undefinedColor;
       let drawStyle = DrawStyle.classic;
@@ -230,12 +235,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         drawStyle = DrawStyle.MSA;
 
       for (const [amino, index] of wu.enumerate(subParts)) {
-        color = palette.get(amino);
+        color = palette.get(amino.canonical);
         g.fillStyle = undefinedColor;
         const last = index === subParts.length - 1;
         /*x1 = */
         printLeftOrCentered(x + this.padding, y, w, h,
-          g, amino, color, 0, true, 1.0, separator, last, drawStyle,
+          g, amino.canonical, color, 0, true, 1.0, separator, last, drawStyle,
           maxLengthWordsSum, index, gridCell, referenceSequence, maxLengthOfMonomer, seqColTemp._monomerLengthMap);
         if (minDistanceRenderer > w) break;
       }
@@ -285,8 +290,8 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = getSplitter(units, separator);
-    const subParts1 = splitter(s1);
-    const subParts2 = splitter(s2);
+    const subParts1 = splitter(s1, (m, jPos) => new SeqMonomer(m));
+    const subParts2 = splitter(s2, (m, jPos) => new SeqMonomer(m));
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units);
   }
 }
@@ -304,7 +309,7 @@ export function drawMoleculeDifferenceOnCanvas(
   molDifferences?: { [key: number]: HTMLCanvasElement },
 ): void {
   if (subParts1.length !== subParts2.length) {
-    const sequences: IComparedSequences = fillShorterSequence(wu(subParts1).toArray(), wu(subParts2).toArray());
+    const sequences: IComparedSequences = fillShorterSequence(subParts1, subParts2);
     subParts1 = sequences.subParts1;
     subParts2 = sequences.subParts2;
   }
@@ -334,34 +339,31 @@ export function drawMoleculeDifferenceOnCanvas(
   for (let i = 0; i < subParts1.length; i++) {
     const amino1 = subParts1[i];
     const amino2 = subParts2[i];
-    const color1 = palette.get(amino1);
+    const color1 = palette.get(amino1.canonical);
 
-    if (amino1 != amino2) {
-      const color2 = palette.get(amino2);
-      const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
-      const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
+    if (amino1.canonical != amino2.canonical) {
+      const color2 = palette.get(amino2.canonical);
+      const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g,
+        amino1.canonical, color1, 0, true);
+      const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g,
+        amino2.canonical, color2, 0, true);
       updatedX = Math.max(subX1, subX0);
       if (molDifferences)
         molDifferences[i] = createDifferenceCanvas(amino1, amino2, color1, color2, updatedY, vShift, h);
-    } else { updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5); }
+    } else { updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, amino1.canonical, color1, 0, true, 0.5); }
     updatedX += 4;
   }
   g.restore();
 }
 
 interface IComparedSequences {
-  subParts1: string[];
-  subParts2: string[];
+  subParts1: ISeqSplitted;
+  subParts2: ISeqSplitted;
 }
 
-function createDifferenceCanvas(
-  amino1: string,
-  amino2: string,
-  color1: string,
-  color2: string,
-  y: number,
-  shift: number,
-  h: number): HTMLCanvasElement {
+function createDifferenceCanvas(amino1: ISeqMonomer, amino2: ISeqMonomer, color1: string, color2: string,
+  y: number, shift: number, h: number
+): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d')!;
   context.font = '12px monospace';
@@ -372,12 +374,12 @@ function createDifferenceCanvas(
   canvas.width = width + 4;
   context.font = '12px monospace';
   context.textBaseline = 'top';
-  printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
-  printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
+  printLeftOrCentered(0, y - shift, width, h, context, amino1.canonical, color1, 0, true);
+  printLeftOrCentered(0, y + shift, width, h, context, amino2.canonical, color2, 0, true);
   return canvas;
 }
 
-function fillShorterSequence(subParts1: string[], subParts2: string[]): IComparedSequences {
+function fillShorterSequence(subParts1: ISeqSplitted, subParts2: ISeqSplitted): IComparedSequences {
   let numIdenticalStart = 0;
   let numIdenticalEnd = 0;
   const longerSeq = subParts1.length > subParts2.length ? subParts1 : subParts2;
@@ -394,14 +396,14 @@ function fillShorterSequence(subParts1: string[], subParts2: string[]): ICompare
       numIdenticalEnd++;
   }
 
-  const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
+  const emptyMonomersArray = new Array<ISeqMonomer>(Math.abs(subParts1.length - subParts2.length)).fill(GapSymbols[NOTATION.FASTA]);
 
-  function concatWithEmptyVals(subparts: string[]): string[] {
+  function concatWithEmptyVals(subparts: ISeqMonomer[]): ISeqMonomer[] {
     return numIdenticalStart > numIdenticalEnd ?
       subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
   }
 
   subParts1.length > subParts2.length ?
-    subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
+    subParts2 = concatWithEmptyVals(wu(subParts2).toArray()) : subParts1 = concatWithEmptyVals(wu(subParts1).toArray());
   return {subParts1: subParts1, subParts2: subParts2};
 }

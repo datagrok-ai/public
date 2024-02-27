@@ -15,9 +15,9 @@ enum Tests {
 }
 
 category('UnitsHandler', () => {
-  const fG = GapSymbols[NOTATION.FASTA];
-  const hG = GapSymbols[NOTATION.HELM];
-  const sG = GapSymbols[NOTATION.SEPARATOR];
+  const fG = GapSymbols[NOTATION.FASTA].original;
+  const hG = GapSymbols[NOTATION.HELM].original;
+  const sG = GapSymbols[NOTATION.SEPARATOR].original;
   const data: {
     [testName: string]: {
       src: { csv: string },
