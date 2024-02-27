@@ -433,8 +433,22 @@ export class RichFunctionView extends FunctionView {
     const uploadDialog = ui.dialog({'title': 'Upload data'})
       .add(uploadWidget.root)
       .addButton('Compare w/ history', async () => {
-        const historyRuns = new HistoricalRunsList(uploadedFunccalls, {fallbackText: 'No historical runs found'});
-        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {fallbackText: 'No runs uploaded'});
+        const historyRuns = new HistoricalRunsList(this.historyBlock!.history, {
+          fallbackText: 'No historical runs found',
+          showDelete: false,
+          showEdit: false,
+          showFavorite: false,
+          showAuthorIcon: false,
+          showCompare: false,
+        });
+        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+          fallbackText: 'No runs uploaded',
+          showDelete: false,
+          showEdit: false,
+          showFavorite: false,
+          showAuthorIcon: false,
+          showCompare: false,
+        });
 
         ui.dialog('Choose runs to compare')
           .add(ui.divH([
@@ -443,19 +457,19 @@ export class RichFunctionView extends FunctionView {
               ui.element('div', 'splitbar-horizontal'),
               uploadedRuns,
             ], {style: {width: '185px'}}),
-            ui.element('div', 'splitbar-vertical'),
             ui.divV([
               ui.label('History', {style: {'padding': '0px 12px'}}),
               ui.element('div', 'splitbar-horizontal'),
               historyRuns,
             ], {style: {width: '185px'}}),
-          ], {style: {'justify-content': 'space-evenly'}}))
+          ], {style: {'justify-content': 'space-between', 'gap': '10px'}}))
           .onOK(async () => {
             const fullHistoryRuns = await Promise.all([...historyRuns.selected.values()].map((funcCall) => historyUtils.loadRun(funcCall.id)));
             this.onComparisonLaunch([...fullHistoryRuns, ...uploadedRuns.selected.values()]);
           })
           .show({width: 400});
 
+        $(uploadDialog.root.parentElement).removeClass('ui-form');
         uploadDialog.close();
       })
       .addButton('Compare w/ current', async () => {

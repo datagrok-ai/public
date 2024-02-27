@@ -129,7 +129,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected changeViewName(newName: string) {
     this.name = newName;
-    // TODO: Find a reproducible sample of the bug
+    // Workaround for https://reddata.atlassian.net/browse/GROK-14674
     document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
   }
 
@@ -406,8 +406,14 @@ export abstract class FunctionView extends DG.ViewBase {
         this.onComparisonLaunch(fullFuncCalls);
       }),
       newHistoryBlock.onRunEdited.subscribe((editedCall) => {
-        if (editedCall.id === this.funcCall.id && editedCall.options['title'])
-          this.changeViewName(editedCall.options['title']);
+        if (editedCall.id === this.funcCall.id && editedCall.options['title']) {
+          this.path = `?id=${this.funcCall.id}`;
+          const dateStarted = new Date(editedCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+          if ((this.name.indexOf(' — ') < 0))
+            this.changeViewName(`${this.name} — ${editedCall.options['title'] ?? dateStarted}`);
+          else
+            this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${editedCall.options['title'] ?? dateStarted}`);
+        }
       }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {

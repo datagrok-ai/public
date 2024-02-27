@@ -29,7 +29,7 @@ export class HistoricalRunsList extends DG.Widget {
   public onDelete = new Subject<DG.FuncCall>();
   public onClicked = new Subject<DG.FuncCall>();
 
-  private cards = this.initialFuncCalls.map((funcCall) => new HistoricalRunCard(funcCall));
+  private cards = this.initialFuncCalls.map((funcCall) => new HistoricalRunCard(funcCall, this.options));
 
   private onSelectedRunsChanged = new BehaviorSubject<Set<DG.FuncCall>>(new Set());
   private onRunsChanged = new BehaviorSubject<DG.FuncCall[]>(this.initialFuncCalls);
@@ -40,9 +40,14 @@ export class HistoricalRunsList extends DG.Widget {
     return this.onSelectedRunsChanged.value;
   }
 
-  constructor(private initialFuncCalls: DG.FuncCall[], private options?: {
+  constructor(private initialFuncCalls: DG.FuncCall[], private options: {
     fallbackText?: string,
-  }) {
+    showEdit?: boolean,
+    showDelete?: boolean,
+    showFavorite?: boolean,
+    showAuthorIcon?: boolean,
+    showCompare?: boolean,
+  } = {showEdit: true, showDelete: true, showFavorite: true, showAuthorIcon: true, showCompare: true}) {
     super(ui.div());
 
     const listChangedSub = this.onRunsChanged.subscribe((runs) => {
@@ -134,7 +139,7 @@ export class HistoricalRunsList extends DG.Widget {
 
   private refresh(newFuncCalls: DG.FuncCall[]) {
     ui.empty(this.root);
-    this.cards = newFuncCalls.map((funcCall) => new HistoricalRunCard(funcCall));
+    this.cards = newFuncCalls.map((funcCall) => new HistoricalRunCard(funcCall, this.options));
 
     if (newFuncCalls.length > 0) {
       this.root.appendChild(ui.divV([
@@ -189,7 +194,7 @@ export class HistoricalRunsList extends DG.Widget {
     const actionsSection = ui.divH([
       ui.span([`Selected: ${currentSelectedSet.size}`], {style: {'align-self': 'center'}}),
       ui.divH([
-        this.getCompareIcon,
+        ...this.options.showCompare ? [this.getCompareIcon]: [],
         this.getTrashIcon,
         currentSelectedSet.size === 0 ? this.selectAllIcon: this.unselectAllIcon,
       ]),
@@ -408,12 +413,11 @@ class HistoricalRunCard extends DG.Widget {
 
   constructor(
     private initialFuncCall: DG.FuncCall,
-    private options = {
-      showEdit: true,
-      showDelete: true,
-      showFavorite: true,
-      showSelect: true,
-      showAuthorIcon: true,
+    private options?: {
+      showEdit?: boolean,
+      showDelete?: boolean,
+      showFavorite?: boolean,
+      showAuthorIcon?: boolean,
     },
   ) {
     super(ui.div());
@@ -545,12 +549,17 @@ class HistoricalRunCard extends DG.Widget {
   private refresh(funcCall: DG.FuncCall) {
     const options = this.options;
 
-    const icon = funcCall.author.picture as HTMLElement;
-    icon.style.width = '25px';
-    icon.style.height = '25px';
-    icon.style.fontSize = '20px';
-    const cardLabel = ui.label(funcCall.options['title'] ?? funcCall.author.friendlyName, {style: {'color': 'var(--blue-1)'}});
-    ui.bind(funcCall.author, icon);
+    let authorIcon = null;
+    if (this.options?.showAuthorIcon) {
+      authorIcon = funcCall.author.picture as HTMLElement;
+      authorIcon.style.width = '25px';
+      authorIcon.style.height = '25px';
+      authorIcon.style.fontSize = '20px';
+
+      ui.bind(funcCall.author, authorIcon);
+    }
+
+    const cardLabel = ui.label(funcCall.options['title'] ?? funcCall.author?.friendlyName ?? grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}});
 
     const editIcon = ui.iconFA('edit', (ev) => {
       ev.stopPropagation();
@@ -583,7 +592,7 @@ class HistoricalRunCard extends DG.Widget {
 
     const card = ui.divH([
       ui.divH([
-        ...(options.showAuthorIcon) ? [icon]: [],
+        ...(options?.showAuthorIcon) ? [authorIcon]: [],
         ui.divV([
           cardLabel,
           ui.span([dateStarted]),
@@ -593,10 +602,10 @@ class HistoricalRunCard extends DG.Widget {
         ], 'hp-card-content'),
       ]),
       ui.divH([
-        ...(options.showFavorite) ? [this.unfavoriteIcon, this.addToFavorites]: [],
-        ...(options.showEdit) ? [editIcon]: [],
-        ...(options.showDelete) ? [deleteIcon]: [],
-        ...(options.showSelect) ? [this.addToSelected, this.removeFromSelected]: [],
+        ...(options?.showFavorite) ? [this.unfavoriteIcon, this.addToFavorites]: [],
+        ...(options?.showEdit) ? [editIcon]: [],
+        ...(options?.showDelete) ? [deleteIcon]: [],
+        this.addToSelected, this.removeFromSelected,
       ]),
     ], 'hp-funccall-card');
 
@@ -627,6 +636,10 @@ export class HistoryPanel extends DG.Widget {
     this.historyList.addItem(newRun);
   }
 
+  public get history() {
+    return this.allRuns.value;
+  }
+
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
 
@@ -643,7 +656,8 @@ export class HistoryPanel extends DG.Widget {
 
   historyFilter = new HistoryFilter();
 
-  historyList = new HistoricalRunsList([], {fallbackText: 'No runs are found in history'});
+  historyList = new HistoricalRunsList([], {fallbackText: 'No runs are found in history',
+    showAuthorIcon: true, showDelete: true, showEdit: true, showFavorite: true, showCompare: true});
 
   panel = ui.divV([
     this.historyFilter.root,
