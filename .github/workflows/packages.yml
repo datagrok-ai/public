@@ -283,7 +283,9 @@ jobs:
             profiles+=' --profile grok_spawner'
           fi
           echo "Run datagrok stand with profiles ${profiles}"
-#          docker system prune -af --volumes
+
+          # docker system prune -af --volumes
+
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
             DATAGROK_VERSION='latest'
           else
@@ -303,6 +305,7 @@ jobs:
           alias=${HOST}
 
           # fi
+
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
       - name: js api dependency for unpublished dependencies
