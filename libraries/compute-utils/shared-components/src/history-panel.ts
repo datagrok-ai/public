@@ -740,6 +740,8 @@ export class HistoryPanel extends DG.Widget {
       const runIdx = this.allRuns.value.findIndex((call) => call.id === deleteCall.id);
       this.allRuns.value.splice(runIdx, 1);
       this.historyFilter.removeTag(deleteCall);
+
+      this.afterRunDeleted.next(deleteCall);
     });
 
     this.subs.push(

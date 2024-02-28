@@ -558,9 +558,9 @@ export class PipelineView extends FunctionView {
   public override buildHistoryBlock(): HTMLElement {
     const hb = super.buildHistoryBlock();
 
-    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedCall) => {
       const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-        .filter(`options.parentCallId="${deletedId}"`).list();
+        .filter(`options.parentCallId="${deletedCall.id}"`).list();
       console.log(childRuns);
 
       childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
