@@ -64,7 +64,7 @@ category('Viewers: Filters: Collaborative filtering', () => {
   const BENZENE = 'c1ccccc1';
 
   before(async () => {
-    df = await _package.files.readCsv('SPGI_v2_100.csv');
+    df = await _package.files.readCsv('SPGI_v2_100_full.csv');
     tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     fg = tv.getFiltersGroup();
@@ -72,10 +72,10 @@ category('Viewers: Filters: Collaborative filtering', () => {
 
   test('Scatter plot', async () => {
     await addScatterPlot();
-    await addScaffoldFilter(22);
-    await addSubscructureFilter(7);
-    await addCategoricalFilter(5);
-    await addHistogtramFilter(3);
+    await addScaffoldFilter(47);
+    await addSubscructureFilter(17);
+    await addCategoricalFilter(9);
+    await addHistogtramFilter(6);
     tv.resetLayout();
     await delay(100);
   });
@@ -131,13 +131,15 @@ category('Viewers: Filters: Collaborative filtering', () => {
 
   // VIEWERS
 
-  async function addScatterPlot(n: number = 28) {
+  async function addScatterPlot(n: number = 49) {
     const v = DG.Viewer.scatterPlot(df, {
-      'xColumnName': 'Chemical Space X',
-      'yColumnName': 'Chemical Space Y',
+      xColumnName: 'Chemical Space X',
+      yColumnName: 'Chemical Space Y',
+      axesFollowFilter: false,
+      zoomAndFilter: 'filter by zoom',
     });
     tv.addViewer(v);
-    v.zoom(-5, -4, 5, 4);
+    v.zoom(-5, 4, 3, 11);
     await awaitCheck(() => df.filter.trueCount === n,
       `Scatter plot: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
   }
