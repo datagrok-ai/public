@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import cloneDeepWith from 'lodash.clonedeepwith';
-import { BehaviorSubject, Observable, Subject, merge, of} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, merge, of} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import { withLatestFrom, filter, map, switchMap, shareReplay } from 'rxjs/operators';
+import {withLatestFrom, filter, map, switchMap, shareReplay} from 'rxjs/operators';
 
 //
 // State values
@@ -237,7 +237,7 @@ export type InputState = 'disabled' | 'restricted' | 'user input';
 export class NodeItemState<T = any> {
   public currentSource = new BehaviorSubject<Observable<T>>(of());
   public valueChanges = this.currentSource.pipe(
-    switchMap(source => source),
+    switchMap((source) => source),
   );
 
   private value = new BehaviorSubject<T | undefined>(undefined);
@@ -249,14 +249,13 @@ export class NodeItemState<T = any> {
   constructor(public conf: StateItemConfiguration) {
     this.valueChanges.subscribe((x) => {
       this.value.next(x);
-    })
+    });
   }
 
   linkState(source: Observable<T>, setter?: (x: any) => void) {
     this.currentSource.next(source);
-    if (setter) {
+    if (setter)
       this.setter = setter;
-    }
   }
 
   getValue() {
@@ -299,7 +298,7 @@ export class LinkState {
   public enabled = new BehaviorSubject(true);
   public currentSource = new BehaviorSubject<Observable<any>>(of());
   public valueChanges = this.currentSource.pipe(
-    switchMap(source => source)
+    switchMap((source) => source),
   );
 
   constructor(
@@ -382,9 +381,8 @@ export class PipelineRuntime {
 
   updateState<T>(path: ItemPath, value: T, inputState: InputState = 'user input'): void {
     const {state} = this.getNodeState(path)!;
-    if (state) {
+    if (state)
       state.setValue(value, inputState);
-    }
   }
 
   getView(path: ItemPath): RichFunctionView | void {
@@ -398,7 +396,7 @@ export class PipelineRuntime {
     // wiring by nqName
     for (const [, link] of this.links) {
       // const inputs = pathsToKeys(link.config.from);
-      const inputNodes = link.controllerConfig.from.map(input => {
+      const inputNodes = link.controllerConfig.from.map((input) => {
         return this.getNodeState(input)!;
       });
       for (const {node, state} of inputNodes) {
@@ -537,7 +535,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     const stepView = this.getStepView<RichFunctionView>(stepId);
     const changes = stepView.getParamChanges(stateId);
     const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => stepView.setInput(stateId, x, inputState);
-    return { changes, setter };
+    return {changes, setter};
   }
 
   override async init() {
