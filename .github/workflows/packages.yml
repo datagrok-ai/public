@@ -490,7 +490,7 @@ jobs:
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
 
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
