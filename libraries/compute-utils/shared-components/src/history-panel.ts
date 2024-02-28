@@ -70,10 +70,10 @@ export class HistoricalRunsList extends DG.Widget {
     this.subs.push(listChangedSub, selectionChangedSub);
   }
 
-  deleteItem(id: string) {
+  async deleteItem(id: string) {
     const corrCards = this.cards.splice(this.cards.findIndex((card) => card.funcCall.id === id)!, 1);
     // We delete single item
-    corrCards[0].deleteCard(false);
+    await corrCards[0].deleteCard(false);
   }
 
   updateItem(updatedFuncCall: DG.FuncCall) {
@@ -108,7 +108,7 @@ export class HistoricalRunsList extends DG.Widget {
       const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async (setToDelete) => {
         await Promise.all(
           wu(setToDelete.values()).map(async (funcCall) => {
-            this.deleteItem(funcCall.id);
+            await this.deleteItem(funcCall.id);
             await historyUtils.deleteRun(funcCall);
 
             return Promise.resolve();
