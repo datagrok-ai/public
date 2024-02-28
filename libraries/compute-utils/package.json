@@ -6,7 +6,7 @@
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
-  "description": "",
+  "description": "Datagrok compute utilities",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.19",
     "fflate": "^0.7.4",
