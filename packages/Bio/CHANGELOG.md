@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.11.36 (2024-02-28)
+
+### Bug fixes
+
+* GROK-15086: Fix GetRegion, Notation: result column does not render
+
 ## 2.11.35 (2024-02-26)
 
 ### Features
