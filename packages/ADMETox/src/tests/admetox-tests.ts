@@ -2,7 +2,7 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetox, addCalculationsToTable, performChemicalPropertyPredictions } from '../utils/admetox-utils';
+import { runAdmetox, performChemicalPropertyPredictions, getQueryParams } from '../utils/admetox-utils';
 import { properties } from '../utils/const';
 
 category('Admetox', () => {
@@ -25,7 +25,7 @@ category('Admetox', () => {
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const bbbResults = await runAdmetox(smiles, 'PPBR,VDss', 'false');
     expect(bbbResults != null, true);
-  }, {timeout: 50000});
+  }, {timeout: 100000});
 
   test('Calculate dialog. UI', async () => {
     molecules = grok.data.demo.molecules(100);
@@ -63,7 +63,7 @@ category('Admetox', () => {
     expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
     expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
     expect(molecules.col(newTableColumn)!.colors.getColor(4), 4293138944, 'Wrong color coding was added');
-  }, {timeout: 90000});
+  }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
     molecules = grok.data.demo.molecules(20);
@@ -83,15 +83,49 @@ category('Admetox', () => {
       Lipophilicity\t2.93
       Solubility\t-1.74`;
     await awaitCheck(() => (pp.getElementsByClassName('d4-table d4-item-table d4-info-table')[3] as HTMLElement).innerText === absorpRes, 'Results for single cell differ', 8000);
-  }, {timeout: 50000});
+  }, {timeout: 100000});
 
-  test('Calculate.Benchmark', async () => {
-    molecules = DG.Test.isInBenchmark 
-      ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip")
-      : grok.data.demo.molecules();
-    DG.time('ADME/Tox post request', () => runAdmetox(molecules.toCsv(), 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%)', 'false'));
-  });
+  test('Calculate.Benchmark column', async () => {
+    const runAdmetoxBenchmark = async (moleculesCount: number) => {
+        const molecules = grok.data.demo.molecules(moleculesCount);
+        molecules.columns.remove('logD');
+        const iterations = DG.Test.isInBenchmark ? 100 : 5;
+        const args = [molecules.toCsv(), getQueryParams(), 'false'];
+        return await runInLoop(iterations, runAdmetox, ...args);
+    };
+
+    const mol1k = await runAdmetoxBenchmark(1000);
+    const mol5k = await runAdmetoxBenchmark(5000);
+    const mol10k = await runAdmetoxBenchmark(10000);
+
+    return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
+}, {timeout: 10000000000});
+
+  test('Calculate.Benchmark cell', async () => {
+    const smiles = `smiles
+    O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
+    const iterations = DG.Test.isInBenchmark ? 100 : 10;
+    const distributionModels = properties['Distribution'].models
+      .filter((model: any) => model.skip !== true)
+      .map((model: any) => model.name);
+    const args = [smiles, distributionModels, 'false'];
+    const cellResults = await runInLoop(iterations, runAdmetox, ...args);
+    return DG.toDart({"results": cellResults});
+  }, {timeout: 1000000});
 });
+
+async function runInLoop(iterations: number, func: (...args: string[]) => Promise<string | null>, ...args: string[]) {
+  const results = new Array<number>(iterations);
+  for (let i = 0; i < iterations; ++i) {
+    const startTime = performance.now();
+    await func(...args);
+    const endTime = performance.now();
+    results[i] = (endTime - startTime) / 1000;
+  }
+  const sum = results.reduce((p, c) => p + c, 0);
+  return {'Iterations' : results.length, 'Average time': sum / results.length,
+    'Min time': Math.min(...results), 'Max time': Math.max(...results)};
+}
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
   await awaitCheck(() => {

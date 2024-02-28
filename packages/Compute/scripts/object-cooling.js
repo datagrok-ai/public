@@ -18,6 +18,7 @@
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.foldedCategories: ["Object properties"]
+//meta.compareCustomizer: Compute:CustomCustomizer
 
 timeToCool = undefined;
 

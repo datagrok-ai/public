@@ -146,7 +146,8 @@ export class TreeViewer extends EChartViewer {
   }
 
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
-    const isColumnNumerical = this.dataFrame.columns.byName(columnName).matches('numerical');
+    const numericalColumns = this.dataFrame.columns.byName(columnName);
+    const isColumnNumerical = numericalColumns ? numericalColumns.matches('numerical') : false;
     const isAggregationApplicable = this.aggregationsStr.includes(aggrType);
     return isColumnNumerical || (!isColumnNumerical && isAggregationApplicable);
   }

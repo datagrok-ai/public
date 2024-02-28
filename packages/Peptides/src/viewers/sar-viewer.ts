@@ -92,7 +92,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   maxMutations: number;
   _scaledActivityColumn: DG.Column | null = null;
   doRender: boolean = true;
-  mutationCliffsDebouncer: () => void;
+  mutationCliffsDebouncer: (
+    activityArray: type.RawData, monomerInfoArray: type.RawColumn[], options?: MutationCliffsOptions
+    ) => Promise<type.MutationCliffs>;
 
   /** Sets common properties for inheritor viewers. */
   protected constructor() {
@@ -120,7 +122,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       {category: PROPERTY_CATEGORIES.AGGREGATION, choices: C.AGGREGATION_TYPES});
 
     this.mutationCliffsDebouncer = debounce(
-      () => this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc), 500);
+      async (activityArray: type.RawData, monomerInfoArray: type.RawColumn[], options?: MutationCliffsOptions) => {
+        return await findMutations(activityArray, monomerInfoArray, options);
+      });
   }
 
   _viewerGrid: DG.Grid | null = null;
@@ -384,7 +388,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       break;
     }
     if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
-      this.mutationCliffsDebouncer();
+      this.calculateMutationCliffs().then((mc) => this.mutationCliffs = mc);
   }
 
   /**
@@ -438,7 +442,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    * @return - mutation cliffs.
    */
   async calculateMutationCliffs(): Promise<MutationCliffs> {
-    const scaledActivityCol: DG.Column<number> = this.dataFrame.getCol(this.sequenceColumnName);
+    const scaledActivityCol: DG.Column<number> = this.dataFrame.getCol(this.activityColumnName);
     //TODO: set categories ordering the same to share compare indexes instead of strings
     const monomerCols: type.RawColumn[] = this.positionColumns.map(extractColInfo);
     const targetCol = this.targetColumnName ? extractColInfo(this.dataFrame.getCol(this.targetColumnName)) : null;
@@ -447,7 +451,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       maxMutations: this.maxMutations, minActivityDelta: this.minActivityDelta,
       targetCol, currentTarget: this.targetCategory,
     };
-    return await findMutations(scaledActivityCol.getRawData(), monomerCols, options);
+    return await this.mutationCliffsDebouncer(scaledActivityCol.getRawData(), monomerCols, options);
   }
 }
 

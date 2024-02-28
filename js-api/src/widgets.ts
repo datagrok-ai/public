@@ -1136,8 +1136,8 @@ export class InputForm extends DartWrapper {
   constructor(dart: any) { super(dart); }
 
   /** Creates an InputForm for the specified function call. */
-  static async forFuncCall(funcCall: FuncCall): Promise<InputForm> {
-    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
+  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean }): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true));
   }
 
   static forInputs(inputs: InputBase[]): InputForm {

@@ -1362,6 +1362,7 @@ export class RichFunctionView extends FunctionView {
 
         if (!this.func) throw new Error('The correspoding function is not specified');
 
+        DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
         const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
         const exportWorkbook = new ExcelJS.Workbook();
 
@@ -1500,6 +1501,8 @@ export class RichFunctionView extends FunctionView {
       const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
       const tabControl = this.outputsTabsElem;
+
+      DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
 
       for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.inputs).includes(label))) {
         for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {

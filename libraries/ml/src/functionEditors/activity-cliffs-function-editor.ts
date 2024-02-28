@@ -12,7 +12,9 @@ export type ActivityCliffsParams = DimReductionParams & {
 
 export class MCLOptions {
     maxIterations: IDimReductionParam =
-    {uiName: 'Max iterations', value: 5, tooltip: 'Maximum iterations for MCL process'};
+    {uiName: 'Max iterations', value: 0, tooltip: `Maximum iterations for MCL process.Default is 
+      0 which will construct the clusters with plain sparse matrix. Values greater than 0 will 
+      perform MCL with the given number of iterations and will result in trans-cluster activity cliff lines.`};
     constructor() {}
 }
 

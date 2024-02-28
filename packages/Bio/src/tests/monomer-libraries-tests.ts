@@ -53,14 +53,18 @@ category('monomerLibraries', () => {
     const libSettings = await getUserLibSettings();
     const libFileEventManager = MonomerLibFileEventManager.getInstance();
     const libFileManager = await MonomerLibFileManager.getInstance(libFileEventManager);
-    const libFnList = libFileManager.getValidLibraryPaths();
+
+    let libFnList = libFileManager.getValidLibraryPaths();
+    if (libFnList.length === 0)
+      libFnList = await libFileManager.getValidLibraryPathsAsynchronously();
+
     libSettings.exclude = libFnList;
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
 
     await monomerLibHelper.loadLibraries(true);
     const currentMonomerLib = monomerLibHelper.getBioLib();
-    expect(currentMonomerLib.getPolymerTypes().length === 0, true);
-    const monomerOfTypesList = currentMonomerLib.getMonomerMolsByPolymerType('PEPTIDE');
+    const polymerTypes = currentMonomerLib.getPolymerTypes();
+    expect(polymerTypes.length === 0, true);
   });
 });

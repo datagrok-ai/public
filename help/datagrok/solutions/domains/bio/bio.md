@@ -171,7 +171,7 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 
 ### Macromolecule aware viewers
 
-Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take 
+Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take
 advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers.
 Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting,
 or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating
@@ -182,7 +182,7 @@ Macromolecule-specific viewers include [sequence logo](../../../../visualize/vie
 and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that
 can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx),
 a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),
-a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), 
+a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md),
 and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
 
 <details>
@@ -231,7 +231,7 @@ To explore the binding interactions between small ligand molecules and biologica
 <summary>How to use</summary>
 
 Prerequisites: Prepare the simulation data in two separate files:
-  
+
 * File 1: Contains the structure of a macromolecule in a [supported format](../../../../access/files/supported-formats.md), such as PDB.
 * File 2: Contains the simulation results of the position of small molecules relative to the structure.
 
@@ -294,18 +294,21 @@ To clear the filter, use the checkbox provided. To remove the filter altogether,
 To search a dataset for matching sequences, do the following:
 
 1. In the **Top Menu**, select **Bio** > **Substructure Search...** A dialog opens.
-1. In the dialog, paste or type the sequence in the field provided and click **OK**. A new column is added to the table.  
+1. In the dialog, paste or type the sequence in the field provided and click **OK**. A new column is added to the table.
 
 </details>
 
 To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/viewers/viewers.md#filter).
 
-## Managing monomer libraries
+## Manage monomer libraries
 
-When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer
-library comes with it automatically. You can add your own libraries by [adding them to a file share](../../../../access/files/files.mdx#connecting-to-file-storage).
-Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use 
-the info pane to add more libraries or switch between different libraries based on your specific requirements.
+The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json) is pre-installed with the [Bio package](https://github.com/datagrok-ai/public/tree/master/packages/Bio). You can add your own monomer libraries using the dialog accessible from **Top Menu** > **Bio** > **Manage** > **Monomer Libraries**:
+
+![Monomer library file manager](./img/monomer-lib-file-manager.png "Monomer library file manager")
+
+To include monomers from a library, click on a checkbox next to its name.
+
+To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.mdx#connecting-to-file-storage).
 
 ## Sequence analysis
 
@@ -377,7 +380,7 @@ sequences. For non-natural sequences, we use [PepSeA](https://github.com/Merck/P
 To perform MSA, do the following:
 
 1. In the Top Menu, select **Bio** > **MSA...** . A dialog opens.
-  
+
   ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
 
 1. In the dialog, select the sequence column (**Sequence**) and set other parameters.
@@ -386,23 +389,23 @@ To perform MSA, do the following:
 
 </details>
 
-<!--- 
+<!---
 
-This part of functionality was describes a while ago and haven't been tested by me, 
+This part of functionality was describes a while ago and haven't been tested by me,
 so for now it's hidden
 
 ### Sequence alignments
-When a file containing aligned sequences is imported, 
+When a file containing aligned sequences is imported,
 Datagrok splits the aligned data into an alignment table by MSA
-positions (see the illustration below) 
-and performs composition analysis in a barchart on the top of this table. 
+positions (see the illustration below)
+and performs composition analysis in a barchart on the top of this table.
 It visualizes multiple sequence alignments with long monomer identifiers.
 
-The composition barchart is interactive, 
-the corresponding rows could be selected by clicking on the segment. 
-The rows are also highlighted in other open visualizations (such as scatter plots) 
-when you hover over the bar. 
-This enables interactive data exploration, 
+The composition barchart is interactive,
+the corresponding rows could be selected by clicking on the segment.
+The rows are also highlighted in other open visualizations (such as scatter plots)
+when you hover over the bar.
+This enables interactive data exploration,
 including on-the-fly statistical analysis of differences in measured values (activity)
 associated with sequences.
 
@@ -479,7 +482,6 @@ application performs SAR analysis of peptides. The app offers the following feat
 
 <!--replace with a gif-->
 
-
 ## Utilities
 
 ### Format conversion
@@ -551,7 +553,6 @@ to easy selection region of interest to extract.
 
 The Oligo Toolkit is a collection of tools helping you to work with oligonucleotide sequences.
 To learn more and how to use, see the [OligoToolkit](oligo-toolkit.md) page.
-
 
 ## Customizing and extending the platform
 

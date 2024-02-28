@@ -249,7 +249,10 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
 
   invalidate(caller?: string): void {
     const logPrefix = `${this.filterToLog()}.invalidate(${caller ? ` <- ${caller} ` : ''})`;
-    this.filterSyncer.sync(logPrefix, async () => { this._onRendered.next(); });
+    this.filterSyncer.sync(logPrefix, async () => {
+      // TODO: Request re-render
+      this._onRendered.next();
+    });
   }
 
   async awaitRendered(timeout: number = 10000): Promise<void> {
