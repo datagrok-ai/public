@@ -1136,8 +1136,8 @@ export class InputForm extends DartWrapper {
   constructor(dart: any) { super(dart); }
 
   /** Creates an InputForm for the specified function call. */
-  static async forFuncCall(funcCall: FuncCall): Promise<InputForm> {
-    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
+  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean }): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true));
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
@@ -1154,6 +1154,11 @@ export class InputForm extends DartWrapper {
 
   /** Occurs when user changes any input value in a form. */
   get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
+
+  /** Occurs after the form is validated, no matter whether it is valid or not. */
+  get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
+
+  get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
 }
 
 

@@ -351,16 +351,39 @@ export abstract class FunctionView extends DG.ViewBase {
    * @param funcCallIds FuncCalls to be compared
    */
   public async onComparisonLaunch(funcCallIds: string[]) {
-    const parentCall = grok.shell.v.parentCall;
-
     const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
 
+    const comparator = this.comparatorFunc;
+    if (comparator) {
+      const comparatorFunc: DG.Func = await grok.functions.eval(comparator);
+      const comparatorCall = await comparatorFunc.prepare(
+        {params: {'comparedRuns': fullFuncCalls}},
+      ).call();
+      const customView = comparatorCall.outputs.comparisonView;
+      grok.shell.addView(customView);
+
+      return;
+    }
+
+    const parentCall = grok.shell.v.parentCall;
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
+    const defaultView = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
       parentView: cardView,
       parentCall,
     });
-    grok.shell.addView(v);
+
+    grok.shell.addView(defaultView);
+    defaultView.defaultCustomize();
+
+    const compareCustomizer = this.compareCustomizer;
+    if (compareCustomizer) {
+      const compareCustomizerFunc: DG.Func = await grok.functions.eval(compareCustomizer);
+      await compareCustomizerFunc.prepare(
+        {params: {'defaultView': defaultView}},
+      ).call();
+
+      return;
+    }
   }
 
   protected historyBlock = null as null | HistoryPanel;
@@ -759,6 +782,14 @@ export abstract class FunctionView extends DG.ViewBase {
   protected defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
+
+  protected get compareCustomizer(): string | null {
+    return this.func.options['compareCustomizer'] ?? null;
+  }
+
+  protected get comparatorFunc(): string | null {
+    return this.func.options['comparator'] ?? null;
+  }
 
   protected get runningOnInput() {
     return this.func.options['runOnInput'] === 'true';

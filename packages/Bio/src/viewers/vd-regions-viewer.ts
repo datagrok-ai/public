@@ -505,20 +505,25 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   private _onRendered: Subject<void> = new Subject<void>();
 
-  public get onRendered(): Observable<void> { return this._onRendered; }
+  get onRendered(): Observable<void> { return this._onRendered; }
 
-  public invalidate(): void {
-    const logPrefix = `${this.viewerToLog()}.invalidate()`;
+  invalidate(caller?: string): void {
+    const logPrefix = `${this.viewerToLog()}.invalidate(${caller ? ` <- ${caller} ` : ''})`;
     // Put the event trigger in the tail of the synced calls queue.
     this.viewSyncer.sync(`${logPrefix}`, async () => {
       // update view / render
+      // TODO: Request re-render
       this._onRendered.next();
     });
   }
 
-  public async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+  async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
     await testEvent(this.onRendered, () => {}, () => {
       this.invalidate();
     }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }

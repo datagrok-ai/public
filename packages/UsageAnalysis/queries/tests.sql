@@ -169,9 +169,12 @@ limit 4
 --connection: System:Datagrok
 --input: string id
 --output: string name
-select v1.value as name
+select
+distinct on (e.description)
+v1.value as name
 from events e
 inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name = 'tt-new-testing'
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'name' on v1.event_id = e.id
 where e.description = @id
+order by e.description, e.event_time desc
 --end

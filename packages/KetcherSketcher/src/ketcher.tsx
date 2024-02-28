@@ -10,7 +10,7 @@ import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "../css/editor.css";
 import { chem } from "datagrok-api/grok";
-import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_WINDOW_OBJECT } from "./constants";
+import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_OPTIONS, KETCHER_USER_STORAGE, KETCHER_WINDOW_OBJECT } from "./constants";
 
 let sketcherId = 0;
 
@@ -37,6 +37,11 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
+        grok.dapi.userDataStorage.getValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, true).then((opts: string) => {
+          if (opts) {
+            this._sketcher?.editor.setOptions(opts);
+          }
+        });
         this.setMoleculeFromHost();
         //@ts-ignore
         window[KETCHER_WINDOW_OBJECT] = ketcher;
@@ -169,6 +174,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   detach() {
+    grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     super.detach();
   }
 

@@ -9,6 +9,7 @@ import {TSNEOptions, UMAPOptions} from '../multi-column-dimensionality-reduction
 import {IDimReductionParam, ITSNEOptions, IUMAPOptions}
   from '../multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
+import {MCLMethodName} from '../MCL';
 
 export const SEQ_COL_NAMES = {
   [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -24,6 +25,7 @@ export type DimReductionEditorOptions = {
     semtype?: string,
     type?: string,
     units?: string,
+    enableMCL?: boolean,
 }
 
 export type DimReductionParams = {
@@ -54,7 +56,8 @@ export class DimReductionBaseEditor {
     clusterEmbeddingsInput = ui.boolInput('Cluster embeddings', true);
     preprocessingFunctionInputRoot: HTMLElement | null = null;
     colInputRoot!: HTMLElement;
-    methodInput: DG.InputBase<string | null>;
+    methods: DimReductionMethods[] = [DimReductionMethods.UMAP, DimReductionMethods.T_SNE];
+    methodInput: DG.ChoiceInput<string | null>;
     methodSettingsIcon: HTMLElement;
     dbScanSettingsIcon: HTMLElement;
     preprocessingFuncSettingsIcon: HTMLElement;
@@ -97,6 +100,9 @@ export class DimReductionBaseEditor {
 
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       this.editorSettings = editorSettings;
+      if (this.editorSettings.enableMCL)
+        this.methods.push(MCLMethodName as any);
+
       const preporcessingFuncs = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
       // map that contains all preprocessing functions and their metadata
       preporcessingFuncs.forEach((f) => {
@@ -131,7 +137,7 @@ export class DimReductionBaseEditor {
       let settingsOpened = false;
       let dbScanSettingsOpened = false;
       this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP,
-        [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
+        this.methods, () => {
           if (settingsOpened)
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         });
@@ -291,7 +297,7 @@ export class DimReductionBaseEditor {
           ui.floatInput(param.uiName, param.value as any, () => {
             param.value = input.value;
           });
-        ui.tooltip.bind(input.root, param.tooltip);
+        ui.tooltip.bind(input.input ?? input.root, param.tooltip);
         paramsForm.append(input.root);
       });
       return paramsForm;

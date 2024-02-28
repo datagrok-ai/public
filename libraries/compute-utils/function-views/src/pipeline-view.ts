@@ -7,7 +7,6 @@ import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
 import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
-import wu from 'wu';
 import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
@@ -84,6 +83,8 @@ export class PipelineView extends FunctionView {
     }
 
     if (format === 'Single Excel') {
+      DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+
       const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
       const exportWorkbook = new ExcelJS.Workbook();
 
@@ -344,15 +345,6 @@ export class PipelineView extends FunctionView {
       this.subs.push(helpOpenSub);
     });
 
-    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
-      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-        .filter(`options.parentCallId="${deletedId}"`).list();
-      console.log(childRuns);
-
-      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
-    });
-    this.subs.push(deletionSub);
-
     this.isReady.next(true);
   }
 
@@ -562,6 +554,21 @@ export class PipelineView extends FunctionView {
   private findCurrentStep() {
     return Object.values(this.steps)
       .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+  }
+
+  public override buildHistoryBlock(): HTMLElement {
+    const hb = super.buildHistoryBlock();
+
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedId}"`).list();
+      console.log(childRuns);
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
+    return hb;
   }
 
   public override buildRibbonPanels(): HTMLElement[][] {

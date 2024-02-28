@@ -1,8 +1,7 @@
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-import {isSummarySettingsBase, SparklineType} from "../sparklines/shared";
-import {GridColumn} from "datagrok-api/dg";
+// import * as grok from 'datagrok-api/grok';
+import {GridColumn} from 'datagrok-api/dg';
 
 export function getChoices(column: DG.Column): string[] | null {
   const choicesStr = column?.getTag(DG.TAGS.CHOICES);
@@ -30,6 +29,9 @@ export class MultiChoiceCellRenderer extends DG.GridCellRenderer {
     const checkEmpty = '\uf0c8';
     const checkSquare = '\uf14a';
 
+    // somehow dart comes null here, will need to investigate it and fix it, now just a workaround
+    if (!gridCell.gridColumn.dart)
+      return;
     const choices = getChoices(gridCell.tableColumn!);
     if (!choices)
       return;
@@ -48,6 +50,8 @@ export class MultiChoiceCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.gridColumn.editable)
+      return;
     const idx = Math.floor((e.offsetY - gridCell.bounds.top - 2) / 16);
     const choices = getChoices(gridCell.tableColumn!);
     if (!choices || idx < 0 || idx >= choices.length)
@@ -56,7 +60,7 @@ export class MultiChoiceCellRenderer extends DG.GridCellRenderer {
     const values: string[] = gridCell.cell.valueString.split(',').map((s) => s.trim());
     const itemIdx = values.indexOf(choices[idx]);
     if (itemIdx != -1)
-      values.splice(itemIdx, 1)
+      values.splice(itemIdx, 1);
     else
       values.push(choices[idx]);
 
@@ -64,15 +68,15 @@ export class MultiChoiceCellRenderer extends DG.GridCellRenderer {
   }
 
   getDefaultSize(gridColumn: GridColumn): {width?: number | null, height?: number | null} {
-    var choices = getChoices(gridColumn.column!);
+    const choices = getChoices(gridColumn.column!);
     if (!choices)
-      return { width: 20, height: 20 };
+      return {width: 20, height: 20};
 
     const g = gridColumn.grid.canvas.getContext('2d')!;
     const maxWidth = Math.max(...choices?.map((c) => g.measureText(c).width));
     return {
-      width: maxWidth + 220,
-      height: choices.length * 16 + 4
-    }
+      width: Math.min(200, maxWidth + 30),
+      height: Math.min(200, choices.length * 16 + 4),
+    };
   }
 }

@@ -20,6 +20,8 @@ jobs:
     needs: common-check
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
+    permissions:
+      checks: write
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       image_exists: ${{ steps.get_version.outputs.image_exists }}

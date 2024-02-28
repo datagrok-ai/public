@@ -535,16 +535,16 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   private _onRendered: Subject<void> = new Subject<void>();
 
-  public get onRendered(): Observable<void> { return this._onRendered; }
+  get onRendered(): Observable<void> { return this._onRendered; }
 
-  public invalidate(): void {
-    this.viewSyncer.sync('invalidate()', async () => {
+  invalidate(caller?: string): void {
+    this.viewSyncer.sync('invalidate(${caller ? ` <- ${caller} ` : \'\'})', async () => {
       // update view / render
       this._onRendered.next();
     });
   }
 
-  public async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+  async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
     await testEvent(this.onRendered, () => {}, () => {
       this.invalidate();
     }, timeout);

@@ -1,5 +1,12 @@
 # PowerGrid changelog
 
+## 1.3.0 (2024-02-20)
+
+### Features
+
+* [#2673](https://github.com/datagrok-ai/public/issues/2673): Implemented MultiChoice cell renderer.
+* [#2681](https://github.com/datagrok-ai/public/issues/2681): Implemented Tags cell renderer.
+
 ## 1.2.6 (2023-11-30)
 
 ### Bug Fixes

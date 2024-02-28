@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 
@@ -23,6 +24,7 @@ export class EChartViewer extends DG.JsViewer {
     this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
     this.addRowSourceAndFormula();
     const chartDiv = ui.div([], {style: {position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}});
+    chartDiv.style.cssText += 'overflow: hidden!important;';
     this.root.appendChild(chartDiv);
     const warn = console.warn.bind(console);
     console.warn = () => {};
@@ -77,5 +79,10 @@ export class EChartViewer extends DG.JsViewer {
 
   getSeriesData() {
     throw new Error('Method not implemented.');
+  }
+
+  updateTable() {
+    const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
+    this.dataFrame = dataFrame!;
   }
 }

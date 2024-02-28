@@ -6,3 +6,5 @@ export type MCLOptions = {
 }
 
 export type SparseMatrixObject = {[_: number]: {[_: number]: number}};
+
+export const MCLMethodName = 'MCL';

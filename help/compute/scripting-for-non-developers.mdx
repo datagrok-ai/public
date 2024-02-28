@@ -1109,13 +1109,22 @@ You can use [smart search](../explore/search-filter-select/smart-search.md) to f
 
 <div style = {{ width: '50%' }}>
 
-Currently, Datagrok has limited debugging capabilities.
+Datagrok has limited debugging capabilities. 
 All scripts except Javascript are executed in isolated environments,
-and the only way of communication between the script and Datagrok is output parameters.
+and the only ways of communication between the script and Datagrok are 
+console log and the script output parameters.
 
-If the script throws an unhandled exception, Datagrok catches it and displays an error popup (shown on the right).
+When you run a script, Datagrok catches all log messages 
+and displays it in the log panel below the script.
+If the script throws an unhandled exception, 
+Datagrok catches it and displays an error popup (shown on the right).
 
-Now, there is no convenient way to access regular script output.
+To include additional debug information in the log, 
+run the script using **Debug script** button in the ribbon menu.
+Alternatively, run the script normally and press the 
+**Debug** button on the bottom part of the input parameter window.
+
+![Script debug output](pics/script-debud-output-enable.png)
 
 For big and complicated scripts, we recommend you develop them locally in your IDE,
 and then integrate them into Datagrok.
