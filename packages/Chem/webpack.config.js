@@ -4,6 +4,9 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 const mode = 'production';
 
 module.exports = (env, options) => ({
+  cache: {
+    type: 'filesystem',
+  },
   stats: {
     children: true
   },
