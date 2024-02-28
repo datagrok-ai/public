@@ -82,6 +82,7 @@ jobs:
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
 
               job_test_env=''
+              runner='ubuntu-22.04'
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
@@ -99,6 +100,7 @@ jobs:
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
                   job_test_env+=',JKG'
+                  runner='ubuntu-latest-m'
                 fi
                 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
@@ -167,6 +169,7 @@ jobs:
                 job_name+=": ${job_test_env}"
               fi
               MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
+              MATRIX_PUBLISH_JSON+=", \"runner\": \"${runner}\""
               MATRIX_PUBLISH_JSON+="}"
             fi
           done
@@ -195,7 +198,7 @@ jobs:
       - matrix
       - common-check
     if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.runner }}
     env:
       HOST: GitHubAction
     strategy:
