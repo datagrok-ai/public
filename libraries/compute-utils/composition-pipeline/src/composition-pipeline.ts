@@ -402,11 +402,11 @@ export class PipelineRuntime {
         return this.getNodeState(input)!;
       });
       for (const {node, state} of inputNodes) {
-        if (node.type === 'popup' || node.type === 'step') {
+        if (node.type === 'popup' || node.type === 'step' && state.conf.stateType === 'state') {
           const stepId = (node.conf as PipelinePopupConfiguration | PipelineStepConfiguration).nqName;
           const stateId = state.conf.id;
           const {changes, setter} = this.view.getStateBindings(stepId, stateId);
-          state.linkState(changes, setter)
+          state.linkState(changes, setter);
         }
       }
     }
