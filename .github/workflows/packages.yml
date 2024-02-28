@@ -283,7 +283,7 @@ jobs:
             profiles+=' --profile grok_spawner'
           fi
           echo "Run datagrok stand with profiles ${profiles}"
-          docker system prune -af --volumes
+#          docker system prune -af --volumes
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
             DATAGROK_VERSION='latest'
           else
@@ -471,11 +471,11 @@ jobs:
           echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
-      - name: Cleanup datagrok stand
-        if: steps.datagrok-image.outcome == 'success'
-        run: |
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
-          docker system prune -af --volumes
+#      - name: Cleanup datagrok stand
+#        if: steps.datagrok-image.outcome == 'success'
+#        run: |
+#          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
+#          docker system prune -af --volumes
 
       - name: Get docker image version
         if: matrix.build_docker == 'true'
@@ -536,11 +536,11 @@ jobs:
         id: check
         working-directory: packages/${{ matrix.package }}
 
-      - name: Cleanup datagrok-tools
-        if: steps.datagrok-tools.outcome == 'success'
-        timeout-minutes: 15
-        run: |
-          npm uninstall -g datagrok-tools@latest
+#      - name: Cleanup datagrok-tools
+#        if: steps.datagrok-tools.outcome == 'success'
+#        timeout-minutes: 15
+#        run: |
+#          npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
         run: npm publish --access public
