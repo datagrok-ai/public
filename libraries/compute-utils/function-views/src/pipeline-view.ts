@@ -7,7 +7,6 @@ import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
 import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
-import wu from 'wu';
 import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
@@ -84,6 +83,8 @@ export class PipelineView extends FunctionView {
     }
 
     if (format === 'Single Excel') {
+      DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+
       const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
       const exportWorkbook = new ExcelJS.Workbook();
 

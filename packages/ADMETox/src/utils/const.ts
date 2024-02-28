@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 export const properties: any = {
   "Absorption": {
     "name": "Absorption",
@@ -6,42 +8,77 @@ export const properties: any = {
     {
       "skip": true,
       "specific": false,
+      "units": "-",
+      "interpretation": "",
+      "coloring": "",
       "name": "Pgp-Inhibitor"
     },
 		{
       "skip": false,
       "specific": false,
+      "units": "-",
+      "interpretation": "Lower is better",
+      "coloring": {
+        "type": "Linear",
+        "min": "0",
+        "max": "1",
+        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+      },
       "name": "Pgp-Substrate"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
+      "interpretation": "",
+      "coloring": "",
       "name": "HIA"
     },
     {
-      "skip": true,
-      "specific": true,
-      "name": "F(20%)"
-    },
-    {
-      "skip": true,
-      "specific": true,
-      "name": "F(30%)"
+      "skip": false,
+      "specific": false,
+      "units": "cm/s",
+      "interpretation": {
+        "range": {
+          "below_-6": "Bad",
+          "to_-6_-5.5": "Intermediate",
+          "above_-5.5": "Good",
+        }
+      },
+      "coloring": {
+        "type": "Linear",
+        "min": "-6",
+        "max": "-5.5",
+        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+      },
+      "name": "Caco2"
     },
     {
       "skip": false,
       "specific": false,
-      "name": "Caco2",
-    },
-    {
-      "skip": false,
-      "specific": false,
-      "name": "Lipophilicity",
+      "units": "log-ratio",
+      "interpretation": {
+        "range": {
+          "below_0": "Bad",
+          "to_2_3": "Ideal",
+          "above_5": "Bad",
+        }
+      },
+      "coloring": "",
+      "name": "Lipophilicity"
     },
     {
       "skip": false,
       "specific": true,
-      "name": "Solubility",
+      "units": "log mol/L",
+      "interpretation": "The higher the better",
+      "coloring": {
+        "type": "Linear",
+        "min": "-4.5",
+        "max": "-1",
+        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+      },
+      "name": "Solubility"
     }]
   },
   "Distribution": {
@@ -51,16 +88,47 @@ export const properties: any = {
     {
       "skip": false,
       "specific": false,
+      "units": "%",
+      "interpretation": {
+        "range": {
+          "below_40": "Low",
+          "to_40_90": "Moderate",
+          "above_90": "High",
+        }
+      },
+      "coloring": {
+        "type": "Conditional",
+        "> 90": `${DG.Color.toHtml(DG.Color.cyan)}`,
+        "40-90": `${DG.Color.toHtml(DG.Color.maroon)}`,
+        "< 40": `${DG.Color.toHtml(DG.Color.yellow)}`,
+      },
       "name": "PPBR"
     },
     {
       "skip": false,
       "specific": false,
+      "units": "L/kg",
+      "interpretation": {
+        "range": {
+          "below_1": "Low",
+          "to_1_2": "Moderate",
+          "above_2": "High",
+        }
+      },
+      "coloring": {
+        "type": "Conditional",
+        "> 2": `${DG.Color.toHtml(DG.Color.cyan)}`,
+        "1-2": `${DG.Color.toHtml(DG.Color.maroon)}`,
+        "< 1": `${DG.Color.toHtml(DG.Color.yellow)}`,
+      },
       "name": "VDss"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
+      "interpretation": "",
+      "coloring": "",
       "name": "BBB"
     }]
   },
@@ -71,51 +139,81 @@ export const properties: any = {
     {
       "skip": false,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP1A2-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP1A2-Substrate"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP3A4-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP3A4-Substrate"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C19-Inhibitor"
     },
     {
       "skip": true,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C19-Substrate"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C9-Inhibitor"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2C9-Substrate"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2D6-Inhibitor"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "-",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "CYP2D6-Substrate"
     }]
   },
@@ -126,16 +224,47 @@ export const properties: any = {
     {
       "skip": false,
       "specific": true,
+      "units": "mL/min",
+      "interpretation": {
+        "range": {
+          "below_10": "Low",
+          "to_10_100": "Moderate",
+          "above_100": "Bad",
+        }
+      },
+      "coloring": {
+        "type": "Linear",
+        "min": "10",
+        "max": "100",
+        "colors": `[${DG.Color.green}, ${DG.Color.red}]`,
+      },
       "name": "CL-Hepa"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "μL/min/million cells",
+      "interpretation": {
+        "range": {
+          "below_10": "Low",
+          "to_10_100": "Moderate",
+          "above_100": "Bad",
+        }
+      },
+      "coloring": {
+        "type": "Linear",
+        "min": "10",
+        "max": "100",
+        "colors": `[${DG.Color.green}, ${DG.Color.red}]`,
+      },
       "name": "CL-Micro"
     },
     {
       "skip": false,
       "specific": true,
+      "units": "hours",
+      "interpretation": "No good or bad values",
+      "coloring": "",
       "name": "Half-Life"
     }]
   },

@@ -1,5 +1,9 @@
 # Bioreactors changelog
 
+## 1.1.7 (2023-02-20)
+
+Updated functions annotations.
+
 ## 1.1.6 (2023-02-08)
 
 Fixed functions annotations.

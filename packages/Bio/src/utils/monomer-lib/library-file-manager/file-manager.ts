@@ -28,20 +28,22 @@ export class MonomerLibFileManager {
     });
   }
 
-  private static instance: MonomerLibFileManager | undefined;
+  private static instancePromise: Promise<MonomerLibFileManager> | undefined;
 
   static async getInstance(
     libraryEventManager: MonomerLibFileEventManager,
   ): Promise<MonomerLibFileManager> {
-    if (MonomerLibFileManager.instance === undefined) {
-      const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
-      const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
+    if (!MonomerLibFileManager.instancePromise) {
+      MonomerLibFileManager.instancePromise = (async () => {
+        const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
+        const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
 
-      const fileValidator = new MonomerLibFileValidator(helmSchema);
-      MonomerLibFileManager.instance = new MonomerLibFileManager(fileValidator, libraryEventManager);
+        const fileValidator = new MonomerLibFileValidator(helmSchema);
+        return new MonomerLibFileManager(fileValidator, libraryEventManager);
+      })();
     }
 
-    return MonomerLibFileManager.instance;
+    return MonomerLibFileManager.instancePromise;
   }
 
   /** Add standard .json monomer library  */
@@ -103,6 +105,13 @@ export class MonomerLibFileManager {
     return this.libraryEventManager.getValidFilesPathList();
   }
 
+  // TODO: remove after adding init from user data storage
+  // WARNING: a temporary solution
+  async getValidLibraryPathsAsynchronously(): Promise<string[]> {
+    return await this.libraryEventManager.getValidLibraryPathsAsynchronously();
+  }
+
+
   private async libraryFileExists(fileName: string): Promise<boolean> {
     return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
@@ -142,7 +151,7 @@ export class MonomerLibFileManager {
       `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
 
       console.warn(message);
-      grok.shell.warning(message);
+      // grok.shell.warning(message);
     }
   }
 

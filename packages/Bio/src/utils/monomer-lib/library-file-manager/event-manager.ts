@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {debounceTime, tap} from 'rxjs/operators';
+import {debounceTime, tap, skip} from 'rxjs/operators';
 
 export class MonomerLibFileEventManager {
   // WARNING: this must be a singleton because it manages the unique state
@@ -20,6 +20,18 @@ export class MonomerLibFileEventManager {
 
   getValidFilesPathList(): string[] {
     return this._libraryFilesUpdateSubject$.getValue();
+  }
+
+  // TODO: remove after adding init from user data storage
+  // WARNING: a temporary solution
+  async getValidLibraryPathsAsynchronously(): Promise<string[]> {
+    return new Promise((resolve) => {
+      this._libraryFilesUpdateSubject$.pipe(
+        skip(1)
+      ).subscribe((fileNames) => {
+        resolve(fileNames);
+      });
+    });
   }
 
   changeValidFilesPathList(newList: string[]): void {

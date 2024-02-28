@@ -87,7 +87,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
         //   webEditor = undefined;
         // });
       }));
-      this.viewSubs.push(ui.onSizeChanged(this._filterPanel).subscribe((_) => {
+      this.viewSubs.push(ui.onSizeChanged(this._filterPanel).subscribe((_: any) => {
         try {
           if (!!webEditorApp) {
             const helmString = webEditorApp.canvas.getHelm(true)
@@ -110,7 +110,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
 
   applyProps() {
     if (!this.helmEditor) return; // helmEditor is not created, the filter is not in dom yet
-    this.helmEditor.editor.setHelm(this.props.substructure);
+    this.updateFilterPanel(this.props.substructure);
   }
 
   get filterPanel() {

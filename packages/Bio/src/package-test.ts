@@ -1,3 +1,5 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
@@ -17,6 +19,8 @@ import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';
 import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
+import './tests/WebLogo-project-tests';
+import './tests/WebLogo-layout-tests';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
 import './tests/substructure-filters-tests';

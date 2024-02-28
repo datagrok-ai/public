@@ -1,5 +1,17 @@
 # Peptides changelog
 
+## 1.17.8 (2024-02-22)
+
+Allow using qnum activity columns when running SAR analysis from top menu.
+
+## 1.17.7 (2024-02-22)
+
+Allow using qnum activity columns.
+
+## 1.17.6 (2024-02-20)
+
+Fix NW Distance function.
+
 ## 1.17.5 (2024-02-15)
 
 Added MCL clustering to peptide analysis.

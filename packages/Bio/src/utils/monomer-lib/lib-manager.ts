@@ -56,9 +56,14 @@ export class MonomerLibManager implements IMonomerLibHelper {
           getLibFileNameList(),
           getUserLibSettings(),
         ]);
-        const filteredLibFnList = libFileNameList
-          .filter((libFileName) => !settings.exclude.includes(libFileName))
-          .filter((libFileName) => settings.explicit.length > 0 ? settings.explicit.includes(libFileName) : true);
+
+        const filteredLibFnList = libFileNameList.filter((libFileName) => {
+          const isFileIncluded = !settings.exclude.includes(libFileName);
+          const isExplicit = settings.explicit.length === 0 || settings.explicit.includes(libFileName);
+
+          return isFileIncluded && isExplicit;
+        });
+
         const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
           .map((libFileName) => {
             //TODO handle whether files are in place

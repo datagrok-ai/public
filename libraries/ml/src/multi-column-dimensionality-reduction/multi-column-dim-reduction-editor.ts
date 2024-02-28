@@ -5,7 +5,8 @@ import {DimReductionMethods} from './types';
 import {DimReductionEditorOptions, DBScanOptions} from '../functionEditors/dimensionality-reduction-editor';
 import {IDBScanOptions} from '@datagrok-libraries/math';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import {DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG,
+import {DIM_RED_DEFAULT_POSTPROCESSING_FUNCTION_META, DIM_RED_POSTPROCESSING_FUNCTION_TAG,
+  DIM_RED_PREPROCESSING_FUNCTION_TAG, SUPPORTED_DISTANCE_FUNCTIONS_TAG,
   SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG} from '../functionEditors/consts';
 import {DistanceAggregationMethods} from '../distance-matrix/types';
 import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim-reducer';
@@ -87,7 +88,8 @@ export class MultiColumnDimReductionEditor {
     methodSettingsIcon: HTMLElement;
     dbScanSettingsIcon: HTMLElement;
     plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
-    clusterEmbeddingsInput = ui.boolInput('Cluster embeddings', true);
+    clusterEmbeddingsInput = ui.boolInput('Cluster embeddings', false);
+    postProcessingEditor: PostProcessingFuncEditor;
     aggregationMethodInput = ui.choiceInput('Aggregation method', DistanceAggregationMethods.EUCLIDEAN,
       [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]);
 
@@ -115,6 +117,8 @@ export class MultiColumnDimReductionEditor {
           distanceFunctions: distanceFunctions ? distanceFunctions.split(',') : [],
         };
       });
+
+      this.postProcessingEditor = new PostProcessingFuncEditor();
 
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
         this.onTableInputChanged();
@@ -259,8 +263,7 @@ export class MultiColumnDimReductionEditor {
         this.methodSettingsDiv,
         this.aggregationMethodInput.root,
         this.plotEmbeddingsInput,
-        this.clusterEmbeddingsInput,
-        this.dbScanSettingsDiv
+        this.postProcessingEditor.root,
       ], {style: {minWidth: '420px'}, classes: 'ui-form'});
       return div;
     }
@@ -276,7 +279,9 @@ export class MultiColumnDimReductionEditor {
         options: {...this.algorithmOptions, ...this.dbScanOptions,
           preprocessingFuncArgs: this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
         plotEmbeddings: this.plotEmbeddingsInput.value,
-        clusterEmbeddings: this.clusterEmbeddingsInput.value,
+        clusterEmbeddings: false,
+        postProcessingFunction: this.postProcessingEditor.postProcessingFunction,
+        postProcessingFunctionArgs: this.postProcessingEditor.args,
         aggreaggregationMethod: this.aggregationMethodInput.value
       };
     }
@@ -439,4 +444,83 @@ class DimReductionweightsEditor {
 
 function getFuncName(func: DG.Func) {
   return func.friendlyName ?? func.name;
+}
+
+class PostProcessingFuncEditor {
+  postProcessingFunctionsMap: {[key: string]: DG.Func | null} = {};
+  postProcessingFunctionInput: DG.ChoiceInput<string | null>;
+  private _root: HTMLElement = ui.div([]);
+  private _postProcessingArgs: Options = {};
+  private _argsElement: HTMLElement = ui.div([]);
+  private _settingsIcon: HTMLElement;
+  private _settingsOpened: boolean = false;
+  constructor() {
+    this._settingsIcon = ui.icons.settings(async () => {
+      this._settingsOpened = !this._settingsOpened;
+      if (this._settingsOpened)
+        this._argsElement.style.display = 'block';
+      else
+        this._argsElement.style.display = 'none';
+    });
+    this._argsElement.style.display = 'none';
+
+    const postProcessingFuncs = DG.Func.find({tags: [DIM_RED_POSTPROCESSING_FUNCTION_TAG]})
+      .filter((f) => f.inputs.length >= 2);
+    postProcessingFuncs.forEach((f) => {
+      const name = f.friendlyName ?? f.name;
+      this.postProcessingFunctionsMap[name] = f;
+    });
+    this.postProcessingFunctionsMap['None'] = null;
+
+    const defaultPostProcessingFunc = Object.keys(this.postProcessingFunctionsMap).find((it) =>
+      !!this.postProcessingFunctionsMap[it]?.options?.[DIM_RED_DEFAULT_POSTPROCESSING_FUNCTION_META]) ?? 'None';
+    this.postProcessingFunctionInput =
+      ui.choiceInput('Postprocessing', defaultPostProcessingFunc,
+        Object.keys(this.postProcessingFunctionsMap), async () => { await this.onFunctionChanged(); },
+        {nullable: false});
+    this.onFunctionChanged();
+    this.postProcessingFunctionInput.nullable = false;
+    this.postProcessingFunctionInput.classList.add('ml-dim-reduction-settings-input');
+    this.postProcessingFunctionInput.root.prepend(this._settingsIcon);
+    this._root.appendChild(this.postProcessingFunctionInput.root);
+    this._root.appendChild(this._argsElement);
+  }
+
+  get postProcessingFunction() {
+    return this.postProcessingFunctionInput.value ?
+      this.postProcessingFunctionsMap[this.postProcessingFunctionInput.value] : null;
+  }
+
+  async onFunctionChanged() {
+    const func = this.postProcessingFunction;
+    ui.empty(this._argsElement);
+    this._postProcessingArgs = {};
+    if (!func || func.inputs.length < 3) {
+      this._settingsIcon.style.display = 'none';
+      return;
+    };
+    this._settingsIcon.style.display = 'flex';
+    const fc = func.prepare();
+    const inputs = await fc.buildEditor(ui.div());
+    for (let i = 2; i < func.inputs.length; i++) {
+      const fInput = func.inputs[i];
+      const val = this._postProcessingArgs[fInput.name] ||
+        fc.inputParams[func.inputs[i].name].value || fInput.defaultValue;
+      if (val)
+        this._postProcessingArgs[fInput.name] = val;
+      const input = inputs.find((inp) => inp.property.name === fInput.name);
+      if (!input)
+        continue;
+      input.onChanged(() => { this._postProcessingArgs[fInput.name] = input.value; });
+      this._argsElement.append(input.root);
+    }
+  }
+
+  get root() {
+    return this._root;
+  }
+
+  get args() {
+    return this._postProcessingArgs;
+  }
 }

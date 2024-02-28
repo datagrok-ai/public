@@ -88,6 +88,16 @@ export function autostart() {
 
 }
 
+//name: CustomCustomizer
+//input: object params
+export function CustomCustomizer(params: {defaultView: DG.TableView}) {
+  const comparisonView = params.defaultView;
+  comparisonView.scatterPlot({
+    "xColumnName": "Initial temperature",
+    "yColumnName": "Time to cool",
+  });
+}
+
 //tags: init
 export function init() {
   if (initCompleted)

@@ -542,3 +542,8 @@
 .gwt-DialogBox { 
   z-index: 10000;
 }
+
+.chem-rgroup-undo-icon {
+  padding-left: 80px;
+  padding-top: 6px
+}

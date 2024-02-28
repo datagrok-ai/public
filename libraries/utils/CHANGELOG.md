@@ -1,14 +1,79 @@
 # utils changelog
 
+## 4.1.45 (2024-02-20)
+
+### Bug fixes
+
+* [#2687](https://github.com/datagrok-ai/public/issues/2687): Forms viewer: Fixed molecule size option name
+
+## 4.1.44 (2024-02-16)
+
+### Features
+
+* [#2687](https://github.com/datagrok-ai/public/issues/2687): Forms viewer: Added an option to adjust the size of the molecule.
+* Lowered line threshold for scatterplot lines renderer.
+
+## 4.1.43 (2024-02-15)
+
+### Features
+
+* Added category for core tests.
+* Added methods to items grid.
+
+## 4.1.42 (2024-02-12)
+
+### Features
+
+* Updated lines renderer for scatterplot.
+
+## 4.1.41 (2024-02-01)
+
 ## 4.1.40 (2024-01-29)
 
 ### Features
 
-* utils: Add to testViewer support options.awaitViewer
+* Added to testViewer support options.awaitViewer
 
 ### Bug fixes 
 
-* utils: Fix testViewer for element selector
+* Fixed testViewer for element selector
+
+## 4.1.39 (2024-01-26)
+
+## 4.1.38 (2024-01-19)
+
+### Features
+
+* Added timeout option.
+
+## 4.1.37 (2024-01-19)
+
+### Features
+
+* Integrated Dart tests.
+* Saved test console logs.
+
+### Bug Fixes
+
+* Added reason for test event.
+
+## 4.1.36 (2023-12-14)
+
+### Bug Fixes
+
+* Fixed test data for the Biostructure viewer.
+
+## 4.1.35 (2023-12-13)
+
+### Bug Fixes
+
+* Scatterplot lines renderer: Sending mouse event on line click.
+
+## 4.1.34 (2023-12-12)
+
+### Bug Fixes
+
+* Forms viewer: Updated layout initial size.
 
 ## 4.1.33 (2023-11-30)
 

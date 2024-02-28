@@ -50,13 +50,15 @@ export async function init(): Promise<void> {
 //input: column yCol {type: numerical}
 //input: double epsilon = 0.02 {caption: Epsilon} [The maximum distance between two samples for them to be considered as in the same neighborhood.]
 //input: int minPts = 4 {caption: Minimum points} [The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.]
+//output: column cluster
 export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column, epsilon: number, minPts: number) {
   const x = xCol.getRawData() as Float32Array;
   const y = yCol.getRawData() as Float32Array;
   const res = await getDbscanWorker(x, y, epsilon, minPts);
-  const clusterColName = df.columns.getUnusedName('Cluster');
+  const clusterColName = df.columns.getUnusedName('Cluster (DBSCAN)');
   const cluster = DG.Column.fromInt32Array(clusterColName, res);
   df.columns.add(cluster);
+  return cluster;
 }
 
 //top-menu: ML | Analyze | PCA...
@@ -83,6 +85,31 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   }
 }
 
+//name: DBSCAN clustering
+//tags: dim-red-postprocessing-function
+//meta.defaultPostProcessingFunction: true
+//input: column col1
+//input: column col2
+//input: double epsilon = 0.01 {default: 0.01}[Minimum distance between two points to be considered as in the same neighborhood.]
+//input: int minimumPoints = 5 {default: 5}[Minimum number of points to form a dense region.]
+export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Column, epsilon: number, minimumPoints: number) {
+  const df = col1.dataFrame;
+  if (df === null)
+    return;
+  const resCol = await dbScan(df, col1, col2, epsilon, minimumPoints);
+  df.changeColumnType(resCol, 'string');
+  const colNames = [col1.name, col2.name];
+  const tv = grok.shell.tableView(df.name);
+  if (!tv)
+    return;
+  // find the correct scatterPlotViewer and set the colorColumnName
+  for (const v of tv.viewers) {
+    if (v instanceof DG.ScatterPlotViewer && colNames.includes(v.props.xColumnName) && colNames.includes(v.props.yColumnName)) {
+      v.props.colorColumnName = resCol.name;
+      return;
+    }
+  }
+}
 
 //name: None (number)
 //tags: dim-red-preprocessing-function
@@ -122,7 +149,7 @@ export async function reduceDimensionality(): Promise<void> {
       params.weights, params.preprocessingFunctions, params.aggreaggregationMethod as DistanceAggregationMethods,
       !!params.plotEmbeddings, !!params.clusterEmbeddings, params.options, {
         fastRowCount: 10000,
-      });
+      }, params.postProcessingFunction, params.postProcessingFunctionArgs);
   }).show();
 }
 

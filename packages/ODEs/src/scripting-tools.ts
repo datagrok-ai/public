@@ -575,7 +575,7 @@ function getViewersLine(ivp: IVP): string {
   const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
 
   // eslint-disable-next-line max-len
-  return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)`;
+  return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
 }
 
 /** Generate annotation lines */

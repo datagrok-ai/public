@@ -43,7 +43,7 @@ export function describeCurrentObj(): void {
   });
 
   grok.events.onContextMenu.subscribe((args) => {
-    if (args.args.context instanceof DG.Viewer)
+    if (args.args.context instanceof DG.Viewer && (args.args.context as DG.Viewer).type !== DG.VIEWER.GRID)
       addToJSContextCommand(args);
   });
 }

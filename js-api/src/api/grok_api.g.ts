@@ -1025,7 +1025,7 @@ export interface IDartApi {
   grok_InputBase_ForColumn(column: any): any;
   grok_InputBase_FromJS(jsInput: any): any;
   grok_InputForm_ForInputs(inputs: any): any;
-  grok_InputForm_ForFuncCallAsync(fc: any): Promise<any>;
+  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
   grok_InputForm_Get_IsValid(form: any): any;
@@ -1398,6 +1398,7 @@ export interface IDartApi {
   grok_DockerImage_Get_dockerFullName(x: any): any;
 
   // Generated from ../d4/lib/d4.api.g.dart
+  grok_UsageType_Create(): any;
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
