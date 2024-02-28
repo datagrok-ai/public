@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable, merge} from 'rxjs';
+import { BehaviorSubject, Observable, Subject, merge, of} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import {withLatestFrom, filter, map} from 'rxjs/operators';
+import { withLatestFrom, filter, map, switchMap, shareReplay } from 'rxjs/operators';
 
 //
 // State values
@@ -176,11 +176,11 @@ export function keyToPath(key: PathKey) {
   return key.split('/');
 }
 
-export function pathsToKeys(paths: ItemPath | ItemPath[]): PathKey[] {
+export function normalizePaths(paths: ItemPath | ItemPath[]): ItemPath[] {
   if (Array.isArray(paths[0]))
-    return paths.map((path) => pathToKey(path as ItemPath));
+    return paths as ItemPath[];
   else
-    return [pathToKey(paths as ItemPath)];
+    return [paths as ItemPath];
 }
 
 export function traverseConfigPipelines<T>(
@@ -232,15 +232,45 @@ export type NodeConf = AddNodeConf | PipelineConfiguration;
 export type AddNodeConfTypes = 'action' | 'popup' | 'step';
 export type NodeConfTypes = AddNodeConfTypes | 'pipeline';
 
-export type NodeItemState<T = any> = StateItemConfiguration & {
-  value: BehaviorSubject<T>,
-  inputState?: 'disabled' | 'restricted' | 'user input',
+export type InputState = 'disabled' | 'restricted' | 'user input';
+
+export class NodeItemState<T = any> {
+  public currentSource = new BehaviorSubject<Observable<T>>(of());
+  public valueChanges = this.currentSource.pipe(
+    switchMap(source => source),
+  );
+
+  private value = new BehaviorSubject<T | undefined>(undefined);
+
+  private setter = (x: T, inputState?: InputState) => {
+    this.currentSource.next(of(x));
+  };
+
+  constructor(public conf: StateItemConfiguration) {
+    this.valueChanges.subscribe((x) => {
+      this.value.next(x);
+    })
+  }
+
+  linkState(source: Observable<T>, setter?: (x: any) => void) {
+    this.currentSource.next(source);
+    if (setter) {
+      this.setter = setter;
+    }
+  }
+
+  getValue() {
+    this.value.value;
+  }
+
+  setValue(val: T, inputState?: InputState) {
+    this.setter(val, inputState);
+  }
 }
 
 export class NodeState {
   public controllerConfig?: ControllerConfig;
-  public states?: Map<ItemName, NodeItemState>;
-  public enabled = new BehaviorSubject(true);
+  public states = new Map<ItemName, NodeItemState>();
 
   constructor(
     public conf: NodeConf,
@@ -250,9 +280,9 @@ export class NodeState {
     if (type === 'step' || type === 'popup') {
       const states = (conf as PipelineStepConfiguration | PipelinePopupConfiguration).states;
       for (const state of states ?? [])
-        this.states?.set(state.id, {...state, value: new BehaviorSubject<any>(undefined)});
+        this.states.set(state.id, new NodeItemState(state));
     }
-    if (type = 'action') {
+    if (type === 'action') {
       const link = conf as ActionConfiguraion;
       this.controllerConfig = new ControllerConfig(pipelinePath, link.from, link.to);
     }
@@ -267,7 +297,10 @@ export class PipelineState {
 export class LinkState {
   public controllerConfig: ControllerConfig;
   public enabled = new BehaviorSubject(true);
-  public valueChanges?: Observable<any>;
+  public currentSource = new BehaviorSubject<Observable<any>>(of());
+  public valueChanges = this.currentSource.pipe(
+    switchMap(source => source)
+  );
 
   constructor(
     public globalState: PipelineState,
@@ -278,7 +311,7 @@ export class LinkState {
   }
 
   public linkValues(sources: Observable<any>[]) {
-    this.valueChanges = merge(sources);
+    this.currentSource.next(merge(sources));
   }
 
   public getValuesChanges() {
@@ -299,8 +332,8 @@ export class LinkState {
 }
 
 export class ControllerConfig {
-  public from?: Set<PathKey>;
-  public to?: Set<PathKey>;
+  public from: ItemPath[] = [];
+  public to: ItemPath[] = [];
 
   constructor(
     public pipelinePath: ItemPath,
@@ -308,10 +341,10 @@ export class ControllerConfig {
     to?: ItemPath | ItemPath[],
   ) {
     if (from)
-      this.from = new Set(pathsToKeys(from));
+      this.from = normalizePaths(from);
 
     if (to)
-      this.to = new Set(pathsToKeys(to));
+      this.to = normalizePaths(to);
   }
 }
 
@@ -319,7 +352,8 @@ export class PipelineRuntime {
   constructor(
     private nodes: Map<PathKey, NodeState>,
     private links: Map<PathKey, LinkState>,
-    private compositionPipelineView: CompositionPipelineView,
+    private view: ICompositionView,
+    public pipelineState: PipelineState,
   ) {}
 
   setLinkState(path: ItemPath, enabled: boolean): void {
@@ -336,34 +370,20 @@ export class PipelineRuntime {
       return;
 
     if (enabled)
-      this.compositionPipelineView.showSteps((conf as PipelineStepConfiguration).nqName);
+      this.view.showSteps((conf as PipelineStepConfiguration).nqName);
     else
-      this.compositionPipelineView.hideSteps((conf as PipelineCompositionConfiguration).nqName);
+      this.view.hideSteps((conf as PipelineCompositionConfiguration).nqName);
   }
 
   getState<T = any>(path: ItemPath): T | void {
-    const nodePath = path.slice(0, path.length - 2);
-    const stateName = path[path.length - 1];
-    const k = pathToKey(nodePath);
-    const node = this.nodes.get(k);
-    if (node && node.states) {
-      const state = node.states.get(stateName);
-      if (state)
-        return state.value.value;
-    }
+    const {state} = this.getNodeState(path)!;
+    return state?.getValue();
   }
 
-  updateState<T>(path: ItemPath, value: T, inputState: 'disabled' | 'restricted' | 'user input' = 'user input'): void {
-    const nodePath = path.slice(0, path.length - 2);
-    const stateName = path[path.length - 1];
-    const k = pathToKey(nodePath);
-    const node = this.nodes.get(k);
-    if (node && node.states) {
-      const state = node.states.get(stateName);
-      if (state) {
-        state.inputState = inputState;
-        state.value.next(value);
-      }
+  updateState<T>(path: ItemPath, value: T, inputState: InputState = 'user input'): void {
+    const {state} = this.getNodeState(path)!;
+    if (state) {
+      state.setValue(value, inputState);
     }
   }
 
@@ -371,11 +391,41 @@ export class PipelineRuntime {
     const k = pathToKey(path);
     const conf = this.nodes.get(k)?.conf;
     if (conf)
-      return this.compositionPipelineView.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName);
+      return this.view.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName);
+  }
+
+  wireView() {
+    // wiring by nqName
+    for (const [, link] of this.links) {
+      // const inputs = pathsToKeys(link.config.from);
+      const inputNodes = link.controllerConfig.from.map(input => {
+        return this.getNodeState(input)!;
+      });
+      for (const {node, state} of inputNodes) {
+        if (node.type === 'popup' || node.type === 'step') {
+          const stepId = (node.conf as PipelinePopupConfiguration | PipelineStepConfiguration).nqName;
+          const stateId = state.conf.id;
+          const {changes, setter} = this.view.getStateBindings(stepId, stateId);
+          state.linkState(changes, setter)
+        }
+      }
+    }
   }
 
   goToStep(path: ItemPath): void {
     console.log('TODO: goToStep not implemented');
+  }
+
+  private getNodeState(path: ItemPath) {
+    const nodePath = path.slice(0, path.length - 2);
+    const stateName = path[path.length - 1];
+    const k = pathToKey(nodePath);
+    const node = this.nodes.get(k);
+    if (node && node.states) {
+      const state = node.states.get(stateName);
+      if (state)
+        return {node, state};
+    }
   }
 }
 
@@ -458,7 +508,15 @@ export class RuntimeControllerImpl implements RuntimeController {
 //
 // Pipeline classes
 
-export class CompositionPipelineView extends PipelineView {
+export interface ICompositionView {
+  showSteps(...id: string[]): void;
+  hideSteps(...id: string[]): void;
+  getStepView<T extends RichFunctionView>(id: string): T;
+  injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
+  getStateBindings<T = any>(stepId: string, stateId: string): {changes: Observable<T>, setter: (x: any) => void};
+}
+
+export class CompositionPipelineView extends PipelineView implements ICompositionView {
   private hooks: HookSpec[] = [];
   private rt?: PipelineRuntime;
 
@@ -475,9 +533,18 @@ export class CompositionPipelineView extends PipelineView {
     this.rt = rt;
   }
 
+  public getStateBindings(stepId: string, stateId: string) {
+    const stepView = this.getStepView<RichFunctionView>(stepId);
+    const changes = stepView.getParamChanges(stateId);
+    const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => stepView.setInput(stateId, x, inputState);
+    return { changes, setter };
+  }
+
   override async init() {
+    this.rt!.pipelineState.initialLoading.next(true);
     await this.execHooks('beforeInit');
     await super.init();
+    this.rt!.pipelineState.initialLoading.next(false);
     await this.execHooks('afterInit');
   }
 
@@ -490,17 +557,21 @@ export class CompositionPipelineView extends PipelineView {
   }
 
   override async onBeforeLoadRun() {
+    this.rt!.pipelineState.runChanging.next(true);
     await super.onBeforeLoadRun();
     await this.execHooks('beforeLoadRun');
   }
 
   override async onAfterLoadRun(run: DG.FuncCall) {
     await super.onAfterLoadRun(run);
+    this.rt!.pipelineState.runChanging.next(false);
+    this.rt!.wireView();
     await this.execHooks('afterLoadRun', {run});
   }
 
   override build() {
     super.build();
+    this.rt!.wireView();
     this.execHooks('onViewReady');
   }
 
@@ -576,7 +647,7 @@ export class CompositionPipeline {
     await this.loadFuncCallsIO();
     this.addScriptStatesToConfig();
     this.processConfig();
-    this.rt = new PipelineRuntime(this.nodes, this.links, this.viewInst);
+    this.rt = new PipelineRuntime(this.nodes, this.links, this.viewInst, this.pipelineState);
     this.viewInst.injectConfiguration(this.steps, this.hooks, this.rt, this.exportConfig);
     this.isInit = true;
     await this.viewInst.init();
