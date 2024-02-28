@@ -239,68 +239,70 @@ jobs:
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
 
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] ||
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] ||
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "ketchersketcher" ]] ||
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"ketchersketcher"* ]]; then
-            if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
-              echo 'Use test stand for tests'
-              apiUrl='https://test.datagrok.ai/api'
-              alias=test
-            else
-              echo 'Use dev stand for tests'
-              apiUrl='https://dev.datagrok.ai/api'
-              alias=dev
-            fi
-          else
-            profiles='--profile datagrok --profile db'
-            echo "Check if Grok Connect is required for the package"
-            if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
-              profiles+=' --profile grok_connect'
-            fi
-            echo "Check if CVM is required for the package"
-            if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "cvmtests" ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "samples" ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
-              echo "Add Scripting as dependency for package ${{ matrix.package }}"
-              profiles+=' --profile scripting'
-            fi
-            if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-               [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-              echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
-              profiles+=' --profile grok_compute'
-            fi
-            echo "Check if Grok Spawner is required for the package"
-            if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
-              profiles+=' --profile grok_spawner'
-            fi
-            echo "Run datagrok stand with profiles ${profiles}"
-            docker system prune -af --volumes
-            if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-              DATAGROK_VERSION='latest'
-            else
-              DATAGROK_VERSION='bleeding-edge'
-              export GROK_SPAWNER_VERSION='bleeding-edge'
-              export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
-            fi
-            export DATAGROK_VERSION
-            docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
-            echo "Set docker_sha"
-            docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
-            echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
-            echo "Notify about version used for tests"
-            echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
-            df -h
-            apiUrl='http://127.0.0.1:8080/api'
-            alias=${HOST}
+          # if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] ||
+          #    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] ||
+          #    [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "ketchersketcher" ]] ||
+          #    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"ketchersketcher"* ]]; then
+          #   if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
+          #     echo 'Use test stand for tests'
+          #     apiUrl='https://test.datagrok.ai/api'
+          #     alias=test
+          #   else
+          #     echo 'Use dev stand for tests'
+          #     apiUrl='https://dev.datagrok.ai/api'
+          #     alias=dev
+          #   fi
+          # else
+
+          profiles='--profile datagrok --profile db'
+          echo "Check if Grok Connect is required for the package"
+          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
+            profiles+=' --profile grok_connect'
           fi
+          echo "Check if CVM is required for the package"
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "cvmtests" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "samples" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
+            echo "Add Scripting as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile scripting'
+          fi
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
+            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile grok_compute'
+          fi
+          echo "Check if Grok Spawner is required for the package"
+          if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
+            profiles+=' --profile grok_spawner'
+          fi
+          echo "Run datagrok stand with profiles ${profiles}"
+          docker system prune -af --volumes
+          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
+            DATAGROK_VERSION='latest'
+          else
+            DATAGROK_VERSION='bleeding-edge'
+            export GROK_SPAWNER_VERSION='bleeding-edge'
+            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
+          fi
+          export DATAGROK_VERSION
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
+          docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
+          echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify about version used for tests"
+          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+          df -h
+          apiUrl='http://127.0.0.1:8080/api'
+          alias=${HOST}
+
+          # fi
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
       - name: js api dependency for unpublished dependencies
