@@ -402,8 +402,10 @@ export abstract class FunctionView extends DG.ViewBase {
         ui.setUpdateIndicator(this.root, false);
       }),
       newHistoryBlock.onComparison.subscribe(async (ids) => {
+        properUpdateIndicator(newHistoryBlock.root, true);
         const fullFuncCalls = await Promise.all(ids.map((funcCallId) => historyUtils.loadRun(funcCallId)));
-        this.onComparisonLaunch(fullFuncCalls);
+        await this.onComparisonLaunch(fullFuncCalls);
+        properUpdateIndicator(newHistoryBlock.root, false);
       }),
       newHistoryBlock.onRunEdited.subscribe((editedCall) => {
         if (editedCall.id === this.funcCall.id && editedCall.options['title']) {
