@@ -40,7 +40,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         this.tags.forEach((tag) => resCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
         resDf.onCurrentRowChanged.subscribe(
-          (_) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
+          (_: any) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
         updateDivInnerHTML(this.root, resDf.plot.grid().root);
         this.computeCompleted.next(true);
       }
@@ -61,7 +61,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
 
   private async computeByMM() {
     const encodedSequences =
-        (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
+      (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
     const distanceMatrixService = new DistanceMatrixService(true, false);
     const distanceMatrixData = await distanceMatrixService.calc(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN);
     distanceMatrixService.terminate();

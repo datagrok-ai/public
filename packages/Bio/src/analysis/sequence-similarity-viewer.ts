@@ -60,7 +60,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         this.molCol.semType = DG.SEMTYPE.MACROMOLECULE;
         this.tags.forEach((tag) => this.molCol!.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
-        resDf.onCurrentRowChanged.subscribe((_) => {
+        resDf.onCurrentRowChanged.subscribe((_: any) => {
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
           setTimeout(() => { this.createPropertyPanel(resDf); }, 1000);
           this.gridSelect = true;

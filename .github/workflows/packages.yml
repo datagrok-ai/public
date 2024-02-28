@@ -425,7 +425,7 @@ jobs:
         run: |
           if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
             key="$TEST_TEST_DEV_KEY"
-          else if [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
             key="$DEV_TEST_DEV_KEY"
           else
             key='admin'
@@ -505,16 +505,12 @@ jobs:
               cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
             fi
             docker buildx create --use
-            docker buildx build $(dirname $dockerfile) \
+            docker buildx build $(dirname $dockerfile) --load \
               --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} \
-               $cache_args \
-              --output type=docker,dest=/tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar \
-              --load
-            image_tars+=" /tmp/${image_name}_${{ steps.docker_name_ver.outputs.image_ver }}.tar"
+               $cache_args
             images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
           echo "images=$images" >> $GITHUB_OUTPUT
-          echo "image_tars=$image_tars" >> $GITHUB_OUTPUT
 
       - name: General checks
         run: |
@@ -602,11 +598,17 @@ jobs:
 #        with:
 #          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
 
-      - uses: actions/upload-artifact@v4
+      - name: Save package Docker image to tar archive
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
+        id: save-docker
+        run: |
+          docker save -o /tmp/${{ matrix.package }}.docker.tar ${{ steps.build-docker.outputs.images }}
+
+      - uses: actions/upload-artifact@v4
+        if: steps.save-docker.outcome == 'success'
         with:
-          path: ${{ steps.build-docker.outputs.image_tars }}
-          name: ${{ matrix.package }}.image_tars
+          path: /tmp/${{ matrix.package }}.docker.tar
+          name: ${{ matrix.package }}.docker.tar
           retention-days: 14
           if-no-files-found: warn
 
