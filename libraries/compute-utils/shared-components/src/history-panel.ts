@@ -40,6 +40,10 @@ export class HistoricalRunsList extends DG.Widget {
     return this.onSelectedRunsChanged.value;
   }
 
+  public get onSelectedChanged() {
+    return this.onSelectedRunsChanged.asObservable();
+  }
+
   constructor(private initialFuncCalls: DG.FuncCall[], private options: {
     fallbackText?: string,
     showEdit?: boolean,
@@ -48,7 +52,7 @@ export class HistoricalRunsList extends DG.Widget {
     showAuthorIcon?: boolean,
     showCompare?: boolean,
   } = {showEdit: true, showDelete: true, showFavorite: true, showAuthorIcon: true, showCompare: true}) {
-    super(ui.div());
+    super(ui.div([], {style: {'height': '100%', 'overflow-y': 'hidden'}}));
 
     const listChangedSub = this.onRunsChanged.subscribe((runs) => {
       this.refresh(runs);
@@ -145,8 +149,8 @@ export class HistoricalRunsList extends DG.Widget {
       this.root.appendChild(ui.divV([
         this.actions,
         ui.element('div', 'splitbar-horizontal'),
-        ...this.cards.map((card) => card.root),
-      ]));
+        ui.divV(this.cards.map((card) => card.root), {style: {'overflow-y': 'scroll'}}),
+      ], {style: {'overflow-y': 'hidden', 'height': '100%'}}));
     } else {
       this.root.appendChild(ui.divV([
         ui.element('div', 'splitbar-horizontal'),
@@ -200,7 +204,7 @@ export class HistoricalRunsList extends DG.Widget {
       ]),
     ], {style: {
       'justify-content': 'space-between',
-      'padding': '0 12px',
+      'padding': '0px 10px 0px 9px',
     }}) as HTMLElement;
 
     return actionsSection;
@@ -599,6 +603,13 @@ class HistoricalRunCard extends DG.Widget {
           ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
           ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
             [ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
+          ...(funcCall.options['immutable_tags'] && funcCall.options['immutable_tags'].length > 0) ?
+            [ui.div(funcCall.options['immutable_tags'].map((tag: string) => {
+              const span = ui.span([tag], 'd4-tag');
+              span.style.padding = '0px';
+              span.style.backgroundColor = 'var(--beige-1)';
+              return span;
+            }))]:[],
         ], 'hp-card-content'),
       ]),
       ui.divH([
@@ -616,6 +627,8 @@ class HistoricalRunCard extends DG.Widget {
       ...(funcCall.options['description']) ? {'Description': funcCall.options['description']}:{},
       ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
         {'Tags': ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor')}:{},
+      ...(funcCall.options['immutable_tags'] && funcCall.options['immutable_tags'].length > 0) ?
+        {'Extra': ui.div(funcCall.options['immutable_tags'].map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor')}:{},
     }));
 
     ui.empty(this.root);

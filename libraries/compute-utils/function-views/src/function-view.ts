@@ -417,8 +417,10 @@ export abstract class FunctionView extends DG.ViewBase {
       }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
-          if (isHistoryBlockOpened)
+          if (isHistoryBlockOpened) {
             grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
+            grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+          }
         } else {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
@@ -445,8 +447,10 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
-      if (!grok.shell.dockManager.findNode(this.historyRoot))
+      if (!grok.shell.dockManager.findNode(this.historyRoot)) {
         grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
+        grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+      }
     });
 
     const exportBtn = ui.comboPopup(
@@ -795,7 +799,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public isHistorical = new BehaviorSubject<boolean>(false);
 
-  protected historyRoot: HTMLDivElement = ui.box();
+  protected historyRoot: HTMLDivElement = ui.box(null, {style: {height: '100%'}});
 
   public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
 
