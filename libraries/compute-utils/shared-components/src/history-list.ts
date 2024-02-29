@@ -6,6 +6,7 @@ import {Subject, BehaviorSubject, merge, fromEvent} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {properUpdateIndicator} from '../../function-views/src/shared/utils';
 import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
+import {EXPERIMENTAL_TAG} from '../../shared-utils/consts';
 
 class HistoricalRunCard extends DG.Widget {
   private _onClicked = new Subject<DG.FuncCall>();
@@ -193,11 +194,20 @@ class HistoricalRunCard extends DG.Widget {
       ui.bind(funcCall.author, authorIcon);
     }
 
-    const cardLabel = ui.label(
-      funcCall.options['title'] ??
-      funcCall.author?.friendlyName ??
-      grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}},
-    );
+    const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
+    experimentalTag.classList.add('fad', 'fa-sm');
+    experimentalTag.classList.remove('fal');
+    experimentalTag.style.marginLeft = '3px';
+    const immutableTags = funcCall.options['immutable_tags'] as string[] | undefined;
+    const cardLabel = ui.span([
+      ui.label(
+        funcCall.options['title'] ??
+        funcCall.author?.friendlyName ??
+        grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}},
+      ),
+      ...(immutableTags && immutableTags.includes(EXPERIMENTAL_TAG)) ?
+        [experimentalTag]:[],
+    ]);
 
     const editIcon = ui.iconFA('edit', (ev) => {
       ev.stopPropagation();
@@ -238,13 +248,6 @@ class HistoricalRunCard extends DG.Widget {
           ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
           ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
             [ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
-          ...(funcCall.options['immutable_tags'] && funcCall.options['immutable_tags'].length > 0) ?
-            [ui.div(funcCall.options['immutable_tags'].map((tag: string) => {
-              const span = ui.span([tag], 'd4-tag');
-              span.style.padding = '0px';
-              span.style.backgroundColor = 'var(--beige-1)';
-              return span;
-            }))]:[],
         ], 'hp-card-content'),
       ]),
       ui.divH([
