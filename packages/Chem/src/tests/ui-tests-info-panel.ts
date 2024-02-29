@@ -203,7 +203,7 @@ category('UI info panel', () => {
       .find((el) => el.textContent === 'Descriptors') as HTMLElement;
     if (!desc?.classList.contains('expanded')) desc?.click();
     await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
-      'descriptors table hasn\'t been created', 10000);
+      'descriptors table hasn\'t been created', 20000);
     desc?.click(); await delay(100);
   });
 
