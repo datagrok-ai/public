@@ -434,6 +434,9 @@ export class HistoricalRunsList extends DG.Widget {
         this.onSelectedRunsChanged.value.delete(callToDelete);
         this.onSelectedRunsChanged.next(this.onSelectedRunsChanged.value);
 
+        this.onRunsChanged.value.splice(this.onRunsChanged.value.findIndex((call) => call.id === callToDelete.id), 1);
+        this.onRunsChanged.next( this.onRunsChanged.value);
+
         this.onDelete.next(callToDelete);
       });
 
