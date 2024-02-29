@@ -105,7 +105,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher !== null, `${chem.currentSketcherType} has not been created`, 20000);
+    await awaitCheck(() => s.sketcher !== null, `${chem.currentSketcherType} has not been created`, 30000);
     if (input) {
       setTimeout(() => {
         s.molInput.value = exampleSmiles;

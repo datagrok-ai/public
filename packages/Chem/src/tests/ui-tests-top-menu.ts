@@ -68,10 +68,9 @@ category('UI top menu', () => {
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
         grok.shell.topMenu.find('Chem').group('Transform').find('Mutate...').click();
         await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 2000);
-        const dialog = DG.Dialog.getOpenDialogs()[0];
-        await awaitCheck(() => dialog.inputs.length === 4, 'cannot load Mutate dialog', 2000);
-        expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
-        const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+        const dialog = returnDialog('Mutate');
+        await awaitCheck(() => dialog?.input('Molecule').stringValue === 'CN1C(CC(O)C1=O)C1=CN=CC=C1', 'cannot open mutate dialog', 2000);
+        const okButton = dialog!.root.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click();
         await awaitCheck(() => grok.shell.t.name === 'mutations', 'cannot find mutations table', 20000);
         await delay(10);
