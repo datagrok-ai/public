@@ -271,6 +271,12 @@ class HistoryFilter extends DG.Widget {
         }, [] as string[]);
 
       tagInput.items = ['Choose tag to filter', ...newTags];
+      dateInput.value = newFuncCalls.reduce((minDate, call) => {
+        if (call.started < minDate)
+          minDate = call.started;
+
+        return minDate;
+      }, dayjs()).subtract(1, 'week');
       properUpdateIndicator(tagInput.root, false);
     });
 
