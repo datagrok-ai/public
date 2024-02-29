@@ -825,7 +825,8 @@ export class PeptidesModel {
         }
         const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
         if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
-          lstViewer.createLogoSummaryTableGrid();
+          lstViewer._logoSummaryTable = lstViewer.createLogoSummaryTable() ?? lstViewer._logoSummaryTable;
+          lstViewer._viewerGrid = lstViewer.createLogoSummaryTableGrid() ?? lstViewer._viewerGrid;
           lstViewer.render();
         }
       } catch (e) {
@@ -1178,7 +1179,7 @@ export class PeptidesModel {
     const epsilon = this.settings!.sequenceSpaceParams!.epsilon ?? 0.01;
     const minPts = this.settings!.sequenceSpaceParams!.minPts ?? 4;
     const clusterRes = await getDbscanWorker(embed1, embed2, epsilon, minPts);
-    const newClusterName = this.df.columns.getUnusedName('Cluster');
+    const newClusterName = this.df.columns.getUnusedName('Cluster (DBSCAN)');
     const clusterCol = this.df.columns.addNewString(newClusterName);
     clusterCol.init((i) => clusterRes[i].toString());
     if (this._sequenceSpaceViewer !== null)
