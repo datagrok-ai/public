@@ -469,7 +469,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       const customClustCol = customClustColList[rowIdx];
       customLSTClustCol.set(rowIdx, customClustCol.name);
       const bitArray = BitArray.fromUint32Array(filteredDfRowCount, customClustCol.getRawData() as Uint32Array);
-      if (bitArray.allFalse || bitArray.allTrue)
+      if (bitArray.allFalse)
         continue;
 
 

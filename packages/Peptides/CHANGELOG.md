@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.10 (2024-02-29)
+
+Fix context panel crashing and never recovering
+
 ## 1.17.9 (2024-02-29)
 
 Fix Logo summary table not calculating for single clusters and not updating on filter.
