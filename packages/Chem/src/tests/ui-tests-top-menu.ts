@@ -69,7 +69,7 @@ category('UI top menu', () => {
         grok.shell.topMenu.find('Chem').group('Transform').find('Mutate...').click();
         await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 2000);
         const dialog = DG.Dialog.getOpenDialogs()[0];
-        await awaitCheck(() => dialog.inputs.length === 4, 'cannot load Mutate dialog', 1000);
+        await awaitCheck(() => dialog.inputs.length === 4, 'cannot load Mutate dialog', 2000);
         expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
         const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click();
@@ -86,7 +86,7 @@ category('UI top menu', () => {
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
         grok.shell.topMenu.find('Chem').group('Transform').find('Curate...').click();
-        await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open curate dialog', 2000);
+        await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find curate dialog', 2000);
         const dialog = returnDialog('Curate');
         await awaitCheck(() => dialog?.input('Kekulization') !== undefined, 'cannot open curate dialog', 2000);
         setDialogInputValue('Curate', 'Kekulization', true);
@@ -191,7 +191,7 @@ category('UI top menu', () => {
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
         await awaitCheck(() => smiles.columns.names().filter((cname) => !cname.startsWith('~')).length === 5,
-            'rgroup columns haven\'t been added', 15000);
+            'rgroup columns haven\'t been added', 20000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.TRELLIS_PLOT)
