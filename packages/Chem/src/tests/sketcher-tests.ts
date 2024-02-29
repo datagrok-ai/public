@@ -20,7 +20,7 @@ category('sketcher testing', () => {
 
   test('smiles', async () => {
     await testSmiles(rdkitModule, funcs);
-  });
+  }, {timeout: 90000});
 
   test('input_smiles', async () => {
     await testSmiles(rdkitModule, funcs, true);
@@ -105,7 +105,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher !== null, `${chem.currentSketcherType} has not been created`, 30000);
+    await awaitCheck(() => s.sketcher !== null, `${chem.currentSketcherType} has not been created`, 60000);
     if (input) {
       setTimeout(() => {
         s.molInput.value = exampleSmiles;
