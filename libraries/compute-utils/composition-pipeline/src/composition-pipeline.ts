@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable, Subject, merge, of} from 'rxjs';
+import {BehaviorSubject, Observable, merge, of, from} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import {withLatestFrom, filter, map, switchMap, shareReplay} from 'rxjs/operators';
+import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil} from 'rxjs/operators';
 
 //
 // State values
@@ -222,6 +222,8 @@ export function traverseConfigPipelines<T>(
 //
 // Internal runtime state
 
+export class Aborted extends Error {}
+
 export type ItemsToMerge = {
   step?: PipelineStepConfiguration[];
   popup?: PipelinePopupConfiguration[];
@@ -246,13 +248,13 @@ export class NodeItemState<T = any> {
     this.currentSource.next(of(x));
   };
 
-  constructor(public conf: StateItemConfiguration) {
-    this.valueChanges.subscribe((x) => {
+  constructor(public conf: StateItemConfiguration, public pipelineState: PipelineState) {
+    this.valueChanges.pipe(takeUntil(this.pipelineState.closed)).subscribe((x) => {
       this.value.next(x);
     });
   }
 
-  linkState(source: Observable<T>, setter?: (x: any) => void) {
+  linkState(source: Observable<T>, setter?: (x: T) => void) {
     this.currentSource.next(source);
     if (setter)
       this.setter = setter;
@@ -275,11 +277,12 @@ export class NodeState {
     public conf: NodeConf,
     public type: NodeConfTypes,
     public pipelinePath: ItemPath,
+    public pipelineState: PipelineState,
   ) {
     if (type === 'step' || type === 'popup') {
       const states = (conf as PipelineStepConfiguration | PipelinePopupConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state));
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState));
     }
     if (type === 'action') {
       const link = conf as ActionConfiguraion;
@@ -291,6 +294,7 @@ export class NodeState {
 export class PipelineState {
   initialLoading = new BehaviorSubject<boolean>(true);
   runChanging = new BehaviorSubject<boolean>(false);
+  closed = new BehaviorSubject<boolean>(false);
 }
 
 export class LinkState {
@@ -302,25 +306,25 @@ export class LinkState {
   );
 
   constructor(
-    public globalState: PipelineState,
-    public config: PipelineLinkConfiguration,
+    public conf: PipelineLinkConfiguration,
     public pipelinePath: ItemPath,
+    public pipelineState: PipelineState,
   ) {
-    this.controllerConfig = new ControllerConfig(pipelinePath, config.from, config.to);
+    this.controllerConfig = new ControllerConfig(pipelinePath, conf.from, conf.to);
   }
 
-  public linkValues(sources: Observable<any>[]) {
+  public setSources(sources: Observable<any>[]) {
     this.currentSource.next(merge(sources));
   }
 
   public getValuesChanges() {
     return this.valueChanges!.pipe(
-      withLatestFrom(this.enabled, this.globalState.initialLoading, this.globalState.runChanging),
+      withLatestFrom(this.enabled, this.pipelineState.initialLoading, this.pipelineState.runChanging),
       filter(([_val, enabled, initialLoading, runChanging]) => {
         if (!enabled)
           return false;
 
-        if ((initialLoading && !this.config.enableOnStart) || (runChanging && !this.config.enableOnLoadRun))
+        if ((initialLoading && !this.conf.enableOnStart) || (runChanging && !this.conf.enableOnLoadRun))
           return false;
 
         return true;
@@ -394,12 +398,8 @@ export class PipelineRuntime {
 
   wireView() {
     // wiring by nqName
-    for (const [, link] of this.links) {
-      // const inputs = pathsToKeys(link.config.from);
-      const inputNodes = link.controllerConfig.from.map((input) => {
-        return this.getNodeState(input)!;
-      });
-      for (const {node, state} of inputNodes) {
+    for (const [, node] of this.nodes) {
+      for (const [, state] of node.states) {
         if (node.type === 'popup' || node.type === 'step' && state.conf.stateType === 'state') {
           const stepId = (node.conf as PipelinePopupConfiguration | PipelineStepConfiguration).nqName;
           const stateId = state.conf.id;
@@ -407,6 +407,49 @@ export class PipelineRuntime {
           state.linkState(changes, setter);
         }
       }
+    }
+  }
+
+  wireLinks() {
+    for (const [, link] of this.links) {
+      const changes = link.controllerConfig.from.map((input) => {
+        return this.getNodeState(input)!.state.valueChanges;
+      });
+      const handler = link.conf.handler ?? (async ({controller}) => {
+        const nLinks = Math.min(link.controllerConfig.from.length, link.controllerConfig.to.length);
+        for (let idx = 0; idx < nLinks; idx++) {
+          const state = controller.getState(link.controllerConfig.from[idx]);
+          controller.updateState(link.controllerConfig.to[idx], state);
+        }
+      });
+      link.setSources(changes);
+      link.getValuesChanges().pipe(
+        debounceTime(0),
+        switchMap(() => {
+          const abortController = new AbortController();
+          const signal = abortController.signal;
+          let done = false;
+          const obs$ = new Observable((observer) => {
+            const controller = new RuntimeControllerImpl(link.controllerConfig, this, signal);
+            const sub = from(callHandler(handler, {controller})).subscribe((val) => {
+              done = true;
+              observer.next(val);
+            }, (error: any) => {
+              if (!(error instanceof Aborted)) {
+                grok.shell.error(error);
+                console.error(error);
+              }
+            });
+            return () => {
+              if (!done)
+                abortController.abort();
+              sub.unsubscribe();
+            };
+          });
+          return obs$;
+        }),
+        takeUntil(this.pipelineState.closed),
+      ).subscribe();
     }
   }
 
@@ -440,30 +483,35 @@ export interface HookSpec {
 
 
 export class RuntimeControllerImpl implements RuntimeController {
-  constructor(private config: ControllerConfig, private rt: PipelineRuntime) {
+  constructor(private config: ControllerConfig, private rt: PipelineRuntime, private signal: AbortSignal) {
   }
 
   enableLink(path: ItemPath): void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setLinkState(fullPath, true);
   }
 
   disableLink(path: ItemPath): void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setLinkState(fullPath, false);
   }
 
   enableStep(path: ItemPath): void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setStepState(fullPath, true);
   }
 
   disableStep(path: ItemPath): void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.setStepState(fullPath, false);
   }
 
   getState<T = any>(path: ItemPath): T | void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkInput(fullPath)) {
       grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePath}`);
@@ -473,6 +521,7 @@ export class RuntimeControllerImpl implements RuntimeController {
   }
 
   updateState<T>(path: ItemPath, value: T, inputState?: 'disabled' | 'restricted' | 'user input'): void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkOutput(fullPath)) {
       grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePath}`);
@@ -482,13 +531,20 @@ export class RuntimeControllerImpl implements RuntimeController {
   }
 
   getView(path: ItemPath): RichFunctionView | void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.getView(fullPath);
   }
 
   goToStep(path: ItemPath): void {
+    this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     return this.rt.goToStep(fullPath);
+  }
+
+  private checkAborted() {
+    if (this.signal.aborted)
+      throw new Aborted();
   }
 
   private checkInput(path: ItemPath) {
@@ -571,6 +627,11 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     super.build();
     this.rt!.wireView();
     this.execHooks('onViewReady');
+  }
+
+  override close() {
+    this.rt!.pipelineState.closed.next(true);
+    super.close();
   }
 
   private async execHooks(category: keyof PipelineHooks, additionalParams: Record<string, any> = {}) {
@@ -798,7 +859,7 @@ export class CompositionPipeline {
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath));
+    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, this.pipelineState));
     return conf;
   }
 
@@ -808,7 +869,7 @@ export class CompositionPipeline {
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath));
+    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, this.pipelineState));
     return conf;
   }
 
@@ -818,7 +879,7 @@ export class CompositionPipeline {
     if (toRemove.has(linkKey))
       return;
 
-    this.links.set(linkKey, new LinkState(this.pipelineState, conf, pipelinePath));
+    this.links.set(linkKey, new LinkState(conf, pipelinePath, this.pipelineState));
     return conf;
   }
 
