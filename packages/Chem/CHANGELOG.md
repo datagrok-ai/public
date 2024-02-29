@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.8.13 (2024-02-29)
+
+### Bug Fixes
+
+* Warm up substructure search web workers only once when first filter is created on column
+
 ## 1.8.12 (2024-02-15)
 
 ### Bug Fixes

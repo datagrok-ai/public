@@ -25,6 +25,7 @@ import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
+const PRE_CALCULATED_FP = 'chem-precalculated-fp';
 let id = 0;
 
 const searchTypeHints  = {
@@ -280,10 +281,13 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
 
-
-    this.currentSearches.add('');
-    chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
-      .then((_) => { }); // Precalculating fingerprints
+    if (!this.column!.temp[PRE_CALCULATED_FP]) {
+      _package.logger.debug(`********pre-calculating fp, filter: ${this.filterId}`);
+      this.column!.temp[PRE_CALCULATED_FP] = this.filterId;
+      this.currentSearches.add('');
+      chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
+        .then((_) => { }); // Precalculating fingerprints in case they were not precalculated before
+    }
 
     let onChangedEvent: any = this.sketcher.onChanged;
     //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
