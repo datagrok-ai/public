@@ -41,10 +41,8 @@ import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
-import {
-  MonomerLibHelper,
-  getLibraryPanelUI
-} from './utils/monomer-lib';
+import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
+import {getMonomerLibraryManagerLink, showManageLibrariesDialog} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -71,11 +69,13 @@ import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
-import {getEmbeddingColsNames, multiColReduceDimensionality} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {
+  getEmbeddingColsNames, multiColReduceDimensionality
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {ITSNEOptions, IUMAPOptions} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {
+  ITSNEOptions, IUMAPOptions
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 
 export const _package = new BioPackage();
 
@@ -86,7 +86,7 @@ export const _package = new BioPackage();
 //description:
 //output: object result
 export function getMonomerLibHelper(): IMonomerLibHelper {
-  return MonomerLibHelper.instance;
+  return MonomerLibManager.instance;
 }
 
 export let hydrophobPalette: SeqPaletteCustom | null = null;
@@ -108,7 +108,7 @@ export async function initBio() {
   _package.logger.debug('Bio: initBio(), started');
   const module = await grok.functions.call('Chem:getRdKitModule');
   await Promise.all([
-    (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
+    (async () => { await MonomerLibManager.instance.loadLibraries(); })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);
@@ -118,7 +118,7 @@ export async function initBio() {
     _package.completeInit();
   });
 
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  const monomerLib = MonomerLibManager.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
 
@@ -161,12 +161,12 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
 //name: getBioLib
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
-  return MonomerLibHelper.instance.getBioLib();
+  return MonomerLibManager.instance.getBioLib();
 }
 
 // -- Panels --
 
-//name: Get Region
+//name: Bioinformatics | Get Region
 //description: Creates a new column with sequences of the region between start and end
 //tags: panel
 //input: column seqCol {semType: Macromolecule}
@@ -181,13 +181,14 @@ export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
   return funcEditor.widget();
 }
 
-//name: Manage Libraries
+//name: Bioinformatics | Manage Monomer Libraries
 //description:
 //tags: panel, exclude-actions-panel
 //input: column seqColumn {semType: Macromolecule}
 //output: widget result
 export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
-  return getLibraryPanelUI();
+  // return getLibraryPanelUI();
+  return getMonomerLibraryManagerLink();
 }
 
 // -- Func Editors --
@@ -291,7 +292,7 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 
 // -- Property panels --
 
-//name: Sequence Renderer
+//name:  Bioinformatics | Sequence Renderer
 //input: column molColumn {semType: Macromolecule}
 //tags: panel
 //output: widget result
@@ -483,7 +484,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
 //input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern']; default: Morgan; optional: true}
+//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; default: Morgan; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
   col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
@@ -557,13 +558,13 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 //top-menu: Bio | Convert | To Atomic Level...
 //name: To Atomic Level
 //description: Converts sequences to molblocks
-//input: dataframe df [Input data table]
-//input: column macroMolecule {semType: Macromolecule}
-//input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
-export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
+//input: dataframe table [Input data table]
+//input: column macroMolecule {caption: Sequence; semType: Macromolecule}
+//input: bool nonlinear =false {description: Slower mode for cycling/branching HELM structures}
+export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
-    await sequenceToMolfile(df, macroMolecule, nonlinear);
+    await sequenceToMolfile(table, seqCol, nonlinear);
   } finally {
     pi.close();
   }
@@ -647,18 +648,6 @@ export async function compositionAnalysis(): Promise<void> {
 
   await handler(col);
 }
-
-// 2023-05-17 Representations does not work at BioIT
-// //name: Representations
-// //tags: panel, widgets
-// //input: cell macroMolecule {semType: Macromolecule}
-// //output: widget result
-// export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
-//   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
-//   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-//
-//   return representationsWidget(macroMolecule, monomersLibObject);
-// }
 
 //name: importFasta
 //description: Opens FASTA file
@@ -867,6 +856,14 @@ export async function sequenceSimilarityScoring(
 ): Promise<DG.Column<number>> {
   const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
   return scores;
+}
+
+
+//top-menu: Bio | Manage | Monomer Libraries
+//name: Manage Monomer Libraries
+//description: Manage HELM monomer libraries
+export async function manageMonomerLibraries(): Promise<void> {
+  showManageLibrariesDialog();
 }
 
 //name: saveAsFasta

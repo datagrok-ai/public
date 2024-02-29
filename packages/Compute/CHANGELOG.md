@@ -1,5 +1,15 @@
 # Compute changelog
 
+## 1.22.0 (2024-02-20)
+
+### Features
+
+- Added heavy-weight libraries dynamic load
+
+### Bug fixes
+
+- SA: Inputs layout fixed
+
 ## 1.21.2 (2024-02-14)
 
 ### Bug fixes

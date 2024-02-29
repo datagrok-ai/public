@@ -130,7 +130,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true,
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: false, addMCL: true,
           useEmbeddingsClusters: generateClustersInput.value ?? false});
       return model !== null;
     }
@@ -167,6 +167,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 type AnalysisOptions = {
   addSequenceSpace?: boolean,
   useEmbeddingsClusters?: boolean,
+  addMCL?: boolean,
 };
 
 /**
@@ -207,8 +208,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
 
   const settings: type.PeptidesSettings = {
     sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
-    columns: {}, showDendrogram: false,
+    columns: {}, showDendrogram: false, showSequenceSpace: false,
     sequenceSpaceParams: new type.SequenceSpaceParams(!!options.useEmbeddingsClusters && !clustersColumn),
+    mclSettings: new type.MCLSettings(),
   };
 
   if (clustersColumn) {
@@ -244,6 +246,25 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       if (clusterCol) {
         const lstProps: ILogoSummaryTable = {
           clustersColumnName: clusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+          activityColumnName: activityColumn.name,
+        };
+        await model.addLogoSummaryTable(lstProps);
+        setTimeout(() => {
+          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
+          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
+        }, 100);
+      }
+    }
+  } else if (options.addMCL ?? false) {
+    await model.addMCLClusters();
+    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+      const mclClusterCol = model._mclCols
+        .find(
+          (col) => model?.df.col(col) && col.toLowerCase().startsWith('cluster') && !col.toLowerCase().includes('size'),
+        );
+      if (mclClusterCol) {
+        const lstProps: ILogoSummaryTable = {
+          clustersColumnName: mclClusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
           activityColumnName: activityColumn.name,
         };
         await model.addLogoSummaryTable(lstProps);

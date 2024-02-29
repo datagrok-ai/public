@@ -2,11 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
-
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
-export const enum HELM_REQUIRED_FIELDS {
+export const enum HELM_REQUIRED_FIELD {
   SYMBOL = 'symbol',
   NAME = 'name',
   MOLFILE = 'molfile',
@@ -19,11 +17,22 @@ export const enum HELM_REQUIRED_FIELDS {
   CREATE_DATE = 'createDate',
 }
 
+// fields of "rgroups" sub-object in HELM library
+export const enum HELM_RGROUP_FIELDS {
+  CAP_GROUP_SMILES = 'capGroupSMILES',
+  // WARNING: both capitalization variants coexist
+  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES',
+  ALTERNATE_ID = 'alternateId',
+  CAP_GROUP_NAME = 'capGroupName',
+  LABEL = 'label',
+}
+
 export const enum HELM_OPTIONAL_FIELDS {
   NATURAL_ANALOG = 'naturalAnalog',
   META = 'meta', // for SequenceTranslator
 }
 
+// todo: remove
 export const enum HELM_FIELDS {
   MONOMER_TYPE = 'monomerType',
   SMILES = 'smiles',
@@ -36,15 +45,6 @@ export const enum HELM_FIELDS {
   ID = 'id',
   POLYMER_TYPE = 'polymerType',
   SYMBOL = 'symbol'
-}
-
-// fields of "rgroups" sub-object in HELM library
-export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSmiles',
-  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
-  ALTERNATE_ID = 'alternateId',
-  CAP_GROUP_NAME = 'capGroupName',
-  LABEL = 'label',
 }
 
 // possible values of polymers
@@ -70,35 +70,6 @@ export const HELM_CORE_FIELDS = [
 ];
 
 export const SDF_MONOMER_NAME = 'MonomerName';
-
-/** For PolyTool  */
-export const helmFieldsToPolyToolInputFields = {
-  [HELM_REQUIRED_FIELDS.SYMBOL]: 'Short Name',
-  [HELM_REQUIRED_FIELDS.NAME]: 'Medium Name',
-  [HELM_REQUIRED_FIELDS.SMILES]: 'SMILES',
-};
-
-/** For PolyTool  */
-export const R_GROUP_BLOCK_DUMMY = [
-  {
-    'capGroupSmiles': '[*:1][H]',
-    'alternateId': 'R1-H',
-    'capGroupName': 'H',
-    'label': 'R1'
-  },
-  {
-    'capGroupSmiles': 'O[*:2]',
-    'alternateId': 'R2-OH',
-    'capGroupName': 'OH',
-    'label': 'R2'
-  },
-  {
-    'capGroupSmiles': '[*:3][H]',
-    'alternateId': 'R3-H',
-    'capGroupName': 'H',
-    'label': 'R3'
-  }
-];
 
 // todo: ideally, keys should be expressed via constants
 export const jsonSdfMonomerLibDict = {

@@ -1934,7 +1934,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.progressBar = null;
     }
 
-    this.molColPropObserver!.disconnect();
+    this.molColPropObserver?.disconnect();
     this.molColPropObserver = null;
 
     this.clearFilters();

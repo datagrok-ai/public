@@ -14,8 +14,8 @@ export function getPropertiesDict(seq: string, uh: UnitsHandler): {} {
     .replaceAll(/\{(\*\.)+/g, '{').replaceAll(/(\.\*)+}/g, '}');
 
   const host = ui.div([], {style: {width: '0', height: '0'}});
+  document.documentElement.appendChild(host);
   try {
-    document.documentElement.appendChild(host);
     const editor = new JSDraw2.Editor(host, {viewonly: true});
     editor.setHelm(helmString2);
 
