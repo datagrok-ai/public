@@ -10,13 +10,14 @@ import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
-import {HistoricalRunEdit, HistoryPanel} from '../../shared-components/src/history-panel';
+import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
-import {delay, distinctUntilChanged, filter, take, timestamp} from 'rxjs/operators';
+import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
 import {properUpdateIndicator} from './shared/utils';
+import {HistoricalRunEdit} from '../../shared-components/src/history-dialogs';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -478,7 +479,7 @@ export abstract class FunctionView extends DG.ViewBase {
             return historyUtils.saveRun(fullCall);
           })
           .then((fullCall) => {
-            this.historyBlock?.historyList.updateItem(fullCall);
+            this.historyBlock!.updateRun(fullCall);
             onEditSub.unsubscribe();
           })
           .catch((err) => {

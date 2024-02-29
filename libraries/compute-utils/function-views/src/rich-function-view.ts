@@ -20,7 +20,7 @@ import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-anal
 import {HistoryInputBase} from '../../shared-components/src/history-input';
 import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
-import {HistoricalRunsList} from '../../shared-components/src/history-panel';
+import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;

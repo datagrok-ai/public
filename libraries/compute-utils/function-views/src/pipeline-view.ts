@@ -561,7 +561,6 @@ export class PipelineView extends FunctionView {
     const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedCall) => {
       const childRuns = await grok.dapi.functions.calls.allPackageVersions()
         .filter(`options.parentCallId="${deletedCall.id}"`).list();
-      console.log(childRuns);
 
       childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
     });

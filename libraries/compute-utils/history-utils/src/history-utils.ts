@@ -38,7 +38,7 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Func>;
-  // TODO: add users and groups cache
+  const groupsCache = new DG.LruCache();
 
   export async function augmentCallWithFunc(call: DG.FuncCall, useCache: boolean = true) {
     const id = call.func.id;
@@ -110,7 +110,12 @@ export namespace historyUtils {
    * @returns Saved FuncCall
    */
   export async function saveRun(callToSave: DG.FuncCall) {
-    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+    let allGroup = groupsCache.get('All users');
+
+    if (!allGroup) {
+      allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+      groupsCache.set('All users', allGroup);
+    }
 
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
