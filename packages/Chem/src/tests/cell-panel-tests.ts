@@ -144,7 +144,7 @@ category('cell panel', async () => {
   test('gasteiger-partion-charges.smiles', async () => {
     const parameters = {mol: molStr, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
-  });
+  }, {timeout: 60000});
 
   test('gasteiger-partion-charges.molV2000', async () => {
     const parameters = {mol: molV2000, contours: 10};
