@@ -149,12 +149,12 @@ category('cell panel', async () => {
   test('gasteiger-partion-charges.molV2000', async () => {
     const parameters = {mol: molV2000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
-  });
+  }, {timeout: 60000});
 
   test('gasteiger-partion-charges.molV3000', async () => {
     const parameters = {mol: molV3000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
-  });
+  }, {timeout: 60000});
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {

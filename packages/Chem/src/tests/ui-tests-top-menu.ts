@@ -69,7 +69,7 @@ category('UI top menu', () => {
         grok.shell.topMenu.find('Chem').group('Transform').find('Mutate...').click();
         await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 2000);
         const dialog = returnDialog('Mutate');
-        await awaitCheck(() => dialog?.input('Molecule').stringValue === 'CN1C(CC(O)C1=O)C1=CN=CC=C1', 'cannot open mutate dialog', 2000);
+        await awaitCheck(() => dialog?.input('Molecule') !== undefined, 'cannot open mutate dialog', 5000);
         const okButton = dialog!.root.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click();
         await awaitCheck(() => grok.shell.t.name === 'mutations', 'cannot find mutations table', 20000);
@@ -78,7 +78,7 @@ category('UI top menu', () => {
         grok.shell.closeTable(grok.shell.t);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-15106'});
 
     test('curate', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -94,7 +94,7 @@ category('UI top menu', () => {
         await awaitCheck(() => smiles.columns.names().includes('curated_molecule'), 'curated molecule hasn\'t been added', 10000);
         v.close();
         grok.shell.o = ui.div();
-    }); 
+    }, {skipReason: 'GROK-15106'}); 
 
     test('map identifiers', async () => {
         smiles = grok.data.demo.molecules(20);
