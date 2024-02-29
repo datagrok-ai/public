@@ -231,7 +231,7 @@ class HistoricalRunCard extends DG.Widget {
 
     const card = ui.divH([
       ui.divH([
-        ...(options?.showAuthorIcon) ? [authorIcon]: [],
+        ...(options?.showAuthorIcon) ? [authorIcon!]: [],
         ui.divV([
           cardLabel,
           ui.span([dateStarted]),
