@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+
 import {runPepsea} from '../utils/pepsea';
 import {awaitContainerStart} from './utils';
 
@@ -15,7 +17,10 @@ category('PepSeA', () => {
   test('Basic alignment', async () => {
     await awaitContainerStart();
     const table = DG.DataFrame.fromCsv(testCsv);
-    const alignedCol = await runPepsea(table.getCol('HELM'), 'msa(HELM)');
+    const srcCol = table.getCol('HELM');
+    srcCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    srcCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    const alignedCol = await runPepsea(srcCol, 'msa(HELM)');
     expect(alignedCol !== null, true, 'PepSeA container has not started');
     const alignedTestCol = table.getCol('MSA');
     for (let i = 0; i < alignedCol!.length; ++i)

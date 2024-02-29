@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -34,9 +36,9 @@ TTCAACTTCAAC`
       tgt: {
         notation: NOTATION.FASTA,
         splitted: [
-          'ACGTCACGTC',
-          'CAGTGTCAGTGT',
-          'TTCAACTTCAAC',
+          ['A', 'C', 'G', 'T', 'C', 'A', 'C', 'G', 'T', 'C'],
+          ['C', 'A', 'G', 'T', 'G', 'T', 'C', 'A', 'G', 'T', 'G', 'T'],
+          ['T', 'T', 'C', 'A', 'A', 'C', 'T', 'T', 'C', 'A', 'A', 'C'],
         ]
       }
     },
@@ -51,9 +53,9 @@ ACCGTACTACCGTACT`,
         notation: NOTATION.FASTA,
         splitted: [
           //@formatter:off
-          'AC-GT-CTAC-GT-CT',
-          'CAC-T-GTCAC-T-GT',
-          'ACCGTACTACCGTACT',
+          ['A','C','-','G','T','-','C','T','A','C','-','G','T','-','C','T'],
+          ['C','A','C','-','T','-','G','T','C','A','C','-','T','-','G','T'],
+          ['A','C','C','G','T','A','C','T','A','C','C','G','T','A','C','T'],
           //@formatter:on
         ]
       }
@@ -133,8 +135,9 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.T.dK.Thr_PO3H2}$$$$`
       expect(uh.notation, testData.tgt.notation);
       expect(uh.separator === testData.tgt.separator, true);
 
-      const resSplitted: ISeqSplitted[] = uh.splitted;
+      const resSplitted = uh.splitted
+        .map((ss) => wu(ss).map((m) => m.original).toArray());
       expectArray(resSplitted, testData.tgt.splitted);
-    }, testName == Tests.separatorMsa ? {skipReason: '#2468 CSV row starting with the quote character'} : undefined);
+    });
   }
 });

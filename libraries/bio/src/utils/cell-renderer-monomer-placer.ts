@@ -182,9 +182,8 @@ export class MonomerPlacer {
   }
 
   getSeqMonList(rowIdx: number): string[] {
-    const seq: string | null = this.col.get(rowIdx);
     const uh = UnitsHandler.getOrCreate(this.col);
-    return seq ? wu(uh.splitted[rowIdx]).map((m) => m.canonical).toArray() : [];
+    return wu(uh.splitted[rowIdx]).map((m) => m.canonical).toArray();
   }
 
   public getMonomer(symbol: string): Monomer | null {

@@ -104,6 +104,8 @@ MRGGL
     const df: DG.DataFrame = DG.DataFrame.fromCsv(args.srcCsv);
 
     const seqCol: DG.Column = df.getCol(args.seqCol);
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     const idCols: DG.Column[] = args.idCols.map((colName) => df.getCol(colName));
 
     const fastaRes: string = saveAsFastaDo(idCols, seqCol, args.lineWidth);

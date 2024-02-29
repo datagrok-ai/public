@@ -102,6 +102,12 @@ async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[
     body: JSON.stringify(body),
   };
   const path = `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
-  const response = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params);
-  return JSON.parse(response ?? '{}');
+  //const response = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params);
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(dockerfileId, path, params);
+  if (!response.ok) {
+    const errorJson = await response.json();
+    const errorMsg = errorJson['datagrok-error'] ?? response.statusText;
+    throw new Error(errorMsg);
+  }
+  return await response.json();
 }

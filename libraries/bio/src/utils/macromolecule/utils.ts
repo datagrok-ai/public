@@ -79,7 +79,7 @@ export const splitterAsFasta: SplitterFunc = (seq: string, getMonomer: MonomerFu
 };
 
 export const splitterAsFastaSimple: SplitterFunc = (seq: string, getMonomer: MonomerFunc): ISeqSplitted => {
-  return wu<string>(seq).enumerate().map(([m, jPos]) => getMonomer(m, jPos)).toArray();
+  return wu<string>(!!seq ? seq : []).enumerate().map(([m, jPos]) => getMonomer(m, jPos)).toArray();
 };
 
 /** Gets method to split sequence by separator
@@ -198,11 +198,12 @@ export const splitterAsHelm: SplitterFunc = (seq: any, getMonomer: MonomerFunc):
 // }
 
 export class SeqMonomer implements ISeqMonomer {
-  get canonical(): string { return this.original; }
+  get canonical(): string { return this._canonical ?? this.original; }
 
   constructor(
-    public readonly original: string
-  ) { }
+    public readonly original: string,
+    private readonly _canonical?: string
+  ) {}
 }
 
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */
