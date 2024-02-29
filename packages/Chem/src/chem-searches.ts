@@ -264,8 +264,10 @@ export async function chemSubstructureSearchLibrary(
   _package.logger.debug(`in chemSubstructureSearchLibrary, filterType: ${filterType}, searchkey: ${searchKey}, currentSearch: ${currentSearch}`);
   await chemBeginCriticalSection();
   _package.logger.debug(`in chemSubstructureSearchLibrary, began critical section currentSearch: ${currentSearch}`);
+  const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
   if (currentSearchSmiles[filterType][searchKey] !== currentSearch && filterType !== FILTER_TYPES.scaffold) {
     _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section without search: ${currentSearch}`);
+    grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff));
     chemEndCriticalSection();
     _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
     return new BitArray(molStringsColumn.length);
@@ -284,7 +286,6 @@ export async function chemSubstructureSearchLibrary(
 
     const matchesBitArray = new BitArray(molStringsColumn.length);
 
-    const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const searchProgressEventName =
       getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const updateFilterFunc = (progress: number) => {
