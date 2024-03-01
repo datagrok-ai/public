@@ -71,8 +71,9 @@ class HistoricalRunCard extends DG.Widget {
     properUpdateIndicator(this.root, true);
     return historyUtils.loadRun(this.funcCall.id, false).then((fullCall) => {
       fullCall.options['isFavorite'] = true;
-      return historyUtils.saveRun(fullCall);
-    }).then((fullCall) => {
+
+      return {_: historyUtils.saveRun(fullCall), fullCall};
+    }).then(({_, fullCall}) => {
       ui.setDisplay(this.addToFavorites, false);
       ui.setDisplay(this.unfavoriteIcon, true);
 
@@ -88,8 +89,9 @@ class HistoricalRunCard extends DG.Widget {
     properUpdateIndicator(this.root, true);
     return historyUtils.loadRun(this.funcCall.id).then((fullCall) => {
       fullCall.options['isFavorite'] = false;
-      return historyUtils.saveRun(fullCall);
-    }).then((fullCall) => {
+
+      return {_: historyUtils.saveRun(fullCall), fullCall};
+    }).then(({_, fullCall}) => {
       ui.setDisplay(this.unfavoriteIcon, false);
       ui.setDisplay(this.addToFavorites, true);
 
@@ -163,6 +165,9 @@ class HistoricalRunCard extends DG.Widget {
           if (editOptions.favorite !== 'same') fullCall.options['isFavorite'] = (editOptions.favorite === 'favorited');
 
           return historyUtils.saveRun(fullCall);
+        })
+        .then((savedCall) => {
+          return historyUtils.loadRun(savedCall.id);
         })
         .then((fullCall) => {
           this.onFuncCallChanged.next(fullCall);
