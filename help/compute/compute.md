@@ -475,6 +475,10 @@ of each function evaluation
 
 ![add-to-workspace](sensitivity-analysis.gif)
 
+Use the sliders in the [PC plot](https://datagrok.ai/help/visualize/viewers/pc-plot) to filter the model evaluations:
+
+![sens-analysis-pc-plot.gif](sens-analysis-pc-plot.gif)
+
 When exploring complex models, some evaluations may be of particular interest. To get them:
 
 * Click on grid row with the required input and output values
