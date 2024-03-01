@@ -10,7 +10,7 @@ const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
-  compoundSize: string;
+  moleculeSize: string;
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -54,7 +54,7 @@ export class FormsViewer extends DG.JsViewer {
     this.showCurrentRow = this.bool('showCurrentRow', true);
     this.showMouseOverRow = this.bool('showMouseOverRow', true);
     this.showSelectedRows = this.bool('showSelectedRows', true);
-    this.compoundSize = this.string('compoundSize', 'small', {choices: ['small', 'normal', 'large']});
+    this.moleculeSize = this.string('moleculeSize', 'small', {choices: ['small', 'normal', 'large']});
 
     //fields
     this.indexes = [];
@@ -224,7 +224,7 @@ export class FormsViewer extends DG.JsViewer {
         const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
         if (input) {
           if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
-            input.input.classList.add(`d4-multi-form-molecule-input-${this.compoundSize}`);
+            input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
           input.input.setAttribute('column', name);
           input.value = this.dataFrame.get(name, row);
           input.readOnly = true;

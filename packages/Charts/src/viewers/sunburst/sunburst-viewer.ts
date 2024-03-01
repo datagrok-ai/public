@@ -9,7 +9,6 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
-type RowPredicate = (row: any) => boolean;
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -40,7 +39,7 @@ export class SunburstViewer extends EChartViewer {
           nodeClick: false,
           label: {
             rotate: 'radial',
-            fontSize: 8,
+            fontSize: 10,
           }
         },
       ],
@@ -66,20 +65,11 @@ export class SunburstViewer extends EChartViewer {
     }, event);
   }
 
-  handleDataframeFiltering(path: string[]) {
-    const rowPredicate = this.buildRowPredicate(path);
-    const filterFunction: RowPredicate = new Function('row', `return ${rowPredicate};`) as RowPredicate;
-    this.dataFrame.rows.filter(filterFunction);
-  }
-
-  buildRowPredicate(path: string[]): string {
+  createQueryMatcher(path: string[]): DG.RowMatcher {
     const conditions = path.map((value, i) => {
-      const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
-      const formattedValue = columnType === 'string' ? `'${value}'` : value;
-      return `row.${this.hierarchyColumnNames[i]} === ${formattedValue}`;
-    });
-  
-    return conditions.join(' && ');
+      return `${this.hierarchyColumnNames[i]} = ${value}`;
+    }).join(' and ');
+    return this.dataFrame.rows.match(conditions);
   }
 
   removeFiltering() {
@@ -96,7 +86,7 @@ export class SunburstViewer extends EChartViewer {
       const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path);
+        this.createQueryMatcher(path).filter();
         return;
       }
       const isSectorSelected = selectedSectors.includes(pathString);
@@ -117,6 +107,9 @@ export class SunburstViewer extends EChartViewer {
       }
     });
     this.chart.on('mouseover', (params: any) => {
+      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const matchDf = this.createQueryMatcher(path).toDataFrame();
+      const matchCount = matchDf.rowCount;
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
         const { hierarchyColumnNames, dataFrame } = this;
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
@@ -134,7 +127,7 @@ export class SunburstViewer extends EChartViewer {
         }
         return false;
       }, params.event.event.x, params.event.event.y);
-      ui.tooltip.root.innerText += params.name;
+      ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {

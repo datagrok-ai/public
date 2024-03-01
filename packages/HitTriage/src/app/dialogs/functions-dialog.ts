@@ -159,6 +159,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   }
 
   const tc = ui.tabControl(tabControlArgs, true);
+  tc.header.style.overflow = 'scroll';
   tc.root.style.width = '100%';
   tc.root.style.minWidth = '350px';
   host.appendChild(tc.root);

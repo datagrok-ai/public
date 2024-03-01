@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.1.8 (2024-02-22)
+
+Add python script support.
+
 ## 1.1.6 (2024-01-26)
 
 * Fixes to adding new functions to the campaign.

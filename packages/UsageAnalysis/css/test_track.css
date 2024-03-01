@@ -1,6 +1,13 @@
+.test-track {
+  overflow: unset;
+  display: flex;
+  flex-direction: column;
+}
+
 #tt-tree {
   width: 100%;
-  overflow-y: unset;
+  overflow-y: scroll;
+  height: inherit;
 }
 
 #tt-tree .d4-tree-view-group {
@@ -14,6 +21,8 @@
   padding: 10px 10px 0 10px;
   overflow-y: scroll;
   line-height: 1.5;
+  user-select: text;
+  resize: vertical;
 }
 
 #tt-test-case-div > .d4-markup > ol {
@@ -29,6 +38,7 @@
 #tt-test-case-div-outer {
   position: relative;
   margin: 0 8px;
+  flex-grow: 0;
 }
 
 #tt-edit-button {
@@ -47,11 +57,6 @@
 
 #tt-test-case-div:focus-visible + #tt-edit-button {
   display: none;
-}
-
-.tt-new-test-case-input {
-  width: 300px;
-  height: 200px;
 }
 
 .tt-status-icon {
@@ -83,19 +88,19 @@
   margin: 4px 0 !important;
 }
 
-.tt-slack-link {
+.tt-link {
   font-size: 0;
 }
 
-.tt-slack-link:after {
-  content: 'SLACK';
+.tt-link:after {
+  content: attr(data-label);
   font-size: 13px;
   vertical-align: -15%;
 }
 
-/* .tt-ribbon-button:nth-child(1) {
-  margin-left: 2px !important;
-} */
+.tt-link-list:after {
+  vertical-align: -30%;
+}
 
 #tt-ribbon-save-button:enabled {
   animation-name: color;
@@ -122,9 +127,30 @@
   color: var(--grey-4);
 }
 
+.tt-reason br {
+  content: '';
+}
+
 #tt-name {
   align-self: center;
   margin-right: 8px;
   margin-left: auto;
   color: var(--grey-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tt-dialog .ui-input-label {
+  width: unset !important;
+  min-width: unset !important;
+  max-width: unset !important;
+}
+
+.tt-reason-dialog {
+  min-width: 500px;
+}
+
+.tt-dialog .ui-input-textarea {
+  height: 100%;
 }

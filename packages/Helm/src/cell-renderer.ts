@@ -229,6 +229,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     }
   }
 
+
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
@@ -281,7 +282,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         }
 
         w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        g.save();
+        //g.save();
         g.beginPath();
         g.rect(x, y, w, h);
         g.clip();

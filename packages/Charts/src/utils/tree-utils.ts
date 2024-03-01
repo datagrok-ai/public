@@ -90,7 +90,8 @@ export class TreeUtils {
             data[`${prop}-meta`] = { min: Infinity, max: -Infinity };
             continue;
           }
-          node[prop] = node[prop] ?? paths[node.path][prop];
+          if (paths[node.path])
+            node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
@@ -107,8 +108,6 @@ export class TreeUtils {
       const value = countCol.get(i);
       const aggrValues = aggrColumns.reduce((obj, col) =>
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
-      if (aggregated.selection.get(i))
-        selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
