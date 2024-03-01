@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.5 (2024-03-01)
+
+Added the Bioreactor example
+
 ## 1.0.4 (2024-02-26)
 
 * Styles improvement
