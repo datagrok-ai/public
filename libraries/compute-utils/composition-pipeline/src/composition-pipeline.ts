@@ -1,9 +1,11 @@
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, merge, of, from} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil} from 'rxjs/operators';
+import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take} from 'rxjs/operators';
 
 //
 // State values
@@ -74,6 +76,7 @@ export type PipelineHookConfiguration = {
 
 export type ActionConfiguraion = PipelineHookConfiguration & {
   position: 'buttons' | 'menu';
+  friendlyName: string;
   runStepOnComplete?: boolean;
 }
 
@@ -81,6 +84,7 @@ export type PipelinePopupConfiguration = {
   id: ItemName;
   nqName: NqName;
   position: 'buttons' | 'menu';
+  friendlyName: string;
   helpUrl?: string;
   states?: StateItemConfiguration[];
   actions?: ActionConfiguraion[];
@@ -183,6 +187,10 @@ export function normalizePaths(paths: ItemPath | ItemPath[]): ItemPath[] {
     return [paths as ItemPath];
 }
 
+function getStepId(conf: PipelinePopupConfiguration | PipelineStepConfiguration) {
+  return conf.nqName;
+}
+
 export function traverseConfigPipelines<T>(
   graph: CompositionGraphConfig,
   nodeHandler: (
@@ -229,10 +237,10 @@ export type ItemsToMerge = {
   popup?: PipelinePopupConfiguration[];
   action?: ActionConfiguraion[];
 }
-export type AddNodeConf = ActionConfiguraion | PipelinePopupConfiguration | PipelineStepConfiguration;
-export type NodeConf = AddNodeConf | PipelineConfiguration;
-export type AddNodeConfTypes = 'action' | 'popup' | 'step';
-export type NodeConfTypes = AddNodeConfTypes | 'pipeline';
+export type SubNodeConf = ActionConfiguraion | PipelinePopupConfiguration | PipelineStepConfiguration;
+export type SubNodeConfTypes = 'action' | 'popup' | 'step';
+export type NodeConfTypes = SubNodeConfTypes | 'pipeline';
+export type NodeConf = SubNodeConf | PipelineConfiguration;
 
 export type InputState = 'disabled' | 'restricted' | 'user input';
 
@@ -254,7 +262,7 @@ export class NodeItemState<T = any> {
     });
   }
 
-  linkState(source: Observable<T>, setter?: (x: T) => void) {
+  linkState(source: Observable<T>, setter?: (x: T, inputState?: InputState) => void) {
     this.currentSource.next(source);
     if (setter)
       this.setter = setter;
@@ -275,8 +283,9 @@ export class NodeState {
 
   constructor(
     public conf: NodeConf,
-    public type: NodeConfTypes,
+    public type: SubNodeConfTypes,
     public pipelinePath: ItemPath,
+    public viewNodePath: ItemPath,
     public pipelineState: PipelineState,
   ) {
     if (type === 'step' || type === 'popup') {
@@ -318,7 +327,7 @@ export class LinkState {
   }
 
   public getValuesChanges() {
-    return this.valueChanges!.pipe(
+    return this.valueChanges.pipe(
       withLatestFrom(this.enabled, this.pipelineState.initialLoading, this.pipelineState.runChanging),
       filter(([_val, enabled, initialLoading, runChanging]) => {
         if (!enabled)
@@ -337,17 +346,23 @@ export class LinkState {
 export class ControllerConfig {
   public from: ItemPath[] = [];
   public to: ItemPath[] = [];
+  public fromKeys = new Set<string>();
+  public toKeys = new Set<string>();
 
   constructor(
     public pipelinePath: ItemPath,
     from?: ItemPath | ItemPath[],
     to?: ItemPath | ItemPath[],
   ) {
-    if (from)
+    if (from) {
       this.from = normalizePaths(from);
+      this.fromKeys = new Set(this.from.map((path) => pathToKey(path)));
+    }
 
-    if (to)
+    if (to) {
       this.to = normalizePaths(to);
+      this.toKeys = new Set(this.to.map((path) => pathToKey(path)));
+    }
   }
 }
 
@@ -400,8 +415,9 @@ export class PipelineRuntime {
     // wiring by nqName
     for (const [, node] of this.nodes) {
       for (const [, state] of node.states) {
-        if (node.type === 'popup' || node.type === 'step' && state.conf.stateType === 'state') {
-          const stepId = (node.conf as PipelinePopupConfiguration | PipelineStepConfiguration).nqName;
+        if ((node.type === 'popup' || node.type === 'step') && state.conf.stateType !== 'state') {
+          const conf = node.conf as PipelinePopupConfiguration | PipelineStepConfiguration;
+          const stepId = getStepId(conf);
           const stateId = state.conf.id;
           const {changes, setter} = this.view.getStateBindings(stepId, stateId);
           state.linkState(changes, setter);
@@ -422,7 +438,6 @@ export class PipelineRuntime {
           controller.updateState(link.controllerConfig.to[idx], state);
         }
       });
-      link.setSources(changes);
       link.getValuesChanges().pipe(
         debounceTime(0),
         switchMap(() => {
@@ -430,7 +445,7 @@ export class PipelineRuntime {
           const signal = abortController.signal;
           let done = false;
           const obs$ = new Observable((observer) => {
-            const controller = new RuntimeControllerImpl(link.controllerConfig, this, signal);
+            const controller = new RuntimeControllerImpl(link.conf.id, link.controllerConfig, this, signal);
             const sub = from(callHandler(handler, {controller})).subscribe((val) => {
               done = true;
               observer.next(val);
@@ -450,6 +465,7 @@ export class PipelineRuntime {
         }),
         takeUntil(this.pipelineState.closed),
       ).subscribe();
+      link.setSources(changes);
     }
   }
 
@@ -483,7 +499,7 @@ export interface HookSpec {
 
 
 export class RuntimeControllerImpl implements RuntimeController {
-  constructor(private config: ControllerConfig, private rt: PipelineRuntime, private signal: AbortSignal) {
+  constructor(private handlerId: string, private config: ControllerConfig, private rt: PipelineRuntime, private signal?: AbortSignal) {
   }
 
   enableLink(path: ItemPath): void {
@@ -513,20 +529,18 @@ export class RuntimeControllerImpl implements RuntimeController {
   getState<T = any>(path: ItemPath): T | void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
-    if (!this.checkInput(fullPath)) {
-      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePath}`);
+    if (!this.checkInput(fullPath))
       return;
-    }
+
     return this.rt.getState(fullPath);
   }
 
   updateState<T>(path: ItemPath, value: T, inputState?: 'disabled' | 'restricted' | 'user input'): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
-    if (!this.checkOutput(fullPath)) {
-      grok.shell.warning(`No input link ${fullPath}, pipeline: ${this.config.pipelinePath}`);
+    if (!this.checkOutput(fullPath))
       return;
-    }
+
     return this.rt.updateState(fullPath, value, inputState);
   }
 
@@ -543,17 +557,23 @@ export class RuntimeControllerImpl implements RuntimeController {
   }
 
   private checkAborted() {
-    if (this.signal.aborted)
+    if (this.signal?.aborted)
       throw new Aborted();
   }
 
   private checkInput(path: ItemPath) {
-    // TODO: check if has an active link
+    const key = pathToKey(path);
+    if (this.config.fromKeys.has(key))
+      grok.shell.warning(`Handler ${this.handlerId} has not declared access to input ${key}`);
+
     return true;
   }
 
   private checkOutput(path: ItemPath) {
-    // TODO: check if has an active link
+    const key = pathToKey(path);
+    if (this.config.fromKeys.has(key))
+      grok.shell.warning(`Handler ${this.handlerId} has not declared access to output ${key}`);
+
     return true;
   }
 }
@@ -595,10 +615,8 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   }
 
   override async init() {
-    this.rt!.pipelineState.initialLoading.next(true);
     await this.execHooks('beforeInit');
     await super.init();
-    this.rt!.pipelineState.initialLoading.next(false);
     await this.execHooks('afterInit');
   }
 
@@ -626,6 +644,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   override build() {
     super.build();
     this.rt!.wireView();
+    this.rt!.pipelineState.initialLoading.next(false);
     this.execHooks('onViewReady');
   }
 
@@ -640,7 +659,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
       for (const item of items ?? []) {
         const handler = item.handler!;
         const ctrlConf = new ControllerConfig(pipelinePath, item.from, item.to);
-        const controller = new RuntimeControllerImpl(ctrlConf, this.rt!);
+        const controller = new RuntimeControllerImpl(item.id, ctrlConf, this.rt!);
         const params = {...additionalParams, controller};
         await callHandler(handler, params);
       }
@@ -706,6 +725,7 @@ export class CompositionPipeline {
     await this.loadFuncCallsIO();
     this.addScriptStatesToConfig();
     this.processConfig();
+    this.addSystemHooks();
     this.rt = new PipelineRuntime(this.nodes, this.links, this.viewInst, this.pipelineState);
     this.viewInst.injectConfiguration(this.steps, this.hooks, this.rt, this.exportConfig);
     this.isInit = true;
@@ -718,6 +738,94 @@ export class CompositionPipeline {
       const spec = await this.getFuncIOSpec(name);
       this.ioInfo.set(name, spec);
     }
+  }
+
+  private addSystemHooks() {
+    // TODO: set menu as buttons for now;
+    const stepIdsToNodes = new Map<string, NodeState[]>();
+    const additionalViewNames = new Map<string, NqName[]>();
+    const additionalViews = new Map<string, Map<string, RichFunctionView>>();
+
+    for (const node of this.nodes.values()) {
+      if (node.type === 'popup' || node.type === 'action') {
+        const conf = node.conf as PipelinePopupConfiguration | ActionConfiguraion;
+        const viewPathKey = pathToKey(node.viewNodePath);
+        const nodes = stepIdsToNodes.get(viewPathKey) ?? [];
+        nodes.push(node);
+        stepIdsToNodes.set(viewPathKey, nodes);
+        if (node.type === 'popup') {
+          const conf = node.conf as PipelinePopupConfiguration;
+          const viewNames = additionalViewNames.get(viewPathKey) ?? [];
+          viewNames.push(conf.nqName);
+          additionalViewNames.set(viewPathKey, viewNames);
+        }
+      }
+    }
+
+    const onBeforeInit = [{
+      id: '_SystemViewsAdd_',
+      handler: async ({controller}: { controller: RuntimeController }) => {
+        for (const [viewKey, views] of additionalViewNames.entries()) {
+          const popupMap = new Map<string, RichFunctionView>();
+          for (const nqName of views) {
+            const view = new RichFunctionView(nqName, {historyEnabled: false, isTabbed: true});
+            await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
+            popupMap.set(nqName, view);
+          }
+          additionalViews.set(viewKey, popupMap);
+        }
+      },
+    }];
+
+    const onViewReady = [{
+      id: '_SystemButtonsAdd_',
+      handler: async ({controller}: { controller: RuntimeController }) => {
+        for (const [viewKey, nodes] of stepIdsToNodes.entries()) {
+          const viewNode = this.nodes.get(viewKey)!;
+          const btns = nodes.map((node) => {
+            if (node.type === 'action') {
+              const conf = node.conf as ActionConfiguraion;
+              const handler = conf.handler;
+              const ctrlConf = node.controllerConfig!;
+              return ui.button(conf.friendlyName, async () => {
+                const controller = new RuntimeControllerImpl(node.conf.id, ctrlConf, this.rt!);
+                await callHandler(handler, {controller});
+              });
+            } else if (node.type === 'popup') {
+              const conf = node.conf as PipelinePopupConfiguration;
+              const nqName = conf.nqName;
+              const view = additionalViews.get(viewKey)?.get(nqName);
+              const buttonName = conf.friendlyName;
+              return ui.button(buttonName, async () => {
+                if (!view) {
+                  grok.shell.error(`Popup ${nqName} for button ${buttonName} not found`);
+                  return;
+                }
+                const confirmed = await new Promise((resolve, _reject) => {
+                  ui.dialog(buttonName)
+                    .add(view.root)
+                    .onOK(() => resolve(true))
+                    .onCancel(() => resolve(false))
+                    .showModal(true);
+                });
+              });
+            }
+            throw new Error(`No element for ${node.conf.id} ${node.type}`);
+          });
+          const view = controller.getView(viewNode.viewNodePath)!;
+          view.setAdditionalButtons(btns);
+        }
+      },
+    }];
+    const hooks = {
+      onBeforeInit,
+      onViewReady,
+    };
+    // TODO: check
+    this.hooks.unshift({
+      pipelinePath: [],
+      hooks,
+    });
   }
 
   private processConfig() {
@@ -845,8 +953,8 @@ export class CompositionPipeline {
     return nData;
   }
 
-  private getAllConfItems<T extends AddNodeConf>(data: T[], prefix: string,
-    toAdd: Map<string, ItemsToMerge>, type: AddNodeConfTypes,
+  private getAllConfItems<T extends SubNodeConf>(data: T[], prefix: string,
+    toAdd: Map<string, ItemsToMerge>, type: SubNodeConfTypes,
   ) {
     const moreItems = toAdd.get(prefix)?.[type] ?? [];
     return [...data, ...moreItems] as T[];
@@ -855,21 +963,26 @@ export class CompositionPipeline {
 
   private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
     const nodePath = this.updateFullPathLink(conf, path);
+    const [, ...viewPath] = nodePath;
     const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, this.pipelineState));
+    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, viewPath, this.pipelineState));
     return conf;
   }
 
-  private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: NodeConfTypes) {
+  private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: SubNodeConfTypes) {
     const nodePath = this.updateFullPathNode(conf, path);
     const nodeKey = pathToKey(nodePath);
+    let viewPath = nodePath;
+    if (type === 'popup')
+      [, ...viewPath] = nodePath;
+
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, this.pipelineState));
+    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, viewPath, this.pipelineState));
     return conf;
   }
 
@@ -928,8 +1041,8 @@ export class CompositionPipeline {
     delete mergeConf.actionsToAdd;
   }
 
-  private processMergeNodeList(itemsToAdd: [AddNodeConf, ItemPath?][], pipelinePath: ItemPath,
-    toAdd: Map<string, ItemsToMerge>, type: AddNodeConfTypes,
+  private processMergeNodeList(itemsToAdd: [SubNodeConf, ItemPath?][], pipelinePath: ItemPath,
+    toAdd: Map<string, ItemsToMerge>, type: SubNodeConfTypes,
   ) {
     for (const [item, path] of itemsToAdd) {
       const itemPath = pathJoin(pipelinePath, path ?? []);
