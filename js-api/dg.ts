@@ -48,7 +48,7 @@ $(function () {
     if ((<any>window).grok_Unhandled_Error != undefined) {
       e.preventDefault();
       e.stopPropagation();
-      (<any>window).grok_Unhandled_Error(e.error?.message ?? e.error ?? e.message ?? e, e.error?.stack ?? <any>e['$thrownJsError']?.stack);
+      (<any>window).grok_Unhandled_Error(e.error?.message ?? e.error ?? e.message ?? e, e.error?.stack ?? (<any>e)['$thrownJsError']?.stack);
     }
   });
   window.addEventListener("unhandledrejection", function(e) {
