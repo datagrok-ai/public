@@ -56,24 +56,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
           getLibFileNameList(),
           getUserLibSettings(),
         ]);
-
-        const filteredLibFnList = libFileNameList.filter((libFileName) => {
-          const isFileIncluded = !settings.exclude.includes(libFileName);
-          const isExplicit = settings.explicit.length === 0 || settings.explicit.includes(libFileName);
-
-          return isFileIncluded && isExplicit;
-        });
-
-        const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
-          .map((libFileName) => {
-            //TODO handle whether files are in place
-            return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {
-              const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
-                `${err instanceof Error ? err.message : err.toString()}`;
-              return new MonomerLib({}, errMsg);
-            });
-          }));
-        this._monomerLib.updateLibs(libs, reload);
+        await this.applyUserLibSettings(libFileNameList, settings, reload);
       } catch (err: any) {
         const errMsg: string = 'Loading monomer libraries error: ' +
           `${err instanceof Error ? err.message : err.toString()}`;
@@ -117,5 +100,29 @@ export class MonomerLibManager implements IMonomerLibHelper {
   public static get instance(): MonomerLibManager {
     if (!window.$monomerLibHelper) window.$monomerLibHelper = new MonomerLibManager();
     return window.$monomerLibHelper;
+  }
+
+  async applyUserLibSettings(
+    libFileNameList: string[],
+    settings: UserLibSettings,
+    reload: boolean
+  ) {
+    const filteredLibFnList = libFileNameList.filter((libFileName) => {
+      const isFileIncluded = !settings.exclude.includes(libFileName);
+      const isExplicit = settings.explicit.length === 0 || settings.explicit.includes(libFileName);
+
+      return isFileIncluded && isExplicit;
+    });
+
+    const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
+      .map((libFileName) => {
+        //TODO handle whether files are in place
+        return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {
+          const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
+            `${err instanceof Error ? err.message : err.toString()}`;
+          return new MonomerLib({}, errMsg);
+        });
+      }));
+    this._monomerLib.updateLibs(libs, reload);
   }
 }

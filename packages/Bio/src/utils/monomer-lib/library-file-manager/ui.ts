@@ -94,9 +94,17 @@ class LibraryControlsManager {
     this.eventManager.librarySelectionRequested$.subscribe(
       async ([fileName, isSelected]) => await this.updateLibrarySelectionStatus(isSelected, fileName)
     );
+    this.eventManager.saveLibrarySettingsRequested$.subscribe(
+      async () => await this.saveLibrarySettings()
+    );
+
+    this.eventManager.resetLibrarySettingsRequested$.subscribe(
+      () => this.resetLibrarySettings()
+    );
   }
   private monomerLibFileManager: MonomerLibFileManager;
-  private userLibSettings: UserLibSettings;
+  private originalLibSettings: UserLibSettings;
+  private updatedLibSettings: UserLibSettings;
 
   static async createControlsForm(eventManager: MonomerLibFileEventManager): Promise<HTMLElement> {
     const manager = new LibraryControlsManager(eventManager);
@@ -115,7 +123,8 @@ class LibraryControlsManager {
   }
 
   private async initialize(): Promise<void> {
-    this.userLibSettings = await getUserLibSettings();
+    this.originalLibSettings = await getUserLibSettings();
+    this.updatedLibSettings = {...this.originalLibSettings};
   };
 
   private async updateControlsForm(): Promise<void> {
@@ -123,15 +132,19 @@ class LibraryControlsManager {
     $('.monomer-lib-controls-form').replaceWith(updatedForm);
   }
 
-  private async createLibraryControls(): Promise<DG.InputBase<boolean | null>[]> {
+  private async getFileNameList(): Promise<string[]> {
     const fileManager = await MonomerLibFileManager.getInstance(this.eventManager);
-    const libFileNameList: string[] = fileManager.getValidLibraryPaths();
+    return fileManager.getValidLibraryPaths();
+  }
+
+  private async createLibraryControls(): Promise<DG.InputBase<boolean | null>[]> {
+    const libFileNameList = await this.getFileNameList();
     return libFileNameList.map((libFileName) => this.createLibInput(libFileName));
   }
 
   private createLibInput(libFileName: string): DG.InputBase<boolean | null> {
-    const isMonomerLibrarySelected = !this.userLibSettings.exclude.includes(libFileName);
-    const libInput = ui.boolInput(
+    const isMonomerLibrarySelected = !this.updatedLibSettings.exclude.includes(libFileName);
+    const libInput = ui.switchInput(
       libFileName,
       isMonomerLibrarySelected,
       (isSelected: boolean) => this.eventManager.updateLibrarySelectionStatus(libFileName, isSelected)
@@ -148,9 +161,24 @@ class LibraryControlsManager {
     libFileName: string
   ): Promise<void> {
     this.updateLibrarySettings(isMonomerLibrarySelected, libFileName);
-    await setUserLibSettings(this.userLibSettings);
+    const libFileNameList = await this.getFileNameList();
+    await MonomerLibManager.instance.applyUserLibSettings(libFileNameList, this.updatedLibSettings, true);
+  }
+
+  private async saveLibrarySettings(): Promise<void> {
+    console.log('updatedLibSettings', this.updatedLibSettings);
+    console.log('originalLibSettings', this.originalLibSettings);
+    if (JSON.stringify(this.updatedLibSettings) === JSON.stringify(this.originalLibSettings))
+      return;
+
+    await setUserLibSettings(this.updatedLibSettings);
     await MonomerLibManager.instance.loadLibraries(true);
-    grok.shell.info('Monomer library user settings saved');
+    this.originalLibSettings = {...this.updatedLibSettings};
+    grok.shell.info('Monomer library settings saved');
+  }
+
+  private resetLibrarySettings():void {
+    this.updatedLibSettings = {...this.originalLibSettings};
   }
 
   private updateLibrarySettings(
@@ -159,10 +187,10 @@ class LibraryControlsManager {
   ): void {
     if (isLibrarySelected) {
       // Remove selected library from exclusion list
-      this.userLibSettings.exclude = this.userLibSettings.exclude.filter((libName) => libName !== libFileName);
-    } else if (!this.userLibSettings.exclude.includes(libFileName)) {
+      this.updatedLibSettings.exclude = this.updatedLibSettings.exclude.filter((libName) => libName !== libFileName);
+    } else if (!this.updatedLibSettings.exclude.includes(libFileName)) {
       // Add unselected library to exclusion list
-      this.userLibSettings.exclude.push(libFileName);
+      this.updatedLibSettings.exclude.push(libFileName);
     }
   }
 
@@ -190,6 +218,7 @@ class DialogWrapper {
   private static _instance: DialogWrapper;
   private dialog?: DG.Dialog;
   private closeDialogSubject$ = new rxjs.Subject<void>();
+  private eventManager = MonomerLibFileEventManager.getInstance();
 
   static async showDialog(): Promise<void> {
     if (!DialogWrapper._instance) {
@@ -205,9 +234,26 @@ class DialogWrapper {
     DialogWrapper._instance.dialog.show();
   }
 
+  private async getWidgetContent(): Promise<DG.Widget> {
+    const widget = await MonomerLibraryManagerWidget.getContent(this.eventManager);
+    return widget;
+  }
+
+  private getAddFileControl(): HTMLElement {
+    const addFileControl = ui.link(
+      'Add file',
+      () => this.eventManager.addLibraryFile(),
+      'Upload new HELM monomer library',
+    );
+    $(addFileControl).addClass('d4-link-action');
+    $(addFileControl).removeClass(' d4-link-external');
+    $(addFileControl).css('padding', '10px 0 0 20px');
+
+    return addFileControl;
+  }
+
+
   private async getDialog(): Promise<DG.Dialog> {
-    const eventManager = MonomerLibFileEventManager.getInstance();
-    const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
     const dialog = ui.dialog(
       {
         title: 'Manage monomer libraries',
@@ -216,14 +262,28 @@ class DialogWrapper {
     );
     $(dialog.root).css('width', '350px');
     dialog.clear();
-    dialog.addButton(
-      'Add',
-      () => eventManager.addLibraryFile(),
-      undefined,
-      'Upload new HELM monomer library'
-    );
+
+    const widget = await this.getWidgetContent();
     dialog.add(widget);
-    dialog.onClose.subscribe(() => this.closeDialogSubject$.next());
+
+    const addFileControl = this.getAddFileControl();
+    dialog.add(addFileControl);
+
+    dialog.addButton(
+      'APPLY',
+      () => this.eventManager.saveLibrarySettings(),
+      undefined,
+      'Apply selection'
+    );
+
+    dialog.onOK(() => this.eventManager.saveLibrarySettings());
+
+    const closeDialogHandler = () => {
+      this.closeDialogSubject$.next();
+      this.eventManager.resetLibrarySettings();
+    };
+    dialog.onClose.subscribe(() => closeDialogHandler());
+    dialog.onCancel(() => closeDialogHandler());
     return dialog;
   }
 }

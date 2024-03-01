@@ -14,19 +14,21 @@ export class MonomerLibFileEventManager {
     return MonomerLibFileEventManager._instance;
   }
 
-  private _libraryFilesUpdateSubject$ = new rxjs.BehaviorSubject<string[]>([]);
-  private _addLibraryFilesSubject$ = new rxjs.Subject<void>();
-  private _librarySelectionSubject$ = new rxjs.Subject<[string, boolean]>();
+  private _libraryFilesUpdate$ = new rxjs.BehaviorSubject<string[]>([]);
+  private _addLibraryFiles$ = new rxjs.Subject<void>();
+  private _librarySelection$ = new rxjs.Subject<[string, boolean]>();
+  private _saveLibrarySettings$ = new rxjs.Subject<void>();
+  private _resetLibrarySettings$ = new rxjs.Subject<void>();
 
   getValidFilesPathList(): string[] {
-    return this._libraryFilesUpdateSubject$.getValue();
+    return this._libraryFilesUpdate$.getValue();
   }
 
   // TODO: remove after adding init from user data storage
   // WARNING: a temporary solution
   async getValidLibraryPathsAsynchronously(): Promise<string[]> {
     return new Promise((resolve) => {
-      this._libraryFilesUpdateSubject$.pipe(
+      this._libraryFilesUpdate$.pipe(
         skip(1)
       ).subscribe((fileNames) => {
         resolve(fileNames);
@@ -35,36 +37,52 @@ export class MonomerLibFileEventManager {
   }
 
   changeValidFilesPathList(newList: string[]): void {
-    this._libraryFilesUpdateSubject$.next(newList);
+    this._libraryFilesUpdate$.next(newList);
   }
 
   get updateUIControlsRequested$(): rxjs.Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
+    return this._libraryFilesUpdate$.pipe(
       // debounceTime(1000)
     );
   }
 
   get updateValidLibraryFileListRequested$(): rxjs.Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
+    return this._libraryFilesUpdate$.pipe(
       // debounceTime(3000)
     );
   }
 
   get addLibraryFileRequested$(): rxjs.Observable<void> {
-    return this._addLibraryFilesSubject$.pipe(
+    return this._addLibraryFiles$.pipe(
       // debounceTime(1000)
     );
   }
 
   addLibraryFile(): void {
-    this._addLibraryFilesSubject$.next();
+    this._addLibraryFiles$.next();
   }
 
   get librarySelectionRequested$(): rxjs.Observable<[string, boolean]> {
-    return this._librarySelectionSubject$;
+    return this._librarySelection$;
   }
 
   updateLibrarySelectionStatus(fileName: string, isSelected: boolean): void {
-    this._librarySelectionSubject$.next([fileName, isSelected]);
+    this._librarySelection$.next([fileName, isSelected]);
+  }
+
+  saveLibrarySettings(): void {
+    this._saveLibrarySettings$.next();
+  }
+
+  get saveLibrarySettingsRequested$(): rxjs.Observable<void> {
+    return this._saveLibrarySettings$;
+  }
+
+  resetLibrarySettings(): void {
+    this._resetLibrarySettings$.next();
+  }
+
+  get resetLibrarySettingsRequested$(): rxjs.Observable<void> {
+    return this._resetLibrarySettings$;
   }
 }
