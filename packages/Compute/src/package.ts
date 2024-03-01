@@ -93,7 +93,7 @@ export function autostart() {
 //input: func func
 //output: object uploadedCalls
 export async function CustomDataUploader(func: DG.Func) {
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 1000));
 
   const dummyFunccall = await func.prepare({
     'ambTemp': 22,

@@ -511,7 +511,7 @@ export class RichFunctionView extends FunctionView {
 
     const uploadDialog = DG.Dialog.create({'title': 'Upload'});
     $(uploadDialog.root.parentElement).removeClass('ui-form');
-    const reviewDialog = DG.Dialog.create({'title': 'Review uploaded'});
+    const reviewDialog = DG.Dialog.create({'title': 'Review uploaded runs'});
     $(reviewDialog.root.parentElement).removeClass('ui-form');
 
     const saveToHistory = 'Save to history' as const;
@@ -523,10 +523,18 @@ export class RichFunctionView extends FunctionView {
 
     uploadDialog.addButton(saveToHistory, async () => {
       properUpdateIndicator(uploadDialog.root, true);
-      Promise.all(uploadedFunccalls.map(async (call) => {
+      return Promise.all(uploadedFunccalls.map(async (call) => {
         const valid = await this.getValidExpRun(call);
+
         return historyUtils.saveRun(valid);
-      })).catch((e) => {
+      })).then((savedRuns) => {
+        // SaveRun returns a funccall without an author
+        return Promise.all(savedRuns.map((savedRun) => {
+          return historyUtils.loadRun(savedRun.id);
+        }));
+      }).then((loadedRuns) =>{
+        loadedRuns.forEach((run) => this.historyBlock!.addRun(run));
+      }).catch((e) => {
         grok.shell.error(e);
       }).finally(() => {
         properUpdateIndicator(uploadDialog.root, false);
