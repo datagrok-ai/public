@@ -14,7 +14,7 @@ type LoggerPutCallback = (logRecord: LogMessage) => void;
 export class Logger {
   putCallback?: LoggerPutCallback;
   private readonly dart: any;
-  private static consoleLogs: string[] = [];
+  private static consoleLogs: object[] = [];
 
   constructor(putCallback?: LoggerPutCallback, options?: {staticLogger?: boolean, params?: object}) {
     this.putCallback = putCallback;
@@ -80,15 +80,16 @@ export class Logger {
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
   }
 
-  static getConsoleOutput(): string[] {
-    return this.consoleLogs;
+  static getConsoleOutput(): string {
+    return JSON.stringify(this.consoleLogs, null, 2);
   }
 
   static interceptConsoleOutput(): void {
     const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
       const std = f.bind(console);
       return (...args: any[]) => {
-        try { this.consoleLogs.push(dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]') + ' | ' + args.map((x) => `${x}`).join(' ')); }
+        try { this.consoleLogs.push({'time': dayjs().utc().format('YYYY-MM-DDTHH:mm:ss.SSS[Z]'),
+          'message': args.map((x) => `${x}`).join(' ')}); }
         catch (_) {}
         std(...args);
       }

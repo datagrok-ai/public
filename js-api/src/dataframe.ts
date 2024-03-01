@@ -71,9 +71,6 @@ export interface CsvExportOptions {
   /** Whether only selected columns are included. False if not specified. */
   selectedColumnsOnly?: boolean;
 
-  /** Whether only visible columns are included. False if not specified. */
-  visibleColumnsOnly?: boolean;
-
   /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
   filteredRowsOnly?: boolean;
 
