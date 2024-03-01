@@ -435,12 +435,81 @@ Automatic outliers detection Manual outliers markup and annotation Used as an in
 
 ### Sensitivity analysis
 
-* Sample inputs:
-  * by specified number of samples
-  * by a specified distribution or within a range
-  * for a specified set of scalar inputs and/or columns of the matrix input
-* Produce variability analysis for outputs based on the sampled inputs
-* Visualize the results of analysis with Datagrok viewers
+Sensitivity Analysis runs the computation multiple times with varying inputs,
+and analyzes the relationship between inputs and outputs. Datagrok provides the following
+methods:
+
+* [Monte Carlo](https://en.wikipedia.org/wiki/Monte_Carlo_method) explores a function
+at randomly taken points
+* [Sobol](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis)
+decomposes output variance into fractions, which can be attributed to inputs
+* **Grid** studies a function at the points of a grid with the specified step
+
+To run analysis, click on the "Run sensitivity analysis" icon <i class="grok-icon fal fa-analytics"></i> on the top panel,
+choose a method, specify inputs & outputs, and press "RUN".
+
+#### Monte Carlo
+
+Once you've chosen it in `Method`
+
+* Set in `Samples` the number of random points
+* Use switchers to specify varied inputs and outputs to be analyzed
+* Press **RUN** or <i class="fas fa-play"></i> on the top panel. You will get
+  * [Correlation plot](https://datagrok.ai/help/visualize/viewers/correlation-plot) for exploring
+correlations between varied inputs and the specified outputs
+  * [PC plot](https://datagrok.ai/help/visualize/viewers/pc-plot) visualizing multivariate data
+and providing variations of the selected inputs & outputs
+  * [Line chart](https://datagrok.ai/help/visualize/viewers/line-chart) or
+[Scatterplot](https://datagrok.ai/help/visualize/viewers/scatter-plot) (dependently on the varied
+inputs count) showing a behavior of each output separately
+  * [Grid](https://datagrok.ai/help/visualize/viewers/grid) containing inputs and outputs values
+of each function evaluation
+
+![add-to-workspace](sensitivity-analysis.gif)
+
+Use the sliders in the [PC plot](https://datagrok.ai/help/visualize/viewers/pc-plot) to filter the model evaluations:
+
+![sens-analysis-pc-plot.gif](sens-analysis-pc-plot.gif)
+
+When exploring complex models, some evaluations may be of particular interest. To get them:
+
+* Click on grid row with the required input and output values
+* Open `Context Panel` (F4). You will get the function run corresponding to the selected row
+
+![sens-analysis-current-run.gif](sens-analysis-current-run.gif)
+
+#### Sobol
+
+This method performs
+[variance-based sensitivity analysis](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis) and decomposes the output variance into fractions, which can be attributed to inputs. It provides the same visualizations
+as **Monte Carlo** and [bar charts](https://datagrok.ai/help/visualize/viewers/bar-chart) showing
+Sobol' indices:
+
+* First-order indices indicate the contribution to the output variance of varying each input alone
+* Total-order indices measure the contribution to the output variance of each input,
+ including all variance caused by its interactions with any other inputs
+
+![sobol-analysis.png](sobol-analysis.png)
+
+#### Grid
+
+This method evaluates a function at the points of uniform grid within the specified ranges. It provides the same visualizations
+as **Monte Carlo**:
+
+![bioreactor-analysis.png](grid-analysis.png)
+
+Sensitivity Analysis can be applied to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"sens-analysis": true}` to enable it:
+
+```javascript
+//name: Test
+//language: javascript
+//input: double x
+//output: double y
+//editor: Compute:RichFunctionViewEditor
+//meta.features: {"sens-analysis": true}
+
+let y = x + 3;
+```
 
 ### Input parameter optimization
 
