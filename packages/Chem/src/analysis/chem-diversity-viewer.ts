@@ -13,7 +13,7 @@ import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
 import {getRdKitModule} from '../package';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
-import { _fpParamsMap } from '../fingerprints-settings/fp-settings';
+import { _fpParamsMap } from '../chem-settings/fp-settings';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];

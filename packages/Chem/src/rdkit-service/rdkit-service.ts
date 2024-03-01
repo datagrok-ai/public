@@ -10,7 +10,7 @@ import {getRdKitModule} from '../package';
 import { SubstructureSearchType } from '../constants';
 import { tanimotoSimilarity } from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import { getRDKitFpAsUint8Array } from '../chem-searches';
-import { _fpParamsMap } from '../fingerprints-settings/fp-settings';
+import { _fpParamsMap } from '../chem-settings/fp-settings';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,

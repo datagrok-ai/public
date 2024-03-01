@@ -1,5 +1,5 @@
 import { Fingerprint } from "./utils/chem-common";
-import { _fpParamsMap } from "./fingerprints-settings/fp-settings";
+import { _fpParamsMap } from "./chem-settings/fp-settings";
 
 export const V2000_ATOM_NAME_POS = 30;
 export const V2000_ATOM_NAME_LEN = 3;

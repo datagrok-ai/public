@@ -20,7 +20,7 @@ import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
 import {SubstructureSearchType, getFpWithParamsColumnName, getFpWithoutParamsColName, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { _fpParamsMap } from './fingerprints-settings/fp-settings';
+import { _fpParamsMap } from './chem-settings/fp-settings';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
