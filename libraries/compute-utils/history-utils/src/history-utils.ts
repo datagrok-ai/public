@@ -84,7 +84,7 @@ export namespace historyUtils {
     const pulledRunAuthor = (await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user').filter(`id="${funcCallId}"`).list())[0].author;
 
-    pulledRun.dart.A.a = pulledRunAuthor.dart;
+    pulledRun.dart.H.a = pulledRunAuthor.dart;
 
     await augmentCallWithFunc(pulledRun);
 
