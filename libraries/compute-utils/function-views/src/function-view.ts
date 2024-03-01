@@ -480,6 +480,9 @@ export abstract class FunctionView extends DG.ViewBase {
           })
           .then((fullCall) => {
             this.historyBlock!.updateRun(fullCall);
+
+            this.funcCall.options = {...fullCall.options};
+
             onEditSub.unsubscribe();
           })
           .catch((err) => {
