@@ -2,6 +2,7 @@ import {LOG_LEVEL} from './const';
 import {toDart} from './wrappers';
 import {Package} from './entities';
 import {IDartApi} from "./api/grok_api.g";
+import dayjs from "dayjs";
 
 const api: IDartApi = <any>window;
 
@@ -13,6 +14,7 @@ type LoggerPutCallback = (logRecord: LogMessage) => void;
 export class Logger {
   putCallback?: LoggerPutCallback;
   private readonly dart: any;
+  private static consoleLogs: object[] = [];
 
   constructor(putCallback?: LoggerPutCallback, options?: {staticLogger?: boolean, params?: object}) {
     this.putCallback = putCallback;
@@ -76,6 +78,27 @@ export class Logger {
       this.putCallback(msg);
     msg.stackTrace ??= new Error().stack;
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
+  }
+
+  static getConsoleOutput(): string {
+    return JSON.stringify(this.consoleLogs, null, 2);
+  }
+
+  static interceptConsoleOutput(): void {
+    const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
+      const std = f.bind(console);
+      return (...args: any[]) => {
+        try { this.consoleLogs.push({'time': dayjs().utc().format('YYYY-MM-DDTHH:mm:ss.SSS[Z]'),
+          'message': args.map((x) => `${x}`).join(' ')}); }
+        catch (_) {}
+        std(...args);
+      }
+    };
+
+    console.log = intercept(console.log);
+    console.info = intercept(console.info);
+    console.warn = intercept(console.warn);
+    console.error = intercept(console.error);
   }
 }
 

@@ -375,6 +375,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       this._logoSummaryTable = null;
       doRender = true;
       break;
+    case LST_PROPERTIES.WEB_LOGO_MODE:
+      this.viewerGrid.invalidate();
     }
     if (doRender)
       this.render();
@@ -467,7 +469,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       const customClustCol = customClustColList[rowIdx];
       customLSTClustCol.set(rowIdx, customClustCol.name);
       const bitArray = BitArray.fromUint32Array(filteredDfRowCount, customClustCol.getRawData() as Uint32Array);
-      if (bitArray.allFalse || bitArray.allTrue)
+      if (bitArray.allFalse)
         continue;
 
 
@@ -495,10 +497,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const origLST = origLSTBuilder.aggregate();
     const origLSTLen = origLST.rowCount;
     const origLSTCols = origLST.columns;
-    const origLSTClustCol: DG.Column<string> = origLST.getCol(clustersColName);
+    let origLSTClustCol: DG.Column<string> = origLST.getCol(clustersColName);
     origLSTClustCol.name = C.LST_COLUMN_NAMES.CLUSTER;
-    if (origLSTClustCol.type !== DG.COLUMN_TYPE.STRING)
+    if (origLSTClustCol.type !== DG.COLUMN_TYPE.STRING) {
       origLST.columns.replace(origLSTClustCol, origLSTClustCol.convertTo(DG.COLUMN_TYPE.STRING));
+      origLSTClustCol = origLST.getCol(origLSTClustCol.name);
+    }
 
 
     const origLSTClustColCat = origLSTClustCol.categories;
@@ -515,14 +519,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     for (let rowIdx = 0; rowIdx < filteredDfRowCount; ++rowIdx) {
       const filteredClustName = filteredDfClustColCat[filteredDfClustColData[rowIdx]];
       const origClustIdx = origLSTClustColCat.indexOf(filteredClustName);
-      origClustMasks[origClustIdx].setTrue(rowIdx);
+      origClustMasks[origClustIdx]?.setTrue(rowIdx);
     }
 
     for (let rowIdx = 0; rowIdx < origLSTLen; ++rowIdx) {
       const mask = origClustMasks[rowIdx];
-      if (mask.allFalse || mask.allTrue)
+      if (mask.allFalse)
         continue;
-
 
       const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
       const stats = isDfFiltered ? getStats(activityColData, mask) :

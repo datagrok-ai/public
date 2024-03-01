@@ -34,6 +34,7 @@ public class DbCredentials
     public static final String ACCESS_KEY = "accessKey";
     public static final String SECRET_KEY = "secretKey";
     public static final String VPC_ENDPOINT = "VPCEndpoint";
+    public static final String ROLE = "role";
 
     public String server;
     public String port;

@@ -102,7 +102,7 @@ export function convert(col?: DG.Column): void {
       })
       .show({x: 350, y: 100});
 
-    convertDialogSubs.push(convertDialog.onClose.subscribe((_value) => {
+    convertDialogSubs.push(convertDialog.onClose.subscribe((_: any) => {
       convertDialogSubs.forEach((s) => { s.unsubscribe(); });
       convertDialogSubs = [];
       convertDialog = null;

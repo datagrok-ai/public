@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -22,6 +23,11 @@ export class TimeWidget extends DG.Widget {
     this.sub(rxjs.interval(1000).subscribe((_) => this.render()));
 
     this.render();
+  }
+
+  detach(): void {
+    super.detach();
+    grok.shell.info('Detached!');
   }
 
   onPropertyChanged(_: DG.Property) {this.render();}

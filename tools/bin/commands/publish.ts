@@ -97,6 +97,8 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const changelogWarnings = checkChangelog(curDir, json);
   contentValidationLog += changelogWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
   console.log(`Checks finished in ${Date.now() - checkStart} ms`);
+  const reg = new RegExp(/\${(\w*)}/g);
+  const errs: string[] = [];
 
   files.forEach((file: any) => {
     const fullPath = file;
@@ -128,9 +130,29 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       console.log(`Skipping ${canonicalRelativePath}`);
       return;
     }
+    if (canonicalRelativePath.startsWith('connections/')) {
+      let f = fs.readFileSync(fullPath, {encoding: 'utf-8'});
+      const matches = [...f.matchAll(reg)];
+      for (const m of matches) {
+        const envVar = process.env[m[1]];
+        if (!envVar) {
+          errs.push(`${canonicalRelativePath}: cannot find environment variable "${m[1]}"`);
+          continue;
+        }
+        f = f.replace(m[0], envVar);
+      }
+      zip.append(f, {name: relativePath});
+      console.log(`Adding ${canonicalRelativePath}...`);
+      return;
+    }
     zip.append(fs.createReadStream(fullPath), {name: relativePath});
     console.log(`Adding ${canonicalRelativePath}...`);
   });
+  if (errs.length) {
+    errs.forEach((e) => color.error(e));
+    return 1;
+  }
+
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
@@ -163,6 +185,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (log['#type'] === 'ApiError') {
       color.error(log['message']);
       console.error(log['innerMessage']);
+      console.log(log);
       return 1;
     } else {
       console.log(log);

@@ -45,6 +45,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             properties.put(DbCredentials.ACCOUNT, buildAccount(conn));
             String schema = conn.get(DbCredentials.SCHEMA);
             properties.put(DbCredentials.SCHEMA, schema == null ? DEFAULT_SCHEMA : schema);
+            if (conn.parameters.containsKey(DbCredentials.ROLE))
+                properties.put(DbCredentials.ROLE, conn.get(DbCredentials.ROLE));
         }
         return properties;
     }
@@ -131,6 +133,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             add(cloudProviders);
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
             add(new Property(Property.STRING_TYPE, DbCredentials.WAREHOUSE));
+            add(new Property(Property.STRING_TYPE, DbCredentials.ROLE));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
             add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));

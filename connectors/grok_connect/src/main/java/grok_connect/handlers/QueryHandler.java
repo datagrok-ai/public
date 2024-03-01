@@ -10,7 +10,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@WebSocket
+@WebSocket(maxTextMessageSize = 1024 * 1024) // set textMessageSize to 1MB
 public class QueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryHandler.class);
 

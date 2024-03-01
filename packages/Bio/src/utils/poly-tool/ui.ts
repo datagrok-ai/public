@@ -4,94 +4,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
-import {MonomerLibHelper} from '../../utils/monomer-lib';
+import {MonomerLibManager} from '../monomer-lib/lib-manager';
 import {ALL_MONOMERS, CYCLIZATION_TYPE, TRANSFORMATION_TYPE} from './const';
 import {addTransformedColumn} from './transformation';
 import * as rxjs from 'rxjs';
-import {MetaData} from './types';
+//import {MetaData} from './types';
 
 export function getPolyToolDialog(): DG.Dialog {
-  function getMonomerList(cyclizationType: CYCLIZATION_TYPE): string[] {
-    if (cyclizationType === cyclizationTypes[0]) {
-      return [ALL_MONOMERS].concat(
-        monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE)
-      );
-    }
-    if (cyclizationType === cyclizationTypes[1]) {
-      return [ALL_MONOMERS].concat(
-        monomerLib.getMonomerSymbolsByRGroup(3, HELM_POLYMER_TYPE.PEPTIDE)
-      );
-    }
-    return ['C'];
-  }
-
-  function updateMonomerList(): void {
-    if (cyclizationTypeChoice.value === CYCLIZATION_TYPE.NCys) {
-      monomerList1 = getMonomerList(CYCLIZATION_TYPE.NO);
-      monomerList2 = getMonomerList(CYCLIZATION_TYPE.NCys);
-    } else {
-      monomerList1 = getMonomerList(cyclizationTypeChoice.value as CYCLIZATION_TYPE);
-      monomerList2 = [...monomerList1];
-    }
-
-    leftTerminalChoice = ui.choiceInput(
-      'R1:', monomerList1[0], monomerList1, () => { onRGroupValueChange.next(); }
-    );
-    rightTerminalChoice = ui.choiceInput('R2:', monomerList2[0], monomerList2, () => { onRGroupValueChange.next(); });
-    onRGroupValueChange.next();
-    ui.empty(terminalControls);
-    [leftTerminalChoice, rightTerminalChoice].forEach((el) => { terminalControls.appendChild(el.root); });
-  }
-
-  function updateMeta() {
-    meta.cyclizationType = cyclizationTypeChoice.value!;
-    meta.leftTerminal = leftTerminalChoice.value!;
-    meta.rightTerminal = rightTerminalChoice.value!;
-    meta.transformationType = transformationChoice.value!;
-  }
-
-
-  const onCyclizationChoice = new rxjs.Subject<string>();
-  const onRGroupValueChange = new rxjs.Subject<string>();
-  onCyclizationChoice.subscribe(() => {
-    meta.cyclizationType = cyclizationTypeChoice.value!;
-    updateMonomerList();
-  });
-  onRGroupValueChange.subscribe(() => {
-    meta.rightTerminal = rightTerminalChoice.value!;
-    meta.leftTerminal = leftTerminalChoice.value!;
-  });
-
-  const meta = {} as MetaData;
-  const transformations = [TRANSFORMATION_TYPE.CYCLIZATION];
-  const transformationChoice = ui.choiceInput(
-    'Modification', transformations[0], transformations, () => meta.transformationType = transformationChoice.value!
-  );
-
-  const cyclizationTypes = [CYCLIZATION_TYPE.NO, CYCLIZATION_TYPE.R3, CYCLIZATION_TYPE.NCys];
-  const cyclizationTypeChoice = ui.choiceInput(
-    'Type', cyclizationTypes[2], cyclizationTypes, () => { onCyclizationChoice.next(); }
-  );
-
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
-  let monomerList1: string[] = [];
-  let monomerList2: string[] = [];
-  let leftTerminalChoice = ui.choiceInput(
-    'R1:', monomerList1[0], monomerList1, () => {
-      meta.leftTerminal = leftTerminalChoice.value!;
-    }
-  );
-  let rightTerminalChoice = ui.choiceInput('R2:', monomerList2[0], monomerList2, () => {
-    meta.rightTerminal = rightTerminalChoice.value!;
-  });
-  const terminalControls = ui.divV([leftTerminalChoice.root, rightTerminalChoice.root]);
-  updateMonomerList();
-
-  updateMeta();
-
+  //const monomerLib = MonomerLibManager.instance.getBioLib();
   const targetColumns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   if (!targetColumns)
-    throw new Error('No dataframe with maceomolecule columns open');
+    throw new Error('No dataframe with macromolecule columns open');
 
   const targetColumnInput = ui.columnInput(
     'Column', grok.shell.t, targetColumns[0], null,
@@ -101,12 +24,46 @@ export function getPolyToolDialog(): DG.Dialog {
   const generateHelmChoiceInput = ui.boolInput('Get HELM', true);
   ui.tooltip.bind(generateHelmChoiceInput.root, 'Add HELM column');
 
+  let rulesTable: DG.DataFrame = DG.DataFrame.create();
+
+  const ruleFileInput = ui.button('ADD RULES', () => {
+    DG.Utils.openFile({
+      accept: '.csv',
+      open: async (selectedFile) => {
+        const content = await selectedFile.text();
+        rulesTable = DG.DataFrame.fromCsv(content);
+        //console.log(df.toCsv());
+      },
+    });
+  });
+  // dialog.addButton(
+  //   'Add',
+  //   () => eventManager.addLibraryFile(),
+  //   undefined,
+  //   'Upload new HELM monomer library'
+  // );
+
+
+  // const ruleFileInput = DG.Utils.openFile({
+  //   accept: '.csv',
+  //   open: async (selectedFile) => {
+  //     const content = await selectedFile.text();
+  //     const name = selectedFile.name;
+  //     const df = DG.DataFrame.fromCsv(content);
+
+  //     console.log(df.toCsv());
+  //   },
+  // });
+
+  //grok.data.files.openTable('Samples:Files/chem/smiles_10K_with_activities.csv')
+  // const file = await loadFileAsText(tableName);
+  // const df = DG.DataFrame.fromCsv(file);
+  // df.name = tableName.replace('.csv', '');
+
   const div = ui.div([
     targetColumnInput,
-    transformationChoice,
-    cyclizationTypeChoice,
-    terminalControls,
     generateHelmChoiceInput,
+    ruleFileInput
   ]);
 
   const dialog = ui.dialog('Poly Tool')
@@ -117,7 +74,7 @@ export function getPolyToolDialog(): DG.Dialog {
         grok.shell.warning('No marcomolecule column chosen!');
         return;
       }
-      addTransformedColumn(molCol!, meta, generateHelmChoiceInput.value!);
+      addTransformedColumn(molCol!, rulesTable!, generateHelmChoiceInput.value!);
     }
     );
 

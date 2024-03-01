@@ -5,35 +5,81 @@ import { HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
 import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 import { isSmarts } from '../package';
 import { ItemType, ItemsGrid } from '@datagrok-libraries/utils/src/items-grid';
+import { Subscription } from 'rxjs';
 
 export function getmolColumnHighlights(col: DG.Column): DG.Widget {
+    return new HighlightWidget(col);
+}
 
-    const props = [
+export class HighlightWidget extends DG.Widget {
+
+    props = [
         DG.Property.fromOptions({ name: 'molecule', type: DG.TYPE.STRING }),
         DG.Property.fromOptions({ name: 'color', inputType: 'Color', type: DG.TYPE.STRING })
     ];
-    const scaffoldsString = col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG);
-    const items: IColoredScaffold[] = scaffoldsString ? JSON.parse(scaffoldsString) : [];
-    const itemsGrid = new ItemsGrid(props, items,
-        {
-            customInputs: {
-                'molecule': (item: ItemType) => {
-                    return new CustomSketcherInput(item.molecule);
-                },
-            },
-            newItemFunction: () => ({color: '#00FF00'}),
-        });
+    latestHighLightTag = '';
+    itemsGridChanged = false;
+    onMetaDataChangeSub: Subscription;
+    col: DG.Column;
 
-    itemsGrid.onItemAdded.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
-    itemsGrid.onAddingItemChanged.subscribe((item) => {
-        if (itemsGrid.items.indexOf(item.item) === -1)
-            col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items.concat([item.item])))
-        if (itemsGrid.items.filter((it => item.item.molecule === it.molecule)).length > 0 && item.fieldName === 'molecule')
-            grok.shell.warning(`Current structure has been added previously`);
-    });
-    itemsGrid.onItemRemoved.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
-    itemsGrid.onItemChanged.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
-    return new DG.Widget(itemsGrid.root);
+    constructor(col: DG.Column) {
+        super(ui.div());
+        this.col = col;
+        this.createItemsGrid();
+        this.onMetaDataChangeSub = this.col.dataFrame.onMetadataChanged.subscribe(() => {
+            if ((this.latestHighLightTag && this.latestHighLightTag !== col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG)) && !this.itemsGridChanged) {
+                this.createItemsGrid();
+            }
+            this.itemsGridChanged = false;
+        })
+
+    }
+
+    createItemsGrid() {
+        const scaffoldsString = this.col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG);
+        const items: IColoredScaffold[] = scaffoldsString ? JSON.parse(scaffoldsString) : [];
+        const itemsGrid = new ItemsGrid(this.props, items,
+            {
+                customInputs: {
+                    'molecule': (item: ItemType) => {
+                        return new CustomSketcherInput(item.molecule);
+                    },
+                },
+                newItemFunction: () => ({ color: '#00FF00' }),
+            });
+
+        itemsGrid.onItemAdded.subscribe(() => {
+            this.itemsGridChanged = true;
+            this.latestHighLightTag = JSON.stringify(itemsGrid.items);
+            this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
+        });
+        itemsGrid.onAddingItemChanged.subscribe((item) => {
+            this.itemsGridChanged = true;
+            if (itemsGrid.items.indexOf(item.item) === -1) {
+                this.latestHighLightTag = JSON.stringify(itemsGrid.items.concat([item.item]));
+                this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
+            }
+            if (itemsGrid.items.filter((it => item.item.molecule === it.molecule)).length > 0 && item.fieldName === 'molecule')
+                grok.shell.warning(`Current structure has been added previously`);
+        });
+        itemsGrid.onItemRemoved.subscribe(() => {
+            this.itemsGridChanged = true;
+            this.latestHighLightTag = JSON.stringify(itemsGrid.items);
+            this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
+        });
+        itemsGrid.onItemChanged.subscribe(() => {
+            this.itemsGridChanged = true;
+            this.latestHighLightTag = JSON.stringify(itemsGrid.items);
+            this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
+        });
+        ui.empty(this.root);
+        this.root.append(itemsGrid.root);
+    };
+
+    detach() {
+        this.onMetaDataChangeSub.unsubscribe();
+    }
+
 }
 
 export class CustomSketcherInput {
@@ -46,7 +92,7 @@ export class CustomSketcherInput {
         this.sketcher.syncCurrentObject = false;
         if (molecule) {
             this.molecule = molecule;
-            isSmarts(molecule) ? this.sketcher.setSmarts(molecule) : this.sketcher.setSmiles(molecule);
+            isSmarts(molecule) ? this.sketcher.setSmarts(molecule) : this.sketcher.setMolFile(molecule);
         }
         this.root = ui.div(this.sketcher.root, 'chem-col-highlight-sketcher-input');
         this.root.addEventListener('click', e => {
@@ -56,7 +102,7 @@ export class CustomSketcherInput {
             }
         }, true);
         this.sketcher.onChanged.subscribe(async () => {
-            this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getSmiles();
+            this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getMolFile();
             this.onChangeFunc();
         });
     }

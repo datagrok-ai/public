@@ -1,5 +1,13 @@
 # gridext changelog
 
+## 1.3.70 (2024-02-20)
+
+## 1.3.69 (2024-02-20)
+
+### Bug Fixes
+
+* Replaced DG.ViewLayout with DG.ViewInfo
+
 ## 1.3.68 (2023-11-29)
 
 ### Bug Fixes

@@ -172,9 +172,9 @@ export class AddNewColumnDialog {
     const control = ui.textInput('', '', async () => {
       // The first characters of the Expression become the default name of the new column:
       (this.inputName!.input as HTMLInputElement).placeholder =
-          (!control.value || (control.value.length > this.maxAutoNameLength)) ?
+          ((!control.value || (control.value.length > this.maxAutoNameLength)) ?
             this.placeholderName :
-            control.value;
+            control.value).trim();
       await this.updatePreview();
     });
     control.setTooltip(this.tooltips['expression']);
@@ -414,7 +414,7 @@ export class AddNewColumnDialog {
     } else {
       await this.sourceDf!.columns.addNewCalculated(
         this.getResultColumnName(),
-          this.inputExpression!.value,
+          this.inputExpression!.value.trim(),
           ...this.getSelectedType(),
       );
     }

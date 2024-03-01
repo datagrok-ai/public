@@ -198,8 +198,8 @@ export class RdKitService {
    * @param {function (_: TMap[]): TReduce} reduce - function which combines results collected from web workers
    * into single result
    * */
-  async _initParallelWorkers<TMap, TReduce>(molecules: string[],
-    workerFunc: (workerIdx: number, moleculesSegment: string[]) => Promise<TMap>,
+  async _initParallelWorkers<TMap, TReduce, T>(molecules: Array<T>,
+    workerFunc: (workerIdx: number, moleculesSegment: Array<T>) => Promise<TMap>,
     reduce: (_: TMap[]) => TReduce): Promise<TReduce> {
     const t = this;
     return this._doParallel(
@@ -468,6 +468,27 @@ export class RdKitService {
       (_: any) => {
         return;
       });
+  }
+
+  async mmpGetFragments(molecules: string[]): Promise<[string, string][][]> {
+    const t = this;
+    const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      t.parallelWorkers[i].mmpGetFragments(segment),
+    (data: [string, string][][][]): [string, string][][] => {
+      return ([] as [string, string][][]).concat(...data);
+    });
+    return res;
+  }
+
+  async mmpGetMcs(molecules: [string, string][]): Promise<string[]> {
+    const t = this;
+
+    const res = await this._initParallelWorkers(molecules, (i: number, segment: [string, string][]) =>
+      t.parallelWorkers[i].mmpGetMcs(segment),
+    (data: string[][]): string[] => {
+      return ([] as string[]).concat(...data);
+    });
+    return res;
   }
 
   async getMCS(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
