@@ -166,6 +166,8 @@ export class HistoryPanel extends DG.Widget {
 
   public addRun(newRun: DG.FuncCall) {
     this.historyList.addItem(newRun);
+
+    this.allRuns.value.push(newRun);
   }
 
   public get history() {
@@ -207,7 +209,7 @@ export class HistoryPanel extends DG.Widget {
 
     const onDeleteSub = this.historyList.onDelete.subscribe((deleteCall) => {
       const runIdx = this.allRuns.value.findIndex((call) => call.id === deleteCall.id);
-      this.allRuns.value.splice(runIdx, 1);
+      if (runIdx >=0) this.allRuns.value.splice(runIdx, 1);
       this.historyFilter.removeTag(deleteCall);
 
       this.afterRunDeleted.next(deleteCall);
