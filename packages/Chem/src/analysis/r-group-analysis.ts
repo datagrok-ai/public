@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findRGroups, findRGroupsWithCore} from '../scripts-api';
-import {getRdKitModule} from '../package';
+import {convertMolNotation, getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
@@ -117,6 +117,8 @@ export function rGroupAnalysis(col: DG.Column): void {
         const onlyMatchAtRGroups =
           !!MolfileHandler.getInstance(core).atomTypes.filter((it) => it.startsWith('R')).length &&
           core.includes('M  RGP');
+        if (!onlyMatchAtRGroups)
+          core = convertMolNotation(core, grok.chem.Notation.MolBlock, grok.chem.Notation.Smarts);
         progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
         const res = await findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups);
         const module = getRdKitModule();
@@ -207,6 +209,7 @@ export function rGroupAnalysis(col: DG.Column): void {
 
 function removeLatestAnalysis(col: DG.Column) {
   latestTrellisPlot?.close();
+  latestTrellisPlot = null;
   latestAnalysisCols.forEach((colName: string) => col.dataFrame.columns.remove(colName));
   latestAnalysisCols = [];
 }
