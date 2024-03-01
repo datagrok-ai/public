@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.24.0 (2024-03-01)
+
+### Features
+
+- RFV: Customizable data upload feature
+
 ## 1.23.0 (2024-02-28)
 
 ### Features
