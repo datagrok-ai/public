@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.87",
+  "version": "3.7.88",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3257,6 +3257,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
