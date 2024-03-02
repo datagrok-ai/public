@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.24.1 (2024-03-02)
+
+### Bug fixes
+
+- ModelCatalog: Fixed error with mandatory groups
+
 ## 1.24.0 (2024-03-01)
 
 ### Features
