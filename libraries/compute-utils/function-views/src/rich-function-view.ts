@@ -712,8 +712,7 @@ export class RichFunctionView extends FunctionView {
 
             this.showOutputTabsElem();
 
-            // Filters: workaround for https://reddata.atlassian.net/browse/GROK-14270
-            if (Object.values(viewerTypesMapping).includes(loadedViewer.type) && loadedViewer.type !== DG.VIEWER.FILTERS) {
+            if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
               loadedViewer.dataFrame = currentParam.value;
               loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
             } else {
