@@ -712,13 +712,11 @@ export class RichFunctionView extends FunctionView {
 
             this.showOutputTabsElem();
 
-            if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
+            if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
               loadedViewer.dataFrame = currentParam.value;
-              loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-            } else {
+            else {
               // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
               const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
-              newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
               loadedViewer.root.replaceWith(newViewer.root);
               loadedViewer = newViewer;
             }
