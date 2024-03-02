@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.24.1 (2024-03-02)
+
+### Features
+
+- ModelCatalog: Fixed bug with mandatory groups
+
 ## 1.24.0 (2024-03-01)
 
 ### Features
