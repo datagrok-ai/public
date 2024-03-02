@@ -24,6 +24,14 @@ category('Dapi: functions calls', async () => {
     expect(savedFuncCall.inputs['x'], funcCall.inputs['x']);
   });
 
+  test('save & get author', async () => {
+    const func: DG.Func = await grok.functions.eval('Sin');
+    const funcCall = await func.prepare({x: xValue}).call();
+    funcCall.newId();
+    const savedFuncCall = await GDF.calls.include('session.user').save(funcCall);
+    expect(savedFuncCall.author, grok.shell.user);
+  }, {skipReason: 'GROK-15119'});
+
   test('save with DF', async () => {
     const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
     const funcCall = await funcWithDf.prepare({'table': grok.data.demo.demog(30)}).call();
