@@ -16,6 +16,7 @@ export class EventBus {
   private _terminalModifications: rxjs.BehaviorSubject<StrandTerminusModifications>;
   private _comment$: rxjs.BehaviorSubject<string>;
   private _modificationsWithNumericLabels$: rxjs.BehaviorSubject<string[]>;
+  private _sequenceBase$: rxjs.BehaviorSubject<string>;
 
   private _patternListUpdated$ = new rxjs.Subject<void>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
@@ -23,7 +24,6 @@ export class EventBus {
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
-  private _sequenceBaseChanged$ = new rxjs.Subject<string>();
 
 
   constructor(defaults: PatternDefaultsProvider) {
@@ -38,6 +38,7 @@ export class EventBus {
     this._terminalModifications = new rxjs.BehaviorSubject(defaults.getTerminusModifications());
     this._comment$ = new rxjs.BehaviorSubject(defaults.getComment());
     this._modificationsWithNumericLabels$ = new rxjs.BehaviorSubject(defaults.getModificationsWithNumericLabels());
+    this._sequenceBase$ = new rxjs.BehaviorSubject(defaults.fetchDefaultNucleobase());
   }
 
   getPatternName(): string {
@@ -66,6 +67,17 @@ export class EventBus {
 
   updateNucleotideSequences(nucleotideSequences: NucleotideSequences) {
     this._nucleotideSequences$.next(nucleotideSequences);
+  }
+
+  changeStrandLength(strand: StrandType, length: number) {
+    const sequence = this.getNucleotideSequences()[strand];
+    if (sequence.length > length) {
+      const newSequence = sequence.slice(0, length);
+      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
+    } else {
+      const newSequence = sequence.concat(new Array(length - sequence.length).fill(this._sequenceBase$.getValue()));
+      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
+    }
   }
 
   getPhosphorothioateLinkageFlags(): PhosphorothioateLinkageFlags {
@@ -101,7 +113,7 @@ export class EventBus {
   }
 
   changeSequenceBase(base: string) {
-    this._sequenceBaseChanged$.next(base);
+    this._sequenceBase$.next(base);
   }
 
   get patternLoadRequested$(): rxjs.Observable<string> {
@@ -140,7 +152,7 @@ export class EventBus {
     this._patternSaveRequested$.next();
   }
 
-  patternStateChanged$(): rxjs.Observable<void> {
+  get patternStateChanged$(): rxjs.Observable<void> {
     return rxjs.merge(
       this._patternName$,
       this._isAntisenseStrandVisible$,

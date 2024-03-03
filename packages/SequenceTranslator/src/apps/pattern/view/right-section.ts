@@ -60,6 +60,7 @@ class SvgDisplayManager {
     eventBus: EventBus,
   ) {
     this.configManager = new PatternConfigurationManager(eventBus);
+    eventBus.patternStateChanged$.subscribe(() => this.updateSvgContainer());
   }
 
   static createSvgDiv(eventBus: EventBus): HTMLElement {

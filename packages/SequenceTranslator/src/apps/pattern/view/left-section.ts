@@ -80,7 +80,10 @@ class PatternControlsManager {
 
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
-      `${STRAND_LABEL[STRAND.ANTISENSE]} strand`, true, (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive));
+      `${STRAND_LABEL[STRAND.ANTISENSE]} strand`,
+      true,
+      (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive)
+    );
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     return toggleAntisenseStrand.root;
@@ -91,9 +94,23 @@ class PatternControlsManager {
 
       const sequenceLength = this.eventBus.getNucleotideSequences()[strand].length;
 
-      const input = ui.intInput(`${STRAND_LABEL[strand]} length`, sequenceLength);
+      const input = ui.intInput(
+        `${STRAND_LABEL[strand]} length`,
+        sequenceLength,
+        (value: number) => updateStrandLengthInputs(strand, value, input)
+      );
       input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
       return [strand, input];
+    }
+
+    const updateStrandLengthInputs = (strand: StrandType, length: number, input: DG.InputBase) => {
+      if (length < 0 || length > this.defaultState.getMaxSequenceLength()) {
+        grok.shell.warning(`Sequence length must be between 0 and ${this.defaultState.getMaxSequenceLength()}`);
+        input.value = this.eventBus.getNucleotideSequences()[strand].length;
+        return;
+      }
+
+      this.eventBus.changeStrandLength(strand, length);
     }
 
     const strandLengthInputs = Object.fromEntries(
