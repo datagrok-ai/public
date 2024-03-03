@@ -139,4 +139,16 @@ export class EventBus {
   requestPatternSave() {
     this._patternSaveRequested$.next();
   }
+
+  patternStateChanged$(): rxjs.Observable<void> {
+    return rxjs.merge(
+      this._patternName$,
+      this._isAntisenseStrandVisible$,
+      this._nucleotideSequences$,
+      this._phosphorothioateLinkageFlags,
+      this._terminalModifications,
+      this._comment$,
+      this._modificationsWithNumericLabels$,
+    );
+  }
 }

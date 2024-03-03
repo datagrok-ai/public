@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
-import { StrandType } from '../model/types';
+import { PatternConfiguration, StrandType } from '../model/types';
 
 import {StringInput, NumberInput} from './types';
 import {NucleotidePatternSVGRenderer} from '../view/svg-utils/svg-renderer';
@@ -14,6 +14,7 @@ import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
+import {PatternConfigurationManager} from '../model/pattern-config-manager';
 
 export class PatternAppRightSection {
   constructor(
@@ -22,7 +23,7 @@ export class PatternAppRightSection {
   ) { };
 
   getLayout(): HTMLDivElement {
-    const svgDisplay = new SvgDisplayManager().create();
+    const svgDisplay = SvgDisplayManager.createSvgDiv(this.eventBus);
     const layout = ui.panel([
       svgDisplay,
       // numericLabelTogglesContainer,
@@ -53,12 +54,30 @@ export class PatternAppRightSection {
 
 class SvgDisplayManager {
   private svgDisplayDiv = ui.div([]);
-  // private renderer = new NucleotidePatternSVGRenderer(patternConfiguration);
-  // const svg = renderer.renderPattern();
+  private configManager: PatternConfigurationManager;
 
-  constructor() { }
+  private constructor(
+    eventBus: EventBus,
+  ) {
+    this.configManager = new PatternConfigurationManager(eventBus);
+  }
 
-  create(): HTMLElement {
-    return this.svgDisplayDiv;
+  static createSvgDiv(eventBus: EventBus): HTMLElement {
+    const manager = new SvgDisplayManager(eventBus);
+    manager.updateSvgContainer();
+    return manager.svgDisplayDiv;
+  }
+
+  private updateSvgContainer(): void {
+    $(this.svgDisplayDiv).empty();
+    const patternConfig = this.configManager.getConfig();
+    const image = this.createSvg(patternConfig);
+    this.svgDisplayDiv.append(image);
+  }
+
+  private createSvg(patternConfig: PatternConfiguration) {
+    const renderer = new NucleotidePatternSVGRenderer(patternConfig);
+    const svg = renderer.renderPattern();
+    return svg;
   }
 }

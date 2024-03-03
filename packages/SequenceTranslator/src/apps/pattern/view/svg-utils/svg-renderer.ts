@@ -30,7 +30,7 @@ export class NucleotidePatternSVGRenderer {
     this.legendBuilder = new LegendBuilder(this.svgFactory, this.config);
   }
 
-  renderPattern(): Element {
+  renderPattern(): SVGElement {
     const labelElements = this.createLabelElements();
 
     const countOfNucleotidesExcludingOverhangs = this.countNucleotidesExcludingOverhangs();
