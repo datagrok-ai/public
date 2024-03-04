@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.25.1 (2024-03-04)
+
+### Features
+
+- SA: input form styles fix
+
 ## 1.25.0 (2024-03-04)
 
 ### Features
