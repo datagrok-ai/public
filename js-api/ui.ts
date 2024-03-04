@@ -1326,7 +1326,13 @@ export class tools {
 
     if (element.querySelector('.ui-input-root:not(.ui-input-buttons)') == null) {
       element.style.removeProperty('max-width');
+      buttons.style.removeProperty('max-width');
       editor.style.removeProperty('max-width');
+      let totalWidth = 0;
+      for (let i = 0; i < editor.children.length; i++)
+        totalWidth += editor.children[i].getBoundingClientRect().width;
+      element.style.maxWidth = `${totalWidth}px`;
+      buttons.style.maxWidth = `${totalWidth}px`;
     }
 
     if (label != null) label.remove();

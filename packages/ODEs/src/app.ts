@@ -33,6 +33,7 @@ enum EDITOR_STATE {
   PKPD = 'pk-pd',
   ACID_PROD = 'ga-production',
   NIMOTUZUMAB = 'nimotuzumab',
+  BIOREACTOR = 'bioreactor',
 };
 
 /** State-to-template/use-case map */
@@ -46,6 +47,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.PKPD, USE_CASES.PK_PD],
   [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
+  [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
 ]);
 
 /** Models & templates */
@@ -58,6 +60,7 @@ const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.PKPD,
   EDITOR_STATE.ACID_PROD,
   EDITOR_STATE.NIMOTUZUMAB,
+  EDITOR_STATE.BIOREACTOR,
 ];
 
 /** Return help link with respect to IVP editor state */
@@ -80,6 +83,9 @@ function getLink(state: EDITOR_STATE): string {
 
   case EDITOR_STATE.NIMOTUZUMAB:
     return LINK.NIMOTUZUMAB;
+
+  case EDITOR_STATE.BIOREACTOR:
+    return LINK.BIOREACTOR;
 
   default:
     return LINK.DIF_STUDIO_REL;
@@ -127,6 +133,7 @@ function getLineChartOptions(colNames: string[]): Object {
     multiAxis: count > MAX_LINE_CHART,
     multiAxisLegendPosition: 'RightTop',
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: null,
+    showAggrSelectors: false,
   };
 }
 
@@ -147,6 +154,8 @@ export class DiffStudio {
     // routing
     if (content)
       await this.runSolving(false);
+      // dfdf
+
 
     else {
       const modelIdx = this.startingPath.indexOf(PATH.MODEL);
@@ -170,11 +179,9 @@ export class DiffStudio {
           }
 
           await this.setState(model as EDITOR_STATE, false);
-        }
-        else
+        } else
           await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-      }
-      else
+      } else
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     }
   } // runSolverApp
@@ -189,6 +196,7 @@ export class DiffStudio {
     const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
     this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
     await this.runSolving(false);
+    // dfdf
   } // runSolverDemoApp
 
   /** Return file preview view */
@@ -279,6 +287,8 @@ export class DiffStudio {
   private helpIcon: HTMLElement;
   private exportButton: HTMLElement;
 
+  private inputsByCategories = new Map<string, DG.InputBase[]>();
+
   constructor(toAddTableView: boolean = true) {
     this.solverView = toAddTableView ?
       grok.shell.addTableView(this.solutionTable) :
@@ -286,7 +296,13 @@ export class DiffStudio {
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
-    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => this.modelDiv);
+    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
+      setTimeout(() => {
+        this.modelDiv.style.height = '100%';
+        this.editorView!.dom.style.height = '100%';
+      }, 10);
+      return this.modelDiv;
+    });
     this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
@@ -324,6 +340,7 @@ export class DiffStudio {
       .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
       .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
       .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
       .endGroup();
 
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
@@ -356,12 +373,10 @@ export class DiffStudio {
         e.stopImmediatePropagation();
         e.preventDefault();
 
-        if (this.tabControl.currentPane === this.modelPane) {
-          if ( this.toChangeInputs )
-            await this.runSolving(true);
-          else
-            this.tabControl.currentPane = this.runPane;
-        }
+        if ( this.toChangeInputs )
+          await this.runSolving(true);
+        else
+          this.tabControl.currentPane = this.runPane;
       }
     });
 
@@ -397,6 +412,9 @@ export class DiffStudio {
           )
           .item(TITLE.NIM, async () =>
             await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
+          )
+          .item(TITLE.BIO, async () =>
+            await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
           )
           .endGroup()
           .separator()
@@ -475,6 +493,7 @@ export class DiffStudio {
     case EDITOR_STATE.ADVANCED_TEMPLATE:
     case EDITOR_STATE.EXTENDED_TEMPLATE:
       await this.runSolving(false);
+      // dfdf
       break;
 
     default:
@@ -593,17 +612,44 @@ export class DiffStudio {
 
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
-    if (this.prevInputsNode !== null)
-      this.inputsPanel.removeChild(this.prevInputsNode);
-
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
-      this.prevInputsNode = this.inputsPanel.appendChild(await this.getInputsForm(ivp));
+      await this.getInputsForm(ivp);
       this.runPane.header.hidden = !this.isSolvingSuccess;
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
-        this.tabControl.currentPane = (toShowInputsForm && this.isSolvingSuccess)? this.runPane : this.modelPane;
+        this.tabControl.currentPane = this.runPane;
+
+        if (this.prevInputsNode !== null)
+          this.inputsPanel.removeChild(this.prevInputsNode);
+
+        const form = ui.form([]);
+
+        if (this.inputsByCategories.size === 1)
+          this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
+        else {
+          this.inputsByCategories.forEach((inputs, category) => {
+            if (category !== TITLE.MISC) {
+              form.append(ui.h2(category));
+              inputs.forEach((inp) => {
+                form.append(inp.root);
+              });
+            }
+          });
+
+          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+            form.append(ui.h2(TITLE.MISC));
+              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+                form.append(inp.root);
+              });
+          }
+        }
+
+        this.prevInputsNode = this.inputsPanel.appendChild(form);
+
+        if (!toShowInputsForm)
+          setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
       } else
         this.tabControl.currentPane = this.modelPane;
     } catch (error) {
@@ -628,7 +674,7 @@ export class DiffStudio {
   } // clearSolution
 
   /** Return form with model inputs */
-  private async getInputsForm(ivp: IVP): Promise<HTMLDivElement> {
+  private async getInputsForm(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
       const options: DG.PropertyOptions = {
@@ -787,28 +833,9 @@ export class DiffStudio {
       categorizeInput(options, input);
     }
 
-    // Inputs form
-    const form = ui.form([]);
-
-    if (inputsByCategories.size === 1)
-      inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
-    else {
-      inputsByCategories.forEach((inputs, category) => {
-        if (category !== TITLE.MISC) {
-          form.append(ui.h2(category));
-          inputs.forEach((inp) => form.append(inp.root));
-        }
-      });
-
-      if (inputsByCategories.get(TITLE.MISC)!.length > 0) {
-        form.append(ui.h2(TITLE.MISC));
-        inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
-      }
-    }
-
     if (this.toRunWhenFormCreated)
       await this.solve(ivp, getInputsPath());
 
-    return form;
+    this.inputsByCategories = inputsByCategories;
   } // getInputsUI
 };

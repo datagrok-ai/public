@@ -422,11 +422,11 @@ export class PipelineView extends FunctionView {
     Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
   }
 
-  public override async onComparisonLaunch(funcCallIds: string[]) {
+  public override async onComparisonLaunch(funcCalls: DG.FuncCall[]) {
     const parentCall = grok.shell.v.parentCall;
 
     const childFuncCalls = await Promise.all(
-      funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
+      funcCalls.map((funcCall) => historyUtils.loadChildRuns(funcCall.id)),
     );
 
     // Main child function should habe `meta.isMain: true` tag or the last function is used
@@ -559,10 +559,9 @@ export class PipelineView extends FunctionView {
   public override buildHistoryBlock(): HTMLElement {
     const hb = super.buildHistoryBlock();
 
-    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedId) => {
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedCall) => {
       const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-        .filter(`options.parentCallId="${deletedId}"`).list();
-      console.log(childRuns);
+        .filter(`options.parentCallId="${deletedCall.id}"`).list();
 
       childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
     });

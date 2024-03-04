@@ -94,7 +94,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
-    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
+    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
   const clustersColumnChoice = ui.columnInput('Clusters', df, null, () => {
     if (clustersColumnChoice.value) {
@@ -185,7 +185,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
   options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   let model: PeptidesModel | null = null;
-  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT && activityColumn.type !== DG.COLUMN_TYPE.QNUM) {
+  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT &&
+    activityColumn.type !== DG.COLUMN_TYPE.QNUM
+  ) {
     grok.shell.error('The activity column must be of numeric type!');
     return model;
   }

@@ -1,10 +1,8 @@
 # ml changelog
 
-## 6.4.0 (WIP)
+## 6.4.11 (2024-02-27)
 
-### Bug fixes
-
-* Fix adding type SequenceSpaceFunc
+Add support for post processing function in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.
 
 ## 6.3.39 (2023-07-21)
 

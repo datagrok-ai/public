@@ -6,10 +6,9 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemCash, getMarkedString, setStemmingCash,
-  getClosest, getEmbeddings} from './stemming-tools/stemming-tools';
+import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemming-tools/stemming-tools';
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
-import {CLOSEST_COUNT, DELIMETER} from './stemming-tools/constants';
+import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
 import '../css/stemming-search.css';
 
 export const _package = new DG.Package();
@@ -201,6 +200,82 @@ export async function initAWS() {
 //description: Compute text embeddings using UMAP
 export function computeEmbds(): void {
   runTextEmdsComputing();
+}
+
+//name: Stem Column
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Text
+//meta.supportedDistanceFunctions: Common Items
+//input: column col {semType: Text}
+//input: string metric
+//input: int minimumCharactersCount = 1 {defaultValue: 1; min: 0; max: 100; optional: true}
+//output: object result
+export function stemColumnPreprocessingFunction(col: DG.Column, metric: string, minimumCharactersCount: number) {
+  const stemRes = stemmColumn(col, minimumCharactersCount);
+  const entries = stemRes.indices.toList();
+  const options = {mostCommon: stemRes.mostCommon};
+  return {entries, options};
+}
+
+//name: Radial Coloring
+//tags: dim-red-postprocessing-function
+//input: column col1
+//input: column col2
+export function radialColoring(col1: DG.Column, col2: DG.Column) {
+  const df = col1.dataFrame;
+  if (!df)
+    return;
+  const rowCount = df.rowCount;
+
+  const markerSize = new Float32Array(rowCount);
+  const markerColor = new Float32Array(rowCount);
+
+  const xMean = col1.stats.avg;
+  const xStd = col1.stats.stdev + TINY; // TINY is added to prevent division by zero
+  const xRaw = col1.getRawData();
+  const yMean = col2.stats.avg;
+  const yStd = col2.stats.stdev + TINY;
+  const yRaw = col2.getRawData();
+
+  let xNorm: number;
+  let yNorm: number;
+  let radius: number;
+  let angle: number;
+
+  // Marker size & color are specified using polar coordinates
+  for (let i = 0; i < rowCount; ++i) {
+    // get normalized embeddings
+    xNorm = (xRaw[i] - xMean) / xStd;
+    yNorm = (yRaw[i] - yMean) / yStd;
+
+    // compute polar coordinates
+    radius = Math.sqrt(xNorm**2 + yNorm**2);
+    angle = Math.acos(xNorm / (radius + TINY)) * (yNorm > 0 ? 1 : -1);
+
+    // heuristics
+    markerSize[i] = radius;
+    markerColor[i] = Math.sin(1.0 / (TINY + Math.log(radius + TINY))) * Math.sin(POLAR_FREQ * angle);
+  }
+
+  const sizeCol = DG.Column.fromFloat32Array('embeddings size', markerSize);
+  const colorCol = DG.Column.fromFloat32Array('embeddings color', markerColor);
+
+  sizeCol.name = df.columns.getUnusedName(sizeCol.name);
+  colorCol.name = df.columns.getUnusedName(colorCol.name);
+
+  df.columns.add(sizeCol);
+  df.columns.add(colorCol);
+  const tv = grok.shell.tableView(df.name);
+  if (!tv)
+    return;
+  const colNames = [col1.name, col2.name];
+  for (const v of tv.viewers) {
+    if (v instanceof DG.ScatterPlotViewer && colNames.includes(v.props.xColumnName) && colNames.includes(v.props.yColumnName)) {
+      v.props.sizeColumnName = sizeCol.name;
+      v.props.colorColumnName = colorCol.name;
+      return;
+    }
+  }
 }
 
 //name: Distance

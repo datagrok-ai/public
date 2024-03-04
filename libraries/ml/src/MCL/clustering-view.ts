@@ -58,7 +58,7 @@ export async function markovCluster(
   const res = await mclWorker.promise;
   if (!res)
     return;
-  const clusterColName = df.columns.getUnusedName('Cluster');
+  const clusterColName = df.columns.getUnusedName('Cluster (MCL)');
   const emberdXColName = df.columns.getUnusedName('EmbedX');
   const emberdYColName = df.columns.getUnusedName('EmbedY');
   const clustersCounter: {[_: number]: number} = {};
@@ -66,7 +66,7 @@ export async function markovCluster(
     if (!clustersCounter[c]) clustersCounter[c] = 0;
     clustersCounter[c]++;
   });
-  const clusterCounterColName = df.columns.getUnusedName('Cluster size');
+  const clusterCounterColName = df.columns.getUnusedName('Cluster size (MCL)');
   df.columns.addNewFloat(emberdXColName).init((i) => res.embedX[i]);
   df.columns.addNewFloat(emberdYColName).init((i) => res.embedY[i]);
   df.columns.addNewInt(clusterCounterColName).init((i) => clustersCounter[res.clusters[i]]);

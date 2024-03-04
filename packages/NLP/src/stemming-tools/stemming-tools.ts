@@ -39,10 +39,10 @@ export type ColUseInfo = {
 
 /** UMAP Settings */
 export type UmapSettings = {
-  components: number, 
-  epochs: number, 
-  neighbors: number, 
-  minDist: number, 
+  components: number,
+  epochs: number,
+  neighbors: number,
+  minDist: number,
   spread: number,
 };
 
@@ -79,7 +79,7 @@ function getStemmedWords(str: string, minCharCount: number): string[] {
 }
 
 /** Return dictionary of stemmed words & a column of indices. */
-function stemmColumn(source: DG.Column<string>, minCharCount: number):
+export function stemmColumn(source: DG.Column<string>, minCharCount: number):
 {dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
   const dict = new Map<string, WordInfo>();
   const size = source.length;
@@ -206,12 +206,12 @@ export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked:
           stemCash.filters.updateOrAdd({
             type: 'text',
             column: stemCash.colName,
-            value: word,
+            gridNames: [word],
           });
         } else {
           const state = stemCash.filters.getStates(stemCash.colName!, 'text')[0];
           //@ts-ignore
-          state.value = word;
+          state.gridNames.push(word);
           stemCash.filters.updateOrAdd(state as DG.FilterState);
         }
       }, 500);

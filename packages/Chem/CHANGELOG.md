@@ -1,5 +1,17 @@
 # Chem changelog
 
+## 1.8.13 (2024-02-29)
+
+### Bug Fixes
+
+* Warm up substructure search web workers only once when first filter is created on column
+
+## 1.8.12 (2024-02-15)
+
+### Bug Fixes
+
+* Fixed multiple substructure search calls with the same structure (in case multiple layouts are applied to cloned views at once)
+
 ## 1.8.11 (2024-02-08)
 
 ### Bug Fixes

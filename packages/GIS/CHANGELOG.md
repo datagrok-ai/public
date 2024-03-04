@@ -1,5 +1,11 @@
 # GIS changelog
 
+## 1.1.5 (2024-03-01)
+
+### Bug Fixes
+
+* Fixed 'Cannot read properties of null (reading 'hasOwnProperty')' error when closing a viewer.
+
 ## 1.1.4 (2023-07-24)
 
 ### Bug Fixes

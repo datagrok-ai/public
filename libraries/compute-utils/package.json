@@ -1,12 +1,12 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.22.0",
+  "version": "1.24.1",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
-  "description": "",
+  "description": "Datagrok compute utils",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.19",
     "fflate": "^0.7.4",

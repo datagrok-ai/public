@@ -1398,6 +1398,7 @@ export interface IDartApi {
   grok_DockerImage_Get_dockerFullName(x: any): any;
 
   // Generated from ../d4/lib/d4.api.g.dart
+  grok_UsageType_Create(): any;
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;

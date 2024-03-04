@@ -66,6 +66,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 * `Nimotuzumab`
   * models population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147)
   * demonstrates the `output` feature
+* `Bioreactor`
+  * simulates the bioreactor [processes](https://doi.org/10.1074/jbc.RA117.000303)
+  * illustrates the capability of modeling complex processes described by a large number of equations
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
@@ -163,6 +166,6 @@ Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-s
 
 See also
 
-* [Scripting](https://datagrok.ai/help/compute/scripting)
-* [Function annotations](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#parameter-types-and-options)
+* [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
 * [Viewers gallery](https://datagrok.ai/help/visualize/gallery)
+* [Scripting](https://datagrok.ai/help/compute/scripting)

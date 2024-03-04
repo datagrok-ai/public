@@ -1,5 +1,17 @@
 # Bio changelog
 
+## 2.11.36 (2024-02-28)
+
+### Bug fixes
+
+* GROK-15086: Fix GetRegion, Notation: result column does not render
+
+## 2.11.35 (2024-02-26)
+
+### Features
+
+* #2706: Polytool: init rule based generation
+
 ## 2.11.34 (2024-02-20)
 
 ### Bug fixes

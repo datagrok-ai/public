@@ -20,6 +20,7 @@ export enum HINT {
   PKPD = 'Pharmacokinetic-pharmacodynamic model',
   ACID = 'Gluconic acid production model',
   NIM = 'Nimotuzumab disposition model',
+  BIO = 'Bioreactor simulation',
   CLEAR = 'Clear model',
   TO_JS = 'Export model to JavaScript script',
   APP = 'Export model to platform application with user interface',
@@ -43,6 +44,7 @@ export enum TITLE {
   PKPD = 'PK-PD',
   ACID = 'Acid production',
   NIM = 'Nimotuzumab',
+  BIO = 'Bioreactor',
   CLEAR = 'Clear',
   TO_JS = 'js',
   MISC = 'Misc',
@@ -64,7 +66,8 @@ export enum LINK {
   GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
   NIMOTUZUMAB = `${DIF_STUDIO_REL}#nimotuzumab`,
   PKPD = `${DIF_STUDIO_REL}#pk-pd`,
-  ROBERTSON = `${DIF_STUDIO_REL}#robertson-model.md`,  
+  ROBERTSON = `${DIF_STUDIO_REL}#robertson-model`,
+  BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
 };
 
 /** Error messages */

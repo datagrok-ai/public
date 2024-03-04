@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.77",
+  "version": "3.7.90",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1263,6 +1263,15 @@
         },
         "1.17.7": {
           "datagrok-api": "^1.17.9"
+        },
+        "1.17.8": {
+          "datagrok-api": "^1.17.9"
+        },
+        "1.17.9": {
+          "datagrok-api": "^1.17.9"
+        },
+        "1.17.10": {
+          "datagrok-api": "^1.17.9"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1604,6 +1613,9 @@
         },
         "1.0.7": {
           "datagrok-api": "^1.17.3"
+        },
+        "1.0.8": {
+          "datagrok-api": "^1.17.3"
         }
       },
       "description": "Natural Language Processing Package",
@@ -1877,6 +1889,15 @@
           "datagrok-api": "^1.17.0"
         },
         "1.22.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.23.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.24.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.24.1": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -2752,6 +2773,9 @@
         },
         "2.11.34": {
           "datagrok-api": "^1.17.4"
+        },
+        "2.11.35": {
+          "datagrok-api": "^1.17.4"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3236,6 +3260,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
@@ -3588,6 +3615,9 @@
         },
         "1.1.14": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.15": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3781,6 +3811,9 @@
         },
         "2.1.5": {
           "datagrok-api": "^1.15.0"
+        },
+        "2.1.7": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
@@ -3929,6 +3962,12 @@
           "datagrok-api": "^1.16.0"
         },
         "1.0.3": {
+          "datagrok-api": "^1.17.12"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.17.12"
+        },
+        "1.0.5": {
           "datagrok-api": "^1.17.12"
         }
       },

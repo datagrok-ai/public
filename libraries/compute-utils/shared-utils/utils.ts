@@ -31,10 +31,6 @@ export const deepCopy = (call: DG.FuncCall) => {
   return deepClone;
 };
 
-export const boundImportFunction = (func: DG.Func): string | undefined => {
-  return func.options['getRealData'];
-};
-
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
   const viewersRawConfig = prop.options[VIEWER_PATH];
   return (viewersRawConfig !== undefined) ?

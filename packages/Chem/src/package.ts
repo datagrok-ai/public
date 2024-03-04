@@ -1415,8 +1415,8 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //top-menu: Chem | Transform | Convert Notation...
 //name: convertNotation
 //input: dataframe data
-//input: column smiles  {semType: Molecule}
-//input: string targetNotation {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
+//input: column molecules {semType: Molecule}
+//input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //input: bool overwrite = false
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
   targetNotation: DG.chem.Notation, overwrite = false ): Promise<void> {

@@ -130,6 +130,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
         g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
         g.fill();
+        g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+        g.stroke();
       }
     } else {
       const sum = getColumnsSum(cols, row);
@@ -147,6 +149,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
         g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
         g.fill();
+        g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+        g.stroke();
         currentAngle = endAngle;
       }
     }

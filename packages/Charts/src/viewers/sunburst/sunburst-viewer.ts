@@ -39,7 +39,7 @@ export class SunburstViewer extends EChartViewer {
           nodeClick: false,
           label: {
             rotate: 'radial',
-            fontSize: 8,
+            fontSize: 10,
           }
         },
       ],

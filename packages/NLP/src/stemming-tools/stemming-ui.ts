@@ -180,7 +180,7 @@ export function runTextEmdsComputing(): void {
   const umapOptionsForm = ui.input.form(umapOptions, umapProps);
 
   const acc = ui.accordion();
-  const umapPane = acc.addPane('UMAP', () => umapOptionsForm);  
+  const umapPane = acc.addPane('UMAP', () => umapOptionsForm);
   ui.tooltip.bind(umapPane.root, 'Edit UMAP settings');
 
   const dlg = ui.dialog({title: 'Compute embeddings', helpUrl: '/help/explore/text-embeddings'});

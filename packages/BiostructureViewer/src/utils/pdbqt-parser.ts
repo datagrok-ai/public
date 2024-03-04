@@ -220,7 +220,7 @@ export class Pdbqt {
     molCol.setTag(DockingTags.dockingRole, DockingRole.ligand);
     const nameCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'name', len)
       .init((rowI) => this.models[rowI].name);
-    const affinityCol = DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'affinity', len)
+    const affinityCol = DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'binding energy', len)
       .init((rowI) => this.models[rowI].affinity ?? this.models[rowI].vinaResult?.affinity);
     const intermolecularCol = DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'intermolecular (1)', len)
       .init((rowI) => this.models[rowI].intermolecular);

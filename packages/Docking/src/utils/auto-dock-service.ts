@@ -189,8 +189,8 @@ export class AutoDockService implements IAutoDockService {
   async dockLigandColumn(receptor: BiostructureData, ligandCol: DG.Column<string>,
     autodockGpf: string, poseCount: number = 30, poseColName: string = 'poses', debug: boolean = false
   ): Promise<DG.DataFrame> {
-    if (receptor.binary || receptor.ext !== 'pdb')
-      throw new Error(`Unsupported receptor ext '${receptor.ext}' or binary, must be 'pdb' string.`);
+    //if (receptor.binary || receptor.ext !== 'pdb')
+      //throw new Error(`Unsupported receptor ext '${receptor.ext}' or binary, must be 'pdb' string.`);
 
     let ligandPdbCol: DG.Column<string>;
     switch (ligandCol.semType) {

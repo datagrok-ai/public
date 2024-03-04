@@ -968,8 +968,7 @@ export class FileSource {
       file = `${this.root}${this.root != '' ? '/' : ''}${file}`;
       return <string>file;
     } else {
-      file = `${this.root}${this.root != '' ? '/' : ''}${file.path}`;
-      return <string>file;
+      return file.fullPath;
     }
   }
 
