@@ -25,7 +25,8 @@ export enum HINT {
   TO_JS = 'Export model to JavaScript script',
   APP = 'Export model to platform application with user interface',
   OPEN_DS = 'Open model in Diff Studio',
-  SAVE = 'Save changes', 
+  SAVE = 'Save changes',
+  SENS_AN = 'Run sensitivity analysis',
 };
 
 /** UI titles */
@@ -85,6 +86,7 @@ export enum ERROR_MSG {
   OPEN_IN_DIF_STUD = 'To change the model, open it in Diff Studio.',
   FAILED_TO_SAVE = 'Failed to save model to the file',
   INCORRECT_MODEL = 'Incorrect model',
+  SENS_AN_FAILS = 'Sensitivity Analysis fails',
 };
 
 /** Warning dialog lines */

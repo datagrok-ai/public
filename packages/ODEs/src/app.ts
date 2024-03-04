@@ -8,6 +8,7 @@ import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
+import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -148,7 +149,7 @@ export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string): Promise<void> {
     this.createEditorView(content, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
+    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
     this.toChangePath = true;
 
     // routing
@@ -188,8 +189,8 @@ export class DiffStudio {
 
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
-    this.createEditorView(DEMO_TEMPLATE, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
+    this.createEditorView(DEMO_TEMPLATE, true);    
+    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
@@ -222,8 +223,11 @@ export class DiffStudio {
     saveBtn.hidden = true;
     let isSaveBtnAdded = false;
 
+    const ribbonPnls = browseView!.getRibbonPanels();
+    ribbonPnls.push([this.sensAnIcon]);
+    browseView!.setRibbonPanels(ribbonPnls);
+
     const addSaveBtnToRibbon = () => {
-      const ribbonPnls = browseView!.getRibbonPanels();
       ribbonPnls.push([saveBtn]);
       browseView!.setRibbonPanels(ribbonPnls);
       isSaveBtnAdded = true;
@@ -286,6 +290,7 @@ export class DiffStudio {
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
   private exportButton: HTMLElement;
+  private sensAnIcon: HTMLElement;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -347,6 +352,7 @@ export class DiffStudio {
     this.saveIcon = ui.iconFA('save', async () => {await this.saveFn();}, HINT.SAVE_LOC);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
+    this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis()}, HINT.SENS_AN);
   }; // constructor
 
   /** Create model editor */
@@ -535,7 +541,7 @@ export class DiffStudio {
       // try to call computations - correctness check
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
-      //await call.call();
+      await call.call();
 
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
@@ -838,4 +844,23 @@ export class DiffStudio {
 
     this.inputsByCategories = inputsByCategories;
   } // getInputsUI
+
+  /** Run sensitivity analysis */
+  private async runSensitivityAnalysis(): Promise<void> {
+    try {
+      const ivp = getIVP(this.editorView!.state.doc.toString());
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);
+      const call = script.prepare(params);
+      await call.call();
+
+      //@ts-ignore
+      await SensitivityAnalysisView.fromEmpty(script);
+    } catch (err) {
+        grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }    
+  }
 };
