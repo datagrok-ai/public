@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import cloneDeepWith from 'lodash.clonedeepwith';
-import { BehaviorSubject, Observable, merge, of, from, Subject } from 'rxjs';
+import {BehaviorSubject, Observable, merge, of, from, Subject} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import { withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample } from 'rxjs/operators';
+import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample, tap} from 'rxjs/operators';
 
 //
 // State values
@@ -258,9 +258,10 @@ export class NodeItemState<T = any> {
 
   constructor(public conf: StateItemConfiguration, public pipelineState: PipelineState, public notifier?: Observable<true>) {
     this.valueChanges.pipe(
-      this.notifier ? sample(this.notifier) : map(x => x),
-      takeUntil(this.pipelineState.closed)
+      this.notifier ? sample(this.notifier) : map((x) => x),
+      takeUntil(this.pipelineState.closed),
     ).subscribe((x) => {
+      console.log('state', this.conf.id, x);
       this.value.next(x);
     });
   }
@@ -272,7 +273,7 @@ export class NodeItemState<T = any> {
   }
 
   getValue() {
-    this.value.value;
+    return this.value.value;
   }
 
   setValue(val: T, inputState?: InputState) {
@@ -307,13 +308,13 @@ export class NodeState {
 export class PipelineState {
   initialLoading = new BehaviorSubject<boolean>(true);
   runChanging = new BehaviorSubject<boolean>(false);
-  closed = new BehaviorSubject<boolean>(false);
+  closed = new Subject<true>();
 }
 
 export class LinkState {
   public controllerConfig: ControllerConfig;
   public enabled = new BehaviorSubject(true);
-  public currentSource = new BehaviorSubject<Observable<any>>(of());
+  private currentSource = new BehaviorSubject<Observable<any>>(of());
   public valueChanges = this.currentSource.pipe(
     switchMap((source) => source),
   );
@@ -327,13 +328,13 @@ export class LinkState {
   }
 
   public setSources(sources: Observable<any>[]) {
-    this.currentSource.next(merge(sources));
+    this.currentSource.next(merge(...sources));
   }
 
   public getValuesChanges() {
     return this.valueChanges.pipe(
       withLatestFrom(this.enabled, this.pipelineState.initialLoading, this.pipelineState.runChanging),
-      filter(([_val, enabled, initialLoading, runChanging]) => {
+      filter(([, enabled, initialLoading, runChanging]) => {
         if (!enabled)
           return false;
 
@@ -342,6 +343,7 @@ export class LinkState {
 
         return true;
       }),
+      tap(() => console.log('link', this.conf.id)),
       map(() => true),
     );
   }
@@ -399,7 +401,8 @@ export class PipelineRuntime {
 
   getState<T = any>(path: ItemPath): T | void {
     const {state} = this.getNodeState(path)!;
-    return state?.getValue();
+    const val = state?.getValue();
+    return val;
   }
 
   updateState<T>(path: ItemPath, value: T, inputState: InputState = 'user input'): void {
@@ -435,11 +438,12 @@ export class PipelineRuntime {
       const changes = link.controllerConfig.from.map((input) => {
         return this.getNodeState(input)!.state.value;
       });
-      const handler = link.conf.handler ?? (async ({controller}) => {
+      const handler = link.conf.handler ?? (async () => {
+        console.log('default handler', link.conf.id);
         const nLinks = Math.min(link.controllerConfig.from.length, link.controllerConfig.to.length);
         for (let idx = 0; idx < nLinks; idx++) {
-          const state = controller.getState(link.controllerConfig.from[idx]);
-          controller.updateState(link.controllerConfig.to[idx], state);
+          const state = this.getState(link.controllerConfig.from[idx]);
+          this.updateState(link.controllerConfig.to[idx], state);
         }
       });
       link.getValuesChanges().pipe(
@@ -478,7 +482,7 @@ export class PipelineRuntime {
   }
 
   private getNodeState(path: ItemPath) {
-    const nodePath = path.slice(0, path.length - 2);
+    const nodePath = path.slice(0, path.length - 1);
     const stateName = path[path.length - 1];
     const k = pathToKey(nodePath);
     const node = this.nodes.get(k);
@@ -652,6 +656,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   override build() {
     super.build();
     this.rt!.wireView();
+    this.rt!.wireLinks();
     this.rt!.pipelineState.initialLoading.next(false);
     this.execHooks('onViewReady');
   }

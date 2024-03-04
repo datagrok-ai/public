@@ -9,6 +9,7 @@ import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult}
   from '@datagrok-libraries/compute-utils/shared-utils/validation';
+import { CompositionPipeline } from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
 
 export const _package = new DG.Package();
 
@@ -220,4 +221,30 @@ export function TestFn5(a: number, b: number, c: number, d: number, e: number) {
 //output: double res
 export function TestFn6(a: number, b: number, c: number, d: number, e: number) {
   return a * b * c * d * e;
+}
+
+
+//name: TestCompositionPipeline1
+export async function TestCompositionPipeline1() {
+  const pipeline = new CompositionPipeline({
+    id: 'testPipeline',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['step2', 'a'],
+    }]
+  });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
 }
