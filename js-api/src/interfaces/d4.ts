@@ -1227,6 +1227,9 @@ export interface ISummaryLookSettings {
   /// Color aggregation type.
   colorAggrType: string;
 
+  /// Whether to apply color coding to the background or to the text.
+  applyTo: string;
+
   /// Custom color scheme for the color-coding.
   colorSchemes: Array<Array<number>>;
 
