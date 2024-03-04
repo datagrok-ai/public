@@ -1,5 +1,12 @@
 # Compute changelog
 
+## 1.25.0 (2024-03-04)
+
+### Features
+
+- RFV: Now supports readme files via `meta.readme` tag
+- Wizard: Now support help panel state saving
+
 ## 1.24.1 (2024-03-02)
 
 ### Features
