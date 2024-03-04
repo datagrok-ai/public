@@ -72,21 +72,9 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import { drawMoleculeLabels } from './rendering/molecule-label';
 import { getMCS } from './utils/most-common-subs';
+import { ChemSettingsEditor, loadFpSettings, loadSketcherSettings} from './chem-settings/chem-settings-editor';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
-const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
-  OpenChemLib: 'OpenChemLib',
-  Ketcher: 'Ketcher',
-  Marvin: 'Marvin',
-  ChemDraw: 'ChemDraw',
-};
-
-const PREVIOUS_SKETCHER_NAMES: {[key: string]: string} = {
-  'Open Chem Sketcher': 'OpenChemLib',
-  'ketcherSketcher': 'Ketcher',
-  'Marvin JS': 'Marvin',
-  'Chem Draw': 'ChemDraw',
-};
 
 /**
  * Usage:
@@ -115,24 +103,16 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-  let storedSketcherType = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
-    storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
-  if (!storedSketcherType && _properties.Sketcher)
-    storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher];
-  const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']})
-    .find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
-  if (sketcherFunc)
-    DG.chem.currentSketcherType = sketcherFunc.friendlyName;
-  else {
-    if (!!storedSketcherType) {
-      grok.shell.warning(
-        `Package with ${storedSketcherType} function is not installed.Switching to ${DG.DEFAULT_SKETCHER}.`);
-    }
-
-    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
-  }
+  await loadSketcherSettings();
   _renderers = new Map();
+  await loadFpSettings();
+}
+
+//output: widget kpi
+//tags: packageSettingsEditor
+//input: list propList
+export function chemSettingsEditor(propList: DG.Property[]): DG.Widget {
+  return new ChemSettingsEditor(propList);
 }
 
 //tags: autostart

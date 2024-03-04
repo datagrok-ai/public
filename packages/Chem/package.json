@@ -17,24 +17,62 @@
     {
       "name": "Renderer",
       "propertyType": "string",
-      "choices": [
-        "RDKit",
-        "OpenChemLib"
-      ],
       "defaultValue": "RDKit",
       "nullable": false
     },
     {
       "name": "Sketcher",
       "propertyType": "string",
-      "choices": [
-        "OpenChemLib",
-        "Ketcher",
-        "Marvin",
-        "ChemDraw"
-      ],
-      "defaultValue": "",
-      "nullable": true
+      "defaultValue": "OpenChemLib",
+      "nullable": false
+    },
+    {
+      "name": "Morgan_radius",
+      "propertyType": "int",
+      "defaultValue": 2,
+      "nullable": false
+    },
+    {
+      "name": "Morgan_numBits",
+      "propertyType": "int",
+      "defaultValue": 2048,
+      "nullable": false
+    },
+    {
+      "name": "AtomPair_minLength",
+      "propertyType": "int",
+      "defaultValue": 1,
+      "nullable": false
+    },
+    {
+      "name": "AtomPair_maxLength",
+      "propertyType": "int",
+      "defaultValue": 30,
+      "nullable": false
+    },
+    {
+      "name": "AtomPair_numBits",
+      "propertyType": "int",
+      "defaultValue": 2048,
+      "nullable": false
+    },
+    {
+      "name": "RDKit_maxPath",
+      "propertyType": "int",
+      "defaultValue": 7,
+      "nullable": false
+    },
+    {
+      "name": "RDKit_numBits",
+      "propertyType": "int",
+      "defaultValue": 2048,
+      "nullable": false
+    },
+    {
+      "name": "TopologicalTorsion_numBits",
+      "propertyType": "int",
+      "defaultValue": 2048,
+      "nullable": false
     }
   ],
   "dependencies": {

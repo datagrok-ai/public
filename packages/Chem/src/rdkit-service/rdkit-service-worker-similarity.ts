@@ -27,14 +27,12 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
    * In case it is passed to function RDMols will be created on the fly.
    */
 
-  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): Promise<IFpResult> {
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean, fpParams?: string): Promise<IFpResult> {
     if (!molecules || this._requestTerminated)
       return {fps: [], smiles: null};
     let addedToCache = false;
     const fpLength = molecules.length;
     const fps = new Array<Uint8Array | null>(fpLength).fill(null);
-    const morganFpParams = fingerprintType === Fingerprint.Morgan ?
-      JSON.stringify({radius: this._fpRadius, nBits: this._fpLength}) : null;
     const canonicalSmilesArr = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
     for (let i = 0; i < fpLength; ++i) {
 
@@ -63,19 +61,19 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
               break;
             case Fingerprint.Morgan:
               if (!rdMol.is_qmol)
-                fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
+                fps[i] = rdMol.get_morgan_fp_as_uint8array(fpParams);
               break;
             case Fingerprint.AtomPair:
-              fps[i] = rdMol.get_atom_pair_fp_as_uint8array();
+              fps[i] = rdMol.get_atom_pair_fp_as_uint8array(fpParams);
               break;
             case Fingerprint.MACCS:
               fps[i] = rdMol.get_maccs_fp_as_uint8array();
               break;
             case Fingerprint.RDKit:
-              fps[i] = rdMol.get_rdkit_fp_as_uint8array();
+              fps[i] = rdMol.get_rdkit_fp_as_uint8array(fpParams);
               break;
             case Fingerprint.TopologicalTorsion:
-              fps[i] = rdMol.get_topological_torsion_fp_as_uint8array();
+              fps[i] = rdMol.get_topological_torsion_fp_as_uint8array(fpParams);
               break;
             default:
               rdMol?.delete();
