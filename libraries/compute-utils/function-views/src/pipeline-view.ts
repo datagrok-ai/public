@@ -609,6 +609,11 @@ export class PipelineView extends FunctionView {
 
       this.setRibbonPanels(newRibbonPanels);
 
+      if (currentStep && this.helpFiles[currentStep.func.nqName]) {
+        if (grok.shell.windows.help.visible)
+          this.showHelpWithDelay(currentStep);
+      }
+
       return newRibbonPanels;
     };
 

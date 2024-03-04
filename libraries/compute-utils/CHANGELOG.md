@@ -1,10 +1,17 @@
 # compute-utils changelog
 
-## 1.24.2 (2024-03-04)
+## 1.25.1 (2024-03-04)
 
 ### Bug fixes
 
 - Sensitivity Analysis: fixed input form styles
+
+## 1.25.0 (2024-03-04)
+
+### Features
+
+- RFV: Now supports readme files via `meta.readme` tag
+- Wizard: Now support help panel state saving 
 
 ## 1.24.1 (2024-03-02)
 
