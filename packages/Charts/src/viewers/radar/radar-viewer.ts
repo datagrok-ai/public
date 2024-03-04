@@ -32,9 +32,11 @@ export class RadarViewer extends DG.JsViewer {
   backgroundMaxColor: number;
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
+  title: string;
 
   constructor() {
     super();
+    this.title = this.string('title', 'Radar');
     this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
