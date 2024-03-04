@@ -6,7 +6,7 @@
 
 * GROK-15086: Fix GetRegion, Notation: doesn't work
 
-## 5.39.27 (deprecated)
+## 5.39.27 (2024-02-20)
 
 ### Bug fixes
 
