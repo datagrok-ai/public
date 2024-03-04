@@ -694,6 +694,7 @@ export interface IDartApi {
   grok_GridColumn_Set_Visible(gc: any, x: any): any;
   grok_GridColumn_Get_CategoryColors(gc: any): any;
   grok_GridColumn_Set_CategoryColors(gc: any, x: any): any;
+  grok_GridColumn_CheckEditable(gc: any): any;
   grok_GridColumn_Get_Editable(gc: any): any;
   grok_GridColumn_Set_Editable(gc: any, x: any): any;
   grok_GridColumn_Get_Selected(gc: any): any;
