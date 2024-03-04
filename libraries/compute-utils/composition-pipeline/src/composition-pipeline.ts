@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable, merge, of, from} from 'rxjs';
+import { BehaviorSubject, Observable, merge, of, from, Subject } from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take} from 'rxjs/operators';
+import { withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample } from 'rxjs/operators';
 
 //
 // State values
@@ -246,18 +246,21 @@ export type InputState = 'disabled' | 'restricted' | 'user input';
 
 export class NodeItemState<T = any> {
   public currentSource = new BehaviorSubject<Observable<T>>(of());
-  public valueChanges = this.currentSource.pipe(
+  private valueChanges = this.currentSource.pipe(
     switchMap((source) => source),
   );
 
-  private value = new BehaviorSubject<T | undefined>(undefined);
+  public value = new BehaviorSubject<T | undefined>(undefined);
 
   private setter = (x: T, inputState?: InputState) => {
     this.currentSource.next(of(x));
   };
 
-  constructor(public conf: StateItemConfiguration, public pipelineState: PipelineState) {
-    this.valueChanges.pipe(takeUntil(this.pipelineState.closed)).subscribe((x) => {
+  constructor(public conf: StateItemConfiguration, public pipelineState: PipelineState, public notifier?: Observable<true>) {
+    this.valueChanges.pipe(
+      this.notifier ? sample(this.notifier) : map(x => x),
+      takeUntil(this.pipelineState.closed)
+    ).subscribe((x) => {
       this.value.next(x);
     });
   }
@@ -280,6 +283,7 @@ export class NodeItemState<T = any> {
 export class NodeState {
   public controllerConfig?: ControllerConfig;
   public states = new Map<ItemName, NodeItemState>();
+  public notifier = new Subject<true>();
 
   constructor(
     public conf: NodeConf,
@@ -291,7 +295,7 @@ export class NodeState {
     if (type === 'step' || type === 'popup') {
       const states = (conf as PipelineStepConfiguration | PipelinePopupConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState));
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState, type === 'popup' ? this.notifier : undefined));
     }
     if (type === 'action') {
       const link = conf as ActionConfiguraion;
@@ -429,7 +433,7 @@ export class PipelineRuntime {
   wireLinks() {
     for (const [, link] of this.links) {
       const changes = link.controllerConfig.from.map((input) => {
-        return this.getNodeState(input)!.state.valueChanges;
+        return this.getNodeState(input)!.state.value;
       });
       const handler = link.conf.handler ?? (async ({controller}) => {
         const nLinks = Math.min(link.controllerConfig.from.length, link.controllerConfig.to.length);
@@ -801,10 +805,13 @@ export class CompositionPipeline {
                   grok.shell.error(`Popup ${nqName} for button ${buttonName} not found`);
                   return;
                 }
-                const confirmed = await new Promise((resolve, _reject) => {
+                await new Promise((resolve, _reject) => {
                   ui.dialog(buttonName)
                     .add(view.root)
-                    .onOK(() => resolve(true))
+                    .onOK(() => {
+                      node.notifier.next(true);
+                      resolve(true);
+                    })
                     .onCancel(() => resolve(false))
                     .showModal(true);
                 });
@@ -944,7 +951,6 @@ export class CompositionPipeline {
   private processSteps(data: PipelineStepConfiguration[], pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const nData: PipelineStepConfiguration[] = data.flatMap((conf) => {
       const pconf = this.processNodeConfig<PipelineStepConfiguration>(conf, pipelinePath, pipelinePath, toRemove, 'step');
-      // TODO: fix prev step suffix
       const addConfs = (toAdd.get(conf.id)?.step ?? [])
         .map((step) => this.processNodeConfig(step, pipelinePath, pipelinePath, toRemove, 'step'))
         .filter((x) => x) as PipelineStepConfiguration[];
