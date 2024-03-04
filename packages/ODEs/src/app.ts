@@ -535,7 +535,7 @@ export class DiffStudio {
       // try to call computations - correctness check
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
-      await call.call();
+      //await call.call();
 
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);

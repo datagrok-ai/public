@@ -78,13 +78,13 @@ ${CONTROL_EXPR.ARG}: t
 ${CONTROL_EXPR.INITS}:  
   P = 4.276 {units: ml/ml; caption: ethanol, P; category: Initials; min: 3; max: 6} [Concentration of ethanol]
   S = 0.3185 {units: mg/ml; caption: glucose, S; category: Initials; min: 0.1; max: 0.5} [Concentration of glucose]
-  X = 0.092 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
+  X = 9.2e-2 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
 
 ${CONTROL_EXPR.PARAMS}:
   r = 1.3455 {units: mg/ml; category: Parameters; min: 1; max: 2} [The growth rate of ethanol]
-  q = 0.011129 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
-  V = 0.087 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
-  K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
+  q = 1.1129e-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
+  V = 8.7e-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
+  K = 6.28e-2 {category: Parameters} [Michaelis-Menten constant]
   
 ${CONTROL_EXPR.TOL}: 1e-7`;
 
@@ -118,7 +118,7 @@ ${CONTROL_EXPR.INITS}:
   eff = 0.2 {category: Initial values} [Effective compartment rate]
 
 ${CONTROL_EXPR.PARAMS}:  
-  dose = 10000 {category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
+  dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
   KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
   CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
   V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
@@ -174,10 +174,10 @@ ${CONTROL_EXPR.PARAMS}:
   gamma = 2.12 {category: Parameters} [Monod type model parameter]
   lambda = 0.232 {units: 1/h; category: Parameters} [Monod type model parameter]
   delta = 0.278 {category: Parameters} [Monod type model parameter]
-  phi = 0.00487 {units: 1/h; category: Parameters} [Monod type model parameter]
-  Ks = 130.9 {units: g/L; category: Parameters} [Monod type model parameter]
-  Ko = 0.000363 {units: g/L; category: Parameters} [Monod type model parameter]
-  Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
+  phi = 4.87e-3 {units: 1/h; category: Parameters} [Monod type model parameter]
+  Ks = 1.309e2 {units: g/L; category: Parameters} [Monod type model parameter]
+  Ko = 3.63e-4 {units: g/L; category: Parameters} [Monod type model parameter]
+  Kla = 1.7e-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
 ${CONTROL_EXPR.TOL}: 1e-9`;
@@ -211,16 +211,16 @@ ${CONTROL_EXPR.OUTPUT}:
   A2 {caption: Periferal}
 
 ${CONTROL_EXPR.PARAMS}:
-  CL = 0.00964 {category: Parameters; min: 0.005; max: 0.015} [Non-specific clearance]
+  CL = 9.64e-3 {category: Parameters; min: 0.005; max: 0.015} [Non-specific clearance]
   V1 = 2.63 {category: Parameters; min: 0.7; max: 3} [Apparent volume of distribution of the central compartment]
-  Q = 0.0288 {category: Parameters; min: 0.015; max: 0.035} [Distribution clearance of free nimotuzumab between the central and peripheral compartment]
-  V2 = 0.00992 {category: Parameters; min: 0.0067; max: 0.0265} [Apparent volume of distribution of the peripheral compartment]
+  Q = 2.88e-2 {category: Parameters; min: 0.015; max: 0.035} [Distribution clearance of free nimotuzumab between the central and peripheral compartment]
+  V2 = 9.92e-3 {category: Parameters; min: 0.0067; max: 0.0265} [Apparent volume of distribution of the peripheral compartment]
   Kss = 15.5 {category: Parameters; min: 10; max: 45} [Quasi steady state constant for the EGFR]
-  kint = 0.01 {category: Parameters; min: 0.01; max: 0.05} [Internalization rate for nimotuzumab-EGFR]
-  Rtot = 0.0105 {category: Parameters; min: 0.007; max: 0.032} [EGFR in the central compartment]
+  kint = 1e-2 {category: Parameters; min: 0.01; max: 0.05} [Internalization rate for nimotuzumab-EGFR]
+  Rtot = 1.05e-2 {category: Parameters; min: 0.007; max: 0.032} [EGFR in the central compartment]
   Rtotp = 956 {category: Parameters; min: 120; max: 3500} [EGFR in the peripheral compartment]
-  Kin = 0.0133 {category: Parameters; min: 0.01; max: 0.05} [Zero-order synthesis rate constant]
-  Kout = 0.0133 {category: Parameters; min: 0.001; max: 0.02} [First-order elimination rate constant]
+  Kin = 1.33e-2 {category: Parameters; min: 0.01; max: 0.05} [Zero-order synthesis rate constant]
+  Kout = 1.33e-2 {category: Parameters; min: 0.001; max: 0.02} [First-order elimination rate constant]
   S50 = 8.57 {category: Parameters; min: 5; max: 12} [Concentration of free nimotuzumab in the central compartment that achieves the half of Smax]
   Smax = 3.18 {category: Parameters; min: 1; max: 5} [Maximal effect of the stimulation]
   gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]
@@ -336,22 +336,22 @@ ${CONTROL_EXPR.CONSTS}:
   diam = 6
   power = 2.1
   pH = 7.4
-  k1red =  0.05604
-  k1ox = 0.0108
+  k1red =  5.604e-2
+  k1ox = 1.08e-2
   k2Fd =  1.35
-  k2Fa =  110400000
-  k2Kd =  0.04038
-  k2Ka =  120000000
-  k3FKa =  181200000
-  k3FKd =  0.01188
-  k4ox =  0.0108
-  k4red =  0.05604
-  ktox = 0.005
+  k2Fa =  1.104e8
+  k2Kd =  4.038e-2
+  k2Ka =  1.2e8
+  k3FKa =  1.812e8
+  k3FKd =  1.188e-2
+  k4ox =  1.08e-2
+  k4red =  5.604e-2
+  ktox = 5e-3
   krcyst = 0
   pO2sat = 100
   pKa2MEA = 8.18
   H = 1.072069378
-  R = 0.082
+  R = 8.2e-2
 
 ${CONTROL_EXPR.PARAMS}:
   qin = 1 {units: L/min; caption: Gas; category: Parameters; min: 0.5; max: 1.5} [Gas to headspace]
