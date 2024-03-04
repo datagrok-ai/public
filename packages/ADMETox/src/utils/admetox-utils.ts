@@ -2,12 +2,14 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { properties, models } from './const';
+import { properties, models, template } from './const';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import $ from 'cash-dom';
 import '../css/admetox.css';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
+let propertiesNew: { [s: string]: unknown; } | ArrayLike<unknown>;
 
 export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
@@ -92,25 +94,28 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[]) {
 
   for (const columnName of columnNames) {
     const col = tv.grid.col(columnName);
-    const model = Object.values(properties)
+    /*const model = Object.values(propertiesNew)
       .flatMap((category: any) => category.models)
-      .find((m: any) => columnName.includes(m.name));
+      .find((m: any) => columnName.includes(m.name));*/
+    
+    //@ts-ignore
+    const model = template.subgroup.models.find(model => columnName.includes(model.name));
 
-    if (!model.coloring || model.coloring === "") continue;
+    //if (!model!.coloring || model.coloring === "") continue;
 
     if (!col) continue;
 
     col.isTextColorCoded = true;
-    if (model.coloring.type === 'Linear') {
-      const min = model.coloring.min;
-      const max = model.coloring.max;
-      const colors = model.coloring.colors;
+    if (model!.coloring!.type === 'Linear') {
+      const min = model!.coloring!.min;
+      const max = model!.coloring!.max;
+      const colors = model!.coloring!.colors;
       col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
       col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = colors;
       col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = min;
       col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = max;
-    } else if (model.coloring.type === 'Conditional') {
-      const conditionalColors = Object.entries(model.coloring).slice(1);
+    } else if (model!.coloring!.type === 'Conditional') {
+      const conditionalColors = Object.entries(model!.coloring!).slice(1);
       const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
       col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
       col.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = conditionalColoring;
@@ -135,27 +140,68 @@ export function getQueryParams(): string {
     .join(',');
 }
 
+function normalizeValue(value: number, minValue: number, maxValue: number): number {
+  return (value - minValue) / (maxValue - minValue);
+}
+
+function minMaxNormalization(value: number, oldMin: number, oldMax: number, newMin: number = 0, newMax: number = 10): number {
+  return ((value - oldMin) * (newMax - newMin)) / (oldMax - oldMin) + newMin;
+}
+
+function addNormalizedColumns(table: DG.DataFrame, columnNames: string[]) {
+  const tv = grok.shell.tableView(table.name);
+  for (let i = 0; i < columnNames.length; ++i) {
+    const column = table.columns.byName(columnNames[i]);
+    const name = table.columns.getUnusedName(columnNames[i]);
+    const savedColumnName = '~' + name;
+    columnNames[i] = savedColumnName;
+    const newCol = table.columns.getOrCreate(savedColumnName, DG.TYPE.FLOAT, table.rowCount);
+    newCol.init((i) => {
+      const model = Object.values(propertiesNew).flatMap((category: any) => category.models).find((m: any) => column.name.includes(m.name));
+      const normalized = normalizeValue(column.get(i), column.stats.min, column.stats.max);
+      if (model.preference === 'higher')
+        return normalized;
+      return 1 - normalized;
+    });
+    newCol.setTag(DG.Tags.IncludeInCsvExport, 'false');
+    newCol.setTag(DG.Tags.IncludeInBinaryExport, 'false');
+  }
+  const sparkline = tv.grid.columns.add({cellType: 'sparkline'});
+  sparkline.settings = {columnNames: columnNames};
+  const radar = tv.grid.columns.add({cellType: 'radar'});
+  radar.settings = {columnNames: columnNames};
+  const bar = tv.grid.columns.add({cellType: 'barchart'});
+  bar.settings = {columnNames: columnNames};
+  const pie = tv.grid.columns.add({cellType: 'piechart'});
+  pie.settings = {columnNames: columnNames};
+}
+
 function addCustomTooltip(table: string) {
   const view = grok.shell.tableView(table);
   view.grid.onCellTooltip(function (cell, x, y) {
     if (cell.isTableCell) {
       const subgroup = cell.tableColumn!.name;
       const value = cell.cell.value;
-      const model = Object.values(properties).flatMap((category: any) => category.models).find((m: any) => m.name === subgroup);
+      //@ts-ignore
+      const model = template.subgroup.models.find(model => subgroup.includes(model.name));
+      //const model = Object.values(propertiesNew).flatMap((category: any) => category.models).find((m: any) => subgroup.includes(m.name));
       if (!model) return;
-      const interpretation = model.interpretation;
+      const interpretation = model;
   
       let tooltipContent = '';
-      if (interpretation && interpretation.range) {
-        for (let rangeKey in interpretation.range) {
-          const rangeParts = rangeKey.split('_');
-          const rangeType = rangeParts[0];
-          const rangeStart = parseFloat(rangeParts[1]);
+      //@ts-ignore
+      if (interpretation && interpretation.ranges) {
+        //@ts-ignore
+        for (let rangeKey in interpretation.ranges) {
+          const rangeParts = rangeKey.split(' ');
+          const rangeType = rangeParts.includes('-') ? '-' : rangeParts[0];
+          const rangeStart = rangeParts.includes('-') ? parseFloat(rangeParts[0]) : parseFloat(rangeParts[1]);
           const rangeEnd = parseFloat(rangeParts[2]);
-          if ((rangeType === 'to' && value >= rangeStart && value <= rangeEnd) ||
-              (rangeType === 'below' && value < rangeStart) ||
-              (rangeType === 'above' && value > rangeStart)) {
-            tooltipContent += `${interpretation.range[rangeKey]}\n`;
+          if ((rangeType === '-' && value >= rangeStart && value <= rangeEnd) ||
+              (rangeType === '<' && value < rangeStart) ||
+              (rangeType === '>' && value > rangeStart)) {
+                //@ts-ignore
+            tooltipContent += `${interpretation.ranges[rangeKey as keyof typeof interpretation.ranges]}\n`;
             break;
           }
         }
@@ -199,13 +245,17 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
   }
 
   addColorCoding(viewTable, updatedModelNames);
+  //addNormalizedColumns(viewTable, updatedModelNames);
   addCustomTooltip(viewTable.name);
 }
 
 export function getModelUnits(modelName: string): string {
-  const modelCategories = Object.values(properties);
-  const model = modelCategories.flatMap((category: any) => category.models).find((m: any) => m.name === modelName);
-  return model.units;
+  //@ts-ignore
+  //const modelCategories = Object.values(propertiesNew['subgroup']);
+  //const model = modelCategories.flatMap((category: any) => category.models).find((m: any) => m.name === modelName);
+  const model = template.subgroup.models.find(model => modelName.includes(model.name));
+  //@ts-ignore
+  return model!.units!;
 };
 
 export function getModelsSingle(smiles: string): DG.Accordion {
@@ -254,7 +304,66 @@ export function getModelsSingle(smiles: string): DG.Accordion {
 }
 
 async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: any): Promise<void> {
-  const tree = ui.tree();
+  //const jsonData = await _package.files.readAsText('template.json');
+  const items = (await grok.dapi.files.list('System:AppData/Admetox/templates')).map((file) => file.fileName.split('.')[0]);
+  const templates = ui.choiceInput('Template', items[0], items);
+  let templateCopy = template; 
+  const host = ui.div([]);
+  const tabsV = ui.tabControl(null, true);
+  templateCopy.subgroup.forEach((subgroup) => {
+    subgroup.models.forEach((model) => {
+      const inputs = ui.divV([]);
+      inputs.classList.add('admetox-input-form');
+      const properties = model.properties;
+      properties.map((p) => {
+        let object: any = {};
+        object[p.name] = p.defaultValue;
+        const prop = DG.Property.fromOptions(p);
+        const input = DG.InputBase.forProperty(prop, object);
+        input.enabled = p.enable;
+        inputs.appendChild(input.root);
+      });
+      tabsV.addPane(model.name, () => inputs);
+    });
+  });
+
+  tabsV.panes.forEach((pane)=> {
+    const functionCheck = ui.boolInput('', false//, (v:boolean) => {
+     // calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
+      /*if (!v)
+        $(pane.content).find('input').attr('disabled', 'true');
+      else
+        $(pane.content).find('input').removeAttr('disabled');*/
+    /*}*/);
+    pane.header.appendChild(functionCheck.root);
+    pane.header.classList.add('admetox-pane-header');
+  });
+  /*templateCopy.subgroup.models.forEach((model) => {
+    const inputs = ui.divV([]);
+    Object.entries(model.ranges).map(([range, meaning]) => {
+      const input = ui.divH([
+        ui.stringInput('', range, (value: string) => {
+          const newRanges = { ...model.ranges }; // Create a shallow copy of the ranges object
+          const meaningValue = newRanges[range as keyof typeof model.ranges]; // Store the meaning value of the old range
+          delete newRanges[range as keyof typeof model.ranges]; // Delete the old range
+          newRanges[value as keyof typeof model.ranges] = meaningValue; // Add the new range with the old meaning value
+          model.ranges = newRanges;
+          range = value;
+        }).root,
+        ui.stringInput('', meaning, (value: string) => {
+          const r = range as keyof typeof model.ranges;
+          model.ranges[r] = value;
+        }).root
+      ]);
+      inputs.appendChild(input);
+    });
+    inputs.appendChild(ui.boolInput('Desirable', true).root);
+    tabsV.addPane(model.name, () => inputs);
+  });*/
+  host.appendChild(tabsV.root);
+
+  
+  /*const tree = ui.tree();
   tree.root.classList.add('admetox-dialog-tree');
 
   const groups: { [_: string]: any } = {};
@@ -330,28 +439,33 @@ async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: an
         groups[history[key]].checked = true;
     }
     countLabel.textContent = `${keys.length} checked`;
-  }
+  }*/
   
   let smilesCol = viewTable.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const molInput = ui.columnInput('Molecules', viewTable, smilesCol, async (col: DG.Column) => {
+  /*const molInput = ui.columnInput('Molecules', viewTable, smilesCol, async (col: DG.Column) => {
     smilesCol = col;
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
   molInput.root.classList.add('admetox-mol-input');
   const boolInput = ui.boolInput('Probability', false);
-  boolInput.root.classList.add('admetox-bool-input');
+  boolInput.root.classList.add('admetox-bool-input');*/
 
   const dlg = ui.dialog('ADME/Tox');
   dlg
-    .add(molInput)
-    .add(ui.divH([selectAll, selectNone, countLabel]))
-    .add(tree.root)
-    .add(boolInput)
-    .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name']), boolInput.value, smilesCol))
+    .add(templates)
+    .add(host)
+    //.add(molInput)
+    //.add(ui.divH([selectAll, selectNone, countLabel]))
+    //.add(tree.root)
+    //.add(boolInput)
+    .onOK(() => {
+      propertiesNew = templateCopy;
+      onOK(['Caco2','PPBR'], false, smilesCol);
+    })
     .show()
-    .history(
-      () => saveInputHistory(),
-      (x) => loadInputHistory(x) 
-    );
+    //.history(
+      //() => saveInputHistory(),
+      //(x) => loadInputHistory(x) 
+    //);
 }
 
 async function getSelected() : Promise<any> {

@@ -2,84 +2,6 @@ import * as DG from 'datagrok-api/dg';
 
 export const properties: any = {
   "Absorption": {
-    "name": "Absorption",
-    "description": "Models to predict absorbtion",
-    "models": [
-    {
-      "skip": true,
-      "specific": false,
-      "units": "-",
-      "interpretation": "",
-      "coloring": "",
-      "name": "Pgp-Inhibitor"
-    },
-		{
-      "skip": false,
-      "specific": false,
-      "units": "-",
-      "interpretation": "Lower is better",
-      "coloring": {
-        "type": "Linear",
-        "min": "0",
-        "max": "1",
-        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
-      },
-      "name": "Pgp-Substrate"
-    },
-    {
-      "skip": true,
-      "specific": true,
-      "units": "-",
-      "interpretation": "",
-      "coloring": "",
-      "name": "HIA"
-    },
-    {
-      "skip": false,
-      "specific": false,
-      "units": "cm/s",
-      "interpretation": {
-        "range": {
-          "below_-6": "Bad",
-          "to_-6_-5.5": "Intermediate",
-          "above_-5.5": "Good",
-        }
-      },
-      "coloring": {
-        "type": "Linear",
-        "min": "-6",
-        "max": "-5.5",
-        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
-      },
-      "name": "Caco2"
-    },
-    {
-      "skip": false,
-      "specific": false,
-      "units": "log-ratio",
-      "interpretation": {
-        "range": {
-          "below_0": "Bad",
-          "to_2_3": "Ideal",
-          "above_5": "Bad",
-        }
-      },
-      "coloring": "",
-      "name": "Lipophilicity"
-    },
-    {
-      "skip": false,
-      "specific": true,
-      "units": "log mol/L",
-      "interpretation": "The higher the better",
-      "coloring": {
-        "type": "Linear",
-        "min": "-4.5",
-        "max": "-1",
-        "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
-      },
-      "name": "Solubility"
-    }]
   },
   "Distribution": {
     "name": "Distribution",
@@ -102,6 +24,7 @@ export const properties: any = {
         "40-90": `${DG.Color.toHtml(DG.Color.maroon)}`,
         "< 40": `${DG.Color.toHtml(DG.Color.yellow)}`,
       },
+      "preference": "higher",
       "name": "PPBR"
     },
     {
@@ -121,6 +44,7 @@ export const properties: any = {
         "1-2": `${DG.Color.toHtml(DG.Color.maroon)}`,
         "< 1": `${DG.Color.toHtml(DG.Color.yellow)}`,
       },
+      "preference": "higher",
       "name": "VDss"
     },
     {
@@ -129,6 +53,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "",
       "coloring": "",
+      "preference": "",
       "name": "BBB"
     }]
   },
@@ -142,6 +67,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP1A2-Inhibitor"
     },
     {
@@ -150,6 +76,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP1A2-Substrate"
     },
     {
@@ -158,6 +85,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP3A4-Inhibitor"
     },
     {
@@ -166,6 +94,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP3A4-Substrate"
     },
     {
@@ -174,6 +103,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP2C19-Inhibitor"
     },
     {
@@ -182,6 +112,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP2C19-Substrate"
     },
     {
@@ -190,6 +121,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP2C9-Inhibitor"
     },
     {
@@ -198,6 +130,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP2C9-Substrate"
     },
     {
@@ -206,6 +139,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP2D6-Inhibitor"
     },
     {
@@ -214,6 +148,7 @@ export const properties: any = {
       "units": "-",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "CYP2D6-Substrate"
     }]
   },
@@ -238,6 +173,7 @@ export const properties: any = {
         "max": "100",
         "colors": `[${DG.Color.green}, ${DG.Color.red}]`,
       },
+      "preference": "higher",
       "name": "CL-Hepa"
     },
     {
@@ -257,6 +193,7 @@ export const properties: any = {
         "max": "100",
         "colors": `[${DG.Color.green}, ${DG.Color.red}]`,
       },
+      "preference": "higher",
       "name": "CL-Micro"
     },
     {
@@ -265,6 +202,7 @@ export const properties: any = {
       "units": "hours",
       "interpretation": "No good or bad values",
       "coloring": "",
+      "preference": "higher",
       "name": "Half-Life"
     }]
   },
@@ -326,22 +264,376 @@ export const properties: any = {
 }
 
 export const models: any = {
-  "Pgp-Inhibitor": "A probability of being an inhibitor of P-glycoprotein which is responsible for cell membrane transport. Inhibiting Pgp leads to low cell permeability of substance.",
-  "Pgp-Substrate": "A probability of being a substrate of P-glycoprotein which is responsible for cell membrane permeability. Compounds with high molecular mass and a large number of polar atoms are the most probable substrates. Binding the substrate leads to low cell permeability of substance.",
-  "Caco2": "It is a rate of compound flux across polarized human colon carcinoma Caco-2 cells layers, cm/s (VALIDATE). High values indicate good permeability characteristics.",
-  "Lipophilicity": "This is a charachteristic of compound quatifying the distribution between lipophilic and hydrophiliv environments. High lipophilicity values  are good for the most of memranes permeability, though low values are related to achievment of therapeutical plasma concentrations. This characterestic is specific to analyzed problem.",
-  "Solubility": "Indicates the fraction of compound that can be solved in water solution, e.g. plasma. This characterestic is specific to analyzed problem.",
-  "PPBR": "This value stands for plasma protein binding. PPB strongly influences drug behavior as only free drug is able to penetrate mebranes. Low values indicate good permeability characteristics.",
-  "VDss": "Volume of distribution (L) is a pharmacokinetic parameter representing the ability of drug to remain in plasma or redistribute to other tissues. Hih VD has a propensity to leave the plasma to other tissues, low VD indicates the ability of drug to achieve desired concentration at lower doses.",
-  "CYP1A2-Inhibitor": "A probability of being an inhibitor of cytochrome CYP1A2 which catalyzes drug metabolism. Inhibiting CYP1A2 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CYP3A4-Inhibitor": "A probability of being an inhibitor of cytochrome CYP3A4 which catalyzes drug metabolism. Inhibiting CYP3A4 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CYP3A4-Substrate": "A probability of being an inhibitor of substrate CYP3A4 which catalyzes drug metabolism. Binding CYP3A4 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.", 
-  "CYP2C19-Inhibitor": "A probability of being an inhibitor of cytochrome CYP2C19 which catalyzes drug metabolism. Inhibiting CYP2C19 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CYP2C9-Inhibitor": "A probability of being an inhibitor of cytochrome CYP2C9 which catalyzes drug metabolism. Inhibiting CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CYP2C9-Substrate": "A probability of being an inhibitor of substrate CYP2C9 which catalyzes drug metabolism. Binding CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CYP2D6-Inhibitor": "A probability of being an inhibitor of cytochrome CYP2D6 which catalyzes drug metabolism. Inhibiting CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CYP2D6-Substrate": " A probability of being an inhibitor of substrate CYP2D6 which catalyzes drug metabolism. Binding CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
-  "CL-Hepa": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to  pojection of dose and drug exposure. This characterestic is specific to analyzed problem.",
   "CL-Micro": "Estimates intrinsic clearance which is related ro compound's metabolic stability. This characterestic is specific to analyzed problem.",
   "Half-Life": "This estimates metabolic half-time of the drug or the time when concentration drops by half. This characterestic is specific to analyzed problem."
+}
+
+
+export const template = {
+  "name": "Demo template",
+  "subgroup": [{
+    "name": "Absorption",
+		"models": [
+			{
+				"name": "Pgp-Substrate",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being a substrate of P-glycoprotein which is responsible for cell membrane permeability. Compounds with high molecular mass and a large number of polar atoms are the most probable substrates. Binding the substrate leads to low cell permeability of substance.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Lower is better",
+          "enable": false, 
+        }],
+        "coloring": {
+          "type": "Linear",
+          "min": "0",
+          "max": "1",
+          "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+        },
+        "preference": "lower",
+			},
+      {
+				"name": "Caco2",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "It is a rate of compound flux across polarized human colon carcinoma Caco-2 cells layers, cm/s (VALIDATE). High values indicate good permeability characteristics.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "cm/s",
+          "enable": false,
+        }],
+				"coloring": {
+          "type": "Linear",
+          "min": "-6",
+          "max": "-5.5",
+          "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+        },
+        "preference": "higher",
+			},
+      {
+				"name": "Lipophilicity",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "This is a charachteristic of compound quatifying the distribution between lipophilic and hydrophiliv environments. High lipophilicity values  are good for the most of memranes permeability, though low values are related to achievment of therapeutical plasma concentrations. This characterestic is specific to analyzed problem.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "log-ratio",
+          "enable": false,
+        }],
+				"coloring": {
+          "type": "Linear",
+          "min": "0",
+          "max": "5",
+          "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+        },
+        "preference": "",
+			},
+      {
+				"name": "Solubility",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "Indicates the fraction of compound that can be solved in water solution, e.g. plasma. This characterestic is specific to analyzed problem.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "log mol/L",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": false,
+        }],
+				"coloring": {
+          "type": "Linear",
+          "min": "-4.5",
+          "max": "-1",
+          "colors": `[${DG.Color.red}, ${DG.Color.green}]`,
+        },
+        "preference": "higher",
+			},
+    ]
+  },
+  {
+    "name": "Distribution",
+    "models": [
+      {
+        "name": "PPBR",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "This value stands for plasma protein binding. PPB strongly influences drug behavior as only free drug is able to penetrate mebranes. Low values indicate good permeability characteristics.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "%",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "VDss",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "Volume of distribution (L) is a pharmacokinetic parameter representing the ability of drug to remain in plasma or redistribute to other tissues. Hih VD has a propensity to leave the plasma to other tissues, low VD indicates the ability of drug to achieve desired concentration at lower doses.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "L/kg",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      }
+    ]
+  },
+  {
+    "name": "Metabolism",
+    "models": [
+      {
+        "name": "CYP1A2-Inhibitor",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being an inhibitor of cytochrome CYP1A2 which catalyzes drug metabolism. Inhibiting CYP1A2 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "CYP2C19-Inhibitor",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being an inhibitor of cytochrome CYP2C19 which catalyzes drug metabolism. Inhibiting CYP2C19 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "CYP2C9-Inhibitor",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being an inhibitor of cytochrome CYP2C9 which catalyzes drug metabolism. Inhibiting CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "CYP2C9-Substrate",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being an inhibitor of substrate CYP2C9 which catalyzes drug metabolism. Binding CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true, 
+        }]
+      },
+      {
+        "name": "CYP2D6-Inhibitor",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being an inhibitor of cytochrome CYP2D6 which catalyzes drug metabolism. Inhibiting CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "CYP2D6-Substrate",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "A probability of being an inhibitor of substrate CYP2D6 which catalyzes drug metabolism. Binding CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "-",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      }
+    ]
+  },
+  {
+    "name": "Excretion",
+    "models": [
+      {
+        "name": "CL-Hepa",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to  pojection of dose and drug exposure. This characterestic is specific to analyzed problem.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "mL/min",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "CL-Micro",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "Estimates intrinsic clearance which is related ro compound's metabolic stability. This characterestic is specific to analyzed problem.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "μL/min/million",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      },
+      {
+        "name": "Half-Life",
+        "properties": [{
+          "name": "description",
+          "inputType": "TextArea",
+          "defaultValue": "This estimates metabolic half-time of the drug or the time when concentration drops by half. This characterestic is specific to analyzed problem.",
+          "enable": false,
+        },
+        {
+          "name": "units",
+          "inputType": "Text",
+          "defaultValue": "hours",
+          "enable": false,
+        },
+        {
+          "name": "radio",
+          "inputType": "Radio",
+          "choices": ["Lower is better", "Higher is better"],
+          "defaultValue": "Higher is better",
+          "enable": true,
+        }]
+      }
+    ]
+  }
+  ]
 }

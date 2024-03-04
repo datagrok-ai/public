@@ -20,3 +20,14 @@
 .admetox-bool-input {
   margin-left: -55px;
 }
+
+.admetox-input-form {
+  display: flex;
+  margin-left: -60px;
+  gap: 10px;
+}
+
+.admetox-pane-header {
+  display: flex;
+  align-items: center;
+}
