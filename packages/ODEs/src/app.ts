@@ -33,6 +33,7 @@ enum EDITOR_STATE {
   PKPD = 'pk-pd',
   ACID_PROD = 'ga-production',
   NIMOTUZUMAB = 'nimotuzumab',
+  BIOREACTOR = 'bioreactor',
 };
 
 /** State-to-template/use-case map */
@@ -46,6 +47,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.PKPD, USE_CASES.PK_PD],
   [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
+  [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
 ]);
 
 /** Models & templates */
@@ -58,6 +60,7 @@ const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.PKPD,
   EDITOR_STATE.ACID_PROD,
   EDITOR_STATE.NIMOTUZUMAB,
+  EDITOR_STATE.BIOREACTOR,
 ];
 
 /** Return help link with respect to IVP editor state */
@@ -80,6 +83,9 @@ function getLink(state: EDITOR_STATE): string {
 
   case EDITOR_STATE.NIMOTUZUMAB:
     return LINK.NIMOTUZUMAB;
+
+  case EDITOR_STATE.BIOREACTOR:
+    return LINK.BIOREACTOR;
 
   default:
     return LINK.DIF_STUDIO_REL;
@@ -146,10 +152,10 @@ export class DiffStudio {
     this.toChangePath = true;
 
     // routing
-    if (content) {
+    if (content)
       await this.runSolving(false);
       // dfdf
-    }
+
 
     else {
       const modelIdx = this.startingPath.indexOf(PATH.MODEL);
@@ -281,7 +287,7 @@ export class DiffStudio {
   private helpIcon: HTMLElement;
   private exportButton: HTMLElement;
 
-  private inputsByCategories = new Map<string, DG.InputBase[]>()
+  private inputsByCategories = new Map<string, DG.InputBase[]>();
 
   constructor(toAddTableView: boolean = true) {
     this.solverView = toAddTableView ?
@@ -334,6 +340,7 @@ export class DiffStudio {
       .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
       .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
       .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
       .endGroup();
 
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
@@ -405,6 +412,9 @@ export class DiffStudio {
           )
           .item(TITLE.NIM, async () =>
             await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
+          )
+          .item(TITLE.BIO, async () =>
+            await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
           )
           .endGroup()
           .separator()
@@ -610,7 +620,7 @@ export class DiffStudio {
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
         this.tabControl.currentPane = this.runPane;
-        
+
         if (this.prevInputsNode !== null)
           this.inputsPanel.removeChild(this.prevInputsNode);
 
@@ -619,28 +629,27 @@ export class DiffStudio {
         if (this.inputsByCategories.size === 1)
           this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
         else {
-            this.inputsByCategories.forEach((inputs, category) => {
-              if (category !== TITLE.MISC) {
-                form.append(ui.h2(category));
-                inputs.forEach((inp) => {
-                  form.append(inp.root);
-                });
-              }
-            });
-      
-            if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
-              form.append(ui.h2(TITLE.MISC));
-              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+          this.inputsByCategories.forEach((inputs, category) => {
+            if (category !== TITLE.MISC) {
+              form.append(ui.h2(category));
+              inputs.forEach((inp) => {
                 form.append(inp.root);
               });
             }
+          });
+
+          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+            form.append(ui.h2(TITLE.MISC));
+              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+                form.append(inp.root);
+              });
+          }
         }
 
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (!toShowInputsForm)
           setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
-        
       } else
         this.tabControl.currentPane = this.modelPane;
     } catch (error) {

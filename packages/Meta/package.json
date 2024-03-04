@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.87",
+  "version": "3.7.90",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1896,6 +1896,9 @@
         },
         "1.24.0": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.24.1": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
@@ -3257,6 +3260,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
@@ -3959,6 +3965,9 @@
           "datagrok-api": "^1.17.12"
         },
         "1.0.4": {
+          "datagrok-api": "^1.17.12"
+        },
+        "1.0.5": {
           "datagrok-api": "^1.17.12"
         }
       },

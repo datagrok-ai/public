@@ -302,6 +302,12 @@ The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab]
 
 ![add-to-workspace](pics/DiffStudio-nimotuzumab.gif)
 
+### Bioreactor
+
+The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies.
+
+![add-to-workspace](pics/DiffStudio-bioreactor.png)
+
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
 
