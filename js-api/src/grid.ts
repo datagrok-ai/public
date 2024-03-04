@@ -702,6 +702,9 @@ export class GridColumn {
   /** Use this field to keep auxiliary data. It is not serialized. See also {@link tags}. */
   get temp(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Temp(this.dart); }
 
+  /** Returns null if column is editable, or the reason of not being editable, otherwise */
+  checkEditable(): string { return api.grok_GridColumn_CheckEditable(this.dart); }
+
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
 
