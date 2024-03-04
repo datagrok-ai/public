@@ -833,8 +833,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
       break;
     }
-      // this.positionWidth obtains a new value
-      // this.updateSlider updates this._positionWidth
     case PROPS.minHeight:
     case PROPS.maxHeight:
     case PROPS.positionWidth:
@@ -845,6 +843,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     case PROPS.verticalAlignment:
     case PROPS.positionMargin:
     case PROPS.positionMarginState: {
+      // this.positionWidth obtains a new value
+      // this.updateSlider updates this._positionWidth
       this.render(WlRenderLevel.Layout, `onPropertyChanged(${property.name})`);
       break;
     }
@@ -998,14 +998,15 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const splitted = this.unitsHandler.splitted;
 
       for (let jPos = 0; jPos < length; ++jPos) {
+        const pi = this.positions[jPos];
         // Here we want to build lists of values for every monomer in position jPos
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) {
+            ++pi.sumRowCount;
             const seqMList: ISeqSplitted = splitted[rowI];
             const m: ISeqMonomer = seqMList[this.startPosition + jPos];
-            const pi = this.positions[jPos];
-            const pmi = pi.getFreq(m.canonical);
-            ++pi.sumRowCount;
+            const canonicalMonomer: string = m ? m.canonical : GAP_SYMBOL;
+            const pmi = pi.getFreq(canonicalMonomer);
             pmi.value = ++pmi.rowCount;
           }
         }
@@ -1121,9 +1122,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // Hacks to scale uppercase characters to target rectangle
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
-      for (let jPos = firstPos; jPos <= lastPos; jPos++) {
+      for (let jPos = firstPos; jPos <= lastPos; jPos++)
         this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, this.palette);
-      }
     } finally {
       g.restore();
     }
@@ -1138,11 +1138,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       return;
     }
     this.requestedRenderLevel = WlRenderLevel.None;
-    this.renderInt(renderLevel)
-      .catch((err: any) => {
-        const [errMsg, errStack] = errInfo(err);
-        _package.logger.error(errMsg, undefined, errStack);
-      });
+    this.viewSyncer.sync(logPrefix, async () => {
+      await this.renderInt(renderLevel);
+    });
   }
 
   private _lastWidth: number;
@@ -1285,8 +1283,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const callLog = `invalidate(${caller ? ` <- ${caller} ` : ''})`;
     const logPrefix = `${this.viewerToLog()}.${callLog}`;
     // Put the event trigger in the tail of the synced calls queue.
+    this.render(WlRenderLevel.None, callLog); // Put render request to the syncer
     this.viewSyncer.sync(`${logPrefix}`, async () => {
-      this.render(WlRenderLevel.None, callLog);
       this._onRendered.next();
     });
   }
