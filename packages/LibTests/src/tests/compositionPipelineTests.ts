@@ -51,6 +51,7 @@ category('CompositionPipeline single config', async () => {
           states: [{id: 'state11'}, {id: 'state12'}],
           actions: [{
             id: 'action1',
+            friendlyName: 'action1',
             from: [['step1', 'state11'], ['step1', 'state12']],
             to: ['step2', 'state21'],
             handler: 'LibTests:MockHandler1',
@@ -63,6 +64,7 @@ category('CompositionPipeline single config', async () => {
           states: [{id: 'state21'}, {id: 'state22'}],
           popups: [{
             id: 'popup1',
+            friendlyName: 'popup1',
             nqName: 'LibTests:TestFn1',
             position: 'menu',
           }],
@@ -172,6 +174,7 @@ category('CompositionPipeline composition config', async () => {
         states: [{id: 'state11'}, {id: 'state12'}],
         actions: [{
           id: 'action1',
+          friendlyName: 'action1',
           from: [['step1', 'a'], ['step1', 'b']],
           to: ['step2', 'b'],
           handler: 'LibTests:MockHandler1',
@@ -179,11 +182,13 @@ category('CompositionPipeline composition config', async () => {
         }],
         popups: [{
           id: 'popup1',
+          friendlyName: 'popup1',
           nqName: 'LibTests:MockPopup1',
           position: 'menu',
           states: [{id: 'state111'}, {id: 'state112'}],
           actions: [{
             id: 'action11',
+            friendlyName: 'action11',
             from: [['step1', 'popup1', 'a'], ['step1', 'popup1', 'b']],
             to: ['step2', 'b'],
             handler: 'LibTests:MockHandler1',
@@ -224,6 +229,7 @@ category('CompositionPipeline composition config', async () => {
         states: [{id: 'state11'}, {id: 'state12'}],
         actions: [{
           id: 'action1',
+          friendlyName: 'action1',
           from: [['step1', 'a'], ['step1', 'b']],
           to: ['step2', 'b'],
           handler: 'LibTests:MockHandler1',
@@ -231,11 +237,13 @@ category('CompositionPipeline composition config', async () => {
         }],
         popups: [{
           id: 'popup1',
+          friendlyName: 'popup1',
           nqName: 'LibTests:MockPopup1',
           position: 'menu',
           states: [{id: 'state111'}, {id: 'state112'}],
           actions: [{
             id: 'action11',
+            friendlyName: 'action11',
             from: [['step1', 'popup1', 'a'], ['step1', 'popup1', 'b']],
             to: ['step2', 'b'],
             handler: 'LibTests:MockHandler1',
@@ -276,6 +284,7 @@ category('CompositionPipeline composition config', async () => {
         states: [{id: 'state11'}, {id: 'state12'}],
         actions: [{
           id: 'action1',
+          friendlyName: 'action1',
           from: [['step1', 'a'], ['step1', 'b']],
           to: ['step2', 'b'],
           handler: 'LibTests:MockHandler1',
@@ -283,11 +292,13 @@ category('CompositionPipeline composition config', async () => {
         }],
         popups: [{
           id: 'popup1',
+          friendlyName: 'popup1',
           nqName: 'LibTests:MockPopup1',
           position: 'menu',
           states: [{id: 'state111'}, {id: 'state112'}],
           actions: [{
             id: 'action11',
+            friendlyName: 'action11',
             from: [['step1', 'popup1', 'a'], ['step1', 'popup1', 'b']],
             to: ['step2', 'b'],
             handler: 'LibTests:MockHandler1',
@@ -414,11 +425,13 @@ category('CompositionPipeline composition config', async () => {
       actionsToAdd: [
         [{
           id: 'addedAction1',
+          friendlyName: 'addedAction1',
           handler: 'LibTests:MockHandler2',
           position: 'buttons',
         }, ['step2']],
         [{
           id: 'addedAction2',
+          friendlyName: 'addedAction2',
           handler: 'LibTests:MockHandler2',
           position: 'menu',
         }, ['testPipeline2', 'step2', 'addedPopup1']]
@@ -426,6 +439,7 @@ category('CompositionPipeline composition config', async () => {
       popupsToAdd: [
         [{
           id: 'addedPopup1',
+          friendlyName: 'addedPopup1',
           nqName: 'LibTests:MockPopup2',
           position: 'buttons',
         }, ['testPipeline2', 'step2']]
@@ -445,11 +459,13 @@ category('CompositionPipeline composition config', async () => {
       actionsToAdd: [
         [{
           id: 'addedAction1',
+          friendlyName: 'addedAction1',
           handler: 'LibTests:MockHandler2',
           position: 'buttons',
         }, ['step2']],
         [{
           id: 'addedAction2',
+          friendlyName: 'addedAction2',
           handler: 'LibTests:MockHandler2',
           position: 'menu',
         }, ['testPipeline2', 'testPipeline1', 'step2', 'addedPopup1']]
@@ -460,6 +476,7 @@ category('CompositionPipeline composition config', async () => {
       popupsToAdd: [
         [{
           id: 'addedPopup1',
+          friendlyName: 'addedPopup2',
           nqName: 'LibTests:MockPopup2',
           position: 'buttons',
         }, ['testPipeline1', 'step2']]
