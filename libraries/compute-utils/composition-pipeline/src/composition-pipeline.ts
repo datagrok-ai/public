@@ -503,6 +503,8 @@ export interface HookSpec {
 
 
 export class RuntimeControllerImpl implements RuntimeController {
+  public disabledSteps = new Set<string>();
+
   constructor(private handlerId: string, private config: ControllerConfig, private rt: PipelineRuntime, private signal?: AbortSignal) {
   }
 
@@ -521,12 +523,14 @@ export class RuntimeControllerImpl implements RuntimeController {
   enableStep(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
+    this.disabledSteps.delete(pathToKey(fullPath));
     return this.rt.setStepState(fullPath, true);
   }
 
   disableStep(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
+    this.disabledSteps.add(pathToKey(fullPath));
     return this.rt.setStepState(fullPath, false);
   }
 
