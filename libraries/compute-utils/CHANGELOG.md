@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.24.2 (2024-03-04)
+
+### Bug fixes
+
+- Sensitivity Analysis: fixed input form styles
+
 ## 1.24.1 (2024-03-02)
 
 ### Bug fixes
