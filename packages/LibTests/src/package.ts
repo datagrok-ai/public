@@ -10,6 +10,7 @@ import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult}
   from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import { CompositionPipeline } from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -243,6 +244,90 @@ export async function TestCompositionPipeline1() {
       id: 'link1',
       from: ['step1', 'res'],
       to: ['step2', 'a'],
+    }]
+  });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline2
+export async function TestCompositionPipeline2() {
+  const pipeline = new CompositionPipeline({
+    id: 'testPipeline',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }]
+  });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline3
+export async function TestCompositionPipeline3() {
+  const pipeline = new CompositionPipeline({
+    id: 'testPipeline',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+      handler: async ({controller}) => {
+        const val = controller.getState(['step1', 'a']);
+        controller.updateState(['step2', 'a'], val * 2);
+      }
+    }]
+  });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline4
+export async function TestCompositionPipeline4() {
+  const pipeline = new CompositionPipeline({
+    id: 'testPipeline',
+    nqName: 'LibTests:MockWrapper',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+      handler: async ({controller}) => {
+        const val = controller.getState(['step1', 'a']);
+        await delay(2000);
+        controller.updateState(['step2', 'a'], val * 2);
+      }
     }]
   });
   grok.shell.addView(pipeline.makePipelineView());

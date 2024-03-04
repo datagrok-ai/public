@@ -575,7 +575,7 @@ export class RuntimeControllerImpl implements RuntimeController {
 
   private checkInput(path: ItemPath) {
     const key = pathToKey(path);
-    if (this.config.fromKeys.has(key))
+    if (!this.config.fromKeys.has(key))
       grok.shell.warning(`Handler ${this.handlerId} has not declared access to input ${key}`);
 
     return true;
@@ -583,7 +583,7 @@ export class RuntimeControllerImpl implements RuntimeController {
 
   private checkOutput(path: ItemPath) {
     const key = pathToKey(path);
-    if (this.config.fromKeys.has(key))
+    if (!this.config.toKeys.has(key))
       grok.shell.warning(`Handler ${this.handlerId} has not declared access to output ${key}`);
 
     return true;
