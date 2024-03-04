@@ -40,4 +40,4 @@
   Smax = 3.18 {category: Parameters; min: 1; max: 5} [Maximal effect of the stimulation]
   gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]
 
-#tolerance: 0.0000001
+#tolerance: 1e-7

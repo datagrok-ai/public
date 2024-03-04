@@ -23,4 +23,4 @@
   V = 0.087 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
   K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
   
-#tolerance: 0.0000001
+#tolerance: 1e-7

@@ -47,4 +47,4 @@
   Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
-#tolerance: 0.000000001
+#tolerance: 1e-9

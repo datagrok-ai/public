@@ -33,7 +33,7 @@
 
 #expressions:
 
-  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2160000000000, 0.361)
+  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2.16e12, 0.361)
 
   MA = MEAthiol * pow(10, pH - pKa2MEA)
 

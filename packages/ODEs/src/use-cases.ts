@@ -36,7 +36,7 @@ ${CONTROL_EXPR.ARG}: t
   final = 6 {units: min; caption: Final; category: Time; min: 6; max: 10} [Final time of simulation]
   step = 0.01 {units: min; caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 5e-5`;
 
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `${CONTROL_EXPR.NAME}: Robertson
@@ -44,9 +44,9 @@ ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
 ${CONTROL_EXPR.COMMENT}: This is classic example of stiff ODEs.
 ${CONTROL_EXPR.DIF_EQ}:
-  dA/dt = -0.04 * A + 10000 * B * C
-  dB/dt = 0.04 * A - 10000 * B * C - 30000000 * B**2
-  dC/dt = 30000000 * B**2
+  dA/dt = -0.04 * A + 1e4 * B * C
+  dB/dt = 0.04 * A - 1e4 * B * C - 3e7 * B**2
+  dC/dt = 3e7 * B**2
 
 ${CONTROL_EXPR.INITS}:
   A = 1 {units: mol/L; category: Initial concentrations; min: 0; max: 5}
@@ -58,7 +58,7 @@ ${CONTROL_EXPR.ARG}: t
   finish = 40 {units: sec; caption: Final; category: Time; min: 2; max: 50} [Final time of simulation]
   step = 0.01 {units: sec; caption: Step; category: Time; min: 0.01; max: 0.1} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 1e-7`;
 
 /** Fermentation process simulation */
 const FERMENTATION_MODEL = `${CONTROL_EXPR.NAME}: Fermentation
@@ -86,7 +86,7 @@ ${CONTROL_EXPR.PARAMS}:
   V = 0.087 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
   K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
   
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 1e-7`;
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
@@ -128,7 +128,7 @@ ${CONTROL_EXPR.PARAMS}:
   Kin = 0.2 {caption: Kin; category: Paramters; min: 0.1; max: 0.5} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Paramters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
-${CONTROL_EXPR.TOL}: 0.000000001`;
+${CONTROL_EXPR.TOL}: 1e-9`;
 
 /** Gluconic acid production */
 const ACID_PROD_MODEL = `${CONTROL_EXPR.NAME}: GA-production
@@ -180,7 +180,7 @@ ${CONTROL_EXPR.PARAMS}:
   Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
-${CONTROL_EXPR.TOL}: 0.000000001`;
+${CONTROL_EXPR.TOL}: 1e-9`;
 
 /** Nimotuzumab disposition model */
 const NIMOTUZUMAB_MODEL = `${CONTROL_EXPR.NAME}: Nimotuzumab
@@ -225,7 +225,7 @@ ${CONTROL_EXPR.PARAMS}:
   Smax = 3.18 {category: Parameters; min: 1; max: 5} [Maximal effect of the stimulation]
   gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]
 
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 1e-7`;
 
 /** Bioreactor simulation */
 const BIOREACTOR_MODEL = `${CONTROL_EXPR.NAME}: Bioreactor
@@ -263,7 +263,7 @@ ${CONTROL_EXPR.DIF_EQ}:
 
 ${CONTROL_EXPR.EXPR}:
 
-  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2160000000000, 0.361)
+  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2.16e12, 0.361)
 
   MA = MEAthiol * pow(10, pH - pKa2MEA)
 

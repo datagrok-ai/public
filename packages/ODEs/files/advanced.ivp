@@ -28,4 +28,4 @@
   P1 = 1
   P2 = -1
 
-#tolerance: 0.00005
+#tolerance: 5e-5

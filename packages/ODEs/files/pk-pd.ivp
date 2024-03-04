@@ -37,4 +37,4 @@
   Kin = 0.2 {caption: Kin; category: Paramters; min: 0.1; max: 0.5} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Paramters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
-#tolerance: 0.000000001
+#tolerance: 1e-9
