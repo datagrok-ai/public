@@ -10,24 +10,22 @@ import {NucleotidePatternSVGRenderer} from './svg-renderer';
 
 export class SvgDisplayManager {
   private svgDisplayDiv = ui.div([]);
-  private configManager: PatternConfigurationManager;
 
   private constructor(
     eventBus: EventBus,
+    private patternConfigManger: PatternConfigurationManager,
   ) {
-    this.configManager = new PatternConfigurationManager(eventBus);
     eventBus.patternStateChanged$.subscribe(() => this.updateSvgContainer());
   }
 
-  static createSvgDiv(eventBus: EventBus): HTMLElement {
-    const manager = new SvgDisplayManager(eventBus);
-    manager.updateSvgContainer();
-    return manager.svgDisplayDiv;
+  static createSvgDiv(eventBus: EventBus, patternConfigManager: PatternConfigurationManager): HTMLDivElement {
+    const displayManager = new SvgDisplayManager(eventBus, patternConfigManager);
+    return displayManager.svgDisplayDiv;
   }
 
   private updateSvgContainer(): void {
     $(this.svgDisplayDiv).empty();
-    const patternConfig = this.configManager.getConfig();
+    const patternConfig = this.patternConfigManger.getConfig();
     const image = this.createSvg(patternConfig);
     this.svgDisplayDiv.append(image);
   }

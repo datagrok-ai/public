@@ -7,17 +7,22 @@ import {SvgDisplayManager} from './svg-utils/svg-display-manager';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
+import {PatternConfigurationManager} from '../model/pattern-config-manager';
 
 export class PatternAppRightSection {
+  private svgDisplay: HTMLDivElement;
+
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-  ) { };
+    patternConfiguration: PatternConfigurationManager,
+  ) {
+    this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus, patternConfiguration);
+  };
 
   getLayout(): HTMLDivElement {
-    const svgDisplay = SvgDisplayManager.createSvgDiv(this.eventBus);
     const layout = ui.panel([
-      svgDisplay,
+      this.svgDisplay,
       // numericLabelTogglesContainer,
       // generateDownloadAndEditControls(),
       // generateStrandSectionDisplays(),
