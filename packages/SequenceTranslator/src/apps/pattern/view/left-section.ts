@@ -105,8 +105,9 @@ class PatternControlsManager {
 
     const updateStrandLengthInputs = (strand: StrandType, length: number, input: DG.InputBase) => {
       if (length < 0 || length > this.defaultState.getMaxSequenceLength()) {
+        const oldValue = this.eventBus.getNucleotideSequences()[strand].length; 
         grok.shell.warning(`Sequence length must be between 0 and ${this.defaultState.getMaxSequenceLength()}`);
-        input.value = this.eventBus.getNucleotideSequences()[strand].length;
+        input.value = oldValue;
         return;
       }
 
