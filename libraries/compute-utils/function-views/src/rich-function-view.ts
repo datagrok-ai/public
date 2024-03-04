@@ -657,6 +657,11 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
+    const readme = ui.iconFA('info', async () => {
+      if (this.hasReadme)
+        grok.shell.windows.help.showHelp(ui.markdown((await this.getReadme())!));
+    });
+
     const newRibbonPanels = [[
       ...super.buildRibbonPanels().flat(),
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
@@ -664,6 +669,7 @@ export class RichFunctionView extends FunctionView {
         ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+      ...this.hasReadme ? [readme]: [],
     ]];
 
     this.setRibbonPanels(newRibbonPanels);

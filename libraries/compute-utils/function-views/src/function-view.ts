@@ -854,6 +854,28 @@ export abstract class FunctionView extends DG.ViewBase {
     return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
   }
 
+  protected get hasReadme() {
+    const readmePath = this.func.options['readme'] as string | undefined;
+
+    return !!readmePath;
+  }
+
+  protected async getReadme() {
+    const readmePath = this.func.options['readme'];
+
+    if (!readmePath) return null;
+
+    const packagePath = `System:AppData/${readmePath}`;
+    if (await grok.dapi.files.exists(packagePath))
+      return await grok.dapi.files.readAsText(packagePath);
+
+    const homePath = `${grok.shell.user.name}.home/${readmePath}`;
+    if (await grok.dapi.files.exists(homePath))
+      return await grok.dapi.files.readAsText(homePath);
+
+    return null;
+  }
+
   protected get features(): Record<string, boolean> | string[] {
     return JSON.parse(this.func.options['features'] ?? '{}');
   }
