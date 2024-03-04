@@ -568,10 +568,12 @@ export class SensitivityAnalysisView {
         );
 
         return container;
-      }, ui.form([
+      }, ui.div([
         this.store.analysisInputs.analysisType.input,
         this.store.analysisInputs.samplesCount.input,
-      ], {style: {'overflow-y': 'scroll', 'width': '100%'/*, 'padding-right': '4px'*/}}));
+      ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
+
+    $(form).addClass('ui-form');
 
     const outputsTitle = ui.h2('Outputs');
     form.appendChild(outputsTitle);
@@ -627,13 +629,11 @@ export class SensitivityAnalysisView {
       buttons,
     );
 
-    ui.tools.handleResize(form, (w: number) => {
-      if (w < 320)
-        $(form).addClass('ui-form-condensed');
-      else
-        $(form).removeClass('ui-form-condensed');
+    $(form).css({
+      'padding-left': '12px',
+      'overflow-y': 'scroll',
+      'padding-right': '4px',
     });
-
     return form;
   }
 
@@ -847,7 +847,7 @@ export class SensitivityAnalysisView {
     this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
       const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
-      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const scalarParams = ([...selectedRun.outputParams.values()])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
       const scalarTable = DG.HtmlTable.create(
         scalarParams,
@@ -855,7 +855,7 @@ export class SensitivityAnalysisView {
           [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
       ).root;
 
-      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const dfParams = ([...selectedRun.outputParams.values()])
         .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
       const dfPanes = dfParams.reduce((acc, param) => {
         const configs = getPropViewers(param.property).config;
@@ -985,7 +985,7 @@ export class SensitivityAnalysisView {
     this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
       const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
-      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const scalarParams = ([...selectedRun.outputParams.values()])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
       const scalarTable = DG.HtmlTable.create(
         scalarParams,
@@ -993,7 +993,7 @@ export class SensitivityAnalysisView {
           [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
       ).root;
 
-      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const dfParams = ([...selectedRun.outputParams.values()])
         .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
       const dfPanes = dfParams.reduce((acc, param) => {
         const configs = getPropViewers(param.property).config;
@@ -1164,7 +1164,7 @@ export class SensitivityAnalysisView {
     this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
       const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
-      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const scalarParams = ([...selectedRun.outputParams.values()])
         .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
       const scalarTable = DG.HtmlTable.create(
         scalarParams,
@@ -1172,7 +1172,7 @@ export class SensitivityAnalysisView {
           [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
       ).root;
 
-      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+      const dfParams = ([...selectedRun.outputParams.values()])
         .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
       const dfPanes = dfParams.reduce((acc, param) => {
         const configs = getPropViewers(param.property).config;
