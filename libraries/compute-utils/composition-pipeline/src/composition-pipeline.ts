@@ -422,7 +422,7 @@ export class PipelineRuntime {
     // wiring by nqName
     for (const [, node] of this.nodes) {
       for (const [, state] of node.states) {
-        if ((node.type === 'popup' || node.type === 'step') && state.conf.stateType !== 'state') {
+        if ((node.type === 'popup' || node.type === 'step') && (state.conf.stateType === 'input' || state.conf.stateType === 'output')) {
           const conf = node.conf as PipelinePopupConfiguration | PipelineStepConfiguration;
           const stepId = getStepId(conf);
           const stateId = state.conf.id;
@@ -794,7 +794,6 @@ export class CompositionPipeline {
       id: '_SystemButtonsAdd_',
       handler: async ({controller}: { controller: RuntimeController }) => {
         for (const [viewKey, nodes] of stepIdsToNodes.entries()) {
-          const viewNode = this.nodes.get(viewKey)!;
           const btns = nodes.map((node) => {
             if (node.type === 'action') {
               const conf = node.conf as ActionConfiguraion;
@@ -828,7 +827,7 @@ export class CompositionPipeline {
             }
             throw new Error(`No element for ${node.conf.id} ${node.type}`);
           });
-          const view = controller.getView(viewNode.viewNodePath)!;
+          const view = controller.getView(keyToPath(viewKey))!;
           view.setAdditionalButtons(btns);
         }
       },
@@ -978,7 +977,7 @@ export class CompositionPipeline {
 
   private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
     const nodePath = this.updateFullPathLink(conf, path);
-    const [, ...viewPath] = nodePath;
+    const viewPath = nodePath.slice(0, nodePath.length - 1);
     const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
       return;
@@ -990,9 +989,7 @@ export class CompositionPipeline {
   private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: SubNodeConfTypes) {
     const nodePath = this.updateFullPathNode(conf, path);
     const nodeKey = pathToKey(nodePath);
-    let viewPath = nodePath;
-    if (type === 'popup')
-      [, ...viewPath] = nodePath;
+    const viewPath = nodePath.slice(0, nodePath.length - 1);
 
     if (toRemove.has(nodeKey))
       return;

@@ -120,6 +120,37 @@ export function ValidatorActionsDemoFactory(params: any) {
 }
 
 
+//name: MockWrapper1
+export function MockWrapper1() {}
+
+//name: MockWrapper2
+export function MockWrapper2() {}
+
+//name: MockWrapper3
+export function MockWrapper3() {}
+
+//name: MockWrapper4
+export function MockWrapper4() {}
+
+//name: MockWrapper5
+export function MockWrapper5() {}
+
+//name: MockWrapper6
+export function MockWrapper6() {}
+
+//name: MockWrapper7
+export function MockWrapper7() {}
+
+//name: MockWrapper8
+export function MockWrapper8() {}
+
+//name: MockWrapper9
+export function MockWrapper9() {}
+
+//name: MockWrapper10
+export function MockWrapper10() {}
+
+
 //name: MockHook1
 //input: object params
 export function MockHook1(params: any) {
@@ -224,12 +255,21 @@ export function TestFn6(a: number, b: number, c: number, d: number, e: number) {
   return a * b * c * d * e;
 }
 
+//name: AddMockD
+//input: double a = 2
+//input: double b = 3
+//output: double res
+export function AddMockD(a: number, b: number) {
+  return a + b;
+}
+
+
 
 //name: TestCompositionPipeline1
 export async function TestCompositionPipeline1() {
   const pipeline = new CompositionPipeline({
     id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper',
+    nqName: 'LibTests:MockWrapper1',
     steps: [
       {
         id: 'step1',
@@ -254,7 +294,7 @@ export async function TestCompositionPipeline1() {
 export async function TestCompositionPipeline2() {
   const pipeline = new CompositionPipeline({
     id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper',
+    nqName: 'LibTests:MockWrapper2',
     steps: [
       {
         id: 'step1',
@@ -279,7 +319,7 @@ export async function TestCompositionPipeline2() {
 export async function TestCompositionPipeline3() {
   const pipeline = new CompositionPipeline({
     id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper',
+    nqName: 'LibTests:MockWrapper3',
     steps: [
       {
         id: 'step1',
@@ -308,7 +348,7 @@ export async function TestCompositionPipeline3() {
 export async function TestCompositionPipeline4() {
   const pipeline = new CompositionPipeline({
     id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper',
+    nqName: 'LibTests:MockWrapper4',
     steps: [
       {
         id: 'step1',
@@ -328,6 +368,50 @@ export async function TestCompositionPipeline4() {
         await delay(2000);
         controller.updateState(['step2', 'a'], val * 2);
       }
+    }]
+  });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+
+//name: TestCompositionPipeline5
+export async function TestCompositionPipeline5() {
+  const pipeline = new CompositionPipeline({
+    id: 'testPipeline',
+    nqName: 'LibTests:MockWrapper5',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+        states: [{id: 'state11'}],
+        actions: [{
+          id: 'action1',
+          friendlyName: 'action1',
+          from: [['step1', 'state11']],
+          to: ['step2', 'b'],
+          handler: async ({controller}) => {
+            const val = controller.getState(['step1', 'state11']);
+            controller.updateState(['step2', 'b'], val * 2);
+          },
+          position: 'buttons',
+        }],
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'a'],
+      to: ['step2', 'a'],
+    }, {
+      id: 'link2',
+      from: ['step1', 'a'],
+      to: ['step1', 'state11'],
+      enableOnLoadRun: true,
+      enableOnStart: true,
     }]
   });
   grok.shell.addView(pipeline.makePipelineView());
