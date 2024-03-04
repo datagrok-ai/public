@@ -860,18 +860,28 @@ export abstract class FunctionView extends DG.ViewBase {
     return !!readmePath;
   }
 
+  private readmeCache = null as string | null;
+
   protected async getReadme() {
     const readmePath = this.func.options['readme'];
 
     if (!readmePath) return null;
 
+    if (this.readmeCache) return this.readmeCache;
+
     const packagePath = `System:AppData/${readmePath}`;
-    if (await grok.dapi.files.exists(packagePath))
-      return await grok.dapi.files.readAsText(packagePath);
+    if (await grok.dapi.files.exists(packagePath)) {
+      const readme = await grok.dapi.files.readAsText(packagePath);
+      this.readmeCache = readme;
+      return readme;
+    }
 
     const homePath = `${grok.shell.user.name}.home/${readmePath}`;
-    if (await grok.dapi.files.exists(homePath))
-      return await grok.dapi.files.readAsText(homePath);
+    if (await grok.dapi.files.exists(homePath)) {
+      const readme = await grok.dapi.files.readAsText(homePath);
+      this.readmeCache = readme;
+      return readme;
+    }
 
     return null;
   }
