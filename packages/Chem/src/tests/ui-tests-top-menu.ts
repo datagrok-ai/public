@@ -179,7 +179,7 @@ category('UI top menu', () => {
     });
 
     test('rgroups', async () => {
-        smiles = grok.data.demo.molecules(20);
+        smiles = await readDataframe('tests/sar-small_test.csv');
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
         grok.shell.topMenu.find('Chem').group('Analyze').find('R-Groups Analysis...').click();
@@ -190,8 +190,8 @@ category('UI top menu', () => {
         await delay(2000);
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() => smiles.columns.names().filter((cname) => !cname.startsWith('~')).length === 5,
-            'rgroup columns haven\'t been added', 15000);
+        await awaitCheck(() => smiles.columns.names().filter((cname) => !cname.startsWith('~')).length === 6,
+            'rgroup columns haven\'t been added', 30000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.TRELLIS_PLOT)
