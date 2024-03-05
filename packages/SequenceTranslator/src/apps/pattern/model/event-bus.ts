@@ -22,6 +22,7 @@ export class EventBus {
   private _patternListUpdated$ = new rxjs.Subject<void>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
   private _patternSaveRequested$ = new rxjs.Subject<void>();
+  private _sequenceBaseReplacementRequested$ = new rxjs.Subject<string>();
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
@@ -30,12 +31,12 @@ export class EventBus {
   constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
 
-    this._sequenceBase$.subscribe((newBase: string) => {
+    this._sequenceBaseReplacementRequested$.subscribe((newBase: string) => {
       const oldNucleotideSequences = this._nucleotideSequences$.getValue();
       const newNucleotideSequences = {} as NucleotideSequences;
       STRANDS.forEach((strand) => {
         newNucleotideSequences[strand] = oldNucleotideSequences[strand].map((_: string) => newBase);
-      })
+      });
 
       this._nucleotideSequences$.next(newNucleotideSequences);
     });
@@ -161,6 +162,10 @@ export class EventBus {
 
   requestPatternSave() {
     this._patternSaveRequested$.next();
+  }
+
+  replaceSequenceBase(newNucleobase: string) {
+    this._sequenceBaseReplacementRequested$.next(newNucleobase);
   }
 
   get patternStateChanged$(): rxjs.Observable<void> {

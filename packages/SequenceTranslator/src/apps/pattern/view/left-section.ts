@@ -129,7 +129,11 @@ class PatternControlsManager {
     const availableNucleoBases = this.defaultState.fetchAvailableNucleotideBases();
     const defaultNucleotideBase = this.defaultState.fetchDefaultNucleobase();
 
-    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases, (base: string) => this.eventBus.changeSequenceBase(base));
+    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases);
+
+    sequenceBaseInput.onInput(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
+
+    sequenceBaseInput.onChanged(() => this.eventBus.changeSequenceBase(sequenceBaseInput.value!));
 
     sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
     return sequenceBaseInput;
