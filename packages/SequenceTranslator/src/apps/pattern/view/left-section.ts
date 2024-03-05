@@ -136,7 +136,11 @@ class PatternControlsManager {
   }
 
   private createPatternCommentInput(): StringInput {
-    const patternCommentInput = ui.textInput('Comment', '', (value: string) => {});
+    const patternCommentInput = ui.textInput(
+      'Comment',
+      '',
+      (comment: string) => this.eventBus.updateComment(comment)
+    );
     return patternCommentInput;
   }
 
