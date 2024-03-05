@@ -812,7 +812,7 @@ async function changeFilterBeforeApplyLayout(tv: DG.TableView, colName: string,
     const panel = await getFilterGroupAndFilter(tv, colName);
     const filter3 = panel.filter;
     if (!filterInitialized)
-        await initializeFilter(filter3, true);
+        await initializeFilter(filter3);
     await filterByStructure(df, filter3, molfile, expectedRows);
 }
 

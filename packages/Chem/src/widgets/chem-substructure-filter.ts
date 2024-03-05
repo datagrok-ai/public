@@ -387,7 +387,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
-    console.log(`*************entered apply filter, filter id${this.filterId}`);
+    _package.logger.debug(`*************entered apply filter, filter id${this.filterId}`);
     this.active = true;
     //we apply filter bitset only from one active filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
@@ -431,7 +431,7 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to load filter state. */
   applyState(state: any): void {
     super.applyState(state);
-    console.log(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
+    _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
 
     if (!this.initListeners) {
       this.initListeners = true;
@@ -444,8 +444,6 @@ export class SubstructureFilter extends DG.Filter {
       }));
     }
     this.active = state.active ?? true;
-    if (this.column?.temp[FILTER_SCAFFOLD_TAG])
-      state.molBlock ??= (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule;
     if (state.molBlock && state.molBlock !== this.currentMolfile) {
       this.currentMolfile = state.molBlock;
       this.sketcher.setMolFile(state.molBlock);
@@ -459,8 +457,15 @@ export class SubstructureFilter extends DG.Filter {
       this.fpInput.value = state.fp;
 
     const that = this;
-    if (state.molBlock) {
-      console.log(`******in applyState, calling sketcher change for filter: ${this.filterId}`);
+    /* columnIsFilteringByStructure variable is required to handle the following:
+    there are cloned views, and column is filtered by some structure. And then we apply layout with empty substructure
+    for this column. So in spite molblock is empty, we need to reset filter for this column, so need to run 
+    _onSketchChanged().
+    */
+    const columnIsFilteringByStructure = this.column?.temp[FILTER_SCAFFOLD_TAG] ?
+      (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule : '';
+    if (state.molBlock || columnIsFilteringByStructure !== state.molBlock) {
+      _package.logger.debug(`******in applyState, calling sketcher change for filter: ${this.filterId}`);
       setTimeout(function() {that._onSketchChanged();}, 1000);
     }
   }
