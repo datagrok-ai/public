@@ -93,6 +93,44 @@ Actelion Java MolfileCreator 1.0
 M  END
 `;
 
+const molFileForCloneTest2 = `
+MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+   -0.1786    0.8920    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8930    0.4795    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8930   -0.3455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.1786   -0.7580    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5358   -0.3455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5358    0.4795    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  2  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  2  0  0  0  0
+  6  1  1  0  0  0  0
+M  END
+`;
+
+const molFileForCloneTest1 = `
+MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+   -0.6919    0.4455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4064    0.0330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4064   -0.7920    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6919   -1.2044    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0225   -0.7920    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0225    0.0330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  6  1  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  1  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  1  0  0  0  0
+M  END
+`;
+
 category('substructure filters', async () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -310,11 +348,10 @@ M  END
 
     DG.chem.currentSketcherType = 'Ketcher';
     const filter1 = await createFilter('Structure', df, sketcherDialogs, 15000);
-    const substr = 'C1CCCCC1';
 
     //filter by structure and wait for results
-    filter1.sketcher.setSmiles(substr);
-    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered', 15000);
+    filter1.sketcher.setSmiles('C1CCCCC1');
+    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered', 3000);
 
     //check that search is finished and loader is disabled
     expect(filter1.calculating, false, 'search hasn\'t been finished properly, loader is active');
@@ -389,6 +426,7 @@ M  END
   });
 
 });
+
 
 async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
   Promise<SubstructureFilter> {
