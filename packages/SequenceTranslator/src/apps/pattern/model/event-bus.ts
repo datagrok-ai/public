@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {STRANDS} from './const';
 import {StrandType, TerminalType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 
@@ -28,6 +29,16 @@ export class EventBus {
 
   constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
+
+    this._sequenceBase$.subscribe((newBase: string) => {
+      const oldNucleotideSequences = this._nucleotideSequences$.getValue();
+      const newNucleotideSequences = {} as NucleotideSequences;
+      STRANDS.forEach((strand) => {
+        newNucleotideSequences[strand] = oldNucleotideSequences[strand].map((_: string) => newBase);
+      })
+
+      this._nucleotideSequences$.next(newNucleotideSequences);
+    });
   }
 
   private initializeDefaultState(defaults: PatternDefaultsProvider) {
