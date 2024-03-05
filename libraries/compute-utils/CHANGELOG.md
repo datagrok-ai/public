@@ -1,5 +1,12 @@
 # compute-utils changelog
 
+## 1.25.2 (2024-03-05)
+
+### Features
+
+- PLV: Added additional check on step enabling
+- ModelCatalog: Added help switching
+
 ## 1.25.1 (2024-03-04)
 
 ### Bug fixes
