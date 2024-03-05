@@ -70,7 +70,42 @@ export class ItemsGrid {
     return this._items;
   }
 
-  private render(): void {
+  set items(value: {[key: string]: any}[]) {
+    this._items = value;
+    this.render();
+  }
+
+  public addItem(item: ItemType, notify = true): void {
+    this._items.push(item);
+    this.render();
+    if (notify)
+      this.onItemAdded.next(item);
+  }
+
+  public removeItem(item: ItemType, notify = true): void {
+    if (this._items.indexOf(item) === -1)
+      return;
+    this._items.splice(this._items.indexOf(item), 1);
+    this.render();
+    if (notify)
+      this.onItemRemoved.next(item);
+  }
+
+  public removeAtIndex(index: number, notify = true): void {
+    if (index < 0 || index >= this._items.length)
+      return;
+    const removed = this._items.splice(index, 1);
+    this.render();
+    if (notify)
+      this.onItemRemoved.next(removed[0]);
+  }
+
+  public removeAllItems(): void {
+    this._items = [];
+    this.render();
+  }
+
+  public render(): void {
     ui.empty(this._root);
     if (!this.options.horizontalInputNames) {
       for (const prop of this.properties) {

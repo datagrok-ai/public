@@ -29,7 +29,7 @@ ${CONTROL_EXPR.EXPR}:
 
 ${CONTROL_EXPR.ARG}: t
   start = 0
-  finish = 2
+  finish = 10
   step = 0.01
 
 ${CONTROL_EXPR.INITS}:
@@ -67,17 +67,17 @@ ${CONTROL_EXPR.CONSTS}:
   C2 = 3
 
 ${CONTROL_EXPR.PARAMS}:
-  P1 = 1 {category: Parameters} [P1 parameter]
-  P2 = -1 {category: Parameters} [P2 parameter]
+  P1 = 1 {category: Parameters; min: 1; max: 10} [P1 parameter]
+  P2 = -1 {category: Parameters; min: -10; max: -1} [P2 parameter]
 
 ${CONTROL_EXPR.INITS}:
-  x = 2 {units: C; category: Initial values} [Initial value of x]
-  y = 0 {units: C; category: Initial values} [Initial value of y]
+  x = 2 {category: Initial values; min: 0; max: 5} [Initial value of x]
+  y = 0 {category: Initial values; min: -2; max: 2} [Initial value of y]
 
 ${CONTROL_EXPR.ARG}: t
-  start = 0 {units: min; caption: Initial; category: Time} [Initial time of simulation]
-  finish = 2 {units: min; caption: Final; category: Time} [Final time of simulation]
-  step = 0.01 {units: min; caption: Initial; category: Time} [Time step of simlulation]
+  start = 0 {caption: Initial; category: Time; min: 0; max: 10} [Initial time of simulation]
+  finish = 10 {caption: Final; category: Time; min: 10; max: 20} [Final time of simulation]
+  step = 0.01 {caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
 
 ${CONTROL_EXPR.TOL}: 0.00005`;
 
@@ -92,14 +92,18 @@ export enum TEMPLATES {
 /** Demo template */
 export const DEMO_TEMPLATE = `${CONTROL_EXPR.NAME}: My model
 ${CONTROL_EXPR.DIF_EQ}:
-  dx/dt = y + sin(t)
-  dy/dt = x - exp(t)
+  dx/dt = y * cos(p * t) + sin(t)
+  dy/dt = x * sin(q * t) - exp(-t)
 
 ${CONTROL_EXPR.ARG}: t
-  initial = 0
-  final = 4
-  step = 0.01
+  initial = 0 {min: 0; max: 3}
+  final = 8 {min: 4; max: 20}
+  step = 0.01 {min: 0.01; max: 0.1}
 
 ${CONTROL_EXPR.INITS}:
-  x = 2
-  y = 1`;
+  x = 0 {min: 0; max: 5}
+  y = 1 {min: 1; max: 7}
+
+${CONTROL_EXPR.PARAMS}:
+  p = -2 {min: -2; max: 2}
+  q = -1 {min: -1; max: 1}`;

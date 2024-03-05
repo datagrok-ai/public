@@ -7,7 +7,6 @@ import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
 import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
-import wu from 'wu';
 import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
@@ -84,6 +83,8 @@ export class PipelineView extends FunctionView {
     }
 
     if (format === 'Single Excel') {
+      DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+
       const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
       const exportWorkbook = new ExcelJS.Workbook();
 
@@ -421,11 +422,11 @@ export class PipelineView extends FunctionView {
     Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
   }
 
-  public override async onComparisonLaunch(funcCallIds: string[]) {
+  public override async onComparisonLaunch(funcCalls: DG.FuncCall[]) {
     const parentCall = grok.shell.v.parentCall;
 
     const childFuncCalls = await Promise.all(
-      funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
+      funcCalls.map((funcCall) => historyUtils.loadChildRuns(funcCall.id)),
     );
 
     // Main child function should habe `meta.isMain: true` tag or the last function is used
@@ -553,6 +554,20 @@ export class PipelineView extends FunctionView {
   private findCurrentStep() {
     return Object.values(this.steps)
       .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+  }
+
+  public override buildHistoryBlock(): HTMLElement {
+    const hb = super.buildHistoryBlock();
+
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedCall) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedCall.id}"`).list();
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
+    return hb;
   }
 
   public override buildRibbonPanels(): HTMLElement[][] {

@@ -145,12 +145,9 @@ Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.
 #tolerance: 0.00005
 ```
 
-### Multi-stage model
+### Cyclic process simulation
 
-The multi-stage model is a model where parameters and function values can vary for different
-ranges of argument values.
-
-Datagrok provides a special capabilities for multi-stage simulation.
+Datagrok provides special capabilities for modeling cyclic processes.
 
 Use the `#loop` feature to specify several modeling cycles.
 Define the number of repetitions in the mandatory `count` variable and
@@ -171,18 +168,30 @@ You can set new values for parameters and change values for functions.
 
 ![Multi-stage model - loop](pics/DiffStudio-loop.gif)
 
-Apply the `#update` feature to obtain acyclic simulation.
-Set the length of the new modeling stage in the mandatory `length` variable.
-Inside you can use any mathematical expression to modify functions and parameters,
-same as for the `#loop` section.
+### Multistage model
+
+Use the `#update` feature to construct models with multiple sequential processes (stages).
+
+Add name of the first stage in the `#argument` block:
 
 ```python
-#update:
-  length = 6
-  y = 1
+#argument: t, 1-st stage
+  t0 = 0.01
+  t1 = 15
+  h = 0.01
 ```
 
-Use any valid expression, when specifying the updates of inputs.
+Add the `#update` block. Enter name of the stage and set its duration. Add lines with model inputs updates. Use any valid mathematical expression to define them.
+
+```python
+#update: 2-nd stage
+  duration = 23
+  p = p * 2
+```
+
+You can add any number of `update` blocks. Simulation stages are marked with a color:
+
+![Multi-stage model - update](pics/DiffStudio-update.gif)
 
 ## Usability improvements
 
@@ -283,7 +292,7 @@ PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their
 
 ### Acid production
 
-`Acid production` models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the `update` feature for multi-stage simulation
+`Acid production` models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the `update` feature for multistage simulation
 
 ![add-to-workspace](pics/DiffStudio-acid-production.gif)
 
@@ -292,6 +301,12 @@ PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their
 The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147). It demonstrates the `output` feature
 
 ![add-to-workspace](pics/DiffStudio-nimotuzumab.gif)
+
+### Bioreactor
+
+The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies.
+
+![add-to-workspace](pics/DiffStudio-bioreactor.png)
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.

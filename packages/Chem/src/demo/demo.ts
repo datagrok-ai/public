@@ -175,8 +175,9 @@ export async function _demoSimilaritySearch(): Promise<void> {
 
 export async function _demoSimilarityDiversitySearch(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/smiles.csv');
-  _package.files.readAsText('demo_files/similarity_diversity.layout').then((layoutString: string) => {
+  _package.files.readAsText('demo_files/similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
+    await delay(100);
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
@@ -582,6 +583,7 @@ LIMIT 50
   ], {style: {height: '100%', width: '100%'}});
 
   const view = grok.shell.addView(DG.View.create());
+  view.name = 'Chemical Databases';
   view.root.append(totalDiv);
   setTimeout(() => runQuery(), 0);
 }

@@ -35,9 +35,13 @@ export enum DistanceMetricsSubjects {
     MacroMolecule = 'MacroMolecule',
     Number = 'Number',
     IntArray = 'IntArray',
+    NumberArray = 'NumberArray',
   }
 
 export enum NumberMetricsNames {
   Difference = 'Difference',
 }
 
+export enum NumberArrayMetricsNames {
+  CommonItems = 'Common Items',
+}

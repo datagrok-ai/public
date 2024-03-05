@@ -46,7 +46,7 @@ export class LogView extends UaView {
         });
         filters.append(DG.Viewer.filters(t, filtersStyle).root);
 
-        viewer.columns.setOrder(['source', 'user', 'event_time', 'event_description']);
+        viewer.columns.setOrder(['source', 'user', 'event_time', 'event_description', 'id']);
         viewer.col('user')!.cellType = 'html';
         viewer.col('user')!.width = 30;
         viewer.col('source')!.width = 30;
@@ -56,7 +56,7 @@ export class LogView extends UaView {
           if (gc.gridColumn.name === 'event_description')
             gc.style.font = '13px monospace';
 
-          if (gc.gridColumn.name === 'event_time') {
+          if (gc.gridColumn.name === 'event_time' || gc.gridColumn.name === 'id') {
             gc.style.textColor = 0xFFB8BAC0;
             gc.style.font = '13px Roboto';
           }

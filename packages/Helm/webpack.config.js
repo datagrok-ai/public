@@ -15,6 +15,9 @@ module.exports = {
     fallback: {'url': false},
     extensions: ['.ts', '.tsx', '.js', '.wasm', '.mjs', '.json'],
   },
+  devServer: {
+    contentBase: './dist',
+  },
   module: {
     rules: [
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},

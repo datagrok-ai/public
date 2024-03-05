@@ -10,7 +10,7 @@ distribution can be edited as well.
 
 1. Open "demog" dataset
 
-1. Open "Random data" dialog from  **Tools | Data Science**
+1. Open "Random data" dialog from  **ML | Tools **
 
 1. Leave the values of all fields by default. Set the value of field "Show histogram" as true
 

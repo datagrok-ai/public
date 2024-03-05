@@ -132,6 +132,7 @@ category('DataFrame: Methods', () => {
     const t = createDf();
     const data = t.toCsv();
     const t2 = DG.DataFrame.fromCsv(data);
+    expect(t2 instanceof DG.DataFrame);
     expectTable(t2, t);
     const df = DG.DataFrame.fromColumns([]);
     const csv = df.toCsv();

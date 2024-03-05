@@ -39,7 +39,6 @@ import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
-import {getMCS} from './utils/most-common-subs';
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -47,6 +46,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {MmpAnalysis} from './analysis/molecular-matched-pairs/mmp-analysis';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -71,6 +71,7 @@ import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import { drawMoleculeLabels } from './rendering/molecule-label';
+import { getMCS } from './utils/most-common-subs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -496,7 +497,8 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
 //input: column col {semType: Molecule}
 //input: string _metric {optional: true}
-//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern']}
+// eslint-disable-next-line max-len
+//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
@@ -1153,7 +1155,6 @@ export function copyAsSmarts(value: DG.SemanticValue): void {
   grok.shell.info('Smarts copied to clipboard');
 }
 
-
 //name: isSmiles
 //input: string s
 //output: bool res
@@ -1277,6 +1278,17 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 export function addScaffoldTree(): void {
   DG.ObjectPropertyBag.setDefaultProperty('Scaffold Tree', 'allowGenerate', true);
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
+}
+
+//top-menu: Chem | Analyze | Molecular Matched Pairs...
+//name:  Molecular Matched Pairs
+//input: dataframe table [Input data table]
+//input: column molecules { semType: Molecule }
+//input: column_list activities {type:numerical}
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList): Promise<void> {
+  const view = grok.shell.tv;
+  const mmp = await MmpAnalysis.init(table, molecules, activities);
+  view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
 }
 
 //name: Scaffold Tree Filter
@@ -1403,8 +1415,8 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //top-menu: Chem | Transform | Convert Notation...
 //name: convertNotation
 //input: dataframe data
-//input: column smiles  {semType: Molecule}
-//input: string targetNotation {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
+//input: column molecules {semType: Molecule}
+//input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //input: bool overwrite = false
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
   targetNotation: DG.chem.Notation, overwrite = false ): Promise<void> {

@@ -94,3 +94,12 @@
   border: 1px solid var(--grey-1);
   border-radius: 2px;
 }
+
+.tm-button {
+  margin-left: 5px;
+}
+
+.tm-button label {
+  order: 1;
+  margin-left: 5px;
+}

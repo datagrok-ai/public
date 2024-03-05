@@ -6,9 +6,10 @@ import {test, after, before, category, expect} from '@datagrok-libraries/utils/s
 
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {getLibFileNameList} from '../utils/monomer-lib';
+import {MonomerLibFileManager} from '../utils/monomer-lib/library-file-manager/file-manager';
+import {MonomerLibFileEventManager} from '../utils/monomer-lib/library-file-manager/event-manager';
 
 
 category('monomerLibraries', () => {
@@ -50,14 +51,20 @@ category('monomerLibraries', () => {
   test('empty', async () => {
     // exclude all monomer libraries for empty set
     const libSettings = await getUserLibSettings();
-    const libFnList = await getLibFileNameList();
+    const libFileEventManager = MonomerLibFileEventManager.getInstance();
+    const libFileManager = await MonomerLibFileManager.getInstance(libFileEventManager);
+
+    let libFnList = libFileManager.getValidLibraryPaths();
+    if (libFnList.length === 0)
+      libFnList = await libFileManager.getValidLibraryPathsAsynchronously();
+
     libSettings.exclude = libFnList;
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
 
     await monomerLibHelper.loadLibraries(true);
     const currentMonomerLib = monomerLibHelper.getBioLib();
-    expect(currentMonomerLib.getPolymerTypes().length === 0, true);
-    const monomerOfTypesList = currentMonomerLib.getMonomerMolsByPolymerType('PEPTIDE');
+    const polymerTypes = currentMonomerLib.getPolymerTypes();
+    expect(polymerTypes.length === 0, true);
   });
 });

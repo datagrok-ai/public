@@ -931,9 +931,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private _onRendered: Subject<void> = new Subject<void>();
 
-  public get onRendered(): Observable<void> { return this._onRendered; }
+  get onRendered(): Observable<void> { return this._onRendered; }
 
-  public invalidate(caller?: string): void {
+  invalidate(caller?: string): void {
     const logPrefix = `${this.viewerToLog()}.invalidate(${caller ? ` <- ${caller} ` : ''})`;
     this.logger.debug(`${logPrefix}, ` + '---> put to syncer');
     // Put the event trigger in the tail of the synced calls queue.
@@ -944,7 +944,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     });
   }
 
-  public async awaitRendered(timeout: number = 10000): Promise<void> {
+  async awaitRendered(timeout: number = 10000): Promise<void> {
     const callLog = `awaitRendered( ${timeout} )`;
     const logPrefix = `${this.viewerToLog()}.${callLog}`;
     await testEvent(this._onRendered, (args) => {

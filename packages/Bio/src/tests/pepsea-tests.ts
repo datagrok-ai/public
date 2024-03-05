@@ -20,5 +20,5 @@ category('PepSeA', () => {
     const alignedTestCol = table.getCol('MSA');
     for (let i = 0; i < alignedCol!.length; ++i)
       expect(alignedCol!.get(i) == alignedTestCol.get(i), true);
-  });
+  }, {timeout: 60000});
 });

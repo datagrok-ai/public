@@ -150,7 +150,8 @@ case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else '
 e.event_time as date,
 v5.value::uuid as uid,
 v3.value as version,
-v2.value as reason
+v2.value as reason,
+v6.value as start
 from events e
 inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
@@ -158,7 +159,22 @@ left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2
 left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
 left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
+left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'start' on v6.event_id = e.id
 where e.description = @path
 order by e.event_time desc
-limit 3
+limit 4
+--end
+
+--name: TestingName
+--connection: System:Datagrok
+--input: string id
+--output: string name
+select
+distinct on (e.description)
+v1.value as name
+from events e
+inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name = 'tt-new-testing'
+left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'name' on v1.event_id = e.id
+where e.description = @id
+order by e.description, e.event_time desc
 --end

@@ -12,29 +12,19 @@ import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-librarie
 import {MonomerPosition} from '../viewers/sar-viewer';
 
 category('Core', () => {
-  let simpleTable: DG.DataFrame;
-  let simpleActivityCol: DG.Column<number>;
-  let simpleAlignedSeqCol: DG.Column<string>;
-  let simpleScaledCol: DG.Column<number>;
-
-  let complexTable: DG.DataFrame;
-  let complexActivityCol: DG.Column<number>;
-  let complexAlignedSeqCol: DG.Column<string>;
-  let complexScaledCol: DG.Column<number>;
   const alignedSequenceCol = 'AlignedSequence';
 
   let model: PeptidesModel | null = null;
-
   test('Start analysis: simple', async () => {
     const simpleActivityColName = 'IC50';
-    simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
-    simpleActivityCol = simpleTable.getCol(simpleActivityColName);
-    simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
+    const simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
+    const simpleActivityCol = simpleTable.getCol(simpleActivityColName);
+    const simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
+    const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
@@ -47,15 +37,15 @@ category('Core', () => {
 
   test('Start analysis: сomplex', async () => {
     const complexActivityColName = 'Activity';
-    complexTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned_2.csv'));
-    complexActivityCol = complexTable.getCol(complexActivityColName);
-    complexAlignedSeqCol = complexTable.getCol('MSA');
+    const complexTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned_2.csv'));
+    const complexActivityCol = complexTable.getCol(complexActivityColName);
+    const complexAlignedSeqCol = complexTable.getCol('MSA');
     complexAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     complexAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.UN);
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     complexAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.setTag(C.TAGS.SEPARATOR, '/');
-    complexScaledCol = scaleActivity(complexActivityCol, C.SCALING_METHODS.MINUS_LG);
+    const complexScaledCol = scaleActivity(complexActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
@@ -68,14 +58,14 @@ category('Core', () => {
 
   test('Save and load project', async () => {
     const simpleActivityColName = 'IC50';
-    simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
-    simpleActivityCol = simpleTable.getCol(simpleActivityColName);
-    simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
+    const simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
+    const simpleActivityCol = simpleTable.getCol(simpleActivityColName);
+    const simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
+    const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol,
       C.SCALING_METHODS.MINUS_LG);
@@ -106,4 +96,4 @@ category('Core', () => {
     await grok.dapi.tables.delete(sti);
     await grok.dapi.projects.delete(sp);
   }, {skipReason: 'ViewLayout should become ViewInfo in 1.18.'});
-});
+}, {clear: true});

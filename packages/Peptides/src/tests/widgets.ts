@@ -48,7 +48,7 @@ category('Widgets: Settings', () => {
 
     // Check number of panes
     const panes = settingsElements.accordion.panes.map((pane) => pane.name);
-    expect(panes.length, 4, `Expected 4 panes, got ${settingsElements.accordion.panes.length}`);
+    expect(panes.length, 5, `Expected 5 panes, got ${settingsElements.accordion.panes.length}`);
     for (const paneName of Object.values(SETTINGS_PANES))
       expect(panes.includes(paneName), true, `Pane ${paneName} is missing`);
 
@@ -153,6 +153,7 @@ category('Widgets: Actions', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    await df.meta.detectSemanticTypes();
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -179,13 +180,14 @@ category('Widgets: Actions', () => {
 
     const selection = model.df.selection;
     selection.set(0, true, false);
+    selection.set(1, true, false);
 
     const newViewId = model.createNewView();
     const currentTable = grok.shell.t;
 
     expect(currentTable.getTag(C.TAGS.MULTIPLE_VIEWS), '1', 'Current table is expected to have multiple views tag');
     expect(currentTable.getTag(DG.TAGS.ID), newViewId, 'Current table is expected to have the same UUID as new view');
-    expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
+    expect(currentTable.rowCount, 2, 'Current table is expected to have 2 rows');
 
     await delay(500);
     const currentTableModel = currentTable.temp[PeptidesModel.modelName] as PeptidesModel;

@@ -9,7 +9,6 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
-type RowPredicate = (row: any) => boolean;
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -40,6 +39,7 @@ export class SunburstViewer extends EChartViewer {
           nodeClick: false,
           label: {
             rotate: 'radial',
+            fontSize: 10,
           }
         },
       ],
@@ -65,20 +65,11 @@ export class SunburstViewer extends EChartViewer {
     }, event);
   }
 
-  handleDataframeFiltering(path: string[]) {
-    const rowPredicate = this.buildRowPredicate(path);
-    const filterFunction: RowPredicate = new Function('row', `return ${rowPredicate};`) as RowPredicate;
-    this.dataFrame.rows.filter(filterFunction);
-  }
-
-  buildRowPredicate(path: string[]): string {
+  createQueryMatcher(path: string[]): DG.RowMatcher {
     const conditions = path.map((value, i) => {
-      const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
-      const formattedValue = columnType === 'string' ? `'${value}'` : value;
-      return `row.${this.hierarchyColumnNames[i]} === ${formattedValue}`;
-    });
-  
-    return conditions.join(' && ');
+      return `${this.hierarchyColumnNames[i]} = ${value}`;
+    }).join(' and ');
+    return this.dataFrame.rows.match(conditions);
   }
 
   removeFiltering() {
@@ -95,7 +86,7 @@ export class SunburstViewer extends EChartViewer {
       const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path);
+        this.createQueryMatcher(path).filter();
         return;
       }
       const isSectorSelected = selectedSectors.includes(pathString);
@@ -112,10 +103,13 @@ export class SunburstViewer extends EChartViewer {
           this.handleDataframeSelection(path, params.event.event);
         }
       } else {
-        return;
+        this.handleDataframeSelection(path, params.event.event);
       }
     });
     this.chart.on('mouseover', (params: any) => {
+      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const matchDf = this.createQueryMatcher(path).toDataFrame();
+      const matchCount = matchDf.rowCount;
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
         const { hierarchyColumnNames, dataFrame } = this;
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
@@ -133,7 +127,7 @@ export class SunburstViewer extends EChartViewer {
         }
         return false;
       }, params.event.event.x, params.event.event.y);
-      ui.tooltip.root.innerText += params.name;
+      ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {
@@ -161,8 +155,7 @@ export class SunburstViewer extends EChartViewer {
     if (p?.name === 'hierarchyColumnNames')
       this.render();
     if (p?.name === 'table') {
-      const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
-      this.dataFrame = dataFrame!;
+      this.updateTable();
       this.onTableAttached(true);
     }
     else
@@ -188,6 +181,53 @@ export class SunburstViewer extends EChartViewer {
 
   getSeriesData(): treeDataType[] | undefined {
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter);
+  }
+
+  formatLabel(params: any) {
+    //@ts-ignore
+    const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+    const getCurrentItemIndex = params.seriesIndex;
+    const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => {
+        if (getCurrentItemIndex === index) {
+            return item;
+        }
+    });
+    const r = ItemLayoutInfo.r;
+    const startAngle = ItemLayoutInfo.startAngle;
+    const endAngle = ItemLayoutInfo.endAngle;
+    const cx = ItemLayoutInfo.cx;
+    const cy = ItemLayoutInfo.cy;
+    const width = Math.abs(cx + r * Math.cos(startAngle) - (cx + r * Math.cos(endAngle)));
+    const height = Math.abs(cy + r / 1.5 * Math.sin(startAngle) - (cy + r / 1.5 * Math.sin(endAngle)));
+
+    const averageCharWidth = 10 * 0.6;
+    const averageCharHeight = 10 * 1.2;
+    const maxWidthCharacters = Math.floor(width / averageCharWidth);
+    const maxHeightCharacters = Math.floor(height / averageCharHeight);
+
+    const maxLength = maxWidthCharacters;
+    let name = params.name;
+    let lines = [name];
+
+    if (name.length > maxLength) {
+      lines = [];
+      let remainingHeight = maxHeightCharacters;
+      while (name.length > 0 && remainingHeight > 0) {
+        let line = name.substring(0, maxLength);
+        const lastSpaceIndex = line.lastIndexOf(' ');
+        if (lastSpaceIndex !== -1) {
+          line = line.substring(0, lastSpaceIndex);
+        }
+        line = line.trimRight();
+        lines.push(line);  
+        remainingHeight -= 1;
+        name = name.substring(line.length).trim();
+      }
+      if (name.length > 0) {
+        lines[lines.length - 1] += '...';
+      }
+    }
+    return lines.join('\n');
   }
 
   async handleStructures(data: treeDataType[] | undefined) {
@@ -226,6 +266,7 @@ export class SunburstViewer extends EChartViewer {
 
     this.handleStructures(this.getSeriesData()).then((data) => {
       this.option.series[0].data = data;
+      this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
       this.chart.setOption(this.option);
     });
   }

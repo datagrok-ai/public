@@ -77,6 +77,7 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
       matrix[0][i] = -gapOpen - (i - 1) * gapExtend;
       matrix[1][i] = 0;
     }
+    matrix[0][0] = 0;
 
     // Calculate the rest of the matrix
     for (let i = 1; i < seq2.length + 1; i++) {

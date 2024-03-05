@@ -47,7 +47,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): StatsIte
     throw new Error('PeptidesError: Data and bit array have different lengths');
 
 
-  if (bitArray.falseCount() === 0 || bitArray.trueCount() === 0)
+  if (bitArray.trueCount() === 0)
     throw new Error('PeptidesError: One of the samples is empty');
 
 

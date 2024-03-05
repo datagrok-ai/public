@@ -51,6 +51,8 @@ import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {getDbscanWorker} from '@datagrok-libraries/math';
+import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
@@ -99,6 +101,8 @@ export class PeptidesModel {
   accordionSource: VIEWER_TYPE | null = null;
   // sequence space viewer
   _sequenceSpaceViewer: DG.ScatterPlotViewer | null = null;
+  //MCL viewer
+  _mclViewer: DG.ScatterPlotViewer | null = null;
   /**
    * @param {DG.DataFrame}dataFrame - DataFrame to use for analysis
    */
@@ -151,6 +155,7 @@ export class PeptidesModel {
   // Peptides analysis settings
   _settings: type.PeptidesSettings | null = null;
   _sequenceSpaceCols: string[] = [];
+  _mclCols: string[] = [];
 
   /**
    * @return {type.PeptidesSettings}- Peptides analysis settings
@@ -185,6 +190,9 @@ export class PeptidesModel {
       case 'showDendrogram':
         updateVars.add('dendrogram');
         break;
+      case 'showSequenceSpace':
+        updateVars.add('showSequenceSpace');
+        break;
       case 'showLogoSummaryTable':
         updateVars.add('logoSummaryTable');
         break;
@@ -199,6 +207,10 @@ export class PeptidesModel {
         break;
       case 'sequenceSpaceParams':
         updateVars.add('sequenceSpaceParams');
+        break;
+      case 'mclSettings':
+        updateVars.add('mclSettings');
+        break;
       }
     }
     // Write updated settings
@@ -216,6 +228,8 @@ export class PeptidesModel {
           updateVars.add('clusterParams');
       }
     }
+    if (updateVars.has('sequenceSpaceParams'))
+      updateVars.delete('clusterParams');
 
     // Apply new settings
     for (const variable of updateVars) {
@@ -258,10 +272,15 @@ export class PeptidesModel {
         mpr.render();
         break;
       case 'sequenceSpaceParams':
-        this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
+      case 'showSequenceSpace':
+        if (this.settings!.showSequenceSpace)
+          this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
         break;
       case 'clusterParams':
         this.clusterEmbeddings();
+        break;
+      case 'mclSettings':
+        this.addMCLClusters();
         break;
       }
     }
@@ -431,43 +450,49 @@ export class PeptidesModel {
 
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newView = ui.label('New view');
-        $(newView).addClass('d4-link-action');
-        newView.onclick = (): string => trueModel.createNewView();
-        newView.onmouseover = (ev): void =>
-          ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
-        if (trueLSTViewer === null)
-          return ui.divV([newView]);
-
-
-        const newCluster = ui.label('New cluster');
-        $(newCluster).addClass('d4-link-action');
-        newCluster.onclick = (): void => {
+        try {
+          const newView = ui.label('New view');
+          $(newView).addClass('d4-link-action');
+          newView.onclick = (): string => trueModel.createNewView();
+          newView.onmouseover = (ev): void =>
+            ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
           if (trueLSTViewer === null)
-            throw new Error('Logo summary table viewer is not found');
+            return ui.divV([newView]);
 
 
-          trueLSTViewer.clusterFromSelection();
-        };
-        newCluster.onmouseover = (ev): void =>
-          ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
-
-        const removeCluster = ui.label('Remove cluster');
-        $(removeCluster).addClass('d4-link-action');
-        removeCluster.onclick = (): void => {
-          const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-          if (lstViewer === null)
-            throw new Error('Logo summary table viewer is not found');
+          const newCluster = ui.label('New cluster');
+          $(newCluster).addClass('d4-link-action');
+          newCluster.onclick = (): void => {
+            if (trueLSTViewer === null)
+              throw new Error('Logo summary table viewer is not found');
 
 
-          lstViewer.removeCluster();
-        };
-        removeCluster.onmouseover = (ev): void =>
-          ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
-        removeCluster.style.visibility = trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' :
-          'visible';
+            trueLSTViewer.clusterFromSelection();
+          };
+          newCluster.onmouseover = (ev): void =>
+            ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
 
-        return ui.divV([newView, newCluster, removeCluster]);
+          const removeCluster = ui.label('Remove cluster');
+          $(removeCluster).addClass('d4-link-action');
+          removeCluster.onclick = (): void => {
+            const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+            if (lstViewer === null)
+              throw new Error('Logo summary table viewer is not found');
+
+
+            lstViewer.removeCluster();
+          };
+          removeCluster.onmouseover = (ev): void =>
+            ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+          removeCluster.style.visibility = trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' :
+            'visible';
+
+          return ui.divV([newView, newCluster, removeCluster]);
+        } catch (e) {
+          const errorDiv = ui.divText('Error in Actions');
+          ui.tooltip.bind(errorDiv, String(e));
+          return errorDiv;
+        }
       }, true);
     }
 
@@ -539,16 +564,24 @@ export class PeptidesModel {
       (requestSource instanceof MonomerPosition) ? requestSource.invariantMapSelection : {};
     const clusterSelection = (requestSource instanceof LogoSummaryTable) ? requestSource.clusterSelection :
       trueLSTViewer?.clusterSelection ?? {};
-    acc.addPane('Distribution', () => getDistributionWidget(trueModel.df, {
-      peptideSelection: combinedBitset,
-      columns: isModelSource ? trueModel.settings!.columns ?? {} :
-        (requestSource as PeptideViewer).getAggregationColumns(),
-      activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
-        (requestSource as PeptideViewer).getScaledActivityColumn(),
-      monomerPositionSelection: totalMonomerPositionSelection,
-      clusterSelection: clusterSelection,
-      clusterColName: trueLSTViewer?.clustersColumnName,
-    }), true);
+    acc.addPane('Distribution', () => {
+      try {
+        return getDistributionWidget(trueModel.df, {
+          peptideSelection: combinedBitset,
+          columns: isModelSource ? trueModel.settings!.columns ?? {} :
+            (requestSource as PeptideViewer).getAggregationColumns(),
+          activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
+            (requestSource as PeptideViewer).getScaledActivityColumn(),
+          monomerPositionSelection: totalMonomerPositionSelection,
+          clusterSelection: clusterSelection,
+          clusterColName: trueLSTViewer?.clustersColumnName,
+        });
+      } catch (e) {
+        const errorDiv = ui.divText('Error in Distribution');
+        ui.tooltip.bind(errorDiv, String(e));
+        return errorDiv;
+      }
+    }, true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
         return false;
@@ -560,20 +593,28 @@ export class PeptidesModel {
       }
       return true;
     };
-    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, {
-      positionColumns: isModelSource ? trueModel.positionColumns! :
-        (requestSource as SARViewer | LogoSummaryTable).positionColumns,
-      columns: isModelSource ? trueModel.settings!.columns ?? {} :
-        (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
-      activityColumn: isModelSource ? trueModel.getScaledActivityColumn()! :
-        (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
-      gridColumns: trueModel.analysisView.grid.columns,
-      colorPalette: pickUpPalette(trueModel.df.getCol(isModelSource ? trueModel.settings!.sequenceColumnName :
-        (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
-      tableSelection: trueModel.getCombinedSelection(),
-      isAnalysis: trueModel.settings !== null && (isModelSource ||
+    acc.addPane('Selection', () => {
+      try {
+        return getSelectionWidget(trueModel.df, {
+          positionColumns: isModelSource ? trueModel.positionColumns! :
+            (requestSource as SARViewer | LogoSummaryTable).positionColumns,
+          columns: isModelSource ? trueModel.settings!.columns ?? {} :
+            (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
+          activityColumn: isModelSource ? trueModel.getScaledActivityColumn()! :
+            (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
+          gridColumns: trueModel.analysisView.grid.columns,
+          colorPalette: pickUpPalette(trueModel.df.getCol(isModelSource ? trueModel.settings!.sequenceColumnName :
+            (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
+          tableSelection: trueModel.getCombinedSelection(),
+          isAnalysis: trueModel.settings !== null && (isModelSource ||
         areObjectsEqual(trueModel.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
-    }), true);
+        });
+      } catch (e) {
+        const errorDiv = ui.divText('Error in Selection');
+        ui.tooltip.bind(errorDiv, String(e));
+        return errorDiv;
+      }
+    }, true);
     return acc;
   }
 
@@ -774,12 +815,16 @@ export class PeptidesModel {
     const filter = this.df.filter;
 
     const showAccordion = (): void => {
-      const acc = this.createAccordion();
-      if (acc === null)
-        return;
+      try {
+        const acc = this.createAccordion();
+        if (acc === null)
+          return;
 
 
-      grok.shell.o = acc.root;
+        grok.shell.o = acc.root;
+      } catch (e) {
+        console.error(e);
+      }
     };
 
     selection.onChanged.subscribe(() => {
@@ -806,7 +851,8 @@ export class PeptidesModel {
         }
         const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
         if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
-          lstViewer.createLogoSummaryTableGrid();
+          lstViewer._logoSummaryTable = lstViewer.createLogoSummaryTable() ?? lstViewer._logoSummaryTable;
+          lstViewer._viewerGrid = lstViewer.createLogoSummaryTableGrid() ?? lstViewer._viewerGrid;
           lstViewer.render();
         }
       } catch (e) {
@@ -1159,7 +1205,7 @@ export class PeptidesModel {
     const epsilon = this.settings!.sequenceSpaceParams!.epsilon ?? 0.01;
     const minPts = this.settings!.sequenceSpaceParams!.minPts ?? 4;
     const clusterRes = await getDbscanWorker(embed1, embed2, epsilon, minPts);
-    const newClusterName = this.df.columns.getUnusedName('Cluster');
+    const newClusterName = this.df.columns.getUnusedName('Cluster (DBSCAN)');
     const clusterCol = this.df.columns.addNewString(newClusterName);
     clusterCol.init((i) => clusterRes[i].toString());
     if (this._sequenceSpaceViewer !== null)
@@ -1168,6 +1214,67 @@ export class PeptidesModel {
     this._sequenceSpaceCols = [embeddingColNames[0], embeddingColNames[1], clusterCol.name];
     const gridCol = this.analysisView.grid.col(clusterCol.name);
     gridCol && (gridCol.visible = false);
+  }
+
+  async addMCLClusters(): Promise<void> {
+    if (this._mclViewer !== null) {
+      try {
+        this._mclViewer?.detach();
+        this._mclViewer?.close();
+      } catch (_) {}
+    }
+    if (this._mclCols.length !== 0)
+      this._mclCols.forEach((col) => this.df.columns.remove(col));
+    this._mclCols = [];
+    const seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
+    this.settings!.mclSettings ??= new type.MCLSettings();
+    const mclParams = this.settings?.mclSettings;
+
+    let counter = 0;
+    const addedColCount = 4;
+    const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
+      for (const col of colArgs.columns) {
+        if (col.name.toLowerCase().startsWith('embed') ||
+        col.name.toLowerCase().startsWith('cluster')) {
+          const gridCol = this.analysisView.grid.col(col.name);
+          if (gridCol == null || this._mclCols.includes(col.name))
+            continue;
+
+          gridCol.visible = false;
+          this._mclCols.push(col.name);
+          counter++;
+        }
+      }
+      if (counter === addedColCount)
+        columnAddedSub.unsubscribe();
+    });
+    const mclAdditionSub = grok.events.onViewerAdded.subscribe((info) => {
+      try {
+        const v = info.args.viewer as DG.ScatterPlotViewer;
+        if (v.type === DG.VIEWER.SCATTER_PLOT) {
+          if (this._sequenceSpaceViewer && this.analysisView.dockManager.findNode(this._sequenceSpaceViewer.root)) {
+            const rootNode = this.analysisView.dockManager.findNode(this._sequenceSpaceViewer.root);
+            setTimeout(() => {
+              this.analysisView.dockManager.dock(v, DG.DOCK_TYPE.FILL, rootNode);
+            });
+          }
+          mclAdditionSub.unsubscribe();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    const bioPreprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
+    const mclViewer = await markovCluster(
+      this.df, [seqCol], [mclParams!.distanceF], [1],
+      DistanceAggregationMethods.MANHATTAN, [bioPreprocessingFunc], [{
+        gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
+        fingerprintType: mclParams!.fingerprintType,
+      }], mclParams!.threshold, mclParams!.maxIterations,
+    );
+    mclAdditionSub.unsubscribe();
+    this._mclViewer = mclViewer ?? null;
   }
 
   /**
@@ -1240,7 +1347,7 @@ export class PeptidesModel {
         if (col.name.toLowerCase().startsWith('embed_') ||
         ( seqSpaceSettings.clusterEmbeddings && col.name.toLowerCase().startsWith('cluster'))) {
           const gridCol = this.analysisView.grid.col(col.name);
-          if (gridCol == null)
+          if (gridCol == null || this._sequenceSpaceCols.includes(col.name))
             continue;
 
           gridCol.visible = false;
@@ -1252,8 +1359,25 @@ export class PeptidesModel {
         columnAddedSub.unsubscribe();
     });
 
+    const seqSpaceAdditionSub = grok.events.onViewerAdded.subscribe((info) => {
+      try {
+        const v = info.args.viewer as DG.ScatterPlotViewer;
+        if (v.type === DG.VIEWER.SCATTER_PLOT) {
+          if (this._mclViewer && this.analysisView.dockManager.findNode(this._mclViewer.root)) {
+            const rootNode = this.analysisView.dockManager.findNode(this._mclViewer.root);
+            setTimeout(() => {
+              this.analysisView.dockManager.dock(v, DG.DOCK_TYPE.FILL, rootNode);
+            });
+          }
+          seqSpaceAdditionSub.unsubscribe();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined =
       await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
+    seqSpaceAdditionSub.unsubscribe();
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
 

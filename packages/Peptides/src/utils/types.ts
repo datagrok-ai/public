@@ -20,8 +20,19 @@ export interface PeptidesSettings {
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
   showDendrogram?: boolean,
+  showSequenceSpace?: boolean,
   columns?: AggregationColumns,
   sequenceSpaceParams: SequenceSpaceParams,
+  mclSettings: MCLSettings,
+}
+
+export class MCLSettings {
+  maxIterations: number = 5;
+  threshold: number = 80;
+  distanceF: MmDistanceFunctionsNames = MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+  gapOpen: number = 1;
+  gapExtend: number = 0.6;
+  fingerprintType: string = 'Morgan';
 }
 
 export class SequenceSpaceParams {

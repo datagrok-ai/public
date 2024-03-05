@@ -137,8 +137,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+      # https://github.com/JulienKode/pull-request-name-linter-action/issues/236
       - name: Install commitlint dependencies
-        run: npm install @commitlint/config-conventional @commitlint/cli
+        run: npm install @commitlint/config-conventional@v17 @commitlint/cli
       - name: Commitlint PR title
         uses: JulienKode/pull-request-name-linter-action@v0.5.0
         with:

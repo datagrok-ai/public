@@ -32,9 +32,11 @@ export class RadarViewer extends DG.JsViewer {
   backgroundMaxColor: number;
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
+  title: string;
 
   constructor() {
     super();
+    this.title = this.string('title', 'Radar');
     this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
@@ -75,15 +77,15 @@ export class RadarViewer extends DG.JsViewer {
     this.updateRow();
 
     this.chart.on('mouseover', (params: any) => {
-      if (params.componentType === 'series') {
-        if (params.seriesIndex === 2) {
-          const divs: HTMLElement[] = [];
-          for (let i = 0; i < this.columns.length; ++i)
-            divs[i] = ui.divText(`${this.columns[i].name} : ${params.data.value[i]}`);
-
-          ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
-        }
-      }
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
+        const currentRow = this.dataFrame.currentRowIdx ?? 0;
+        if (i === currentRow)
+          return true;
+        return false;
+      }, params.event.event.x, params.event.event.y);
+      const tooltipText = this.getTooltip(params);
+      if (tooltipText)
+        ui.tooltip.root.innerText = tooltipText;
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
@@ -96,6 +98,18 @@ export class RadarViewer extends DG.JsViewer {
         this.render();
       }
     });
+  }
+
+  getTooltip(params: any): string | null {
+    if (params.componentType === 'series') {
+      if (params.seriesIndex === 2) {
+        const rows: string[] = [];
+        for (let i = 0; i < this.columns.length; ++i)
+          rows[i] = `${this.columns[i].name} : ${params.data.value[i]}`;
+        return rows.join('\n');
+      }
+    }
+    return null;
   }
 
   onTableAttached() {
@@ -292,7 +306,7 @@ export class RadarViewer extends DG.JsViewer {
         color: 'rgba(66, 135, 204, 0.8)',
       },
       label: {
-        show: true,
+        show: this.showValues,
         formatter: function(params: any) {
           return StringUtils.formatNumber(params.value) as string;
         },

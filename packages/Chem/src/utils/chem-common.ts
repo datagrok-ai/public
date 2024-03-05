@@ -70,6 +70,12 @@ export function hexToPercentRgb(hex: string): number[] | null {
   ] : null;
 }
 
+export function getSigFigs(n: number, sig: number) {
+  var mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
+  return Math.round(n * mult) / mult;
+}
+
+
 export function getFirstNSymbols(number: number, digits: number): string {
   const str = number.toFixed(digits).toString().slice(0, digits);
   return str[str.length - 1] === '.' ? number.toFixed(1).toString() : str;

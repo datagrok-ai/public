@@ -275,6 +275,7 @@ M  END
   }, {timeout: 60000});
 
   test('multipleDfsWithTerminatedSearch', async () => {
+    DG.chem.currentSketcherType = 'OpenChemLib';
     const df1 = await readDataframe('tests/smi10K.csv');
     const df2 = await readDataframe('tests/smi10K.csv');
     df2.name = 'tests/smi10K (2)';
@@ -284,25 +285,20 @@ M  END
 
     const filter1 = await createFilter('smiles', df1, sketcherDialogs);
     const filter2 = await createFilter('smiles', df2, sketcherDialogs);
-    const terminateFlag1 = 'terminate_substructure_search-tests/smi10K-smiles';
-    const terminateFlag2 = 'terminate_substructure_search-tests/smi10K (2)-smiles';
     const substr1 = 'C1CCCCC1';
     const substr2 = 'c1ccccc1';
     const substr3 = 'CC1CCCCC1';
 
     //starting filtering by 1st structure
     filter1.sketcher.setSmiles(substr1);
-    await delay(500);
+    await awaitCheck(() => df1.filter.trueCount !== 10001 , 'filtering of df1 didn\'t start', 30000);
     //setting 1st structure to the 2nd filter
     filter2.sketcher.setSmiles(substr2);
-    //setting 2nd structure to the 2nd filter and waiting for 1st filter to complete
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => {
-    }, () => {filter2.sketcher.setSmiles(substr3);}, 60000);
+    //setting 2nd structure to the 2nd filter
+    filter2.sketcher.setSmiles(substr3);
     //waiting for 2nd filter to complete
-    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {
-      expect(df1.filter.trueCount, 462);
-      expect(df2.filter.trueCount, 286);
-    }, () => {}, 60000);
+    await awaitCheck(() => df1.filter.trueCount === 462 , 'df1 hasn\'t been filtered correctly', 30000);
+    await awaitCheck(() => df2.filter.trueCount === 286 , 'df2 hasn\'t been filtered correctly', 30000);
 
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();

@@ -28,7 +28,7 @@ async function _testSimilaritySearchViewer() {
   const viewer: SequenceSimilarityViewer = (await moleculesView.dataFrame.plot
     .fromType('Sequence Similarity Search')) as SequenceSimilarityViewer;
   let computeCompleted: boolean = false;
-  viewer.computeCompleted.subscribe((value) => {
+  viewer.computeCompleted.subscribe((value: any) => {
     if (value) computeCompleted = true;
   });
   moleculesView.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity');
@@ -78,7 +78,7 @@ async function _testDiversitySearchViewer() {
   const viewer: SequenceDiversityViewer = (await moleculesView.dataFrame.plot
     .fromType('Sequence Diversity Search')) as SequenceDiversityViewer;
   let computeCompleted: boolean = false;
-  viewer.computeCompleted.subscribe((value) => {
+  viewer.computeCompleted.subscribe((value: boolean) => {
     if (value) computeCompleted = true;
   });
   moleculesView.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN, null, 'Diversity');

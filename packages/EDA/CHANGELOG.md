@@ -1,5 +1,21 @@
 # EDA changelog
 
+## 1.1.15 (2024-02-27)
+
+Add support for post processing functions in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.
+
+## 1.1.14 (2024-02-20)
+
+Fix NW distance function
+
+## 1.1.13 (2024-02-12)
+
+Fix PCA & PLS applying to table from local file
+
+## 1.1.12 (2024-02-12)
+
+Add MCL clustering. The method is available in Top Menu > ML > Cluster > MCL.
+
 ## 1.1.11 (2023-12-28)
 
 Add missing values imputation using the KNN method.

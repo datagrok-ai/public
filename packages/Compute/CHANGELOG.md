@@ -1,5 +1,57 @@
 # Compute changelog
 
+## 1.24.1 (2024-03-02)
+
+### Features
+
+- ModelCatalog: Fixed bug with mandatory groups
+
+## 1.24.0 (2024-03-01)
+
+### Features
+
+- RFV: Customizable data upload feature
+
+## 1.23.0 (2024-02-28)
+
+### Features
+
+- SA: Updated viewers
+- SA: Added analysis by value in custom column
+
+### Bug fixes
+
+- SA: Fixed bug last row analysis
+
+## 1.22.0 (2024-02-20)
+
+### Features
+
+- Added heavy-weight libraries dynamic load
+
+### Bug fixes
+
+- SA: Inputs layout fixed
+
+## 1.21.2 (2024-02-14)
+
+### Bug fixes
+
+- SA: Fixed bug switch styling
+
+## 1.21.0 (2024-02-13)
+
+### Features
+
+- Wizard: now deletes all steps' funccalls on parent funccall deletion
+- CPV: Design & performance improvements
+- SA: Added units into the form
+
+### Bug fixes
+
+- SA: Fixed bug with identical column names
+- CPV: Fixed bug with viewers of the same type
+
 ## 1.20.1 (2024-02-05)
 
 ### Features

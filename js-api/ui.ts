@@ -1049,7 +1049,7 @@ export class tools {
     });
   }
 
-  static async resizeFormLabels(element: HTMLElement): Promise<void> { 
+  static async resizeFormLabels(element: HTMLElement): Promise<void> {
     if (this.skipResizing(element)) return;
     
     //Default form width
@@ -1323,7 +1323,18 @@ export class tools {
 
     let label = buttons.querySelector('label') as HTMLElement;
     let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
-    
+
+    if (element.querySelector('.ui-input-root:not(.ui-input-buttons)') == null) {
+      element.style.removeProperty('max-width');
+      buttons.style.removeProperty('max-width');
+      editor.style.removeProperty('max-width');
+      let totalWidth = 0;
+      for (let i = 0; i < editor.children.length; i++)
+        totalWidth += editor.children[i].getBoundingClientRect().width;
+      element.style.maxWidth = `${totalWidth}px`;
+      buttons.style.maxWidth = `${totalWidth}px`;
+    }
+
     if (label != null) label.remove();
 
     if (editor != null) {
@@ -2045,6 +2056,18 @@ export namespace forms {
       root.append(editor);
       form.append(root);
     }
+  }
+
+  export function addGroup(form: HTMLElement, title: string, children: InputBase[] = []) {
+    if (!Array.isArray(children))
+      children = [children];
+
+    if (children == null)
+      return;
+
+    form.append(h2(title), ...children.map(input => input.root))
+
+    tools.resizeFormLabels(form);
   }
 }
 

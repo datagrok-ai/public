@@ -1,6 +1,28 @@
 # Helm changelog
 
-## 2.2.0 (WIP)
+## 2.1.29 (2024-02-21)
+
+* Fix Unkown monomers breaking grid rendering.
+
+## 2.1.28 (2024-02-19)
+
+* Fix TS config file.
+
+## 2.1.27 (2024-02-15)
+
+### Bug fixes
+
+* Fix dojo patch dependency on package init
+* Fix getMolfiles without current table view
+* Fix initHelm/rewriteLibraries without current table view
+
+## 2.1.26 (2024-02-14)
+
+### Bug fixes
+
+* Fix Properties panel of Context panel for sequences of MSA with gaps
+
+## 2.1.25 (2024-02-09)
 
 ### Features
 

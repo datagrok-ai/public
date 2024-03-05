@@ -9,6 +9,7 @@ export async function calculateSingleCellValues(
   value: string, descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
   queries: HitTriageTemplateScript[] = [],
 ): Promise<DG.DataFrame> {
+  const pg = DG.TaskBarProgressIndicator.create('Calculating ...');
   // TODO: this converts value to canonical one. We need to do it in a better way
   const canonicalSmiles = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
   const col = DG.Column.fromStrings(HitDesignMolColName, [canonicalSmiles]);
@@ -39,7 +40,14 @@ export async function calculateSingleCellValues(
       if (scriptFunc) {
         const tablePropName = scriptFunc.inputs[0].name;
         const colPropName = scriptFunc.inputs[1].name;
-        await scriptFunc.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+
+        const r: DG.DataFrame = await scriptFunc.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+        if (r && r.rowCount === table.rowCount && scriptFunc.language === 'python') {
+          for (const c of r.columns) {
+            c.name = table.columns.getUnusedName(c.name);
+            table.columns.add(c);
+          }
+        }
       }
     } catch (e) {
       console.error(e);
@@ -62,6 +70,7 @@ export async function calculateSingleCellValues(
       console.error(e);
     }
   }
+  pg.close();
   return table;
 };
 
@@ -82,6 +91,7 @@ export function getNewVid(vidCol: DG.Column<any>) {
 }
 
 export async function calculateColumns(resultMap: IComputeDialogResult, dataFrame: DG.DataFrame, molColName: string) {
+  const pg = DG.TaskBarProgressIndicator.create('Calculating ...');
   // first step: convert all values to canonical smiles.
   const molCol = dataFrame.col(molColName);
   if (!molCol)
@@ -123,7 +133,13 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
           continue;
         const tablePropName = s.inputs[0].name;
         const colPropName = s.inputs[1].name;
-        await s.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molColName});
+        const r: DG.DataFrame = await s.apply({...props, [tablePropName]: dataFrame, [colPropName]: molColName});
+        if (r && r.rowCount === dataFrame.rowCount && s.language === 'python') {
+          for (const c of r.columns) {
+            c.name = dataFrame.columns.getUnusedName(c.name);
+            dataFrame.columns.add(c);
+          }
+        }
       } catch (e) {
         console.error(e);
       }
@@ -152,4 +168,5 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
       }
     }
   };
+  pg.close();
 }

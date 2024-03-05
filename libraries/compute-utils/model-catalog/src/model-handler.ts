@@ -110,7 +110,8 @@ export class ModelHandler extends DG.ObjectHandler {
     setTimeout(async () => {
       const userGroups = await this.awaitUserGroups();
       const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
-      const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
+      const missingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name));
+      const hasMissingMandatoryGroups = missingMandatoryGroups.length > 0;
       const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
       mandatoryGroupsIcon.classList.remove('grok-icon');
 
@@ -123,7 +124,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
       const mandatoryGroupsInfo = ui.div(ui.divV([
         ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
-        ...mandatoryUserGroups.map((group) => ui.divV([
+        ...missingMandatoryGroups.map((group) => ui.divV([
           ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
           ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
           ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}}),

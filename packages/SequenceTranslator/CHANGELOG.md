@@ -1,5 +1,10 @@
 # Sequence Translator changelog
 
+## 1.2.7 (2024-01-29)
+### Features
+
+* Bulk translation for formats
+
 ## 1.2.6 (2024-01-29)
 
 ### Bug fixes

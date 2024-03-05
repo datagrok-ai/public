@@ -300,9 +300,12 @@ jobs:
           
           header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
+          if [ -z "$SLACK_MESSAGE_BODY" ]; then
+            SLACK_MESSAGE_BODY='Test results are empty. Probably it was caused by timeout. Check the job output for more information'
+          fi
           echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
 
       - name: Send test report to Slack

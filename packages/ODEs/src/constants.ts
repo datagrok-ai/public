@@ -29,7 +29,7 @@ export enum CONTROL_EXPR {
 export enum LOOP {
   MIN_LINES_COUNT = 1,
   COUNT_IDX = 0,
-  COUNT_NAME = '_count',  
+  COUNT_NAME = '_count',
   MIN_COUNT = 1,
 };
 
@@ -37,6 +37,5 @@ export enum LOOP {
 export enum UPDATE {
   MIN_LINES_COUNT = 1,
   DURATION_IDX = 0,
-  DURATION = '_duration',  
-  MIN_DURATION = 0,
+  DURATION = '_duration',
 };

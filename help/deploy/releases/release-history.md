@@ -8,7 +8,7 @@ position: 6 # float position is supported
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.6](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.13](https://hub.docker.com/r/datagrok/datagrok)                           |
 | [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -21,11 +21,21 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+## 2024-02-08 1.17.13
+
+### Addressed Issues
+
+* (Bug) [#2647](https://github.com/datagrok-ai/public/issues/2647): #2647: File refresh breaks structure filter
+* (Bug) [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases
+* (Bug) [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases (WIP)
+
+
 ## 2024-01-26 1.17.12
 
 ### Addressed Issues
 
 * (Bug) Windows share mounts with wrong permissions
+
 
 ## 2024-01-22 1.17.11
 

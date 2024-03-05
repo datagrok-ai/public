@@ -30,6 +30,17 @@ for (const lang of langs) {
         'bool_output': bool, 'string_output': str});
     });
 
+    test('Long string', async () => {
+      const str = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+      const int = 2;
+      const double = 0.3;
+      const bool = true;
+      const result = await grok.functions.call(`CVMTests:${lang}Simple`,
+        {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
+      expectObject(result, {'integer_output': int, 'double_output': double,
+        'bool_output': bool, 'string_output': str});
+    }, {timeout: 60000});
+
     test('Datetime input/output', async () => {
       const currentTime = dayjs();
       const result = await grok.functions.call(`CVMTests:${lang}Date`,
@@ -226,4 +237,10 @@ export async function getScriptTime(name: string, params: object = {}): Promise<
   const start = Date.now();
   await grok.functions.call(name, params);
   return Date.now() - start;
+}
+
+function randomString(length: number, chars: string) {
+  let result = '';
+  for (let i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+  return result;
 }

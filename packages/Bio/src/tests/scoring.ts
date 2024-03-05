@@ -8,8 +8,9 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/sr
 
 import {sequenceIdentityScoring, sequenceSimilarityScoring} from '../package';
 import {
-  LibSettings, getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 category('Scoring', () => {
   const sequence = 'sequence';
@@ -29,7 +30,7 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibSettings: LibSettings;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();

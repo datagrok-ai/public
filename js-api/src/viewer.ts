@@ -483,8 +483,16 @@ export class FilterGroup extends Viewer {
   }
 
   /** Returns array of filters in FilterGroup. Filter if js filter and dart object if dart filter */
-  get filters(): Array<Filter | any> {
+  get filters(): Array<Filter | Widget> {
     return toJs(api.grok_FilterGroup_Get_Filters(this.dart));
+  }
+
+  setEnabled(filter: Filter | Widget, active: boolean) {
+    api.grok_FilterGroup_SetEnabled(this.dart, filter, active);
+  }
+
+  remove(filter: Filter | Widget) {
+    api.grok_FilterGroup_Remove(this.dart, filter);
   }
 }
 

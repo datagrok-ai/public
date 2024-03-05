@@ -94,7 +94,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
-    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
+    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
   const clustersColumnChoice = ui.columnInput('Clusters', df, null, () => {
     if (clustersColumnChoice.value) {
@@ -130,7 +130,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: true,
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: false, addMCL: true,
           useEmbeddingsClusters: generateClustersInput.value ?? false});
       return model !== null;
     }
@@ -167,6 +167,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 type AnalysisOptions = {
   addSequenceSpace?: boolean,
   useEmbeddingsClusters?: boolean,
+  addMCL?: boolean,
 };
 
 /**
@@ -184,7 +185,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
   options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   let model: PeptidesModel | null = null;
-  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT) {
+  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT &&
+    activityColumn.type !== DG.COLUMN_TYPE.QNUM
+  ) {
     grok.shell.error('The activity column must be of numeric type!');
     return model;
   }
@@ -207,8 +210,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
 
   const settings: type.PeptidesSettings = {
     sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
-    columns: {}, showDendrogram: false,
+    columns: {}, showDendrogram: false, showSequenceSpace: false,
     sequenceSpaceParams: new type.SequenceSpaceParams(!!options.useEmbeddingsClusters && !clustersColumn),
+    mclSettings: new type.MCLSettings(),
   };
 
   if (clustersColumn) {
@@ -244,6 +248,25 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       if (clusterCol) {
         const lstProps: ILogoSummaryTable = {
           clustersColumnName: clusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+          activityColumnName: activityColumn.name,
+        };
+        await model.addLogoSummaryTable(lstProps);
+        setTimeout(() => {
+          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
+          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
+        }, 100);
+      }
+    }
+  } else if (options.addMCL ?? false) {
+    await model.addMCLClusters();
+    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+      const mclClusterCol = model._mclCols
+        .find(
+          (col) => model?.df.col(col) && col.toLowerCase().startsWith('cluster') && !col.toLowerCase().includes('size'),
+        );
+      if (mclClusterCol) {
+        const lstProps: ILogoSummaryTable = {
+          clustersColumnName: mclClusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
           activityColumnName: activityColumn.name,
         };
         await model.addLogoSummaryTable(lstProps);

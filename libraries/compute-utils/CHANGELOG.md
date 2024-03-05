@@ -1,5 +1,28 @@
 # compute-utils changelog
 
+## 1.24.1 (2024-03-02)
+
+### Bug fixes
+
+- ModelCatalog: Fixed error with mandatory groups
+
+## 1.24.0 (2024-03-01)
+
+### Features
+
+- RFV: Customizable data upload feature
+
+## 1.23.0 (2024-02-28)
+
+### Features
+
+- SA: Updated viewers
+- SA: Added analysis by value in custom column
+
+### Bug fixes
+
+- SA: Fixed bug last row analysis
+
 ## 1.13.14 (2023-08-30)
 
 ### Features
