@@ -8,8 +8,8 @@ import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
-import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-//import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+//import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -542,7 +542,7 @@ export class DiffStudio {
       // try to call computations - correctness check
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
-      await call.call();
+      //await call.call();
 
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);

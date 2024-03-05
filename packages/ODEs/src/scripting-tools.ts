@@ -302,7 +302,7 @@ function getExpressions(lines: string[]): Map<string, string> {
 
   for (const line of lines) {
     eqIdx = line.indexOf(EQUAL_SIGN);
-    exprs.set(line.slice(0, eqIdx).replace(' ', ''), line.slice(eqIdx + 1).trim());
+    exprs.set(line.slice(0, eqIdx).replaceAll(' ', ''), line.slice(eqIdx + 1).trim());
   }
 
   return exprs;
@@ -354,7 +354,7 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
 
   for (const line of source) {
     eqIdx = line.indexOf(EQUAL_SIGN);
-    eqs.set(line.slice(0, eqIdx).replace(' ', ''), getInput(line.slice(eqIdx + 1).trim()));
+    eqs.set(line.slice(0, eqIdx).replaceAll(' ', ''), getInput(line));
   }
 
   return eqs;
@@ -481,7 +481,7 @@ export function getIVP(text: string): IVP {
   let outputs: Map<string, Output> | null = null;
 
   // 0. Split text into lines & remove comments
-  const lines = text.split('\n')
+  const lines = text.replaceAll('\t', ' ').split('\n')
     .map((s) => {
       const idx = s.indexOf(COMMENT_SEQ);
       return s.slice(0, (idx >= 0) ? idx : undefined).trimStart();
