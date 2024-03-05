@@ -29,7 +29,9 @@ export interface IColoredScaffold {
   molecule: string,
   color?: string,
   priority?: number,
-  isSuperstructure?: string
+  isSuperstructure?: string,
+  align?: boolean,
+  highlight?: boolean
 }
 
 export interface IHighlightTagInfo {
@@ -457,7 +459,7 @@ M  END
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
-    const alignByStructure = !!(filter.length || align.length);
+    const alignByStructure = !!(filter.length && filter[0].align || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }

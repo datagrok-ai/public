@@ -48,7 +48,12 @@ category('sketcher testing', () => {
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
-  }, {timeout: 90000, skipReason: 'GROK-13815'});
+  }, {timeout: 90000});
+
+  
+  test('malformed input', async () => {
+    await testMolblock(rdkitModule, funcs, 'V2000', false, true);
+  });
 
   after(async () => {
     grok.shell.closeAll();
@@ -96,6 +101,13 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
   qmol?.delete();
 }
 
+const validationFunc = (s: string) => {
+  const valFunc = DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0];
+  const funcCall: DG.FuncCall = valFunc.prepare({s});
+  funcCall.callSync();
+  const res = funcCall.getOutputParamValue();
+  return res;
+}
 
 async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, malformed?: boolean) {
   const mol = rdkitModule.get_mol(exampleSmiles);
@@ -103,7 +115,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
     if (func.name === 'chemDrawSketcher')
       continue;
     chem.currentSketcherType = func.friendlyName;
-    const s = new Sketcher();
+    const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, `${chem.currentSketcherType} has not been created`, 20000);
     if (input) {
@@ -136,7 +148,7 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
     if (func.name === 'chemDrawSketcher')
       continue;
     chem.currentSketcherType = func.friendlyName;
-    const s = new Sketcher();
+    const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
     if (input) {

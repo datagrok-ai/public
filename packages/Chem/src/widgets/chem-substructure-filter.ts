@@ -26,6 +26,8 @@ import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 const PRE_CALCULATED_FP = 'chem-precalculated-fp';
+const ALIGN_SYNC_EVENT = 'chem-align-sync';
+const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
 let id = 0;
 
 const searchTypeHints  = {
@@ -48,6 +50,14 @@ interface ISubstructureFilterState {
   fp: Fingerprint
 }
 
+type AlignHighlightSync = {
+  align: boolean;
+  highlight: boolean;
+  colName: string;
+  filterId: number;
+  tableName: string;
+}
+
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
   sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
@@ -59,6 +69,8 @@ export class SubstructureFilter extends DG.Filter {
   searchTypeSync = false;
   similarityCutOffSync = false;
   fpSync = false;
+  alignSync = false;
+  highlightSync = false;
   filterId: number;
   tableName: string = '';
   errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
@@ -83,7 +95,7 @@ export class SubstructureFilter extends DG.Filter {
   similarityCutOffInput: DG.InputBase;
   fpInput: DG.InputBase;
   similarityOptionsDiv = ui.divH([], 'chem-filter-similarity-options');
-  sketcherDiv = ui.div('', 'chem-test')
+  sketcherDiv = ui.div('', 'chem-filter-sketcher-div')
   emptySketcherDiv = ui.divH([], 'chem-empty-filter');
   optionsIcon: HTMLElement;
   searchTypeChanged = new Subject();
@@ -158,6 +170,8 @@ export class SubstructureFilter extends DG.Filter {
     });
     $(this.optionsIcon).addClass('chem-search-options-icon');
 
+    this.sketcher.isSubstructureFilter = true;
+
     this.sketcherDiv.append(this.sketcher.root);
     this.emptySketcherDiv.append(this.searchTypeInput.root);
     this.emptySketcherDiv.append(this.sketcherDiv);
@@ -201,6 +215,8 @@ export class SubstructureFilter extends DG.Filter {
         this.refresh();
         this.root.append(this.sketcher.root);
         this.searchOptionsDiv.append(this.searchTypeInput.root);
+        this.sketcher.filterOptions.classList.add('grok-chem-filter-options');
+        this.root.append(this.sketcher.filterOptions);
       } else
         this.updateFilterUiOnSketcherChanged(this.currentMolfile);
     });
@@ -281,6 +297,20 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
 
+    this.subs.push(grok.events.onCustomEvent(ALIGN_SYNC_EVENT).subscribe((state: AlignHighlightSync) => {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+        this.alignSync = true;
+        setTimeout(() => this.sketcher.align = state.align, 0);
+      }
+    }));
+
+    this.subs.push(grok.events.onCustomEvent(HIGHLIGHT_SYNC_EVENT).subscribe((state: AlignHighlightSync) => {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+        this.highlightSync = true;
+        setTimeout(() => this.sketcher.highlight = state.highlight, 0);
+      }
+    }));
+
     if (!this.column!.temp[PRE_CALCULATED_FP]) {
       _package.logger.debug(`********pre-calculating fp, filter: ${this.filterId}`);
       this.column!.temp[PRE_CALCULATED_FP] = this.filterId;
@@ -294,6 +324,12 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
       this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
+    }));
+    this.onSketcherChangedSubs?.push(this.sketcher.onAlignedChanged.subscribe(async (_: any) => {
+      this.alignSync === true ? this.alignSync = false : this.setFilterScaffoldTagAndFireSync(true);
+    }));
+    this.onSketcherChangedSubs?.push(this.sketcher.onHighlightChanged.subscribe(async (_: any) => {
+      this.highlightSync === true ? this.highlightSync = false : this.setFilterScaffoldTagAndFireSync();
     }));
     let searchTypeChanged = this.searchTypeChanged.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(searchTypeChanged.subscribe(async (_: any) => {
@@ -334,8 +370,24 @@ export class SubstructureFilter extends DG.Filter {
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
   }
 
+  setFilterScaffoldTagAndFireSync(align?: boolean) {
+    this.setFilterScaffoldTag();
+    grok.events.fireCustomEvent(align ? ALIGN_SYNC_EVENT : HIGHLIGHT_SYNC_EVENT, {colName: this.columnName,
+      filterId: this.filterId, tableName: this.tableName, align: this.sketcher.align, highlight: this.sketcher.highlight});
+  }
+
+  setFilterScaffoldTag() {
+    this.column!.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{
+      molecule: this.currentMolfile,
+      isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN,
+      align: this.sketcher.align,
+      color: this.sketcher.highlight ? undefined : '#00000000',
+    }]);
+    grok.shell.tv?.grid?.invalidate();
+  }
+
   applyFilter(): void {
-    _package.logger.debug(`*************entered apply filter, filter id${this.filterId}`);
+    console.log(`*************entered apply filter, filter id${this.filterId}`);
     this.active = true;
     //we apply filter bitset only from one active filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
@@ -357,10 +409,7 @@ export class SubstructureFilter extends DG.Filter {
     if (this.dataFrame && this.bitset && !this.isDetached) {
       this.dataFrame.filter.and(this.bitset);
         this.dataFrame.rows.addFilterState(this.saveState());
-        this.column!.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{
-          molecule: this.currentMolfile,
-          isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
-        }]);
+        this.setFilterScaffoldTag();
         // if filter was disabled during active search and then enabled -> need to recalculate results
         if (this.searchNotCompleted)
           this._onSketchChanged();
@@ -382,7 +431,7 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to load filter state. */
   applyState(state: any): void {
     super.applyState(state);
-    _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
+    console.log(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
 
     if (!this.initListeners) {
       this.initListeners = true;
@@ -411,7 +460,7 @@ export class SubstructureFilter extends DG.Filter {
 
     const that = this;
     if (state.molBlock) {
-      _package.logger.debug(`******in applyState, calling sketcher change for filter: ${this.filterId}`);
+      console.log(`******in applyState, calling sketcher change for filter: ${this.filterId}`);
       setTimeout(function() {that._onSketchChanged();}, 1000);
     }
   }
