@@ -9,6 +9,8 @@ import {HELM_WRAPPER} from './const';
 import {getMolColumnFromHelm} from '../helm-to-molfile';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
+const RULE_PATH = 'System:AppData/Bio/polytool-rules/';
+
 type ConnectionData = {
   allPos1: number[],
   allPos2: number[],
@@ -17,6 +19,7 @@ type ConnectionData = {
 }
 
 type Rule = {
+  code: number,
   firstMonomer: string,
   secondMonomer: string,
   firstModification: string,
@@ -48,27 +51,58 @@ class TransformationCommon {
     return isLinkable;
   }
 
-  protected getLinkedPositions(helm: string, ruleCount: number): [number, number][] {
+  protected getLinkedPositions(helm: string, rules: Rule[]): [number, number][] {
     const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
-    const monomers = seq.split('.');
-    const result:[number, number][] = new Array<[number, number]>(ruleCount);
+    const monomers = seq.split('.').map((m) => { return m.replace('[', '').replace(']', ''); });
+    const result:[number, number][] = new Array<[number, number]>(rules.length);
 
-    for (let i = 0; i < ruleCount; i++) {
+    for (let i = 0; i < rules.length; i++) {
       let firstFound = false;
+      let secondFound = false;
+      let firstIsFirst = false;
+      let firstEntryIndex = -1;
+      let secondEntryIndex = -1;
+      const add = `(${rules[i].code})`;
       for (let j = 0; j < monomers.length; j++) {
-        if (monomers[j].includes(`(${i + 1})`)) {
+        if (monomers[j].includes(add)) {
           if (firstFound) {
-            result[i][1] = j;
-            break;
+            if (firstIsFirst && monomers[j] == rules[i].secondMonomer + add) {
+              secondFound = true;
+              secondEntryIndex = j;
+              break;
+            } else if (!firstIsFirst && monomers[j] == rules[i].firstMonomer + add) {
+              secondFound = true;
+              secondEntryIndex = j;
+              break;
+            } else {
+              continue;
+            }
+            //result[i][1] = j;
+            // secondFound = true;
+            // break;
           } else {
-            firstFound = true;
-            result[i] = [j, 0];
+            if (monomers[j] == rules[i].firstMonomer + add) {
+              firstFound = true;
+              firstIsFirst = true;
+              firstEntryIndex = j;
+            } else if (monomers[j] == rules[i].secondMonomer + add) {
+              firstFound = true;
+              firstIsFirst = false;
+              firstEntryIndex = j;
+            } else {
+              continue;
+            }
+            //result[i] = [j, 0];
           }
         }
       }
 
-      if (!firstFound)
+      if (!(firstFound && secondFound))
         result[i] = [-1, -1];
+      else if (firstIsFirst)
+        result[i] = [firstEntryIndex, secondEntryIndex];
+      else
+        result[i] = [secondEntryIndex, firstEntryIndex];
     }
 
 
@@ -88,6 +122,7 @@ class TransformationCommon {
 
     for (let i = 0; i < ruleCount; i++) {
       rules[i] = {
+        code: codeCol.get(i),
         firstMonomer: monomer1Col.get(i),
         secondMonomer: monomer2Col.get(i),
         firstModification: modification1Col.get(i),
@@ -102,7 +137,7 @@ class TransformationCommon {
 
   protected getTransformedHelm(helm: string, rules: Rule[]): string {
     const ruleCount = rules.length;
-    const positions = this.getLinkedPositions(helm, ruleCount);
+    const positions = this.getLinkedPositions(helm, rules);
 
     const allPos1: number [] = [];
     const allPos2: number [] = [];
@@ -113,31 +148,19 @@ class TransformationCommon {
       if (positions[i][0] == -1)
         continue;
 
-      helm = helm.replaceAll(`(${i + 1})`, '');
+      //helm = helm.replaceAll(`(${i + 1})`, '');
       const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
       const monomers = seq.split('.');
       const firstMonomer = monomers[positions[i][0]].replace('[', '').replace(']', '');
       const secondMonomer = monomers[positions[i][1]].replace('[', '').replace(']', '');
-      let attach1 = 0;
-      let attach2 = 0;
-      if (firstMonomer === rules[i].firstMonomer && secondMonomer === rules[i].secondMonomer) {
-        monomers[positions[i][0]] = monomers[positions[i][0]].replace(firstMonomer, rules[i].firstModification);
-        monomers[positions[i][1]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondModification);
-        attach1 = rules[i].firstR;
-        attach2 = rules[i].secondR;
-      } else if (secondMonomer === rules[i].firstModification && firstMonomer === rules[i].secondModification) {
-        monomers[positions[i][0]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondModification);
-        monomers[positions[i][1]] = rules[i].firstModification.replace(firstMonomer, rules[i].firstModification);
-        attach1 = rules[i].secondR;
-        attach2 = rules[i].firstR;
-      } else {
-        continue;
-      }
+
+      monomers[positions[i][0]] = monomers[positions[i][0]].replace(firstMonomer, rules[i].firstModification);
+      monomers[positions[i][1]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondModification);
 
       allPos1.push(positions[i][0] + 1);
       allPos2.push(positions[i][1] + 1);
-      allAttaches1.push(attach1);
-      allAttaches2.push(attach2);
+      allAttaches1.push(rules[i].firstR);
+      allAttaches2.push(rules[i].secondR);
 
       helm = HELM_WRAPPER.LEFT;
       for (let i = 0; i < monomers.length; i ++) {
@@ -203,12 +226,15 @@ function getHelmCycle(helm: string, source: ConnectionData): string {
 }
 
 export async function addTransformedColumn(
-  molColumn: DG.Column<string>, rulesTable: DG.DataFrame, addHelm: boolean
+  molColumn: DG.Column<string>, addHelm: boolean
 ): Promise<void> {
   const df = molColumn.dataFrame;
   const uh = UnitsHandler.getOrCreate(molColumn);
   const sourceHelmCol = uh.convert(NOTATION.HELM);
   const pt = PolymerTransformation.getInstance(sourceHelmCol);
+  const fileSource = new DG.FileSource(RULE_PATH);
+  const rulesRaw = await fileSource.readAsText('rules.csv');
+  const rulesTable = DG.DataFrame.fromCsv(rulesRaw);
   const targetList = pt.transform(rulesTable);
   const helmColName = df.columns.getUnusedName('transformed(' + molColumn.name + ')');
   const targetHelmCol = DG.Column.fromList('string', helmColName, targetList);

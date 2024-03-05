@@ -178,25 +178,11 @@ M  END`;
 M  END
 `;
 
-    const terminateFlag1 = 'terminate_substructure_search-tests/smiles_2_columns-smiles1';
-    const terminateFlag2 = 'terminate_substructure_search-tests/smiles_2_columns-smiles2';
+    filter1.sketcher.setMolFile(molfile1);
+    filter2.sketcher.setMolFile(molfile2);
+    await awaitCheck(() => df.filter.trueCount === 2 && df.filter.get(4) && df.filter.get(5) && !df.filter.get(0),
+      'df hasn\'t been filtered', 7000);
 
- 
-    //finishing first search
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => {},
-      () => { filter1.sketcher.setMolFile(molfile1);  }, 7000);
-
-    //finishing fp pre-calculation for filter2
-    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {},
-      () => {filter2.sketcher.setMolFile(molfile2);}, 7000); 
-
-    //finishing second search
-    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {
-      expect(df.filter.trueCount, 2);
-      expect(df.filter.get(4), true);
-      expect(df.filter.get(5), true);
-      expect(df.filter.get(0), false);
-    }, () => { }, 7000);
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
@@ -252,22 +238,17 @@ M  END
 
     const filter1 = await createFilter('smiles', df1, sketcherDialogs);
     const filter2 = await createFilter('smiles', df2, sketcherDialogs);
-    const terminateFlag1 = 'terminate_substructure_search-tests/smi10K-smiles';
-    const terminateFlag2 = 'terminate_substructure_search-tests/smi10K (2)-smiles';
+
     const substr1 = 'C1CCCCC1';
     const substr2 = 'CC1CCCCC1';
 
     //starting filtering by 1st structure
     filter1.sketcher.setSmiles(substr1);
     await delay(500);
-    //opening 2nd filter, sketching a molecule and waiting for 1st filter to complete
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => {
-    }, () => {filter2.sketcher.setSmiles(substr2);}, 60000);
-    //waiting for 2nd filter to complete
-    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {
-      expect(df1.filter.trueCount, 462);
-      expect(df2.filter.trueCount, 286);
-    }, () => {}, 60000);
+    //opening 2nd filter, sketching a molecule and waiting for filters to complete search
+    filter2.sketcher.setSmiles(substr2);
+    await awaitCheck(() => df1.filter.trueCount === 462, 'df1 hasn\'t been filtered', 20000);
+    await awaitCheck(() => df2.filter.trueCount === 286, 'df1 hasn\'t been filtered', 20000);
 
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
@@ -429,7 +410,7 @@ M  END
       column: 'smiles',
       columnName: 'smiles',
       molBlock: molblock1,
-    });
+    }, false);
     await awaitCheck(() => df.filter.trueCount === 4, 'df hasn\'t been filtered by 1st structure', 3000);
 
     //filtering by 2nd structure and wait for results
@@ -438,8 +419,8 @@ M  END
       column: 'smiles',
       columnName: 'smiles',
       molBlock: molblock2,
-    });
-    await awaitCheck(() => df.filter.trueCount === 3, 'df hasn\'t been filtered by 2nd structure', 3000);
+    }, false);
+    await awaitCheck(() => df.filter.trueCount === 3, 'df hasn\'t been filtered by 2nd structure', 15000);
 
     DG.chem.currentSketcherType = 'OpenChemLib';
   });

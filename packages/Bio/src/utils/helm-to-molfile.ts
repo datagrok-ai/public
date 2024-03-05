@@ -106,7 +106,9 @@ export class HelmToMolfileConverter {
     return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
-      return mol.get_molblock();
+      const molBlock = mol.get_v3Kmolblock();
+      mol!.delete();
+      return molBlock;
     }));
   }
 

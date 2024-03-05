@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.90",
+  "version": "3.7.94",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -685,6 +685,9 @@
         },
         "1.8.11": {
           "datagrok-api": "^1.17.13"
+        },
+        "1.8.13": {
+          "datagrok-api": "../../js-api"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -1899,6 +1902,12 @@
         },
         "1.24.1": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.25.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.25.1": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
@@ -2775,6 +2784,9 @@
           "datagrok-api": "^1.17.4"
         },
         "2.11.35": {
+          "datagrok-api": "^1.17.4"
+        },
+        "2.11.36": {
           "datagrok-api": "^1.17.4"
         }
       },
