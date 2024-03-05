@@ -3,6 +3,7 @@
 ## 1.0.6 (2024-03-14)
 
 * E-notation use
+* Sensitivity Analysis
 
 ## 1.0.5 (2024-03-01)
 

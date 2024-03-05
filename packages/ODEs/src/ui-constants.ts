@@ -61,7 +61,8 @@ export enum TITLE {
 /** Help links */
 export enum LINK {  
   DIF_STUDIO_REL = '/help/compute/diff-studio',
-  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',  
+  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
+  SENS_AN = 'https://datagrok.ai/help/compute#sensitivity-analysis',
   CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
   FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
   GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
@@ -137,9 +138,12 @@ Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
 # Scripting
 Press **JS** button and export model to JavaScript script.
 
+# Analysis
+Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon to explore model
+
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
-* [Compute](https://datagrok.ai/help/compute)`;
+* [Sensitivity Analysis](${LINK.SENS_AN})`;
 
 /** Inputs types */
 export enum INPUT_TYPE {
