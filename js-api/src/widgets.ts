@@ -34,6 +34,11 @@ export type SliderOptions = {
 }
 
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+export type CodeConfig = {
+  script?: string;
+  mode?: string;
+  placeholder?: string
+};
 
 export class ObjectPropertyBag {
   source: any;
@@ -979,6 +984,34 @@ export class Balloon {
 }
 
 
+
+/** Class for code input editor. */
+export class CodeEditor {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static create(script = '', mode = 'javascript', placeholder = ''): CodeEditor {
+    return toJs(api.grok_CodeEditor(script, mode, placeholder));
+  }
+
+  append(text: string): void {
+    api.grok_CodeEditor_Append(this.dart, text);
+  }
+
+  async setReadOnly(value: boolean): Promise<void> {
+    await api.grok_CodeEditor_SetReadOnly(this.dart, value);
+  }
+
+  get root(): HTMLElement { return api.grok_CodeEditor_Get_Root(this.dart); }
+
+  get value(): string { return api.grok_CodeEditor_Get_Value(this.dart); }
+  set value(x: string) { api.grok_CodeEditor_Set_Value(this.dart, x); }
+
+  get onValueChanged(): Observable<any> { return observeStream(api.grok_CodeEditor_OnValueChanged(this.dart)); }
+}
 
 /** Input control base. Could be used for editing {@link Property} values as well.
  * The root is a div that consists of {@link captionLabel} and {@link input}.
@@ -2172,4 +2205,24 @@ export class TagsInput extends InputBase {
   get onTagRemoved(): Observable<string> {
     return this._onTagRemoved;
   }
+}
+
+export class CodeInput extends InputBase {
+  dart: any;
+  editor: CodeEditor;
+
+  constructor(name: string, config?: CodeConfig) {
+    const inputElement = ui.input.textArea(name);
+    super(inputElement.dart);
+
+    this.editor = CodeEditor.create(config?.script ?? '', config?.mode ?? 'javascript', config?.placeholder ?? '');
+    this.input.style.display = 'none';
+    this.root.classList.add('ui-input-code');
+    this.root.append(this.editor.root);
+  }
+
+  get value(): string { return this.editor.value; }
+  set value(x: string) { this.editor.value = x; }
+
+  get onValueChanged(): Observable<any> { return this.editor.onValueChanged; }
 }

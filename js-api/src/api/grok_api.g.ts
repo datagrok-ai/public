@@ -963,6 +963,7 @@ export interface IDartApi {
   grok_ColorInput(name: any, value: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any): any;
   grok_RadioInput(name: any, value: any, items: any): any;
+  grok_CodeEditor(script: String, mode: String, placeholder: String): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
   grok_ProgressIndicator_Get_Percent(pi: any): any;
   grok_ProgressIndicator_Get_Description(pi: any): any;
@@ -1025,6 +1026,12 @@ export interface IDartApi {
   grok_InputBase_ForInputType(inputType: String): any;
   grok_InputBase_ForColumn(column: any): any;
   grok_InputBase_FromJS(jsInput: any): any;
+  grok_CodeEditor_Get_Root(editor: any): any;
+  grok_CodeEditor_Append(editor: any, x: String): any;
+  grok_CodeEditor_SetReadOnly(editor: any, x: Bool): any;
+  grok_CodeEditor_Get_Value(editor: any): any;
+  grok_CodeEditor_Set_Value(editor: any, x: String): any;
+  grok_CodeEditor_OnValueChanged(editor: any): any;
   grok_InputForm_ForInputs(inputs: any): any;
   grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
