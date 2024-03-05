@@ -279,7 +279,10 @@ export class PipelineView extends FunctionView {
       this.subs.push(disableMutationSub);
 
       const enableSub = grok.functions.onAfterRunAction.pipe(
-        filter((run) => step.view.funcCall && run && step.view.funcCall.id === run.id),
+        filter((run) =>
+          step.view.funcCall && run &&
+          !!run.id && step.view.funcCall.id === run.id,
+        ),
         withLatestFrom(step.visibility, step.ability),
         filter(([, visibility, ability]) =>
           !(visibility === VISIBILITY_STATE.HIDDEN || ability === ABILITY_STATE.DISABLED)),
