@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm
+  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -852,6 +852,10 @@ export namespace input {
 
   export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Radio, name, options);
+  }
+
+  export function code(name: string, options?: CodeConfig): CodeInput {
+    return new CodeInput(name, options);
   }
 }
 
