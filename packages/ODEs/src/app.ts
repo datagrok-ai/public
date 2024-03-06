@@ -290,7 +290,7 @@ export class DiffStudio {
   private openIcon: HTMLElement;
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
-  private exportButton: HTMLElement;
+  private exportButton: HTMLButtonElement;
   private sensAnIcon: HTMLElement;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
@@ -373,9 +373,9 @@ export class DiffStudio {
         this.startingInputs = null;
         this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
         this.isSolvingSuccess = false;
-        this.runPane.header.hidden = false;
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
+        this.setCallWidgetsVisibility(true);
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -542,15 +542,13 @@ export class DiffStudio {
       // try to call computations - correctness check
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
-      //await call.call();
+      await call.call();
 
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     } catch (err) {
-      if (err instanceof Error)
-        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
-      else
-        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.clearSolution();
+      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);      
     }
   }; // exportToJS
 
@@ -622,7 +620,7 @@ export class DiffStudio {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.getInputsForm(ivp);
-      this.runPane.header.hidden = !this.isSolvingSuccess;
+      this.setCallWidgetsVisibility(this.isSolvingSuccess);
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
@@ -659,19 +657,29 @@ export class DiffStudio {
           setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
       } else
         this.tabControl.currentPane = this.modelPane;
-    } catch (error) {
-      this.prevInputsNode = null;
-      this.tabControl.currentPane = this.modelPane;
+    } catch (error) {      
       this.clearSolution();
       grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
     }
   }; // runSolving
 
+  /** Show/hide model call widgets */
+  private setCallWidgetsVisibility(toShow: boolean): void {
+    this.runPane.header.hidden = !toShow;
+    this.exportButton.disabled = !toShow;
+    this.sensAnIcon.hidden = !toShow;    
+  }
+
   /** Clear solution table & viewer */
   private clearSolution() {
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
-    this.runPane.header.hidden = true;
+    this.setCallWidgetsVisibility(false);
+
+    if (this.prevInputsNode !== null)
+          this.inputsPanel.removeChild(this.prevInputsNode);
+    this.prevInputsNode = null;
+    this.tabControl.currentPane = this.modelPane;
 
     if (this.solutionViewer && this.viewerDockNode) {
       grok.shell.dockManager.close(this.viewerDockNode);
@@ -861,6 +869,7 @@ export class DiffStudio {
       //@ts-ignore
       await SensitivityAnalysisView.fromEmpty(script);
     } catch (err) {
+        this.clearSolution();
         grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
     }    
   }

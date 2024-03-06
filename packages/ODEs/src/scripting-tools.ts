@@ -134,6 +134,7 @@ enum ERROR_MSG {
   NEGATIVE_STEP = `Incorrect step for`,
   INCOR_STEP = `Step is greater than the length of solution interval ${SEE_ARG}`,
   MISS_COLON = `Missing "${CONTROL_SEP}"`,
+  NAN = `is not a number. Check the line`,
 }
 
 /** Datagrok annatations */
@@ -312,16 +313,30 @@ function getExpressions(lines: string[]): Map<string, string> {
 function getInput(line: string) : Input {
   const str = line.slice(line.indexOf(EQUAL_SIGN) + 1).trim();
   const braceIdx = str.indexOf(BRACE_OPEN);
+  let val: number;
 
-  if (braceIdx === -1) {
+  if (braceIdx === -1) { // no annotation
+    val = Number(str);
+
+    // Check right-hand side
+    if (isNaN(val))
+      throw new Error(`'${str}' ${ERROR_MSG.NAN}: ${line}`);
+
     return {
-      value: Number(str),
+      value: val,
       annot: null,
     };
   }
 
+  // There is an annotation
+  val = Number(str.slice(0, braceIdx));
+
+  // Check right-hand side
+  if (isNaN(val))
+    throw new Error(`'${str.slice(0, braceIdx)}' ${ERROR_MSG.NAN}: ${line}`);
+
   return {
-    value: Number(str.slice(0, braceIdx)),
+    value: val,
     annot: str.slice(braceIdx),
   };
 }

@@ -223,7 +223,7 @@ ${CONTROL_EXPR.PARAMS}:
   Kout = 1.33e-2 {category: Parameters; min: 0.001; max: 0.02} [First-order elimination rate constant]
   S50 = 8.57 {category: Parameters; min: 5; max: 12} [Concentration of free nimotuzumab in the central compartment that achieves the half of Smax]
   Smax = 3.18 {category: Parameters; min: 1; max: 5} [Maximal effect of the stimulation]
-  gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]
+  gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]  
 
 ${CONTROL_EXPR.TOL}: 1e-7`;
 
