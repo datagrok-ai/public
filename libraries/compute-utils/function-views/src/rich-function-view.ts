@@ -657,12 +657,12 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
-    const readme = ui.iconFA('info', async () => {
-      if (this.hasReadme) {
+    const contextHelpIcon = ui.iconFA('info', async () => {
+      if (this.hasContextHelp) {
         grok.shell.windows.help.visible = true;
         // Workaround to deal with help panel bug
         await new Promise((resolve) => setTimeout(resolve, 100));
-        grok.shell.windows.help.showHelp(ui.markdown((await this.getReadme())!));
+        grok.shell.windows.help.showHelp(ui.markdown((await this.getContextHelp())!));
       }
     });
 
@@ -673,7 +673,7 @@ export class RichFunctionView extends FunctionView {
         ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
-      ...this.hasReadme ? [readme]: [],
+      ...this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
     this.setRibbonPanels(newRibbonPanels);

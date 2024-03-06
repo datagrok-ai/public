@@ -854,32 +854,32 @@ export abstract class FunctionView extends DG.ViewBase {
     return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
   }
 
-  protected get hasReadme() {
-    const readmePath = this.func.options['readme'] as string | undefined;
+  protected get hasContextHelp() {
+    const readmePath = this.func.options['help'] as string | undefined;
 
     return !!readmePath;
   }
 
-  private readmeCache = null as string | null;
+  private helpCache = null as string | null;
 
-  protected async getReadme() {
-    const readmePath = this.func.options['readme'];
+  protected async getContextHelp() {
+    const helpPath = this.func.options['help'];
 
-    if (!readmePath) return null;
+    if (!helpPath) return null;
 
-    if (this.readmeCache) return this.readmeCache;
+    if (this.helpCache) return this.helpCache;
 
-    const packagePath = `System:AppData/${readmePath}`;
+    const packagePath = `System:AppData/${helpPath}`;
     if (await grok.dapi.files.exists(packagePath)) {
       const readme = await grok.dapi.files.readAsText(packagePath);
-      this.readmeCache = readme;
+      this.helpCache = readme;
       return readme;
     }
 
-    const homePath = `${grok.shell.user.name}.home/${readmePath}`;
+    const homePath = `${grok.shell.user.name}.home/${helpPath}`;
     if (await grok.dapi.files.exists(homePath)) {
       const readme = await grok.dapi.files.readAsText(homePath);
-      this.readmeCache = readme;
+      this.helpCache = readme;
       return readme;
     }
 

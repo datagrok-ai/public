@@ -20,7 +20,7 @@
 //meta.foldedCategories: ["Object properties"]
 //meta.compareCustomizer: Compute:CustomCustomizer
 //meta.uploadFunc: Compute:CustomUploader
-//meta.readme: Compute/readme.md
+//meta.help: Compute/readme.md
 
 timeToCool = undefined;
 
