@@ -33,6 +33,7 @@ export class RadarViewer extends DG.JsViewer {
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
   title: string;
+  resizeScheduled: boolean = false;
 
   constructor() {
     super();
@@ -55,7 +56,15 @@ export class RadarViewer extends DG.JsViewer {
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
+    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => {
+      if (!this.resizeScheduled) {
+        this.resizeScheduled = true;
+        requestAnimationFrame(() => {
+          this.chart.resize();
+          this.resizeScheduled = false;
+        });
+      }
+    }));
   }
 
   init() {
