@@ -274,6 +274,76 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
+  mmpGetFragments(molecules: string[]): [string, string][][] {
+    const frags: [string, string][][] = new Array<[string, string][]>(molecules.length);
+    for (let i = 0; i < molecules.length; i++) {
+      let mol;
+      try {
+        mol = this._rdKitModule.get_mol(molecules[i]);
+        if (mol) {
+          const res = mol.get_mmpa_frags(1, 1, 20);
+          const length = res.sidechains.size();
+          frags[i] = new Array<[string, string]>(length);
+
+          for (let j = 0; j < length; j++) {
+            let frag = null;
+            try {
+              frag = res.sidechains.next();
+              const split = frag.get_smiles().split('.');
+              const firstIsFirst = split[0].length >= split[1].length;
+              frags[i][j] = [firstIsFirst ? split[0] : split[1], firstIsFirst ? split[1] : split[0]];
+            } catch (e: any) {
+              frags[i][j] = ['', ''];
+            } finally {
+              frag?.delete();
+            }
+          }
+
+          res.cores.delete();
+          res.sidechains.delete();
+        } else
+          frags[i] = new Array<[string, string]>(0);
+      } catch (e: any) {
+        frags[i] = new Array<[string, string]>(0);
+      } finally {
+        mol?.delete();
+      }
+    }
+
+    return frags;
+  }
+
+  mmpGetMcs(molecules: [string, string][]): string[] {
+    const res: string[] = new Array<string>(molecules.length);
+    for (let i = 0; i < molecules.length; i++) {
+      let mol1;
+      let mol2;
+      let mols;
+      try {
+        mol1 = getMolSafe(molecules[i][0], {}, this._rdKitModule);
+        mol2 = getMolSafe(molecules[i][1], {}, this._rdKitModule);
+        mols = new this._rdKitModule.MolList();
+        if (mol1.mol && mol2.mol) {
+          mols.append(mol1.mol!);
+          mols.append(mol2.mol!);
+          res[i] = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+            AtomCompare: 'Elements',
+            BondCompare: 'OrderExact',
+            RingMatchesRingOnly: true,
+          }));
+        } else
+          res[i] = '';
+      } catch (e: any) {
+        res[i] = '';
+      } finally {
+        mol1?.mol?.delete();
+        mol2?.mol?.delete();
+      }
+    }
+
+    return res;
+  }
+
   setTerminateFlag(flag: boolean) {
     this._requestTerminated = flag;
   }
@@ -300,6 +370,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
           AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
           BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
+          //RingMatchesRingOnly: true
         }));
       }
       return mcsSmarts ?? '';

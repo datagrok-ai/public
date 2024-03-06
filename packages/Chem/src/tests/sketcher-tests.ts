@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {molV2000, molV3000} from './utils';
+import {malformedMolblock, molV2000, molV3000} from './utils';
 
 
 category('sketcher testing', () => {
@@ -48,7 +48,12 @@ category('sketcher testing', () => {
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
-  }, {timeout: 90000, skipReason: 'GROK-13815'});
+  }, {timeout: 90000});
+
+  
+  test('malformed input', async () => {
+    await testMolblock(rdkitModule, funcs, 'V2000', false, true);
+  });
 
   after(async () => {
     grok.shell.closeAll();
@@ -56,13 +61,12 @@ category('sketcher testing', () => {
 });
 
 
-function compareTwoMols(rdkitModule: any, mol: any, resMolfile: any) {
+function compareTwoMols(rdkitModule: any, mol: any, resMolfile: any): boolean {
   const mol2 = rdkitModule.get_mol(resMolfile);
   const match1 = mol.get_substruct_match(mol2);
-  expect(match1 !== '{}', true);
   const match2 = mol2.get_substruct_match(mol);
-  expect(match2 !== '{}', true);
   mol2.delete();
+  return match1 !== '{}' && match2 !== '{}';
 }
 
 async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
@@ -97,58 +101,56 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
   qmol?.delete();
 }
 
-async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
+const validationFunc = (s: string) => {
+  const valFunc = DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0];
+  const funcCall: DG.FuncCall = valFunc.prepare({s});
+  funcCall.callSync();
+  const res = funcCall.getOutputParamValue();
+  return res;
+}
+
+async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, malformed?: boolean) {
   const mol = rdkitModule.get_mol(exampleSmiles);
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
     chem.currentSketcherType = func.friendlyName;
-    const s = new Sketcher();
+    const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, `${chem.currentSketcherType} has not been created`, 20000);
-    const t = new Promise((resolve, reject) => {
-      s.sketcher!.onChanged.subscribe(async (_: any) => {
-        try {
-          const resultMol = input ? s.getMolFile() : s.getSmiles();
-          resolve(resultMol);
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
     if (input) {
       setTimeout(() => {
         s.molInput.value = exampleSmiles;
         s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
       }, 1000);
-    } else setTimeout(() => s.setSmiles(exampleSmiles), 1000);
-    const resMolblock = await t;
-    compareTwoMols(rdkitModule, mol, resMolblock);
+    } else 
+    setTimeout(() => s.setSmiles(exampleSmiles), 1000);
+    if (malformed) {
+      await awaitCheck(() => {
+        const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
+        return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
+      }, 'error div has not been created', 10000, 500);    
+    } else {
+      await awaitCheck(() => {
+        const resMolblock = input ? s.getMolFile() : s.getSmiles();
+        return compareTwoMols(rdkitModule, mol, resMolblock);
+      }, 'mols are not equal', 3000);
+    }
     d.close();
   }
   mol?.delete();
 }
 
-async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, input?: boolean) {
+async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, input?: boolean, malformed?: boolean) {
   const molfile = ver === 'V2000' ? molV2000 : molV3000;
   const mol = rdkitModule.get_mol(molfile);
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
     chem.currentSketcherType = func.friendlyName;
-    const s = new Sketcher();
+    const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
-    const t = new Promise((resolve, reject) => {
-      s.sketcher!.onChanged.subscribe(async (_: any) => {
-        try {
-          const resultMol = s.getMolFile();
-          resolve(resultMol);
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
     if (input) {
       setTimeout(() => {
         let dT = null;
@@ -158,9 +160,19 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
         s.molInput.value = molfile;
         s.molInput.dispatchEvent(evt);
       }, 1000);
-    } else setTimeout(() => s.setMolFile(molfile), 1000);
-    const resMolblock = await t;
-    compareTwoMols(rdkitModule, mol, resMolblock);
+    } else 
+      setTimeout(() => s.setMolFile(malformed ? malformedMolblock : molfile), 1000);
+    if (malformed) {
+      await awaitCheck(() => {
+        const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
+        return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
+      }, 'error div has not been created', 10000, 500);     
+    } else {
+      await awaitCheck(() => {
+        const resMolblock =  s.getMolFile();;
+        return compareTwoMols(rdkitModule, mol, resMolblock);
+      }, 'mols are not equal', 3000);
+    }
     d.close();
   }
   mol?.delete();
@@ -176,10 +188,11 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
     s.molInput.value = exampleInchi;
-    await delay(5000);
-    await testEvent(s.onChanged,
-      () => {compareTwoMols(rdkitModule, mol, s.getMolFile());},
-      () => {s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));}, 10000);
+    s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+    await awaitCheck(() => {
+      const resMolblock =  s.getMolFile();;
+      return compareTwoMols(rdkitModule, mol, resMolblock);
+    }, 'mols are not equal', 3000);
     d.close();
   }
   mol?.delete();

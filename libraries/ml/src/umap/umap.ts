@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * @license
  *
@@ -228,7 +229,7 @@ export class UMAP {
   // Supervised projection params
   private targetMetric = TargetMetric.categorical;
   private targetWeight = 0.5;
-  private targetNNeighbors = this.nNeighbors;
+  private targetNNeighbors = 15;
 
   private distanceFn: DistanceFn = numeric;
 
@@ -276,6 +277,7 @@ export class UMAP {
     setParam('setOpMixRatio');
     setParam('spread');
     setParam('transformQueueSize');
+    this.targetNNeighbors = params.nNeighbors || this.nNeighbors || this.targetNNeighbors;
   }
 
   /**
@@ -327,14 +329,14 @@ export class UMAP {
    * SGD optimization.
    */
   initializeFit(X: Vector): number {
-    if (X.length <= this.nNeighbors) {
+    if (X.length <= this.nNeighbors)
       throw new Error(`Not enough data points (${X.length}) to create nNeighbors: ${this.nNeighbors}.  Add more data points or adjust the configuration.`);
-    }
+
 
     // We don't need to reinitialize if we've already initialized for this data.
-    if (this.X === X && this.isInitialized) {
+    if (this.X === X && this.isInitialized)
       return this.getNEpochs();
-    }
+
 
     this.X = X;
 
@@ -377,7 +379,7 @@ export class UMAP {
   }
 
   private makeSearchFns() {
-    const { initFromTree, initFromRandom } = nnDescent.makeInitializations(
+    const {initFromTree, initFromRandom} = nnDescent.makeInitializations(
       this.distanceFn
     );
     this.initFromTree = initFromTree;
@@ -396,9 +398,8 @@ export class UMAP {
       for (let j = 0; j < knn.length; j++) {
         const neighbor = knn[j];
         const distance = distances[j];
-        if (distance > 0) {
+        if (distance > 0)
           searchGraph.set(i, neighbor, distance);
-        }
       }
     }
 
@@ -412,9 +413,9 @@ export class UMAP {
   transform(toTransform: Vector) {
     // Use the previous rawData
     const rawData = this.X;
-    if (rawData === undefined || rawData.length === 0) {
+    if (rawData === undefined || rawData.length === 0)
       throw new Error('No data has been fit.');
-    }
+
 
     let nNeighbors = Math.floor(this.nNeighbors * this.transformQueueSize);
     nNeighbors = Math.min(rawData.length, nNeighbors);
@@ -430,19 +431,19 @@ export class UMAP {
 
     const result = this.search(rawData, this.searchGraph, init, toTransform);
 
-    let { indices, weights: distances } = heap.deheapSort(result);
+    let {indices, weights: distances} = heap.deheapSort(result);
 
-    indices = indices.map(x => x.slice(0, this.nNeighbors));
-    distances = distances.map(x => x.slice(0, this.nNeighbors));
+    indices = indices.map((x) => x.slice(0, this.nNeighbors));
+    distances = distances.map((x) => x.slice(0, this.nNeighbors));
 
     const adjustedLocalConnectivity = Math.max(0, this.localConnectivity - 1);
-    const { sigmas, rhos } = this.smoothKNNDistance(
+    const {sigmas, rhos} = this.smoothKNNDistance(
       distances,
       this.nNeighbors,
       adjustedLocalConnectivity
     );
 
-    const { rows, cols, vals } = this.computeMembershipStrengths(
+    const {rows, cols, vals} = this.computeMembershipStrengths(
       indices,
       distances,
       sigmas,
@@ -475,16 +476,16 @@ export class UMAP {
 
     const embedding = initTransform(eIndices, eWeights, this.embedding);
 
-    const nEpochs = this.nEpochs
-      ? this.nEpochs / 3
-      : graph.nRows <= 10000
-      ? 100
-      : 30;
+    const nEpochs = this.nEpochs ?
+      this.nEpochs / 3 :
+      graph.nRows <= 10000 ?
+        100 :
+        30;
 
     const graphMax = graph
       .getValues()
       .reduce((max, val) => (val > max ? val : max), 0);
-    graph = graph.map(value => (value < graphMax / nEpochs ? 0 : value));
+    graph = graph.map((value) => (value < graphMax / nEpochs ? 0 : value));
     graph = matrix.eliminateZeros(graph);
 
     const epochsPerSample = this.makeEpochsPerSample(
@@ -515,11 +516,11 @@ export class UMAP {
    * accordingly.
    */
   private processGraphForSupervisedProjection() {
-    const { Y, X } = this;
+    const {Y, X} = this;
     if (Y) {
-      if (Y.length !== X.length) {
+      if (Y.length !== X.length)
         throw new Error('Length of X and y must be equal');
-      }
+
 
       if (this.targetMetric === TargetMetric.categorical) {
         const lt = this.targetWeight < 1.0;
@@ -538,11 +539,11 @@ export class UMAP {
    * Manually step through the optimization process one epoch at a time.
    */
   step() {
-    const { currentEpoch } = this.optimizationState;
+    const {currentEpoch} = this.optimizationState;
 
-    if (currentEpoch < this.getNEpochs()) {
+    if (currentEpoch < this.getNEpochs())
       this.optimizeLayoutStep(currentEpoch);
-    }
+
     return this.optimizationState.currentEpoch;
   }
 
@@ -559,7 +560,7 @@ export class UMAP {
    * descent.
    */
   private nearestNeighbors(X: Vector) {
-    const { distanceFn, nNeighbors } = this;
+    const {distanceFn, nNeighbors} = this;
     const log2 = (n: number) => Math.log(n) / Math.log(2);
     const metricNNDescent = nnDescent.makeNNDescent(distanceFn, this.random);
 
@@ -574,13 +575,13 @@ export class UMAP {
     this.rpForest = tree.makeForest(X, nNeighbors, nTrees, this.random);
 
     const leafArray = tree.makeLeafArray(this.rpForest);
-    const { indices, weights } = metricNNDescent(
+    const {indices, weights} = metricNNDescent(
       X,
       leafArray,
       nNeighbors,
       nIters
     );
-    return { knnIndices: indices, knnDistances: weights };
+    return {knnIndices: indices, knnDistances: weights};
   }
 
   /**
@@ -596,15 +597,15 @@ export class UMAP {
     nNeighbors: number,
     setOpMixRatio = 1.0
   ) {
-    const { knnIndices = [], knnDistances = [], localConnectivity } = this;
+    const {knnIndices = [], knnDistances = [], localConnectivity} = this;
 
-    const { sigmas, rhos } = this.smoothKNNDistance(
+    const {sigmas, rhos} = this.smoothKNNDistance(
       knnDistances,
       nNeighbors,
       localConnectivity
     );
 
-    const { rows, cols, vals } = this.computeMembershipStrengths(
+    const {rows, cols, vals} = this.computeMembershipStrengths(
       knnIndices,
       knnDistances,
       sigmas,
@@ -672,11 +673,11 @@ export class UMAP {
 
       // TODO: This is very inefficient, but will do for now. FIXME
       const ithDistances = distances[i];
-      const nonZeroDists = ithDistances.filter(d => d > 0.0);
+      const nonZeroDists = ithDistances.filter((d) => d > 0.0);
 
       if (nonZeroDists.length >= localConnectivity) {
-        let index = Math.floor(localConnectivity);
-        let interpolation = localConnectivity - index;
+        const index = Math.floor(localConnectivity);
+        const interpolation = localConnectivity - index;
         if (index > 0) {
           rho[i] = nonZeroDists[index - 1];
           if (interpolation > SMOOTH_K_TOLERANCE) {
@@ -694,27 +695,25 @@ export class UMAP {
         let psum = 0.0;
         for (let j = 1; j < distances[i].length; j++) {
           const d = distances[i][j] - rho[i];
-          if (d > 0) {
+          if (d > 0)
             psum += Math.exp(-(d / mid));
-          } else {
+          else
             psum += 1.0;
-          }
         }
 
-        if (Math.abs(psum - target) < SMOOTH_K_TOLERANCE) {
+        if (Math.abs(psum - target) < SMOOTH_K_TOLERANCE)
           break;
-        }
+
 
         if (psum > target) {
           hi = mid;
           mid = (lo + hi) / 2.0;
         } else {
           lo = mid;
-          if (hi === Infinity) {
+          if (hi === Infinity)
             mid *= 2;
-          } else {
+          else
             mid = (lo + hi) / 2.0;
-          }
         }
       }
 
@@ -723,18 +722,16 @@ export class UMAP {
       // TODO: This is very inefficient, but will do for now. FIXME
       if (rho[i] > 0.0) {
         const meanIthDistances = utils.mean(ithDistances);
-        if (result[i] < MIN_K_DIST_SCALE * meanIthDistances) {
+        if (result[i] < MIN_K_DIST_SCALE * meanIthDistances)
           result[i] = MIN_K_DIST_SCALE * meanIthDistances;
-        }
       } else {
         const meanDistances = utils.mean(distances.map(utils.mean));
-        if (result[i] < MIN_K_DIST_SCALE * meanDistances) {
+        if (result[i] < MIN_K_DIST_SCALE * meanDistances)
           result[i] = MIN_K_DIST_SCALE * meanDistances;
-        }
       }
     }
 
-    return { sigmas: result, rhos: rho };
+    return {sigmas: result, rhos: rho};
   }
 
   /**
@@ -759,16 +756,16 @@ export class UMAP {
     for (let i = 0; i < nSamples; i++) {
       for (let j = 0; j < nNeighbors; j++) {
         let val = 0;
-        if (knnIndices[i][j] === -1) {
+        if (knnIndices[i][j] === -1)
           continue; // We didn't get the full knn for i
-        }
-        if (knnIndices[i][j] === i) {
+
+        if (knnIndices[i][j] === i)
           val = 0.0;
-        } else if (knnDistances[i][j] - rhos[i] <= 0.0) {
+        else if (knnDistances[i][j] - rhos[i] <= 0.0)
           val = 1.0;
-        } else {
+        else
           val = Math.exp(-((knnDistances[i][j] - rhos[i]) / sigmas[i]));
-        }
+
 
         rows[i * nNeighbors + j] = i;
         cols[i * nNeighbors + j] = knnIndices[i][j];
@@ -776,7 +773,7 @@ export class UMAP {
       }
     }
 
-    return { rows, cols, vals };
+    return {rows, cols, vals};
   }
 
   /**
@@ -788,22 +785,20 @@ export class UMAP {
   private initializeSimplicialSetEmbedding() {
     const nEpochs = this.getNEpochs();
 
-    const { nComponents } = this;
+    const {nComponents} = this;
     const graphValues = this.graph.getValues();
     let graphMax = 0;
     for (let i = 0; i < graphValues.length; i++) {
       const value = graphValues[i];
-      if (graphMax < graphValues[i]) {
+      if (graphMax < graphValues[i])
         graphMax = value;
-      }
     }
 
-    const graph = this.graph.map(value => {
-      if (value < graphMax / nEpochs) {
+    const graph = this.graph.map((value) => {
+      if (value < graphMax / nEpochs)
         return 0;
-      } else {
+      else
         return value;
-      }
     });
 
     // We're not computing the spectral initialization in this implementation
@@ -830,7 +825,7 @@ export class UMAP {
     }
     const epochsPerSample = this.makeEpochsPerSample(weights, nEpochs);
 
-    return { head, tail, epochsPerSample };
+    return {head, tail, epochsPerSample};
   }
 
   /**
@@ -840,7 +835,7 @@ export class UMAP {
   private makeEpochsPerSample(weights: number[], nEpochs: number) {
     const result = utils.filled(weights.length, -1.0);
     const max = utils.max(weights);
-    const nSamples = weights.map(w => (w / max) * nEpochs);
+    const nSamples = weights.map((w) => (w / max) * nEpochs);
     nSamples.forEach((n, i) => {
       if (n > 0) result[i] = nEpochs / nSamples[i];
     });
@@ -860,7 +855,7 @@ export class UMAP {
    */
   private prepareForOptimizationLoop() {
     // Hyperparameters
-    const { repulsionStrength, learningRate, negativeSampleRate } = this;
+    const {repulsionStrength, learningRate, negativeSampleRate} = this;
 
     const {
       epochsPerSample,
@@ -872,7 +867,7 @@ export class UMAP {
     const moveOther = headEmbedding.length === tailEmbedding.length;
 
     const epochsPerNegativeSample = epochsPerSample.map(
-      e => e / negativeSampleRate
+      (e) => e / negativeSampleRate
     );
     const epochOfNextNegativeSample = [...epochsPerNegativeSample];
     const epochOfNextSample = [...epochsPerSample];
@@ -898,12 +893,12 @@ export class UMAP {
     const tailEmbedding = this.embedding;
 
     // Initialized in initializeSimplicialSetEmbedding()
-    const { head, tail, epochsPerSample } = this.optimizationState;
+    const {head, tail, epochsPerSample} = this.optimizationState;
 
     const nEpochs = this.getNEpochs();
     const nVertices = this.graph.nCols;
 
-    const { a, b } = findABParams(this.spread, this.minDist);
+    const {a, b} = findABParams(this.spread, this.minDist);
 
     this.assignOptimizationStateParameters({
       headEmbedding,
@@ -926,7 +921,7 @@ export class UMAP {
    * coming from negative sampling similar to word2vec).
    */
   private optimizeLayoutStep(n: number) {
-    const { optimizationState } = this;
+    const {optimizationState} = this;
     const {
       head,
       tail,
@@ -950,9 +945,9 @@ export class UMAP {
     const clipValue = 4.0;
 
     for (let i = 0; i < epochsPerSample.length; i++) {
-      if (epochOfNextSample[i] > n) {
+      if (epochOfNextSample[i] > n)
         continue;
-      }
+
 
       const j = head[i];
       const k = tail[i];
@@ -971,9 +966,8 @@ export class UMAP {
       for (let d = 0; d < dim; d++) {
         const gradD = clip(gradCoeff * (current[d] - other[d]), clipValue);
         current[d] += gradD * alpha;
-        if (moveOther) {
+        if (moveOther)
           other[d] += -gradD * alpha;
-        }
       }
 
       epochOfNextSample[i] += epochsPerSample[i];
@@ -999,9 +993,9 @@ export class UMAP {
 
         for (let d = 0; d < dim; d++) {
           let gradD = 4.0;
-          if (gradCoeff > 0.0) {
+          if (gradCoeff > 0.0)
             gradD = clip(gradCoeff * (current[d] - other[d]), clipValue);
-          }
+
           current[d] += gradD * alpha;
         }
       }
@@ -1026,16 +1020,15 @@ export class UMAP {
     return new Promise((resolve, reject) => {
       const step = async () => {
         try {
-          const { nEpochs, currentEpoch } = this.optimizationState;
+          const {nEpochs, currentEpoch} = this.optimizationState;
           this.embedding = this.optimizeLayoutStep(currentEpoch);
           const epochCompleted = this.optimizationState.currentEpoch;
           const shouldStop = epochCallback(epochCompleted) === false;
           const isFinished = epochCompleted === nEpochs;
-          if (!shouldStop && !isFinished) {
+          if (!shouldStop && !isFinished)
             setTimeout(() => step(), 0);
-          } else {
+          else
             return resolve(isFinished);
-          }
         } catch (err) {
           reject(err);
         }
@@ -1057,7 +1050,7 @@ export class UMAP {
     let isFinished = false;
     let embedding: Vectors = [];
     while (!isFinished) {
-      const { nEpochs, currentEpoch } = this.optimizationState;
+      const {nEpochs, currentEpoch} = this.optimizationState;
       embedding = this.optimizeLayoutStep(currentEpoch);
       const epochCompleted = this.optimizationState.currentEpoch;
       const shouldStop = epochCallback(epochCompleted) === false;
@@ -1073,32 +1066,31 @@ export class UMAP {
   public getNEpochs() {
     const graph = this.graph;
 
-    if (this.nEpochs > 0) {
+    if (this.nEpochs > 0)
       return this.nEpochs;
-    }
 
-    if (!graph) {
+
+    if (!graph)
       return 200;
-    }
+
 
     const length = graph.nRows;
-    if (length <= 2500) {
+    if (length <= 2500)
       return 500;
-    } else if (length <= 5000) {
+    else if (length <= 5000)
       return 400;
-    } else if (length <= 7500) {
+    else if (length <= 7500)
       return 300;
-    } else {
+    else
       return 200;
-    }
   }
 }
 
 export function euclidean(x: Vector, y: Vector) {
   let result = 0;
-  for (let i = 0; i < x.length; i++) {
+  for (let i = 0; i < x.length; i++)
     result += (x[i] - y[i]) ** 2;
-  }
+
   return Math.sqrt(result);
 }
 
@@ -1118,13 +1110,12 @@ export function cosine(x: Vector, y: Vector) {
     normY += y[i] ** 2;
   }
 
-  if (normX === 0 && normY === 0) {
+  if (normX === 0 && normY === 0)
     return 0;
-  } else if (normX === 0 || normY === 0) {
+  else if (normX === 0 || normY === 0)
     return 1.0;
-  } else {
+  else
     return 1.0 - result / Math.sqrt(normX * normY);
-  }
 }
 
 /**
@@ -1168,9 +1159,9 @@ function clip(x: number, clipValue: number) {
  */
 function rDist(x: number[], y: number[]) {
   let result = 0.0;
-  for (let i = 0; i < x.length; i++) {
+  for (let i = 0; i < x.length; i++)
     result += Math.pow(x[i] - y[i], 2);
-  }
+
   return result;
 }
 
@@ -1187,7 +1178,7 @@ export function findABParams(spread: number, minDist: number) {
 
   const xv = utils
     .linear(0, spread * 3, 300)
-    .map(val => (val < minDist ? 1.0 : val));
+    .map((val) => (val < minDist ? 1.0 : val));
 
   const yv = utils.zeros(xv.length).map((val, index) => {
     const gte = xv[index] >= minDist;
@@ -1195,7 +1186,7 @@ export function findABParams(spread: number, minDist: number) {
   });
 
   const initialValues = [0.5, 0.5];
-  const data = { x: xv, y: yv };
+  const data = {x: xv, y: yv};
 
   // Default options for the algorithm (from github example)
   const options = {
@@ -1206,9 +1197,10 @@ export function findABParams(spread: number, minDist: number) {
     errorTolerance: 10e-3,
   };
 
-  const { parameterValues } = LM(data, curve, options);
+  // eslint-disable-next-line new-cap
+  const {parameterValues} = LM(data, curve, options);
   const [a, b] = parameterValues as number[];
-  return { a, b };
+  return {a, b};
 }
 
 /**
@@ -1222,13 +1214,12 @@ export function fastIntersection(
   farDist = 5.0
 ) {
   return graph.map((value, row, col) => {
-    if (target[row] === -1 || target[col] === -1) {
+    if (target[row] === -1 || target[col] === -1)
       return value * Math.exp(-unknownDist);
-    } else if (target[row] !== target[col]) {
+    else if (target[row] !== target[col])
       return value * Math.exp(-farDist);
-    } else {
+    else
       return value;
-    }
   });
 }
 
@@ -1261,7 +1252,7 @@ export function initTransform(
 ) {
   const result = utils
     .zeros(indices.length)
-    .map(z => utils.zeros(embedding[0].length));
+    .map((_z) => utils.zeros(embedding[0].length));
 
   for (let i = 0; i < indices.length; i++) {
     for (let j = 0; j < indices[0].length; j++) {

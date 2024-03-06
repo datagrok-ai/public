@@ -1,25 +1,24 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {DataFrame} from "./dataframe.js";
+import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
-import {Menu, ObjectPropertyBag, Widget} from "./widgets";
+import {Menu, ObjectPropertyBag, Widget, Filter} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
 import {toJs} from "./wrappers";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
-import {map} from 'rxjs/operators';
+import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
-import {IDartApi} from "./api/grok_api.g";
+import {ViewerEvent} from './api/d4.api.g';
 
 declare let DG: any;
 declare let ui: any;
-const api: IDartApi = <any>window;
-
+let api = <any>window;
 
 export class TypedEventArgs<TData> {
   dart: any;
@@ -68,12 +67,19 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
+  filter: BitSet = BitSet.create(0);
 
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
     super(root ?? api.grok_Viewer_Root(dart));
     this.initDartObject(dart);
   }
+
+  get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
+  get onDataHovered(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-hover-event')); }
+  get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select-event')); }
+  /// current row clicked
+  get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-click-event')); }
 
   initDartObject(dart: any) {
     this.dart = dart;
@@ -334,6 +340,8 @@ export class JsViewer extends Viewer {
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
   props: ObjectPropertyBag;
+  rowSource: string | undefined;
+  formulaFilter: string | undefined;
 
   /** @constructs JsViewer */
   constructor() {
@@ -353,9 +361,22 @@ export class JsViewer extends Viewer {
     this.props = new ObjectPropertyBag(this);
   }
 
+  addRowSourceAndFormula() {
+    this.rowSource = this.string('rowSource', 'Filtered',
+        { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
+    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter'});
+  }
+
   onFrameAttached(dataFrame: DataFrame): void {
     this.onTableAttached();
   }
+
+  sourceRowsChanged(): void {
+    this.filter = toJs(api.grok_Viewer_Get_Filter(this.dart));
+    this.onSourceRowsChanged();
+  }
+
+  onSourceRowsChanged(): void {}
 
   get root(): HTMLElement { return this._root; }
   set root(r: HTMLElement) { this._root = r; }
@@ -445,7 +466,7 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
-  getStates(columnName: string, filterType: string): Array<Object> {
+  getStates(columnName: string, filterType: String): Array<Object> {
     return api.grok_FilterGroup_GetStates(this.dart, columnName, filterType);
   }
 
@@ -453,8 +474,25 @@ export class FilterGroup extends Viewer {
     api.grok_FilterGroup_Add(this.dart, state);
   }
 
-  updateOrAdd<T extends FilterState>(state: T) {
-    api.grok_FilterGroup_UpdateOrAdd(this.dart, state);
+  updateOrAdd<T extends FilterState>(state: T, requestFilter?: boolean) {
+    api.grok_FilterGroup_UpdateOrAdd(this.dart, state, requestFilter);
+  }
+
+  getFilterSummary(): Element {
+    return api.grok_FilterGroup_GetFilterSummary(this.dart);
+  }
+
+  /** Returns array of filters in FilterGroup. Filter if js filter and dart object if dart filter */
+  get filters(): Array<Filter | Widget> {
+    return toJs(api.grok_FilterGroup_Get_Filters(this.dart));
+  }
+
+  setEnabled(filter: Filter | Widget, active: boolean) {
+    api.grok_FilterGroup_SetEnabled(this.dart, filter, active);
+  }
+
+  remove(filter: Filter | Widget) {
+    api.grok_FilterGroup_Remove(this.dart, filter);
   }
 }
 

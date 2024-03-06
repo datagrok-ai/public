@@ -15,6 +15,14 @@ export async function findRGroups(
   return await grok.functions.call('Chem:FindRGroups', {molecules, df, core, prefix});
 }
 
+export async function findRGroupsWithCore(
+  molecules: string,
+  df: DG.DataFrame,
+  core: string,
+  onlyMatchAtRGroups: boolean): Promise<DG.DataFrame> {
+  return await grok.functions.call('Chem:FindRGroupsWithCore', {molecules, df, core, onlyMatchAtRGroups});
+}
+
 export async function smilesTo3DCoordinates(molecule: string): Promise<string> {
   return await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule});
 }

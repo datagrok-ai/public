@@ -152,7 +152,7 @@ export class Tags {
 
   static DataQueryName = 'DataQuery.name';
 
-  static DataQueryCall = '.DataQuery.query.call';
+  static DataQueryFinished = '.DataQuery.query.finished';
 
   static Presentation = '.presentation';
 
@@ -210,6 +210,15 @@ export class Tags {
   /// Pipe-separated path that defines where this column is within the hierarchy
   /// Used for dynamic forms construction, etc
   static Hierarchy = 'hierarchy';
+
+  /// Links column and db property
+  static DbPropertyName = 'dbPropertyName';
+
+  /// Links column and db property schema
+  static DbPropertySchema = 'dbPropertySchema';
+
+  /// Specifies the column that has entity key
+  static DbPropertyReference = 'dbPropertyReference';
 
 }
 export class FuncOptions {

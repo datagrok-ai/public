@@ -9,15 +9,12 @@ import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {_importSdf} from '../open-chem/sdf-importer';
 import {_package} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
-import {chemSpace, getEmbeddingColsNames} from '../analysis/chem-space';
 import {CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {getSimilaritiesMarix} from '../utils/similarity-utils';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-
-import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
-import {TreeViewGroup} from 'datagrok-api/dg';
+import {getEmbeddingColsNames} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -178,10 +175,11 @@ export async function _demoSimilaritySearch(): Promise<void> {
 
 export async function _demoSimilarityDiversitySearch(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/smiles.csv');
-  _package.files.readAsText('demo_files/similarity_diversity.layout').then((layoutString: string) => {
+  _package.files.readAsText('demo_files/similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
+    await delay(100);
     tv.loadLayout(layout);
-  })
+  });
   grok.shell.windows.showHelp = true;
   //@ts-ignore
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
@@ -278,24 +276,29 @@ export async function _demoActivityCliffs(): Promise<void> {
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
-    }, {description: 'Load dataset with molecule and activity columns', delay: 2000})
+    }, {description: 'Load dataset with molecule and activity columns.', delay: 2000})
     .step('Find activity cliffs', async () => {
       const molecules = table.col('smiles')!;
       const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
       const axesNames = getEmbeddingColsNames(table);
-      scatterPlot = await getActivityCliffs(table, molecules, null as any, axesNames, 'Activity cliffs',
-        table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE,
-        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-        createTooltipElement, createPropPanelElement, undefined, undefined, 0.5);
+      const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+      scatterPlot = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs',
+        table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
+        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
+        createTooltipElement, createPropPanelElement, undefined, 0.5);
       progressBar.close();
       await delay(1000);
-    }, {description: 'Results are shown on a scatter plot', delay: 2000})
+    }, {description: `Results are shown on a scatter plot. Each point on a scatter plot corresponds to a molecule from a dataset.
+    Pairs of molecules with similarity higher than specified cutoff, are connected by lines. Marker color corresponds to molecule activity.
+    Line opacity corresponds to molecule pair SALI value (Structure−Activity Landscape Index - activity difference divided by 1 minus similarity).
+    Marker size corresponds to highest SALI value detected for the molecule.`, delay: 2000})
     .step('Explore activity cliffs', async () => {
       await delay(1000);
       (Array.from(scatterPlot!.root.children)
         .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid')[0] as HTMLElement).click();
       await delay(1000);
-    }, {description: 'Detected cliffs are available in a separate table', delay: 2000})
+    }, {description: `Detected cliffs are available in a separate table. 
+    Cliffs are pairs of molecules with similarity higher than cutoff. Cliffs are sorted by SALI value.`, delay: 2000})
     .step('Select cliffs', async () => {
       await delay(1000);
       let cliffsGrid: DG.Viewer | null = null;
@@ -308,7 +311,8 @@ export async function _demoActivityCliffs(): Promise<void> {
             cliffsGrid!.dataFrame.currentRowIdx = 6;
             await delay(3000);
             cliffsGrid!.dataFrame.currentRowIdx = 5;
-    }, {description: 'When you select a cliff scatter plot is zoomed to that exact cliff', delay: 3000})
+    }, {description: `To zoom scatter plot to exact cliff, click on a row in the cliffs table. 
+    Additional information about molecule pair is on the context panel. Non common fragments are highlighted in molecules.`, delay: 3000})
     .start();
 }
 
@@ -579,6 +583,7 @@ LIMIT 50
   ], {style: {height: '100%', width: '100%'}});
 
   const view = grok.shell.addView(DG.View.create());
+  view.name = 'Chemical Databases';
   view.root.append(totalDiv);
   setTimeout(() => runQuery(), 0);
 }

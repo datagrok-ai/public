@@ -17,4 +17,4 @@
  * ==============================================================================
  */
 
-export { UMAP, UMAPParameters } from './umap';
+export {UMAP, UMAPParameters} from './umap';

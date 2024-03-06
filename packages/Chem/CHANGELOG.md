@@ -1,5 +1,53 @@
 # Chem changelog
 
+## 1.8.13 (2024-02-29)
+
+### Bug Fixes
+
+* Warm up substructure search web workers only once when first filter is created on column
+
+## 1.8.12 (2024-02-15)
+
+### Bug Fixes
+
+* Fixed multiple substructure search calls with the same structure (in case multiple layouts are applied to cloned views at once)
+
+## 1.8.11 (2024-02-08)
+
+### Bug Fixes
+
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases
+* [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases
+* [#2646](https://github.com/datagrok-ai/public/issues/2646): Structure highlighting is not removed when filters panel is closed
+
+## 1.8.10 (2024-01-19)
+
+### Features
+
+* Molecule labels on scatter plot zoom in Chemical Space and Activity Cliffs
+
+### Bug Fixes
+
+* [#2626](https://github.com/datagrok-ai/public/issues/2626): Unexpected warning on adding child node to the scaffold tree if parent contains 'H' atom
+* [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there are two views opened
+* [#2629](https://github.com/datagrok-ai/public/issues/2629): Structure filter filters out all molecules in the presence of filter-by-zoom scatterplot and multiple views
+* GROK-14542: Filter Panel | Structure filter: incorrect behavior on deleting a filter in a cloned view
+
+## 1.8.9 (2024-01-09)
+
+### Features
+
+* Update MinimalLib to 1.2.15 featuring support for RGroups (support for R-group decomposition)
+* Chem: Add ability to specify fingerprint types and cluster embeddings for chemical space
+
+### Bug Fixes
+
+* GROK-14383: Chem | Scaffold Tree: The selection doesn't change on folder node click
+* GROK-14411: Demo: Exception while closing Scaffold Tree
+* GROK-14409: Chem | R-Group Analysis: Error with prefix
+* GROK-14375: Chem | Activity cliffs: Implement scatter plot lines renderer
+* [#2612](https://github.com/datagrok-ai/public/issues/2612): Chem | Scaffold tree: Structure part containing H atom is replaced with '?' in some cases
+
 ## 1.8.8 (2023-12-07)
 
 ### Bug Fixes

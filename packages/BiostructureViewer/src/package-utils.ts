@@ -6,10 +6,11 @@ import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {NglGlDocService} from './utils/ngl-gl-doc-service';
 import {PdbHelper} from './utils/pdb-helper';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 // -- _package --
 
-export class Package extends DG.Package {
+export class BsvPackage extends DG.Package {
   private _pLogger: DG.PackageLogger;
 
   get logger(): DG.PackageLogger {
@@ -25,12 +26,17 @@ export class Package extends DG.Package {
 
     return this._pLogger;
   }
+
+  handleErrorUI(err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    grok.shell.error(errMsg);
+    this.logger.error(errMsg, undefined, errStack);
+  }
 }
 
 // -- _getNglGlService, _getPdbHelper--
 
 type BsvWindowType = Window & {
-  $pdbHelper?: IPdbHelper,
   $nglGlService?: NglGlServiceBase,
 };
 declare const window: BsvWindowType;
@@ -43,15 +49,3 @@ export function _getNglGlService() {
 
   return window.$nglGlService;
 }
-
-export async function _getPdbHelper(): Promise<IPdbHelper> {
-  if (!(window.$pdbHelper)) {
-    const ph = await PdbHelper.getInstance(); // getPdbHelper
-    window.$pdbHelper = ph;
-  }
-
-  return window.$pdbHelper;
-}
-
-
-

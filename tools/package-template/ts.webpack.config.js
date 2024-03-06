@@ -5,15 +5,15 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'development',
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
-    package: './src/package.ts'
+    test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
+    package: './src/package.ts',
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      {test: /\.tsx?$/, loader: 'ts-loader'},
     ],
   },
   plugins: [

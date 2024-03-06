@@ -1,11 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
-  HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus} from './types';
+import {HitTriageCampaign, IFunctionArgs,
+  HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus,
+  HitDesignTemplate} from './types';
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName,
+  HTQueryPrefix, HTScriptPrefix, HitSelectionColName, i18n} from './consts';
 import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
@@ -13,6 +15,7 @@ import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
+import {calculateColumns} from './utils/calculate-single-cell';
 export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
@@ -31,6 +34,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   protected _filterDescriptions: string[] = [];
   public campaignProps: {[key: string]: any} = {};
   private currentPickViewId?: string;
+  private _pickViewPromise?: Promise<void> | null = null;
   constructor(c: DG.FuncCall) {
     super(c);
     this._infoView = new InfoView(this);
@@ -40,7 +44,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    //grok.shell.addView(this.multiView);
+    grok.shell.addView(this.multiView);
 
     grok.events.onCurrentViewChanged.subscribe(() => {
       try {
@@ -85,19 +89,32 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     this._dfName = this.dataFrame.name ?? ingestProps?.query;
     this.dataFrame.name = this._dfName ?? this.dataFrame.name ?? 'Molecules';
     this._campaignId = campaignId;
-    this.template = template;
+    this.template = this.campaign?.template ?
+      {...this.campaign.template, dataSourceType: template.dataSourceType,
+        queryFunctionName: template.queryFunctionName} : template;
     this._campaignFilters = presetFilters;
 
     if (!presetFilters) {
       const funcs: {[_: string]: IFunctionArgs} = {};
+      const scripts: {[_: string]: IFunctionArgs} = {};
+      const queries: {[_: string]: IFunctionArgs} = {};
       template.compute.functions.forEach((func) => {
         const fName = `${func.package}:${func.name}`;
         funcs[fName] = func.args;
-      } );
-      await this.calculateColumns({
-        descriptors: template.compute.descriptors.enabled ? template.compute.descriptors.args : [],
-        externals: funcs,
       });
+      template.compute.scripts?.forEach((script) => {
+        const fName = `${HTScriptPrefix}:${script.name}:${script.id}`;
+        scripts[fName] = script.args;
+      });
+      template.compute.queries?.forEach((query) => {
+        const fName = `${HTQueryPrefix}:${query.name}:${query.id}`;
+        queries[fName] = query.args;
+      });
+
+      await calculateColumns({
+        descriptors: template.compute.descriptors.enabled ? template.compute.descriptors.args : [],
+        externals: funcs, scripts, queries,
+      }, this.dataFrame!, this._molColName!);
     };
     const curView = grok.shell.v;
     const pickV = grok.shell.addView(this.pickView);
@@ -107,11 +124,16 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
 
     const newView = pickV;
-    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', 'Pick', () => {
-      grok.shell.v = curView;
-      newView.close();
-      sub.unsubscribe();
-    });
+
+    setTimeout(() => {
+      this._pickViewPromise && this._pickViewPromise.then(() => {
+        const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', 'Pick', () => {
+          grok.shell.v = curView;
+          newView.close();
+          sub.unsubscribe();
+        });
+      });
+    }, 300);
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -130,53 +152,96 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
   set campaign(campaign: HitTriageCampaign | undefined) {this._campaign = campaign;}
 
-  public async calculateColumns(resultMap: IComputeDialogResult, view?: DG.TableView) {
-    const previousColumns = this.dataFrame!.columns.names();
-    if (resultMap.descriptors && resultMap.descriptors.length > 0)
-      await grok.chem.descriptors(this.dataFrame!, this.molColName!, resultMap.descriptors);
-
-    for (const funcName of Object.keys(resultMap.externals)) {
-      const props = resultMap.externals[funcName];
-      const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
-      const tablePropName = f.inputs[0].name;
-      const colPropName = f.inputs[1].name;
-      if (props)
-        await f.apply({...props, [tablePropName]: this.dataFrame!, [colPropName]: this.molColName});
-    };
-    for (const scriptName of Object.keys(resultMap.scripts ?? {})) {
-      const props = resultMap.scripts![scriptName];
-      if (props) {
-        // props['table'] = this.dataFrame!;
-        // props['molecules'] = this.molColName!;
-        try {
-          const s = await grok.dapi.scripts.find(scriptName);
-          if (!s)
-            continue;
-          const tablePropName = s.inputs[0].name;
-          const colPropName = s.inputs[1].name;
-          await s.apply({...props, [tablePropName]: this.dataFrame!, [colPropName]: this.molColName});
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    };
-
-    if (view) {
-      const filterGroup = view.getFiltersGroup();
-    this.dataFrame!.columns.names().filter((colName) => !previousColumns.includes(colName))
-      .forEach((colName) => {filterGroup.add({type: this.getFilterType(colName), column: colName});});
-    }
-  }
-
   /**
    * A view that lets you filter the molecules using either molecules, or
    * their properties derived at the enrichment step.
    * @return {DG.TableView}
    * */
   getFilterView(): DG.TableView {
+    let resolvePromise: Function | null = null;
+    this._pickViewPromise = new Promise<void>((res) => {resolvePromise = res;});
     const getComputeDialog = async () => {
-      chemFunctionsDialog(async (resultMap) => {
-        this.calculateColumns(resultMap, view);
+      chemFunctionsDialog(this, async (resultMap) => {
+        const oldDescriptors = this.template!.compute.descriptors.args;
+        const oldFunctions = this.template!.compute.functions;
+        const oldScripts = this.template!.compute.scripts ?? [];
+        const oldQueries = this.template!.compute.queries ?? [];
+        const newDescriptors = resultMap.descriptors;
+        const newComputeObj = {
+          descriptors: {
+            enabled: !!resultMap?.descriptors?.length,
+            args: resultMap?.descriptors ?? [],
+          },
+          functions: Object.entries(resultMap?.externals ?? {}).map(([funcName, args]) => {
+            const splitFunc = funcName.split(':');
+            return ({
+              name: splitFunc[1],
+              package: splitFunc[0],
+              args: args,
+            });
+          }),
+          scripts: Object.entries(resultMap?.scripts ?? {})
+            .filter(([name, _]) => name.startsWith(HTScriptPrefix) && name.split(':').length === 3)
+            .map(([scriptId, args]) => {
+              const scriptNameParts = scriptId.split(':');
+              return ({
+                name: scriptNameParts[1] ?? '',
+                id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
+          queries: Object.entries(resultMap?.queries ?? {})
+            .filter(([name, _]) => name.startsWith(HTQueryPrefix) && name.split(':').length === 3)
+            .map(([scriptId, args]) => {
+              const scriptNameParts = scriptId.split(':');
+              return ({
+                name: scriptNameParts[1] ?? '',
+                id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
+        };
+        this.template!.compute = newComputeObj;
+        const uncalculatedDescriptors = newDescriptors.filter((d) => !oldDescriptors.includes(d));
+        const uncalculatedFunctions = newComputeObj.functions.filter((func) => {
+          if (!oldFunctions.some((f) => f.name === func.name && f.package === func.package))
+            return true;
+          const oldFunc = oldFunctions.find((f) => f.name === func.name && f.package === func.package)!;
+          return !Object.entries(func.args).every(([key, value]) => oldFunc.args[key] === value);
+        });
+        const uncalculatedScripts = newComputeObj.scripts.filter((func) => {
+          if (!oldScripts.some((f) => f.id === func.id ))
+            return true;
+          const oldScript = oldScripts.find((f) => f.id === func.id)!;
+          return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
+        });
+        const uncalculatedQueries = newComputeObj.queries.filter((query) => {
+          if (!oldQueries.some((f) => f.id === query.id))
+            return true;
+          const oldQuery = oldQueries.find((f) => f.id === query.id)!;
+          return !Object.entries(query.args).every(([key, value]) => oldQuery.args[key] === value);
+        });
+
+        const externalFuncs: {[_: string]: IFunctionArgs} = {};
+        uncalculatedFunctions.forEach((func) => {
+          const fName = `${func.package}:${func.name}`;
+          externalFuncs[fName] = func.args;
+        });
+        const externalScripts: {[_: string]: IFunctionArgs} = {};
+        uncalculatedScripts.forEach((script) => {
+          const fName = `${HTScriptPrefix}:${script.name}:${script.id}`;
+          externalScripts[fName] = script.args;
+        });
+        const externalQueries: {[_: string]: IFunctionArgs} = {};
+        uncalculatedQueries.forEach((query) => {
+          const fName = `${HTQueryPrefix}:${query.name}:${query.id}`;
+          externalQueries[fName] = query.args;
+        });
+        await calculateColumns(
+          {descriptors: uncalculatedDescriptors, externals: externalFuncs,
+            scripts: externalScripts, queries: externalQueries},
+          this.dataFrame!, this._molColName!);
+        this.saveCampaign('In Progress', false);
       }, () => null, this.template!, true);
     };
     if (!this.dataFrame!.col(HitSelectionColName))
@@ -203,19 +268,8 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     setTimeout(async () => {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000));
-      // const ribbons = view.getRibbonPanels();
-      // ribbons[0].push(ui.div(ui.icons.add(() => null), {classes: 'd4-ribbon-item'}));
-      // console.log(ribbons);
-      // we need to wait for chem package to be initialized first to be able to use chem filters
 
-      //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
-      // loading layout
-      // const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
-      //   .find((l) => l && l.getUserDataValue(HTcampaignName) === this._campaignId);
-      // if (layout)
-      //   view.loadLayout(layout);
-      //console.log('layout loaded');
 
       if (this._campaign?.layout) {
         try {
@@ -234,6 +288,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         this._filterDescriptions = Array.from(view.dataFrame.rows.filters);
         this._campaignFilters = f.getOptions().look.filters;
       }, 300);
+      resolvePromise && resolvePromise();
     }, 300);
     view.parentCall = this.parentCall;
     return view;
@@ -281,8 +336,9 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       columnSemTypes,
       rowCount: enrichedDf.rowCount,
       filteredRowCount: enrichedDf.filter.trueCount,
+      template: this.template as HitDesignTemplate | undefined,
     };
-
+    this.campaign = campaign;
 
     const csvDf = DG.DataFrame.fromColumns(
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),

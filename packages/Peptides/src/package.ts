@@ -45,7 +45,6 @@ async function openDemoData(chosenFile: string): Promise<void> {
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
   grok.shell.windows.showProperties = true;
-
   pi.close();
 }
 
@@ -140,6 +139,7 @@ export function manualAlignment(_monomer: string): DG.Widget {
   const model: PeptidesModel | null = df?.temp[PeptidesModel.modelName];
   if (!model)
     return new DG.Widget(ui.divText('Manual alignment works with peptides analysis'));
+
 
   const col = df.getCol(model.settings!.sequenceColumnName!);
   return manualAlignmentWidget(col, df);

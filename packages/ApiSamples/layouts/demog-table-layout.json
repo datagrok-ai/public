@@ -1,236 +1,452 @@
 {
   "#type": "ViewLayout",
-  "type": "TableView",
-  "friendlyName": "demog-table-layout",
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1105,
-      "height": 860
+      "width": 1231,
+      "height": 838
     },
     "children": [
       {
-        "containerType": "horizontal",
+        "containerType": "vertical",
         "state": {
-          "width": 711,
-          "height": 860
+          "width": 406,
+          "height": 838
         },
         "children": [
           {
-            "containerType": "panel",
+            "containerType": "fill",
             "state": {
-              "width": 357,
-              "height": 860,
-              "element": {
-                "id": "ea7539b0-3260-11e9-a856-271c562d1aaf",
-                "type": "Bar chart",
-                "look": {
-                  "splitColumnName": "DIS_POP",
-                  "valueAggrType": "avg",
-                  "valueColumnName": "AGE"
-                }
-              }
+              "width": 406,
+              "height": 415,
+              "documentManager": true
             },
             "children": [
-
-            ]
-          },
-          {
-            "containerType": "vertical",
-            "state": {
-              "width": 345,
-              "height": 860
-            },
-            "children": [
-              {
-                "containerType": "fill",
-                "state": {
-                  "width": 345,
-                  "height": 421,
-                  "documentManager": true
-                },
-                "children": [
-                  {
-                    "containerType": "panel",
-                    "state": {
-                      "width": 345,
-                      "height": 421,
-                      "element": {
-                        "id": "ea75aee0-3260-11e9-cd55-27767803c24d",
-                        "type": "Grid",
-                        "look": {
-                          "#type": "HeatMapLook",
-                          "allowColumnMenu": true,
-                          "topLevelDefaultMenu": true,
-                          "columns": [
-                            {
-                              "width": 78,
-                              "columnName": "USUBJID",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 51,
-                              "columnName": "AGE",
-                              "cellType": "number"
-                            },
-                            {
-                              "width": 60,
-                              "columnName": "SEX",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 60,
-                              "columnName": "RACE",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 76,
-                              "columnName": "DIS_POP",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 71,
-                              "columnName": "HEIGHT",
-                              "cellType": "number"
-                            },
-                            {
-                              "width": 73,
-                              "columnName": "WEIGHT",
-                              "cellType": "number"
-                            },
-                            {
-                              "width": 69,
-                              "columnName": "DEMOG",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 78,
-                              "columnName": "STUDYID",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 64,
-                              "columnName": "SITEID",
-                              "cellType": "number"
-                            },
-                            {
-                              "width": 69,
-                              "columnName": "SUBJID",
-                              "cellType": "number"
-                            },
-                            {
-                              "width": 84,
-                              "columnName": "SITESUBJ",
-                              "cellType": "string"
-                            },
-                            {
-                              "width": 86,
-                              "columnName": "UNIQUE_P",
-                              "cellType": "string"
-                            }
-                          ]
-                        }
-                      }
-                    },
-                    "children": [
-
-                    ]
-                  }
-                ]
-              },
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 345,
-                  "height": 430,
+                  "width": 406,
+                  "height": 415,
                   "element": {
-                    "id": "ea762410-3260-11e9-e56d-114895ca4284",
-                    "type": "Scatter plot",
+                    "id": "21d77650-8990-11ee-9464-5b1d82deba51",
+                    "type": "Grid",
                     "look": {
-                      "xColumnName": "WEIGHT",
-                      "yColumnName": "HEIGHT",
-                      "colorColumnName": "SEX",
-                      "markerMinSize": 3.0,
-                      "markerMaxSize": 20.0
-                    }
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 36,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "settings": {}
+                        },
+                        {
+                          "width": 53,
+                          "columnName": "subj",
+                          "cellType": "number",
+                          "settings": {}
+                        },
+                        {
+                          "width": 69,
+                          "columnName": "study",
+                          "settings": {}
+                        },
+                        {
+                          "width": 91,
+                          "columnName": "site",
+                          "settings": {}
+                        },
+                        {
+                          "width": 53,
+                          "columnName": "age",
+                          "cellType": "number",
+                          "settings": {}
+                        },
+                        {
+                          "width": 45,
+                          "columnName": "sex",
+                          "settings": {}
+                        },
+                        {
+                          "width": 81,
+                          "columnName": "race",
+                          "settings": {}
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "disease",
+                          "settings": {}
+                        },
+                        {
+                          "width": 126,
+                          "columnName": "started",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm",
+                          "settings": {}
+                        },
+                        {
+                          "width": 62,
+                          "columnName": "height",
+                          "cellType": "number",
+                          "settings": {}
+                        },
+                        {
+                          "width": 64,
+                          "columnName": "weight",
+                          "cellType": "number",
+                          "settings": {}
+                        }
+                      ]
+                    },
+                    "title": "demog 100",
+                    "default": true
                   }
                 },
-                "children": [
-
-                ]
+                "children": []
               }
             ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 406,
+              "height": 422,
+              "element": {
+                "id": "21d7c470-8990-11ee-ca4b-0712a0658261",
+                "type": "Scatter plot",
+                "look": {
+                  "#type": "ScatterPlotLook",
+                  "xColumnName": "subj",
+                  "yColumnName": "height",
+                  "markerMinSize": 3,
+                  "markerMaxSize": 20,
+                  "viewport": ""
+                },
+                "title": "Scatter plot"
+              }
+            },
+            "children": []
           }
         ]
       },
       {
         "containerType": "vertical",
         "state": {
-          "width": 385,
-          "height": 860
+          "width": 409,
+          "height": 838
         },
         "children": [
           {
             "containerType": "panel",
             "state": {
-              "width": 385,
-              "height": 425,
+              "width": 409,
+              "height": 415,
               "element": {
-                "id": "ea764b20-3260-11e9-a7c0-a1f07a947fad",
-                "type": "Line chart",
+                "id": "21d7eb80-8990-11ee-ace6-9deb4f8e9d4b",
+                "type": "Bar chart",
                 "look": {
-                  "xColumnName": "AGE",
-                  "yColumnNames": [
-                    "STARTED",
-                    "HEIGHT",
-                    "WEIGHT"
-                  ],
-                  "yAggrTypes": [
-                    "avg",
-                    "avg",
-                    "avg"
-                  ],
-                  "overviewColumnName": "HEIGHT",
-                  "chartTypes": [
-                    "Line Chart",
-                    "Line Chart",
-                    "Line Chart"
-                  ]
-                }
+                  "#type": "BarChartLook",
+                  "valueColumnName": "subj",
+                  "valueAggrType": "count",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "splitColumnName": "study"
+                },
+                "title": "Bar chart"
               }
             },
-            "children": [
-
-            ]
+            "children": []
           },
           {
             "containerType": "panel",
             "state": {
-              "width": 385,
-              "height": 426,
+              "width": 409,
+              "height": 422,
               "element": {
-                "id": "ea767230-3260-11e9-8324-3762815e7b42",
-                "type": "Histogram",
+                "id": "21d81290-8990-11ee-e703-75dc537ef7d3",
+                "type": "Heat map",
                 "look": {
-                  "valueColumnName": "AGE",
-                  "showXAxis": true,
-                  "showYAxis": true,
-                  "marginLeft": 5,
-                  "marginRight": 5,
-                  "binWidthRatio": 1.0
-                }
+                  "#type": "GridLook",
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "visible": false,
+                      "width": 30,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header"
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "subj",
+                      "cellType": "number",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "study",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "site",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "age",
+                      "cellType": "number",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "sex",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "race",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "disease",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "started",
+                      "cellType": "number",
+                      "format": "M/d/yyyy HH:mm",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "height",
+                      "cellType": "number",
+                      "settings": {}
+                    },
+                    {
+                      "width": 30,
+                      "columnName": "weight",
+                      "cellType": "number",
+                      "settings": {}
+                    }
+                  ]
+                },
+                "title": "Heat map"
               }
             },
-            "children": [
-
-            ]
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 414,
+          "height": 838
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 414,
+              "height": 415,
+              "element": {
+                "id": "21d839a0-8990-11ee-a997-99e9f6d59d3b",
+                "type": "Line chart",
+                "look": {
+                  "#type": "LineChartLook",
+                  "overviewColumnName": "subj",
+                  "yAggrTypes": [
+                    "avg",
+                    "avg",
+                    "avg",
+                    "avg"
+                  ],
+                  "xColumnName": "started",
+                  "yColumnNames": [
+                    "subj",
+                    "age",
+                    "height",
+                    "weight"
+                  ],
+                  "chartTypes": [
+                    "Line Chart",
+                    "Line Chart",
+                    "Line Chart",
+                    "Line Chart"
+                  ]
+                },
+                "title": "Line chart"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 414,
+              "height": 422,
+              "element": {
+                "id": "21d860b0-8990-11ee-d490-755eec825538",
+                "type": "Histogram",
+                "look": {
+                  "#type": "HistogramLook",
+                  "valueColumnName": "subj",
+                  "showXAxis": true,
+                  "showYAxis": true,
+                  "binWidthRatio": 0.9,
+                  "marginLeft": 5,
+                  "marginRight": 5
+                },
+                "title": "Histogram"
+              }
+            },
+            "children": []
           }
         ]
       }
-    ]
+    ],
+    "floating": []
   },
-  "id": "e17b4620-bd30-11e8-ee69-3f240ada768a",
-  "createdOn": "2019-04-04T12:15:34.056116Z",
-  "updatedOn": "2019-04-04T12:19:41.302899Z",
-  "name": "DemogTableLayout"
+  "columns": [
+    {
+      "name": "subj",
+      "type": "int",
+      "id": "dea0e380-8990-11ee-ae9e-1f565dcacf13",
+      "friendlyName": "Subj",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "21d8aed0-8990-11ee-d810-09fc344b5325"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "21d8aed0-8990-11ee-88e0-f9e90500ecd4"
+        }
+      ],
+      "metaParams": {
+        ".id": "dea0e380-8990-11ee-ae9e-1f565dcacf13",
+        ".semantic-detection-duration": "5"
+      }
+    },
+    {
+      "name": "study",
+      "type": "string",
+      "id": "dea10a90-8990-11ee-8063-8ddbc6c16b3c",
+      "friendlyName": "Study",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "21d8aed0-8990-11ee-b993-97581b1cca86"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "21d8d5e0-8990-11ee-9960-2195140b7a07"
+        }
+      ],
+      "metaParams": {
+        ".id": "dea10a90-8990-11ee-8063-8ddbc6c16b3c",
+        ".semantic-detection-duration": "8"
+      }
+    },
+    {
+      "name": "height",
+      "type": "double",
+      "id": "dea158b0-8990-11ee-ee43-911e8fc57638",
+      "friendlyName": "Height",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "21d8d5e0-8990-11ee-84f2-f7f6ceca1596"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "21d8fcf0-8990-11ee-929f-e7e6bb58298a"
+        }
+      ],
+      "metaParams": {
+        ".id": "dea158b0-8990-11ee-ee43-911e8fc57638",
+        ".semantic-detection-duration": "9"
+      }
+    },
+    {
+      "name": "started",
+      "type": "datetime",
+      "id": "dea158b0-8990-11ee-aa95-a936c52cda96",
+      "friendlyName": "Started",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "21d8fcf0-8990-11ee-a91c-2b7bb70b6230"
+        },
+        {
+          "tag": ".id",
+          "id": "21d8fcf0-8990-11ee-cf8e-0f62a4c5e2b2"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "21d8fcf0-8990-11ee-8cbd-a51f24e2420c"
+        }
+      ],
+      "metaParams": {
+        "format": "M/d/yyyy HH:mm",
+        ".id": "dea158b0-8990-11ee-aa95-a936c52cda96",
+        ".semantic-detection-duration": "5"
+      }
+    },
+    {
+      "name": "age",
+      "type": "int",
+      "id": "dea10a90-8990-11ee-d5a8-853546c4ca30",
+      "friendlyName": "Age",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "21d8fcf0-8990-11ee-9576-81215cbd230b"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "21d8fcf0-8990-11ee-b160-93257b41bcfa"
+        }
+      ],
+      "metaParams": {
+        ".id": "dea10a90-8990-11ee-d5a8-853546c4ca30",
+        ".semantic-detection-duration": "6"
+      }
+    },
+    {
+      "name": "weight",
+      "type": "double",
+      "id": "dea17fc0-8990-11ee-b469-976be844d1be",
+      "friendlyName": "Weight",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "21d8fcf0-8990-11ee-8257-57081ad24a25"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "21d92400-8990-11ee-faf3-dbfb88046d82"
+        }
+      ],
+      "metaParams": {
+        ".id": "dea17fc0-8990-11ee-b469-976be844d1be",
+        ".semantic-detection-duration": "5"
+      }
+    }
+  ],
+  "name": "DemogTableLayout",
+  "friendlyName": "DemogTableLayout",
+  "author": {
+    "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
+  },
+  "createdOn": "2024-01-09T15:38:27.252Z"
 }

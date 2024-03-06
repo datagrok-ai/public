@@ -5,7 +5,7 @@ const yaml = require('js-yaml');
 const utils = require('../utils/utils.js');
 
 module.exports = {
-  migrate: migrate
+  migrate: migrate,
 };
 
 const curDir = process.cwd();
@@ -21,10 +21,10 @@ const grokMap = {
   'debug': '',
   'deploy': '--release',
   'build': '',
-  'rebuild': '--rebuild'
+  'rebuild': '--rebuild',
 };
 
-const replRegExp = new RegExp(Object.keys(grokMap).join("|"), "g");
+const replRegExp = new RegExp(Object.keys(grokMap).join('|'), 'g');
 
 function migrate(args) {
   const nOptions = Object.keys(args).length - 1;
@@ -36,13 +36,13 @@ function migrate(args) {
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
 
-  let config = yaml.load(fs.readFileSync(confPath));
+  const config = yaml.load(fs.readFileSync(confPath));
 
   // Copy keys to the `config.yaml` file
   if (fs.existsSync(keysDir)) {
     try {
       const keys = JSON.parse(fs.readFileSync(keysDir));
-      let urls = utils.mapURL(config);
+      const urls = utils.mapURL(config);
       for (const url in keys) {
         try {
           let hostname = (new URL(url)).hostname;
@@ -61,15 +61,15 @@ function migrate(args) {
     } catch (error) {
       console.error(error);
     }
-  } else {
+  } else 
     console.log('Unable to locate `upload.keys.json`');
-  }
+  
 
   // Rewrite scripts in `package.json`
   if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
   try {
-    let _package = JSON.parse(fs.readFileSync(packDir));
-    for (let script in _package.scripts) {
+    const _package = JSON.parse(fs.readFileSync(packDir));
+    for (const script in _package.scripts) {
       if (!_package['scripts'][script].includes('datagrok-upload')) continue;
       _package['scripts'][script] = _package['scripts'][script].replace(replRegExp, (match) => grokMap[match]);
     }

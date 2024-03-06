@@ -2,7 +2,6 @@ import styles from './styles.module.css';
 import React from 'react';
 
 export default function mainMenu (page){
-    console.log(page.name);
     return(
         <nav className="navbar fixed-top navbar-expand-lg navbar-light bg-white">
             <a className="navbar-brand mb-0 h1" href="https://datagrok.ai/">datagrok</a>

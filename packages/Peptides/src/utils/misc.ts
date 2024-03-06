@@ -9,10 +9,21 @@ import {AggregationColumns, MasksInfo, MonomerPositionStats, PositionStats} from
 import {PeptideViewer} from '../widgets/distribution';
 import wu from 'wu';
 
+/**
+ * Gets seprator for sequence column.
+ * @param col - Macromolecule column.
+ * @return - Separator symbol.
+ */
 export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
+/**
+ * Scales activity column values.
+ * @param activityCol - Activity column.
+ * @param scaling - Scaling method.
+ * @return - Scaled activity column.
+ */
 export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING_METHODS = C.SCALING_METHODS.NONE,
 ): DG.Column<number> {
   let formula = (x: number): number => x;
@@ -40,6 +51,11 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
 }
 
 //TODO: optimize
+/**
+ * Calculates number of selected monomers for each position.
+ * @param df - Dataframe with position columns.
+ * @return - Object with number of selected monomers for each position.
+ */
 export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
   const selectedObj: type.SelectionStats = {};
@@ -50,6 +66,7 @@ export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
       if (!monomer)
         continue;
 
+
       selectedObj[col.name] ??= {};
       selectedObj[col.name][monomer] ??= 0;
       selectedObj[col.name][monomer] += 1;
@@ -59,6 +76,11 @@ export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
   return selectedObj;
 }
 
+/**
+ * Extracts raw data from column.
+ * @param col - Column.
+ * @return - Object with column name, categories and raw data.
+ */
 export function extractColInfo(col: DG.Column<string>): type.RawColumn {
   return {
     name: col.name,
@@ -75,6 +97,13 @@ export enum SPLIT_CATEGORY {
 
 export type DistributionLabelMap = { [key in SPLIT_CATEGORY]?: string };
 
+/**
+ * Creates a panel to plot activity distribution.
+ * @param hist - Histogram viewer.
+ * @param statsMap - Object with statistics names and values.
+ * @param labelMap - Mapping object for distribution labels.
+ * @return - Panel with distribution plot and statistics.
+ */
 export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>, statsMap: StringDictionary,
   labelMap: DistributionLabelMap = {}): HTMLDivElement {
   const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
@@ -84,6 +113,8 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>,
   for (let categoryIdx = 0; categoryIdx < categories.length; ++categoryIdx) {
     if (!Object.values(SPLIT_CATEGORY).includes(categories[categoryIdx]))
       continue;
+
+
     const color = DG.Color.toHtml(splitCol.colors.getColor(rawData.indexOf(categoryIdx)));
     const label = ui.label(labelMap[categories[categoryIdx]] ?? categories[categoryIdx], {style: {color}});
     labels.push(label);
@@ -94,7 +125,13 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>,
   return result;
 }
 
-/* Creates a table to plot activity distribution. */
+/**
+ * Creates a table to plot activity distribution.
+ * @param activityCol - Activity column.
+ * @param selection - Selection bitset.
+ * @param [peptideSelection] - Peptide selection bitset.
+ * @return - Dataframe with activity distribution.
+ */
 export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet,
 ): DG.DataFrame {
   const selectionMismatch = peptideSelection?.clone().xor(selection).anyTrue ?? false;
@@ -124,16 +161,21 @@ export function getDistributionTable(activityCol: DG.Column<number>, selection: 
   const categoryOrder = [SPLIT_CATEGORY.ALL, SPLIT_CATEGORY.SELECTION];
   if (selectionMismatch)
     categoryOrder.push(SPLIT_CATEGORY.PEPTIDES_SELECTION);
-  splitCol.setCategoryOrder(categoryOrder);
 
+
+  splitCol.setCategoryOrder(categoryOrder);
   splitCol.colors.setCategorical();
   return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityData), splitCol]);
 }
 
+/**
+ * Adds expand in full screen icon to the grid.
+ * @param grid - Grid to add expand icon to.
+ */
 export function addExpandIcon(grid: DG.Grid): void {
   const fullscreenIcon = ui.iconFA('expand-alt', () => {
     const fullscreenGrid = grid.dataFrame.plot.grid();
-    setGridProps(fullscreenGrid);
+    setGridProps(fullscreenGrid, false);
     fullscreenGrid.root.style.height = '100%';
     const pairsFullscreenDialog = ui.dialog(grid.dataFrame.name);
     pairsFullscreenDialog.add(fullscreenGrid.root);
@@ -153,8 +195,14 @@ export function addExpandIcon(grid: DG.Grid): void {
   });
 }
 
-export function setGridProps(grid: DG.Grid): void {
+/**
+ * Sets common properties for grid in property panel.
+ * @param grid - Grid to set properties to.
+ * @param autosize - Flag whether to autosize grid.
+ */
+export function setGridProps(grid: DG.Grid, autosize: boolean = true): void {
   grid.props.allowEdit = false;
+  grid.props.showReadOnlyNotifications = false;
   grid.props.allowRowSelection = false;
   grid.props.allowBlockSelection = false;
   grid.props.allowColSelection = false;
@@ -162,9 +210,15 @@ export function setGridProps(grid: DG.Grid): void {
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
   grid.root.style.maxWidth = '100%';
-  grid.autoSize(1000, 400, 0, 0, true);
+  if (autosize)
+    grid.autoSize(1000, 175, 0, 0, true);
 }
 
+/**
+ * Checks whether selection is empty.
+ * @param selection - Selection object.
+ * @return - Flag whether selection is empty.
+ */
 export function isSelectionEmpty(selection: type.Selection): boolean {
   for (const selectionList of Object.values(selection)) {
     if (selectionList.length !== 0)
@@ -173,6 +227,15 @@ export function isSelectionEmpty(selection: type.Selection): boolean {
   return true;
 }
 
+/**
+ * Modifies selection based on pressed keys. If shift and ctrl keys are both pressed, it removes item from selection.
+ * If only shift key is pressed, it adds item to selection. If only ctrl key is pressed, it changes item
+ * presence in selection. If none of the keys is pressed, it sets item as the only selected one.
+ * @param selection - Selection object.
+ * @param clusterOrMonomerPosition - Selection item object.
+ * @param options - Selection options object.
+ * @return - Modified selection object.
+ */
 export function modifySelection(selection: type.Selection, clusterOrMonomerPosition: type.SelectionItem,
   options: type.SelectionOptions): type.Selection {
   const monomerList = selection[clusterOrMonomerPosition.positionOrClusterType];
@@ -200,8 +263,15 @@ export function modifySelection(selection: type.Selection, clusterOrMonomerPosit
   return selection;
 }
 
+/**
+ * Highlights rows containing monomer-position in the dataframe.
+ * @param monomerPosition - Monomer-position item object.
+ * @param dataFrame - Dataframe to highlight rows in.
+ * @param monomerPositionStats - Object with statistics for monomer-positions.
+ */
 export function highlightMonomerPosition(monomerPosition: type.SelectionItem, dataFrame: DG.DataFrame,
   monomerPositionStats: MonomerPositionStats): void {
+  if (!dataFrame) return;
   const bitArray = new BitArray(dataFrame.rowCount);
   if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
     const positionStats = Object.values(monomerPositionStats);
@@ -222,14 +292,26 @@ export function highlightMonomerPosition(monomerPosition: type.SelectionItem, da
   dataFrame.rows.highlight((i) => bitArray.getBit(i));
 }
 
+/**
+ * Initializes selection object.
+ * @param positionColumns - Array of position columns.
+ * @return - Initialized selection object.
+ */
 export function initSelection(positionColumns: DG.Column<string>[]): type.Selection {
   const tempSelection: type.Selection = {};
   for (const posCol of positionColumns)
     tempSelection[posCol.name] = [];
 
+
   return tempSelection;
 }
 
+/**
+ * Gets selection bitset.
+ * @param selection - Selection object.
+ * @param stats - Object with monomer-position or cluster masks.
+ * @return - Selection bitset.
+ */
 export function getSelectionBitset(selection: type.Selection, stats: MasksInfo): DG.BitSet | null {
   let combinedBitset: BitArray | null = null;
   const selectionEntries = Object.entries(selection);
@@ -245,12 +327,24 @@ export function getSelectionBitset(selection: type.Selection, stats: MasksInfo):
   return (combinedBitset != null) ? DG.BitSet.fromBytes(combinedBitset!.buffer.buffer, combinedBitset!.length) : null;
 }
 
+/**
+ * Checks if viewer parameters are equal.
+ * @param o1 - First viewer or settings object.
+ * @param o2 - Second viewer or settings object.
+ * @return - Flag whether viewer parameters are equal.
+ */
 export function areParametersEqual(o1: PeptideViewer | PeptidesSettings, o2: PeptideViewer | PeptidesSettings,
 ): boolean {
   return o1.sequenceColumnName === o2.sequenceColumnName && o1.activityColumnName === o2.activityColumnName &&
     o1.activityScaling === o2.activityScaling;
 }
 
+/**
+ * Converts mutation cliffs to masks info.
+ * @param mutationCliffs - Mutation Cliffs map.
+ * @param rowCount - Number of rows in dataframe.
+ * @return - Object with monomer-position masks.
+ */
 export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, rowCount: number): MasksInfo {
   const result: MasksInfo = {};
   for (const [position, monomerMap] of mutationCliffs) {
@@ -268,15 +362,40 @@ export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, ro
   return result;
 }
 
+/**
+ * Gets combined aggregation columns.
+ * @param viewerSelectedColNames - Array of selected columns in viewer properties.
+ * @param aggColsViewer - Object with aggregation columns from viewer properties.
+ * @param aggColsModel - Object with aggregation columns from analysis settings.
+ * @return - Array of combined aggregation columns.
+ */
 export function getTotalAggColumns(viewerSelectedColNames: string[], aggColsViewer: AggregationColumns,
   aggColsModel?: AggregationColumns): [string, DG.AggregationType][] {
   const aggColsEntries = Object.entries(aggColsViewer);
-  const aggColsEntriesFromSettings = aggColsModel ?
-    Object.entries(aggColsModel).filter((it) => !viewerSelectedColNames.includes(it[0]) || aggColsViewer[it[0]] !== it[1]) : [];
+  const aggColsEntriesFromSettings = !aggColsModel ? [] : Object.entries(aggColsModel)
+    .filter((it) => !viewerSelectedColNames.includes(it[0]) || aggColsViewer[it[0]] !== it[1]);
   return aggColsEntries.concat(aggColsEntriesFromSettings);
 }
 
+/**
+ * Checks if dataframe is applicable for analysis. To be applicable, dataframe must contain at least one macromolecule
+ * column, at least one numerical column for activity and at least two rows.
+ * @param table - Dataframe to check.
+ * @param minRows - Minimum number of rows in dataframe.
+ * @return - Flag whether dataframe is applicable for analysis.
+ */
 export function isApplicableDataframe(table: DG.DataFrame, minRows: number = 2): boolean {
   return table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE).length > 0 &&
     wu(table.columns.numerical).toArray().length > 0 && table.rowCount >= minRows;
+}
+
+export function debounce<T extends Array<any>, K>(f: (...args: T) => Promise<K>, timeout: number = 500,
+): (...args: T) => Promise<K> {
+  let timer: NodeJS.Timeout | number | undefined;
+  return async (...args: T) => {
+    return new Promise<K>((resolve) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => resolve(f(...args)), timeout);
+    });
+  };
 }

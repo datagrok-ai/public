@@ -8,14 +8,6 @@ import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/traj
 
 // -- View --
 
-/** View Biostructure (PDB) for file handler
- * @param {string} content - string content of the file
- * @param {BuiltInTrajectoryFormat} format - format of the file
- */
-export async function viewBiostructure(content: string, format?: BuiltInTrajectoryFormat): Promise<void> {
-  await viewMolstarUI(content, undefined, format);
-}
-
 export async function viewNgl(content: string): Promise<void> {
   await viewNglUI(content);
 }

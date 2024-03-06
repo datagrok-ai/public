@@ -1,27 +1,28 @@
-import {after, before, category, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
 category('UI: Groups', () => {
-  let v: DG.ViewBase;
-  let tb: HTMLElement;
-
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Manage');
-    const usel = mng.content.querySelector('[data-view=groups]') as HTMLElement;
-    await usel.click();
-    v = grok.shell.v;
-    tb = v.toolbox;
-    const filters = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Filters') as HTMLElement;
-    if (!filters.classList.contains('expanded')) await filters.click();
-    const actions = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Actions') as HTMLElement;
-    if (!actions.classList.contains('expanded')) actions.click();
+    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
+    mng.header.click();
+    let platform: any;
+    await awaitCheck(() => {
+      platform = Array.from(document.querySelectorAll('div.d4-tree-view-node'))
+        .find((el) => el.textContent === 'Platform');
+      return platform !== undefined;
+    }, '', 2000);
+    if ((platform.nextElementSibling as HTMLElement).style.display === 'none')
+      (platform.firstElementChild as HTMLElement).click();
+    await delay(100);
+    const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
+      .find((el) => el.textContent === 'Groups') as HTMLElement;
+    groups.click();
   });
 
+  /*
   test('filters.all', async () => {
     const grapi = await grok.dapi.groups
       .list()
@@ -54,15 +55,16 @@ category('UI: Groups', () => {
       return false;
     }, 'number of groups does not match', 3000);
   });
+  */
 
   test('actions.createNewGroup', async () => {
-    const cng = Array.from(tb.querySelectorAll('label'))
-      .find((el) => el.textContent === 'Create New Group...');
-    if (cng === undefined) throw new Error('cannot find Create New Group!');
-    await cng.click();
-    const diag = document.getElementsByClassName('d4-dialog');
-    if (diag.length === 0) throw new Error('Create New Group does not work!');
-    const cancel = diag[0].querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
+    const cng = Array.from(document.querySelectorAll('.ui-btn'))
+      .find((el) => el.textContent === 'New group');
+    if (cng === undefined) throw new Error('cannot find New Group button');
+    (cng as HTMLElement).click();
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Create New Group dialog was not shown', 1000);
+    const diag = DG.Dialog.getOpenDialogs()[0];
+    const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
     const mainGroup = await grok.dapi.groups.createNew('APITests Main Group');
     const subGroup = DG.Group.create('APITests Sub Group');

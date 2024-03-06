@@ -70,7 +70,7 @@ export enum SUFFIXES {
 }
 
 export const AGGREGATION_TYPES = Object.values(DG.AGG)
-  .filter(it => ![DG.AGG.FIRST, DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(it));
+  .filter((it) => ![DG.AGG.FIRST, DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(it));
 
 export const AGG_STATS_MAPPING: {[key: string]: string} = {
   [DG.AGG.TOTAL_COUNT]: 'totalCount',
@@ -89,4 +89,4 @@ export const AGG_STATS_MAPPING: {[key: string]: string} = {
   [DG.AGG.Q1]: 'q1',
   [DG.AGG.Q2]: 'q2',
   [DG.AGG.Q3]: 'q3',
-}
+};

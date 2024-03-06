@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok math library",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "Library for high performance computations",
   "dependencies": {
     "cash-dom": "latest",

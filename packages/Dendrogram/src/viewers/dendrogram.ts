@@ -418,6 +418,8 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
           const nodeCol: DG.Column = this.dataFrame.getCol(this.nodeColumnName);
           const nodeName = this._renderer.currentNode.name;
 
+          // if ((this._renderer?.currentNode?.children ?? []).length === 0)
+          //   return;
           const newCurrentRowIdx = wu.count(0).take(rowCount)
             .find((rowI: number) => nodeCol.get(rowI) == nodeName) ?? -1;
 

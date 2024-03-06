@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
-import {RDMol, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-import {MonomerLibHelper} from './monomer-lib';
+import {MonomerLibManager} from './monomer-lib/lib-manager';
 
 import {_package} from '../package';
 
@@ -106,7 +106,9 @@ export class HelmToMolfileConverter {
     return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
-      return mol.get_molblock();
+      const molBlock = mol.get_v3Kmolblock();
+      mol!.delete();
+      return molBlock;
     }));
   }
 
@@ -173,7 +175,7 @@ class MonomerWrapper {
     monomerSymbol: string,
     polymerType: HELM_POLYMER_TYPE,
   ) {
-    const monomerLib = MonomerLibHelper.instance.getBioLib();
+    const monomerLib = MonomerLibManager.instance.getBioLib();
     const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);

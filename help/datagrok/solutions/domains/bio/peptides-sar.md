@@ -20,21 +20,21 @@ options will appear. In the dialog, you can preview the composition analysis wit
 4. Choose an activity scaling method. On the right of the inputs, you can find the distribution of the scaled
 activity.
 5. Optionally, choose a clusters column and a target column. The clusters column enables composition analysis and
-useful statistics for each of the clusters. The target column restricts the mutation cliffs calculation to one of
-the targets.
+   useful statistics for each of the clusters.
 6. Click "OK" to start the analysis.
 
 ![Analyze Peptides dialog](img/analyze-peptides-dialog.png)
 
 # Analysis View
 
-The analysis view consists of 4 main parts:
+The analysis view consists of 5 main parts:
 
 1. **Table view** contains sequences, activities and composition analysis.
 2. **Monomer-position viewer** is a matrix-like table with positions as columns and monomers as rows.
 The monomer-position viewer can work in two modes: Mutation Cliffs and Invariant Map.
 3. **Most Potent Residues viewer** attempts to build a sequence, using the most potent monomers for each position.
 4. **Logo Summary Table viewer** is a table with WebLogo, activity distribution and other statistics for each cluster.
+5. **Sequence Space viewer** is a scatter plot that shows embeddings of sequences.
 
 ![Analysis view](img/analysis-view.png)
 
@@ -64,9 +64,9 @@ the sequences, and additional metrics.
 
 ![Monomer-Position tooltip](img/statistics-tooltip.png)
 
-Click on the monomer to select the rows that contain a given monomer at a given position. `Shift+Click` will
-deselect the currently selected monomer-position or add to the selection. The selected monomer-position will be
-highlighted in composition analysis, in the monomer-position viewer and the most potent residues viewer.
+Click on the monomer to select the rows that contain a given monomer at a given position. More about selection with
+viewers can be found [here](https://datagrok.ai/help/visualize/viewers/#selection). The selected monomer-position will
+be highlighted in composition analysis, in the monomer-position viewer and the most potent residues viewer.
 
 ## Monomer-Position viewer
 
@@ -80,14 +80,14 @@ monomer-position in invariant map mode.
 
 Mutation Cliffs mode shows the significance of the monomer position regarding activity with circles.
 The circle size corresponds to the mean difference between the sequences containing monomer-position vs. all.
-The color intensity represents the p-value. Some of the cells contain the number of sequences that form mutation
-cliffs pairs. You can configure the maximum number of mutations or the minimum activity difference between two
-sequences in settings. Learn more in the [settings](#settings) section.
+The color intensity represents the p-value. Red circles represent negative mean difference and blue circles represent
+positive mean difference. Some of the cells contain the number of sequences that form mutation cliffs pairs. You can
+configure the maximum number of mutations or the minimum activity difference between two sequences in viewer properties.
 
 ![Mutation-Cliffs mode](img/mutation-cliffs-mode.png)
 
-If you chose the target column for the analysis, you can modify the target for which the mutation cliffs are computed
-in the viewer properties. Learn more about viewer properties [here](../../../../visualize/viewers/viewers.md#properties).
+Choose the target column and category in viewer properties to calculate the mutation cliffs for that target.
+Learn more about viewer properties [here](../../../../visualize/viewers/viewers.md#properties).
 
 ### Invariant Map mode
 
@@ -113,7 +113,8 @@ activity distribution and statistics such as p-value and mean difference.
 You can set the WebLogo rendering mode and members ratio threshold in viewer properties. WebLogo rendering mode can
 be either full-height or entropy (defaults to entropy). Learn more about WebLogo
 [here](https://github.com/datagrok-ai/public/tree/master/packages/Bio#web-logo).
-The member ratio threshold property filters out the clusters that have a ratio of members below the threshold, relative to the cluster with the most members (defaults to 0.3).
+The member ratio threshold property filters out the clusters that have a ratio of members below the threshold, relative
+to the cluster with the most members (defaults to 0.3).
 
 Hover over the Clusters column values to see the tooltip with the activity distribution and statistics.
 Click to select the cluster.
@@ -139,29 +140,27 @@ a Logo Summary Table for that view.
 ## Mutation Cliffs pairs
 
 The Mutation Cliffs pairs panel contains the table with the sequence pairs and the table with the unique sequences
-that form the mutation cliffs pairs. You can input a monomer in the "Mutated to" field to filter the sequence pairs table. Click the sequence pair to filter the unique sequences table.
+that form the mutation cliffs pairs. You can input a monomer in the "Mutated to" field to filter the sequence pairs
+table. Click the sequence pair to filter the unique sequences table.
 
 ## Distribution
 
 The Distribution panel shows the distribution of the activities of selected sequences compared to all, and statistics
 such as the number of selected sequences, mean difference and p-value.
 
-Use checkboxes "Split by position" and "Split by monomer" to see separate distributions and statistics for each of
-the monomers or positions.
+Use checkboxes "Monomers", "Positions" and "Clusters" to see separate distributions and statistics for each of
+the monomers, positions or clusters groups.
 
 # Settings
 
 You can find analysis settings in the top menu under the wrench icon. The settings contain four sections:
-general, viewers, mutation cliffs, and columns.
+general, viewers, columns and sequence space.
 
 ![Settings dialog](img/settings.png)
 
 ## General
 
-The General section has settings for the activity column, activity scaling method and bidirectional analysis.
-Bidirectional analysis modifies the coloring of circles monomer-position and most potent residues viewers: orange for negative and green for positive mean difference.
-
-![Bidirectional mutation cliffs](img/bidirectional-mutation-cliffs.png)
+The General section has settings for the activity column and activity scaling method.
 
 ## Viewers
 
@@ -170,19 +169,16 @@ Learn more about dendrogram [here](../../../../visualize/viewers/dendrogram.md).
 
 ![Dendrogram viewer](img/dendrogram.png)
 
-## Mutation Cliffs
-
-The Mutation Cliffs section has maximum mutations and minimum activity delta parameters for Mutation Cliffs
-calculations. Maximum mutations are the maximum amount of different monomers in the sequences. Minimum activity delta
-is the minimum difference in the activity.
-
 ## Columns
 
 The Columns section lists all the numeric columns in the dataset, except activity. Enable the checkbox near the
 column name and choose the aggregation function to add the aggregated value to all the tooltips with statistics,
 Logo Summary Table and Distribution panel. The column also appears in the table view and Mutation Cliffs pairs panel.
 
-![Columns aggregation](img/columns-aggregation.png)
+## Sequence Space
+
+The Sequence Space section contains settings for the Sequence Space viewer such as distance function, fingerprint type,
+gap open and gat extend penalties, whether to perform clustering on sequence embeddings, etc.
 
 # Analysis sharing
 

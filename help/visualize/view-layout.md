@@ -51,10 +51,10 @@ columns could be mapped to the table columns. There are few different ways a lay
 column, which are evaluated in the following order:
 
 1. Column names AND column types match
-2. Both columns have the same [layout-id](../catalog/tags.md#layout-id)
-3. Both columns have the same [semantic type](../catalog/tags.md#quality)
+2. Both columns have the same [layout-id](../govern/catalog/tags.md#layout-id)
+3. Both columns have the same [semantic type](../govern/catalog/tags.md#quality)
 
 See also:
 
 * [Table view](../datagrok/navigation/table-view.md)
-* [Self-learning platform](../learn/self-learning-platform.md)
+* [Self-learning platform](../govern/catalog/self-learning-platform.md)

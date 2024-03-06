@@ -1,0 +1,40 @@
+1. Open SPGI, SPGI-linked1, SPGI-linked2.
+2. Go to **Tables > SPGI.**
+3. On the **Viewers tab,** click **Bar chart.**
+4. On the **Bar chart** viewer, click the **Gear** icon. The **Property Pane** opens.
+5. Split and coloring:
+    1. Go to the **Category** info panel.
+    2. Set Split to `Series`, `Primary Scaffold`
+    3. Check/uncheck the checkboxes
+    4. Go to the grid. Right-click the Primary Scaffold and select **Color coding > Categorical, Edit.**
+    5. Edit the color scheme. Check the bar chart coloring.
+    6. Save to Layout. Check
+6. Check aggregation functions
+7. Selection
+    1. Go to the grid and select the first 50 columns. The selection should be reflected on bar chart
+    2. Go to the Property Pane > Selection. Toggle the **Show selected rows** checkbox.
+    3. Click the bar chart and check the selection in grid.
+8. Filtering
+    1. Go to **Tables** and click the **Filter** icon
+    2. Change arbitrary settings on the **Filter Panel** and check the bar chart interaction.
+9. Go to the **Data** info panel and check all the properties, including the following:
+    1. Tables switching (SPGI-linked1, SPGI-linked2, SPGI)
+    2. **Row Source** with different options
+    3. Set **Filter** to `${CAST Idea ID} < 636500` , set color coding by Chemical Space Y, and arbitrarily change other options.
+    4. Save to Layout. Check
+    5. Set **On click** to **Filter**. Check filtering (to cancel filtering click the bar chart)
+10. Title, Description:
+    1. Add a title and a description.
+    2. Change their position
+    3. Check the range slider functionality
+    4. Save to Layout. Check
+11. Scrolling:
+    1. Change the vertical range slider and use it to scroll
+    2. Set **Value** to CAST Idea ID. Scroll
+12. Tooltip
+    1. Right-click the bar chart and check all options on the **Tooltip** tab.
+    2. Save to Layout. Check
+---
+{
+  "order": 3
+}

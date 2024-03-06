@@ -25,7 +25,7 @@ export enum RepresentationType {
 
 export const NglPropsDefault = new class {
   // -- Data --
-  dataJson: BiostructureDataJson = BiostructureDataJson.null;
+  dataJson: string = BiostructureDataJson.empty;
   pdb: string | null = null;
   pdbTag: string | null = pdbTAGS.PDB;
   ligandColumnName: string | null = null;

@@ -30,6 +30,13 @@ import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = <any>window;
 
+export class ComponentBuildInfo {
+  branch: string = '';
+  commit: string = '';
+  date: string = '';
+  version: string = '';
+}
+
 /**
  * Exposes Datagrok's server-side functionality.
  *
@@ -631,6 +638,15 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
   forEntity(e: Entity): Promise<Credentials> {
     return api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart);
   }
+
+  /** Saves a credentials.
+   * Note, that in order to work correct, credentials should be connected
+   * to other entity that owns them. So the best way to modify Credentials is load by {@link forEntity}, change
+   * {@link Credentials.parameters} and after that call this method.
+   */
+  save(c: Credentials): Promise<Credentials> {
+    return api.grok_CredentialsDataSource_Save(this.dart, c.dart);
+  }
 }
 
 /**
@@ -784,9 +800,9 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   }
 
   /** Gets recent projects datasource
-   * @returns {HttpDataSource<HistoryEntry>} */
-  get recent(): HttpDataSource<HistoryEntry> {
-     return new HttpDataSource<HistoryEntry>(api.grok_Dapi_RecentProjects());
+   * @returns {HttpDataSource<Project>} */
+  get recent(): HttpDataSource<Project> {
+     return new HttpDataSource<Project>(api.grok_Dapi_RecentProjects());
   }
 
   /** Opens the specified project. */
@@ -910,6 +926,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
     params ??= {};
     params.method ??= 'GET';
     params.credentials = 'include';
+    if (!path.startsWith('/')) path = `/${path}`;
     return fetch(`${api.grok_Dapi_Root()}/docker/containers/proxy/${containerId}${path}`, params);
   }
 
@@ -951,8 +968,7 @@ export class FileSource {
       file = `${this.root}${this.root != '' ? '/' : ''}${file}`;
       return <string>file;
     } else {
-      file = `${this.root}${this.root != '' ? '/' : ''}${file.path}`;
-      return <string>file;
+      return file.fullPath;
     }
   }
 

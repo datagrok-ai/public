@@ -10,7 +10,7 @@ import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "../css/editor.css";
 import { chem } from "datagrok-api/grok";
-import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_WINDOW_OBJECT } from "./constants";
+import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_OPTIONS, KETCHER_USER_STORAGE, KETCHER_WINDOW_OBJECT } from "./constants";
 
 let sketcherId = 0;
 
@@ -37,10 +37,20 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
+        grok.dapi.userDataStorage.getValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, true).then((opts: string) => {
+          if (opts) {
+            this._sketcher?.editor.setOptions(opts);
+          }
+        });
+        this.setMoleculeFromHost();
         //@ts-ignore
         window[KETCHER_WINDOW_OBJECT] = ketcher;
         (this._sketcher.editor as any).subscribe("change", async (_: any) => {
-          this._smiles = await this._sketcher!.getSmiles();
+          try {
+            this._smiles = await this._sketcher!.getSmiles();
+          } catch { //in case we are working with smarts - getSmiles() will fail with exception
+            this._smiles = null;
+          }
           this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
           this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
           this.onChanged.next(null);
@@ -143,7 +153,28 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     }
   }
 
+  setMoleculeFromHost(): void {
+    if (this.host) {
+      if (this.host!._molfile !== null) {
+        if (this.host!.molFileUnits === chem.Notation.MolBlock)
+          this.molFile = this.host!._molfile;
+        if (this.host!.molFileUnits === chem.Notation.V3KMolBlock)
+          this.molV3000 = this.host!._molfile;
+        return;
+      }
+      if (this.host!._smiles !== null) {
+        this.smiles = this.host!._smiles;
+        return;
+      }
+      if (this.host!._smarts !== null) {
+        this.smarts = this.host!._smarts;
+        return;
+      }
+    }
+  }
+
   detach() {
+    grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     super.detach();
   }
 

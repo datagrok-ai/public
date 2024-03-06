@@ -79,9 +79,22 @@ The following fields could be used to filter projects with [smart search](../exp
 | commentedBy  | [User](../govern/user.md) object            |
 | usedBy       | [User](../govern/user.md) object            |
 
-See also:
+## Resources
 
-* [Create project](create-project.md)
-* [Data connection](../access/access.md#data-connection)
-* [Data query](../access/access.md#data-query)
-* [Function call](../datagrok/concepts/functions/function-call.md)
+YouTube videos:
+
+<div class="help-video-list" style={{display:"flex","flex-wrap":"wrap",}}>
+
+<div class="card" style={{width:"512px",}}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtVjvxMj9Ds?si=8J08Iqbigx2RtR9T" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+  <div class="card-body">
+    <h2 class="card-title">Dynamic Dashboards</h2>
+    <p class="card-text">Building dynamic dashboards using database queries</p>
+    </div>
+</div>
+</div>
+
+### See also:
+
+* [Create a project](create-project.md)
+* [Build dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results)

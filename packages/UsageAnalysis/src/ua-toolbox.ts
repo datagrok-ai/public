@@ -32,7 +32,7 @@ export class UaToolbox {
   }
 
   backButton?: HTMLButtonElement;
-  formDD: HTMLDivElement;
+  formDD: HTMLElement;
   drilldown: UaView | null = null;
   filters: DG.AccordionPane;
 

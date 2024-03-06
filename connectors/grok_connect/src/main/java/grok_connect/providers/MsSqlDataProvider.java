@@ -78,7 +78,6 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         if (conn.credentials.getLogin() == null || conn.credentials.getPassword() == null) {
             throw new RuntimeException("Login or password can't be blank");
         }
-        connString += "user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword();
         return connString;
     }
 
@@ -152,7 +151,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     @Override
     public String limitToSql(String query, Integer limit) {
-        return query + "top " + limit.toString() + " ";
+        return String.format("%stop %s", query, limit);
     }
 
     @Override

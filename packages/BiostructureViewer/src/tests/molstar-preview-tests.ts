@@ -91,7 +91,7 @@ category('MolstarPreview', () => {
         // grok.shell.addView(view); // ???
         await loadingPromise;
         await delay(100);
-      });
+      }, {timeout: 15000 /* loading file */});
     }
   });
 });

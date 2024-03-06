@@ -73,6 +73,40 @@ by type, name, optional default value, options, and optional description, just l
 #output: double price
 ```
 
+:::warning Parameters mapping for functions
+There is a crucial difference between annotation of 
+[scrips](../../../compute/scripting.md) 
+and Javascript functions in 
+[packages](../../../develop/develop.md#packages).
+When you annotate a script in any supported language, parameters are mapped by the parameter name.
+So the parameter name and value always are consistent.
+
+When you annotate a Javascript function from a package, parameters are mapped 
+by **parameter order** instead of name.
+Let's explore it on the following example:
+
+```javascript 
+//name: ParameterTestFunction
+//description: Small fucntion to illustrate parameter mapping
+//language: javascript
+//input: int one=1 {caption: First} [First farameter]
+//input: int two=2 {caption: Second} [First farameter]
+export function ParameterTestFunctionPkg(two, one) {
+    const result = `First:${one}, second:${two}`;
+    console.log(result);
+}
+```
+
+In the function signature, the parameter names go in the different order: `(two, one)`,
+comparing to the annotation.
+As a result, the function will produce the unexpected result: `First:2, second:1`
+
+To avoid mistakes, we suggest that you always use 
+exactly the same parameter order in the function annotation 
+and the function signature. 
+:::
+
+
 ### Parameter types and options
 
 Datagrok supports the following types in all scripting languages: 
@@ -117,16 +151,16 @@ For `column` and `column_list` types
 
 For `string` type
 
-| Option                       | Value                                                                             | Description                                        |
-|------------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------|
-| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
+| Option                       | Value                                                                             | Description                                |
+|------------------------------|-----------------------------------------------------------------------------------|--------------------------------------------|
+| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                       |
 | [suggestions](#autocomplete) | Name of a function that returns a list of strings to autocomplete user input      | Autocomplete gives you options as you type |
 
 For `numeric` types
 
 | Option   | Description                                                                                                                                |
 |----------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |                                                                                |
+| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |
 
 For `list` type`
 

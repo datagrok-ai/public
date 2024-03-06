@@ -92,6 +92,12 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
+  enableStickyMeta: boolean;
+
+  /// Whenever an error occurs, automatically reports extended logs to the server. Use UsageAnalysis to browse them.
+  /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
+  autoReportExtendedLogs: boolean;
+
   dateFormat: string;
 
   integerNumberFormat: string;
@@ -124,6 +130,8 @@ export interface SettingsInterface {
   helpBaseUrl: string;
 
   clientFuncCacheEnabled: boolean;
+
+  dataFrameBatchSize: number;
 
 
 }

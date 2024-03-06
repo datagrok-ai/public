@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2), {
-  alias: { k: 'key', h: 'help', r: 'recursive' },
+  alias: {k: 'key', h: 'help', r: 'recursive'},
 });
 const help = require('./commands/help').help;
 
@@ -28,9 +28,9 @@ if (command in commands) {
     console.log(help[command]);
     exitWithCode(1);
   }
-} else {
+} else 
   console.log(help.help);
-}
+
 
 function exitWithCode(code) {
   console.log(`Exiting with code ${code}`);

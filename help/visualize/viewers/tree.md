@@ -26,7 +26,7 @@ least number of categories. They form the initial hierarchy of the tree viewer.
 
 You can set the tree hierarchy and customize a tree viewer. To do that, click
 the **Gear** icon on top of the viewer and use the **Data** and **Misc** info
-panels on the **Context Pane** to manage the tree viewer’s settings.
+panels on the **Context Pane** to manage the tree viewer's settings.
 
 For example, you can:
 

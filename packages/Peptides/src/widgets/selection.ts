@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 import {addExpandIcon} from '../utils/misc';
-import {CellRendererOptions, setWebLogoRenderer, WebLogoBounds} from '../utils/cell-renderer';
+import {setWebLogoRenderer, WebLogoBounds, WebLogoCellRendererOptions} from '../utils/cell-renderer';
 import {CachedWebLogoTooltip, SelectionItem} from '../utils/types';
 import {TooltipOptions} from '../utils/tooltips';
 import {calculateMonomerPositionStatistics} from '../utils/algorithms';
@@ -15,9 +15,17 @@ export type SelectionWidgetOptions = {
   activityColumn: DG.Column<number>, columns: AggregationColumns, colorPalette: SeqPalette, isAnalysis: boolean,
 };
 
+/**
+ * Creates selection grid with WebLogo rendered in its header.
+ * @param table - table with selected sequences.
+ * @param options - options for selection widget.
+ * @return - selection grid.
+ */
 export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidgetOptions): HTMLElement {
   if (options.tableSelection.trueCount === 0)
     return ui.divText('No compounds selected');
+
+
   const newTable = DG.DataFrame.create(table.rowCount);
   newTable.name = 'Selected compounds';
   newTable.filter.copyFrom(options.tableSelection);
@@ -26,9 +34,13 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
     const gridCol = options.gridColumns.byIndex(gridColIdx)!;
     if (!gridCol.visible)
       continue;
+
+
     const sourceCol = gridCol.column!;
     if (sourceCol.type === DG.COLUMN_TYPE.BOOL)
       continue;
+
+
     const sourceColRawData = sourceCol.getRawData();
     const sourceColCategories = sourceCol.categories;
     const getValue = numericalCols
@@ -64,8 +76,12 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
       const originalGridCol = options.gridColumns.byIndex(gridColIdx)!;
       if (!originalGridCol.visible)
         continue;
+
+
       if (!grid.col(originalGridCol.name))
         continue;
+
+
       grid.col(originalGridCol.name)!.width = originalGridCol.width;
     }
   }, 500);
@@ -79,7 +95,7 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   const webLogoBounds: () => WebLogoBounds = () => {
     return {};
   };
-  const cellRendererOptions: CellRendererOptions = {
+  const cellRendererOptions: WebLogoCellRendererOptions = {
     isSelectionTable: true, cachedWebLogoTooltip, webLogoBounds,
     colorPalette: () => options.colorPalette,
   };

@@ -81,12 +81,12 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
   test('isCorrectHelm', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  }, {skipReason: 'GROK-13221'});
+  }, {timeout: 60000});
 
   test('isCorrectHelmLong', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  }, {skipReason: 'GROK-13221'});
+  }, {timeout: 60000});
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(

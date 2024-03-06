@@ -4,7 +4,7 @@ import {RawData} from './types';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {ClusterType} from '../viewers/logo-summary';
-import { AGG_STATS_MAPPING } from './constants';
+import {AGG_STATS_MAPPING} from './constants';
 
 export type StatsItem = {
   count: number,
@@ -17,7 +17,8 @@ export type StatsItem = {
 
 export type PositionStats = { [monomer: string]: StatsItem } & { general: SummaryStats };
 export type MonomerPositionStats = { [position: string]: PositionStats } & { general: SummaryStats };
-export type MonomerPositionStatsCache = {[colName: string]: {filter: Int32Array, stats: MonomerPositionStats, selection: Int32Array}};
+export type CacheItem = { filter: Int32Array, stats: MonomerPositionStats, selection: Int32Array };
+export type MonomerPositionStatsCache = { [colName: string]: CacheItem };
 export type ClusterStats = { [cluster: string]: StatsItem };
 export type ClusterTypeStats = { [clusterType in ClusterType]: ClusterStats };
 export type MasksInfo = {
@@ -35,11 +36,20 @@ export type SummaryStats = {
 export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 export type AggregationColumns = { [col: string]: DG.AggregationType };
 
+/**
+ * Returns statistics for the given activity data and bit array.
+ * @param data - Activity data to calculate statistics for.
+ * @param bitArray - Bit array to use for the calculation.
+ * @return - Statistics for the given data and bit array.
+ */
 export function getStats(data: RawData | number[], bitArray: BitArray): StatsItem {
   if (data.length !== bitArray.length && data.some((v, i) => i >= bitArray.length ? v !== 0 : false))
     throw new Error('PeptidesError: Data and bit array have different lengths');
-  if (bitArray.falseCount() === 0 || bitArray.trueCount() === 0)
+
+
+  if (bitArray.trueCount() === 0)
     throw new Error('PeptidesError: One of the samples is empty');
+
 
   const selected = new Float32Array(bitArray.trueCount());
   const rest = new Float32Array(bitArray.falseCount());
@@ -78,21 +88,36 @@ export function getStats(data: RawData | number[], bitArray: BitArray): StatsIte
   };
 }
 
+/**
+ * Returns statistics for the given activity data and bit array.
+ * @param col - Column to get aggregated value for.
+ * @param agg - Aggregation type to use.
+ * @param [mask] - BitSet to use for the calculation.
+ * @return - Aggregated value.
+ */
 export function getAggregatedValue(col: DG.Column<number>, agg: DG.AggregationType, mask?: DG.BitSet): number {
   const mappedAgg = AGG_STATS_MAPPING[agg];
   const stat = DG.Stats.fromColumn(col, mask);
   if (!(mappedAgg in stat))
     throw new Error(`Aggregation type ${mappedAgg} is not supported`);
+
+
   //@ts-ignore: this is a hack to avoid using switch to access the getters
   return stat[mappedAgg] as number;
 }
 
+/**
+ * Calculate aggregated values for the given columns.
+ * @param df - Data frame to get aggregated values from.
+ * @param columns - Columns to get aggregated values for.
+ * @param options - Options to use.
+ * @param [options.filterDf] - Whether to use dataframe filter.
+ * @param [options.mask] - BitSet to use for the calculation.
+ * @param options.fractionDigits - Number of fraction digits to use.
+ * @return - Mapping object with aggregated column values.
+ */
 export function getAggregatedColumnValues(df: DG.DataFrame, columns: [string, DG.AggregationType][],
-  options: {
-    filterDf?: boolean,
-    mask?: DG.BitSet,
-    fractionDigits?: number,
-  } = {}): StringDictionary {
+  options: { filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number } = {}): StringDictionary {
   options.filterDf ??= false;
   options.fractionDigits ??= 3;
 
@@ -107,8 +132,17 @@ export function getAggregatedColumnValues(df: DG.DataFrame, columns: [string, DG
   return colResults;
 }
 
+/**
+ * Gets aggregated column values from the given dataframe at the row index.
+ * @param df - Data frame to get aggregated values from.
+ * @param idx - Row index to get aggregated values for.
+ * @param columns - Columns to get aggregated values for.
+ * @param options - Aggregated columns options.
+ * @param [options.fractionDigits] - Number of fraction digits to use.
+ * @return - Mapping object with aggregated column values.
+ */
 export function getAggregatedColumnValuesFromDf(df: DG.DataFrame, idx: number,
-  columns: [string, DG.AggregationType][], options: {fractionDigits?: number}): StringDictionary {
+  columns: [string, DG.AggregationType][], options: { fractionDigits?: number }): StringDictionary {
   options.fractionDigits ??= 3;
   const colResults: StringDictionary = {};
   for (const [colName, aggFn] of columns) {

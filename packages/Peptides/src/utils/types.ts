@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {ClusterType} from '../viewers/logo-summary';
 import {SCALING_METHODS} from './constants';
 import {AggregationColumns} from './statistics';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
@@ -19,7 +20,32 @@ export interface PeptidesSettings {
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
   showDendrogram?: boolean,
+  showSequenceSpace?: boolean,
   columns?: AggregationColumns,
+  sequenceSpaceParams: SequenceSpaceParams,
+  mclSettings: MCLSettings,
+}
+
+export class MCLSettings {
+  maxIterations: number = 5;
+  threshold: number = 80;
+  distanceF: MmDistanceFunctionsNames = MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+  gapOpen: number = 1;
+  gapExtend: number = 0.6;
+  fingerprintType: string = 'Morgan';
+}
+
+export class SequenceSpaceParams {
+  distanceF: MmDistanceFunctionsNames = MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+  gapOpen: number = 1;
+  gapExtend: number = 0.6;
+  clusterEmbeddings: boolean = true;
+  epsilon: number = 0.01;
+  minPts: number = 4;
+  fingerprintType: string = 'Morgan';
+  constructor(clusterEmbeddings?: boolean) {
+    this.clusterEmbeddings = !!clusterEmbeddings;
+  }
 }
 
 export type PartialPeptidesSettings = Partial<PeptidesSettings>;

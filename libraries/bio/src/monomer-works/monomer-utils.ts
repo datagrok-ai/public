@@ -10,6 +10,8 @@ import {IMonomerLib} from '../types/index';
 import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';
 import {UnitsHandler} from '../utils/units-handler';
 import {splitAlignedSequences} from '../utils/splitter';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -240,3 +242,41 @@ export async function calculateMonomerSimilarity(monomerSet: string[],
 
   return {scoringMatrix, alphabetIndexes};
 }
+
+export async function getMonomerSubstitutionMatrix(monomerSet: string[], fingerprintType: string = 'Morgan',
+): Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}> {
+  const libHelper = await getMonomerLibHelper();
+  const monomerLib = libHelper.getBioLib();
+  const scoringMatrix: number[][] =
+    new Array(monomerSet.length).fill(0).map(() => new Array(monomerSet.length).fill(0));
+  const alphabetIndexes: {[id: string]: number} = {};
+  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
+  const fingerprintsFunc = DG.Func.find({package: 'Chem', name: 'getFingerprints'})[0];
+  if (!fingerprintsFunc) {
+    console.warn('Function "Chem:getFingerprints" is not found in chem package. falling back to Morgan fingerprints');
+    return await calculateMonomerSimilarity(monomerSet);
+  }
+  const monomerMoleculesCol = DG.Column.fromStrings('smiles', monomerMolecules);
+  // needed for function to work
+  const _unusedMolDf = DG.DataFrame.fromColumns([monomerMoleculesCol]);
+  const fingerPrints: (BitArray | null)[] =
+    (await fingerprintsFunc.apply({col: monomerMoleculesCol, fingerprintType: fingerprintType}))?.entries!;
+  if (!fingerPrints) {
+    console.warn(`${fingerprintType} Fingerprints could not be calculated for monomers from chem package.
+      falling back to Morgan fingerprints`);
+    return await calculateMonomerSimilarity(monomerSet);
+  }
+
+  for (let i = 0; i < fingerPrints.length; ++i) {
+    scoringMatrix[i][i] = 1;
+    alphabetIndexes[monomerSet[i]] = i;
+    if (!fingerPrints[i])
+      continue;
+    for (let j = i + 1; j < fingerPrints.length; ++j) {
+      if (!fingerPrints[j])
+        continue;
+      scoringMatrix[i][j] = scoringMatrix[j][i] = tanimotoSimilarity(fingerPrints[i]!, fingerPrints[j]!);
+    }
+  }
+  return {scoringMatrix, alphabetIndexes};
+};

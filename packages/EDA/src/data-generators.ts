@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Test data generation tools
 
 /* Do not change these import lines to match external modules in webpack configuration */
@@ -21,7 +22,7 @@ export function carsDataframe(): DG.DataFrame {
       DG.Column.fromInt32Array('diesel', new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1])),
       DG.Column.fromInt32Array('turbo', new Int32Array([0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1])),
       DG.Column.fromInt32Array('two.doors', new Int32Array([1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0])),
-      DG.Column.fromInt32Array('hatchback', new Int32Array([1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])),      
+      DG.Column.fromInt32Array('hatchback', new Int32Array([1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])),
       DG.Column.fromFloat32Array('wheel.base', new Float32Array([94.5, 105.80000305175781, 101.19999694824219, 94.5, 93.69999694824219, 93.69999694824219, 93.69999694824219, 96.5, 94.30000305175781, 113, 93.0999984741211, 115.5999984741211, 102.69999694824219, 93.69999694824219, 94.5, 94.5, 93.69999694824219, 114.19999694824219, 89.5, 99.0999984741211, 97.19999694824219, 95.69999694824219, 95.69999694824219, 98.4000015258789, 102.4000015258789, 97.30000305175781, 100.4000015258789, 104.30000305175781, 109.0999984741211, 109.0999984741211])),
       DG.Column.fromFloat32Array('length', new Float32Array([171.1999969482422, 192.6999969482422, 176.8000030517578, 158.8000030517578, 157.3000030517578, 157.3000030517578, 150, 175.39999389648438, 170.6999969482422, 199.60000610351562, 166.8000030517578, 202.60000610351562, 178.39999389648438, 157.3000030517578, 170.1999969482422, 165.3000030517578, 157.3000030517578, 198.89999389648438, 168.89999389648438, 186.60000610351562, 172, 158.6999969482422, 166.3000030517578, 176.1999969482422, 175.60000610351562, 171.6999969482422, 180.1999969482422, 188.8000030517578, 188.8000030517578, 188.8000030517578])),
       DG.Column.fromFloat32Array('width', new Float32Array([65.5, 71.4000015258789, 64.80000305175781, 63.599998474121094, 63.79999923706055, 63.79999923706055, 64, 65.19999694824219, 61.79999923706055, 69.5999984741211, 64.19999694824219, 71.69999694824219, 68, 64.4000015258789, 63.79999923706055, 63.79999923706055, 63.79999923706055, 68.4000015258789, 65, 66.5, 65.4000015258789, 63.599998474121094, 64.4000015258789, 65.5999984741211, 66.5, 65.5, 66.9000015258789, 67.19999694824219, 68.80000305175781, 68.9000015258789])),
@@ -38,36 +39,35 @@ export function carsDataframe(): DG.DataFrame {
 } // carsDataframe
 
 // Generate dataset for testing binary classifiers
-export async function testDataForBinaryClassification(kernel: number, kernelParams: Array<number>, 
-  name: string, samplesCount: number, featuresCount: number, min: number, 
+export async function testDataForBinaryClassification(kernel: number, kernelParams: Array<number>,
+  name: string, samplesCount: number, featuresCount: number, min: number,
   max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
-
   // check inputs
   checkGeneratorSVMinputs(samplesCount, featuresCount, min, max, violatorsPercentage);
-  
+
   // kernel params column
   const kernelParamsCol = DG.Column.fromList('double', 'kernelParams', kernelParams);
-  
-  // CALL WASM-COMPUTATIONS  
+
+  // CALL WASM-COMPUTATIONS
   let _output: any;
-  let _promise = _generateDatasetInWebWorker(kernel, kernelParamsCol, 
+  const _promise = _generateDatasetInWebWorker(kernel, kernelParamsCol,
     samplesCount, featuresCount, min, max, violatorsPercentage);
 
   await _promise.then(
-    _result => { _output = _result; },
-    _error => {  throw new Error (`Error: ${_error}`); }
+    (_result) => {_output = _result;},
+    (_error) => {throw new Error(`Error: ${_error}`);},
   );
-  
+
   // Rename labels column
   _output[SVM_GEN_LABELS_INDEX].name = SVM_LABEL_NAME;
-  
+
   // Rename feature columns
   for (const col of _output[SVM_GEN_FEATURES_INDEX])
     col.name = SVM_FEATURE_NAME + col.name;
 
   // Create dataframe
   const df = DG.DataFrame.fromColumns(_output[SVM_GEN_FEATURES_INDEX]);
-  df.name = name;  
+  df.name = name;
   df.columns.add(_output[SVM_GEN_LABELS_INDEX]);
 
   return df;

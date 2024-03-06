@@ -8,12 +8,13 @@
     "email": "vdyma@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.3.64",
+  "version": "6.4.12",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.35",
-    "@datagrok-libraries/math": "^1.0.3",
+    "@datagrok-libraries/math": "^1.0.7",
+    "@datagrok-libraries/utils": "^4.1.45",
     "@keckelt/tsne": "^1.0.2",
+    "@types/seedrandom": "^3.0.8",
     "cash-dom": "latest",
     "datagrok-api": "^1.16.0",
     "dayjs": "latest",
@@ -21,6 +22,7 @@
     "jaro-winkler-typescript": "^1.0.1",
     "ml-levenberg-marquardt": "^2.0.0",
     "rxjs": "^6.6.7",
+    "seedrandom": "^3.0.5",
     "umap-js": "^1.3.3"
   },
   "devDependencies": {
@@ -39,7 +41,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/math",
     "debug-ml": "grok publish",
     "release-ml": "grok publish --release",
     "build-ml": "git clean -f -X -d ./src && tsc",
@@ -50,6 +52,6 @@
     "release-ml-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm run build"
   }
 }

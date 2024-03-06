@@ -61,11 +61,23 @@ export function isMolBlock(s: string): boolean {
 }
 
 export function hexToPercentRgb(hex: string): number[] | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
+    /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? [
       parseInt(result[1], 16) / 256,
       parseInt(result[2], 16) / 256,
       parseInt(result[3], 16) / 256,
-      0.3
+      result.length > 4 ? parseInt(result[4], 16) / 256 : 0.3
   ] : null;
+}
+
+export function getSigFigs(n: number, sig: number) {
+  var mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
+  return Math.round(n * mult) / mult;
+}
+
+
+export function getFirstNSymbols(number: number, digits: number): string {
+  const str = number.toFixed(digits).toString().slice(0, digits);
+  return str[str.length - 1] === '.' ? number.toFixed(1).toString() : str;
 }

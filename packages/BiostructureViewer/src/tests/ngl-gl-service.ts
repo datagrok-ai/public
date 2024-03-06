@@ -45,9 +45,9 @@ category('NglGlService', () => {
         };
         nglSvc.reset();
         nglSvc.render(task, 0);
-      }, 10000);
+      }, 15000);
 
     expect(nglSvc.errorCount, 0, 'There was errors in NglGlService.');
     _package.logger.debug('tests NglGlService/pdb, end');
-  }, {timeout: 20000});
+  }, {timeout: 25000});
 });

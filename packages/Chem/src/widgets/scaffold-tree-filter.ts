@@ -23,6 +23,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs = this.viewer.subs;
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.viewer.clearFilters();
+      if (this.viewer._bitOpInput)
+        this.viewer._bitOpInput.value = BitwiseOp.OR;
       this.viewer.clearNotIcon(this.viewer.tree.children);
     }));
   }
@@ -42,7 +44,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_) => {
-        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));
+        this.viewer.setHighlightTag = super.isFiltering;
+        // in case node is disabled - keep the highlight, in case whole filter is disabled - drop the highlight
+        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, super.isFiltering ? JSON.stringify(this.viewer.colorCodedScaffolds) : '');
       }),
     );
     this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
@@ -64,6 +68,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
       colName: state.columnName,
     });
 
+    if (state.colorCodedScaffolds)
+      this.viewer.setHighlightTag = state.active; //in case applyState is called on disabled filter with existing scaffolds, the highlight is not set
     if (state.savedTree)
       this.viewer.loadTreeStr(state.savedTree);
 
@@ -73,6 +79,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   applyFilter(): void {
     if (this.dataFrame && this.viewer.bitset && !this.isDetached) {
+      this.viewer.setHighlightTag = true;
       this.viewer.updateFilters(false);
       this.dataFrame!.filter.and(this.viewer.bitset!);
       this.dataFrame!.rows.addFilterState(this.saveState());

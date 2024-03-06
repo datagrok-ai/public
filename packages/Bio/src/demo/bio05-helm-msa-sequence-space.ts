@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {IWebLogoViewer} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {awaitStatus, DockerContainerStatus} from '@datagrok-libraries/bio/src/utils/docker';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 import {Pepsea, pepseaMethods, runPepsea} from '../utils/pepsea';
@@ -13,6 +12,7 @@ import {sequenceSpaceTopMenu} from '../package';
 import {handleError} from './utils';
 
 import {_package} from '../package';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 const helmFn: string = 'samples/HELM.csv';
 

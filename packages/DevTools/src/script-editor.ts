@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 export function scriptEditor(view: DG.View) {
   setTimeout(function() {
     // @ts-ignore
-    const editor = view.root.lastChild.lastChild.CodeMirror;
+    const editor = view.root.querySelector(".CodeMirror").CodeMirror;
     const doc = editor.getDoc();
 
     if (doc.getLine(2) == '//language: javascript') {

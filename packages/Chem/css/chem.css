@@ -176,11 +176,11 @@
   opacity: 1.0;
 }
 
-.similarity-header {
+.chem-similarity-header {
   justify-content: space-between;
 }
 
-.similarity-prop-label {
+.chem-similarity-prop-label {
   width: 75%;
   margin-left: 5px;
   text-align: start;
@@ -190,21 +190,46 @@
   color: var(--grey-4)
 }
 
-.similarity-prop-value {
+.chem-similarity-prop-value {
   margin-right: 5px;
   text-align: end;
   overflow-wrap: break-word;
   color: var(--grey-5);
 }
 
-.similarity-prop-item {
+.chem-similarity-prop-item {
   justify-content: space-between;
 }
 
-.similarity-search-edit {
+.chem-similarity-search-edit {
   font-size: 12px;
   padding: 4px;
   color:var(--blue-1);
+}
+
+.chem-mmpa-prop-value {
+  margin-right: 5px;
+  text-align: end;
+  color: var(--grey-5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chem-mmpa-context-pane-mol-div {
+  width: 100%;
+  min-width: 440px;
+  padding-left: 100px;
+}
+
+.chem-mmpa-context-pane-properties-div {
+  gap: 5px;
+  width: 100%;
+}
+
+.chem-mmpa-forms-viewer {
+  height: 100%!important;
+  width: 100%!important;
 }
 
 .chem-scaffold-tree-toolbar {
@@ -444,7 +469,7 @@
 .chem-filter-fp-label {
   margin-right: 5px!important;
 }
-arch-options-icon
+
 .chem-filter-sim-cutoff-label {
   width: 0px;
   margin: 0px!important;
@@ -467,7 +492,7 @@ arch-options-icon
   visibility: visible;
 }
 
-.empty-filter {
+.chem-empty-filter {
   gap: 5px;
 }
 
@@ -506,4 +531,24 @@ arch-options-icon
 .sketch-link {
   border: none!important;
   color: var(--blue-1);
+}
+
+.chem-filter-sketcher-div {
+  position: relative;
+  width: 100%
+}
+
+/* workaround for OCL sketcher to show molecule properties - https://github.com/cheminfo/openchemlib-js/issues/117 */
+.gwt-DialogBox { 
+  z-index: 10000;
+}
+
+.chem-rgroup-undo-icon {
+  padding-left: 80px;
+  padding-top: 6px
+}
+
+.grok-chem-filter-options {
+  bottom: 455px!important;
+  left: 360px!important;
 }

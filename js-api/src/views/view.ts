@@ -93,6 +93,7 @@ export class ViewBase {
 
   set name(s: string) {
     this._name = s;
+    api.grok_View_Set_Name(this.dart, s);
   }
 
   get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }
@@ -302,6 +303,14 @@ export class View extends ViewBase {
   saveLayout(): ViewLayout {
     return toJs(api.grok_View_Save_Layout(this.dart));
   }
+
+  /**
+   *  Saves view as a ViewInfo. Only applicable to certain views, such as {@link TableView}.
+   *  @returns {ViewInfo} */
+  getInfo(): ViewLayout {
+    return toJs(api.grok_View_Get_Info(this.dart));
+  }
+
 
   /** View name. It gets shown in the tab handle.
    * @type {string} */

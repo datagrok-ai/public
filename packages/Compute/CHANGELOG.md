@@ -1,5 +1,132 @@
 # Compute changelog
 
+## 1.25.3 (2024-03-06)
+
+### Features
+
+- RFV: "readme" tag replaced by "help"
+
+## 1.25.2 (2024-03-05)
+
+### Features
+
+- PLV: Added additional check on step enabling
+- ModelCatalog: Added help switching
+
+## 1.25.1 (2024-03-04)
+
+### Features
+
+- SA: input form styles fix
+
+## 1.25.0 (2024-03-04)
+
+### Features
+
+- RFV: Now supports readme files via `meta.readme` tag
+- Wizard: Now support help panel state saving
+
+## 1.24.1 (2024-03-02)
+
+### Features
+
+- ModelCatalog: Fixed bug with mandatory groups
+
+## 1.24.0 (2024-03-01)
+
+### Features
+
+- RFV: Customizable data upload feature
+
+## 1.23.0 (2024-02-28)
+
+### Features
+
+- SA: Updated viewers
+- SA: Added analysis by value in custom column
+
+### Bug fixes
+
+- SA: Fixed bug last row analysis
+
+## 1.22.0 (2024-02-20)
+
+### Features
+
+- Added heavy-weight libraries dynamic load
+
+### Bug fixes
+
+- SA: Inputs layout fixed
+
+## 1.21.2 (2024-02-14)
+
+### Bug fixes
+
+- SA: Fixed bug switch styling
+
+## 1.21.0 (2024-02-13)
+
+### Features
+
+- Wizard: now deletes all steps' funccalls on parent funccall deletion
+- CPV: Design & performance improvements
+- SA: Added units into the form
+
+### Bug fixes
+
+- SA: Fixed bug with identical column names
+- CPV: Fixed bug with viewers of the same type
+
+## 1.20.1 (2024-02-05)
+
+### Features
+
+- HistoryInput now supports DF param skipping
+
+## 1.20.0 (2024-02-01)
+
+### Features
+
+- PLV: Added help icon for steps if help is available
+- RFV: Added "add to favorites" icon for historical runs cards
+- ModelCatalog: Moved help to model's context menu
+- RFV: Moved History panel out from context panel
+
+## 1.19.2 (2024-01-18)
+
+### Bug fixes
+
+- RFV: Run button disabling fix
+
+## 1.19.1 (2024-01-18)
+
+### Features
+
+- SA: Internal refactoring & UI improvements
+
+### Bug fixes
+
+- RFV: Foldable categories design fix
+- RFV: Buttons layout changes
+
+## 1.19.0 (2024-01-08)
+
+### Features
+
+- RFV: Added `graphics` type support
+- RFV: Exposed feature-flags
+
+### Bug fixes
+
+- RFV: Fixed bug for string default values
+
+## 1.18.0 (2023-12-25)
+
+- RFV: Added input form adaptiveness
+- RFV: Renamed validator tag to `validatorFunc`
+- RFV: Added `nullable` tag for inputs 
+
 ## 1.17.3 (2023-11-22)
 
 ### Features:
@@ -7,7 +134,7 @@
 - RFV: New styles for huge viewers
 - PLV: Added input resetting from locked state
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed error on getting pacakge of newly created script
 - RFV: Disabled scripts caching for newly created scripts
@@ -35,7 +162,7 @@
 - RFV: Added input lock-states
 - RFV: Added `keepOutput` tag to control output hiding
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed losing focus on input disabling
 - RFV: Fixed empty tooltip appearing
@@ -43,20 +170,20 @@
 
 ## 1.15.2 (WIP)
 
-### Fixed bugs
+### Bug Fixes
 
 - Removed idle pkpd.R and pop-pk.R scripts
 
 ## 1.15.1 (2023-10-21)
 
-### Fixed bugs
+### Bug Fixes
 
 - PLV: Fixed load run bug logic
 - RFV: Fixed load run bug logic
 
 ## 1.15.0 (2023-09-25)
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed inputs layout inside of foldable categories
 
@@ -66,7 +193,7 @@
 
 ## 1.14.3 (2023-09-08)
 
-### Fixed bugs
+### Bug Fixes
 
 - PLV: Fixed options logic on funcCall copy
 
@@ -76,7 +203,7 @@
 
 ## 1.14.2 (2023-09-07)
 
-### Fixed bugs
+### Bug Fixes
 
 - RFV: Fixed tabs reappearance after recalculation
 
@@ -87,20 +214,20 @@
 
 ## 1.14.1 (2023-09-06)
 
-### Fixed bugs
+### Bug Fixes
 
 - Fixed color and numeric values parsing in RFV
 
 ## 1.13.12 (2023-08-25)
 
-### Fixed bugs
+### Bug Fixes
 
 - Fixed rare bug with historical runs in PLV
 - Fixed bug with viewers' captions duplication
 
 ## 1.13.9 (2023-08-23)
 
-### Fixed bugs
+### Bug Fixes
 
 - Fixed bug with empty captions in RFV blocks
 

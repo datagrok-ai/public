@@ -1,13 +1,7 @@
 ---
 title: "Datagrok: Swiss Army Knife for Data"
-format: mdx
+
 ---
-
-```mdx-code-block
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-```
 
 ## Why Datagrok?
 
@@ -23,23 +17,10 @@ and apply models, and do more. Need a specific tool or functionality? Easily
 integrate or add your own code. Datagrok's plugin architecture makes it easy to
 deliver cohesive, fit-for-purpose solutions. 
 
-<Tabs
-  defaultValue="access"
-  values={[
-    {label: 'Access', value: 'access'},
-    {label: 'Govern', value: 'govern'},
-    {label: 'Transform', value: 'transform'},
-    {label: 'Explore', value: 'explore'},
-    {label: 'Compute', value: 'compute'},
-    {label: 'Learn', value: 'learn'},
-    {label: 'Collaborate', value: 'collaborate'},
-    {label: 'Extend', value: 'integrate-extend'},
-  ]}>
-
-<TabItem value="access">
+#### Access
 
 Get your data from anywhere - databases, web services, file shares, pipelines.
-If it’s machine-readable, we can work with it!
+If it's machine-readable, we can work with it!
 
 * [40+ connectors](../access/databases/connectors/connectors.md) to all major
   databases and file shares (or [create your own](../access/databases/create-custom-connectors.md))
@@ -54,8 +35,20 @@ view schemas, tables, and column data
 
 [Learn more about data access](../access/access.md).
 
-</TabItem>
-<TabItem value="transform">
+#### Govern
+
+Use catalogs, data lineage tools, audit, and usage analysis to take control.
+Your data is [FAIR](../govern/catalog/fair.md) and secure.
+* Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
+flexible [authentication](../govern/authentication.md), 
+[secrets managers](../access/data-connection-credentials.md)
+* Central [metadata](../govern/catalog/metadata.md)-annotated catalog of
+[entities](concepts/objects.md). Powerful "everything" browser for
+navigating, viewing, and managing data, connections, users, and more
+* Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
+* [Global search](../explore/search-filter-select/smart-search.md). 
+
+#### Transform
 
 Automatically generate macros from data transformations and use them on new datasets. 
 
@@ -68,9 +61,7 @@ Automatically generate macros from data transformations and use them on new data
 
 [Learn more about functions](concepts/functions/functions.md).
 
-</TabItem>
-
-<TabItem value="explore">
+#### Explore
 
 Slice, dice, and visualize your data. Render millions of data points
 interactively and find patterns. Build dynamic dashboards in seconds. Leverage
@@ -85,8 +76,7 @@ suggestions.
  or incorrect data types
 * Adaptive UI and data-specific suggestions.
 
-</TabItem>
-<TabItem value="compute">
+#### Compute
 
 Write in any language, annotate, publish, and apply scientific models, methods,
 and apps. Solve differential equations and run simulations for complex processes<!--(e.g., for [bioreactors](like) and [PKPD](link))-->.
@@ -99,8 +89,7 @@ and apps. Solve differential equations and run simulations for complex processes
 
 Learn more about [Compute](../compute/compute.md).
 
-</TabItem>
-<TabItem value="learn">
+#### Learn
 
 No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included.
 
@@ -109,8 +98,7 @@ No-code modeling. State-of-the-art cheminformatics engines and ML toolkit includ
 * Open any dataset with a [Jupyter notebook](../compute/jupyter-notebook.md)
 * ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis/pls.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
 
-</TabItem>
-<TabItem value="collaborate">
+#### Collaborate
 
 Share anything with anyone. Collaborate on decision-making. Use open-source
 ecosystem to save cost and innovate.
@@ -125,9 +113,7 @@ or embed as an iframe
 * Data annotations, [team discussions](../collaborate/chat.md)
 * [Community forum](../collaborate/forum.md) for ideas, support, and feedback.
 
-</TabItem>
-
-<TabItem value="integrate-extend">
+#### Extend
 
 Customize anything, from context actions to UI elements. Fast development and
 deployment time with seamless integration.
@@ -137,40 +123,15 @@ deployment time with seamless integration.
 * [Developer tools](../develop/tools/inspector.md), [UI toolkit](../develop/advanced/ui.md)
 * Comprehensive help: [wiki](../develop/develop.md), [exercises](../develop/onboarding/exercises.md), [community forum](https://community.datagrok.ai/).
 
-</TabItem>
-
-<TabItem value="govern">
-
-Use catalogs, data lineage tools, audit, and usage analysis to take control.
-Your data is [FAIR](../govern/catalog/fair.md) and secure.
-
-* Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
-flexible [authentication](../govern/authentication.md), 
- [secrets managers](../access/data-connection-credentials.md)
-* Central [metadata](../catalog/metadata.md)-annotated catalog of
-  [entities](concepts/objects.md). Powerful "everything" browser for
-  navigating, viewing, and managing data, connections, users, and more
-* Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
-* [Global search](../explore/search-filter-select/smart-search.md). 
-
-</TabItem>
-</Tabs>
-
 ## Who is it for?
 
-<Tabs>
-<TabItem value="data" label="Data" default>
-
-Datagrok is optimized for structured, tabular data. It automatically
+**Data**: Datagrok is optimized for structured, tabular data. It automatically
 detects the semantics, like zip codes or molecules, and has built-in support
 for areas like [cheminformatics](solutions/domains/chem/chem.md),
 [bioinformatics](solutions/domains/bio/bio.md), [data science](solutions/domains/data-science.md),
  and others. Need more? Create [your own plugin](../develop/how-to/create-package.md).
 
-</TabItem>
-<TabItem value="skillset" label="Skillset">
-
-Datagrok is for anyone who works with data: 
+**Skillset**: Datagrok is for anyone who works with data: 
 
 * Chemists analyzing SAR tables? [Perfect fit](solutions/domains/chem/chem.md#chemically-aware-spreadsheet).
 * Data analysts? Drag and drop your local files to start analyzing. 
@@ -179,16 +140,10 @@ Datagrok is for anyone who works with data:
 * Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results), no coding needed. 
 * Developers? Quickly develop and test data-driven applications.   
 
-</TabItem>
-<TabItem value="team-size" label="Team size">
-
-Datagrok is for individuals and teams of all sizes - from
+**Team size**: Datagrok is for individuals and teams of all sizes - from
 startups<!--insert link to customer stories--> to large enterprises<!--insert link to customer stories-->. The
 platform is [enterprise-ready](solutions/enterprise/enterprise.md),
 [scalable](../develop/under-the-hood/scaling.md), and ideal for sharing and collaboration.
-
-</TabItem>
-</Tabs>
 
 ## What makes it so flexible?
 
@@ -200,20 +155,22 @@ Our mission is to help anyone understand their data, even in complex scenarios:
 
 Here's how we do it. 
 
-<Tabs>
-<TabItem value="js-api" label="JS API">
-
-With JS API, you aren't confined to pre-built features or interfaces. Add new
+**JS API**: With JS API, you aren't confined to pre-built features or interfaces. Add new
 data formats, connectors, transformations, augmentations, dynamic calculations,
 UI elements, full-scale applications, workflows, and
 [more](../develop/function-roles.md). The API also provides seamless
 integration with data sources and other tools, crucial for large enterprises
 combatting data silos and complex data ecosystems.
 
-</TabItem>
-<TabItem value="functions" label="Functions">
+**Functions**: In Datagrok, every task is a
+[function](concepts/functions/functions.md) that can be
+[annotated](concepts/functions/func-params-annotation.md). Annotations make
+functions versatile, allowing them to work on their own or within larger
+scripts, no matter the function's language or role. This means you can use
+functions as blocks to build on your team's collective expertise while fully
+leveraging Datagrok's capabilities. (See the cheminformatics example below).
 
-In Datagrok, every task is a [function](concepts/functions/functions.md) that can be [annotated](concepts/functions/func-params-annotation.md). Annotations make functions versatile, allowing them to work on their own or within larger scripts, no matter the function's language or role. This means you can use functions as blocks to build on your team's collective expertise while fully leveraging Datagrok's capabilities.
+<!---
 
 <details>
 <summary>Example</summary>
@@ -225,7 +182,7 @@ visualizes the results. In this case, however, the script is also tagged as a
 `panel`. This instructs Datagrok to show the results as an interactive UI
 element that updates dynamically for the current molecule.
 
-| <div style={{ width:160 }}></div>  | |
+|  | |
 |--|--|
 |Script with auto-generated UI based on annotation|![Gasteiger partial charges script](solutions/domains/chem/img/script-gasteiger-part-charges-0.png)|
 |Script output|![Gasteiger partial charges script output](solutions/domains/chem/img/script-output-gasteiger-part-charges-0.png)|
@@ -233,10 +190,9 @@ element that updates dynamically for the current molecule.
 
 </details>
 
-</TabItem>
-<TabItem value="semantic-types" label="Semantic types">
+-->
 
-[Semantic data types](../govern/catalog/semantic-types.md) provide domain-specific customization:
+**Semantic types**: [Semantic data types](../govern/catalog/semantic-types.md) provide domain-specific customization:
 
 * Automatic detection of domain-specific data types
 * Domain-specific menus and context actions
@@ -245,6 +201,9 @@ element that updates dynamically for the current molecule.
 * Domain-specific calculation and data processing functions
 * Fit-for-purpose apps built on top of Datagrok.
 
+[See this example for cheminformatics](solutions/domains/chem/chem.md#chemically-aware-spreadsheet).
+
+<!--
 <details>
 <summary>Example</summary>
 
@@ -261,8 +220,7 @@ For example, when you open a CSV file containing molecules in the SMILES format,
 
 </details>
 
-</TabItem>
-</Tabs>
+-->
 
 ## What makes it so fast?
 

@@ -72,6 +72,7 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceColumnName = this.string('sourceColumnName');
     this.targetColumnName = this.string('targetColumnName');
     this.valueColumnName = this.string('valueColumnName');
+    this.addRowSourceAndFormula();
 
     this.initialized = false;
   }
@@ -99,7 +100,6 @@ export class SankeyViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
 
     this.init();
@@ -118,6 +118,10 @@ export class SankeyViewer extends DG.JsViewer {
     this.render();
   }
 
+  onSourceRowsChanged() {
+    this.render();
+  }
+
   prepareData() {
     if (!this._testColumns())
       return;
@@ -125,7 +129,7 @@ export class SankeyViewer extends DG.JsViewer {
     const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
     const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
-    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+    const filteredIndexList = this.filter.getSelectedIndexes();
 
     const sourceList = new Array<string>(filteredIndexList.length);
     const targetList = new Array<string>(filteredIndexList.length);

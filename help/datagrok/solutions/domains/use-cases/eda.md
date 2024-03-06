@@ -1,84 +1,55 @@
 ---
 title: "Exploratory data analysis"
 sidebar position: 4
+keywords:
+ - EDA
+ - exploratory data analysis
+ - interactive exploration
+ - interactive dashboards
 
 ---
 
-Before we can learn from data, we need to understand
-it. [Exploratory data analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis) (EDA) is a process of
-performing initial investigation on data to discover patterns, spot anomalies, test hypothesis, and check assumptions.
+>We help you explore at the speed of thought. [Learn what makes it possible](../../../datagrok.md#what-makes-it-so-fast).
 
-By its nature, EDA is visually-driven. Most of today's datasets are too big, too complex, and diverse to be explored in
-a tabular format or by statistical means alone. On the other hand, humans evolved to understand complex information
-visually and are better than computers at detecting patterns and anomalies.
+The goal of data analysis is to derive knowledge. To learn from data, we need to understand it. For large, complex datasets, conventional tools like tables and stats aren't enough. To recognize patterns and anomalies, we must leverage our ability to process information visually.
 
-Interactivity is key. We may not know what we are looking for until we extract knowledge from data and update our
-understanding as we go. To uncover insights that otherwise may go unnoticed, we need to be able to quickly change both
-what we are viewing and how we are viewing it:
+For this kind of analysis, we need tools that let us quickly test hypotheses and validate assumptions. We need the ability to slice and dice data, switch contexts, zoom, aggregate, focus, and access information as needed. In other words, we need interactivity, flexibility, and speed.
 
-* Look at data from multiple perspectives at once
-* Zoom in and filter
-* Manipulate, edit, and add data
-* Get details on demand
-* Select rows of interest, and see how they compare to other row sets.
+Datagrok delivers exactly that. It works with _millions of columns_ and _billions of rows_ and lets you explore at the speed of thought. Imagine loading the
+entire ChEMBL database (2.7 million molecules) in your browser, searching substructures, sketching, filtering, visualizing, and interactively exploring the chemical
+space. Datagrok makes it possible.
 
-From the ground up, we designed Datagrok for visually-driven EDA of big, complex datasets. Unlike other tools that use
-conventional client-server architecture,
-Datagrok's [proprietary in-memory database](../../../../develop/under-the-hood/performance.md#in-memory-database) makes it possible to
-analyze _millions of columns_ and
-_billions of rows_ at the speed of thought right in your browser.
+What's more, Datagrok understands the nature of your
+  data, offering actionable insights. It can
+  [suggest suitable visualizations](../../../../visualize/view-layout.md#layout-suggestions) for your datasets, automatically render  chemical structures, calculate descriptors, or predict properties. It gives you every tool you need to explore data and uncover its meaning.
 
-With Datagrok, you can:
+![img](../../../../visualize/viewers-interaction-main.gif)
 
-* [Seamlessly load data from any data source](../../../../access/files/files.mdx). Datagrok supports all popular databases,
-  multiple [file formats](../../../../access/files/supported-formats.md) and is both data-agnostic and
-  domain-intelligent. <!--TODO link to a section on domains once ready-->
-
-* Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).
-
-* Analyze big datasets that other tools struggle with (billions of rows, or millions of columns).
-
-* Use multiple interactive tools to [wrangle data](../../../../transform/transform.md) right from your visualization
+* [Bring data from anywhere](../../../../access/access.md#data-sources). Your data is automatically parsed and rendered in a spreadsheet. The spreadsheet works with _millions of columns_ and _billions of rows_ and has powerful features:
+  * Built-in statistics and dataset overview
+  * Custom cell renderers, including for domain-specific data (like molecules, sequences, or dose-response curves)
+  * [Summary columns](../../../../deploy/releases/platform/1-17.md#summary-columns) and sparklines
+  * Editable rows, and [_more_](../../../../visualize/viewers/grid.md).
+* [Wrangle data](../../../../transform/transform.md) right from your visualization
   workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../transform/missing-values-imputation.md), find
   and treat duplicates and outliers.
-
-* Visualize data at the click of a button using [30+ native viewers](../../../../visualize/viewers/viewers.md). We support all popular
-  visualizations (
-  like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.mdx#regression-line)
+* Use statistical [functions](../../../concepts/functions/functions.md) to perform calculations.
+* Slice and dice data with [50+ interactive viewers](../../../../visualize/viewers/viewers.md). We support all popular
+  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.mdx#regression-line)
   or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
-  viewers, such as [chemically-aware   viewers](../chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../../../../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
+  viewers. The viewers also support domain-specific value renderers like molecules on scatterplot axes and points.
+* Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
+* Seamlessly access information with [widgets](../../../../visualize/widgets.md)
+ and context-driven [info panes](../../../../explore/data-augmentation/info-panels.md). 
+* Create dashboards in seconds. Share your analysis in easy and
+[secure](../../../../govern/security.md) way: send a URL link or integrate: REST API, JS API, or embed as an iframe. 
+* Use data annotations and team discussions to collaborate on decision-making. 
 
-  * Viewing datasets with _millions of columns_ and _billions of rows_
-  * Dataset overview, including summary statistics for numerical data columns and distribution for categorical data
-    columns
-  * Custom cell renderers for molecules, sequences, dose-response curves, and sparklines
-  * Editing datasets (for example, adding new molecules using [sketchers](../chem/chem.md#sketching))
+Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting.md).
 
-* Filter, zoom in and out, aggregate, pivot, and cross-link data. All our viewers work in tandem and are customizable,
-  [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
+[Learn more about capabilities here](../../../datagrok.md).
 
-* Perform calculations on data using predefined statistical [functions](../../../concepts/functions/functions.md).
-* Get details on demand using a variety of [widgets](../../../../visualize/widgets.md), including customizable
-  [tooltips](../../../../explore/search-filter-select/select-tooltip-columns.md#viewer-tooltips) and
-  context-driven [info panes](../../../../explore/data-augmentation/info-panels.md).
-
-* Build on collective knowledge of Datagrok users. Using
-  built-in [data augmentation capabilities](../../../../explore/data-augmentation/data-augmentation.md), Datagrok understands the nature of your
-  data, and offers actionable insights based on it. For example, the platform
-  [automatically suggests visualizations](../../../../visualize/view-layout.md#layout-suggestions) for datasets or predicts
-  properties for chemical structures.
-
-You can also leverage Datagrok's component-based architecture to extend or create any element you like. For example, you
-can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions
-in [R, Python, or Julia](../../../../compute/scripting.md).
-
-Each of these actions can be [automated](../../../concepts/functions/functions.md#macros) and used in
-pipelines. Sharing the results of your analysis is easy and
-[secure](../../../../govern/security.md).<!--TODO rewrite for clarity-->
-
-With Datagrok, anyone can use their domain knowledge and perceptive abilities to explore data and uncover its meaning.
-
-## Examples
+## Resources
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable -->

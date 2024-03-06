@@ -650,9 +650,9 @@ property setter).
 
 [107]: ../../datagrok/navigation/table-view.md "Table Views"
 
-[108]: ../../catalog/tags.md#format "Values of a format tag"
+[108]: ../../govern/catalog/tags.md#format "Values of a format tag"
 
-[109]: ../../catalog/semantic-types.md "Semantic types"
+[109]: ../../govern/catalog/semantic-types.md "Semantic types"
 
 [110]: ../../datagrok/solutions/domains/chem/chem.md "Cheminformatics overview"
 

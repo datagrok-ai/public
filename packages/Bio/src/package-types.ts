@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {Observable, Subject} from 'rxjs';
-import {ObjectPropertyBag} from 'datagrok-api/dg';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
@@ -60,13 +60,12 @@ export class BioPackage extends DG.Package {
 
   private _initialized: boolean = false;
 
-  public get initialized(): boolean { return this._initialized;}
+  public get initialized(): boolean { return this._initialized; }
 
-  public completeInit(): void { this._initialized = true;}
+  public completeInit(): void { this._initialized = true; }
 
   handleErrorUI(err: any) {
-    const errMsg = err instanceof Error ? err.message : err.toString();
-    const errStack = err instanceof Error ? err.stack : undefined;
+    const [errMsg, errStack] = errInfo(err);
     grok.shell.error(errMsg);
     this.logger.error(errMsg, undefined, errStack);
   }

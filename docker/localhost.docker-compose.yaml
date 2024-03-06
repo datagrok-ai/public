@@ -153,7 +153,7 @@ services:
       - datagrok_postgres_rdkit:/var/lib/postgresql/data
     command: postgres -c 'max_connections=1000'
     restart: on-failure
-    profiles: ["postgres_rdkit"]
+    profiles: [ "postgres_rdkit" ]
 
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
@@ -230,6 +230,35 @@ services:
     restart: on-failure
     profiles: [ "demo", "postgres_world", "world" ]
 
+  mlflow:
+    image: datagrok/mlflow:2.9.2
+    command: >-
+      mlflow server
+        --backend-store-uri file:/data/mlruns
+        --default-artifact-root mlflow-artifacts:/
+        --artifacts-destination /data/mlartifacts
+        --host 0.0.0.0 --port 5000
+        --expose-prometheus /data/mlflow_metrics
+        --serve-artifacts
+    volumes:
+      - datagrok_mlflow_artifact:/data/mlartifacts
+      - datagrok_mlflow_backend:/data/mlruns
+      - datagrok_mlflow_prom:/data/mlflow_metrics
+    ports:
+      - "${DATAGROK_MLFLOW_PORT:-5555}:5000/tcp"
+    #    --backend-store-uri postgresql://postgres:postgres@database:5432/mlflow
+    #    depends_on:
+    #      db:
+    #        condition: service_healthy
+    #        restart: false
+    networks:
+      datagrok:
+        aliases:
+          - mlflow
+    restart: on-failure
+    platform: linux/amd64
+    profiles: [ "ml", "mlflow" ]
+
 volumes:
   datagrok_db:
   datagrok_data:
@@ -240,6 +269,9 @@ volumes:
   datagrok_demo_postgres_world:
   datagrok_demo_postgres_unichem:
   datagrok_postgres_rdkit:
+  datagrok_mlflow_artifact:
+  datagrok_mlflow_backend:
+  datagrok_mlflow_prom:
 
 networks:
   datagrok:

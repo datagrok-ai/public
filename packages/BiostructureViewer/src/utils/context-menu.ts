@@ -3,11 +3,17 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
-import {defaultErrorHandler} from './err-info';
 import {openPdbResidues} from '../package';
+import {defaultErrorHandler} from './err-info';
 
-import {_package} from '../package';
+export type BiostructureViewerWindowType = Window & {
+  $biostructureViewer?: {
+    contextMenuError?: any,
+  },
+};
+declare const window: BiostructureViewerWindowType;
 
 export function addContextMenuUI(event: DG.EventData): void {
   try {
@@ -29,7 +35,8 @@ export function addContextMenuUI(event: DG.EventData): void {
     }
   } catch (err: any) {
     defaultErrorHandler(err);
-    throw err;
+    if (!window.$biostructureViewer) window.$biostructureViewer = {};
+    window.$biostructureViewer.contextMenuError = err;
   }
 }
 
@@ -62,16 +69,61 @@ export function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boo
   function downloadRawValue(): void {
     const tableCol = gridCell.tableColumn!;
     const uh = Molecule3DUnitsHandler.getOrCreate(tableCol);
+
     const fileName: string = uh.getFileName(gridCell.cell);
     const tgtValue: string = gridCell.cell.value;
     DG.Utils.download(fileName, tgtValue);
   }
 
-  switch (gridCell.tableColumn!.semType) {
-    case DG.SEMTYPE.MOLECULE3D: {
-      menu.item('Copy', copyRawValue);
-      menu.item('Download', downloadRawValue);
-      return true;
+  async function showNglViewer(): Promise<void> {
+    const tableCol = gridCell.tableColumn!;
+    const uh = Molecule3DUnitsHandler.getOrCreate(tableCol);
+
+    const valueData: BiostructureData = {
+      binary: false,
+      data: gridCell.cell.value,
+      ext: uh.fileExt(),
+    };
+    if (gridCell.grid.view instanceof DG.TableView) {
+      const view = gridCell.grid.view as DG.TableView;
+      const viewer = await gridCell.tableColumn?.dataFrame.plot.fromType('NGL', {
+        dataJson: BiostructureDataJson.fromData(valueData),
+      });
+      if (viewer) view.dockManager.dock(viewer.root);
+    }
+  }
+
+  async function showBiostructureViewer(): Promise<void> {
+    const tableCol = gridCell.tableColumn!;
+    const uh = Molecule3DUnitsHandler.getOrCreate(tableCol);
+
+    const valueData: BiostructureData = {
+      binary: false,
+      data: gridCell.cell.value,
+      ext: uh.fileExt(),
+    };
+    if (gridCell.grid.view instanceof DG.TableView) {
+      const view = gridCell.grid.view as DG.TableView;
+      const viewer = await gridCell.tableColumn?.dataFrame.plot.fromType('Biostructure', {
+        dataJson: BiostructureDataJson.fromData(valueData),
+      });
+      if (viewer) view.dockManager.dock(viewer.root);
+    }
+  }
+
+  if (gridCell && gridCell.tableColumn) {
+    switch (gridCell.tableColumn.semType) {
+      case DG.SEMTYPE.MOLECULE3D: {
+        menu
+          .item('Copy', copyRawValue)
+          .item('Download', downloadRawValue);
+        const showG = menu.group('Show');
+        const nglM = showG.item('Biostructure', showBiostructureViewer, null,
+          {description: 'Show with Biostructure (mol*) viewer'});
+        const msM = showG.item('NGL', showNglViewer, null,
+          {description: 'Show with NGL viewer'});
+        return true;
+      }
     }
   }
   return false;

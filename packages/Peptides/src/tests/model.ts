@@ -1,16 +1,48 @@
-import * as DG from 'datagrok-api/dg';
+import * as DG
+  from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
-import {startAnalysis} from '../widgets/peptides';
-import {scaleActivity} from '../utils/misc';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
-import {LogoSummaryTable} from '../viewers/logo-summary';
-import {TEST_COLUMN_NAMES} from './utils';
-import {getAggregatedColName} from '../utils/statistics';
-import { MonomerPosition } from '../viewers/sar-viewer';
+import {
+  after,
+  awaitCheck,
+  before,
+  category,
+  delay,
+  expect,
+  expectFloat,
+  test,
+} from '@datagrok-libraries/utils/src/test';
+import {
+  _package,
+} from '../package-test';
+import {
+  PeptidesModel,
+  VIEWER_TYPE,
+} from '../model';
+import {
+  startAnalysis,
+} from '../widgets/peptides';
+import {
+  scaleActivity,
+} from '../utils/misc';
+import {
+  NOTATION,
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {
+  COLUMNS_NAMES,
+  SCALING_METHODS,
+} from '../utils/constants';
+import {
+  LogoSummaryTable,
+} from '../viewers/logo-summary';
+import {
+  TEST_COLUMN_NAMES,
+} from './utils';
+import {
+  getAggregatedColName,
+} from '../utils/statistics';
+import {
+  MonomerPosition,
+} from '../viewers/sar-viewer';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -20,8 +52,14 @@ category('Model: Settings', () => {
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
 
-  const mutationCliffsDefaultParams = {maxMutations: 1, minActivityDelta: 0};
-  const mutationCliffsTestParams = {maxMutations: 2, minActivityDelta: 0.5};
+  const mutationCliffsDefaultParams = {
+    maxMutations: 1,
+    minActivityDelta: 0,
+  };
+  const mutationCliffsTestParams = {
+    maxMutations: 2,
+    minActivityDelta: 0.5,
+  };
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
@@ -35,6 +73,8 @@ category('Model: Settings', () => {
       SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
+
+
     model = tempModel;
 
     await delay(500);
@@ -55,10 +95,12 @@ category('Model: Settings', () => {
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
 
+
     // Check 'lg' scaling
     scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.LG).getRawData();
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], Math.log10(origActivityData[i]), tolerance, getError(i, SCALING_METHODS.LG));
+
 
     // Check '-lg' scaling
     scaledActivityData = scaleActivity(activityCol, SCALING_METHODS.MINUS_LG).getRawData();
@@ -93,12 +135,12 @@ category('Model: Settings', () => {
   test('Include columns', async () => {
     const columnName = 'rank';
     const testColumns = {[columnName]: DG.AGG.AVG};
+    model.settings = {columns: testColumns};
 
     // Include column
-
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
-    lstViewer.setOptions({columns: testColumns});
-    const aggColName = getAggregatedColName(testColumns[columnName], columnName);
+    // lstViewer.setOptions({columns: testColumns});
+    const aggColName = getAggregatedColName(DG.AGG.AVG, columnName);
     expect(lstViewer.viewerGrid.col(aggColName) !== null, true, `Expected to include column '${columnName}' in ` +
       `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is absent`);
 
@@ -110,7 +152,7 @@ category('Model: Settings', () => {
 
     expect(lstViewer.viewerGrid.col(aggColName) === null, true, `Expected to remove column '${columnName}' from ` +
       `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is still present`);
-  }, {skipReason: 'GROK-14357'});
+  });
 
   test('Dendrogram', async () => {
     // Enable dendrogram

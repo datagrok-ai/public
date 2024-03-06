@@ -1,8 +1,0 @@
-upload.keys.json
-node_modules/
-dist/
-publisher.js
-watcher.js
-debug.js
-test-report.html
-test-console-output.log

@@ -12,21 +12,38 @@ import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import {SARViewer} from '../viewers/sar-viewer';
 
-export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
+/**
+ * Renders cell selection border.
+ * @param canvasContext - Canvas context.
+ * @param bounds - Cell bounds.
+ */
+export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bounds: DG.Rect): void {
   canvasContext.strokeStyle = DG.Color.toHtml(DG.Color.selectedRows);
   canvasContext.lineWidth = 3;
-  canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
+  canvasContext.strokeRect(bounds.x + 1, bounds.y + 1, bounds.width - 1, bounds.height - 1);
 }
 
-/** A function that sets amino acid residue cell renderer to the specified column */
+/**
+ * Sets amino acid residue cell renderer to the specified column.
+ * @param col - Column to set renderer to.
+ * @param alphabet - Sequence alphabet.
+ */
 export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
   col.setTag(C.TAGS.ALPHABET, alphabet);
 }
 
+/**
+ * Renders mutation cliffs cell.
+ * @param canvasContext - Canvas context.
+ * @param currentMonomer - Current monomer.
+ * @param currentPosition - Current position.
+ * @param viewer - Viewer that requested rendering.
+ * @param bounds - Cell bounds.
+ */
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
-  currentPosition: string, viewer: SARViewer, bound: DG.Rect): void {
+  currentPosition: string, viewer: SARViewer, bounds: DG.Rect): void {
   const positionStats = viewer.monomerPositionStats[currentPosition];
   const pVal = positionStats![currentMonomer]!.pValue;
   const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
@@ -42,17 +59,17 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 
   const x = currentMeanDifference >= 0 ? pValComplement : -pValComplement;
   const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
-    DG.Color.scaleColor(x, -centeredPValLimit, centeredPValLimit));
+    DG.Color.scaleColor(x, -centeredPValLimit, centeredPValLimit, 255));
 
-  const halfWidth = bound.width / 2;
+  const halfWidth = bounds.width / 2;
   const maxMeanDifference = Math.max(Math.abs(viewer.monomerPositionStats.general.minMeanDifference),
     viewer.monomerPositionStats.general.maxMeanDifference);
   const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
   const maxRadius = 0.9 * halfWidth / 2; // Fill at most 90% of the half of the cell width
   const radius = Math.floor(maxRadius * rCoef);
 
-  const midX = Math.ceil(bound.x + 1 + halfWidth);
-  const midY = Math.ceil(bound.y + 1 + bound.height / 2);
+  const midX = Math.ceil(bounds.x + 1 + halfWidth);
+  const midY = Math.ceil(bounds.y + 1 + bounds.height / 2);
   canvasContext.beginPath();
   canvasContext.fillStyle = coef;
   canvasContext.arc(midX - halfWidth / 2, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
@@ -77,44 +94,81 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   if (uniqueValues.size !== 0)
     canvasContext.fillText(uniqueValues.size.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
 
+
   const monomerSelection = viewer.mutationCliffsSelection[currentPosition];
   if (monomerSelection && monomerSelection.includes(currentMonomer))
-    renderCellSelection(canvasContext, bound);
+    renderCellSelection(canvasContext, bounds);
 }
 
+/**
+ * Renders invariant map cell.
+ * @param canvasContext - Canvas context.
+ * @param currentMonomer - Current monomer.
+ * @param currentPosition - Current position.
+ * @param invariantMapSelection - Invariant map selection.
+ * @param cellValue - Cell value.
+ * @param bounds - Cell bounds.
+ * @param color - Cell color.
+ */
+
+function setAlpha(color: number, alpha: number): number {
+  return (color & 0x00ffffff | (alpha << 24)) >>> 0;
+}
 export function renderInvariantMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
-  currentPosition: string, invariantMapSelection: type.Selection, cellValue: number, bound: DG.Rect,
+  currentPosition: string, invariantMapSelection: type.Selection, cellValue: number, bounds: DG.Rect,
   color: number): void {
   //FIXME: This is a hack, because `color` value sometimes comes incomplete. E.g. we found that here `color` value is
   // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
   // is actually 4278190335.
-  color = DG.Color.fromHtml(DG.Color.toHtml(color));
+  color = DG.Color.fromHtml(DG.Color.toHtml(setAlpha(color, 255)));
   canvasContext.fillStyle = DG.Color.toHtml(color);
-  canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
+  canvasContext.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
-  canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
+  canvasContext.fillText(cellValue.toString(), bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2),
+    bounds.width);
 
   const monomerSelection = invariantMapSelection[currentPosition];
   if (monomerSelection && monomerSelection.includes(currentMonomer))
-    renderCellSelection(canvasContext, bound);
+    renderCellSelection(canvasContext, bounds);
 }
 
+/**
+ * Renders logo summary table cell.
+ * @param canvasContext - Canvas context.
+ * @param cellValue - Cell value.
+ * @param clusterSelection - Cluster selection.
+ * @param bounds - Cell bounds.
+ */
 export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string,
-  clusterSelection: type.Selection, bound: DG.Rect): void {
+  clusterSelection: type.Selection, bounds: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = '#000';
-  canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
+  canvasContext.fillText(cellValue.toString(), bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2),
+    bounds.width);
 
   if (clusterSelection[CLUSTER_TYPE.CUSTOM].includes(cellValue) ||
     clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue))
-    renderCellSelection(canvasContext, bound);
+    renderCellSelection(canvasContext, bounds);
 }
 
+/**
+ * Renders WebLogo in a cell.
+ * @param ctx - Canvas context.
+ * @param bounds - Cell bounds.
+ * @param stats - Position statistics.
+ * @param position - Position name.
+ * @param sortedOrder - Monomers order to render.
+ * @param rowCount - Total dataframe rows count.
+ * @param cp - Color palette.
+ * @param [monomerSelectionStats] - Monomer selection statistics.
+ * @param [drawOptions] - Drawing options.
+ * @return - WebLogo monomer bounds.
+ */
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats, position: string,
   sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: {
     [monomer: string]: number
@@ -181,7 +235,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   return monomerBounds;
 }
 
-export type CellRendererOptions = {
+export type WebLogoCellRendererOptions = {
   isSelectionTable?: boolean,
   headerSelectedMonomers?: () => type.SelectionStats,
   webLogoBounds: () => WebLogoBounds,
@@ -193,8 +247,17 @@ export type CellRendererOptions = {
 };
 export type WebLogoBounds = { [position: string]: { [monomer: string]: DG.Rect } };
 
+/**
+ * Sets WebLogo renderer.
+ * @param grid - Grid to set renderer to.
+ * @param monomerPositionStats - Monomer position statistics.
+ * @param positionColumns - Position columns.
+ * @param activityCol - Activity column.
+ * @param options - Cell renderer options.
+ * @param tooltipOptions - Tooltip options.
+ */
 export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerPositionStats,
-  positionColumns: DG.Column<string>[], activityCol: DG.Column<number>, options: CellRendererOptions,
+  positionColumns: DG.Column<string>[], activityCol: DG.Column<number>, options: WebLogoCellRendererOptions,
   tooltipOptions: TooltipOptions = {
     x: 0, y: 0, mpStats: {} as MonomerPositionStats,
     monomerPosition: {} as type.SelectionItem,
@@ -202,6 +265,8 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
   options.isSelectionTable ??= false;
   if (Object.keys(tooltipOptions.mpStats).length == 0)
     tooltipOptions.mpStats = monomerPositionStats;
+
+
   if (options.isSelectionTable && (!options.webLogoBounds || !options.cachedWebLogoTooltip)) {
     throw new Error('Peptides: Cannot set WebLogo renderer for selection table without `headerSelectedMonomers`, ' +
       '`webLogoBounds` and `cachedWebLogoTooltip` options.');
@@ -248,14 +313,19 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
         } else
           stats = monomerPositionStats[col.name];
 
+
         if (!stats)
           return;
+
+
         //TODO: precalc on stats creation
         const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
           if (a === '' || a === '-')
             return +1;
           else if (b === '' || b === '-')
             return -1;
+
+
           return 0;
         }).filter((v) => v !== 'general');
 
@@ -281,10 +351,12 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
       if (monomerPosition === null) {
         if (!options.isSelectionTable && options.unhighlightCallback != null)
           options.unhighlightCallback();
+
+
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
-      requestBarchartAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
+      requestWebLogoAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
       if (!options.isSelectionTable && options.highlightCallback != null)
         options.highlightCallback(monomerPosition, df, monomerPositionStats);
     }
@@ -295,8 +367,17 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
 }
 
-function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionItem, df: DG.DataFrame,
-  activityCol: DG.Column<number>, options: CellRendererOptions, tooltipOptions: TooltipOptions): void {
+/**
+ * Handles WebLogoAction action.
+ * @param ev - Mouse event.
+ * @param monomerPosition - Monomer-position object.
+ * @param df - Dataframe with WebLogo in header.
+ * @param activityCol - Activity column.
+ * @param options - WebLogo cell renderer options.
+ * @param tooltipOptions - Tooltip options.
+ */
+function requestWebLogoAction(ev: MouseEvent, monomerPosition: type.SelectionItem, df: DG.DataFrame,
+  activityCol: DG.Column<number>, options: WebLogoCellRendererOptions, tooltipOptions: TooltipOptions): void {
   if (ev.type === 'click' && !options.isSelectionTable && options.selectionCallback != null)
     options.selectionCallback(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
   else {
@@ -313,6 +394,13 @@ function requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionIt
   }
 }
 
+/**
+ * Finds monomer-position pair in a grid cell with WebLogo render.
+ * @param cell - Grid cell to look for monomer-position pair.
+ * @param ev - Mouse event.
+ * @param webLogoBounds - Monomer bounds in WebLogo position.
+ * @return - Monomer-position pair.
+ */
 function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBounds: WebLogoBounds,
 ): type.SelectionItem | null {
   const barCoords = webLogoBounds[cell.tableColumn!.name];

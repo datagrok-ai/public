@@ -1,0 +1,4 @@
+# PDB receptor, standard config file
+
+./test_autodock_pdbqt.sh 3swz.gpf ligand.pdb
+

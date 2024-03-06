@@ -30,7 +30,7 @@ const INCORRECT_LEARNING_RATE_MES = 'learning rate must be positive.';
 const INCORRECT_PERPLEXITY_MES = 'perplexity must be at least 2 and not greater than samples count.';
 const INCORRECT_STEPS_MES = 'steps must be non-negative.';
 const INCORRECT_CYCLES_MES = 'cycles must be positive.';
-const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.'
+const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.';
 
 // Check column type
 export function checkColumnType(col: DG.Column): void {
@@ -52,8 +52,7 @@ export function checkDimensionReducerInputs(features: DG.ColumnList, components:
 
 // Check UMAP inputs
 export function checkUMAPinputs(features: DG.ColumnList, components: number, epochs: number,
-  neighbors: number, minDist: number, spread: number): void 
-{
+  neighbors: number, minDist: number, spread: number): void {
   // General dim reducer checks
   checkDimensionReducerInputs(features, components);
 
@@ -73,13 +72,12 @@ export function checkUMAPinputs(features: DG.ColumnList, components: number, epo
     throw new Error(INCORRECT_EPOCH_MES);
 
   if ((neighbors < 2) || (neighbors > features.byIndex(0).length))
-    throw new Error(INCORRECT_NEIBORS_MES);  
+    throw new Error(INCORRECT_NEIBORS_MES);
 }
 
 // Check t-SNE inputs
-export function checkTSNEinputs(features: DG.ColumnList, components: number, 
-  learningRate: number, perplexity: number, iterations: number): void 
-{
+export function checkTSNEinputs(features: DG.ColumnList, components: number,
+  learningRate: number, perplexity: number, iterations: number): void {
   // General dim reducer checks
   checkDimensionReducerInputs(features, components);
 
@@ -96,13 +94,12 @@ export function checkTSNEinputs(features: DG.ColumnList, components: number,
     throw new Error(INCORRECT_ITERATIONS_MES);
 
   if ((perplexity < 2) || (perplexity > features.byIndex(0).length))
-    throw new Error(INCORRECT_PERPLEXITY_MES);  
+    throw new Error(INCORRECT_PERPLEXITY_MES);
 }
 
 // Check SPE inputs
 export function checkSPEinputs(features: DG.ColumnList, dimension: number,
-  steps: number, cycles: number, cutoff: number, lambda: number): void 
-{
+  steps: number, cycles: number, cutoff: number, lambda: number): void {
   // General dim reducer checks
   checkDimensionReducerInputs(features, dimension);
 
@@ -136,16 +133,15 @@ export function checkWasmDimensionReducerInputs(features: DG.ColumnList, compone
 }
 
 // Check inputs of data for SVM testing generator
-export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: number, 
-  min: number, max: number, violatorsPercentage: number): void 
-{
+export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: number,
+  min: number, max: number, violatorsPercentage: number): void {
   if (min >= max)
     throw new Error(INCORERRECT_MIN_MAX_MES);
-  
-  if (featuresCount < FEATURES_COUNT_MIN) 
+
+  if (featuresCount < FEATURES_COUNT_MIN)
     throw new Error(INCORERRECT_FEATURES_MES);
 
-  if (samplesCount < SAMPLES_COUNT_MIN) 
+  if (samplesCount < SAMPLES_COUNT_MIN)
     throw new Error(INCORERRECT_SAMPLES_MES);
 
   if ((violatorsPercentage < PERCENTAGE_MIN) || (violatorsPercentage > PERCENTAGE_MAX))
@@ -156,7 +152,7 @@ export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: num
 export function getRowsOfNumericalColumnns(columnList: DG.ColumnList): any[][] {
   const columns = columnList.toList();
   const rowCount = columns[0].length;
-  const colCount = columns.length;  
+  const colCount = columns.length;
 
   const output = [] as any[][];
 

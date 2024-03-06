@@ -153,7 +153,8 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     @Override
     public String limitToSql(String query, Integer limit) {
-        return "select * from (\n" + query + "\n) where ROWNUM <= " + limit.toString();
+        return String.format("SELECT * FROM (%s%s%s) WHERE ROWNUM <= %s", System.lineSeparator(),
+                query, System.lineSeparator(), limit);
     }
 
     @Override

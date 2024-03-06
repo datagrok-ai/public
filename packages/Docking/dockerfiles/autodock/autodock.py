@@ -7,33 +7,52 @@ import hashlib
 import re
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
+import logging
+
+logging_level = logging.WARNING
+logging.basicConfig(level=logging_level)
 
 app = Flask(__name__)
+logging.warning('autodock app started version -- 12 -- ')
 
 def prepare_autogrid_config(folder_path, receptor_basename, autodock_gpf):
-    config = "{}/{}.gpf".format(folder_path, receptor_basename)
-    with open(config, "w") as config_file:
+    config_path = "{}/{}.gpf".format(folder_path, receptor_basename)
+    with open(config_path, "w") as config_file:
         config_file.write(autodock_gpf)
-    return config
+    return config_path
 
 def calculate_hash(data):
     return hashlib.sha256(data.encode()).hexdigest()
 
 def run_process(command, folder_path, shell=False):
+    command_txt = ' '.join(command) if isinstance(command, list) else str(command)
     output_file = 'out.txt'
     error_file = 'err.txt'
     with open(output_file, 'w+') as fout:
         with open(error_file, 'w+') as ferr:
-            returncode = subprocess.call(command, stdout=fout, stderr=ferr, shell=shell, cwd=folder_path)
+            return_code = subprocess.call(command if not shell else command_txt, stdout=fout, stderr=ferr,
+                                          shell=shell, cwd=folder_path)
             fout.seek(0)
             output = fout.read()
             ferr.seek(0)
             error = ferr.read()
-            os.remove(output_file)
-            os.remove(error_file)
-    return returncode, output, error
+            if os.path.exists(output_file):
+                os.remove(output_file)
+            if os.path.exists(error_file):
+                os.remove(error_file)
+    
+    logging.debug('run_process: output\n{}'.format(output))
+    logging.debug('run_process: output END\n')
+    
+    logging.debug('run_process: error\n{}'.format(error))
+    logging.debug('run_process: error END\n')
 
-def run_docking(receptor_name, folder_path, autodock_gpf, ligand_value, ligand_format, ligand_name):
+    return return_code, output, error
+
+def run_docking(receptor_name, folder_path, autodock_gpf, ligand_value, ligand_format, ligand_name, pose_count):
+    logging.debug('run_docking: ')
+    logging.debug('run_docking: ' + 'folder_path: ' + str(folder_path))
+
     ligand_path = '{}.{}'.format(ligand_name, ligand_format)
 
     with open('{}/{}'.format(folder_path, ligand_path), 'w') as ligand_file:
@@ -42,15 +61,14 @@ def run_docking(receptor_name, folder_path, autodock_gpf, ligand_value, ligand_f
     if 'pdbqt' not in ligand_format:
         subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path], cwd=folder_path)
 
-    command = [
+    autodock_command = [
         '/opt/autodock-gpu',
         '--ffile', '{}.maps.fld'.format(receptor_name),
         '--lfile', '{}.pdbqt'.format(ligand_name),
-        '--nrun', '30',
+        '--nrun', str(pose_count),
         '--resnam', '{}-{}'.format(receptor_name, ligand_name)
     ]
-
-    return run_process(command, folder_path, False)
+    return run_process(autodock_command, folder_path, False)
 
 def prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, autodock_gpf):
     if not os.path.exists(folder_path):
@@ -62,36 +80,49 @@ def prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, aut
         if 'pdbqt' not in receptor_path:
             subprocess.call(['prepare_receptor4.py', '-r', receptor_path], cwd=folder_path)
 
-        autogrid_config = prepare_autogrid_config(folder_path, receptor_name, autodock_gpf)
-        subprocess.call(['/usr/local/x86_64Linux2/autogrid4', '-p', autogrid_config, '-l', "{}.autogrid.log".format(receptor_name)], cwd=folder_path)
+        autogrid_config_path = prepare_autogrid_config(folder_path, receptor_name, autodock_gpf)
+        subprocess_command = [
+            '/usr/local/x86_64Linux2/autogrid4',
+            '-p', autogrid_config_path,
+            '-l', "{}.autogrid.log".format(receptor_name)
+        ]
+        subprocess.call(subprocess_command, cwd=folder_path)
 
-def convert_dlg_to_pdbqt(folder_path, receptor_name, ligand_name):
+def convert_dlg_to_pdbqt(folder_path, dlg_path, out_path):
+    if logging_level <= logging.DEBUG:
+        with open('{}/{}'.format(folder_path, dlg_path), 'r') as dlg_file:
+            dlg = dlg_file.read()
+            logging.debug('convert_dlg_to_pdbqt: dlg content\n' + dlg)
+
     convert_command = [
-        'cat', '{}-{}.dlg'.format(receptor_name, ligand_name),
+        'cat', dlg_path,
         '|', 'grep', '"^DOCKED: "',
-        '|', 'cut', '-b', '9-', '>', '{}-{}.pdbqt'.format(receptor_name, ligand_name)
+        '|', 'cut', '-b', '9-', '>', out_path
     ]
 
-    return run_process(convert_command, folder_path, True)
+    res = run_process(convert_command, folder_path, True)
+    return res
 
 def get_receptor_name(autodock_gpf):
     pattern = r"receptor\s+(\S+\.pdbqt)"
     match = re.search(pattern, autodock_gpf)
     return match.group(1)[:-6] if match else None
 
-def process_ligand(i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format):
+def process_ligand(i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format, pose_count):
     ligand_name = 'ligand{}'.format(i + 1)
-    returncode, gpu_output, gpu_error = run_docking(receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format, ligand_name)
+    docking_return_code, gpu_output, gpu_error = run_docking(receptor_name, folder_path, autodock_gpf, ligand_data,
+                                                             ligand_format, ligand_name, pose_count)
 
-    if returncode != 0:
+    if docking_return_code != 0:
         return i, {'error': gpu_output if gpu_output != '' else gpu_error}
-    
-    returncode, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, receptor_name, ligand_name)
 
-    if returncode != 0:
+    dlg_path = '{}-{}.dlg'.format(receptor_name, ligand_name)
+    out_path = '{}-{}.pdbqt'.format(receptor_name, ligand_name)
+    grep_return_code, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, dlg_path, out_path)
+    if grep_return_code != 0:
         return i, {'error': grep_output if grep_output != '' else grep_error}
 
-    with open('{}/{}-{}.pdbqt'.format(folder_path, receptor_name, ligand_name), 'r') as result_file:
+    with open('{}/{}'.format(folder_path, out_path), 'r') as result_file:
         result_content = result_file.read()
 
     return i, {'poses': result_content}
@@ -102,9 +133,9 @@ def extract_json_values(json_data):
     ligand_value = json_data.get('ligand', '')
     ligand_format = json_data.get('ligand_format', '')
     autodock_gpf = json_data.get('autodock_gpf', '')
+    pose_count = json_data.get('pose_count', 30)
     debug_mode = request.args.get('debug', False)
-
-    return receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, debug_mode
+    return receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, pose_count, debug_mode
 
 @app.route('/check_opencl', methods=['GET'])
 def check_opencl():
@@ -124,7 +155,8 @@ def dock_ligand():
     raw_data = request.data
     json_data = json.loads(raw_data)
 
-    receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, debug_mode = extract_json_values(json_data)
+    receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, pose_count, debug_mode = \
+        extract_json_values(json_data)
 
     folder_name = calculate_hash(receptor_value + autodock_gpf)
     folder_path = os.path.join(os.getcwd(), folder_name)
@@ -135,26 +167,29 @@ def dock_ligand():
     receptor_path = '{}.{}'.format(receptor_name, receptor_format)
 
     prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, autodock_gpf)
-    returncode, gpu_output, gpu_error = run_docking(receptor_name, folder_path,autodock_gpf, ligand_value, ligand_format, ligand_name)
+    return_code, gpu_output, gpu_error = run_docking(receptor_name, folder_path, autodock_gpf, ligand_value,
+                                                     ligand_format, ligand_name, pose_count)
 
-    if returncode != 0:
+    if return_code != 0:
         error = gpu_output if gpu_output != '' else gpu_error
         response = {
             'error': error
         }
         return jsonify(response)
 
-    returncode, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, receptor_name, ligand_name)
-    if returncode != 0:
+    dlg_path = '{}-{}.dlg'.format(receptor_name, ligand_name)
+    out_path = '{}-{}.pdbqt'.format(receptor_name, ligand_name)
+    grep_return_code, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, dlg_path, out_path)
+    if grep_return_code != 0:
         error = grep_output if grep_output != '' else grep_error
         response = {
             'error': error
         }
         return jsonify(response)
 
-    with open('{}/{}-{}.pdbqt'.format(folder_path, receptor_name, ligand_name), 'r') as result_file:
+    with open('{}/{}'.format(folder_path, out_path), 'r') as result_file:
         result_content = result_file.read()
-    
+
     response = {
         'poses': result_content
     }
@@ -166,15 +201,16 @@ def dock_ligand():
             'grep_output': grep_output,
             'grep_error': grep_error
         }
- 
+
     return jsonify(response)
 
-@app.route('/autodock/dock_list_ligands', methods=['POST'])
+@app.route('/autodock/dock_ligand_list', methods=['POST'])
 def dock_list_ligands():
     raw_data = request.data
     json_data = json.loads(raw_data)
 
-    receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, debug_mode = extract_json_values(json_data)
+    receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, pose_count, debug_mode = extract_json_values(
+        json_data)
 
     folder_name = calculate_hash(receptor_value + autodock_gpf)
     folder_path = os.path.join(os.getcwd(), folder_name)
@@ -185,7 +221,9 @@ def dock_list_ligands():
     result_poses = {}
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_ligand, i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format) for i, ligand_data in enumerate(ligand_value)]
+        futures = [
+            executor.submit(process_ligand, i, receptor_name, folder_path, autodock_gpf, ligand_data, ligand_format, pose_count)
+            for i, ligand_data in enumerate(ligand_value)]
 
         for future in concurrent.futures.as_completed(futures):
             i, result = future.result()

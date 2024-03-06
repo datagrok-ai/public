@@ -17,6 +17,8 @@ on:
       - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'help/deploy/releases/plugins/**'
+      - 'packages/*/CHANGELOG.md'
   pull_request:
     paths:
       - 'help/**/*.md'
@@ -31,6 +33,8 @@ on:
       - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'help/deploy/releases/plugins/**'
+      - 'packages/*/CHANGELOG.md'
 
 jobs:
   common-check:
@@ -57,7 +61,7 @@ jobs:
       - name: Lint-Fix Markdown
         id: check
         run: |
-          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+          markdownlint-cli2 --fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
 #      - name: Commit package-lock.json
@@ -195,14 +199,58 @@ jobs:
           name: docusaurus
           path: docusaurus/build
           retention-days: 7
-
+      - name: 'debug'
+        run: |
+          echo ${{ github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true' }}
+          echo ${{ github.ref }}
+          echo ${{ needs.common-check.outputs.continue }}
+#      - name: Commit plugins.json
+#        id: git
+#        if: github.ref == 'refs/heads/master'
+#        continue-on-error: true
+#        run: |
+#          git config --global user.name 'github-actions[bot]'
+#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+#          git pull
+#          continue=false
+#          if [ -n "$(git status -s help/deploy/releases/plugins/)" ]; then
+#            git add help/deploy/releases/plugins/
+#            skip_ci=""
+#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+#              skip_ci="[skip ci]"
+#            fi
+#            git commit -m "GitHub Actions: Update plugins.json $skip_ci
+#
+#            Workflow ${{ github.workflow }} ${{ github.run_number }}
+#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+#            continue=true
+#          fi
+#          if [[ "${continue}" == "true" ]]; then
+#            count=0
+#            retries=10
+#            until git push; do
+#              exit=$?
+#              wait=$((2 ** count))
+#              count=$((count + 1))
+#              if [ $count -lt "$retries" ]; then
+#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+#                sleep $wait
+#                git pull --rebase
+#              else
+#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+#                exit $exit
+#              fi
+#            done
+#          fi
+#
+#
   deploy:
     name: Deploy
     needs: [ convert, common-check ]
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
+    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-22.04
     environment: Help
     steps:
@@ -259,7 +307,7 @@ jobs:
           header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
       - name: Send to Slack
@@ -300,7 +348,7 @@ jobs:
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
+    if: always() && needs.deploy.result == 'success'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout

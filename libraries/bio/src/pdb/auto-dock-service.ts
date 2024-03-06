@@ -54,19 +54,24 @@ export interface IAutoDockService {
 
   startDockerContainer(timeout?: number): Promise<void>;
 
+  checkOpenCl(): Promise<number>;
+
   /**
    * @param receptor  PDB string of target (receptor) structure
    * @param ligand    PDB or mol structure of the ligand to be docked
    * @param npts      Grid
    */
-  run(
-    receptor: string, ligand: BiostructureData, npts: GridSize, poseCount?: number,
+  dockLigand(receptor: BiostructureData, ligand: BiostructureData, autodockGpf: string, poseCount?: number,
     posColName?: string
-  ): Promise<AutoDockRunResult>;
+  ): Promise<DG.DataFrame>;
+
+  dockLigandColumn(receptor: BiostructureData, ligandCol: DG.Column<string>, autodockGpf: string, poseCount?: number,
+    posColName?: string
+  ): Promise<DG.DataFrame>;
 }
 
 export async function getAutoDockService(): Promise<IAutoDockService> {
-  const packageName: string = 'BiostructureViewer';
+  const packageName: string = 'Docking';
   const funcName: string = 'getAutoDockService';
   const funcList = DG.Func.find({package: packageName, name: funcName});
   if (funcList.length === 0)

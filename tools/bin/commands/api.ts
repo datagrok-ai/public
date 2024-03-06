@@ -15,7 +15,7 @@ function generateQueryWrappers(): void {
   }
 
   const packagePath = path.join(curDir, 'package.json');
-  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+  const _package = JSON.parse(fs.readFileSync(packagePath, {encoding: 'utf-8'}));
 
   const files = walk.sync({
     path: './queries',
@@ -33,7 +33,7 @@ function generateQueryWrappers(): void {
     for (const q of queries) {
       const name = utils.getScriptName(q, utils.commentMap[utils.queryExtension]);
       if (!name) continue;
-      let tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
+      const tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
         .replace('FUNC_NAME', name)
         .replace('FUNC_NAME_LOWERCASE', name)
         .replace('PACKAGE_NAMESPACE', _package.name);
@@ -71,7 +71,7 @@ function generateScriptWrappers(): void {
   }
 
   const packagePath = path.join(curDir, 'package.json');
-  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+  const _package = JSON.parse(fs.readFileSync(packagePath, {encoding: 'utf-8'}));
 
   const files = walk.sync({
     path: './scripts',
@@ -90,7 +90,7 @@ function generateScriptWrappers(): void {
     const name = utils.getScriptName(script, utils.commentMap[extension!]);
     if (!name) continue;
 
-    let tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
+    const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
       .replace('FUNC_NAME', name)
       .replace('FUNC_NAME_LOWERCASE', name)
       .replace('PACKAGE_NAMESPACE', _package.name);

@@ -22,7 +22,8 @@ type HitTriageCampaignAccordeon = {
  * additional campaign fields
  * @return {HitTriageCampaignAccordeon} Object containing root element, promise for the campaign result and cancel
  */
-export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCampaignAccordeon {
+export async function newCampaignAccordeon(template: HitTriageTemplate,
+  dataSourceFunctionsMap: {[key: string]: DG.Func | DG.DataQuery}): Promise<HitTriageCampaignAccordeon> {
   const errorDiv = ui.divText('', {style: {color: 'red'}});
   // handling file input
   let fileDf: DG.DataFrame | null = null;
@@ -45,16 +46,21 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   };
 
   const dfInput = ui.tableInput('Dataframe', null, undefined, onFileChange);
-  onFileChange();
+  await onFileChange();
   const fileInputDiv = ui.div([dfInput, errorDiv]);
+  if (Object.keys(dataSourceFunctionsMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
-  const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
-  // for display purposes we use friendly name of the function
-  const dataSourceFunctionsMap: {[key: string]: DG.Func} = {};
-  dataSourceFunctions.forEach((func) => {
-    dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
-  });
-
+    const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
+    // for display purposes we use friendly name of the function
+    dataSourceFunctions.forEach((func) => {
+      dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
+    });
+    const dataSourceQueries = await grok.dapi.queries.include('params,connection')
+      .filter(`#${C.HitTriageDataSourceTag}`).list();
+    dataSourceQueries.forEach((query) => {
+      dataSourceFunctionsMap[query.friendlyName ?? query.name] = query;
+    });
+  }
   let funcCall: DG.FuncCall | null = null;
   // each data source function can have some parameters like for example number of rows to return
   // whenever user selects a function we create a FuncCall object and get an editor for it
@@ -71,7 +77,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
     Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
   // call the onchange function to create an editor for the first function
-  onDataFunctionChange();
+  await onDataFunctionChange();
   if (template.queryFunctionName)
     dataSourceFunctionInput.root.getElementsByTagName('select').item(0)?.setAttribute('disabled', 'true');
   const functionInputDiv = ui.div([dataSourceFunctionInput, funcEditorDiv]);
@@ -137,6 +143,5 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     const _cancelButton = ui.button(C.i18n.cancel, () => resolve());
     //buttonsDiv.appendChild(cancelButton);
   });
-
   return {promise, root: form, cancelPromise};
 }

@@ -37,7 +37,7 @@ category('pdbGridCellRenderer', () => {
       {gridCol: molGridCol});
 
     await delay(0);
-    await testEvent(back.renderComplete, () => {}, () => {
+    await testEvent(back.onRendered, () => {}, () => {
       grid.invalidate();
     }, 20000 /* prev tests cause timeouts on NGL. "Too many active WebGL contexts" */);
   });

@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as ngl from 'NGL';
+
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 
 import {awaitNgl} from '../viewers/ngl-viewer-utils';

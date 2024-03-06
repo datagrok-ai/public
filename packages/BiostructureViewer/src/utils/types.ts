@@ -4,6 +4,8 @@ import * as ui from 'datagrok-api/ui';
 
 import {Observable} from 'rxjs';
 
-export interface IPdbGridCellRenderer {
-  get renderComplete(): Observable<void>;
+import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
+
+export interface IPdbGridCellRenderer extends IRenderer {
+  get onClicked(): Observable<void>;
 }

@@ -45,6 +45,7 @@ jobs:
             echo "Package $name version ${current_version} already published"
             echo "::notice title=${name}::Version ${current_version} is already published"
           else
+            echo "NPM response for ${current_version}: $npm_version"
             if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
               changed_version='true'
               job_name="Build and publish to NPM"
@@ -169,10 +170,12 @@ jobs:
         id: datagrok-stand
         env:
           DATAGROK_VERSION: 'bleeding-edge'
+          GROK_SPAWNER_VERSION: 'bleeding-edge'
+          GROK_CONNECT_VERSION: 'bleeding-edge'
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          profiles='--profile datagrok --profile db --profile grok_connect'
+          profiles='--profile datagrok --profile db --profile grok_connect --profile grok_spawner'
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "docker/localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
@@ -202,12 +205,36 @@ jobs:
       - name: Install ApiTests dependencies
         run: npm install
         working-directory: ./packages/ApiTests
+      - name: Build ApiTests
+        run: npm run build
+        working-directory: ./packages/ApiTests
+      - name: Publish ApiTests
+        run: grok publish ${HOST}
+        working-directory: ./packages/ApiTests
+
+      - name: Wait for published docker to become available
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "docker ps" 'ApiTests'
+          do
+            sleep 1
+            echo -e "\nContainer for ApiTests did not start yet..."
+            docker ps -a
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+            echo -e "\nRetrying..."
+          done
+
+          echo -e "\nGet admin session token...\n"
+          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+          echo -e "\nGet ALL containers from datlas API...\n"
+          curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+
       - name: Run ApiTests
         continue-on-error: true
         timeout-minutes: 15
         id: test-ApiTests
         run: |
-          test_result=$(npm run test -- --record --csv | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
+          test_result=$(npm run test -- --record --csv --skip-build --skip-publish | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
           if [ -z "$test_result" ]; then
             echo "All tests finished successfully"
           else
@@ -273,9 +300,12 @@ jobs:
           
           header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
+          if [ -z "$SLACK_MESSAGE_BODY" ]; then
+            SLACK_MESSAGE_BODY='Test results are empty. Probably it was caused by timeout. Check the job output for more information'
+          fi
           echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
 
       - name: Send test report to Slack

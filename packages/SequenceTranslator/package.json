@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.2.4",
+  "version": "1.2.8",
   "author": {
     "name": "Alexey Choposky",
     "email": "achopovsky@datagrok.ai"
@@ -19,7 +19,7 @@
     "@datagrok-libraries/utils": "^1.17.2",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.15.2",
+    "datagrok-api": "^1.17.4",
     "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",
     "ts-loader": "^9.3.1",

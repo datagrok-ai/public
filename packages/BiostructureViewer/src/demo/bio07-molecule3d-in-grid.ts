@@ -19,7 +19,23 @@ export async function demoBio07NoScript(): Promise<void> {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProperties = false;
 
-    const df = await _package.files.readCsv(pdbCsvFn);
+    let csv: string;
+    let df: DG.DataFrame;
+    try {
+      csv = await _package.files.readAsText(pdbCsvFn);
+      if (!csv)
+        throw new Error('Data file is empty.');
+      df = DG.DataFrame.fromCsv(csv);
+    } catch (err: any) {
+      grok.shell.warning(`Error reading file '${pdbCsvFn}': ${err.toString()}`);
+      // fallback on empty data
+      const idCol = DG.Column.fromStrings('id', []);
+      const pdbIdCol = DG.Column.fromStrings('pdb_id', []);
+      const pdbCol = DG.Column.fromStrings('pdb', []);
+      pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
+      df = DG.DataFrame.fromColumns([idCol, pdbIdCol, pdbCol]);
+    }
+
     const view = grok.shell.addTableView(df);
     view.grid.columns.byName('id')!.width = 0;
 
@@ -38,7 +54,7 @@ export async function demoBio07NoScript(): Promise<void> {
       grok.shell.windows.help.showHelp(viewer.helpUrl);
     }
 
-    await Promise.all([awaitGrid(view.grid), viewer.viewPromise]);
+    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
   } finally {
     pi.close();
   }

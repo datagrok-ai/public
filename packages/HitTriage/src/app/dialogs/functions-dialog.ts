@@ -5,23 +5,35 @@ import $ from 'cash-dom';
 import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree,
   HitTriageTemplate, HitTriageTemplateFunction, HitTriageTemplateScript} from '../types';
 import '../../../css/hit-triage.css';
-import {HTScriptPrefix, HitTriageComputeFunctionTag} from '../consts';
+import {HTQueryPrefix, HTScriptPrefix} from '../consts';
+import {HitAppBase} from '../hit-app-base';
 
-export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
+export async function chemFunctionsDialog(app: HitAppBase<any>,
+  onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
   template: Omit<HitTriageTemplate, 'dataSourceType'>, dialog?: boolean,
 ): Promise<IChemFunctionsDialogResult> {
   // if compute is in dialog form, we need to show all the functions
-  const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
+  const computeFunctions = await app.computeFunctions;
+  const functions = computeFunctions.functions
     .filter(({inputs: i}) => i.length > 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
       template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
 
   //const scripts = (await DG.Script.findAll({tags: [HitTriageComputeFunctionTag]})).filter((s) => s.type === 'script')
-  const scripts: HitTriageTemplateScript[] =
-  (await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list())
-    .filter(({inputs: i}) => i.length > 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
+  const scripts: HitTriageTemplateScript[] = computeFunctions.scripts
+    .filter(({inputs: i}) => i.length >= 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((s) => ({name: s.name, id: s.id, args: template?.compute?.scripts?.find((ts) => ts.id === s.id)?.args ?? {}}));
 
+  const queries: HitTriageTemplateScript[] = computeFunctions.queries
+    .filter((q) => q.inputs.length > 0 && q.inputs[0].propertyType === 'list')// for now only lists...
+    .map((q) => {
+      return {
+        name: q.friendlyName ?? q.name,
+        id: q.id,
+        args: template?.compute?.queries?.find((ts) => ts.id === q.id)?.args ?? {},
+      };
+    })
+    ;
 
   const useDescriptors = !!template?.compute?.descriptors?.enabled || dialog;
 
@@ -62,26 +74,31 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
     !!template?.compute?.descriptors?.enabled && template?.compute?.descriptors?.args?.length > 0;
   // handling package functions
   for (const func of functions) {
-    const f = DG.Func.find({package: func.package, name: func.name})[0];
-    const funcCall = f.prepare(func.args);
-    const keyName = `${func.package}:${func.name}`;
-    funcInputsMap[keyName] = funcCall;
-    const editor = ui.div();
-    const inputs = await funcCall.buildEditor(editor, {condensed: false});
-    editor.classList.add('oy-scroll');
-    editor.style.marginLeft = '15px';
-    tabControlArgs[f.friendlyName ?? f.name] = editor;
-    funcNamesMap[f.friendlyName ?? f.name] = keyName;
-    calculatedFunctions[keyName] = template?.compute?.functions?.some(
-      (f) => f.name === func.name && f.package === func.package,
-    ) ?? false;
-    (editor.children[0] as HTMLElement).style.display = 'none'; // table input
-    (editor.children[1] as HTMLElement).style.display = 'none'; // column input
-    inputs.forEach((input) => {
-      if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
-        input.value = func.args[input.property.name];
-      input.fireChanged();
-    });
+    try {
+      const f = DG.Func.find({package: func.package, name: func.name})[0];
+      const funcCall = f.prepare(func.args);
+      const keyName = `${func.package}:${func.name}`;
+      funcInputsMap[keyName] = funcCall;
+      const editor = ui.div();
+      const inputs = await funcCall.buildEditor(editor, {condensed: false});
+      editor.classList.add('oy-scroll');
+      editor.style.marginLeft = '15px';
+      tabControlArgs[f.friendlyName ?? f.name] = editor;
+      funcNamesMap[f.friendlyName ?? f.name] = keyName;
+      calculatedFunctions[keyName] = template?.compute?.functions?.some(
+        (f) => f.name === func.name && f.package === func.package,
+      ) ?? false;
+      (editor.children[0] as HTMLElement).style.display = 'none'; // table input
+      (editor.children[1] as HTMLElement).style.display = 'none'; // column input
+      inputs.forEach((input) => {
+        if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
+          input.value = func.args[input.property.name];
+        input.fireChanged();
+      });
+    } catch (e) {
+      console.error(e);
+      continue;
+    }
   }
 
   // handling scripts
@@ -113,7 +130,38 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
     }
   }
 
+  // handling queries
+  for (const query of queries) {
+    try {
+      const f = await grok.dapi.queries.find(query.id);
+      const funcCall = f.prepare(query.args);
+      const keyName = `${HTQueryPrefix}:${query.name ?? ''}:${query.id}`;
+      funcInputsMap[keyName] = funcCall;
+      const editor = ui.div();
+      const inputs = await funcCall.buildEditor(editor, {condensed: false});
+      editor.classList.add('oy-scroll');
+      editor.style.marginLeft = '15px';
+      tabControlArgs[f.friendlyName ?? f.name] = editor;
+      funcNamesMap[f.friendlyName ?? f.name] = keyName;
+      calculatedFunctions[keyName] = template?.compute?.queries?.some(
+        (s) => s.id === query.id,
+      ) ?? false;
+      (editor.children[0] as HTMLElement).style.display = 'none'; // list of molecules input
+      inputs.forEach((input) => {
+        if (input.property?.name && Object.keys(query.args).includes(input.property?.name))
+          input.value = query.args[input.property.name];
+        input.fireChanged();
+      });
+    } catch (e) {
+      console.error(e);
+      continue;
+    }
+  }
+
   const tc = ui.tabControl(tabControlArgs, true);
+  tc.header.style.overflow = 'scroll';
+  tc.root.style.width = '100%';
+  tc.root.style.minWidth = '350px';
   host.appendChild(tc.root);
   // add checkboxes to each hader
   tc.panes.forEach((pane)=> {
@@ -129,12 +177,12 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
     pane.header.classList.add('hit-triage-compute-dialog-pane-header');
   });
   function onOkProxy() {
-    const res: IComputeDialogResult = {descriptors: [], externals: {}, scripts: {}};
-    res.descriptors =calculatedFunctions[descriptorsName] ?
+    const res: IComputeDialogResult = {descriptors: [], externals: {}, scripts: {}, queries: {}};
+    res.descriptors = calculatedFunctions[descriptorsName] ?
       descriptorItems.filter((i) => i.checked).map((i) => i.value.name) : [];
     const filteredFuncs = Object.entries(funcInputsMap).filter(([name, _]) => calculatedFunctions[name]);
     // handling package functions
-    filteredFuncs.filter(([name, _]) => !name.startsWith(HTScriptPrefix))
+    filteredFuncs.filter(([name, _]) => !name.startsWith(HTScriptPrefix) && !name.startsWith(HTQueryPrefix))
       .forEach(([name, value]) => {
         res.externals[name] = {};
         const inputs = value.inputs;
@@ -149,6 +197,15 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
         const inputs = value.inputs;
         Object.entries(inputs).slice(2).forEach(([inputName, inputVal]) => {
           res.scripts![name][inputName] = inputVal;
+        });
+      });
+    // handling queries
+    filteredFuncs.filter(([name, _]) => name.startsWith(HTQueryPrefix))
+      .forEach(([name, value]) => {
+        res.queries![name] = {};
+        const inputs = value.inputs;
+        Object.entries(inputs).slice(1).forEach(([inputName, inputVal]) => {
+          res.queries![name][inputName] = inputVal;
         });
       });
     console.log(res);

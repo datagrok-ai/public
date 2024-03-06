@@ -2,29 +2,29 @@
 
 ## Tabular formats
 
-| Extension  | Description                                      | Source |
-|------------|--------------------------------------------------|--------|
-| .txt       | Plain text                                       | Core   |
-| .csv       | Comma-separated values                           | Core   |
-| .tsv       | Tab-separated values                             | Core   |
-| .xml       | Extensible Markup Language                       | Core   |
-| .json      | JavaScript Object Notation                       | Core   |
-| .HTML      | HyperText Markup Language                        | Core   |
-| .xlsx      | Excel                                            | Core   |
-| .edf       | European Data Format                             | Core   |
-| .sas7bdat  | SAS database file                                | Core   |
-| .kml, .kmz | Keyhole Markup Language (geographic annotations) | [GIS]  |
-| .kxl       | KeyCreator eXtensible Language                   | Core   | <!--check!!!-->
-| .rds, .rda | R Data Format                                    | Core   |
-| .h5        | Hierarchical Data Format                         | Core   |
-| .nc        | NetCDF                                           | Core   |
-| .mat       | MATLAB MAT                                       | Core   |
-| .d42       | Datagrok [project](../../collaborate/project.md) | Core   |
-| .zip       | ZIP archive (for supported types)                | Core   |
-| .gz, .gzip | gzip                                             | Core   |
-| .tar       | Tape archive                                     | Core   |
-| .ipynb     | Jupyter Notebook                                 | Core   |
-| netCDF     | network Common Data Form                         | Core   | <!--check!!!-->
+| Extension  | Description                                      | Source                 |
+|------------|--------------------------------------------------|------------------------|
+| .txt       | Plain text                                       | Core                   |
+| .csv       | Comma-separated values                           | Core                   |
+| .tsv       | Tab-separated values                             | Core                   |
+| .xml       | Extensible Markup Language                       | Core                   |
+| .json      | JavaScript Object Notation                       | Core                   |
+| .HTML      | HyperText Markup Language                        | Core                   |
+| .xlsx      | Excel                                            | Core                   |
+| .edf       | European Data Format                             | Core                   |
+| .sas7bdat  | SAS database file                                | Core                   |
+| .kml, .kmz | Keyhole Markup Language (geographic annotations) | [GIS]                  |
+| .kxl       | KeyCreator eXtensible Language                   | Core   <!--check!!!--> |
+| .rds, .rda | R Data Format                                    | Core                   |
+| .h5        | Hierarchical Data Format                         | Core                   |
+| .nc        | NetCDF                                           | Core                   |
+| .mat       | MATLAB MAT                                       | Core                   |
+| .d42       | Datagrok [project](../../collaborate/project.md) | Core                   |
+| .zip       | ZIP archive (for supported types)                | Core                   |
+| .gz, .gzip | gzip                                             | Core                   |
+| .tar       | Tape archive                                     | Core                   |
+| .ipynb     | Jupyter Notebook                                 | Core                   |
+| netCDF     | network Common Data Form                         | Core  <!--check!!!-->  |
 
 ## Molecule structure formats
 

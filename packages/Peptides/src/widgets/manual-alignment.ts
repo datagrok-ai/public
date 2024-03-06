@@ -5,32 +5,39 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import '../styles.css';
 import {PeptidesModel} from '../model';
-import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
-/** Manual sequence alignment widget.
- * @param {DG.Column} alignedSequenceCol Aligned sequence column
- * @param {DG.DataFrame} currentDf Working table
- * @return {DG.Widget} Widget for manual sequence alignment */
+/**
+ * Allows to edit sequence and apply changes to the table and analysis.
+ * @param alignedSequenceCol Aligned sequence column
+ * @param currentDf Working table
+ * @return Widget for manual sequence alignment
+ */
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, currentDf: DG.DataFrame): DG.Widget {
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx)!);
   $(sequenceInput.root).addClass('pep-textinput');
 
   const applyChangesBtn = ui.button('Apply', async () => {
+    const uh = UnitsHandler.getOrCreate(alignedSequenceCol);
     const newSequence = sequenceInput.value;
+    const splitter = uh.getSplitter();
+    const splitSequence = splitter(newSequence);
     const affectedRowIndex = currentDf.currentRowIdx;
-    const splitSequence = splitAlignedSequences(DG.Column.fromStrings('splitSequence', [newSequence]));
-
     alignedSequenceCol.set(affectedRowIndex, newSequence);
-    for (const part of splitSequence.columns) {
-      if (currentDf.col(part.name) !== null)
-        currentDf.set(part.name, affectedRowIndex, part.get(0));
+    for (let i = 0; i < splitSequence.length; i++) {
+      const part = splitSequence[i];
+      if (currentDf.col(i.toString()) !== null)
+        currentDf.set(i.toString(), affectedRowIndex, part);
     }
     const temp = grok.shell.o;
     grok.shell.o = null;
-    grok.shell.o = temp;
 
     const peptidesController = PeptidesModel.getInstance(currentDf);
     peptidesController.updateGrid();
+
+    setTimeout(() => {
+      grok.shell.o = temp;
+    }, 100);
   }, 'Apply changes');
 
   const resetBtn = ui.button(ui.iconFA('redo'),

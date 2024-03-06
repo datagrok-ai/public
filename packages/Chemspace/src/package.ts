@@ -86,6 +86,8 @@ export async function app(): Promise<void> {
 //output: widget result
 //condition: true
 export async function samplesPanel(smiles: string): Promise<DG.Widget> {
+  if (DG.chem.isMolBlock(smiles))
+    smiles = DG.chem.convert(smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles)
   await getApiToken();
   const acc = ui.accordion();
   const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};

@@ -42,6 +42,8 @@ export class InputType {
 
   static Text = 'Text';
 
+  static Search = 'Search';
+
   static Date = 'Date';
 
   static Map = 'Map';
@@ -118,6 +120,8 @@ export class GridCellStyleEx {
   set imageScale(x: number) {api.grok_GridCellStyle_Set_imageScale(this.dart, toDart(x)); }
   get opacity(): number { return api.grok_GridCellStyle_Get_opacity(this.dart); };
   set opacity(x: number) {api.grok_GridCellStyle_Set_opacity(this.dart, toDart(x)); }
+  get clip(): boolean { return api.grok_GridCellStyle_Get_clip(this.dart); };
+  set clip(x: boolean) {api.grok_GridCellStyle_Set_clip(this.dart, toDart(x)); }
   /// For 'html' cell types only
   get element(): any { return api.grok_GridCellStyle_Get_element(this.dart); };
   set element(x: any) {api.grok_GridCellStyle_Set_element(this.dart, toDart(x)); }

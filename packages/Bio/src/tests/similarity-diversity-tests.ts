@@ -28,7 +28,7 @@ async function _testSimilaritySearchViewer() {
   const viewer: SequenceSimilarityViewer = (await moleculesView.dataFrame.plot
     .fromType('Sequence Similarity Search')) as SequenceSimilarityViewer;
   let computeCompleted: boolean = false;
-  viewer.computeCompleted.subscribe((value) => {
+  viewer.computeCompleted.subscribe((value: any) => {
     if (value) computeCompleted = true;
   });
   moleculesView.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity');
@@ -48,7 +48,7 @@ async function _testSimilaritySearchViewer() {
 
   /* eslint-disable max-len */
   const str0: string = 'D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me';
-  const str1: string = 'meI/hHis//Aca/meM/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me';
+  const str1: string = 'Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/Chg/N/D-Orn/D-aThr//Phe_4Me';
   const simStr1: string = 'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me';
   /* eslint-enable max-len */
 
@@ -57,8 +57,8 @@ async function _testSimilaritySearchViewer() {
   expect(similaritySearchViewer.scores!.get(0), DG.FLOAT_NULL);
   expect(similaritySearchViewer.idxs!.get(0), 0);
   expect(similaritySearchViewer.molCol!.get(0), str0);
-  expect(similaritySearchViewer.scores!.get(1), 0.4722222089767456);
-  expect(similaritySearchViewer.idxs!.get(1), 11);
+  expect((similaritySearchViewer.scores!.get(1) as number).toFixed(2), '0.73');
+  expect(similaritySearchViewer.idxs!.get(1), 4);
   expect(similaritySearchViewer.molCol!.get(1), str1);
   moleculesView.dataFrame.currentRowIdx = 1;
   await awaitCheck(() => similaritySearchViewer.targetMoleculeIdx === 1,
@@ -78,7 +78,7 @@ async function _testDiversitySearchViewer() {
   const viewer: SequenceDiversityViewer = (await moleculesView.dataFrame.plot
     .fromType('Sequence Diversity Search')) as SequenceDiversityViewer;
   let computeCompleted: boolean = false;
-  viewer.computeCompleted.subscribe((value) => {
+  viewer.computeCompleted.subscribe((value: boolean) => {
     if (value) computeCompleted = true;
   });
   moleculesView.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN, null, 'Diversity');

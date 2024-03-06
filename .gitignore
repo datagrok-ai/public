@@ -18,6 +18,7 @@ upload.keys.json
 test-report.html
 test-record.mp4
 test-report.csv
+test-console-output.log
 
 # Build results
 dist/
@@ -66,7 +67,6 @@ pubspec.lock
 docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
-test-console-output.log
 
 .terraform
 
@@ -74,3 +74,13 @@ test-console-output.log
 .lh
 
 _lint-check-report.md
+
+
+help/deploy/releases/plugins/*.md
+help/deploy/releases/plugins/plugins.json
+!help/deploy/releases/plugins/_category_.yml
+!help/deploy/releases/plugins/_plugins.md
+!help/deploy/releases/plugins/plugins.mdx
+!help/deploy/releases/plugins/TableFromJson.js
+
+tools/.cache/

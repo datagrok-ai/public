@@ -72,6 +72,8 @@ export async function getCallTime(call: DG.FuncCall): Promise<number> {
 
 async function getDataQueryTime(dataQueryName: string): Promise<number> {
   const startTime = Date.now();
-  await grok.functions.eval('Dbtests:' + dataQueryName);
+  const func: DG.Func = await grok.functions.eval('Dbtests:' + dataQueryName);
+  const call: DG.FuncCall = func.prepare();
+  await call.call();
   return Date.now() - startTime;
 }

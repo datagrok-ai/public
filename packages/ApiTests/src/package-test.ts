@@ -67,7 +67,7 @@ export async function test(category: string, test: string, testContext: TestCont
 //top-menu: Tools | Dev | Test | Platform
 export async function testPlatform(): Promise<DG.DataFrame> {
   const skip = ['Benchmarks', 'Packages: Docker', 'Functions: Client-side cache'];
-  const data = await runTests({}, skip);
+  const data = await runTests({exclude: skip});
   return DG.DataFrame.fromObjects(data)!;
 }
 

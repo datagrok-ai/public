@@ -22,6 +22,7 @@ jobs:
     name: Check version was changed
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
+      version: ${{ steps.check-version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -37,9 +38,8 @@ jobs:
           else
             changed_version='true'
           fi
-          echo '::echo::on'
-          echo "::set-output name=changed_version::${changed_version}"
-          echo '::echo::off'
+          echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
+          echo "version=${current_version}" >> $GITHUB_OUTPUT
 
   build:
     name: Build and publish to npm
@@ -62,10 +62,59 @@ jobs:
       - run: npm install
         working-directory: ./tools
       - run: npm publish
+        id: publish
         working-directory: ./tools
         if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Prepare Slack Message
+        working-directory: ./tools
+        if: ${{ steps.publish.outcome == 'success' }}
+        id: slack-prepare
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          header="*datagrok-tools* version *${{ needs.check.outputs.version }}* published to <https://www.npmjs.com/package/$(jq -r .name package.json)/v/${{ needs.check.outputs.version }}|NPM>"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-prepare.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'

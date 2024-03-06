@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm
+  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -699,13 +699,52 @@ export function tree(): TreeViewGroup {
 }
 
 
-export interface IInputInitOptions {
-  onCreated?: (input: InputBase) => void;
-  onValueChanged?: (input: InputBase) => void;
-}
-
-
+// TODO: create a new file - inputs.ts for these inputs
 export namespace input {
+  // TODO: add label here
+  interface IInputInitOptions<T = any> {
+    value?: T;
+    property?: Property;
+    elementOptions?: ElementOptions;
+    onCreated?: (input: InputBase<T>) => void;
+    onValueChanged?: (input: InputBase<T>) => void;
+  }
+
+  interface ITextBoxInputInitOptions<T> extends IInputInitOptions<T> {
+    clearIcon?: boolean;
+    escClears?: boolean;
+    placeholder?: string;
+  }
+
+  interface INumberInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    min?: number;
+    max?: number;
+    step?: number;
+  }
+
+  interface IChoiceInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    items?: T[];
+    nullable?: boolean;
+  }
+
+  interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
+    value?: T[];
+  }
+
+  interface IStringInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    icon?: string | HTMLElement;
+    // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
+  }
+
+  interface IColumnInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    table?: DataFrame;
+    filter?: Function;
+  }
+
+  interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
+    available?: string[];
+    checked?: string[];
+  }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
   export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
@@ -730,10 +769,6 @@ export namespace input {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
-  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
-    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
-  }
-
   export function userGroups(name: string, value?: User[], onValueChanged: Function | null = null): InputBase<User[]> {
     const i = forInputType(d4.InputType.UserGroups);
     if (value)
@@ -741,27 +776,87 @@ export namespace input {
     return i;
   }
 
-  // export function bySemType(semType: string) {
-  //
+  function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
+    const input = forInputType(type);
+    input.caption = name;
+    // go through properties and set them
+    _options(input.root, options?.elementOptions);
+    return input;
+  }
+
+  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Int, name, options);
+  }
+
+  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Slider, name, options);
+  }
+
+  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T> {
+    return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
+  }
+
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[]> {
+    return _create(d4.InputType.MultiChoice, name, options);
+  }
+
+  export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Text, name, options);
+  }
+
+  export function search(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Search, name, options);
+  }
+
+  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+    return _create(d4.InputType.Float, name, options);
+  }
+
+  export function date(name: string, options?: ITextBoxInputInitOptions<dayjs.Dayjs>): DateInput {
+    return _create(d4.InputType.Date, name, options);
+  }
+
+  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+    return _create(d4.InputType.Bool, name, options);
+  }
+
+  // do we need this?
+  export function toggle(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+    return _create(d4.InputType.Switch, name, options);
+  }
+
+  export function molecule(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Molecule, name, options);
+  }
+
+  // export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+    // const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
+    // return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
   // }
 
-  // function _options(inputBase: InputBase, options?: InputOptions) {
-  //   if (options == null)
-  //     return;
-  //   return inputBase;
-  // }
-  //
-  // export function int(name: string, options?: InputOptions) {
-  //   return _options(intInput(name, options?.value, options?.onValueChanged));
-  // }
-  //
-  // export function choice(name: string, choices: string[], options?: InputOptions) {
-  //   return _options(choiceInput(name, options?.value ?? choices[0], choices, options?.onValueChanged));
-  // }
-  //
-  // export function multiChoice(name: string, options?: InputOptions) {
-  //
-  // }
+  export function columns(name: string, options?: IColumnsInputInitOptions<Column[]>): InputBase<Column[]> {
+    return _create(d4.InputType.Columns, name, options);
+  }
+
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame[]>): InputBase<DataFrame> {
+    return _create(d4.InputType.Table, name, options);
+  }
+
+  export function textArea(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.TextArea, name, options);
+  }
+
+  export function color(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Color, name, options);
+  }
+
+  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Radio, name, options);
+  }
+
+  export function code(name: string, options?: CodeConfig): CodeInput {
+    return new CodeInput(name, options);
+  }
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
@@ -887,6 +982,10 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
 /** UI Tools **/
 export class tools {
+  private static mutationObserver: MutationObserver | null = null;
+  private static mutationObserverElements: {
+    element: HTMLElement, resolveF: (element: HTMLElement) => void, timestamp: number
+  }[] = [];
 
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
     let width = element.clientWidth;
@@ -925,52 +1024,470 @@ export class tools {
   static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
     if (_isDartium()) {
       return new Promise(resolve => {
-        setInterval(function() {
-          if (document.contains(element))
+        const intervalId = setInterval(function() {
+          if (document.contains(element)) {
+            clearInterval(intervalId);
             return resolve(element);
+          }
         }, 100);
       });
     }
 
+    tools.mutationObserver ??=  new MutationObserver((_) => {
+      tools.mutationObserverElements.forEach((item, index) => {
+        if (document.contains(item.element)) {
+          item.resolveF(item.element);
+          tools.mutationObserverElements.splice(index, 1);
+        }
+      })
+    });
+    tools.mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+    
     return new Promise(resolve => {
       if (document.contains(element))
         return resolve(element);
-
-      const observer = new MutationObserver(_ => {
-        if (document.contains(element)) {
-          resolve(element);
-          observer.disconnect();
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      tools.mutationObserverElements.push({element: element, resolveF: resolve, timestamp: Date.now()});
     });
   }
 
-  static resizeFormLabels(element: HTMLElement): void {
-    this.waitForElementInDom(element).then((form)=>{
-      if(!form.classList.contains('ui-form-condensed')) {
-        form.classList.remove('ui-form');
-        let labels: number[] = [];
-        let formLabels = $(form).find('label.ui-input-label');
-        
-        formLabels.each((i)=>{
-            let renderWidth = formLabels[i]!.getBoundingClientRect().width;
-            labels.push(renderWidth);
-        });
-        
-        formLabels.each((i)=>{
-          let label = formLabels[i] as HTMLElement;
-          label.style.minWidth = String(Math.min(...labels))+'px';
-          label.style.maxWidth = String(Math.max(...labels))+'px';
-        });
+  static async resizeFormLabels(element: HTMLElement): Promise<void> {
+    if (this.skipResizing(element)) return;
+    
+    //Default form width
+    let minFormWidth = 150;
+    let maxFormWidth = 450;
 
-        form.classList.add('ui-form')
+    //Min input width and padding
+    const minInputWidth = 58;
+    const minInputPadding = 28;
+
+    const tempForm = this.createTempForm(element, minFormWidth, maxFormWidth);
+
+    const selectors = [
+      'div.ui-input-root:not(.ui-input-buttons) > label.ui-input-label:not(:empty',
+      'div.ui-input-root:not(.ui-input-buttons) > .ui-input-editor, div.ui-input-root:not(.ui-input-buttons) > .d4-table.d4-item-table',
+      'div.ui-input-root:not(.ui-input-buttons) > .ui-input-options'
+    ];
+    const labels = this.calculateWidths(tempForm, selectors[0], 'data-label', minInputWidth, minInputPadding);
+    const inputs = this.calculateWidths(tempForm, selectors[1], 'data-input', minInputWidth, minInputPadding);
+    const options = this.calculateWidths(tempForm, selectors[2], 'data-options', minInputWidth, minInputPadding);
+
+    this.applyStyles(tempForm, labels, inputs, options, minInputWidth);
+    this.copyAttributesToForm(element, tempForm, labels);
+    this.adjustButtonContainer(element);
+    this.adjustDialogForm(element, tempForm);
+    this.handleFormResize(element, labels, minInputWidth);
+
+    tempForm.remove();
+  }
+
+  private static createInputRows (tempForm: HTMLElement) {
+
+    Array.from(tempForm.children).forEach((item, index) => {
+      if(!item.hasAttribute('data-align')) return;
+      if (item.getAttribute('data-align') != 'row') return;
+
+      let root = document.createElement('div');
+      root.className = 'ui-input-root ui-input-row';
+
+      let label = document.createElement('label');
+      label.className = 'ui-input-label ui-label';
+
+      let editor = document.createElement('div');
+      editor.className = 'ui-input-editor ui-input-row';
+
+    });
+  }
+
+  private static createTempForm(element: HTMLElement, minFormWidth:number, maxFormWidth:number): HTMLElement {
+    const tempForm = element.cloneNode(true) as HTMLElement;
+    document.body.append(tempForm);
+    tempForm.className = 'ui-form';
+    tempForm.setAttribute('data-min-width', String(minFormWidth));
+    tempForm.setAttribute('data-max-width', String(maxFormWidth));
+    tempForm.setAttribute('data-type','form');
+
+    this.createInputRows(element);
+    return tempForm;
+  }
+
+  private static skipResizing(element: HTMLElement): boolean {
+    return element.hasAttribute('data-type') || element.children.length == 0 || element.classList.contains('ui-form-condensed') || element.classList.contains('ui-form-wide');
+  }
+
+  private static calculateWidths(tempForm: HTMLElement, selector: string, attribute: string, minInputWidth: number, minInputPadding:number): number[] {
+    const width: number[] = [];
+    const elements = $(tempForm).find(selector);
+
+    elements.each((i) => {
+      let renderWidth = minInputWidth;
+      let element = elements[i] as HTMLElement;
+      let value = document.createElement('span');
+      value.style.visibility = 'hidden';
+      value.style.position = 'fixed';
+      value.style.padding = '0';
+      value.style.margin = '0';
+      tempForm.append(value);
+
+      // Calculate width for field labels
+      if (attribute == 'data-label') {
+        value.textContent = element.textContent;
+        renderWidth = Math.ceil(value.getBoundingClientRect().width);
+        element.parentElement?.setAttribute(attribute, String(renderWidth));
+      }
+
+      // Calculate width for field options
+      if (attribute == 'data-options') {
+        renderWidth = Math.ceil(element.getBoundingClientRect().width);
+        element.parentElement?.setAttribute(attribute, String(renderWidth));
+      }
+
+      // Calculate width for field inputs
+      if (attribute == 'data-input') {
+
+        // Calculate value width
+        if (element.tagName == 'INPUT' || element.tagName == 'SELECT') {
+          let temp = element as HTMLInputElement;
+          value.textContent = temp.value != undefined ? temp.value : '';
+          renderWidth = Math.ceil(value.getBoundingClientRect().width);
+        }
+
+        // Get table container width
+        if (element.tagName == 'TABLE') {
+          renderWidth = Math.ceil(element.getBoundingClientRect().width);
+        }
+
+        // Get textarea container width
+        if (element.tagName == 'TEXTAREA') {
+          let temp = element as HTMLInputElement;
+          value.textContent = temp.value != undefined ? temp.value : '';
+          renderWidth = Math.ceil(value.getBoundingClientRect().width);
+          if (renderWidth < 120)
+            renderWidth = 120
+          else if (renderWidth > 250) {
+            //IF form has other elements exept textarea limit width to 250px (222+28)
+            //Else expand to 400px (372+28)
+            //28 is input paddings
+            if ($(tempForm).find('.ui-input-editor:not(textarea, .ui-buttons-editor)').length != 0)
+              renderWidth = 222
+            else
+              renderWidth = 372
+          }
+        }
+
+        // Get text content width
+        if (element.tagName == 'DIV') {
+          // If Multi-choice or radio button - get container width
+          if (element.parentElement?.classList.contains('ui-input-radio') || element.parentElement?.classList.contains('ui-input-multi-choice')) {
+            renderWidth = Math.ceil(element.getBoundingClientRect().width)-minInputPadding;
+          } else {
+            value.textContent = element.textContent;
+            renderWidth = Math.ceil(value.getBoundingClientRect().width);
+          }
+        }
+
+        // Set canvas min width
+        if ($(element).has('canvas').length != 0) { renderWidth = 100; }
+
+        //Check if calculated width not smaller than minimun input width
+        renderWidth+minInputPadding < minInputWidth ? renderWidth = minInputWidth : renderWidth = renderWidth+minInputPadding;
+        element.parentElement?.setAttribute(attribute, String(renderWidth));
+      }
+
+      width.push(renderWidth);
+      value.remove();
+    });
+
+    return width;
+  }
+
+  private static applyStyles(tempForm: HTMLElement, labels: number[], inputs: number[], options: number[], minInputWidth:number) {
+    
+    //Set the min and max width to input label element
+    Array.from(tempForm.children).forEach((element) => {
+      let label = element.querySelector('label.ui-input-label') as HTMLElement;
+      
+      if (label == null) return;
+
+      label.style.minWidth = String(Math.min(...labels))+'px';;
+      label.style.maxWidth = String(Math.max(...labels))+'px';
+      label.style.width = '100%';
+
+    });
+
+    //Set the min and max width to input-root element
+    Array.from(tempForm.children).forEach((item, index) => {
+      let element = item as HTMLElement;
+
+      if (!item.classList.contains('ui-input-root')) return;
+
+      //Get the max width;
+      let maxLabelWidth = labels.length > 0 ? Math.max(...labels) : 0;
+      let maxInputWidth = inputs.length > 0 ? Math.max(...inputs) : 0;
+      let maxOptionsWidth = options.length > 0 ? Math.max(...options) : 0;
+      
+      //Max and min form width + 8px label margin
+      let maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8;
+      let minFormWidth = maxLabelWidth + minInputWidth + 8;
+
+      element.style.width = '100%';
+      element.style.maxWidth = String(maxFormWidth)+'px';
+
+      //Update the max form width attribute
+      tempForm.setAttribute('data-max-width', String(maxFormWidth));
+      tempForm.setAttribute('data-min-width', String(minFormWidth));
+    });
+
+  }
+
+  private static copyAttributesToForm (element: HTMLElement, tempForm: HTMLElement, labels: number[]) {
+    let currentWidth = element.getBoundingClientRect().width;
+    let maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
+    let maxLabelWidth = Math.max(...labels);
+    let avaliableSpace = currentWidth - maxFormWidth > 0 ? currentWidth - maxFormWidth : 0;
+    let inputWidth = 0;
+
+    //If form has avalibable space then adjust min form width to maxFormWidth+128. 
+    //Where 128 is space form input-ediotr + input-options if exist.
+    if (maxFormWidth < maxLabelWidth+128) {
+      if (avaliableSpace != 0){
+        if (maxFormWidth+avaliableSpace < maxLabelWidth+128) {
+          maxFormWidth = maxFormWidth+avaliableSpace;
+          inputWidth = maxFormWidth - maxLabelWidth - 8;
+        }
+        else {
+          maxFormWidth = maxLabelWidth+128;
+          inputWidth = 120;
+        }
+      }
+    }
+
+    //Set attributes to form fields
+    Array.from(tempForm.children).forEach((item, index) => {
+      let root = element.children[index] as HTMLElement;
+      let label = element.children[index].firstElementChild as HTMLElement;
+
+      let rootStyle = item.getAttribute('style');
+      let labelStyle = item.firstElementChild?.getAttribute('style');
+
+      if (rootStyle != null) {
+        root.setAttribute('style', rootStyle);
+        root.style.maxWidth = String(maxFormWidth)+'px';
+      }
+      if (labelStyle != null) label.setAttribute('style', labelStyle);
+
+      let dataLabel = item.getAttribute('data-label');
+      let dataInput = item.getAttribute('data-input');
+      let dataOptions = item.getAttribute('data-options');
+
+      if (dataLabel != null) root.setAttribute('data-label', dataLabel);
+      if (dataOptions != null) root.setAttribute('data-options', dataOptions);
+      if (dataInput != null) root.setAttribute('data-input', dataInput);
+
+    });
+
+    //Set attributes to form
+    element.setAttribute('data-type', 'form');
+    element.setAttribute('data-min-width', tempForm.getAttribute('data-min-width')!);
+    element.setAttribute('data-max-width', String(maxFormWidth));
+    element.style.maxWidth = String(maxFormWidth)+'px';
+  }
+
+  private static adjustDialogForm(element: HTMLElement, tempForm:HTMLElement) {
+    if (element.classList.contains('d4-dialog-contents') || element.parentElement?.classList.contains('d4-dialog-contents')) {
+      element.style.removeProperty('max-width');
+    
+      const formWidth = Math.ceil(element.getBoundingClientRect().width-24);
+      const maxFormWidth = Number(element.getAttribute('data-max-width'));
+
+      Array.from(element.children).forEach((field) => {
+        let root = field as HTMLElement;
+        let label = root.querySelector('label') as HTMLElement;
+
+        if (label == null) return;
+
+        if (maxFormWidth < formWidth)
+          root.style.maxWidth = String(formWidth)+'px';
+
+        label.style.removeProperty('width')
+      });
+    } 
+    else {
+      this.adjustForm(element, tempForm);
+    }
+  }
+  
+  private static adjustButtonContainer(element: HTMLElement) {
+    let buttons = element.querySelector('.ui-input-buttons') as HTMLElement;
+    
+    if (buttons == null) return;
+
+    let label = buttons.querySelector('label') as HTMLElement;
+    let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
+
+    if (element.querySelector('.ui-input-root:not(.ui-input-buttons)') == null) {
+      element.style.removeProperty('max-width');
+      buttons.style.removeProperty('max-width');
+      editor.style.removeProperty('max-width');
+      let totalWidth = 0;
+      for (let i = 0; i < editor.children.length; i++)
+        totalWidth += editor.children[i].getBoundingClientRect().width;
+      element.style.maxWidth = `${totalWidth}px`;
+      buttons.style.maxWidth = `${totalWidth}px`;
+    }
+
+    if (label != null) label.remove();
+
+    if (editor != null) {
+      editor.classList.add('ui-buttons-editor');
+      editor.style.flexWrap = 'wrap';
+      editor.style.padding = '0';
+    }
+  }
+
+  private static adjustForm(element:HTMLElement, tempForm:HTMLElement){
+    const minFormWidth = Number(tempForm.getAttribute('data-min-width'));
+    const maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
+    const currentWidth = element.getBoundingClientRect().width;
+    const label = tempForm.querySelector('label.ui-input-label') as HTMLElement;
+    const maxLabelWidth = label != null ? parseInt(label.style.maxWidth) : 0;
+    
+    if (currentWidth > minFormWidth) {
+      Array.from(element.children).forEach((field)=>{
+        let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
+        let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
+        let option = field.querySelector('.ui-input-options') as HTMLElement;
+        let optionIcon = iconFA('ellipsis-h', ()=>{
+          $(element).find('.ui-input-options').not(option).removeClass('ui-input-options-expand');
+          $(option).toggleClass('ui-input-options-expand');
+        });
+        optionIcon.classList.add('ui-input-options-icon');
+
+        if (option == null) return;
+
+        if ($(option).has('i').length != 0) option.append(optionIcon);
+
+        if (currentWidth < maxLabelWidth+inputWidth+8+optionWidth) {
+         $(option).children().css('display', 'none');
+         $(optionIcon).css('display', 'flex');
+        }
+        else {
+          $(option).children().css('display', 'flex');
+          $(optionIcon).css('display', 'none');
+        }
+
+      });
+    }
+    else if (currentWidth < minFormWidth)
+      element.classList.add('ui-form-condensed')
+
+    // Add tooltips for radio and multi-choice inputs
+    Array.from(element.children).forEach((field)=>{ 
+      let editor = field.querySelector('.ui-input-editor');
+      if (editor != null && editor.children.length != 0) {
+        Array.from(editor.children).forEach((item) => {
+          let label = item.querySelector('label');
+          if (label != null)
+            api.grok_Tooltip_SetOn(label, label.textContent)
+        })
       }
     });
+  }
+
+  private static handleFormResize(element: HTMLElement, labels: number[], minInputWidth: number) {
+    const fields = Array.from(element.children) as HTMLElement [];
+    const fieldsCount = element.querySelectorAll('.ui-input-root').length;
+    const formClassName = element.className;
+    const minFormWidth = element.getAttribute('data-min-width') != null ? Number(element.getAttribute('data-min-width')) : Math.max(...labels)+minInputWidth;
+    
+    tools.handleResize(element, (currentWidth) => { 
+      let shrinkedLabels = 0;
+
+      fields.forEach((field, index) => {
+        //Get label and options containers
+        let label = field.querySelector('label.ui-input-label') as HTMLElement;
+        let editor = field.querySelector('.ui-input-editor') as HTMLElement;
+        let option = field.querySelector('.ui-input-options') as HTMLElement;
+
+        //Get field data attributes
+        let labelWidth = field.getAttribute('data-label') != null ? Number(field.getAttribute('data-label')) : 0;
+        let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
+        let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
+        
+        //Hide options if current width less than max label width + current input and options width + 8px label margin
+        if (currentWidth < Math.max(...labels)+inputWidth+8+optionWidth) {
+          if (option != null)
+            $(option).children().css('display','none');
+            $(option).find('.ui-input-options-icon').css('display','flex');
+        }
+        else {
+          if (option != null)
+            $(option).removeClass('ui-input-options-expand');
+            $(option).children().css('display','flex');
+            $(option).find('.ui-input-options-icon').css('display','none');
+        }
+
+        //Shrink labels if current form width less than min form width
+        if (currentWidth < Math.max(...labels)+minInputWidth) {
+          if (label != null) {
+            label.style.width = String(Math.ceil(Math.max(...labels)/(Math.max(...labels)+58)*100))+'%';
+            label.style.flexShrink = String(1-Math.max(...labels)/(Math.max(...labels)+58));
+            api.grok_Tooltip_SetOn(label, label?.textContent);
+          }
+
+          if (editor == null) return;
+
+          editor.style.maxWidth = String(minInputWidth)+'px';
+          editor.style.width = '100%';
+        }
+        else {
+          if (label != null) {
+            label.style.width = '100%';
+            label.style.removeProperty('flex-shrink');
+          }
+          if (editor != null) {
+            editor.style.removeProperty('max-width');
+            editor.style.removeProperty('width');
+          }
+        }
+  
+        //Detect when label become to shrink  
+        if (currentWidth < labelWidth+minInputWidth)
+          shrinkedLabels++;
+  
+        //Hide options for condensed form  
+        if (element.classList.contains('ui-form-condensed')) {
+          if (editor != null) {
+            editor.style.maxWidth = 'initial';
+            editor.style.removeProperty('width');
+          }
+
+          if (currentWidth < inputWidth+8+optionWidth) {
+            if (option != null) { 
+              $(option).children().css('display','none');
+              $(option).find('.ui-input-options-icon').css('display','flex');
+            }
+          }
+          else {
+            if (option != null) {
+              $(option).removeClass('ui-input-options-expand');
+              $(option).children().css('display','flex');
+              $(option).find('.ui-input-options-icon').css('display','none');
+            }
+          }
+        }
+      });
+
+      //If 80% of labels are shrinked change form type to condensed
+      if (Math.round(100-(shrinkedLabels/fieldsCount*100)) < 80)
+        element.classList.add('ui-form-condensed');
+      else
+        element.classList.remove('ui-form-condensed');
+    });
+    
   }
 }
 
@@ -986,48 +1503,8 @@ export class Tooltip {
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
-    if (tooltip != null){
+    if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
-
-        tools.waitForElementInDom(element).then((el)=>{ 
-          if(el.classList.contains('d4-disabled')) {
-            let overlay = document.createElement('span');
-            overlay.style.position = 'fixed';
-
-            if ($('body').has('.d4-tooltip-overlays').length !=0)
-              $('.d4-tooltip-overlays').append(overlay)
-            else
-              $('body').append(div([overlay],'d4-tooltip-overlays'));
-            
-            let interval = setInterval(()=> {
-              let target = el.getBoundingClientRect();
-              overlay.style.left = String(target.left)+'px';
-              overlay.style.top = String(target.top)+'px';
-              overlay.style.width = String(target.width)+'px';
-              overlay.style.height = String(target.height)+'px';
-              
-              if ($('body').has(el).length == 0) { 
-                overlay.remove();
-                clearInterval(interval);
-              }
-
-            }, 100);
-
-            overlay.addEventListener('mousemove', (e:MouseEvent)=> {
-              api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
-            });
-
-            overlay.addEventListener('mouseleave', (e:MouseEvent)=> {
-              setTimeout(()=>{
-                api.grok_Tooltip_Hide();
-              }, 250)
-            });
-
-          }
-
-        });
-      
-    }
     return element;
   }
 
@@ -1560,32 +2037,49 @@ export namespace forms {
 
   export function wide(children: InputBase[], options: {} | null = null){
     let d = wideForm(children, options);
-    tools.resizeFormLabels(d);
     return d;
   }
+
+  export function addButtons(form: HTMLElement, children: HTMLButtonElement[] = []) {
+    if (!Array.isArray(children))
+      children = [children];
   
+    if (children == null)
+      return;
+
+    let style = $(form).find('div.ui-input-root').first().attr('style');
+    let root = document.createElement('div');
+    let editor = document.createElement('div');
+    $(editor).addClass('ui-input-editor').css('flex-wrap', 'wrap').css('padding', '0');
+    $(root).addClass('ui-input-root ui-input-buttons').attr('style', style != null ? style : '');
+    
+    if ($(form).find('.ui-input-buttons').length != 0) {
+        $(form).find('.ui-input-buttons > div.ui-input-editor').prepend(children.map(x => render(x)));
+    } else {
+      $(editor).append(children.map(x => render(x)));
+      root.append(editor);
+      form.append(root);
+    }
+  }
+
+  export function addGroup(form: HTMLElement, title: string, children: InputBase[] = []) {
+    if (!Array.isArray(children))
+      children = [children];
+
+    if (children == null)
+      return;
+
+    form.append(h2(title), ...children.map(input => input.root))
+
+    tools.resizeFormLabels(form);
+  }
 }
 
 export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
-  // let d = document.createElement('div');
-  // if (children != null) {
-  //   $(d).append(children.map(x => render(x)));
-  // }
   const form = InputForm.forInputs(inputs);
   const d = form.root;
   _options(d, options);
   $(d).addClass('ui-form');
-  
-  if (autosize) {
-    tools.resizeFormLabels(d);
-    tools.handleResize(d, (w)=>{
-      let formWidth = d.getBoundingClientRect().width;
-      if (formWidth < 200)
-        d.className = 'ui-form ui-form-condensed';
-      else if (formWidth > 200)
-        d.className = 'ui-form';
-    })
-  }
   return d;
 }
 
@@ -1690,6 +2184,54 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   else
     element.style.display = 'none';
   return element;
+}
+
+export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: string | null | (() => string | HTMLElement | null)): void {
+  if (!disabled) {
+    element.classList.remove('d4-disabled');
+    element.classList.contains('ui-input-root') ? element.classList.remove('ui-input-disabled') : null
+  }
+  else {
+    element.classList.add('d4-disabled');
+    element.classList.contains('ui-input-root') ? element.classList.add('ui-input-disabled') : null
+  }
+
+  if (tooltip == null)
+    return;
+
+  api.grok_Tooltip_SetOn(element, tooltip);
+
+  const overlay = document.createElement('span');
+  overlay.style.position = 'fixed';
+
+  if ($(document.body).has('.d4-tooltip-overlays').length != 0)
+    $('.d4-tooltip-overlays').append(overlay)
+  else
+    document.body.append(div([overlay],'d4-tooltip-overlays'));
+
+  let interval = setInterval(()=> {
+    let target = element.getBoundingClientRect();
+    
+    overlay.style.left = String(target.left)+'px';
+    overlay.style.top = String(target.top)+'px';
+    overlay.style.width = String(target.width)+'px';
+    overlay.style.height = String(target.height)+'px';
+    
+    if ($('body').has(element).length == 0 || !element.classList.contains('d4-disabled')) { 
+      overlay.remove();
+      clearInterval(interval);
+    }
+  }, 100);
+
+  overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+    api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
+  });
+
+  overlay.addEventListener('mouseleave', (e:MouseEvent) => {
+    setTimeout(() => {
+      api.grok_Tooltip_Hide();
+    }, 200)
+  });
 }
 
 /**

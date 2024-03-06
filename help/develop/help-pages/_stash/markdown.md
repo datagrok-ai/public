@@ -8,7 +8,7 @@ do with Markdown. Mostly, Markdown is just regular text with a few non-alphabeti
 
 ## Syntax guide
 
-Here’s an overview of Markdown syntax that you can use.
+Here's an overview of Markdown syntax that you can use.
 
 ### Headers
 
@@ -67,7 +67,7 @@ I think you should use an
 
 ### Syntax highlighting
 
-Here’s an example of how you can use syntax highlighting with
+Here's an example of how you can use syntax highlighting with
 [GitHub Flavored Markdown](https://help.github.com/articles/basic-writing-and-formatting-syntax):
 
 ```javascript
@@ -86,7 +86,7 @@ You can also simply indent your code by four spaces:
       }
     }
 
-Here’s an example of Python code without syntax highlighting:
+Here's an example of Python code without syntax highlighting:
 
     def foo():
         if not bar:

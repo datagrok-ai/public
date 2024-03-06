@@ -1,10 +1,8 @@
 package grok_connect.table_query;
 
-import grok_connect.utils.*;
+import grok_connect.utils.PatternMatcher;
 
-
-public class FieldPredicate
-{
+public class FieldPredicate {
     public String field;
     public String dataType;
     public String pattern;
@@ -16,6 +14,7 @@ public class FieldPredicate
         this.dataType = dataType;
     }
 
+    @Override
     public String toString() {
         return field + " " + pattern;
     }

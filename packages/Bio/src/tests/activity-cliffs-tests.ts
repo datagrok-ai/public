@@ -5,16 +5,17 @@ import {after, before, category, test} from '@datagrok-libraries/utils/src/test'
 
 import {readDataframe} from './utils';
 import {_testActivityCliffsOpen} from './activity-cliffs-utils';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {_package} from '../package-test';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 
 category('activityCliffs', async () => {
@@ -23,9 +24,9 @@ category('activityCliffs', async () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibSettings: LibSettings;
-
-
+  let userLibSettings: UserLibSettings;
+  const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
+  const helmEncodingFunc = DG.Func.find({name: 'helmPreprocessingFunction', package: 'Bio'})[0];
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
@@ -57,7 +58,7 @@ category('activityCliffs', async () => {
     const cliffsNum = DG.Test.isInBenchmark ? 6 : 3;
 
     await _testActivityCliffsOpen(actCliffsDf, DimReductionMethods.UMAP,
-      'sequence', 'Activity', 90, cliffsNum, MmDistanceFunctionsNames.LEVENSHTEIN);
+      'sequence', 'Activity', 90, cliffsNum, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc);
   });
 
   test('activityCliffsWithEmptyRows', async () => {
@@ -67,14 +68,14 @@ category('activityCliffs', async () => {
     viewList.push(actCliffsTableViewWithEmptyRows);
 
     await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, DimReductionMethods.UMAP,
-      'sequence', 'Activity', 90, 3, MmDistanceFunctionsNames.LEVENSHTEIN);
+      'sequence', 'Activity', 90, 3, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc);
   });
 
   test('Helm', async () => {
     const df = await _package.files.readCsv('data/sample_HELM_50.csv');
-    const view = grok.shell.addTableView(df);
+    const _view = grok.shell.addTableView(df);
 
     await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
-      'HELM', 'Activity', 65, 4, BitArrayMetricsNames.Tanimoto);
+      'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
   });
 });

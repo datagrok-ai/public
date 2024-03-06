@@ -1,0 +1,338 @@
+<!-- markdownlint-disable first-line-h1 -->
+
+import Header from '@site/src/components/new/hero.jsx';
+import Features from '@site/src/components/new/features.jsx';
+import Section from '@site/src/components/new/section.jsx';
+import Cpa from '@site/src/components/new/cpa.jsx';
+import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/components/new/ui-parts.jsx';
+
+<Header>
+{/* Header container. */}
+
+# Datagrok: Swiss army knife for data
+
+### Fast. Easy to use. Endlessly customizable
+
+Datagrok helps you unlock the value of your organization's complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and share these results.
+
+<br/>  
+<Button label="Get a Demo" type="outline" size="large"/> 
+<Button label="Try Now" type="primary" size="large"/>
+<br/>
+<Image src="/docusaurus_img/new/hero.gif" frame/>
+</Header>
+
+<Features>
+{/* Features container. */}
+
+# Features
+We have tools for all data tasks, from data access to advanced analytics and beyond. Need more? Easily integrate or add your own code. We eliminate the clutter of multiple apps, giving you a streamlined, efficient solution for every data challenge.
+
+<TabGroup>
+<Tab 
+    name = "Access"
+    title = "Access"
+    description = "Get your data from anywhere - databases, web services, cloud storage, pipelines (or write your own script). If it's machine-readable, we can work with it!"
+    slides = {[
+        {
+            text: "40+ connectors to databases and file shares (or create your own)",
+            image: "/docusaurus_img/slides/access-db-connect.png"
+        },
+        {
+            text: "1,000+ services exposed via OpenAPI",
+            image: "/docusaurus_img/slides/access-open-api.png"
+        },
+        {
+            text: "Browse relational database schemas",
+            image: "/docusaurus_img/slides/access-schema-browser.gif"
+        },
+        {
+            text: "Create, edit, and debug queries with visual tools",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Save query results as dynamic dashboards, no codig needed.",
+            image: "/docusaurus_img/slides/no-image.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/#access"
+/>
+<Tab 
+    name = "Govern"
+    title = "Govern"
+    description = "Use catalogs, data lineage tools, audit, and usage analysis to take control. Your data is FAIR and secure."
+    slides = {[
+        {
+            text: "Control who, what, where, and how: roles, groups, privileges, flexible authentication, secrets managers",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Centralized, metadata-annotated catalog of entities. Manage everything: data, connections, projects, users, and more",
+            image: "/docusaurus_img/slides/govern-catalogue.gif"
+        },
+        {
+            text: "Secure by design",
+            image: "/docusaurus_img/slides/govern-secure-by-design.png"
+        },
+        {
+            text: "Built-in data provenance, data lineage, impact analysis, usage analysis, and audit tools.",
+            image: "/docusaurus_img/slides/no-image.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/#govern"
+/>
+<Tab 
+    name = "Transform"
+    title = "Transform"
+    description = "Prep your data with clicks and drags. Choose from 500+ functions. Link, join, aggregate, address missing values, and more - visually or programmatically."
+    slides = {[
+        {
+            text: "Aggregate, join, filter, and edit data",
+            image: "/docusaurus_img/slides/aggregate.gif"
+        },
+        {
+            text: "500+ available functions, or write your own in JavaScript, Python, R (or any other language that compiles to WASM)",
+            image: "/docusaurus_img/slides/transform-functions.gif"
+        },
+        {
+            text: "Record and apply macros, use in pipelines",
+            image: "/docusaurus_img/slides/console-macros.gif"
+        },
+        {
+            text: "See, edit, and apply query transformations.",
+            image: "/docusaurus_img/slides/transform-edit.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/#transform"
+/>
+<Tab 
+    name = "Explore"
+    title = "Explore"
+    description = "Slice, dice, and visualize your data. Render millions of data points interactively and find patterns. Build dynamic dashboards in seconds. Loaded with automated statistical hypothesis testing, data enrichment, and contextual suggestions."
+    slides = {[
+        {
+            text: "50+ interactive viewers for synchronized, dynamic dashboards",
+            image: "/docusaurus_img/slides/viewers-interaction-main.gif"
+        },
+        {
+            text: "Integration with visualizations in R, Python, or Julia",
+            image: "/docusaurus_img/slides/scripting-visualizations.png"
+        },
+        {
+            text: "Built-in regression and formula lines, confidence intervals, correlations, and statistics",
+            image: "/docusaurus_img/slides/explore-statistics.png"
+        },
+        {
+            text: "Automatic detection of outliers, missing values, or incorrect data types.",
+            image: "/docusaurus_img/slides/no-image.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/#explore"
+/>
+<Tab 
+    name = "Compute"
+    title = "Compute"
+    description = "Write in any language, annotate, publish, and apply scientific models, methods, and apps. Solve differential equations and run simulations for complex processes."
+    slides = {[
+        {
+            text: "500+ functions, or write your own in R, Python, or JavaScript",
+            image: "/docusaurus_img/slides/transform-functions.gif"
+        },
+        {
+            text: "Metadata-annotated scripts with cross-language support",
+            image: "/docusaurus_img/slides/auto-ui-queries.png"
+        },
+        {
+            text: "Scalable and reproducible computations, model lifecycle management",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Auto-generated UI.",
+            image: "/docusaurus_img/slides/auto-ui-queries.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/datagrok/#compute"
+/>
+<Tab 
+    name = "Learn"
+    title = "Learn"
+    description = "No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included."
+    slides = {[
+        {
+            text: "Train, assess, apply, and share models (or integrate your own)",
+            image: "/docusaurus_img/slides/predictive-modeling.gif"
+        },
+        {
+            text: "Native support for R, Python, Julia, Matlab, and Octave",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Open any dataset with a Jupyter notebook",
+            image: "/docusaurus_img/slides/jupyter-notebooks.gif"
+        },
+        {
+            text: "ML toolkit: statistical hypothesis testing, multivariate analysis, dimensionality reduction, clustering, variance analysis.",
+            image: "/docusaurus_img/slides/no-image.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/datagrok/#learn"
+/>
+<Tab 
+    name = "Collaborate"
+    title = "Collaborate"
+    description = "Share anything with anyone. Collaborate on decision-making. Open source plugins are free to use under the MIT license."
+    slides = {[
+        {
+            text: "Share within Datagrok, as a URL link, or integrate: REST API, JS API, or embed as an iframe",
+            image: "/docusaurus_img/slides/share-sharing.gif"
+        },
+        {
+            text: "50+ open source plugins, including specialized ones for cheminformatics, bioinformatics, NLP, and others",
+            image: "/docusaurus_img/slides/plugins-list.gif"
+        },
+        {
+            text: "Data annotations, team discussions",
+            image: "/docusaurus_img/slides/share-forum.png"
+        },
+        {
+            text: "Community forum for ideas, support, and feedback.",
+            image: "/docusaurus_img/slides/forum.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/datagrok/#collaborate"
+/>
+<Tab 
+    name = "Extend"
+    title = "Extend"
+    description = "Customize anything, from context actions to UI elements. Fast development and deployment time with seamless integration."
+    slides = {[
+        {
+            text: "JavaScript API for extending Datagrok",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "App marketplace: use or customize ours, build your own, or integrate with third party apps",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Developer tools, UI toolkit",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Comprehensive help: wiki, exercises, community forum.",
+            image: "/docusaurus_img/slides/no-image.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/datagrok/#extend"
+/>
+</TabGroup>
+</Features>
+
+<Section color="var(--ifm-color-gray-100)">
+
+# Why Datagrok?
+### From data to great achievements
+
+<Row>
+<Slider
+    name = "slide-1"
+    slides = {[
+        { image: "/docusaurus_img/slides/no-image.png" },
+    ]}
+    link = {{
+        label: "Learn what makes it so fast",
+        href: "https://datagrok.ai/help/datagrok/#learn"
+    }}
+>
+
+#### Explore at the speed of thought
+Picture this: exploring the entire CheMBL database right in your browser. This is the power of Datagrok. Designed for both speed and scale, it lets you analyze billions of data points interactively.
+</Slider>
+</Row>
+
+<Row>
+<Slider
+    name = "slide-2"
+    slides = {[
+        { image: "/docusaurus_img/slides/no-image.png" },
+    ]}
+>
+
+#### Built for any data, perfected for life sciences
+Datagrok works with all kinds of structured, tabular data. It automatically detects the semantics  (like molecules or zip codes) and instantly adapts the UI for a seamless user experience. Armed with biochemical intelligence, Datagrok is perfectly equipped to address the complexities of life science data. Have a custom data type? Create your own plugin.
+
+- Domain-specific menus and actions
+- Custom rendering and visualizations
+- Specialized interfaces for data editing and filtering
+- Calculations and data processing functions
+- Fit-for-purpose apps
+
+Learn about our solutions for <Link href="https://datagrok.ai/cheminformatics" label="cheminformatics"/> and <Link href="https://datagrok.ai/macromolecules" label="bioinformatics"/>
+
+</Slider>
+</Row>
+
+<Row>
+<Slider
+    name = "slide-3"
+    slides = {[
+        { image: "/docusaurus_img/slides/no-image.png" },
+    ]}
+    link = {{
+        label: "Learn what makes it so flexible",
+        href: "https://datagrok.ai/help/datagrok/#what-makes-it-so-flexible"
+    }}
+>
+
+#### Intelligent Data Ecosystem
+Datagrok is not yet another toolbox; it’s your data ecosystem. It seamlessly connects data from multiple sources and pairs it with matching assets, producing automated predictions, analyses, and smart visualization suggestions. The result? Deeper, richer insights and shared knowledge.
+
+</Slider>
+</Row>
+</Section>
+
+<Section>
+
+# Who is it for?
+<Row>
+<Col col="col-lg-6">
+
+<Image src="/docusaurus_img/slides/no-image.png"/>
+
+</Col>
+<Col col="col-lg-6">
+
+#### Skillset
+Datagrok is for anyone who works with data:
+1. Chemists analyzing SAR tables? Perfect fit.
+2. Data scientists? Excellent for strategic planning.
+3. Researchers running complex simulations? Absolutely.
+4. Data engineers? Delight business with dynamic dashboards, no coding needed.
+5. Data analysts? Drag and drop your files to start analyzing.
+6. Developers? Quickly develop and test data-driven applications.
+
+</Col>
+</Row>
+
+<Row>
+<Col col="col-lg-6">
+
+#### Team size
+Datagrok is for individuals and teams of all sizes - from startups to large enterprises. The platform is <Link href="https://datagrok.ai/enterprise" label="enterprise-ready"/>, scalable, and ideal for sharing and collaboration.
+
+</Col>
+<Col col="col-lg-6">
+
+<Image src="/docusaurus_img/slides/no-image.png"/>
+
+</Col>
+</Row>
+</Section>
+
+<Cpa>
+
+# Try Datagrok for free
+Unlock the value of your organization's complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and share these results.
+
+<Button label='Get a Demo' href="#" size="large"/><Button label='Try Now' href="#" type="primary" size="large"/>
+</Cpa>

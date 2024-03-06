@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subject} from 'rxjs';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
-import {ILogger} from './syncer';
+import {ILogger} from './logger';
 
 // TODO: Use type from datagrok-api
 export type DockerContainerStatus = 'stopped' | 'started' | 'pending change' | 'changing' | 'error' | 'checking';

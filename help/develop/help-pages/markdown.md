@@ -353,7 +353,7 @@ Use:
 </TabItem>
 <TabItem value="ui">
 
-Capitalize the names and emphasize all user interface elements in **bold** text. When referring to specific UI text (such as a menu item), use the same capitalization that’s displayed in the user interface.
+Capitalize the names and emphasize all user interface elements in **bold** text. When referring to specific UI text (such as a menu item), use the same capitalization that's displayed in the user interface.
 
 <details>
 <summary>UI naming conventions</summary>
@@ -424,7 +424,7 @@ If a list starts with an introductory word or phrase, do the following:
   * Completed by this capitalized sentence.
   * Also completed by this capitalized sentence.
 
-* Don’t add commas (`,`) or semicolons (`;`) to the ends of list items. If a list item is a complete sentence (with a subject and a verb), add a period at the end. For individual items, add a period only an the end of your list.
+* Don't add commas (`,`) or semicolons (`;`) to the ends of list items. If a list item is a complete sentence (with a subject and a verb), add a period at the end. For individual items, add a period only an the end of your list.
 * Be consistent. Don't mix complete sentences and individual items in a list. Each bulleted item should form a grammatically correct sentence with an introductory word or phrase. 
 * Separate list items from explanatory text with a colon (`:`). Also, emphasize the list items to make them visually stand out. 
 
@@ -461,7 +461,7 @@ Capture screenshots or screen recording using [ScreenToGif](https://www.screento
 
 When you take screenshots/screen recordings:
 
-* Capture only the relevant UI. Reduce the size of your browser window as much as possible to keep elements close together and reduce empty space. Exclude any areas of UI that don’t illustrate the point.
+* Capture only the relevant UI. Reduce the size of your browser window as much as possible to keep elements close together and reduce empty space. Exclude any areas of UI that don't illustrate the point.
 * Capture screenshots and screen recordings at a browser viewport width of 800px and height of 500 pixels. This helps keep scaling consistent. You can use this [Chrome extension](https://chrome.google.com/webstore/detail/window-resizer/kkelicaakdanhinjdeammmilcgefonfh?hl=en) to quickly set your browser viewport to 800px by 500px.
 * Don't zoom in or out.
 * When displayed in the documentation, the text in the image of a screenshot should closely match the text size of the page itself.

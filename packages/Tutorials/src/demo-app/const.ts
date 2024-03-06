@@ -212,6 +212,9 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Compute',
 			children: [
 				{
+					name: 'Diff Studio',
+				},
+				{
 					name: 'Multivariate analysis',
 				},
 				{

@@ -3,16 +3,19 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {debounceTime} from 'rxjs/operators';
-import {getDistanceFromSimilarity, getSimilarityFromDistance} from '../distance-metrics-methods';
+import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {Subject} from 'rxjs';
-import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
+import {MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import '../../css/styles.css';
-import {DimReductionMethods} from '../reduce-dimensionality';
-import {BitArrayMetrics, isBitArrayMetric} from '../typed-metrics/typed-metrics';
-import {DistanceMatrix, dmLinearIndex} from '../distance-matrix';
-import { SparseMatrixResult, SparseMatrixService } from '../distance-matrix/sparse-matrix-service';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {BitArrayMetrics} from '../typed-metrics/typed-metrics';
+import {dmLinearIndex} from '../distance-matrix';
+import {SparseMatrixResult, SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer} from '@datagrok-libraries/utils/src/render-lines-on-sp';
+import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
+import {getNormalizedEmbeddings} from '../multi-column-dimensionality-reduction/embeddings-space';
+import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
+import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
+import {MCLMethodName, createMCLWorker} from '../MCL';
 
 export let activityCliffsIdx = 0;
 
@@ -71,78 +74,53 @@ interface ISaliLims {
 }
 
 const filterCliffsSubj = new Subject<string>();
-const LINES_DF_ACT_DIFF_COL_NAME = 'act_diff';
-const LINES_DF_SALI_COL_NAME = 'sali';
-const LINES_DF_SIM_COL_NAME = 'sim';
+const LINES_DF_ACT_DIFF_COL_NAME = 'activity_difference';
+const LINES_DF_SALI_COL_NAME = 'SALI_index';
+const LINES_DF_SIM_COL_NAME = 'similarity';
 const LINES_DF_LINE_IND_COL_NAME = 'line_index';
-const LINES_DF_MOL_COLS_NAMES = ['1_seq', '2_seq'];
+const LINES_DF_MOL_COLS_NAMES = ['1_molecule', '2_molecule'];
 const CLIFFS_FILTER_APPLIED = 'filterCliffs';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
-export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, encodedCol: DG.Column | null,
+export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
-  methodName: DimReductionMethods, semType: string, tags: {[index: string]: string},
-  seqSpaceFunc: SequenceSpaceFunc,
-  simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
-    simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>,
-  tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
+  methodName: DimReductionMethods, seqSpaceOptions: any, semType: string, tags: {[index: string]: string},
+  encodingFunc: DG.Func, tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
-  seqSpaceOptions?: any, cliffsDockRatio?: number) : Promise<DG.Viewer> {
+  cliffsDockRatio?: number) : Promise<DG.Viewer> {
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
-  const dimensionalityReduceCol = encodedCol ?? seqCol;
   // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
-  let timer: NodeJS.Timeout;
   let clickedSp = false;
 
-  const seqSpaceParams = {
-    seqCol: dimensionalityReduceCol,
-    methodName: methodName,
-    similarityMetric: similarityMetric as BitArrayMetrics,
-    embedAxesNames: axesNames,
-    options: {...(seqSpaceOptions??{}), [CLIFFS_COL_ENCODE_FN]: undefined},
-  };
+  const encodingFuncInputs = encodingFunc.inputs;
+  const encodedColWithOptions: PreprocessFunctionReturnType =
+    await encodingFunc.apply({[encodingFuncInputs[0].name]: seqCol,
+      [encodingFuncInputs[1].name]: similarityMetric, ...(seqSpaceOptions.preprocessingFuncArgs ?? {})});
 
-  const {distance, coordinates} = await seqSpaceFunc(seqSpaceParams);
-  for (const col of coordinates)
-    df.columns.add(col);
-
-
-  
-  let cliffsMetrics: IActivityCliffsMetrics;
-  if (seqCol.semType === DG.SEMTYPE.MOLECULE) { // chem needs to calculate fingerprints from scratch, so different approach is needed.
-    // let recalculatedDistances = distance;
-    // const isMacroMoleculeDistance = Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric);
-    // if (isMacroMoleculeDistance && !distance) {
-    //   recalculatedDistances =
-    //   DistanceMatrix.calc(seqCol.toList(), mmDistanceFunctions[similarityMetric as MmDistanceFunctionsNames]()).data;
-    // }
-    // const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances!,
-    //   isMacroMoleculeDistance, simMatrixFunc);
-    const fingerprintsCol: DG.Column = await grok.functions.call('Chem:getMorganFingerprints', {molColumn: dimensionalityReduceCol});
-    const fpBitArrayList = fingerprintsCol.toList()
-      .map((fp: DG.BitSet) => (new BitArray(new Uint32Array(fp.getBuffer().buffer), fp.length)));
-    
-    // because chem uses different sort of similarity and distance(not in range of 0 to 1), we need to set similarity threshold differently
-    const chemSimilarityLimit = 1 - getDistanceFromSimilarity(similarityLimit);
-    const sparseMatrixRes = await new SparseMatrixService().calc(fpBitArrayList, similarityMetric, chemSimilarityLimit);
-    cliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, chemSimilarityLimit, activities);
+  let embeddingsMatrix: Matrix = [];
+  if (methodName as any === MCLMethodName) {
+    const mclRes = await createMCLWorker([encodedColWithOptions.entries], similarity, [1], 'MANHATTAN',
+      [similarityMetric], [encodedColWithOptions.options??{}], seqSpaceOptions?.maxIterations ?? 5).promise;
+    df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
+    embeddingsMatrix = [mclRes.embedX, mclRes.embedY];
   } else {
-    let seqColList: string[] = seqCol.toList();
-    let opts = {};
-    if (seqSpaceOptions?.[CLIFFS_COL_ENCODE_FN]){
-      const {seqList, options} = await seqSpaceOptions[CLIFFS_COL_ENCODE_FN](seqCol, similarityMetric);
-      seqColList = seqList;
-      opts = options;
-    }
-
-    const sparseMatrixRes = await new SparseMatrixService().calc(seqColList, similarityMetric, similarityLimit, opts);
-    cliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, similarityLimit, activities);
+    embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
+      [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});
   }
-  const sali: DG.Column = getSaliCountCol(dimensionalityReduceCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,
+  if (embeddingsMatrix.length !== axesNames.length)
+    throw new Error('Number of axes names should be equal to number of embedding dimensions');
+  for (let i = 0; i < embeddingsMatrix.length; ++i)
+    df.columns.addNewFloat(axesNames[i]).init((idx) => embeddingsMatrix[i][idx]);
+
+  const sparseMatrixRes = await new SparseMatrixService()
+    .calc(encodedColWithOptions.entries, similarityMetric, similarityLimit, encodedColWithOptions.options);
+  const cliffsMetrics: IActivityCliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, activities);
+
+  const sali: DG.Column = getSaliCountCol(seqCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,
     cliffsMetrics.n2, axesNames, activities);
   df.columns.add(sali);
 
@@ -166,9 +144,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     title: scatterTitle,
   }) as DG.ScatterPlotViewer;
 
-  const canvas = (sp.getInfo() as any)['canvas'];
   const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
-
+  linesRes.lines.skipMultiLineCalculation = true;
+  linesRes.linesDf.col(LINES_DF_SALI_COL_NAME)!.setTag('description', 'Structure−Activity Landscape Index (activity difference divided by 1 minus similarity)');
   //creating scatter plot lines renderer
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);
@@ -176,6 +154,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   const linesDfGrid = linesGridFunc ?
     linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
     linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+
+  if (linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME))
+    linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME)!.visible = false;
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
@@ -205,20 +186,20 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     filterCliffsButton.enabled = s !== '' ? s !== axesNames[0] ? false : true : true;
   });
 
-  //need to apply filtering by cliffs on each d4-before-draw-scene since redrawing scatter plot on zoom or move resets the filter 
+  //need to apply filtering by cliffs on each d4-before-draw-scene since redrawing scatter plot on zoom or move resets the filter
   let cliffsFilterApplied = false;
   sp.onEvent('d4-before-draw-scene')
     .subscribe((_: any) => {
       if (!cliffsFilterApplied) {
         if (filterCliffsButton.value) {
-          setTimeout(() => {df.filter.and(cliffsBitSet)}, 100);
+          setTimeout(() => { df.filter.and(cliffsBitSet); }, 100);
           cliffsFilterApplied = true;
         }
       } else {
         cliffsFilterApplied = false;
       }
-    }); 
-    
+    });
+
 
   //closing docked grid when viewer is closed
   const viewerClosedSub = grok.events.onViewerClosed.subscribe((v) => {
@@ -242,13 +223,13 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     if (lineIdx !== null) {
       const currentLineId = linesRes.linesDf.currentRowIdx;
       spEditor.currentLineId = currentLineId;
-      const { zoomLeft, zoomRight, zoomTop, zoomBottom } = getZoomCoordinates(
+      const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
         sp.viewport.width,
         sp.viewport.height,
         sp.dataFrame.get(axesNames[0], linesRes.lines.from[currentLineId]),
         sp.dataFrame.get(axesNames[1], linesRes.lines.from[currentLineId]),
         sp.dataFrame.get(axesNames[0], linesRes.lines.to[currentLineId]),
-        sp.dataFrame.get(axesNames[1], linesRes.lines.to[currentLineId]),
+        sp.dataFrame.get(axesNames[1], linesRes.lines.to[currentLineId])
       );
       sp.zoom(zoomLeft,
         zoomTop,
@@ -257,8 +238,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
       if (filterCliffsButton.value)
         df.filter.and(cliffsBitSet);
       else
-        if (filterCliffsButton.enabled === true)
-          df.filter.setAll(true);
+      if (filterCliffsButton.enabled === true)
+        df.filter.setAll(true);
       setTimeout(() => {
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
           seqCol, activities, linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, lineIdx), propertyPanelFunc);
@@ -280,16 +261,16 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     }
     df.selection.copyFrom(selection);
     spEditor.linesToRender = linesRes.lines;
-  }
+  };
 
   const resetSelectionOnEsc = (dataframe: DG.DataFrame) => {
     dataframe.selection.setAll(false);
     for (let i = 0; i < linesRes.lines.colors!.length; i++)
-      linesRes.lines.colors![i] = '0,128,0' //reset color to default for all lines
+      linesRes.lines.colors![i] = '0,128,0'; //reset color to default for all lines
     spEditor.linesToRender = linesRes.lines;
-  }
+  };
 
-  linesRes.linesDf.onSelectionChanged.subscribe((e: any) => {
+  linesRes.linesDf.onSelectionChanged.subscribe((_e: any) => {
     setTimeout(() => updateParentDfSelectionAndLineColors(), 100);
   });
 
@@ -298,7 +279,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
       if (!clickedSp)
         resetSelectionOnEsc(linesDfGrid.dataFrame);
       else
-       clickedSp = false;
+        clickedSp = false;
     }
   });
 
@@ -306,11 +287,11 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
     clickedSp = true;
     spEditor.currentLineId = event.id;
     if (event.id !== -1) {
-      const savedSelection = linesRes.linesDf.selection.clone(); 
-      setTimeout(() => { //clicking on a scatter plot leads to selection reset, thus we need to set selection after a little timeout 
+      const savedSelection = linesRes.linesDf.selection.clone();
+      setTimeout(() => { //clicking on a scatter plot leads to selection reset, thus we need to set selection after a little timeout
         if (event.event.ctrlKey) {
-            savedSelection.set(event.id, !savedSelection.get(event.id));
-            linesRes.linesDf.selection.copyFrom(savedSelection);
+          savedSelection.set(event.id, !savedSelection.get(event.id));
+          linesRes.linesDf.selection.copyFrom(savedSelection);
         } else {
           if (linesRes.linesDf.currentRowIdx !== event.id) {
             linesRes.linesDf.currentRowIdx = event.id;
@@ -320,14 +301,14 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
         }
         const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
         linesDfGrid.scrollToCell(LINES_DF_MOL_COLS_NAMES[0], order.indexOf(event.id));
-       }, 500);
+      }, 500);
     }
   });
 
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     if (event.id !== -1 && df.mouseOverRowIdx === -1) {
-      ui.tooltip.show(tooltipFunc({lineId: event.id, 
+      ui.tooltip.show(tooltipFunc({lineId: event.id,
         points: [linesRes.lines.from[event.id], linesRes.lines.to[event.id]], df: df, seqCol: seqCol,
         activityCol: activities}), event.x, event.y);
     }
@@ -338,72 +319,28 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   return sp;
 }
 
-async function createSimilaritiesMatrix(col: DG.Column, distance: Float32Array, countFromDistance: boolean,
-  simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
-  simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>): Promise<(DG.Column | null)[]> {
-  const cats = col.categories;
-  const raw = col.getRawData();
-  const newCol = DG.Column.string('seq', col.length).init((i) => cats[raw[i]]);
-  const dfSeq = DG.DataFrame.fromColumns([newCol]);
-  const dim = col.length;
-  let simArr: (DG.Column | null)[] = Array(dim - 1);
-
-  if (countFromDistance && distance)
-    getSimilaritiesFromDistances(dim, distance, simArr);
-  else
-    simArr = await simMatrixFunc(dim, col, dfSeq, 'seq', simArr);
-
-  return simArr;
-}
-
 async function getSparseActivityCliffsMetrics(
-  sparseMatrix: SparseMatrixResult, similarityLimit: number, actirvities: DG.Column
+  sparseMatrix: SparseMatrixResult, actirvities: DG.Column
 ): Promise<IActivityCliffsMetrics> {
   const saliVals = sparseMatrix.distance.map((d, idx) => {
     const diff = Math.abs(actirvities.get(sparseMatrix.i[idx]) - actirvities.get(sparseMatrix.j[idx]));
     return d != 0 ? diff / d : Infinity;
-  })
+  });
   const simVals = sparseMatrix.distance.map((d) => 1 - d);
   const n1 = sparseMatrix.i;
   const n2 = sparseMatrix.j;
   const cliffsMolIds = new Set<number>();
   sparseMatrix.distance.forEach((_, idx) => {
-      cliffsMolIds.add(sparseMatrix.i[idx]);
-      cliffsMolIds.add(sparseMatrix.j[idx]);
+    cliffsMolIds.add(sparseMatrix.i[idx]);
+    cliffsMolIds.add(sparseMatrix.j[idx]);
   });
   return {simVals: simVals, saliVals: saliVals, n1: n1, n2: n2, cliffsMolIds: cliffsMolIds} as unknown as IActivityCliffsMetrics;
-} 
-
-function getActivityCliffsMetrics(simArr: (DG.Column | null)[], similarityLimit: number, activities: DG.Column): IActivityCliffsMetrics {
-  const simVals: number[] = [];
-  const saliVals: number[] = [];
-  const n1: number[] = [];
-  const n2: number[] = [];
-  const cliffsMolIds = new Set<number>();
-
-  for (let i = 0; i != simArr.length; ++i) {
-    for (let j = 0; j != simArr.length - i; ++j) {
-      const sim: number = simArr[i] ? simArr[i]!.get(j) : 0;
-
-      if (sim >= similarityLimit) {
-        n1.push(i);
-        n2.push(i + j + 1);
-        cliffsMolIds.add(i);
-        cliffsMolIds.add(i + j + 1);
-        simVals.push(sim);
-        const diff = Math.abs(activities.get(i) - activities.get(i + j + 1));
-        saliVals.push(sim != 1 ? diff / (1 - sim) : Infinity);
-      }
-    }
-  }
-
-  return {simVals: simVals, saliVals: saliVals, n1: n1, n2: n2, cliffsMolIds: cliffsMolIds};
 }
 
 function getSaliMinMax(saliVals: number[]): ISaliLims {
   const saliValsWithoutInfinity = saliVals.filter((it) => it !== Infinity);
-  const saliMin = saliValsWithoutInfinity.reduce((acc, val) => Math.min(acc, val), Number.MAX_VALUE) //Math.min(...saliValsWithoutInfinity);
-  const saliMax = saliValsWithoutInfinity.reduce((acc, val) => Math.max(acc, val), saliMin) //Math.max(...saliValsWithoutInfinity);
+  const saliMin = saliValsWithoutInfinity.reduce((acc, val) => Math.min(acc, val), Number.MAX_VALUE); //Math.min(...saliValsWithoutInfinity);
+  const saliMax = saliValsWithoutInfinity.reduce((acc, val) => Math.max(acc, val), saliMin); //Math.max(...saliValsWithoutInfinity);
   return {max: saliMax, min: saliMin};
 }
 
@@ -467,13 +404,13 @@ function getZoomCoordinates(W0: number, H0: number, x1: number, y1: number, x2: 
 function createLines(df: DG.DataFrame, params: IActivityCliffsMetrics, seq: DG.Column, activities: DG.Column, semType: string,
   tags: {[index: string]: string}, saliMinMax: ISaliLims, saliOpacityCoef: number) : IRenderedLines {
   const lines: ILineSeries = {
-    from: new Uint32Array(params.n1.length), 
+    from: new Uint32Array(params.n1.length),
     to: new Uint32Array(params.n1.length),
     opacities: new Float32Array(params.n1.length),
     colors: new Array<string>(params.n1.length),
     widths: new Float32Array(params.n1.length)
   };
-  for (let i = 0; i < params.n1.length; i++) {   
+  for (let i = 0; i < params.n1.length; i++) {
     lines.from[i] = params.n1[i];
     lines.to[i] = params.n2[i];
     lines.opacities![i] = params.saliVals[i] === Infinity ? 1 : 0.2 + (params.saliVals[i] - saliMinMax.min) * saliOpacityCoef;

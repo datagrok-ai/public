@@ -1,0 +1,212 @@
+MODEL        1
+USER    Run = 1
+USER
+USER    Estimated Free Energy of Binding    =  -5.16 kcal/mol  [=(1)+(2)+(3)-(4)]
+USER
+USER    (1) Final Intermolecular Energy     =  -9.33 kcal/mol
+USER        vdW + Hbond + desolv Energy     =  -9.36 kcal/mol
+USER        Electrostatic Energy            =  +0.03 kcal/mol
+USER        Moving Ligand-Fixed Receptor    =  -9.33 kcal/mol
+USER        Moving Ligand-Moving Receptor   =  +0.00 kcal/mol
+USER    (2) Final Total Internal Energy     =  -3.77 kcal/mol
+USER    (3) Torsional Free Energy           =  +4.18 kcal/mol
+USER    (4) Unbound System's Energy         =  -3.77 kcal/mol
+USER
+USER
+REMARK  14 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  O_5
+REMARK    2  A    between atoms: O_5  and  C_6
+REMARK       I    between atoms: C_6  and  N_8
+REMARK    3  A    between atoms: N_8  and  C_9
+REMARK    4  A    between atoms: C_9  and  C_17
+REMARK    5  A    between atoms: C_9  and  C_10
+REMARK    6  A    between atoms: C_10  and  C_11
+REMARK    7  A    between atoms: C_17  and  C_19
+REMARK    8  A    between atoms: C_19  and  C_20
+REMARK    9  A    between atoms: C_20  and  C_28
+REMARK   10  A    between atoms: C_20  and  C_21
+REMARK   11  A    between atoms: C_21  and  C_22
+REMARK       I    between atoms: C_28  and  N_30
+REMARK   12  A    between atoms: N_30  and  C_31
+REMARK   13  A    between atoms: C_31  and  C_34
+REMARK   14  A    between atoms: C_31  and  C_32
+USER                              x       y       z     vdW  Elec       q    Type
+USER                           _______ _______ _______ _____ _____    ______ ____
+ROOT
+HETATM    1  C   UNK     0      -7.824  15.176  26.666 -0.32 -0.02    +0.088 C
+ENDROOT
+BRANCH   1   2
+HETATM    2  C   UNK     0      -6.747  16.264  26.669 -0.21 -0.05    +0.252 C
+HETATM    3  O   UNK     0      -6.039  16.452  27.653 -0.20 +0.04    -0.271 OA
+HETATM    4  N   UNK     0      -6.641  17.004  25.576 -0.11 +0.06    -0.232 NA
+BRANCH   4   5
+HETATM    5  C   UNK     0      -5.661  18.080  25.476 -0.21 -0.03    +0.164 C
+BRANCH   5   6
+HETATM    6  C   UNK     0      -5.995  19.012  26.641 -0.22 -0.06    +0.162 A
+HETATM    7  N   UNK     0      -7.251  19.218  26.954 -0.19 +0.21    -0.226 NA
+HETATM    8  C   UNK     0      -7.251  20.141  27.974 -0.25 -0.19    +0.121 A
+HETATM    9  C   UNK     0      -5.911  20.428  28.211 -0.02 -0.07    +0.121 A
+HETATM   10  N   UNK     0      -5.116  19.688  27.352 -0.23 +0.04    -0.226 NA
+ENDBRANCH   5   6
+BRANCH   5  11
+HETATM   11  C   UNK     0      -5.764  18.840  24.139 -0.29 -0.01    +0.032 C
+HETATM   12  C   UNK     0      -7.197  18.878  23.647 -0.33 -0.00    +0.003 C
+ENDBRANCH   5  11
+ENDBRANCH   4   5
+ENDBRANCH   1   2
+BRANCH   1  13
+HETATM   13  C   UNK     0      -9.182  15.625  26.044 -0.20 -0.01    +0.036 C
+BRANCH  13  14
+HETATM   14  C   UNK     0      -9.206  15.552  24.527 -0.22 +0.01    -0.022 A
+HETATM   15  C   UNK     0      -8.380  14.641  23.856 -0.30 +0.00    -0.004 A
+HETATM   16  C   UNK     0      -8.329  14.674  22.472 -0.35 +0.00    -0.000 A
+HETATM   17  C   UNK     0      -9.087  15.601  21.760 -0.36 +0.00    -0.000 A
+HETATM   18  C   UNK     0      -9.902  16.507  22.425 -0.37 +0.00    -0.000 A
+HETATM   19  C   UNK     0      -9.966  16.486  23.808 -0.33 +0.00    -0.004 A
+ENDBRANCH  13  14
+ENDBRANCH   1  13
+BRANCH   1  20
+HETATM   20  C   UNK     0      -8.119  14.789  28.062 -0.23 -0.01    +0.045 C
+BRANCH  20  21
+HETATM   21  C   UNK     0      -9.526  14.997  28.567 -0.25 -0.05    +0.175 C
+HETATM   22  O   UNK     0      -9.613  16.414  28.829 -0.16 +0.15    -0.221 OA
+BRANCH  21  23
+HETATM   23  C   UNK     0      -9.776  14.124  29.829 -0.26 -0.01    +0.143 C
+BRANCH  23  24
+HETATM   24  C   UNK     0     -11.259  13.776  29.963 -0.30 -0.00    +0.053 C
+BRANCH  24  25
+HETATM   25  C   UNK     0     -12.123  14.638  29.047 -0.29 +0.01    -0.020 A
+HETATM   26  C   UNK     0     -12.549  14.144  27.804 -0.31 +0.00    -0.004 A
+HETATM   27  C   UNK     0     -13.341  14.925  26.967 -0.13 +0.00    -0.000 A
+HETATM   28  C   UNK     0     -13.714  16.198  27.360 -0.35 +0.00    -0.000 A
+HETATM   29  C   UNK     0     -13.292  16.696  28.596 -0.07 +0.00    -0.000 A
+HETATM   30  C   UNK     0     -12.497  15.928  29.447 -0.27 +0.00    -0.004 A
+ENDBRANCH  24  25
+ENDBRANCH  23  24
+BRANCH  23  31
+HETATM   31  N   UNK     0      -9.337  14.851  31.014 -0.12 +0.03    -0.211 NA
+HETATM   32  C   UNK     0      -9.519  14.412  32.253 -0.00 -0.04    +0.383 C
+HETATM   33  O   UNK     0     -10.076  13.336  32.465 -0.16 +0.03    -0.236 OA
+BRANCH  32  34
+HETATM   34  O   UNK     0      -9.047  15.160  33.332 -0.23 +0.03    -0.289 OA
+BRANCH  34  35
+HETATM   35  C   UNK     0      -9.553  16.404  33.693 -0.42 -0.02    +0.103 C
+HETATM   36  C   UNK     0      -8.953  17.510  32.834 -0.25 -0.01    +0.030 C
+HETATM   37  C   UNK     0      -9.177  16.672  35.140 -0.51 -0.01    +0.030 C
+HETATM   38  C   UNK     0     -11.072  16.399  33.678 -0.32 -0.01    +0.030 C
+ENDBRANCH  34  35
+ENDBRANCH  32  34
+ENDBRANCH  23  31
+ENDBRANCH  21  23
+ENDBRANCH  20  21
+ENDBRANCH   1  20
+TORSDOF 14
+TER
+ENDMDL
+MODEL        2
+USER    Run = 2
+USER
+USER    Estimated Free Energy of Binding    =  -6.89 kcal/mol  [=(1)+(2)+(3)-(4)]
+USER
+USER    (1) Final Intermolecular Energy     = -11.07 kcal/mol
+USER        vdW + Hbond + desolv Energy     = -11.09 kcal/mol
+USER        Electrostatic Energy            =  +0.02 kcal/mol
+USER        Moving Ligand-Fixed Receptor    = -11.07 kcal/mol
+USER        Moving Ligand-Moving Receptor   =  +0.00 kcal/mol
+USER    (2) Final Total Internal Energy     =  -4.31 kcal/mol
+USER    (3) Torsional Free Energy           =  +4.18 kcal/mol
+USER    (4) Unbound System's Energy         =  -4.31 kcal/mol
+USER
+USER
+REMARK  14 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  O_5
+REMARK    2  A    between atoms: O_5  and  C_6
+REMARK       I    between atoms: C_6  and  N_8
+REMARK    3  A    between atoms: N_8  and  C_9
+REMARK    4  A    between atoms: C_9  and  C_17
+REMARK    5  A    between atoms: C_9  and  C_10
+REMARK    6  A    between atoms: C_10  and  C_11
+REMARK    7  A    between atoms: C_17  and  C_19
+REMARK    8  A    between atoms: C_19  and  C_20
+REMARK    9  A    between atoms: C_20  and  C_28
+REMARK   10  A    between atoms: C_20  and  C_21
+REMARK   11  A    between atoms: C_21  and  C_22
+REMARK       I    between atoms: C_28  and  N_30
+REMARK   12  A    between atoms: N_30  and  C_31
+REMARK   13  A    between atoms: C_31  and  C_34
+REMARK   14  A    between atoms: C_31  and  C_32
+USER                              x       y       z     vdW  Elec       q    Type
+USER                           _______ _______ _______ _____ _____    ______ ____
+ROOT
+HETATM    1  C   UNK     0      -8.928  15.536  29.924 -0.25 -0.03    +0.088 C
+ENDROOT
+BRANCH   1   2
+HETATM    2  C   UNK     0      -9.523  14.909  31.187 -0.14 -0.04    +0.252 C
+HETATM    3  O   UNK     0     -10.122  13.840  31.142 -0.21 +0.01    -0.271 OA
+HETATM    4  N   UNK     0      -9.383  15.589  32.315 -0.20 +0.04    -0.232 NA
+BRANCH   4   5
+HETATM    5  C   UNK     0      -9.925  15.094  33.576 -0.33 -0.03    +0.164 C
+BRANCH   5   6
+HETATM    6  C   UNK     0     -11.436  15.039  33.347 -0.21 -0.05    +0.162 A
+HETATM    7  N   UNK     0     -12.004  15.964  32.613 -0.18 +0.09    -0.226 NA
+HETATM    8  C   UNK     0     -13.355  15.708  32.642 -0.25 -0.06    +0.121 A
+HETATM    9  C   UNK     0     -13.498  14.575  33.436 -0.22 -0.08    +0.121 A
+HETATM   10  N   UNK     0     -12.254  14.153  33.875 -0.14 +0.11    -0.226 NA
+ENDBRANCH   5   6
+BRANCH   5  11
+HETATM   11  C   UNK     0      -9.597  16.027  34.757 -0.54 -0.01    +0.032 C
+HETATM   12  C   UNK     0      -9.504  17.468  34.299 -0.52 -0.00    +0.003 C
+ENDBRANCH   5  11
+ENDBRANCH   4   5
+ENDBRANCH   1   2
+BRANCH   1  13
+HETATM   13  C   UNK     0      -8.482  17.021  30.098 -0.38 -0.02    +0.036 C
+BRANCH  13  14
+HETATM   14  C   UNK     0      -7.812  17.599  28.863 -0.29 +0.02    -0.022 A
+HETATM   15  C   UNK     0      -6.963  16.799  28.087 -0.29 +0.00    -0.004 A
+HETATM   16  C   UNK     0      -6.270  17.378  27.036 -0.31 +0.00    -0.000 A
+HETATM   17  C   UNK     0      -6.415  18.736  26.758 -0.31 +0.00    -0.000 A
+HETATM   18  C   UNK     0      -7.253  19.529  27.530 -0.37 +0.00    -0.000 A
+HETATM   19  C   UNK     0      -7.955  18.965  28.582 -0.26 +0.01    -0.004 A
+ENDBRANCH  13  14
+ENDBRANCH   1  13
+BRANCH   1  20
+HETATM   20  C   UNK     0      -9.954  15.538  28.859 -0.29 -0.02    +0.045 C
+BRANCH  20  21
+HETATM   21  C   UNK     0     -10.793  16.782  28.693 -0.22 -0.18    +0.175 C
+HETATM   22  O   UNK     0     -11.729  16.739  29.791 -0.21 +0.25    -0.221 OA
+BRANCH  21  23
+HETATM   23  C   UNK     0     -11.483  16.779  27.300 -0.28 -0.22    +0.143 C
+BRANCH  23  24
+HETATM   24  C   UNK     0     -12.036  15.392  26.972 -0.32 -0.04    +0.053 C
+BRANCH  24  25
+HETATM   25  C   UNK     0     -12.917  14.858  28.098 -0.36 +0.01    -0.020 A
+HETATM   26  C   UNK     0     -14.001  15.616  28.569 -0.40 +0.00    -0.004 A
+HETATM   27  C   UNK     0     -14.810  15.132  29.592 -0.37 +0.00    -0.000 A
+HETATM   28  C   UNK     0     -14.549  13.894  30.152 -0.30 -0.00    -0.000 A
+HETATM   29  C   UNK     0     -13.471  13.134  29.688 -0.36 -0.00    -0.000 A
+HETATM   30  C   UNK     0     -12.649  13.604  28.664 -0.38 +0.00    -0.004 A
+ENDBRANCH  24  25
+ENDBRANCH  23  24
+BRANCH  23  31
+HETATM   31  N   UNK     0     -10.518  17.173  26.282 -0.18 +0.28    -0.211 NA
+HETATM   32  C   UNK     0     -10.747  17.076  24.977 -0.14 -0.42    +0.383 C
+HETATM   33  O   UNK     0     -11.819  16.645  24.556 -0.31 +0.27    -0.236 OA
+BRANCH  32  34
+HETATM   34  O   UNK     0      -9.776  17.497  24.068 -0.18 +0.19    -0.289 OA
+BRANCH  34  35
+HETATM   35  C   UNK     0      -9.171  16.661  23.137 -0.29 -0.04    +0.103 C
+HETATM   36  C   UNK     0      -8.616  15.409  23.803 -0.31 -0.01    +0.030 C
+HETATM   37  C   UNK     0      -8.014  17.411  22.501 -0.32 -0.01    +0.030 C
+HETATM   38  C   UNK     0     -10.116  16.353  21.988 -0.48 -0.01    +0.030 C
+ENDBRANCH  34  35
+ENDBRANCH  32  34
+ENDBRANCH  23  31
+ENDBRANCH  21  23
+ENDBRANCH  20  21
+ENDBRANCH   1  20
+TORSDOF 14
+TER
+ENDMDL

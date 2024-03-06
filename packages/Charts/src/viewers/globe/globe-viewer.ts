@@ -47,6 +47,7 @@ export class GlobeViewer extends DG.JsViewer {
     this.pointRadius = this.float('pointRadius', 15);
     this.pointAltitude = this.float('pointAltitude', 50);
     this.autorotation = this.bool('autorotation', true);
+    this.addRowSourceAndFormula();
 
     this.rScale = scaleLinear([0, 100], [0, 1]);
     this.points = [];
@@ -108,7 +109,6 @@ export class GlobeViewer extends DG.JsViewer {
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
       const width = this.root.parentElement!.clientWidth;
       const height = this.root.parentElement!.clientHeight;
@@ -168,7 +168,7 @@ export class GlobeViewer extends DG.JsViewer {
 
     const magData = mag.getRawData();
     const colorByColData = colorByCol.getRawData();
-    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
+    for (const i of this.filter.getSelectedIndexes()) {
       this.points.push({
         lat: lat[i],
         lng: lon[i],

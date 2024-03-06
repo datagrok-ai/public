@@ -11,6 +11,7 @@ import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { addDataFromDmDomain, getNullOrValue } from "../data-preparation/utils";
 import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { TIMELINES_VIEW_NAME } from "../constants/view-names-constants";
+import { TIMELINES_VIEWER } from "../constants/constants";
 
 let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
 
@@ -143,7 +144,7 @@ export class TimelinesView extends ClinicalCaseViewBase {
   private updateTimelinesPlot() {
     this.updateTimelinesTables();
     if (this.resultTables) {
-      this.resultTables.plot.fromType(DG.VIEWER.TIMELINES, {
+      this.resultTables.plot.fromType(TIMELINES_VIEWER, {
         paramOptions: JSON.stringify(this.options),
       }).then((v: any) => {
         v.setOptions({

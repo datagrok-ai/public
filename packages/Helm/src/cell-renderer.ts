@@ -144,36 +144,6 @@ function getHoveredMonomerFallback(
   return hoveredSeqMonomer;
 }
 
-// patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
-/** get the text width in pixels */
-// @ts-ignore
-window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
-  const rawNode = this.rawNode;
-  const oldParent = rawNode.parentNode;
-  const _measurementNode = rawNode.cloneNode(true);
-  _measurementNode.style.visibility = 'hidden';
-
-  // solution to the "orphan issue" in FF
-  let _width = 0;
-  const _text = _measurementNode.firstChild.nodeValue;
-  oldParent.appendChild(_measurementNode);
-
-  // solution to the "orphan issue" in Opera
-  // (nodeValue == "" hangs firefox)
-  if (_text != '') {
-    let watchdogCounter = 100;
-    while (!_width && --watchdogCounter > 0) { // <-- hangs
-      //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
-      if (_measurementNode.getBBox)
-        _width = parseInt(_measurementNode.getBBox().width);
-      else
-        _width = 68;
-    }
-  }
-  oldParent.removeChild(_measurementNode);
-  return _width;
-};
-
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
  * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
  */
@@ -259,6 +229,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     }
   }
 
+
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
@@ -288,6 +259,11 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           {style: {width: `${w - 2}px`, height: `${h - 2}px`, margin: `${1}px`, backgroundColor: '#FFE0E0'}});
         host.setAttribute('dataformat', 'helm');
         host.setAttribute('data', seq /* gaps skipped */);
+        // if grid has neighbour to the left, then shift host to the left
+        if (host.parentElement && (gridCell.grid?.canvas?.offsetLeft ?? 0) > 0) {
+          host.parentElement.style.left =
+            `${(gridCell.grid?.canvas?.offsetLeft ?? 0) + host.parentElement.offsetLeft}px`;
+        }
 
         // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
         const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;
@@ -306,7 +282,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         }
 
         w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        g.save();
+        //g.save();
         g.beginPath();
         g.rect(x, y, w, h);
         g.clip();

@@ -128,11 +128,6 @@ export class DemoView extends DG.ViewBase {
 
       for (let j = 0; j < directionFuncs.length; ++j) {
         let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
-        fetch(imgPath)
-          .then(res => {
-            imgPath = res.ok ? imgPath : `${_package.webRoot}images/demoapp/emptyImg.jpg`;
-          })
-          .catch();
 
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
@@ -221,9 +216,24 @@ export class DemoView extends DG.ViewBase {
     for (let i = 0; i < directionFuncs.length; i++) {
 
       const path = directionFuncs[i].path.split('|').map((s) => s.trim());
-
-      const img = ui.div('', 'ui-image');
-      img.style.backgroundImage = `url(${directionFuncs[i].imagePath}`;
+      //const img = ui.div('', 'ui-image');
+      
+      const img = ui.div([ui.wait(async () => {
+        let root = ui.div('','img');
+        root.className = 'ui-image';
+        await fetch(`${directionFuncs[i].imagePath}`)
+          .then(response => {
+            if (response.ok) {
+              return Promise.resolve(response.url)
+            } else if(response.status === 404) {
+              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.jpg`)
+            }
+          })
+          .then((data) => root.style.backgroundImage = `url(${data})`)
+          .catch((data) => root.style.backgroundImage = `url(${data})`);
+        return root;
+        })
+      ]);
 
       let item = ui.card(ui.divV([
         img,
@@ -539,4 +549,13 @@ export class DemoView extends DG.ViewBase {
 
     grok.shell.windows.help.syncCurrentObject = false;
   }
+}
+
+function imageExists(image_url: string){
+  var http = new XMLHttpRequest();
+
+  http.open('HEAD', image_url, false);
+  http.send();
+
+  return http.status != 404;
 }

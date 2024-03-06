@@ -8,7 +8,7 @@ out of a center: the higher value is, the further it is from the center. The
 values from the same table row are connected across axes with lines.
 
 On radar viewer, you can compare the numerical values of different columns
-within a row and rows’ values within a dataset. Radar viewer is commonly used in
+within a row and rows' values within a dataset. Radar viewer is commonly used in
 the comparison, decision-making, and analysis, for example, in [elemental analysis in cheminformatics](../../datagrok/solutions/domains/chem/chem.md#elemental-analysis).
 
 ![Radar viewer](radar-viewer.png)
@@ -47,13 +47,13 @@ For example, you can:
   lists in **Min** and **Max**.
 * Toggle the display of percentiles using the **Show Min** and **Show Max**
   checkboxes.
-* Set the background color for the percentiles’ areas using the **Background Min
+* Set the background color for the percentiles' areas using the **Background Min
   Color** and **Background Max Color** settings.
 * Toggle value labels using the **Show values** checkbox.
 
 ## Interaction with other viewers
 
-A radar viewer responds to the current row selection and doesn’t respond to data
+A radar viewer responds to the current row selection and doesn't respond to data
 filters.
 
 ![Radar viewer](radar-viewer.gif)

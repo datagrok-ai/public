@@ -11,7 +11,7 @@ export function showHelpPanel() {
   # Model
   Only declarative equations description is required.
   # Essence
-  One- and two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
+  Two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
   # Performance
   Nonlinear system of differential equations within a few milliseconds
   # Learn more

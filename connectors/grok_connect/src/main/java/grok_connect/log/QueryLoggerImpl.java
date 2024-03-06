@@ -2,26 +2,25 @@ package grok_connect.log;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.LoggerFactory;
-import serialization.DataFrame;
-import java.util.List;
 import java.util.UUID;
 
-public class QueryLoggerImpl implements QueryLogger<DataFrame> {
-    private final QueryLoggerAppender appender;
+public class QueryLoggerImpl implements QueryLogger {
+    private final QueryStreamAppender appender;
     private final Logger logger;
 
-    public QueryLoggerImpl(List<String> logLevels) {
+    public QueryLoggerImpl(Session session) {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        appender = new QueryLoggerAppender();
-        UUID uuid = UUID.randomUUID();
-        appender.setName(uuid.toString());
+        appender = new QueryStreamAppender(session);
+        String name = UUID.randomUUID().toString();
+        appender.setName(name);
         appender.setContext(context);
-        appender.addFilter(new AppenderFilter(logLevels));
+        appender.addFilter(new AppenderFilter());
         appender.start();
-        logger = context.getLogger(uuid.toString());
+        logger = context.getLogger(name);
         logger.addAppender(appender);
-        logger.setAdditive(true);
+        logger.setAdditive(true); // set true if root logger should log too
     }
 
     @Override
@@ -35,12 +34,10 @@ public class QueryLoggerImpl implements QueryLogger<DataFrame> {
     }
 
     @Override
-    public DataFrame dumpLogMessages() {
-        return appender.getLog();
-    }
-
-    @Override
     public void writeLog(boolean write) {
-        appender.setWriteLog(write);
+        if (write)
+            logger.addAppender(appender);
+        else
+            logger.detachAppender(appender);
     }
 }

@@ -3,7 +3,7 @@ export const CONTROL_TAG = '#';
 export const CONTROL_TAG_LEN = CONTROL_TAG.length;
 export const DF_NAME = 'df';
 const META = `${CONTROL_TAG}meta`;
-export const MAX_LINE_CHART = 6;
+export const MAX_LINE_CHART = 4;
 
 /** Control expressions for the problem specifying */
 export enum CONTROL_EXPR {
@@ -29,7 +29,7 @@ export enum CONTROL_EXPR {
 export enum LOOP {
   MIN_LINES_COUNT = 1,
   COUNT_IDX = 0,
-  COUNT_NAME = '_count',  
+  COUNT_NAME = '_count',
   MIN_COUNT = 1,
 };
 
@@ -37,6 +37,5 @@ export enum LOOP {
 export enum UPDATE {
   MIN_LINES_COUNT = 1,
   DURATION_IDX = 0,
-  DURATION = '_duration',  
-  MIN_DURATION = 0,
+  DURATION = '_duration',
 };

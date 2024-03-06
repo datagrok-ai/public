@@ -59,7 +59,7 @@ molecule (Gapmers / siRNA).
 | `Z-New`        |                                                          | `Z`                                  |
 | `InvAbasic`    | Inverted abasic capped                                   | `(invabasic)`                        |
 | `InvAbasic(o)` | Inverted abasic capped (overhang)                        | `(invabasic)`                        |
-| `2'-OMe-U(o)`  | Nucleotide Uridine with 2’O-Methyl protection (overhang) | `mU`                                 |
+| `2'-OMe-U(o)`  | Nucleotide Uridine with 2'O-Methyl protection (overhang) | `mU`                                 |
 
 ## App glossary
 

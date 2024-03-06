@@ -2,21 +2,14 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {v4 as uuidv4} from 'uuid';
-
 import {errInfo} from './err-info';
+import {ILogger} from './logger';
 
 export enum LogLevel { error = 0, warning = 1, info = 2, debug = 3}
 
-export interface ILogger {
-  error(message: any, params?: object | undefined, stackTrace?: string | undefined): void;
-  warning(message: string, params?: object | undefined): void;
-  info(message: string, params?: object | undefined): void;
-  debug(message: string, params?: object | undefined): void;
-}
-
 export class PromiseSyncer {
   private promise: Promise<void> = Promise.resolve();
+  private errors: any[] = [];
 
   constructor(
     private readonly logger: ILogger,
@@ -34,7 +27,14 @@ export class PromiseSyncer {
     }).catch((err: any) => {
       const [errMsg, errStack] = errInfo(err);
       this.logger.error(`${logPrefix}, SYNC syncId = ${syncId}, ERROR:\n${errMsg}`, undefined, errStack);
+      this.errors.push(err);
     });
     // this.logger.debug(`${logPrefix}, SYNC syncId = ${syncId}, OUT`);
+  }
+
+  public resetErrors(): any[] {
+    const res = this.errors;
+    this.errors = [];
+    return res;
   }
 }

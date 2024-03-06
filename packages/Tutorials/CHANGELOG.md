@@ -1,5 +1,11 @@
 # Tutorials changelog
 
+## 1.3.22 (2023-12-21)
+
+### Features
+
+* Added card for Diff Studio demo app.
+
 ## 1.3.21 (2023-12-07)
 
 ### Bug Fixes

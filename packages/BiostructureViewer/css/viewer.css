@@ -13,3 +13,15 @@
     max-width: 350px;
     max-height: 200px;
 }
+
+.bsv-modal-background {
+    background-color: white; /* reference to .d4-root background color */
+    opacity: 0.8;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    height: 100%;
+    width: 100%;
+    z-index: 2999;
+}
+

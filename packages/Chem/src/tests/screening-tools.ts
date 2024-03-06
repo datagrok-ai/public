@@ -102,7 +102,7 @@ category('screening tools: benchmarks', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
     df.name = 'test';
     const v = grok.shell.addTableView(df);
-    await awaitCheck(() => v.name === 'test', undefined, 1000);
+    await awaitCheck(() => v.dataFrame.name === 'test', undefined, 1000);
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
     DG.time('Elemental Analysis', async () => {

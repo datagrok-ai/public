@@ -1,486 +1,841 @@
-// Application for solving initial value problems (IVP) & demo app
+// UI for solving differential equations
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-
-import {basicSetup, EditorView} from "codemirror";
-import {EditorState} from "@codemirror/state";
-import {python} from "@codemirror/lang-python";
-import {autocompletion} from "@codemirror/autocomplete";
+import {basicSetup, EditorView} from 'codemirror';
+import {EditorState} from '@codemirror/state';
+import {python} from '@codemirror/lang-python';
+import {autocompletion} from '@codemirror/autocomplete';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
-import { USE_CASES } from './use-cases';
-import {getIVP, getScriptLines, getScriptParams, IVP} from './scripting-tools';
+import {USE_CASES} from './use-cases';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, TIMEOUT} from './ui-constants';
+import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
+  BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
+
+import './css/app-styles.css';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
-  CLEAR = 0,
-  BASIC_TEMPLATE = 1,
-  ADVANCED_TEMPLATE = 2,  
-  FROM_FILE = 3,
-  EXTENDED_TEMPLATE = 4,
-  CHEM_REACT = 5,
-  ROBERT = 6,
-  FERM = 7,
-  PKPD = 8,
-  ACID_PROD = 9,
-  NIMOTUZUMAB = 10,
+  EMPTY = 'empty',
+  BASIC_TEMPLATE = 'template',
+  ADVANCED_TEMPLATE = 'advanced',
+  FROM_FILE = 'from-file',
+  EXTENDED_TEMPLATE = 'extended',
+  CHEM_REACT = 'chem-react',
+  ROBERT = 'robertson',
+  FERM = 'fermentation',
+  PKPD = 'pk-pd',
+  ACID_PROD = 'ga-production',
+  NIMOTUZUMAB = 'nimotuzumab',
+  BIOREACTOR = 'bioreactor',
 };
 
-const SOLVER_HELP_LINK = '/help/compute/solver.md';
+/** State-to-template/use-case map */
+const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
+  [EDITOR_STATE.BASIC_TEMPLATE, TEMPLATES.BASIC],
+  [EDITOR_STATE.ADVANCED_TEMPLATE, TEMPLATES.ADVANCED],
+  [EDITOR_STATE.EXTENDED_TEMPLATE, TEMPLATES.EXTENDED],
+  [EDITOR_STATE.CHEM_REACT, USE_CASES.CHEM_REACT],
+  [EDITOR_STATE.ROBERT, USE_CASES.ROBERTSON],
+  [EDITOR_STATE.FERM, USE_CASES.FERMENTATION],
+  [EDITOR_STATE.PKPD, USE_CASES.PK_PD],
+  [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
+  [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
+  [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
+]);
 
-/** Get problem with respect to IVP editor state. */
-function getProblem(state: EDITOR_STATE): string {
+/** Models & templates */
+const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
+  EDITOR_STATE.ADVANCED_TEMPLATE,
+  EDITOR_STATE.EXTENDED_TEMPLATE,
+  EDITOR_STATE.CHEM_REACT,
+  EDITOR_STATE.ROBERT,
+  EDITOR_STATE.FERM,
+  EDITOR_STATE.PKPD,
+  EDITOR_STATE.ACID_PROD,
+  EDITOR_STATE.NIMOTUZUMAB,
+  EDITOR_STATE.BIOREACTOR,
+];
+
+/** Return help link with respect to IVP editor state */
+function getLink(state: EDITOR_STATE): string {
   switch (state) {
-    case EDITOR_STATE.BASIC_TEMPLATE:
-      return TEMPLATES.BASIC;
+  case EDITOR_STATE.CHEM_REACT:
+    return LINK.CHEM_REACT;
 
-    case EDITOR_STATE.ADVANCED_TEMPLATE:
-      return TEMPLATES.ADVANCED;
-      
-    case EDITOR_STATE.EXTENDED_TEMPLATE:
-      return TEMPLATES.EXTENDED;
-    
-    case EDITOR_STATE.CHEM_REACT:
-      return USE_CASES.CHEM_REACT;
+  case EDITOR_STATE.ROBERT:
+    return LINK.ROBERTSON;
 
-    case EDITOR_STATE.ROBERT:
-      return USE_CASES.ROBERTSON;    
+  case EDITOR_STATE.FERM:
+    return LINK.FERMENTATION;
 
-    case EDITOR_STATE.FERM:
-      return USE_CASES.FERMENTATION;
+  case EDITOR_STATE.PKPD:
+    return LINK.PKPD;
 
-    case EDITOR_STATE.PKPD:
-      return USE_CASES.PK_PD;
+  case EDITOR_STATE.ACID_PROD:
+    return LINK.GA_PRODUCTION;
 
-    case EDITOR_STATE.ACID_PROD:
-      return USE_CASES.ACID_PROD;
+  case EDITOR_STATE.NIMOTUZUMAB:
+    return LINK.NIMOTUZUMAB;
 
-    case EDITOR_STATE.NIMOTUZUMAB:
-      return USE_CASES.NIMOTUZUMAB;
+  case EDITOR_STATE.BIOREACTOR:
+    return LINK.BIOREACTOR;
 
-    default:
-      return TEMPLATES.EMPTY;
+  default:
+    return LINK.DIF_STUDIO_REL;
   }
-} // getProblem
+} // getLink
 
 /** Completions of control expressions */
 const completions = [
-  {label: `${CONTROL_EXPR.NAME}: `, type: "keyword", info: "name of the problem"},  
-  {label: `${CONTROL_EXPR.TAGS}: `, type: "keyword", info: "scripting tags"},
-  {label: `${CONTROL_EXPR.DESCR}: `, type: "keyword", info: "descritpion of the problem"},
-  {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: "keyword", info: "block of differential equation(s) specification"},
-  {label: `${CONTROL_EXPR.EXPR}:\n  `, type: "keyword", info: "block of auxiliary expressions & computations"},
-  {label: `${CONTROL_EXPR.ARG}: `, type: "keyword", info: "independent variable specification"},
-  {label: `${CONTROL_EXPR.INITS}:\n  `, type: "keyword", info: "initial values of the problem"},
-  {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: "keyword", info: "parameters of the problem"},
-  {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: "keyword", info: "constants definition"},
-  {label: `${CONTROL_EXPR.TOL}: `, type: "keyword", info: "tolerance of numerical solution"},
-  {label: `${CONTROL_EXPR.LOOP}:\n  `, type: "keyword", info: "loop feature"},
-  {label: `${CONTROL_EXPR.UPDATE}:\n  `, type: "keyword", info: "update model feature"},
-  {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: "keyword", info: "output specification"},
-  {label: `${CONTROL_EXPR.COMMENT}: `, type: "keyword", info: "block with comments"},
+  {label: `${CONTROL_EXPR.NAME}: `, type: 'keyword', info: INFO.NAME},
+  {label: `${CONTROL_EXPR.TAGS}: `, type: 'keyword', info: INFO.TAGS},
+  {label: `${CONTROL_EXPR.DESCR}: `, type: 'keyword', info: INFO.DESCR},
+  {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: 'keyword', info: INFO.DIF_EQ},
+  {label: `${CONTROL_EXPR.EXPR}:\n  `, type: 'keyword', info: INFO.EXPR},
+  {label: `${CONTROL_EXPR.ARG}: `, type: 'keyword', info: INFO.ARG},
+  {label: `${CONTROL_EXPR.INITS}:\n  `, type: 'keyword', info: INFO.INITS},
+  {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: 'keyword', info: INFO.PARAMS},
+  {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: 'keyword', info: INFO.CONSTS},
+  {label: `${CONTROL_EXPR.TOL}: `, type: 'keyword', info: INFO.TOL},
+  {label: `${CONTROL_EXPR.LOOP}:\n  `, type: 'keyword', info: INFO.LOOP},
+  {label: `${CONTROL_EXPR.UPDATE}:  `, type: 'keyword', info: INFO.UPDATE},
+  {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: 'keyword', info: INFO.OUTPUT},
+  {label: `${CONTROL_EXPR.COMMENT}: `, type: 'keyword', info: INFO.COMMENT},
 ];
 
 /** Control expressions completion utilite */
 function contrCompletions(context: any) {
-  let before = context.matchBefore(/[#]\w*/)
-  if (!context.explicit && !before) return null
+  const before = context.matchBefore(/[#]\w*/);
+
+  if (!context.explicit && !before) return null;
   return {
     from: before ? before.from : context.pos,
     options: completions,
-    validFor: /^\w*$/
-  }
+    validFor: /^\w*$/,
+  };
 }
 
 /** Return options of line chart */
-function lineChartOptions(ivp: IVP): Object {
-  const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
-
-  return {    
+function getLineChartOptions(colNames: string[]): Object {
+  const count = colNames.length;
+  return {
+    xColumnName: colNames[0],
+    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : colNames[0],
     showTitle: true,
-    sharex: true, 
-    multiAxis: outputColsCount > MAX_LINE_CHART,
-    multiAxisLegendPosition: "RightTop",
+    sharex: true,
+    multiAxis: count > MAX_LINE_CHART,
+    multiAxisLegendPosition: 'RightTop',
+    segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: null,
+    showAggrSelectors: false,
   };
 }
 
-/** Run solver application */
-export async function runSolverApp() {
+/**  String-to-value */
+const strToVal = (s: string) => {
+  const num = Number(s);
+  return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
+};
 
-  /** Get JS-script for solving the current IVP */
-  const exportToJS = () => {
-    try {
-      const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
-      const script = DG.Script.create(scriptText);
-      const sView = DG.ScriptView.create(script);
-      grok.shell.addView(sView);
+/** Solver of differential equations */
+export class DiffStudio {
+  /** Run Diff Studio application */
+  public async runSolverApp(content?: string): Promise<void> {
+    this.createEditorView(content, true);
+    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
+    this.toChangePath = true;
+
+    // routing
+    if (content)
+      await this.runSolving(false);
+      // dfdf
+
+
+    else {
+      const modelIdx = this.startingPath.indexOf(PATH.MODEL);
+      const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
+
+      if (modelIdx > -1) {
+        const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
+
+        if (MODELS.includes(model)) {
+          this.startingInputs = new Map<string, number>();
+
+          if (modelIdx < paramsIdx) {
+            try {
+              this.startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
+                const eqIdx = equality.indexOf(PATH.EQ);
+                this.startingInputs?.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+              });
+            } catch (error) {
+              this.startingInputs = null;
+            }
+          }
+
+          await this.setState(model as EDITOR_STATE, false);
+        } else
+          await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+      } else
+        await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     }
-    catch (err) {
-      if (err instanceof Error) {
-        const b = new DG.Balloon();
-        b.error(err.message);
+  } // runSolverApp
+
+  /** Run Diff Studio demo application */
+  public async runSolverDemoApp(): Promise<void> {
+    this.createEditorView(DEMO_TEMPLATE, true);
+    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
+    this.toChangePath = false;
+    const helpMD = ui.markdown(demoInfo);
+    helpMD.classList.add('diff-studio-demo-app-div-md');
+    const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
+    this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
+    await this.runSolving(false);
+    // dfdf
+  } // runSolverDemoApp
+
+  /** Return file preview view */
+  public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
+    const browseView = grok.shell.view(TITLE.BROWSE);
+    const equations = await file.readAsString();
+    this.createEditorView(equations, false);
+    this.toChangePath = true;
+    this.solverView.setRibbonPanels([]);
+
+    const saveBtn = ui.button(TITLE.SAVE, async () => {
+      const source = new DG.FileSource();
+
+      try {
+        await source.writeAsText(file.fullPath, this.editorView!.state.doc.toString());
+      } catch (error) {
+        grok.shell.error(ERROR_MSG.FAILED_TO_SAVE);
+      }
+
+      saveBtn.hidden = true;
+    }, HINT.SAVE);
+    this.solverView.append(saveBtn);
+    saveBtn.hidden = true;
+    let isSaveBtnAdded = false;
+
+    const addSaveBtnToRibbon = () => {
+      const ribbonPnls = browseView!.getRibbonPanels();
+      ribbonPnls.push([saveBtn]);
+      browseView!.setRibbonPanels(ribbonPnls);
+      isSaveBtnAdded = true;
+    };
+
+    // routing
+    const paramsIdx = path.indexOf(PATH.PARAM);
+    if (paramsIdx > -1) {
+      try {
+        this.startingInputs = new Map<string, number>();
+        path.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
+          const eqIdx = equality.indexOf(PATH.EQ);
+          this.startingInputs!.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+        });
+      } catch (error) {
+        this.startingInputs = null;
       }
     }
-  };
 
-  /** Solve the current IVP */
-  const solve = async () => {  
-    try {  
-      const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);    
-      const params = getScriptParams(ivp);    
-      const call = script.prepare(params);
+    this.editorView!.dom.addEventListener('keydown', async (e) => {
+      if (!isSaveBtnAdded)
+        addSaveBtnToRibbon();
 
-      await call.call();
-      solutionTable = call.outputs[DF_NAME];
-      solverView.dataFrame = call.outputs[DF_NAME];
-      solverView.name = solutionTable.name;
-
-      if (!solutionViewer)
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
-      
-      solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
-
-    } catch (err) {
-        if (err instanceof Error) {
-          const b = new DG.Balloon();
-          b.error(err.message);
-        }
-  }}; 
-   
-  let solutionTable = DG.DataFrame.create();
-  let solverView = grok.shell.addTableView(solutionTable);
-  let solutionViewer: DG.Viewer | null = null;
-  solverView.name = 'Template';
-  let div = ui.divV([]);   
-
-  /** Code editor for IVP specifying */
-  let editorView = new EditorView({
-    doc: TEMPLATES.BASIC,
-    extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-    parent: div
-  });
-
-  let editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
-  let toShowWarning = true;
-
-  /** Load IVP from file */
-  const loadFn = async () => {
-    let text = '';
-    const dlg = ui.dialog('Open a file');
-    const fileInp = document.createElement('input');
-    fileInp.type = 'file';
-    fileInp.onchange = () => {
-      //@ts-ignore
-      const [file] = document.querySelector("input[type=file]").files;
-      const reader = new FileReader();
-      reader.addEventListener("load", () => { 
-        text = reader.result as string; 
-        setState(EDITOR_STATE.FROM_FILE, text);
-        dlg.close();
-      }, false);
-          
-      if (file) 
-        reader.readAsText(file);
-    }     
-
-    dlg.add(fileInp);        
-    fileInp.click();
-  };
-
-  /** Save the current IVP to file */
-  const saveFn = async () => {
-    const link = document.createElement("a");
-    const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
-    link.href = URL.createObjectURL(file);
-    link.download = "equations.txt";
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
-
-  /** Set IVP code editor state */
-  const setState = (state: EDITOR_STATE, text?: string | undefined) => {
-    editorState = state;
-    solutionTable = DG.DataFrame.create();
-    solverView.dataFrame = solutionTable;
-    
-    if (solutionViewer) {
-      solutionViewer.close();
-      solutionViewer = null;
-    }
-
-    const newState = EditorState.create({
-      doc: text ?? getProblem(state), 
-      extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+      saveBtn.hidden = false;
     });
 
-    editorView.setState(newState);
-  };
+    this.toRunWhenFormCreated = true;
 
-  /** Overwrite the editor content */
-  const overwrite = async (state?: EDITOR_STATE, fn?: () => Promise<void>) => {
-    if (toShowWarning) {      
-      const boolInput = ui.boolInput('Show this warning', true, () => toShowWarning = !toShowWarning);      
-      const dlg = ui.dialog({title: 'Overwrite?', helpUrl: SOLVER_HELP_LINK});
-      solverView.append(dlg);
+    setTimeout(() => this.runSolving(true), TIMEOUT.PREVIEW_RUN_SOLVING);
 
-      dlg
-        .add(ui.label('This will overwrite the current project.'))
-        .add(ui.label('Do you want to go on?'))
-        .add(ui.divH([boolInput.root]))
-        .onCancel(() => dlg.close())
-        .onOK(async () => {
-          if (fn)
-            await fn();
-          else
-            setState(state ?? EDITOR_STATE.CLEAR);          
-        })
-        .show();
-    }
-    else if (fn)
-      await fn();
+    return this.solverView;
+  } // getFilePreview
+
+  static isStartingUriProcessed: boolean = false;
+
+  private solutionTable = DG.DataFrame.create();
+  private startingPath = window.location.href;
+  private startingInputs: Map<string, number> | null = null;
+  private solverView: DG.TableView;
+  private solverMainPath: string = PATH.CUSTOM;
+  private solutionViewer: DG.Viewer | null = null;
+  private viewerDockNode: DG.DockNode | null = null;
+  private toChangeSolutionViewerProps = false;
+  private modelDiv = ui.divV([]);
+  private inputsPanel = ui.panel([]);
+  private prevInputsNode: Node | null = null;
+  private tabControl: DG.TabControl = ui.tabControl();
+  private editorState: EDITOR_STATE = EDITOR_STATE.BASIC_TEMPLATE;
+  private toShowWarning = true;
+  private isModelChanged = false;
+  private toChangeInputs = false;
+  private isSolvingSuccess = false;
+  private toChangePath = false;
+  private toRunWhenFormCreated = true;
+  private modelPane: DG.TabPane;
+  private runPane: DG.TabPane;
+  private editorView: EditorView | undefined;
+  private openMenu: DG.Menu;
+  private openIcon: HTMLElement;
+  private saveIcon: HTMLElement;
+  private helpIcon: HTMLElement;
+  private exportButton: HTMLElement;
+
+  private inputsByCategories = new Map<string, DG.InputBase[]>();
+
+  constructor(toAddTableView: boolean = true) {
+    this.solverView = toAddTableView ?
+      grok.shell.addTableView(this.solutionTable) :
+      DG.TableView.create(this.solutionTable, false);
+
+    this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
+    this.solverView.name = MISC.VIEW_DEFAULT_NAME;
+    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
+      setTimeout(() => {
+        this.modelDiv.style.height = '100%';
+        this.editorView!.dom.style.height = '100%';
+      }, 10);
+      return this.modelDiv;
+    });
+    this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
+
+    this.tabControl.onTabChanged.subscribe(async (_) => {
+      if ((this.tabControl.currentPane === this.runPane) && this.toChangeInputs)
+        await this.runSolving(true);
+    });
+
+    const dockTabCtrl = () => {
+      const node = this.solverView.dockManager.dock(this.tabControl.root, DG.DOCK_TYPE.LEFT);
+      if (node.container.dart.elementTitle)
+        node.container.dart.elementTitle.hidden = true;
+    };
+
+    if (!toAddTableView)
+      setTimeout(dockTabCtrl, TIMEOUT.PREVIEW_DOCK_EDITOR);
     else
-      setState(state ?? EDITOR_STATE.CLEAR);
-  };
+      dockTabCtrl();
 
-  editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
-    event.preventDefault();
-    DG.Menu.popup()
-      .item('Load...', async () => await overwrite(undefined, loadFn), undefined, {description: 'Load problem from local file'})
-      .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-      .item('Clear...', async () => await overwrite(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
-      .separator()
-      .group('Templates')
-      .item('Basic...', async () => await overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-      .item('Advanced...', async () => await overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
-      .item('Extended...', async () => await overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
+    this.openMenu = DG.Menu.popup()
+      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
       .endGroup()
-      .group('Use cases')
-      .item('Chem reactions...', async () => await overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-      .item("Robertson's model...", async () => await overwrite(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
-      .item('Fermentation...', async () => await overwrite(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
-      //.separator()
-      .item('PK-PD...', async () => await overwrite(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
-      .item('Acid production...', async () => await overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
-      .item('Nimotuzumab...', async () => await overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: 'Nimotuzumab disposition model'})
-      .endGroup()
-      .show();    
-  });
-  
-  editorView.dom.style.overflow = 'auto';
-  editorView.dom.style.height = '100%';
+      .group(TITLE.CASES)
+      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
+      .endGroup();
 
-  solverView.dockManager.dock(div, 'left');
-  solverView.helpUrl = SOLVER_HELP_LINK;
+    this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
+    this.saveIcon = ui.iconFA('save', async () => {await this.saveFn();}, HINT.SAVE_LOC);
+    this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
+    this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
+  }; // constructor
 
-  const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
-  exportIcon.classList.add("fal");
+  /** Create model editor */
+  private createEditorView(content?: string, toAddContextMenu?: boolean): void {
+    this.editorView = new EditorView({
+      doc: content ?? TEMPLATES.BASIC,
+      extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+      parent: this.modelDiv,
+    });
 
-  const playIcon = ui.iconFA('play', solve, 'Solve (F5)');  
-  playIcon.style.color = "var(--green-2)";
-  playIcon.classList.add("fas"); 
-  
-  solverView.root.addEventListener('keydown', async (e) => {
-    if (e.key === "F5") {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      await solve();
-    }
-  });
+    this.editorView.dom.addEventListener('keydown', async (e) => {
+      if (e.key !== HOT_KEY.RUN) {
+        this.isModelChanged = true;
+        this.toChangeInputs = true;
+        this.solverView.path = PATH.CUSTOM;
+        this.solverMainPath = PATH.CUSTOM;
+        this.startingInputs = null;
+        this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
+        this.isSolvingSuccess = false;
+        this.runPane.header.hidden = false;
+        this.toRunWhenFormCreated = true;
+        this.toChangeSolutionViewerProps = true;
+      } else {
+        e.stopImmediatePropagation();
+        e.preventDefault();
 
-  solverView.setRibbonPanels([[exportIcon], [playIcon]]);
-} // runSolverApp
+        if ( this.toChangeInputs )
+          await this.runSolving(true);
+        else
+          this.tabControl.currentPane = this.runPane;
+      }
+    });
 
-/** Run solver demo application */
-export async function runSolverDemoApp() {
-  let solutionTable: DG.DataFrame;
-  let solverView: DG.TableView;
-  let solutionViewer: DG.Viewer | null = null;  
-  let div = ui.div([]);   
+    this.editorView.dom.classList.add('diff-studio-eqs-editor');
 
-  /** Code editor for IVP specifying */
-  let editorView = new EditorView({
-    doc: DEMO_TEMPLATE[0],
-    extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-    parent: div
-  });
-
-  /** Return new state of editor */
-  const newState = (lines: string[]) => EditorState.create({
-    doc: lines.join('\n'),
-    extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-  });
-
-  /** Solve the current IVP */
-  const solve = async () => {  
-    try {  
-      const ivp = getIVP(editorView.state.doc.toString());
-      const scriptText = getScriptLines(ivp).join('\n');    
-      const script = DG.Script.create(scriptText);    
-      const params = getScriptParams(ivp);    
-      const call = script.prepare(params);
-
-      await call.call();
-      solutionTable = call.outputs[DF_NAME];
-      solverView.dataFrame = call.outputs[DF_NAME];
-
-      if (!solutionViewer)
-        solutionViewer = DG.Viewer.lineChart(solutionTable, lineChartOptions(ivp));
-      
-      solverView.dockManager.dock(solutionViewer, DG.DOCK_TYPE.RIGHT);
-    } catch (err) {
-        if (err instanceof Error) {
-          const b = new DG.Balloon();
-          b.error(err.message);
-        }
-  }};
-
-  const demoScript = new DemoScript('Solving ODEs',
-    'Interactive solution of complex problems given in a declarative form');
-
-  await demoScript
-    .step('Project', async () => {      
-      solutionTable = DG.DataFrame.create();
-      solverView = grok.shell.addTableView(solutionTable);      
-      solverView.name = 'Demo';
-      editorView.dom.style.overflow = 'auto';
-      editorView.dom.style.height = '100%';
-      solverView.dockManager.dock(div, DG.DOCK_TYPE.LEFT);
-      solverView.helpUrl = SOLVER_HELP_LINK;
-      solverView.setRibbonPanels([]);
-    }, {description: 'Each project starts with the name.', delay: 0})    
-    .step('Equations', async () => {  
-      editorView.setState(newState(DEMO_TEMPLATE.slice(0, 4)));
-    }, {description: 'Declarative formulas define differential equations.', delay: 0})
-    .step('Argument', async () => {  
-      editorView.setState(newState(DEMO_TEMPLATE.slice(0, 9)));      
-    }, {description: 'The variable, its initial & final values and modeling step.', delay: 0})
-    .step('Initials', async () => {  
-      editorView.setState(newState(DEMO_TEMPLATE));      
-    }, {description: 'Initial values of the functions to be found.', delay: 0})
-    .step('Solution', async () => { 
-      grok.shell.windows.context.visible = false;
-      await solve();      
-    }, {description: 'Numerical results & their visualization.', delay: 0})
-    .step('Try it', async () => {
-
-      editorView.dom.addEventListener<"contextmenu">("contextmenu", (event) => {
+    if (toAddContextMenu) {
+      this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
         event.preventDefault();
         DG.Menu.popup()
-          .item('Load...', loadFn, undefined, {description: 'Load problem from local file'})
-          .item('Save...', saveFn, undefined, {description: 'Save problem to local file'})
-          .item('Clear...', async () => setState(EDITOR_STATE.CLEAR), undefined, {description: 'Clear problem'})
+          .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+          .item(TITLE.SAVE_DOTS, this.saveFn, undefined, {description: HINT.SAVE_LOC})
           .separator()
-          .group('Templates')
-          .item('Basic...', async () => setState(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: 'Open basic template'})
-          .item('Advanced...', async () => setState(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: 'Open advanced template'})
-          .item('Extended...', async () => setState(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: 'Open extended template'})
+          .group(TITLE.TEMPL)
+          .item(TITLE.BASIC, async () =>
+            await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+          )
+          .item(TITLE.ADV, async () =>
+            await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+          )
+          .item(TITLE.EXT, async () =>
+            await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
+          )
           .endGroup()
-          .group('Use cases')
-          .item('Chem reactions...', async () => setState(EDITOR_STATE.CHEM_REACT), undefined, {description: 'Mass-action kinetics illustration'})
-          .item("Robertson's model...", async () => setState(EDITOR_STATE.ROBERT), undefined, {description: "Robertson's chemical reaction model"})
-          .item('Fermentation...', async () => setState(EDITOR_STATE.FERM), undefined, {description: 'Fermentation process simulation'})
-          //.separator()
-          .item('PK-PD...', async () => setState(EDITOR_STATE.PKPD), undefined, {description: 'Pharmacokinetic-pharmacodynamic model'})
-          .item('Acid production...', async () => setState(EDITOR_STATE.ACID_PROD), undefined, {description: 'Gluconic acid production model'})
-          .item('Nimotuzumab...', async () => setState(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: 'Nimotuzumab disposition model'})
+          .group(TITLE.CASES)
+          .item(TITLE.CHEM, async () =>
+            await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
+          )
+          .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+          .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+          .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+          .item(TITLE.ACID, async () =>
+            await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
+          )
+          .item(TITLE.NIM, async () =>
+            await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
+          )
+          .item(TITLE.BIO, async () =>
+            await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
+          )
           .endGroup()
-          .show();    
+          .separator()
+          .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
+          .show();
       });
-    
-      const exportIcon = ui.iconFA('file-import', exportToJS, 'Export to JavaScript script');
-      exportIcon.classList.add("fal");
-    
-      const playIcon = ui.iconFA('play', solve, 'Solve (F5)');  
-      playIcon.style.color = "var(--green-2)";
-      playIcon.classList.add("fas"); 
-      
-      solverView.root.addEventListener('keydown', async (e) => {
-        if (e.key === "F5") {
-          e.stopImmediatePropagation();
-          e.preventDefault();
-          await solve();
-        }
-      });
-    
-      solverView.setRibbonPanels([[exportIcon], [playIcon]]);
-    }, {description: 'Modify formulas and press Run button. Check use cases via context menu.', delay: 0})
-    .start();
-  
-  /** Get JS-script for solving the current IVP */
-  const exportToJS = () => {
-    try {
-      const scriptText = getScriptLines(getIVP(editorView.state.doc.toString())).join('\n');      
-      const script = DG.Script.create(scriptText);
-      const sView = DG.ScriptView.create(script);
-      grok.shell.addView(sView);
     }
-    catch (err) {
-      if (err instanceof Error) {
-        const b = new DG.Balloon();
-        b.error(err.message);
-      }
-    }
-  };  
+  } // createEditorView
 
   /** Load IVP from file */
-  const loadFn = async () => {
+  private async loadFn(): Promise<void> {
     let text = '';
     const dlg = ui.dialog('Open a file');
     const fileInp = document.createElement('input');
     fileInp.type = 'file';
     fileInp.onchange = () => {
       //@ts-ignore
-      const [file] = document.querySelector("input[type=file]").files;
+      const [file] = document.querySelector('input[type=file]').files;
       const reader = new FileReader();
-      reader.addEventListener("load", () => { 
-        text = reader.result as string; 
-        setState(EDITOR_STATE.FROM_FILE, text);
+      reader.addEventListener('load', () => {
+        text = reader.result as string;
+        this.setState(EDITOR_STATE.FROM_FILE, true, text);
         dlg.close();
       }, false);
-          
-      if (file) 
-        reader.readAsText(file);
-    }     
 
-    dlg.add(fileInp);        
+      if (file)
+        reader.readAsText(file);
+    };
+
+    dlg.add(fileInp);
     fileInp.click();
-  };
+  }; // loadFn
 
   /** Save the current IVP to file */
-  const saveFn = async () => {
-    const link = document.createElement("a");
-    const file = new Blob([editorView.state.doc.toString()], {type: 'text/plain'});
+  private async saveFn(): Promise<void> {
+    const link = document.createElement('a');
+    const file = new Blob([this.editorView!.state.doc.toString()], {type: 'text/plain'});
     link.href = URL.createObjectURL(file);
-    link.download = "equations.txt";
+    link.download = MISC.FILE_DEFAULT_NAME;
     link.click();
     URL.revokeObjectURL(link.href);
   };
 
   /** Set IVP code editor state */
-  const setState = async (state: EDITOR_STATE, text?: string | undefined) => {
-    solutionTable = DG.DataFrame.create();
-    solverView.dataFrame = solutionTable;
-    
-    if (solutionViewer) {
-      solutionViewer.close();
-      solutionViewer = null;
-    }
+  private async setState(state: EDITOR_STATE,
+    toClearStartingInputs: boolean = true, text?: string | undefined): Promise<void> {
+    this.toChangeSolutionViewerProps = true;
+    this.isModelChanged = false;
+    this.editorState = state;
+    this.solutionTable = DG.DataFrame.create();
+    this.solverView.dataFrame = this.solutionTable;
+    this.solverView.helpUrl = getLink(state);
+
+    if (toClearStartingInputs)
+      this.startingInputs = null;
 
     const newState = EditorState.create({
-      doc: text ?? getProblem(state), 
+      doc: text ?? MODEL_BY_STATE.get(state) as string,
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
     });
 
-    editorView.setState(newState);
+    this.editorView!.setState(newState);
 
-    if (state != EDITOR_STATE.CLEAR)
-      await solve();
-  };
-} // runSolverDemoApp
+    // set path
+    if (state === EDITOR_STATE.FROM_FILE)
+      this.solverMainPath = PATH.CUSTOM;
+    else
+      this.solverMainPath = `${PATH.MODEL}${state}`;
+
+    switch (state) {
+    case EDITOR_STATE.EMPTY:
+      this.clearSolution();
+      break;
+
+    case EDITOR_STATE.BASIC_TEMPLATE:
+    case EDITOR_STATE.ADVANCED_TEMPLATE:
+    case EDITOR_STATE.EXTENDED_TEMPLATE:
+      await this.runSolving(false);
+      // dfdf
+      break;
+
+    default:
+      await this.runSolving(true);
+      break;
+    }
+  }; // setState
+
+  /** Overwrite the editor content */
+  private async overwrite(state?: EDITOR_STATE): Promise<void> {
+    if (this.toShowWarning && this.isModelChanged) {
+      const boolInput = ui.boolInput(WARNING.CHECK, true, () => this.toShowWarning = !this.toShowWarning);
+      const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
+      this.solverView.append(dlg);
+
+      dlg.add(ui.label(WARNING.MES))
+        .add(boolInput.root)
+        .onCancel(() => dlg.close())
+        .onOK(async () => {
+          if (state === undefined)
+            await this.loadFn();
+          else
+            this.setState(state ?? EDITOR_STATE.EMPTY);
+        })
+        .show();
+    } else if (state === undefined)
+      await this.loadFn();
+    else
+      this.setState(state ?? EDITOR_STATE.EMPTY);
+  }; // overwrite
+
+  /** Get JS-script for solving the current IVP */
+  private async exportToJS(): Promise<void> {
+    try {
+      const ivp = getIVP(this.editorView!.state.doc.toString());
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);
+      const call = script.prepare(params);
+      await call.call();
+
+      const sView = DG.ScriptView.create(script);
+      grok.shell.addView(sView);
+    } catch (err) {
+      if (err instanceof Error)
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
+      else
+        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.SCRIPTING_ISSUE}`);
+    }
+  }; // exportToJS
+
+  /** Solve IVP */
+  private async solve(ivp: IVP, inputsPath: string): Promise<void> {
+    try {
+      if (this.toChangePath)
+        this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+
+      const start = ivp.arg.initial.value;
+      const finish = ivp.arg.final.value;
+      const step = ivp.arg.step.value;
+
+      if (start >= finish)
+        return;
+
+      if ((step <= 0) || (step > finish - start))
+        return;
+
+      const scriptText = getScriptLines(ivp).join('\n');
+      const script = DG.Script.create(scriptText);
+      const params = getScriptParams(ivp);
+      const call = script.prepare(params);
+
+      await call.call();
+
+      if (this.solutionViewer)
+        this.solutionViewer.setOptions({segmentColumnName: (ivp.updates !== null) ? STAGE_COL_NAME: null});
+
+      this.solutionTable = call.outputs[DF_NAME];
+      this.solverView.dataFrame = call.outputs[DF_NAME];
+      this.solverView.name = this.solutionTable.name;
+
+      if (ivp.updates) {
+        this.solverView.grid.columns.setVisible([this.solutionTable.columns.names()[0]]);
+        this.solverView.grid.columns.setVisible(this.solutionTable.columns.names()
+          .filter((name) => name !== STAGE_COL_NAME));
+      }
+
+      if (!this.solutionViewer) {
+        this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
+          getLineChartOptions(this.solutionTable.columns.names()));
+        this.viewerDockNode = grok.shell.dockManager.dock(
+          this.solutionViewer,
+          DG.DOCK_TYPE.TOP,
+          this.solverView.dockManager.
+            findNode(this.solverView.grid.root),
+        );
+      } else {
+        this.solutionViewer.dataFrame = this.solutionTable;
+
+        if (this.toChangeSolutionViewerProps) {
+          this.solutionViewer.setOptions(getLineChartOptions(this.solutionTable.columns.names()));
+          this.toChangeSolutionViewerProps = false;
+        }
+      }
+
+      this.isSolvingSuccess = true;
+      this.runPane.header.hidden = false;
+    } catch (error) {
+      this.clearSolution();
+      this.isSolvingSuccess = false;
+      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+    }
+  }; // solve
+
+  /** Run solving the current IVP */
+  private async runSolving(toShowInputsForm: boolean): Promise<void> {
+    try {
+      const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.getInputsForm(ivp);
+      this.runPane.header.hidden = !this.isSolvingSuccess;
+
+      if (this.isSolvingSuccess) {
+        this.toChangeInputs = false;
+        this.tabControl.currentPane = this.runPane;
+
+        if (this.prevInputsNode !== null)
+          this.inputsPanel.removeChild(this.prevInputsNode);
+
+        const form = ui.form([]);
+
+        if (this.inputsByCategories.size === 1)
+          this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
+        else {
+          this.inputsByCategories.forEach((inputs, category) => {
+            if (category !== TITLE.MISC) {
+              form.append(ui.h2(category));
+              inputs.forEach((inp) => {
+                form.append(inp.root);
+              });
+            }
+          });
+
+          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+            form.append(ui.h2(TITLE.MISC));
+              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+                form.append(inp.root);
+              });
+          }
+        }
+
+        this.prevInputsNode = this.inputsPanel.appendChild(form);
+
+        if (!toShowInputsForm)
+          setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
+      } else
+        this.tabControl.currentPane = this.modelPane;
+    } catch (error) {
+      this.prevInputsNode = null;
+      this.tabControl.currentPane = this.modelPane;
+      this.clearSolution();
+      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
+    }
+  }; // runSolving
+
+  /** Clear solution table & viewer */
+  private clearSolution() {
+    this.solutionTable = DG.DataFrame.create();
+    this.solverView.dataFrame = this.solutionTable;
+    this.runPane.header.hidden = true;
+
+    if (this.solutionViewer && this.viewerDockNode) {
+      grok.shell.dockManager.close(this.viewerDockNode);
+      this.solutionViewer = null;
+      this.solverView.path = PATH.EMPTY;
+    }
+  } // clearSolution
+
+  /** Return form with model inputs */
+  private async getInputsForm(ivp: IVP): Promise<void> {
+    /** Return options with respect to the model input specification */
+    const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
+      const options: DG.PropertyOptions = {
+        name: name,
+        defaultValue: modelInput.value,
+        type: DG.TYPE.FLOAT,
+        inputType: INPUT_TYPE.FLOAT,
+      };
+
+      if (modelInput.annot !== null) {
+        let annot = modelInput.annot;
+        let descr: string | undefined = undefined;
+
+        let posOpen = annot.indexOf(BRACKET_OPEN);
+        let posClose = annot.indexOf(BRACKET_CLOSE);
+
+        if (posOpen !== -1) {
+          if (posClose === -1)
+            throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, see '${name}' in ${modelBlock}-block`);
+
+          descr = annot.slice(posOpen + 1, posClose);
+
+          annot = annot.slice(0, posOpen);
+        }
+
+        posOpen = annot.indexOf(BRACE_OPEN);
+        posClose = annot.indexOf(BRACE_CLOSE);
+
+        if (posOpen >= posClose)
+          throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, see '${name}' in ${modelBlock}-block`);
+
+        let pos: number;
+        let key: string;
+        let val;
+
+        annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
+          pos = str.indexOf(CONTROL_SEP);
+
+          if (pos === -1)
+            throw new Error(`${ERROR_MSG.MISSING_COLON}, see '${name}' in ${modelBlock}-block`);
+
+          key = str.slice(0, pos).trim();
+          val = str.slice(pos + 1).trim();
+
+          // @ts-ignore
+          options[key] = strToVal(val);
+        });
+
+        options.description = descr ?? '';
+        options.name = options.caption ?? options.name;
+        options.caption = options.name;
+      }
+
+      if (this.startingInputs) {
+        options.defaultValue = this.startingInputs
+          .get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
+        modelInput.value = options.defaultValue;
+      }
+
+      return options;
+    }; // getOptions
+
+    const inputsByCategories = new Map<string, DG.InputBase[]>();
+    inputsByCategories.set(TITLE.MISC, []);
+    let options: DG.PropertyOptions;
+
+    /** Pull input to appropriate category & add tooltip */
+    const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
+      const category = options.category;
+
+      if (category === undefined)
+        inputsByCategories.get(TITLE.MISC)?.push(input);
+      else if (inputsByCategories.has(category))
+        inputsByCategories.get(category)!.push(input);
+      else
+        inputsByCategories.set(category, [input]);
+
+      input.setTooltip(options.description!);
+    };
+
+    /** Return line with inputs names & values */
+    const getInputsPath = () => {
+      let line = '';
+
+      inputsByCategories.forEach((inputs, cat) => {
+        if (cat !== TITLE.MISC)
+          inputs.forEach((input) => {line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`;});
+      });
+
+      inputsByCategories.get(TITLE.MISC)!.forEach((input) => {
+        line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`;
+      });
+
+      return line.slice(1); // we ignore 1-st '&'
+    };
+
+    // Inputs for argument
+    for (const key of ARG_INPUT_KEYS) {
+      //@ts-ignore
+      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
+      const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.onChanged(async () => {
+        if (input.value !== null) {
+          //@ts-ignore
+          ivp.arg[key].value = input.value;
+          await this.solve(ivp, getInputsPath());
+        }
+      });
+
+      categorizeInput(options, input);
+    }
+
+    // Inputs for initial values
+    ivp.inits.forEach((val, key, map) => {
+      options = getOptions(key, val, CONTROL_EXPR.INITS);
+      const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.onChanged(async () => {
+        if (input.value !== null) {
+        ivp.inits.get(key)!.value = input.value;
+        await this.solve(ivp, getInputsPath());
+        }
+      });
+
+      categorizeInput(options, input);
+    });
+
+    // Inputs for parameters
+    if (ivp.params !== null) {
+      ivp.params.forEach((val, key, map) => {
+        options = getOptions(key, val, CONTROL_EXPR.PARAMS);
+        const input = ui.input.forProperty(DG.Property.fromOptions(options));
+        input.onChanged(async () => {
+          if (input.value !== null) {
+            ivp.params!.get(key)!.value = input.value;
+            await this.solve(ivp, getInputsPath());
+          }
+        });
+
+        categorizeInput(options, input);
+      });
+    }
+
+    // Inputs for loop
+    if (ivp.loop !== null) {
+      options = getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP);
+      options.inputType = INPUT_TYPE.INT; // since it's an integer
+      options.type = DG.TYPE.INT; // since it's an integer
+      const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.onChanged(async () => {
+        if (input.value !== null) {
+          ivp.loop!.count.value = input.value;
+          await this.solve(ivp, getInputsPath());
+        }
+      });
+
+      categorizeInput(options, input);
+    }
+
+    if (this.toRunWhenFormCreated)
+      await this.solve(ivp, getInputsPath());
+
+    this.inputsByCategories = inputsByCategories;
+  } // getInputsUI
+};

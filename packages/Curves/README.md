@@ -134,6 +134,12 @@ returns the result of the fit function. These functions are written as JavaScrip
 
 ![custom-fit-function](./img/custom-fit-function.gif)
 
+## Multi Curve Viewer
+
+You can overlay curves from multiple cells on one chart with the Multi Curve Viewer:
+
+![](img/multi-curve-viewer.gif)
+
 See also:
 
 - [Packages](../../help/develop/develop.md#packages)

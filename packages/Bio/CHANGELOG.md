@@ -1,6 +1,48 @@
 # Bio changelog
 
-## 2.12.0 (WIP)
+## 2.11.36 (2024-02-28)
+
+### Bug fixes
+
+* GROK-15086: Fix GetRegion, Notation: result column does not render
+
+## 2.11.35 (2024-02-26)
+
+### Features
+
+* #2706: Polytool: init rule based generation
+
+## 2.11.34 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version to 1.17.4
+
+## 2.11.32 (2024-02-20)
+
+### Bug fixes
+
+* GROK-11982: Bio: Fix duplicates WebLogo on layout, test
+* GROK-11983: Bio: Fix duplicates WebLogo on project, test
+
+## 2.11.31 (2024-02-19)
+
+### Features
+
+* GROK-14230: Bio: Add basic UI for monomer lib files adding / validation
+
+## 2.11.30 (2024-02-15)
+
+### Features
+
+* GROK-14598: Bio: Substructure filter sync between cloned views, tests
+
+### Bug fixes
+
+* GROK-14916: Bio: Fix biosubstructure filter for sequences of Helm
+* GROK-14913: Bio: Fix To Atomic Level for sequences with gaps, tests
+
+## 2.11.28 (2024-02-07)
 
 ### Features
 
@@ -43,6 +85,9 @@
 * Fix WebLogoViewer for empty column (annotated).
 * Fix WebLogoViewer and VdRegionsViewer deadlock.
 * Fix Activity Cliffs error on Helm dataset
+* Fix Macromolecule tooltip, context widget for detach
+* Fix WebLogo optimize with postponed update positions
+* Fix error in bioSubstructureFilter for Helm
 
 ## 2.10.0 (2023-09-06)
 

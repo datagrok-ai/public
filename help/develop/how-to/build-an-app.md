@@ -345,12 +345,12 @@ Most of the objects in Datagrok can be annotated with metadata (key-value pairs)
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
 with the platform; other have no effect at all, except that you can search objects by metadata.
 
-There is a variety of metadata in Datagrok, discussed [here](../../catalog/metadata.md). Out of all metadata, column
+There is a variety of metadata in Datagrok, discussed [here](../../govern/catalog/metadata.md). Out of all metadata, column
 tags and semantic types are of particular interest in application development and working with dataframes.
 
 *References:*
 
-* [Metadata](../../catalog/metadata.md)
+* [Metadata](../../govern/catalog/metadata.md)
 
 ##### Column tags
 
@@ -365,7 +365,7 @@ Properties..." (or press F2 in the grid).
 
 *References:*
 
-* [Tags](../../catalog/tags.md)
+* [Tags](../../govern/catalog/tags.md)
 
 ##### Semantic types
 
@@ -378,12 +378,12 @@ semantic type `'Molecule'`. Some viewers, such as Map, use the semantic type to 
 visualized against specific datasets. Function parameters could be annotated with the semantic type. This is used for
 automatic suggestions of applicable functions.
 
-Semantic type is a special kind of a [column tag](../../catalog/tags.md#quality). It could be either detected
+Semantic type is a special kind of a [column tag](../../govern/catalog/tags.md#quality). It could be either detected
 automatically by column semantic type detectors, or set manually in the JavaScript code with `.semType` property.
 
 *References:*
 
-* [Semantic Types](../../catalog/semantic-types.md)
+* [Semantic Types](../../govern/catalog/semantic-types.md)
 
 #### Aggregations and joining
 

@@ -161,129 +161,326 @@ export type RectangleRenderOptions<TNode extends MarkupNodeType> = {
   get totalLength(): number;
 }
 
+// /**
+//   * @param {RectangleRenderOptions<TNode>} opts Options
+//   * @param {TNode} node Node to render
+//   * @param {number} currentLength Current length of the tree
+//   * @param {TraceTargetType<TNode>[]} traceList List of trace targets
+//   * @param {number} depth Current depth of the node in the tree
+//   * @return {RenderNodeResultType<TNode>}*/
+// export function renderNode<TNode extends MarkupNodeType>(
+//   opts: RectangleRenderOptions<TNode>,
+//   node: TNode, currentLength: number = 0, traceList: TraceTargetType<TNode>[]
+// ): RenderNodeResultType<TNode> {
+//   const dpr: number = window.devicePixelRatio;
+//   const res: RenderNodeResultType<TNode> = {
+//     traceback: traceList.filter((t) => t.target == node).map((t) => t.styler),
+//   };
+//   try {
+//     const beginX = currentLength * opts.lengthRatio + opts.leftPadding * dpr;
+//     const endX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
+//     const posY = (node.index - opts.firstRowIndex) * opts.stepRatio;
+
+//     const ctx: CanvasRenderingContext2D = opts.ctx;
+
+//     const maxIndex = node.maxIndex ?? node.index;
+//     const minIndex = node.minIndex ?? node.index;
+//     if (!isLeaf(node) && opts.firstRowIndex <= maxIndex && minIndex <= opts.lastRowIndex) {
+//     //#region Plot join
+//       const joinMinIndex = node.children[0].index;
+//       const joinMaxIndex = node.children[node.children.length - 1].index;
+//       const posX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
+//       const minY = Math.max((joinMinIndex - opts.firstRowIndex) * opts.stepRatio, 0);
+//       const maxY = Math.min((joinMaxIndex - opts.firstRowIndex) * opts.stepRatio, opts.ctx.canvas.height);
+
+//       ctx.beginPath();
+//       ctx.strokeStyle = opts.styler.getStrokeColor(node);
+//       ctx.lineWidth = opts.styler.lineWidth * dpr;
+//       ctx.lineCap = 'round';
+//       ctx.moveTo(posX, minY);
+//       ctx.lineTo(posX, maxY);
+//       ctx.stroke();
+//       //#endregion
+
+//      if (minIndex == maxIndex || (maxIndex - minIndex) * opts.stepRatio > 1 || (traceList && traceList.length > 0)) {
+//         for (const childNode of (node.children ?? [])) {
+//           const childTraceList = traceList.filter((trace) => {
+//             return (childNode.minIndex ?? childNode.index) <= trace.target.index &&
+//             trace.target.index <= (childNode.maxIndex ?? childNode.index);
+//           });
+
+//           const childRenderRes = renderNode<TNode>(opts, childNode as TNode,
+//             currentLength + node.branch_length!,
+//             childTraceList);
+//           for (const effStyler of childRenderRes.traceback) {
+//             const childPosY = (childNode.index - opts.firstRowIndex) * opts.stepRatio;
+
+//             ctx.beginPath();
+//             ctx.strokeStyle = effStyler.getStrokeColor(node);
+//             ctx.lineWidth = effStyler.lineWidth * dpr;
+//             ctx.lineCap = 'round';
+//             ctx.moveTo(endX, childPosY);
+//             ctx.lineTo(endX, posY);
+//             ctx.stroke();
+//             res.traceback.push(effStyler);
+//           }
+//         //res.traceback.push(...childRenderRes.traceback);
+//         }
+//       } else {
+//         const finishX: number = (currentLength + node.subtreeLength!) * opts.lengthRatio + opts.leftPadding * dpr;
+//         ctx.beginPath();
+//         ctx.strokeStyle = opts.styler.getStrokeColor(node);
+//         ctx.lineWidth = opts.styler.lineWidth * dpr;
+//         ctx.lineCap = 'round';
+//         ctx.moveTo(beginX, posY);
+//         ctx.lineTo(finishX, posY);
+//         ctx.stroke();
+//       }
+//     }
+
+//     for (const effStyler of [opts.styler, ...res.traceback]) {
+//     // Draw trace
+//       ctx.beginPath();
+//       ctx.strokeStyle = effStyler.getStrokeColor(node);
+//       ctx.lineWidth = effStyler.lineWidth * dpr;
+//       ctx.lineCap = 'round';
+//       // ctx.moveTo(posX, childPosY);
+//       ctx.moveTo(endX, posY);
+//       ctx.lineTo(beginX, posY);
+//       ctx.stroke();
+
+//       //#region Plot branch
+//       ctx.beginPath();
+//       ctx.strokeStyle = effStyler.getStrokeColor(node);
+//       ctx.lineWidth = effStyler.lineWidth * dpr;
+//       ctx.lineCap = 'round';
+//       ctx.moveTo(endX, posY);
+//       ctx.lineTo(beginX, posY);
+//       ctx.stroke();
+//       //#endregion
+
+//       if (isLeaf(node)) {
+//       //#region Plot leaf grid
+//         if (effStyler.showGrid) {
+//           ctx.beginPath();
+//           ctx.strokeStyle = '#C0C0C0';
+//           ctx.lineWidth = 1;
+//           ctx.lineCap = 'round';
+//           ctx.moveTo(endX, posY);
+//           ctx.lineTo(ctx.canvas.width, posY);
+//           ctx.stroke();
+//         }
+//         //#endregion
+
+//         //#region Plot leaf (marker)
+//         ctx.beginPath();
+//         ctx.strokeStyle = effStyler.getStrokeColor(node);
+//         ctx.fillStyle = effStyler.getFillColor(node);
+//         ctx.beginPath();
+//         ctx.ellipse(endX, posY, effStyler.nodeSize * dpr / 2, effStyler.nodeSize * dpr / 2,
+//           0, 0, 2 * Math.PI);
+//         ctx.fill();
+//         ctx.beginPath();
+//         ctx.ellipse(endX, posY, effStyler.nodeSize * dpr / 2, effStyler.nodeSize * dpr / 2,
+//           0, 0, 2 * Math.PI);
+//         ctx.stroke();
+//       //#endregion
+//       }
+//       node.desc += effStyler.name + ', ';
+//     }
+//   } catch (e) {
+//     console.error(e);
+//   }
+//   console.log(res);
+//   return res;
+// }
+
+
 /**
   * @param {RectangleRenderOptions<TNode>} opts Options
-  * @param {TNode} node Node to render
-  * @param {number} currentLength Current length of the tree
-  * @param {TraceTargetType<TNode>[]} traceList List of trace targets
+  * @param {TNode} nodeRoot Node to render
+  * @param {number} nodeCurrentLength Current length of the tree
+  * @param {TraceTargetType<TNode>[]} mainTraceList List of trace targets
+  * @param {number} depth Current depth of the node in the tree
   * @return {RenderNodeResultType<TNode>}*/
 export function renderNode<TNode extends MarkupNodeType>(
   opts: RectangleRenderOptions<TNode>,
-  node: TNode, currentLength: number = 0, traceList: TraceTargetType<TNode>[],
+  nodeRoot: TNode, nodeCurrentLength: number = 0, mainTraceList: TraceTargetType<TNode>[]
 ): RenderNodeResultType<TNode> {
   const dpr: number = window.devicePixelRatio;
-  const res: RenderNodeResultType<TNode> = {
-    traceback: traceList.filter((t) => t.target == node).map((t) => t.styler),
-  };
-
-  const beginX = currentLength * opts.lengthRatio + opts.leftPadding * dpr;
-  const endX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
-  const posY = (node.index - opts.firstRowIndex) * opts.stepRatio;
-
+  // const res: RenderNodeResultType<TNode> = {
+  //   traceback: mainTraceList.filter((t) => t.target == nodeRoot).map((t) => t.styler),
+  // };
   const ctx: CanvasRenderingContext2D = opts.ctx;
+  const allNodes = getAllNodes(nodeRoot, nodeCurrentLength, mainTraceList);
+  for (const nodeInfo of allNodes) {
+    try {
+      const node = nodeInfo.node;
+      const currentLength = nodeInfo.currentLength;
 
-  const maxIndex = node.maxIndex ?? node.index;
-  const minIndex = node.minIndex ?? node.index;
-  if (!isLeaf(node) && opts.firstRowIndex <= maxIndex && minIndex <= opts.lastRowIndex) {
-    //#region Plot join
-    const joinMinIndex = node.children[0].index;
-    const joinMaxIndex = node.children[node.children.length - 1].index;
-    const posX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
-    const minY = Math.max((joinMinIndex - opts.firstRowIndex) * opts.stepRatio, 0);
-    const maxY = Math.min((joinMaxIndex - opts.firstRowIndex) * opts.stepRatio, opts.ctx.canvas.height);
+      const beginX = currentLength * opts.lengthRatio + opts.leftPadding * dpr;
+      const endX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
+      const posY = (node.index - opts.firstRowIndex) * opts.stepRatio;
 
-    ctx.beginPath();
-    ctx.strokeStyle = opts.styler.getStrokeColor(node);
-    ctx.lineWidth = opts.styler.lineWidth * dpr;
-    ctx.lineCap = 'round';
-    ctx.moveTo(posX, minY);
-    ctx.lineTo(posX, maxY);
-    ctx.stroke();
-    //#endregion
+      const maxIndex = node.maxIndex ?? node.index;
+      const minIndex = node.minIndex ?? node.index;
+      const isInRange = opts.firstRowIndex <= maxIndex && minIndex <= opts.lastRowIndex;
+      if (!isInRange)
+        continue;
+      if (!isLeaf(node) && isInRange) {
+        //#region Plot join
+        const joinMinIndex = node.children[0].index;
+        const joinMaxIndex = node.children[node.children.length - 1].index;
+        const posX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
+        const minY = Math.max((joinMinIndex - opts.firstRowIndex) * opts.stepRatio, 0);
+        const maxY = Math.min((joinMaxIndex - opts.firstRowIndex) * opts.stepRatio, opts.ctx.canvas.height);
 
-    if (minIndex == maxIndex || (maxIndex - minIndex) * opts.stepRatio > 1 || (traceList && traceList.length > 0)) {
-      for (const childNode of (node.children ?? [])) {
-        const childTraceList = traceList.filter((trace) => {
-          return (childNode.minIndex ?? childNode.index) <= trace.target.index &&
-            trace.target.index <= (childNode.maxIndex ?? childNode.index);
-        });
-        const childRenderRes = renderNode<TNode>(opts, childNode as TNode,
-          currentLength + node.branch_length!,
-          childTraceList);
-        for (const effStyler of childRenderRes.traceback) {
-          const childPosY = (childNode.index - opts.firstRowIndex) * opts.stepRatio;
+        ctx.beginPath();
+        ctx.strokeStyle = opts.styler.getStrokeColor(node);
+        ctx.lineWidth = opts.styler.lineWidth * dpr;
+        ctx.lineCap = 'round';
+        ctx.moveTo(posX, minY);
+        ctx.lineTo(posX, maxY);
+        ctx.stroke();
+        //#endregion
 
+        if (minIndex == maxIndex || (maxIndex - minIndex) * opts.stepRatio > 1 ||
+          (nodeInfo.traceList && nodeInfo.traceList.length > 0)) {
+          for (const childNode of (node.children ?? [])) {
+            // const childTraceList = traceList.filter((trace) => {
+            //   return (childNode.minIndex ?? childNode.index) <= trace.target.index &&
+            // trace.target.index <= (childNode.maxIndex ?? childNode.index);
+            // });
+
+            // const childRenderRes = renderNode<TNode>(opts, childNode as TNode,
+            //   currentLength + node.branch_length!,
+            //   childTraceList);
+            for (const effStyler of nodeInfo.traceList) {
+              const childPosY = (childNode.index - opts.firstRowIndex) * opts.stepRatio;
+
+              ctx.beginPath();
+              ctx.strokeStyle = effStyler.styler.getStrokeColor(node);
+              ctx.lineWidth = effStyler.styler.lineWidth * dpr;
+              ctx.lineCap = 'round';
+              ctx.moveTo(endX, childPosY);
+              ctx.lineTo(endX, posY);
+              ctx.stroke();
+              //res.traceback.push(effStyler);
+            }
+            //res.traceback.push(...childRenderRes.traceback);
+          }
+        } else {
+          const finishX: number = (currentLength + node.subtreeLength!) * opts.lengthRatio + opts.leftPadding * dpr;
+          ctx.beginPath();
+          ctx.strokeStyle = opts.styler.getStrokeColor(node);
+          ctx.lineWidth = opts.styler.lineWidth * dpr;
+          ctx.lineCap = 'round';
+          ctx.moveTo(beginX, posY);
+          ctx.lineTo(finishX, posY);
+          ctx.stroke();
+        }
+      }
+      if (isInRange) {
+        for (const effStyler of [opts.styler, ...nodeInfo.traceList.map((t) => t.styler)]) {
+        // Draw trace
           ctx.beginPath();
           ctx.strokeStyle = effStyler.getStrokeColor(node);
           ctx.lineWidth = effStyler.lineWidth * dpr;
           ctx.lineCap = 'round';
-          ctx.moveTo(endX, childPosY);
-          ctx.lineTo(endX, posY);
+          // ctx.moveTo(posX, childPosY);
+          ctx.moveTo(endX, posY);
+          ctx.lineTo(beginX, posY);
           ctx.stroke();
+
+          //#region Plot branch
+          ctx.beginPath();
+          ctx.strokeStyle = effStyler.getStrokeColor(node);
+          ctx.lineWidth = effStyler.lineWidth * dpr;
+          ctx.lineCap = 'round';
+          ctx.moveTo(endX, posY);
+          ctx.lineTo(beginX, posY);
+          ctx.stroke();
+          //#endregion
+
+          if (isLeaf(node)) {
+          //#region Plot leaf grid
+            if (effStyler.showGrid) {
+              ctx.beginPath();
+              ctx.strokeStyle = '#C0C0C0';
+              ctx.lineWidth = 1;
+              ctx.lineCap = 'round';
+              ctx.moveTo(endX, posY);
+              ctx.lineTo(ctx.canvas.width, posY);
+              ctx.stroke();
+            }
+            //#endregion
+
+            //#region Plot leaf (marker)
+            ctx.beginPath();
+            ctx.strokeStyle = effStyler.getStrokeColor(node);
+            ctx.fillStyle = effStyler.getFillColor(node);
+            ctx.beginPath();
+            ctx.ellipse(endX, posY, effStyler.nodeSize * dpr / 2, effStyler.nodeSize * dpr / 2,
+              0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(endX, posY, effStyler.nodeSize * dpr / 2, effStyler.nodeSize * dpr / 2,
+              0, 0, 2 * Math.PI);
+            ctx.stroke();
+          //#endregion
+          }
+          node.desc += effStyler.name + ', ';
         }
-        res.traceback.push(...childRenderRes.traceback);
       }
-    } else {
-      const finishX: number = (currentLength + node.subtreeLength!) * opts.lengthRatio + opts.leftPadding * dpr;
-      ctx.beginPath();
-      ctx.strokeStyle = opts.styler.getStrokeColor(node);
-      ctx.lineWidth = opts.styler.lineWidth * dpr;
-      ctx.lineCap = 'round';
-      ctx.moveTo(beginX, posY);
-      ctx.lineTo(finishX, posY);
-      ctx.stroke();
+    } catch (e) {
+      console.error(e);
     }
   }
+  // console.log(res);
+  return {traceback: allNodes[0].traceList.map((t) => t.styler)};
+}
 
-  for (const effStyler of [opts.styler, ...res.traceback]) {
-    // Draw trace
-    ctx.beginPath();
-    ctx.strokeStyle = effStyler.getStrokeColor(node);
-    ctx.lineWidth = effStyler.lineWidth * dpr;
-    ctx.lineCap = 'round';
-    // ctx.moveTo(posX, childPosY);
-    ctx.moveTo(endX, posY);
-    ctx.lineTo(beginX, posY);
-    ctx.stroke();
+type getAllNodesType<TNode extends MarkupNodeType> = {
+  node: TNode;
+  currentLength: number;
+  traceList: TraceTargetType<TNode>[];
+  parent?: getAllNodesType<TNode>;
+}
 
-    //#region Plot branch
-    ctx.beginPath();
-    ctx.strokeStyle = effStyler.getStrokeColor(node);
-    ctx.lineWidth = effStyler.lineWidth * dpr;
-    ctx.lineCap = 'round';
-    ctx.moveTo(endX, posY);
-    ctx.lineTo(beginX, posY);
-    ctx.stroke();
-    //#endregion
+export function getAllNodes<TNode extends MarkupNodeType>(
+  node: TNode, currentLength: number = 0, traceList: TraceTargetType<TNode>[]) {
+  const queue: getAllNodesType<TNode>[] = [
+    {node, currentLength: currentLength, traceList: traceList, parent: undefined as getAllNodesType<TNode> | undefined}
+  ];
+  const res: typeof queue = [];
+  while (queue.length > 0) {
+    const nodeInfo = queue.shift()!;
+    nodeInfo.traceList = traceList.filter((t) => t.target == nodeInfo.node);
+    res.push(nodeInfo);
 
-    if (isLeaf(node)) {
-      //#region Plot leaf grid
-      if (effStyler.showGrid) {
-        ctx.beginPath();
-        ctx.strokeStyle = '#C0C0C0';
-        ctx.lineWidth = 1;
-        ctx.lineCap = 'round';
-        ctx.moveTo(endX, posY);
-        ctx.lineTo(ctx.canvas.width, posY);
-        ctx.stroke();
+    if (nodeInfo.node.children) {
+      for (const childNode of nodeInfo.node.children) {
+        const childTraceList = nodeInfo.traceList.filter((trace) => {
+          return (childNode.minIndex ?? childNode.index) <= trace.target.index &&
+          trace.target.index <= (childNode.maxIndex ?? childNode.index);
+        });
+        queue.push({
+          node: childNode as TNode,
+          currentLength: nodeInfo.currentLength + (nodeInfo.node.branch_length! ?? 0),
+          traceList: childTraceList, parent: nodeInfo});
       }
-      //#endregion
-
-      //#region Plot leaf (marker)
-      ctx.beginPath();
-      ctx.strokeStyle = effStyler.getStrokeColor(node);
-      ctx.fillStyle = effStyler.getFillColor(node);
-      ctx.beginPath();
-      ctx.ellipse(endX, posY, effStyler.nodeSize * dpr / 2, effStyler.nodeSize * dpr / 2,
-        0, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(endX, posY, effStyler.nodeSize * dpr / 2, effStyler.nodeSize * dpr / 2,
-        0, 0, 2 * Math.PI);
-      ctx.stroke();
-      //#endregion
     }
-    node.desc += effStyler.name + ', ';
+  }
+  res[0] && (res[0].traceList = []);
+  for (let i = res.length - 1; i >= 0; i--) {
+    const nodeInfo = res[i];
+    if (nodeInfo.parent) {
+      for (const tl of nodeInfo.traceList) {
+        if (!nodeInfo.parent.traceList.includes(tl))
+          nodeInfo.parent.traceList.push(tl);
+      }
+    }
+    //nodeInfo.parent.traceList.push(...nodeInfo.traceList);
   }
   return res;
 }

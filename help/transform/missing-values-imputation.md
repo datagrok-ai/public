@@ -2,31 +2,17 @@
 title: "Missing values imputation"
 ---
 
-Imputation is the process of replacing missing data with substituted values.
+Use [imputation](https://en.wikipedia.org/wiki/Imputation_\(statistics\)) to replace missing values in a dataframe:
 
-## Algorithm
+1. On the **Top Menu**, select **ML > Missing Values Imputation...**. A dialog opens.
+2. In the dialog, specify the columns with missing values you want to impute (in the `Impute` field) and the columns that should be used for finding neighbors (in the `Using` field). The imputed value is a weighted average of the corresponding values in the specified number of neighbors. You can also select a distance metric, neighbor count, and decide whether to replace missing values or create a new column with imputed results.
+3. Click **Run** to execute.
 
-Missing values imputation algorithm is based on **k-nearest neighbors algorithm (k-NN)**. This algorithm is a
-non-parametric method used for classification and regression. Both for classification and regression, it can be useful
-to assign weight to the contributions of the neighbors, so that the nearer neighbors contribute more to the average than
-the more distant ones. For example, a common weighting scheme consists in giving each neighbor a weight of **1/d**,
-where **d** is the distance to the neighbor.
+![add-to-workspace](missing-values-imputation.gif)
 
-## Run
-
-* Open table
-* Run from menu: **Tools** | **Data Science** | **Missing Values Imputation...**
-* Select source table
-* Select columns that contains missing values **"impute"**
-* Select data rows **"data"**
-* Set **"Number of nearest neighbors"**
-* Run missing values imputation. Result will replace all missing values in all columns and rows.
+Datagrok imputes missing values using the k-nearest neighbors method ([k-NN](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)).
 
 See also:
 
-* [Imputation](https://en.wikipedia.org/wiki/Imputation_\(statistics\))
-* [k-nearest neighbors algorithm](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm)
-
-Sample:
-
-* [Missing values imputation](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)
+* [Statistical functions](https://datagrok.ai/help/transform/functions/stats-functions)
+* [Recipe Editor](https://datagrok.ai/help/transform/recipe-editor)

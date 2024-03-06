@@ -235,7 +235,7 @@ export class GetRegionFuncEditor {
     const inputsForm = ui.inputs(Object.values(this.inputs), {style: {minWidth: '320px'}});
     ui.dialog({title: 'Get Region'})
       .add(inputsForm)
-      .onOK(async () => {
+      .onOK(() => {
         (async () => {
           const callParams = this.getParams();
           await this.call.func.prepare(callParams).call(true);
@@ -247,8 +247,8 @@ export class GetRegionFuncEditor {
 
   public widget(): DG.Widget {
     const inputsForm = ui.inputs(Object.entries(this.inputs)
-      .filter(([inputName, input]) => !['table', 'sequence'].includes(inputName))
-      .map(([inputName, input]) => input));
+      .filter(([inputName, _input]) => !['table', 'sequence'].includes(inputName))
+      .map(([_inputName, input]) => input));
     const doBtn = ui.button('Get Region', () => {
       (async () => {
         const callParams = this.getParams();

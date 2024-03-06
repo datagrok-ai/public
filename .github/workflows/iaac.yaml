@@ -169,6 +169,7 @@ jobs:
         run: echo ${{ steps.changed-files.outputs.all_changed_files }}
       - name: Snyk check
         uses: snyk/actions/iac@master
+        id: snyk
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -176,9 +177,10 @@ jobs:
           args: --severity-threshold=high
           sarif: true
           file: ${{ steps.changed-files.outputs.all_changed_files }}
-      - uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: snyk.sarif
+#      - uses: github/codeql-action/upload-sarif@v2
+#        if: steps.snyk.outcome == 'success'
+#        with:
+#          sarif_file: snyk.sarif
 
   #  checkov:
   #    needs: common-check

@@ -53,7 +53,7 @@ const defaultArgs: NeedlemanWunchArgs = {
 export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFunctionType {
   const maxLen = 10000;
   const charCodeArray = new Uint16Array(0x10000);
-  
+
   const {gapOpen, gapExtend, scoringMatrix, alphabetIndexes} = {...defaultArgs, ...args};
   Object.entries(alphabetIndexes).forEach(([k, v]) => charCodeArray[k.charCodeAt(0)] = v);
   // As we don't need traceback, no need to store the whole matrix
@@ -77,13 +77,15 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
       matrix[0][i] = -gapOpen - (i - 1) * gapExtend;
       matrix[1][i] = 0;
     }
+    matrix[0][0] = 0;
 
     // Calculate the rest of the matrix
     for (let i = 1; i < seq2.length + 1; i++) {
       matrix[currRow][0] = -gapOpen - (i - 1) * gapExtend;
       for (let j = 1; j < seq1.length + 1; j++) {
         const diagonal =
-          matrix[prevRow][j - 1] + scoringMatrix[charCodeArray[seq1.charCodeAt(j - 1)]][charCodeArray[seq2.charCodeAt(i - 1)]];
+          matrix[prevRow][j - 1] +
+            scoringMatrix[charCodeArray[seq1.charCodeAt(j - 1)]][charCodeArray[seq2.charCodeAt(i - 1)]];
         const top = matrix[prevRow][j] - (verticalGaps[j] ? gapExtend : gapOpen );
         const left = matrix[currRow][j - 1] - (horizontalGaps[j - 1] ? gapExtend : gapOpen);
         matrix[currRow][j] = Math.max(

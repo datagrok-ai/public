@@ -4,13 +4,11 @@ import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {chemSpace} from '../analysis/chem-space';
-import {getSimilaritiesMarix} from '../utils/similarity-utils';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
-import { MALFORMED_DATA_WARNING_CLASS } from '../constants';
+import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 // const {jStat} = require('jstat');
 
 
@@ -65,13 +63,14 @@ category('top menu activity cliffs', async () => {
 async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activityCol: string, numberCliffs: number) {
   await grok.data.detectSemanticTypes(df);
   const actCliffsTableView = grok.shell.addTableView(df);
-  await awaitCheck(() => actCliffsTableView.name === df.name, 'Activity cliffs table view hasn\'t been created', 1000);
+  await awaitCheck(() => actCliffsTableView.name?.toLowerCase() === df.name?.toLowerCase(),
+    'Activity cliffs table view hasn\'t been created', 1000);
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
+  const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   await getActivityCliffs(df, df.col(molCol)!,
-    null as any, ['Embed_X_1', 'Embed_Y_1'], 'Activity cliffs', actCliffsTableView.dataFrame.getCol(activityCol),
-    80, BitArrayMetricsNames.Tanimoto, DimReductionMethods.UMAP, DG.SEMTYPE.MOLECULE,
-    {'units': df.col(molCol)!.tags['units']}, chemSpace,
-    getSimilaritiesMarix, createTooltipElement, createPropPanelElement);
+    ['Embed_X_1', 'Embed_Y_1'], 'Activity cliffs', actCliffsTableView.dataFrame.getCol(activityCol),
+    80, BitArrayMetricsNames.Tanimoto, DimReductionMethods.UMAP, {}, DG.SEMTYPE.MOLECULE,
+    {'units': df.col(molCol)!.tags['units']}, encodingFunc, createTooltipElement, createPropPanelElement);
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)

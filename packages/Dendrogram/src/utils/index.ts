@@ -27,6 +27,7 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
   eDiv.appendChild(button);
 
   const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  neighbor.root && (neighbor.root.style.zIndex = '1');
   return neighbor;
 }
 

@@ -34,6 +34,11 @@ export type SliderOptions = {
 }
 
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+export type CodeConfig = {
+  script?: string;
+  mode?: string;
+  placeholder?: string
+};
 
 export class ObjectPropertyBag {
   source: any;
@@ -237,6 +242,8 @@ export class Widget<TSettings = any> {
   getDartProperties(): any[] {
     return this.getProperties().map((p) => p.dart);
   }
+
+  sourceRowsChanged(): void {};
 
   onFrameAttached(dataFrame: DataFrame): void {
     if (this.props.hasProperty('dataFrame'))
@@ -978,6 +985,34 @@ export class Balloon {
 
 
 
+/** Class for code input editor. */
+export class CodeEditor {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static create(script = '', mode = 'javascript', placeholder = ''): CodeEditor {
+    return toJs(api.grok_CodeEditor(script, mode, placeholder));
+  }
+
+  append(text: string): void {
+    api.grok_CodeEditor_Append(this.dart, text);
+  }
+
+  async setReadOnly(value: boolean): Promise<void> {
+    await api.grok_CodeEditor_SetReadOnly(this.dart, value);
+  }
+
+  get root(): HTMLElement { return api.grok_CodeEditor_Get_Root(this.dart); }
+
+  get value(): string { return api.grok_CodeEditor_Get_Value(this.dart); }
+  set value(x: string) { api.grok_CodeEditor_Set_Value(this.dart, x); }
+
+  get onValueChanged(): Observable<any> { return observeStream(api.grok_CodeEditor_OnValueChanged(this.dart)); }
+}
+
 /** Input control base. Could be used for editing {@link Property} values as well.
  * The root is a div that consists of {@link captionLabel} and {@link input}.
  * */
@@ -1134,8 +1169,8 @@ export class InputForm extends DartWrapper {
   constructor(dart: any) { super(dart); }
 
   /** Creates an InputForm for the specified function call. */
-  static async forFuncCall(funcCall: FuncCall): Promise<InputForm> {
-    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
+  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean }): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true));
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
@@ -1152,6 +1187,11 @@ export class InputForm extends DartWrapper {
 
   /** Occurs when user changes any input value in a form. */
   get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
+
+  /** Occurs after the form is validated, no matter whether it is valid or not. */
+  get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
+
+  get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
 }
 
 
@@ -1358,6 +1398,15 @@ export class Color {
 
   /** Returns the Blue component of the color represented as ARGB-formatted integer. */
   static b(c: number): number { return c & 0xFF; }
+
+  static argb(a: number, r: number, g: number, b: number) {
+    return ((a << 24) | (r << 16) | (g << 8) | b) >>> 0;
+  }
+
+  /** Returns the color with the specified alpha component (0-255). */
+  static setAlpha(color: number, alpha: number) {
+    return Color.argb(alpha, Color.r(color), Color.g(color), Color.b(color));
+  }
 
   /** Returns i-th categorical color (looping over the palette if needed) */
   static getCategoricalColor(i: number): ColorType {
@@ -2156,4 +2205,24 @@ export class TagsInput extends InputBase {
   get onTagRemoved(): Observable<string> {
     return this._onTagRemoved;
   }
+}
+
+export class CodeInput extends InputBase {
+  dart: any;
+  editor: CodeEditor;
+
+  constructor(name: string, config?: CodeConfig) {
+    const inputElement = ui.input.textArea(name);
+    super(inputElement.dart);
+
+    this.editor = CodeEditor.create(config?.script ?? '', config?.mode ?? 'javascript', config?.placeholder ?? '');
+    this.input.style.display = 'none';
+    this.root.classList.add('ui-input-code');
+    this.root.append(this.editor.root);
+  }
+
+  get value(): string { return this.editor.value; }
+  set value(x: string) { this.editor.value = x; }
+
+  get onValueChanged(): Observable<any> { return this.editor.onValueChanged; }
 }

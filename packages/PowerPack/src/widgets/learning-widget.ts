@@ -165,6 +165,6 @@ let help = [
   },
   {
     'title': 'Acknowledgments',
-    'url': 'https://datagrok.ai/help/resources/acknowledgements'
+    'url': 'https://datagrok.ai/help/datagrok/resources/acknowledgements'
   }
 ];

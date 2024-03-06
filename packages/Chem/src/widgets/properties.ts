@@ -27,8 +27,9 @@ export function getChemPropertyFunc(name: string) : null | ((smiles: string) => 
 
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
   const rdKitModule = getRdKitModule();
+  let smiles: string;
   try {
-    semValue.value = _convertMolNotation(semValue.value, DG.chem.Notation.Unknown,
+    smiles = _convertMolNotation(semValue.value, DG.chem.Notation.Unknown,
       DG.chem.Notation.Smiles, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
@@ -36,7 +37,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   const host = div();
   let mol: OCL.Molecule | null = null;
   try {
-    mol = oclMol(semValue.value);
+    mol = oclMol(smiles);
   } catch {
     return new DG.Widget(ui.divText('Could not analyze properties'));
   }

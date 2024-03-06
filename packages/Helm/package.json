@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.22",
+  "version": "2.1.29",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -15,22 +15,23 @@
     "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.39.6",
+    "@datagrok-libraries/bio": "^5.39.24",
     "@datagrok-libraries/chem-meta": "^1.2.1",
-    "@datagrok-libraries/utils": "^4.0.17",
+    "@datagrok-libraries/utils": "^4.1.42",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.10.2",
+    "datagrok-api": "^1.17.0",
     "dayjs": "^1.10.6",
     "rxjs": "^6.5.5",
     "wu": "latest"
   },
   "devDependencies": {
+    "@types/node": "17.0.45",
     "@types/wu": "latest",
     "path": "^0.12.7",
     "source-map-loader": "^4.0.1",
     "ts-loader": "^9.2.6",
     "typescript": "^4.8.4",
-    "webpack": "^5.59.1",
+    "webpack": "^5.76.3",
     "webpack-cli": "^4.9.1",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
@@ -39,7 +40,7 @@
     "@datagrok/bio": "^2.11.8"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
     "debug-helm": "webpack && grok publish",
     "release-helm": "webpack && grok publish --release",
     "build-helm": "webpack",
@@ -55,7 +56,7 @@
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
+    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
   },
   "canEdit": [
     "Developers"

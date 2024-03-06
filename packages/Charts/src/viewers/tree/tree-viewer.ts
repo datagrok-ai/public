@@ -28,9 +28,12 @@ export class TreeViewer extends EChartViewer {
   sizeAggrType: DG.AggregationType;
   symbolSizeRange: [number, number] = [5, 20];
   aggregations: string[] = Object.values(DG.AGG).filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
+  aggregationsStr: string[] = Object.values({...DG.STR_AGG, ...DG.STAT_COUNTS});
   colorColumnName: string;
   colorAggrType: DG.AggregationType;
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
+  applySizeAggr: boolean = false;
+  applyColorAggr: boolean = false;
 
   constructor() {
     super();
@@ -102,22 +105,61 @@ export class TreeViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
-    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
+    if (p?.name === 'edgeShape') {
+      this.getProperty('layout')?.set(this, 'orthogonal');
+      this.option.series[0].layout = 'orthogonal';
+      this.option.series[0].label.rotate = 0;
+      this.chart.clear();
+    }
+    if (p?.name === 'layout') {
+      const layout: layoutType = p.get(this);
+      this.option.series[0].layout = layout;
+      if (layout === 'orthogonal')
+        this.option.series[0].label.rotate = 0;
+      else {
+        this.option.series[0].label.rotate = null;
+        const es = this.getProperty('edgeShape');
+        if (es?.get(this) !== 'curve') {
+          es?.set(this, 'curve');
+          this.option.series[0].edgeShape = 'curve';
+        }
+      }
       this.render();
-    else
+      return;
+    }
+    if (p?.name === 'table') {
+      this.updateTable();
+      this.onTableAttached(true);
+      this.render();
+    }
+    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
+        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
+      if (p?.name === 'hierarchyColumnNames')
+        this.chart.clear();
+      if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
+        this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
+      if (p?.name === 'sizeColumnName' || p?.name === 'sizeAggrType')
+        this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
+      this.render();
+    } else
       super.onPropertyChanged(p, render);
   }
 
-  onTableAttached() {
+  shouldApplyAggregation(columnName: string, aggrType: string): boolean {
+    const numericalColumns = this.dataFrame.columns.byName(columnName);
+    const isColumnNumerical = numericalColumns ? numericalColumns.matches('numerical') : false;
+    const isAggregationApplicable = this.aggregationsStr.includes(aggrType);
+    return isColumnNumerical || (!isColumnNumerical && isAggregationApplicable);
+  }
+  
+  onTableAttached(propertyChanged?: boolean) {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
 
     if (categoricalColumns.length < 1)
       return;
 
-
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
       this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
 
     super.onTableAttached();
@@ -141,16 +183,15 @@ export class TreeViewer extends EChartViewer {
   getSeriesData() {
     const aggregations = [];
 
-    if (this.sizeColumnName) {
+    if (this.sizeColumnName && this.applySizeAggr)
       aggregations.push({ type: <DG.AggregationType> this.sizeAggrType,
         columnName: this.sizeColumnName, propertyName: 'size' });
-    }
-    if (this.colorColumnName) {
+
+    if (this.colorColumnName && this.applyColorAggr)
       aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
         columnName: this.colorColumnName, propertyName: 'color' });
-    }
 
-    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
+    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
   }
 
   render() {
@@ -159,11 +200,11 @@ export class TreeViewer extends EChartViewer {
 
     this.option.series[0].data = this.getSeriesData();
 
-    this.option.series[0]['symbolSize'] = this.sizeColumnName ?
+    this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
         params.data.size, this.option.series[0].data[0]['size-meta']['min'],
         this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
-    if (this.colorColumnName)
+    if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
 
     this.chart.setOption(this.option);

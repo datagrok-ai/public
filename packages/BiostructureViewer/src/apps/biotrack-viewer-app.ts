@@ -4,14 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-
-import {_getPdbHelper} from '../package-utils';
+import {PdbHelper} from '../utils/pdb-helper';
 
 import {_package} from '../package';
 
 /** The app for biotrackViewer */
 export class BiotrackViewerApp {
-  private readonly appFuncName: string = '';
+  private readonly appFuncName: string;
 
   constructor(appFuncName: string = 'biotrackViewerApp') {
     this.appFuncName = appFuncName;
@@ -28,7 +27,7 @@ export class BiotrackViewerApp {
   }
 
   static async loadData(): Promise<[DG.DataFrame]> {
-    const ph: IPdbHelper = await _getPdbHelper();
+    const ph: IPdbHelper = await PdbHelper.getInstance();
     const pdbStr: string = await _package.files.readAsText('samples/1bdq.pdb');
     const pdbDf: DG.DataFrame = await ph.pdbToDf(pdbStr, '1bdq');
     return [pdbDf];

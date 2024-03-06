@@ -33,8 +33,6 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
-    'exceljs': 'ExcelJS',
-    'html2canvas': 'html2canvas'
   },
   output: {
     filename: '[name].js',

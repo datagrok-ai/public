@@ -30,6 +30,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   nglHost.style.height = `${HEIGHT}px`;
   nglHost.style.backgroundColor = 'white';
 
+  await DG.Utils.loadJsCss(['/js/common/ngl_viewer/ngl.js']);
   //@ts-ignore
   const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
   //@ts-ignore

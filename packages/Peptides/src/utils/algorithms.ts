@@ -21,11 +21,19 @@ export type MutationCliffsOptions = {
   currentTarget?: string | null
 };
 
+/**
+ * Finds mutation cliffs in the set of sequences.
+ * @param activityArray - Activity column raw data.
+ * @param monomerInfoArray - Split sequence raw columns.
+ * @param options - Options for the mutation cliffs algorithm.
+ * @return - Mutation cliffs map.
+ */
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
   if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
+
 
   options.minActivityDelta ??= 0;
   options.maxMutations ??= 1;
@@ -35,6 +43,16 @@ export async function findMutations(activityArray: type.RawData, monomerInfoArra
   return substitutionsInfo;
 }
 
+/**
+ * Calculates statistics for each monomer position.
+ * @param activityCol - Activity column.
+ * @param filter - Dataframe filter to consider.
+ * @param positionColumns - Position columns containing monomers.
+ * @param [options] - Options for the algorithm.
+ * @param [options.isFiltered] - Whether the dataframe is filtered.
+ * @param [options.columns] - Columns to consider when calculating statistics.
+ * @return - Statistics for each monomer position.
+ */
 export function calculateMonomerPositionStatistics(activityCol: DG.Column<number>, filter: DG.BitSet,
   positionColumns: DG.Column<string>[], options: {
     isFiltered?: boolean,
@@ -51,6 +69,8 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
     const selectedIndexes = filter.getSelectedIndexes();
     for (let i = 0; i < sourceDfLen; ++i)
       tempActivityData[i] = activityColData[selectedIndexes[i]];
+
+
     activityColData = tempActivityData;
     positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter).columns.toList();
   }
@@ -59,6 +79,8 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   for (const posCol of positionColumns) {
     if (!options.columns.includes(posCol.name))
       continue;
+
+
     const posColData = posCol.getRawData();
     const posColCateogries = posCol.categories;
     const currentPositionObject = {general: {}} as PositionStats & { general: SummaryStats };
@@ -67,6 +89,7 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
       const monomer = posColCateogries[categoryIndex];
       if (monomer === '')
         continue;
+
 
       const boolArray: boolean[] = new Array(sourceDfLen).fill(false);
       for (let i = 0; i < sourceDfLen; ++i) {
@@ -86,36 +109,49 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   return monomerPositionObject;
 }
 
+/**
+ * Calculates summary statistics for the monomer position statistics such as maximum and minimum values for each
+ * statistic in general and on each position.
+ * @param genObj - Object to store the summary statistics to.
+ * @param stats - Statistics for a single monomer position.
+ * @param summaryStats - Summary statistics for all monomer positions.
+ */
 export function getSummaryStats(genObj: SummaryStats, stats: StatsItem | null = null,
   summaryStats: SummaryStats | null = null): void {
   if (stats === null && summaryStats === null)
     throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
+
 
   const possibleMaxCount = stats?.count ?? summaryStats!.maxCount;
   genObj.maxCount ??= possibleMaxCount;
   if (genObj.maxCount < possibleMaxCount)
     genObj.maxCount = possibleMaxCount;
 
+
   const possibleMinCount = stats?.count ?? summaryStats!.minCount;
   genObj.minCount ??= possibleMinCount;
   if (genObj.minCount > possibleMinCount)
     genObj.minCount = possibleMinCount;
+
 
   const possibleMaxMeanDifference = stats?.meanDifference ?? summaryStats!.maxMeanDifference;
   genObj.maxMeanDifference ??= possibleMaxMeanDifference;
   if (genObj.maxMeanDifference < possibleMaxMeanDifference)
     genObj.maxMeanDifference = possibleMaxMeanDifference;
 
+
   const possibleMinMeanDifference = stats?.meanDifference ?? summaryStats!.minMeanDifference;
   genObj.minMeanDifference ??= possibleMinMeanDifference;
   if (genObj.minMeanDifference > possibleMinMeanDifference)
     genObj.minMeanDifference = possibleMinMeanDifference;
+
 
   if (!isNaN(stats?.pValue ?? NaN)) {
     const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
     genObj.maxPValue ??= possibleMaxPValue;
     if (genObj.maxPValue < possibleMaxPValue)
       genObj.maxPValue = possibleMaxPValue;
+
 
     const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
     genObj.minPValue ??= possibleMinPValue;
@@ -128,12 +164,21 @@ export function getSummaryStats(genObj: SummaryStats, stats: StatsItem | null = 
   if (genObj.maxRatio < possibleMaxRatio)
     genObj.maxRatio = possibleMaxRatio;
 
+
   const possibleMinRatio = stats?.ratio ?? summaryStats!.minRatio;
   genObj.minRatio ??= possibleMinRatio;
   if (genObj.minRatio > possibleMinRatio)
     genObj.minRatio = possibleMinRatio;
 }
 
+/**
+ * Calculates statistics for each cluster type.
+ * @param df - Dataframe containing the clusters column.
+ * @param clustersColumnName - Name of the original clusters column.
+ * @param customClusters - Array of custom clusters columns names.
+ * @param activityCol - Activity column.
+ * @return - Statistics for each cluster type.
+ */
 export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName: string,
   customClusters: DG.Column<boolean>[], activityCol: DG.Column<number>): ClusterTypeStats {
   const rowCount = df.rowCount;
@@ -144,6 +189,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     () => new BitArray(rowCount, false));
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx)
     origClustMasks[origClustColData[rowIdx]].setTrue(rowIdx);
+
 
   const customClustMasks = customClusters.map(
     (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));

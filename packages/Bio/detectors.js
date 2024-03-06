@@ -43,7 +43,34 @@ const UnitsHandler = {
 
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
+class LoggerWrapper {
+  constructor(_package, logger, componentName) {
+    this.package = _package;
+    this.logger = logger;
+    this.componentName = componentName;
+    this.debugEnabled = false;
+  }
+
+  debug(message, params) {
+    if (!this.debugEnabled) return;
+    this.logger.debug(message, params);
+  }
+
+  error(message, params, stackTrace) {
+    this.logger.error(message, params, stackTrace);
+  }
+}
+
 class BioPackageDetectors extends DG.Package {
+  static objCounter = -1;
+  objId = ++BioPackageDetectors.objCounter;
+
+  constructor() {
+    super();
+    // replace super._logger
+    this._logger = new LoggerWrapper(this, this.logger, 'detectors');
+  }
+
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
   likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
 
@@ -99,7 +126,7 @@ class BioPackageDetectors extends DG.Package {
   //output: string semType
   detectMacromolecule(col) {
     const tableName = col.dataFrame ? col.dataFrame.name : null;
-    console.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
+    this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
     const t1 = Date.now();
     try {
       const last = this.detectMacromoleculeStoreLast();
@@ -271,11 +298,11 @@ class BioPackageDetectors extends DG.Package {
       const errStack = err instanceof Error ? err.stack : undefined;
       const colTops = wu.count(0).take(Math.max(col.length, 4)).map((rowI) => col.get(rowI))
         .reduce((a, b) => a === undefined ? b : a + '\n' + b, undefined);
-      console.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}` +
+      this.logger.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}` +
         `${errStack ? '\n' + errStack : ''}` + `\n${colTops}`);
     } finally {
       const t2 = Date.now();
-      console.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
+      this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
     }
   }
 
@@ -432,21 +459,18 @@ class BioPackageDetectors extends DG.Package {
 
   vectorLength(v) {
     let sqrSum = 0;
-    for (let i = 0; i < v.length; i++) {
+    for (let i = 0; i < v.length; i++)
       sqrSum += v[i] * v[i];
-    }
     return Math.sqrt(sqrSum);
   }
 
   vectorDotProduct(v1, v2) {
-    if (v1.length !== v2.length) {
+    if (v1.length !== v2.length)
       throw Error('The dimensionality of the vectors must match');
-    }
 
     let prod = 0;
-    for (let i = 0; i < v1.length; i++) {
+    for (let i = 0; i < v1.length; i++)
       prod += v1[i] * v2[i];
-    }
 
     return prod;
   }
@@ -475,11 +499,10 @@ class BioPackageDetectors extends DG.Package {
         .map((ma) => {
           let mRes;
           const m = ma[0];
-          if (m.length > 1) {
+          if (m.length > 1)
             mRes = ma[1];
-          } else {
+          else
             mRes = m;
-          }
 
           return mRes;
         }).toArray();
@@ -507,11 +530,10 @@ class BioPackageDetectors extends DG.Package {
       const mmPostProcess = (mm) => {
         this.helmPp1Re.lastIndex = 0;
         const pp1M = this.helmPp1Re.exec(mm);
-        if (pp1M && pp1M.length >= 2) {
+        if (pp1M && pp1M.length >= 2)
           return pp1M[1];
-        } else {
+        else
           return mm;
-        }
       };
 
       const mmList = inSeq ? inSeq.split('.') : [];

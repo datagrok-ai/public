@@ -1,8 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {expect} from '@datagrok-libraries/utils/src/test';
+
+import {awaitGrid} from '../utils';
 
 
 export function generateManySequences(): DG.Column[] {
@@ -32,8 +35,8 @@ export async function performanceTest(generateFunc: () => DG.Column[], testName:
   const col: DG.Column = df.columns.byName('MSA');
   const view: DG.TableView = grok.shell.addTableView(df);
 
-  await awaitCheck(() => { return view.grid.dataFrame !== df; },
-    'View grid has wrong data frame ', 100);
+  await awaitGrid(view.grid);
+  expect(view.grid.dataFrame.id, df.id);
 
   const endTime: number = Date.now();
   const elapsedTime: number = endTime - startTime;

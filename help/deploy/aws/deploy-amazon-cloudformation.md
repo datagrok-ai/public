@@ -144,18 +144,18 @@ the [prerequisites](#ec2-prerequisites) and [parameters](#ec2-parameters).
 
      * If you already have an RSA key pair, you can use the existing one.
      * If you have a Linux-based OS or macOS, type in terminal `ssh-keygen` and hit **Enter**.
-       You’ll be asked to enter a passphrase. Hit **Enter** to skip this step.
+       You'll be asked to enter a passphrase. Hit **Enter** to skip this step.
        It will create `id_rsa` and `id_rsa.pub` files in the `~/.ssh` directory.
      * If you have Windows open the Settings panel, then click Apps.
        Under the *Apps and Features* heading, click **Optional Features**.
        Scroll down the list to see if **OpenSSH Client** is listed.
-       If it’s not, click the plus-sign next to **Add a feature**.
+       If it's not, click the plus-sign next to **Add a feature**.
        Scroll through the list to find and select **OpenSSH Client**. Finally, click **Install**.
        Press the **Windows key**, type **cmd** under *Best Match*, and right-click **Command Prompt**.
        Click **Run as Administrator**.
        If prompted, click **Yes** in the *Do you want to allow this app to make changes to your device?* pop-up.
        In the command prompt, type `ssh-keygen` and hit **Enter**.
-       You’ll be asked to enter a passphrase. Hit **Enter** to skip this step.
+       You'll be asked to enter a passphrase. Hit **Enter** to skip this step.
        By default, the system will save the keys to `C:\Users\your_username/.ssh/id_rsa`.
 
 2. Copy the content of the public part of the key pair: `id_rsa.pub`. It will be placed in the EC2 instances

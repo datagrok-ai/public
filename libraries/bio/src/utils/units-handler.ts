@@ -299,7 +299,9 @@ export class UnitsHandler {
    * @param {NOTATION} tgtNotation
    * @return {DG.Column}
    */
-  protected getNewColumn(tgtNotation: NOTATION, tgtSeparator?: string, colName?: string, data?: string[]): DG.Column<string> {
+  protected getNewColumn(
+    tgtNotation: NOTATION, tgtSeparator?: string, colName?: string, data?: string[]
+  ): DG.Column<string> {
     const col = this.column;
     const name = tgtNotation.toLowerCase() + '(' + col.name + ')';
     const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
@@ -310,7 +312,7 @@ export class UnitsHandler {
       if (!tgtSeparator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
       newColumn.setTag(TAGS.separator, tgtSeparator);
     }
-    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule'); // cell.renderer
+    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'sequence'); // cell.renderer
 
     const srcAligned = col.getTag(TAGS.aligned);
     if (srcAligned)
@@ -533,7 +535,10 @@ export class UnitsHandler {
     const convert: ConvertFunc = this.getConverter(tgtNotation, tgtSeparator);
     const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
     // assign the values to the newly created empty column
-    newColumn.init((rowI: number) => { return convert(this.column.get(rowI)); });
+    newColumn.init((rowI: number) => {
+      const sourceSequence = this.column.get(rowI);
+      return sourceSequence ? convert(sourceSequence) : sourceSequence;
+    });
     // newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     return newColumn;
   }

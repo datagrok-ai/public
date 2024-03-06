@@ -101,7 +101,7 @@ Train models, apply them, compare performance characteristics, deploy, share. Cu
   * Principal Component Analysis (PCA)
 
 Trained models can be shared with other users. In addition to making them discoverable and reusable, the platform might
-also [suggest applying models to the datasets](../../../learn/self-learning-platform.md) (
+also [suggest applying models to the datasets](../../../govern/catalog/self-learning-platform.md) (
 potentially opened by other users) when it deduces that the input dataset is of the same structure as the dataset the
 model was trained on.
 

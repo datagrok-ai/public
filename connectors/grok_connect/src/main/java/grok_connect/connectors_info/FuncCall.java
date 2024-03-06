@@ -4,10 +4,10 @@ import java.util.*;
 
 
 public class FuncCall {
-    public static final String DEBUG_QUERY_KEY = "debugQuery";
+    public static final String DEBUG_QUERY_KEY = "debug";
     public String id;
     public DataQuery func;
-    public Map options;
+    public Map<String, Object> options;
     public Map<String, Object> parameterValues = new HashMap<>();
     public Map<String, Object> aux = new HashMap<>();
     public String log;
@@ -24,8 +24,7 @@ public class FuncCall {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void afterDeserialization() {
-        this.debugQuery = Boolean.parseBoolean(options.getOrDefault(DEBUG_QUERY_KEY, Boolean.FALSE).toString()) ;
+        this.debugQuery = options.get(DEBUG_QUERY_KEY) != null && options.get(DEBUG_QUERY_KEY).equals(Boolean.TRUE);
     }
 }

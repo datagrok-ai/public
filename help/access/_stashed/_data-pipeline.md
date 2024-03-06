@@ -43,7 +43,7 @@ essentially a dashboard.
 
 ## Security
 
-We take the issue of security and access privileges very seriously, and the concepts of access control and users’ roles
+We take the issue of security and access privileges very seriously, and the concepts of access control and users' roles
 and privileges are at the heart at the system. Each system entity (such as `Data Source`, `Data Connection`
 , `Data Query`, or `Data Job`)
 has a list of possible actions associated with it, such as `view`, `edit`, or `publish`. The platform has a flexible

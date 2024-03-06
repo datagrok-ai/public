@@ -28,7 +28,7 @@
       }
     ],
     "block-spacing": [2, "always"],
-    "comma-dangle": ["error"],
+    "comma-dangle": ["off"],
     "comma-spacing": "error",
     "comma-style": "error",
     "guard-for-in": "off",

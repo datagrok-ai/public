@@ -27,7 +27,7 @@ the client side, whereas panel scripts get executed on the server.
 #### Semantic types
 
 Sometimes it is desirable to show an info panel only for data of a specific
-[semantic type](../../catalog/semantic-types.md). To make use of detectors
+[semantic type](../../govern/catalog/semantic-types.md). To make use of detectors
 available out of the box, simply specify a relevant semantic type either from a
 script or from a panel function written in JavaScript.
 
@@ -47,7 +47,7 @@ have a table open and go to a cell in a column with the semantic type `Text`,
 you will see this panel. You can use other semantic types in a similar way, for
 example, set `{semType: Molecule}` to display properties of various chemical
 structures. See the full list of semantic types
-[here](../../catalog/semantic-types.md#automatic-semantic-type-detection).
+[here](../../govern/catalog/semantic-types.md#automatic-semantic-type-detection).
 Since the type is common to all values in a column, it is often convenient to
 check it in the panel condition like this:
 

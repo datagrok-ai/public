@@ -3,12 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {Unsubscribable} from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
-
 import {RcsbFv, RcsbFvDisplayTypes, RcsbFvRowConfigInterface} from '@rcsb/rcsb-saguaro';
 import {RcsbFvBoardConfigInterface} from '@rcsb/rcsb-saguaro/build/RcsbFv/RcsbFvConfig/RcsbFvConfigInterface';
+
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
 import {_package} from '../package';
@@ -91,7 +93,14 @@ export class SaguaroViewer extends DG.JsViewer {
 
     this.subs.push(
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+
+    this.viewSyncer = new PromiseSyncer(_package.logger);
   }
+
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++SaguaroViewer.viewerCounter;
+
+  private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
 
   override onPropertyChanged(property: DG.Property | null) {
     super.onPropertyChanged(property);
@@ -133,23 +142,20 @@ export class SaguaroViewer extends DG.JsViewer {
 
   override detach(): void {
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewSyncer.sync('detach()', async () => {
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach'); // detach
         this.viewed = false;
       }
       superDetach();
-    }).catch((reason: any) => {
-      grok.shell.error(reason.toString());
     });
   }
 
   // -- Data --
 
   setData(): void {
-    _package.logger.debug('BiotrackViewer.setData() in');
-    this.viewPromise = this.viewPromise.then(async () => { // setData
+    this.viewSyncer.sync('setData()', async () => { // setData
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
         if (this.viewed) {
@@ -159,11 +165,10 @@ export class SaguaroViewer extends DG.JsViewer {
         // TODO: Data
 
         if (!this.viewed) {
+          await ui.tools.waitForElementInDom(this.root);
           await this.buildView('setData'); // setData
           this.viewed = true;
         }
-      } catch (err: any) {
-        grok.shell.error(err.toString());
       } finally {
         this.setDataInProgress = false;
       }
@@ -171,7 +176,7 @@ export class SaguaroViewer extends DG.JsViewer {
   }
 
   // -- View --
-  private viewPromise: Promise<void> = Promise.resolve();
+  private viewSyncer;
   private setDataInProgress: boolean = false;
 
   private viewerDivId: string;
@@ -190,6 +195,7 @@ export class SaguaroViewer extends DG.JsViewer {
     }
 
     for (const sub of this.viewSubs) sub.unsubscribe();
+    this.viewSubs = [];
 
     if (this.splashDiv) {
       $(this.splashDiv).empty();
@@ -319,7 +325,7 @@ export class SaguaroViewer extends DG.JsViewer {
   }
 
   private calcSize(): void {
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewSyncer.sync('calcSize()', async () => {
       if (!this.viewer || !this.viewerDiv) return;
 
       const cw: number = this.root.clientWidth;
@@ -352,5 +358,29 @@ export class SaguaroViewer extends DG.JsViewer {
   private rootOnSizeChanged(_value: any): void {
     _package.logger.debug('BiotrackViewer.rootOnSizeChanged() ');
     this.calcSize();
+  }
+
+  // -- IRenderer--
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    // Put the event trigger in the tail of the synced calls queue.
+    this.viewSyncer.sync('invalidate(${caller ? ` <- ${caller} ` : \'\'})', async () => {
+      // update view / render
+      this._onRendered.next();
+    });
+  }
+
+  async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+    await testEvent(this.onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }

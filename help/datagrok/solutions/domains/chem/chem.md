@@ -38,7 +38,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
   * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
-  * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for the chemical building blocks.
+  * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
 
 </details>
 
@@ -49,7 +49,7 @@ with chemical data:
   * Automatic detection of chemical structures upon [data import](../../../../access/access.md).
   * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules.<!--Add links?-->
   * Multiple molecular [sketchers](#sketching).
-  * Support for multiple formats, such as SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2 and others.
+  * Support for multiple formats, such as SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2, and others.
   * Flexible and fast [chemically-aware spreadsheet](#chemically-aware-spreadsheet).
   * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
   * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
@@ -117,9 +117,9 @@ To learn more about querying data and data access in general, see the [Access](.
 
 When you open a dataset, Datagrok automatically detects molecules and makes available molecule-specific context actions. For example, when you open a CSV file containing molecules in the SMILES format, the following happens:
 
-* Data is parsed, and the [semantic type](../../../../catalog/semantic-types.md) _molecule_ is assigned to the corresponding column.
+* Data is parsed, and the [semantic type](../../../../govern/catalog/semantic-types.md) _molecule_ is assigned to the corresponding column.
 * Molecules are automatically rendered in the spreadsheet.
-* Column tooltip now shows most diverse molecules in your dataset.
+* Column tooltip now shows the most diverse molecules in your dataset.
 * Default column filter is now a sketcher-driven substructure search.
 * A top menu item labeled **Chem** appears.
 * When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../explore/data-augmentation/info-panels.md), such as **Toxicity** or **Drug Likeness**.
@@ -143,12 +143,12 @@ The following info panes are shown by default for the current molecular column:
 
 * Most Diverse Structures
 * Rendering (offers rendering options for molecules):
-  * Render a molecule, or show its textual representation (**Show structures**).
+  * Render a molecule or show its textual representation (**Show structures**).
   * Aligned to a particular scaffold (**Scaffold**).
   * Aligned to a scaffold defined in the specified column (**Scaffold column**).
   * Highlight the scaffold (**Highlight from column**).
   * Force regeneration for atom coordinates, even if the molecule is defined as a MOLBLOCK (**Regenerate coords**).
-  * Type of the filter for that column (sketcher, or categorical)(**Filter type**).
+  * Type of the filter for that column (sketcher or categorical)(**Filter type**).
 
 <details>
 <summary>Info pane options</summary>
@@ -202,7 +202,7 @@ Datagrok provides integrations with various sketchers, but their availability de
 <summary> How to provide a license path </summary>
 
 1. Go to [**Manage** > **Packages**](https://public.datagrok.ai/packages) and select a package that you want to use.
-1. Navigate to the **Context Panel** > **Settings**  and enter the license code in the **License path** field.
+1. Navigate to the **Context Panel** > **Settings** and enter the license code in the **License path** field.
 1. Click **SAVE** to activate the license.
 
 </details>
@@ -211,7 +211,7 @@ Datagrok provides integrations with various sketchers, but their availability de
 
 To launch a sketcher, double-click a molecule.  Alternatively, in the **Actions** info pane, select **Sketch**.
 
-You can sketch a molecule or retrieve one by entering SMILES, compound identifier, or a common name (like aspirin).<!--do we support FASTA sequences for small peptides?--> The following compound identifiers are natively understood since they have a prefix that uniquely identifies data source: SMILES, InChI, InChIKey, ChEMBL, MCULE, comptox, and zinc (example: CHEMBL358225). The rest of the 30+ identifier systems can be referenced by prefixing source name followed by colon to the identifier (example: 'pubchem:11122').
+You can sketch a molecule or retrieve one by entering SMILES, compound identifier, or a common name (like aspirin).<!--do we support FASTA sequences for small peptides?--> The following compound identifiers are natively understood since they have a prefix that uniquely identifies the data source: SMILES, InChI, InChIKey, ChEMBL, MCULE, comptox, and zinc (example: CHEMBL358225). The rest of the 30+ identifier systems can be referenced by prefixing the source name followed by a colon to the identifier (example: 'pubchem:11122').
 
 <details>
 <summary> Supported identifier systems </summary>
@@ -273,7 +273,7 @@ Sketchers are synchronized with the **Context Panel**. As you draw or edit a mol
 
 ### Substructure search / Filtering
 
-Datagrok offers an intuitive filtering functionality to explore and filter datasets. Hovering over categories or distributions in the **Filter Panel**  instantly highlights relevant data points across all viewers. For molecules, Datagrok uses integrated [sketchers](#sketching) to allow structure-based filtering. After applying the filter, Datagrok highlights the queried substructures in the filtered subset.
+Datagrok offers an intuitive filtering functionality to explore and filter datasets. Hovering over categories or distributions in the **Filter Panel** instantly highlights relevant data points across all viewers. For molecules, Datagrok uses integrated [sketchers](#sketching) to allow structure-based filtering. After applying the filter, Datagrok highlights the queried substructures in the filtered subset.
 
 ![Filter by substructure](img/filter-substructure.gif)
 
@@ -282,7 +282,7 @@ Datagrok offers an intuitive filtering functionality to explore and filter datas
 
 To filter by substructure, follow these steps:
 
-1. On the **Menu Ribbon**, click the **Filter** icon to open the **Filter Panel**. The panel shows filters for all dataset columns. By default, the substructure filter is displayed on top but you can rearrange, add, or remove filter columns by using available controls.
+1. On the **Menu Ribbon**, click the **Filter** icon to open the **Filter Panel**. The panel shows filters for all dataset columns. By default, the substructure filter is displayed on top, but you can rearrange, add, or remove filter columns by using available controls.
 1. Open the sketcher by clicking the **Click to edit** button. Sketch or enter a substructure.
 1. Once finished, click **OK** to apply the filter.
 
@@ -316,7 +316,7 @@ To explore the dataset further, use the similarity and diversity viewers (**Top 
 
 To configure a similarity or diversity viewer, click the **Gear** icon at the viewer's top. The **Context Panel** updates with available controls. You can change parameters like the similarity threshold, fingerprint type<!--we only have Morgan?-->, or the distance measure.
 
-By default, a reference molecule follows the current row. If you click a different molecule, the similarity viewer update accordingly. To lock in a specific reference molecule, clear the **Follow Current Row** control. To sketch a custom reference molecule, click the **Edit** icon on the reference molecule card.
+By default, a reference molecule follows the current row. If you click a different molecule, the similarity viewer updates accordingly. To lock in a specific reference molecule, clear the **Follow Current Row** control. To sketch a custom reference molecule, click the **Edit** icon on the reference molecule card.
 
 You can enhance the viewer cards by incorporating column data. To do so, use the **Molecule Properties** control. If a column is color-coded, its format is reflected on the card's value. To adjust how the color is shown (either as a background or text), use the **Apply Color To** control. To remove highlighting, clear the color-coding from the corresponding column in the dataset.
 
@@ -326,7 +326,7 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 ### Chemical space
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D or 3D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.mdx).
+Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D or 3D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.mdx).
 
 ![chem-space](img/chem-space-0.png)
 
@@ -334,7 +334,7 @@ Datagrok lets you analyze chemical space using distance-based dimensionality red
 <summary> How to use </summary>
 
 1. Go to the **Menu Ribbon** and choose **Chem** > **Analyze Structure** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
-1. In the dialog, select the source of the molecule and set the parameters such as the distance metric (Tanimoto, Asymmetric, Cosine, Sokal) and the algorithm you want to use. To change default settings for the selected algorithm, click the **Gear** icon next to the **Method name** control.
+1. In the dialog, select the source of the molecule and set the parameters such as the distance metric (Tanimoto, Asymmetric, Cosine, Sokal) and the algorithm you want to use. To change the default settings for the selected algorithm, click the **Gear** icon next to the **Method name** control.
 1. Click **OK**. A scatterplot is added to the view.
 
 </details>
@@ -353,7 +353,7 @@ consists of the scaffold and ligand attachment points represented by R-groups.
 
 1. Go to **Chem** > **Analyze SAR** > **R-Groups Analysis...**
 A [sketcher](#sketching) opens.
-1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of this methods:
+1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
    * Draw or paste a scaffold in the sketcher.
    * Click **MCS** to automatically identify the most common substructure.
 1. Click **OK** to execute. The R-group columns are added to the dataframe, along with a [trellis plot](../../../../visualize/viewers/trellis-plot.md) for visual exploration.
@@ -387,7 +387,7 @@ Scaffold tree generation is computationally intensive and may take a significant
 
 ![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
 
-A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold, but do not contain any of the sibling scaffolds. This is best illustrated by a picture:
+A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds. A picture best illustrates this:
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
@@ -414,15 +414,25 @@ Scaffold tree is a viewer, which means it's synchronized with other viewers, can
 <details>
 <summary>Filtering and selection</summary>
 
-To highlight rows matching a particular scaffold, hover the mouse over the scaffold tile. To select rows matching a particular scaffold, click the **Select rows** icon next to the scaffold. To deselect rows matching a particular scaffold, click the **Deselect rows** icon next to the scaffold. The state is picked up by other viewers.
+To highlight rows matching a particular scaffold, hover the mouse over the
+scaffold tile. To select rows matching a particular scaffold, click the **Select
+rows** icon next to the scaffold. To deselect rows matching a particular
+scaffold, click the **Deselect rows** icon next to the scaffold. The state is
+picked up by other viewers.
 
 ![scaffold-tree-filter-select](scaffold-tree-filter-select.gif)
 
 To filter a dataset using a scaffold tree, do the following:
 
-* To exclusively filter by a particular scaffold, select the checkbox
+* To filter by a particular scaffold exclusively, select the checkbox
   to the left of the molecule. This action automatically clears any other checkboxes and helps to navigate quickly within the dataset.
-* To add another scaffold to the filtered subset, select the corresponding checkbox. Use the **AND/OR** control in the **Toolbar** to set the desired logical operation. If needed, you can invert the function of an individual checkbox to exclude the scaffold from the subset instead of adding it. To invert the checkbox mode, click the **Doesn't equal** icon located in the top left corner of the scaffold tile. The change in the state of an individual checkbox doesn't affect the state of other checkboxes.
+* To add another scaffold to the filtered subset, select the corresponding
+  checkbox. Use the **AND/OR** control in the **Toolbar** to set the desired
+  logical operation. If needed, you can invert the function of an individual
+  checkbox to exclude the scaffold from the subset instead of adding it. To
+  invert the checkbox mode, click the **Doesn't equal** icon located in the top
+  left corner of the scaffold tile. The change in the state of an individual
+  checkbox doesn't affect the state of other checkboxes.
 * To clear all filters, click the **Filter** icon in the **Toolbar**.
 
 ![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
@@ -436,13 +446,13 @@ You can add the scaffold tree as a filter to the **Filter Panel**:
 
 ![Scaffold tree filter panel](scaffold-tree-filter.gif)
 
-Scaffold tree can be combined with other [filters](../../../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
+You can use a scaffold tree with other [filters](../../../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
 
 </details>
 
 ### Elemental analysis
 
-**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualizes the results in a [radar viewer](../../../../visualize/viewers/radar.md). Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. Use it as a basic tool to explore the dataset and detect rare elements, unique properties.
+**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualizes the results in a [radar viewer](../../../../visualize/viewers/radar.md). Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. Use it as a basic tool to explore the dataset and detect rare elements and unique properties.
 
 <details>
 <summary>How to use</summary>
@@ -451,7 +461,7 @@ Scaffold tree can be combined with other [filters](../../../../visualize/viewers
 1. In the dialog:
    1. Select the source table and the molecular column that you want to analyze.
    1. Select the desired visualization option. You can choose between a standalone viewer (select **Radar View**) and sparklines (select **Radar Grid**), both of which use a radar viewer.
-1. Click **OK** to execute the analysis. New columns with atoms counts and molecule charges are added to the spreadsheet and plotted on a radar chart using the selected visualization option.
+1. Click **OK** to execute the analysis. New columns with atom counts and molecule charges are added to the spreadsheet and plotted on a radar chart using the selected visualization option.
 
 </details>
 
@@ -467,18 +477,18 @@ The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules w
 <summary>How to use</summary>
 
 1. Open the **Chem** menu and select **Analyze SAR** > **Activity Cliffs**.
-1. In the parameter input dialog specify the following:
+1. In the parameter input dialog, specify the following:
    1. Select the source table, molecular column, and activity data column to analyze.
    1. Set the similarity cutoff.
    1. Select a dimensionality reduction algorithm and adjust its parameters using the **Gear** icon next to the **Method** control.
 1. Click **OK** to execute the analysis. A scatterplot visualization is added to the view.
-1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also has detailed information such as similarity score, activity difference score, and other data.
+1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also have detailed information such as similarity score, activity difference score, and other data.
 
 In the scatterplot, the marker color corresponds to the level of molecule activity, and the size represents the maximum detected activity cliff for that molecule. The opacity of the line connecting molecule pairs corresponds to the size of the activity cliff.
 
 To explore the molecule pairs:
 
-* Click a molecule in the source dataframe to zoom in on the scatterplot and focus on the pair that includes the selected molecule. Hover over molecules pairs and connecting lines to see summary information about them.
+* Click a molecule in the source dataframe to zoom in on the scatterplot and focus on the pair that includes the selected molecule. Hover over molecule pairs and connecting lines to see summary information about them.
 * Click the line connecting molecules in the scatterplot to select a corresponding pair of molecules in the underlying dataframe and **Activity Cliffs** table. The reverse also applies: clicking a pair in the **Activity Cliffs** table updates the scatterplot and selects the corresponding rows in the underlying dataframe.
 
 As you browse the dataset, the **Context Panel** updates with relevant information.
@@ -517,8 +527,11 @@ using these modeling methods:
 <details>
 <summary>Train</summary>
 
-Train a model based on a measured response, using calculated descriptors as features. Use an integrated [model building mechanism](../../../../learn/learn.md) that supports different backends and dozens of
-models with hundreds of hyperparameters available. You may try it as a [tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening) and walk through an illustrative example of virtual screening exercise.
+Train a model based on a measured response using calculated descriptors as
+features. Use an integrated [model building mechanism](../../../../learn/learn.md) that supports different backends and
+dozens of models with hundreds of hyperparameters available. You may try it as a
+[tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
+and walk through an illustrative example of virtual screening exercise.
 
 ![Training](../../../../uploads/gifs/chem-train-model.gif "Training")
 
@@ -544,7 +557,7 @@ A simple yet efficient way to deploy models is through the use of [info panes](.
 
 ## Chemical scripts
 
-Chem package comes with a number of scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated in larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
+Chem package comes with several scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated into larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
 
 ```mdx-code-block
 <Tabs>
@@ -572,7 +585,12 @@ Chem package comes with a number of scripts that can be used either directly, or
 </Tabs>
 ```
 
-In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0) is used to visualize Gasteiger partial charges. When you run the script explicitly, Datagrok shows the autogenerated parameter input dialog, allowing you to sketch the input structure. In this example, script is also tagged as `panel`, and that instructs Datagrok to show the results in the [info pane](../../../../explore/data-augmentation/info-panels.md) when a user clicks a molecule.
+In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0)
+calculates and visualizes Gasteiger partial charges. When you run the script
+explicitly, Datagrok shows a dialog for sketching a query molecule and
+visualizes the results. In this case, however, the script is also tagged as a
+`panel`. This instructs Datagrok to show the results as an interactive UI
+element that updates dynamically for the current molecule.
 
 To view the chemical scripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
 
@@ -590,7 +608,7 @@ Datagrok offers [multiple ways to transform and enrich your data](../../../../tr
 
 #### Molecular descriptors and fingerprints
 
-Datagrok supports calculation of different sets of descriptors and fingerprints:
+Datagrok supports the calculation of different sets of descriptors and fingerprints:
 
 * Lipinski, Crippen, EState, EState VSA, Fragments, Graph, MolSurf, QED. See [this reference article](descriptors.md) for additional details.
 * RDKFingerprint, MACCSKeys, AtomPair, TopologicalTorsion, Morgan/Circular. See [this reference article](fingerprints.md) for additional details.
@@ -599,7 +617,7 @@ For individual molecules, descriptors are calculated in real-time and presented 
 
 #### Molecule identifier conversions
 
-Datagrok supports conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with multiple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
+Datagrok supports the conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with multiple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
 
 <details>
 <summary> Supported data sources</summary>
@@ -618,7 +636,7 @@ Datagrok supports conversion of various molecule identifiers, including propriet
 
 </details>
 
-For individual molecules, the conversion happens automatically as you interact with molecules, and the **Context Panel** shows all available identifiers in the **Identifiers** info pane (**Context Panel** > **Structure** > **Identifiers**). You can also perform conversion on the entire column by choosing the corresponding option from the **Chem** > **Calculate** menu.
+For individual molecules, the conversion happens automatically as you interact with molecules, and the **Context Panel** shows all available identifiers in the **Identifiers** info pane (**Context Panel** > **Structure** > **Identifiers**). You can also convert the entire column by choosing the corresponding option from the **Chem** > **Calculate** menu.
 
 :::note developers
 
@@ -644,7 +662,7 @@ To perform chemical structure curation:
 
 ### Mutation
 
-You can generate a dataset based on preferred structure.
+You can generate a dataset based on the preferred structure.
 
 <details>
 <summary> How to use </summary>

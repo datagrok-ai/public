@@ -11,27 +11,22 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
-import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
-import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
+import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {HistoryInputBase} from '../../shared-components/src/history-input';
+import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
+import {historyUtils} from '../../history-utils';
+import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
 const RUN_WAIT_TIME = 500;
 
 export type InputVariants = DG.InputBase | FuncCallInput;
-
-function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
-  return new Observable((observer: any) => {
-    const sub = onInput((val: T) => {
-      observer.next(val);
-    });
-    return () => sub.unsubscribe();
-  });
-}
 
 export interface AfterInputRenderPayload {
   prop: DG.Property;
@@ -227,7 +222,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = this.validationUpdates.pipe().subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.isRunning).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -251,9 +246,9 @@ export class RichFunctionView extends FunctionView {
   public async loadInputsValidators() {
     const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
-      if (param.property.options.validator) {
-        const func: DG.Func = await grok.functions.eval(param.property.options.validator);
-        const call = func.prepare({params: JSON.parse(param.property.options.validatorOptions || '{}')});
+      if (param.property.options.validatorFunc) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
         this.validators[param.name] = call.outputs.validator;
       }
@@ -269,7 +264,6 @@ export class RichFunctionView extends FunctionView {
 
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
-      if (this.runningOnInput) return;
 
       if (newValue)
         $(saveButton).show();
@@ -278,50 +272,67 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(uploadSub);
 
-    if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
-
     return saveButton;
   }
 
   private getStandardButtons(): HTMLElement[] {
-    const runButton = this.getRunButton();
+    const runButton = this.getRunButton() as HTMLButtonElement;
     const runButtonWrapper = ui.div([runButton]);
     ui.tooltip.bind(
       runButtonWrapper,
       () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
     const saveButton = this.getSaveButton();
 
-    if (this.runningOnInput) $(runButtonWrapper).hide();
+    return [
+      ...this.isHistoryEnabled && !this.options.isTabbed ? [saveButton]:[],
+      ...!this.runningOnInput ? [runButtonWrapper]: [],
+    ];
+  }
 
-    return [saveButton, runButtonWrapper];
+  private formButtons = ui.div();
+  private buildFormButtons() {
+    const standardButtons = this.getStandardButtons();
+
+    const newFormButtons = ui.buttonsInput();
+    $(newFormButtons.firstChild).css({'display': 'none'});
+    newFormButtons.lastChild?.replaceWith(ui.div([
+      ...this.navBtns,
+      ...this.additionalBtns,
+      ...standardButtons,
+    ], 'ui-input-editor'));
+    $(newFormButtons).addClass('rfv-buttons');
+    $(newFormButtons).css({'max-width': '100%'});
+
+    this.formButtons.replaceWith(newFormButtons);
+    this.formButtons = newFormButtons;
+
+    return newFormButtons;
   }
 
   /**
    * Override to change additional buttons placed between navigation and run buttons.
    */
-  protected additionalBtns = ui.divH([]) as HTMLElement;
+  protected additionalBtns = [] as HTMLElement[];
   /**
    * Changes additional buttons to provided ones.
    * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
    */
   public setAdditionalButtons(additionalBtns: HTMLElement[]) {
-    const additionalBtnsContainer = ui.divH(additionalBtns);
-    this.additionalBtns.replaceWith(additionalBtnsContainer);
-    this.additionalBtns = additionalBtnsContainer;
+    this.additionalBtns = additionalBtns;
+
+    this.buildFormButtons();
   }
 
   /**
    * Override to change navigation buttons placed next to the additional buttons.
    */
-  protected navBtns = ui.divH([]) as HTMLElement;
+  protected navBtns = [] as HTMLElement[];
   /**
    * Changes navigation buttons to provided ones.
    * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
-    const navBtnsContainer = ui.divH(navBtns);
-    this.navBtns.replaceWith(navBtnsContainer);
-    this.navBtns = navBtnsContainer;
+    this.navBtns = navBtns;
   }
 
   /**
@@ -331,20 +342,22 @@ export class RichFunctionView extends FunctionView {
    */
   public buildIO(): HTMLElement {
     const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
+    const inputElements = ([
+      ...Array.from(inputForm.childNodes),
+      ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
+    ]);
 
     ui.tools.handleResize(inputBlock, () => {
-      if (([
-        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
-        ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
-      ]).some((child) => $(child).width() < 250) ||
-      $(inputBlock).width() < 350) {
+      if ($(inputBlock).width() < 300) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
         $(controlsWrapper).addClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100px'));
       } else {
         $(inputForm).removeClass('ui-form-condensed');
         $(outputForm).removeClass('ui-form-condensed');
         $(controlsWrapper).removeClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100%'));
       }
     });
 
@@ -362,7 +375,7 @@ export class RichFunctionView extends FunctionView {
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
 
-    inputBlock.style.maxWidth = '450px';
+    inputBlock.style.maxWidth = '360px';
 
     return out;
   }
@@ -370,21 +383,13 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
-    const standardButtons = this.getStandardButtons();
+    this.buildFormButtons();
 
-    const controllsDiv = ui.buttonsInput([
-      this.navBtns as any,
-      ui.divH([
-        this.additionalBtns,
-        ...standardButtons,
-      ], {style: {'gap': '5px'}}),
-    ]);
-    $(controllsDiv).addClass('rfv-buttons');
-
-    const controlsForm = ui.div(controllsDiv, 'ui-form ui-form-wide');
+    const controlsForm = ui.div(this.formButtons, 'ui-form ui-form-wide');
     $(controlsForm).css({
       'padding-left': '0px',
       'padding-bottom': '0px',
+      'padding-right': '6px',
       'max-width': '100%',
       'min-height': '50px',
     });
@@ -403,7 +408,7 @@ export class RichFunctionView extends FunctionView {
 
     const form = ui.divV([
       inputFormDiv,
-      ...this.hasUploadMode ? [
+      ...this.hasUploadMode && !this.uploadFunc ? [
         ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
@@ -416,6 +421,205 @@ export class RichFunctionView extends FunctionView {
       outputForm: outputFormDiv,
       controlsWrapper: controlsForm,
     };
+  }
+
+  private async processCustomDataUpload() {
+    const getCompareDialog = () => {
+      const compareDialog = DG.Dialog.create({'title': 'Select to compare'});
+
+      const historyRuns = new HistoricalRunsList(simulatedFunccalls.length > 0 ? simulatedFunccalls: this.historyBlock!.history, {
+        fallbackText: 'No historical runs found',
+        showDelete: false,
+        showEdit: false,
+        showFavorite: false,
+        showAuthorIcon: false,
+        showCompare: false,
+      });
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+        fallbackText: 'No runs uploaded',
+        showDelete: false,
+        showEdit: false,
+        showFavorite: false,
+        showAuthorIcon: false,
+        showCompare: false,
+      });
+
+      compareDialog.add(ui.divH([
+        ui.divV([
+          ui.label('Uploaded runs', {style: {'padding': '0px 10px 0px 9px'}}),
+          ui.element('div', 'splitbar-horizontal'),
+          uploadedRuns,
+        ], {style: {width: '185px'}}),
+        ui.divV([
+          ui.label(simulatedFunccalls.length > 0 ? 'Simulated': 'History', {style: {'padding': '0px 10px 0px 9px'}}),
+          ui.element('div', 'splitbar-horizontal'),
+          historyRuns,
+        ], {style: {width: '185px'}}),
+      ], {style: {'justify-content': 'space-between', 'gap': '10px', 'overflow-y': 'scroll'}}));
+
+      $(compareDialog.root.parentElement).removeClass('ui-form');
+      $(compareDialog.root.parentElement).css('overflow-y', 'hidden');
+
+      const compareSelected = 'Compare selected' as const;
+
+      if (simulatedFunccalls.length === 0) {
+        compareDialog
+          .addButton(compareSelected, async () => {
+            const fullHistoryRuns = await Promise.all([...historyRuns.selected.values()].map((funcCall) => historyUtils.loadRun(funcCall.id)));
+            this.onComparisonLaunch([...fullHistoryRuns, ...uploadedRuns.selected.values()]);
+
+            compareDialog.close();
+          });
+      } else {
+        compareDialog
+          .addButton(compareSelected, async () => {
+            this.onComparisonLaunch([...historyRuns.selected.values(), ...uploadedRuns.selected.values()]);
+
+            compareDialog.close();
+          });
+      }
+      compareDialog.getButton(compareSelected).disabled = true;
+      this.subs.push(
+        merge(historyRuns.onSelectedChanged, uploadedRuns.onSelectedChanged).subscribe(() => {
+          if (historyRuns.selected.size + uploadedRuns.selected.size > 1)
+            compareDialog.getButton(compareSelected).disabled = false;
+          else
+            compareDialog.getButton(compareSelected).disabled = true;
+        }),
+      );
+
+      if (this.isHistorical.value) {
+        compareDialog
+          .addButton(compareWithCurrent, async () => {
+            this.onComparisonLaunch([this.funcCall, ...uploadedRuns.selected.values()]);
+
+            compareDialog.close();
+          });
+      }
+
+      $(compareDialog.getButton('CANCEL')).hide();
+
+      return compareDialog;
+    };
+
+    const func = await grok.functions.eval(this.uploadFunc!) as DG.Func;
+    const funcCall = await func.prepare({params: {'func': this.func}}).call();
+    const uploadWidget = funcCall.outputs.uploadWidget;
+    const uploadFuncCall = funcCall.outputs.uploadFuncCall as DG.FuncCall;
+    let uploadedFunccalls = [] as DG.FuncCall[];
+    let simulatedFunccalls = [] as DG.FuncCall[];
+
+    const uploadDialog = DG.Dialog.create({'title': 'Upload'});
+    $(uploadDialog.root.parentElement).removeClass('ui-form');
+    const reviewDialog = DG.Dialog.create({'title': 'Review uploaded runs'});
+    $(reviewDialog.root.parentElement).removeClass('ui-form');
+
+    const saveToHistory = 'Save to history' as const;
+    const simulateInputs = 'Simulate w/ same inputs' as const;
+    const compareWithHistory = 'Compare w/ history' as const;
+    const compareWithCurrent = 'Compare w/ current' as const;
+
+    uploadDialog.add(uploadWidget.root);
+
+    uploadDialog.addButton(saveToHistory, async () => {
+      properUpdateIndicator(uploadDialog.root, true);
+      return Promise.all(uploadedFunccalls.map(async (call) => {
+        const valid = await this.getValidExpRun(call);
+
+        return historyUtils.saveRun(valid);
+      })).then((savedRuns) => {
+        // SaveRun returns a funccall without an author
+        return Promise.all(savedRuns.map((savedRun) => {
+          return historyUtils.loadRun(savedRun.id);
+        }));
+      }).then((loadedRuns) =>{
+        loadedRuns.forEach((run) => this.historyBlock!.addRun(run));
+      }).catch((e) => {
+        grok.shell.error(e);
+      }).finally(() => {
+        properUpdateIndicator(uploadDialog.root, false);
+
+        uploadDialog.close();
+
+        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+          fallbackText: 'No runs uploaded',
+          showDelete: false,
+          showEdit: false,
+          showFavorite: false,
+          showAuthorIcon: false,
+          showCompare: false,
+        });
+
+        reviewDialog.add(uploadedRuns);
+
+        reviewDialog.show({modal: true, center: true});
+      });
+    });
+    uploadDialog.addButton('Next', () => {
+      uploadDialog.close();
+
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+        fallbackText: 'No runs uploaded',
+        showDelete: false,
+        showEdit: false,
+        showFavorite: false,
+        showAuthorIcon: false,
+        showCompare: false,
+      });
+
+      reviewDialog.add(ui.divV([
+        ui.label('Uploaded runs', {style: {'padding': '0px 10px 0px 9px'}}),
+        ui.element('div', 'splitbar-horizontal'),
+        uploadedRuns,
+      ]));
+
+      reviewDialog.show({modal: true, center: true});
+    });
+    $(uploadDialog.getButton('CANCEL')).hide();
+    uploadDialog.getButton(saveToHistory).disabled = true;
+    uploadDialog.getButton('Next').disabled = true;
+    $(reviewDialog.getButton('CANCEL')).hide();
+
+    reviewDialog.addButton(simulateInputs, () => {
+      properUpdateIndicator(uploadDialog.root, true);
+      Promise.all(uploadedFunccalls.map((call) => {
+        const simulatingCall = this.func.prepare(deepCopy(call).inputs);
+        return simulatingCall.call();
+      })).then((calls)=> {
+        simulatedFunccalls = calls;
+
+        reviewDialog.close();
+
+        getCompareDialog().show({modal: true, center: true});
+      }).catch((e) => {
+        grok.shell.error(e);
+      }).finally(() => {
+        properUpdateIndicator(uploadDialog.root, false);
+      });
+    });
+
+    reviewDialog.addButton(compareWithHistory, () => {
+      reviewDialog.close();
+
+      getCompareDialog().show({modal: true, center: true});
+    });
+
+    const uploadSub = grok.functions.onAfterRunAction.pipe(
+      filter((fc) => fc.id === uploadFuncCall.id),
+    ).subscribe(() => {
+      uploadedFunccalls = uploadFuncCall.outputs.uploadedCalls;
+
+      uploadDialog.getButton(saveToHistory).disabled = false;
+      uploadDialog.getButton('Next').disabled = false;
+    });
+
+    const closingSub = uploadDialog.onClose.subscribe(() => {
+      this.isUploadMode.next(false);
+    });
+
+    uploadDialog.subs.push(closingSub, uploadSub);
+
+    uploadDialog.show({modal: true, center: true, resizable: true});
   }
 
   buildRibbonPanels(): HTMLElement[][] {
@@ -437,13 +641,12 @@ export class RichFunctionView extends FunctionView {
     }, this.isUploadMode.value ? 'Save uploaded data': 'Save the last run');
 
     const toggleUploadMode = ui.iconFA('arrow-to-top', async () => {
-      this.isUploadMode.next(!this.isUploadMode.value);
-
-      if (boundImportFunction(this.func)) {
-        const func = await grok.functions.eval(boundImportFunction(this.func)!) as DG.Func;
-        func.prepare().edit();
+      if (this.uploadFunc) {
+        await this.processCustomDataUpload();
         return;
       }
+
+      this.isUploadMode.next(!this.isUploadMode.value);
 
       toggleUploadMode.classList.toggle('d4-current');
     }, 'Upload experimental data');
@@ -454,15 +657,24 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
-    const newRibbonPanels = [
-      ...this.getRibbonPanels(),
-      [
-        ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
-        ...this.hasUploadMode ? [toggleUploadMode]: [],
-        sensitivityAnalysis,
-      ],
-    ];
+    const contextHelpIcon = ui.iconFA('info', async () => {
+      if (this.hasContextHelp) {
+        grok.shell.windows.help.visible = true;
+        // Workaround to deal with help panel bug
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        grok.shell.windows.help.showHelp(ui.markdown((await this.getContextHelp())!));
+      }
+    });
+
+    const newRibbonPanels = [[
+      ...super.buildRibbonPanels().flat(),
+      ...this.runningOnInput || this.options.isTabbed ? []: [play],
+      ...(!this.options.isTabbed &&
+        ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
+      ...this.hasUploadMode ? [toggleUploadMode]: [],
+      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+      ...this.hasContextHelp ? [contextHelpIcon]: [],
+    ]];
 
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
@@ -482,8 +694,8 @@ export class RichFunctionView extends FunctionView {
     this.tabsLabels.forEach((tabLabel) => {
       const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
 
-      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
-      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
+      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.GRAPHICS);
+      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
@@ -575,6 +787,41 @@ export class RichFunctionView extends FunctionView {
           }}});
         });
 
+        if (dfProp.propertyType === DG.TYPE.GRAPHICS) {
+          const blockWidth = dfProp.options.block;
+          const graphics = ui.div([], {style: {
+            'width': '100%',
+            'height': '100%',
+          }});
+          graphics.classList.add('grok-scripting-image-container');
+          const graphicsWrapper = ui.divV([
+            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            graphics,
+          ], {style: {...blockWidth ? {
+            'width': `${blockWidth}%`,
+            'max-width': `${blockWidth}%`,
+            'max-height': '100%',
+          } : {
+            'flex-grow': '1',
+          }}});
+
+          const updateGraphics = () => {
+            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+          };
+
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateGraphics);
+          this.subs.push(paramSub);
+          acc.append(graphicsWrapper);
+        }
+
         acc.append(...wrappedViewers);
 
         return acc;
@@ -610,7 +857,10 @@ export class RichFunctionView extends FunctionView {
       this.subs.push(tableSub);
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
+        return ui.divV([
+          ...tabDfProps.length ? [dfBlocks]: [],
+          ...tabScalarProps.length ? [scalarsTable]: [],
+        ]);
       });
     });
 
@@ -736,6 +986,21 @@ export class RichFunctionView extends FunctionView {
     this.setInputLockState(input, name, value, state);
   }
 
+  public getParamChanges<T = any>(name: string): Observable<T | null> {
+    const ptype = this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCallReplaced.pipe(
+      startWith(null),
+      filter(() => !!this.funcCall),
+      switchMap(() => this.funcCall[ptype][name].onChanged.pipe(startWith(null))),
+      map(() => this.funcCall[ptype][name].value as T),
+    );
+  }
+
+  public getParamValue<T = any>(name: string): T | null {
+    const ptype = this.funcCall?.['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCall?.[ptype][name].value;
+  }
+
   private setInputLockState(input: FuncCallInput, paramName: string, value: any, state?: INPUT_STATE) {
     // if the state is undefined, it is common input with no special state.
     // thus, no need to save it.
@@ -781,6 +1046,11 @@ export class RichFunctionView extends FunctionView {
     $(inputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
+      'padding-right': '12px',
+      'padding-top': '0px',
+      'padding-left': '0px',
+      'max-width': '100%',
+      'gap': '4px',
     });
 
     let prevCategory = 'Misc';
@@ -798,7 +1068,10 @@ export class RichFunctionView extends FunctionView {
         this.inputsMap[val.property.name] = input;
         if (field === SYNC_FIELD.INPUTS) {
           this.syncInput(val, input, field);
-          this.disableInputsOnRun(val.property.name, input);
+          this.checkForMapping(val, input);
+          if (!this.runningOnInput)
+            this.disableInputsOnRun(val.property.name, input);
+
           this.bindOnHotkey(input);
         }
 
@@ -814,9 +1087,6 @@ export class RichFunctionView extends FunctionView {
       );
 
     inputs.classList.remove('ui-panel');
-    inputs.style.paddingTop = '0px';
-    inputs.style.paddingLeft = '0px';
-    inputs.style.maxWidth = '100%';
 
     return inputs;
   }
@@ -844,6 +1114,32 @@ export class RichFunctionView extends FunctionView {
       }
     });
     this.subs.push(disableOnRunSub);
+  }
+
+  private checkForMapping(val: DG.FuncCallParam, funcCallInput: InputVariants) {
+    const isHistoryInputBase = (input: InputVariants): input is HistoryInputBase => funcCallInput.hasOwnProperty('_chosenRun');
+
+    if (!isHistoryInputBase(funcCallInput)) return;
+
+    const mappingJson = val.property.options.funccallMapping;
+    if (!mappingJson) return;
+
+    const mapping = JSON.parse(mappingJson) as Record<string, string>;
+    const paramSub = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const currentParam = this.funcCall.inputParams[val.property.name];
+        return currentParam.onChanged;
+      }),
+    ).subscribe(() => {
+      const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
+      Object.entries(mapping).forEach(([input, key]) => this.setInput(
+        input,
+        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? 'restricted': 'user input',
+      ));
+    });
+    this.subs.push(paramSub);
   }
 
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
@@ -1030,7 +1326,10 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
+      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
+        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
+        newParam.property.defaultValue;
+      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
@@ -1154,7 +1453,10 @@ export class RichFunctionView extends FunctionView {
           view: this,
         });
       }
-      return [name, mergeValidationResults(standardMsgs, customMsgs)] as const;
+      return [name, mergeValidationResults(
+        ...this.funcCall.inputParams[name].property.options.nullable ? []: [standardMsgs],
+        customMsgs),
+      ] as const;
     }));
     return Object.fromEntries(validationItems);
   }
@@ -1195,17 +1497,22 @@ export class RichFunctionView extends FunctionView {
     return (inputName ? [inputName]: [...this.funcCall.inputs.keys()]);
   }
 
-  private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
+  private async getValidExpRun(expFuncCall: DG.FuncCall) {
     // Dirty hack to set readonly 'started' field
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
     expFuncCall.dart.r2 = tempCall.dart.r2;
 
-    const tags = expFuncCall.options['tags'] || [];
-    expFuncCall.options['tags'] = tags.includes(EXPERIMENTAL_TAG) ? tags: [...tags, EXPERIMENTAL_TAG];
+    const immutableTags = expFuncCall.options['immutable_tags'] || [];
+    expFuncCall.options['immutable_tags'] = immutableTags.includes(EXPERIMENTAL_TAG) ? immutableTags: [...immutableTags, EXPERIMENTAL_TAG];
 
     expFuncCall.newId();
 
-    await this.saveRun(expFuncCall);
+    return expFuncCall;
+  }
+
+  private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
+    const validExpRun = await this.getValidExpRun(expFuncCall);
+    await this.saveRun(validExpRun);
   }
 
   private hideOutdatedOutput() {
@@ -1262,6 +1569,7 @@ export class RichFunctionView extends FunctionView {
 
         if (!this.func) throw new Error('The correspoding function is not specified');
 
+        DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
         const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
         const exportWorkbook = new ExcelJS.Workbook();
 
@@ -1400,6 +1708,8 @@ export class RichFunctionView extends FunctionView {
       const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
       const tabControl = this.outputsTabsElem;
+
+      DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
 
       for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.inputs).includes(label))) {
         for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {

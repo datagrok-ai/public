@@ -107,4 +107,4 @@ See also:
 
 * [View layout](view-layout.md)
 * [Table view](../datagrok/navigation/table-view.md)
-* [Self-learning platform](../learn/self-learning-platform.md)
+* [Self-learning platform](../govern/catalog/self-learning-platform.md)

@@ -3,13 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
-
-import * as lev from 'fastest-levenshtein';
-import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {demoSequenceSpace, handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 
 const dataFn = 'data/sample_FASTA_PT_activity.csv';
 const seqColName = 'sequence';
@@ -55,13 +53,11 @@ export async function demoBio01aUI() {
         delay: 2000,
       })
       .step('Cluster sequences', async () => {
-        const seqCol: DG.Column<string> = df.getCol(seqColName);
-        const seqList = seqCol.toList();
-        const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
-          const levDistance = lev.distance(aSeq, bSeq);
-          return levDistance / ((aSeq.length + bSeq.length) / 2);
-        });
-        const treeRoot = await treeHelper.hierarchicalClusteringByDistance(distance, 'ward');
+        const distance = await treeHelper.calcDistanceMatrix(df, [seqColName]);
+        const clusterMatrix = await getClusterMatrixWorker(
+          distance!.data, df.rowCount, 1,
+        );
+        const treeRoot = treeHelper.parseClusterMatrix(clusterMatrix);
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
       }, {
         description: `Perform hierarchical clustering to reveal relationships between sequences.`,

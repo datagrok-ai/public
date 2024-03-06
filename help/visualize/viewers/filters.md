@@ -33,9 +33,42 @@ their choice.
 
 ## Text filter
 
-On the **Filter Panel**, you can search or filter text using keywords. To create a keyword category, enter a word or phrase in the filter tab and press Enter. The filter automatically generates categories based on the entered text. Toggle the categories to include or exclude specific words from the search. By default, the result includes text that contains at least one of the specified keywords. To find text that includes all the specified keywords, at the top of the filter tab, switch the logical operator from `OR` to `AND`.
+This filter is used for fuzzy searching for the specified search terms, and applies to string columns that 
+have the "Text" semantic type.
 
-<img alt="Text filter" src={require('../../uploads/viewers/text-filter.gif').default} width="800px"/>
+To add a search term, enter it in the search box, and press Enter. Use the checkboxes and the "and/or"
+switch to control search results.
+
+![](../../uploads/viewers/text-filter.gif)
+
+## Free-text filter
+
+Free-text filter lets you enter custom search terms. Typically, search terms
+have a form of `column name` `operation` `value`. The following operations are supported:
+
+* numerical columns: `none`, `=`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `-`, `is null`, `is not null`
+  * `age > 40`
+  * `height is null`
+* string columns: `none`, `contains`, `starts with`, `ends with`, `equals`, `!=`, `regex`, `in`, `not in`, `is null`, `is not null`
+  * `race contains sian`  // Asian, Caucasian
+  * `race starts with B`
+  * `race in (Black, Asian)`
+  * `race regex ck$`
+* datetime columns: `none`, `equals`, `before`, `after`, `range`, `is null`, `is not null`
+  * `started after 7/1/1991`
+  * `started `
+* bool columns: `true`, `false`
+
+### Logical conditions
+
+Free-text filter also understands (very basic) logical conditions. Here are some examples:
+* `age > 30 and height > 190`
+* `age > 30 and sex = F`
+
+Unfortunately, at the moment free-text filter does not work with columns that have space in the name. 
+We are working on developing another filter that would let you specify column/operation/value in a more structured form.
+
+![](features/filters-free-text.gif)
 
 ## Column tags
 
@@ -62,7 +95,7 @@ On the **Filter Panel**, you can search or filter text using keywords. To create
 
 To set the column tag value via the UI:
 
-1. Right-click the column’s header and select **Column Properties** from the
+1. Right-click the column's header and select **Column Properties** from the
    context menu. A dialog with column metadata opens.
 1. In the dialog, use the **Plus** icon to add a new tag.
 1. Enter the tag name and value.
