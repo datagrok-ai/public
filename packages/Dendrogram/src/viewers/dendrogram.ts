@@ -310,7 +310,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     // this.dataFrame.getTag(TREE_TAGS.NEWICK) // the lowest priority
     let newickTag: string = treeTAGS.NEWICK;
     if (this.newickTag) newickTag = this.newickTag;
-    this.treeNewick = this.dataFrame.getTag(newickTag);
+    this.treeNewick = this.dataFrame.getTag(newickTag) ?? newickDefault;
     if (this.newick && this.newick != newickDefault) this.treeNewick = this.newick;
 
     if (!this.viewed) {

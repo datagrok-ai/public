@@ -9,10 +9,10 @@ import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {MmDistanceFunctionsNames} from
-  '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
+
 type DataNodeDict = { [nodeName: string]: number };
 
 export const enum TAGS {
@@ -52,17 +52,17 @@ export class TreeHelper implements ITreeHelper {
         name = `${nodePrefixV}${NO_NAME_ROOT}`;
       }
 
+      if (!!obj.children) {
+        const childrenCount = obj.children.length;
+        for (let i = 0; i < childrenCount; i++)
+          traverse(obj.children[i], obj);
+      }
+
       nodes.push(name);
       distances.push(obj.branch_length ? obj.branch_length : null);
       // annotations.push(obj.annotation);
       parents.push(parent ? parent!.name : null);
       leafs.push(!obj.children || obj.children.length == 0);
-
-      if (!obj.children) return;
-      const childrenNum = obj.children.length;
-
-      for (let i = 0; i < childrenNum; i++)
-        traverse(obj.children[i], obj);
     }
 
     traverse(obj, null);
@@ -267,7 +267,7 @@ export class TreeHelper implements ITreeHelper {
    * @param {string}leafColName - name of column with leaf names
    * @param {boolean}removeMissingDataRows - remove rows with missing data
    * @return {[NodeType, string[]]} - tree (root node) of nodes presented in data and list of missed data nodes
-  */
+   */
   setGridOrder(
     tree: NodeType | null, grid: DG.Grid, leafColName?: string,
     removeMissingDataRows: boolean = false,
@@ -555,8 +555,10 @@ export class TreeHelper implements ITreeHelper {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
         newMat.normalize();
         switch (method) {
-        case DistanceMetric.Manhattan:
+        case DistanceMetric.Manhattan: {
           out.add(newMat);
+          break;
+        }
         default:
           newMat.square();
           out.add(newMat);
@@ -571,6 +573,7 @@ export class TreeHelper implements ITreeHelper {
 
     return out;
   }
+
   parseClusterMatrix(clusterMatrix: ClusterMatrix): NodeType {
     /*
     clusert matrix is in R format, I.E. the indexings are 1-based.
@@ -586,6 +589,7 @@ export class TreeHelper implements ITreeHelper {
       function subTreeLength(children?: NodeType[]): number {
         return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
       }
+
       if (isLeaf(node))
         return 0;
       else

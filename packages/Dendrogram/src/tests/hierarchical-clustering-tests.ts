@@ -156,16 +156,19 @@ category('hierarchicalClustering', () => {
 
   test('distanceScript1', async () => {
     await _testDistanceScript(data1, tgt1Dist, tgt1DistM);
-  });
+  }, {timeout: 60000 /* script */});
 
   test('distanceScript2', async () => {
     await _testDistanceScript(data2, tgt2Dist, tgt2DistM);
-  });
+  }, {timeout: 60000 /* script */});
 
   async function _testDistanceScript(csv: string, tgtDist: number[], distM: number[][]): Promise<void> {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    const t1: number = window.performance.now();
     const distDf: DG.DataFrame = await grok.functions.call('Dendrogram:distanceScript',
       {data: df, distance_name: 'euclidean'});
+    const t2: number = window.performance.now();
+    _package.logger.debug(`BsV: Tests: _testDistanceScript(), call Dendrogram:distanceScript ET: ${(t2 - t1)} ms`);
     const distCol: DG.Column = distDf.getCol('distance');
     const distData: Float32Array = distCol.getRawData() as Float32Array;
     const dist = new DistanceMatrix(distData, df.rowCount);

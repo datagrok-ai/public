@@ -1,10 +1,17 @@
 # Dendrogram changelog
 
+## 1.2.26 (2024-03-06)
+
+### Bug fixes
+
+* Bump dependencies version 
+* Fix tree traverse order, fix tests
+
 ## 1.2.18 (2023-07-21)
 
 This release focuses on improving analysis stability and usability.
 
-*Dependency: datagarok-api >= 1.15.0*
+* Dependency: datagarok-api >= 1.15.0*
 
 ### Features
 
