@@ -93,6 +93,15 @@ export function stringValue(name: string, input: DG.InputBase, selector: string,
       value = (<HTMLInputElement>v.root.querySelector('.ui-input-column-names')).innerText.substring(3);
       expect(input.stringValue, value);
       break;
+    case 'boolInput':
+      value = (<HTMLInputElement>v.root.querySelector(`input${selector}`)).value;
+      expect(input.stringValue, value);
+      break;
+    case 'switchInput':
+      value = (<HTMLInputElement>v.root.querySelector(selector)?.querySelector('.ui-input-switch'))
+        ?.classList.contains('ui-input-switch-on') ? 'true' : 'false';
+      expect(input.stringValue, value);
+      break;
     default:
       value = (<HTMLInputElement>v.root.querySelector(selector)).value;
       expect(input.stringValue, value);
