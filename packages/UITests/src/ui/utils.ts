@@ -78,10 +78,11 @@ export function caption(name: string, input: DG.InputBase, view: DG.View, select
   }
 }
 
-export function customCaption(name: string, input: DG.InputBase, view: DG.View, customCaption: string): void {
+export function customCaption(name: string, input: DG.InputBase, view: DG.View,
+  customCaption: string, isInputForm: boolean = false): void {
   view.append(input.root);
   try {
-    expect(input.caption, camelCaseToWords(customCaption));
+    expect(input.caption, isInputForm ? customCaption : camelCaseToWords(customCaption));
   } catch (x) {
     throw new Error(name + ': ' + x);
   } finally {

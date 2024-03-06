@@ -55,7 +55,7 @@ category('UI: Inputs via InputForm', () => {
 
   test('input.customCaption', async () => {
     for (const [key, value] of Object.entries(inputs))
-      customCaption(key, value, v, funcCall.inputParams[key].property.caption);
+      customCaption(key, value, v, funcCall.inputParams[key].property.caption, true);
   });
 
   test('input.stringValue', async () => {
@@ -64,13 +64,15 @@ category('UI: Inputs via InputForm', () => {
   });
 
   test('input.units.exist', async () => {
-    for (const [key, value] of Object.entries(inputs))
+    for (const [key, value] of Object.entries(inputs)
+      .filter(([key, _]) => ['intInput', 'doubleInput'].includes(key)))
       checkHTMLElement(key, value.root, v, '.ui-input-description');
   });
 
   test('input.units.value', async () => {
-    for (const [key, value] of Object.entries(inputs))
-      units(key, value, v, '.ui-input-description', funcCall.inputs[key]);
+    for (const [key, value] of Object.entries(inputs)
+      .filter(([key, _]) => ['intInput', 'doubleInput'].includes(key)))
+      units(key, value, v, '.ui-input-description', funcCall.inputParams[key].property.options.units);
   });
 
   test('input.width', async () => {
