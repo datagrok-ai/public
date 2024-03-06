@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.25.3 (2024-03-06)
+
+### Features
+
+- RFV: "readme" tag replaced by "help"
+
 ## 1.25.2 (2024-03-05)
 
 ### Features
