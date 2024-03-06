@@ -12,20 +12,19 @@ export class SvgDisplayManager {
   private svgDisplayDiv = ui.div([]);
 
   private constructor(
-    eventBus: EventBus,
-    private patternConfigManger: PatternConfigurationManager,
+    private eventBus: EventBus
   ) {
     eventBus.patternStateChanged$.subscribe(() => this.updateSvgContainer());
   }
 
-  static createSvgDiv(eventBus: EventBus, patternConfigManager: PatternConfigurationManager): HTMLDivElement {
-    const displayManager = new SvgDisplayManager(eventBus, patternConfigManager);
+  static createSvgDiv(eventBus: EventBus): HTMLDivElement {
+    const displayManager = new SvgDisplayManager(eventBus);
     return displayManager.svgDisplayDiv;
   }
 
   private updateSvgContainer(): void {
     $(this.svgDisplayDiv).empty();
-    const patternConfig = this.patternConfigManger.getConfig();
+    const patternConfig = PatternConfigurationManager.getConfig(this.eventBus);
     const image = this.createSvg(patternConfig);
     this.svgDisplayDiv.append(image);
   }

@@ -3,14 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {isPatternCreatedByCurrentUser} from './oligo-pattern';
+import {isPatternCreatedByCurrentUser} from './utils';
 import {USER_STORAGE_KEY} from './const';
+import {PatternConfiguration} from './types';
 import {EventBus} from './event-bus';
+import {PatternConfigurationManager} from './pattern-config-manager';
 
 type PatternsRecord = {[patternName: string]: string};
 
 export class PatternAppDataManager {
-  constructor(eventBus: EventBus) {
+  constructor(private eventBus: EventBus) {
     this.patternListManager = new PatternListManager(eventBus);
     this.patternListManager.init();
   }
@@ -27,6 +29,13 @@ export class PatternAppDataManager {
   getCurrentUserName(): string {
     return this.patternListManager.getCurrentUserName();
   }
+
+  async savePatternToUserStorage(patternName: string): Promise<void> {
+    const patternConfig = PatternConfigurationManager.getConfig(this.eventBus);
+    const userName = this.patternListManager.getCurrentUserName();
+    await PatternConfigLoader.savePatternToUserDataStorage(patternConfig, patternName, userName);
+  }
+
 }
 
 class PatternListManager {
@@ -42,8 +51,8 @@ class PatternListManager {
 
   async init(): Promise<void> {
     try {
-      const patternsRecords = await this.fetchAllPatterns();
-      const categorizedPatterns = await this.categorizePatternsByUserOwnership(patternsRecords);
+      const patternRecords = await PatternConfigLoader.fetchPatternsFromUserDataStorage();
+      const categorizedPatterns = await this.categorizePatternsByUserOwnership(patternRecords);
 
       this.currentUserPatterns = categorizedPatterns.currentUserPatterns;
       this.otherUsersPatterns = categorizedPatterns.otherUsersPatterns;
@@ -67,15 +76,6 @@ class PatternListManager {
     return this.currentUserFriendlyName;
   }
 
-  async savePatternToUserStorage(patternName: string, pattern: string): Promise<void> {
-    // todo: implement
-  }
-
-  private async fetchAllPatterns(): Promise<PatternsRecord> {
-    const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false) as PatternsRecord;
-    return patternsData;
-  }
-
   private async categorizePatternsByUserOwnership(
     patternsRecords: PatternsRecord
   ): Promise<{ currentUserPatterns: string[], otherUsersPatterns: string[] }> {
@@ -92,8 +92,25 @@ class PatternListManager {
     return { currentUserPatterns, otherUsersPatterns };
   }
 
-  async fetchCurrentUserName(): Promise<string> {
+  private async fetchCurrentUserName(): Promise<string> {
     const friendlyName = (await grok.dapi.users.current()).friendlyName;
     return friendlyName;
+  }
+}
+
+namespace PatternConfigLoader {
+  export async function fetchPatternsFromUserDataStorage() {
+    const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false) as PatternsRecord;
+    return patternsData;
+  }
+
+  export async function savePatternToUserDataStorage(patternConfig: PatternConfiguration, patternName: string, userName: string) {
+    const stringifiedPatternConfig = JSON.stringify(patternConfig);
+    const fullPatternName = patternName + createPatternNamePostfix(userName);
+    await grok.dapi.userDataStorage.postValue(USER_STORAGE_KEY, fullPatternName, stringifiedPatternConfig, false);
+  }
+
+  function createPatternNamePostfix(userName: string): string {
+    return ` (created by ${userName})`;
   }
 }

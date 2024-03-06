@@ -3,17 +3,15 @@ import {PatternConfiguration} from './types';
 
 /** A wrapper over EventBus encapsulating pattern config access  */
 export class PatternConfigurationManager {
-  constructor(private eventBus: EventBus) { }
-
-  getConfig(): PatternConfiguration {
-    const patternName = this.eventBus.getPatternName();
-    const isAntisenseStrandIncluded = this.eventBus.isAntiSenseStrandVisible();
-    const nucleotideSequences = this.eventBus.getNucleotideSequences();
-    const phosphorothioateLinkageFlags = this.eventBus.getPhosphorothioateLinkageFlags();
-    const strandTerminusModifications = this.eventBus.getTerminalModifications();
-    const patternComment = this.eventBus.getComment();
+  static getConfig(eventBus: EventBus): PatternConfiguration {
+    const patternName = eventBus.getPatternName();
+    const isAntisenseStrandIncluded = eventBus.isAntiSenseStrandVisible();
+    const nucleotideSequences = eventBus.getNucleotideSequences();
+    const phosphorothioateLinkageFlags = eventBus.getPhosphorothioateLinkageFlags();
+    const strandTerminusModifications = eventBus.getTerminalModifications();
+    const patternComment = eventBus.getComment();
     const nucleotidesWithNumericLabels =
-      this.eventBus.getModificationsWithNumericLabels();
+      eventBus.getModificationsWithNumericLabels();
 
     return {
       patternName,

@@ -159,7 +159,7 @@ class PatternControlsManager {
   private createPatternNameInputBlock(): HTMLElement {
     const patternNameControls = new PatternNameControls(
       this.eventBus,
-      // this.patternConfiguration,
+      this.dataManager,
     );
     return patternNameControls.createPatternNameInputBlock();
   }
@@ -210,7 +210,6 @@ class PatternChoiceControls {
     const userChoiceInput = this.createUserChoiceInput();
     const patternChoiceInput = this.getPatternChoiceInput();
 
-    // todo: refactor this legacy solution
     patternChoiceInput.root.append(
       userChoiceInput.input,
       patternChoiceInput.input,
@@ -272,6 +271,7 @@ class PatternChoiceControls {
 class PatternNameControls {
   constructor(
     private eventBus: EventBus,
+    private dataManager: PatternAppDataManager,
     // private patternConfiguration: PatternConfigurationManager,
   ) { }
 
@@ -301,12 +301,14 @@ class PatternNameControls {
   }
 
   private processSaveButtonClick(): void {
-    if (this.eventBus.getPatternName() === '') {
+    const patternName = this.eventBus.getPatternName();
+    if (patternName === '') {
       grok.shell.warning(`Insert pattern name`);
       return;
     }
-    grok.shell.info(`Pattern ${this.eventBus.getPatternName()} saved`);
-    this.eventBus.requestPatternSave();
+    this.dataManager.savePatternToUserStorage(patternName);
+    // this.eventBus.requestPatternSave();
+    grok.shell.info(`Pattern ${patternName} saved`);
   }
 }
 

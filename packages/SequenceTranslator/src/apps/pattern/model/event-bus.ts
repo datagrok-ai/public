@@ -164,6 +164,10 @@ export class EventBus {
     this._patternSaveRequested$.next();
   }
 
+  patternSaveRequested$(): rxjs.Observable<void> {
+    return this._patternSaveRequested$.asObservable();
+  }
+
   replaceSequenceBase(newNucleobase: string) {
     this._sequenceBaseReplacementRequested$.next(newNucleobase);
   }

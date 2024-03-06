@@ -35,7 +35,7 @@ async function loadAndParseJson(filePath: string): Promise<any> {
     return JSON.parse(content);
   } catch (err) {
     console.error(`Error loading json from ${filePath}:`, err);
-    throw err;
+    // throw err;
   }
 }
 

@@ -15,9 +15,8 @@ export class PatternAppRightSection {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    patternConfiguration: PatternConfigurationManager,
   ) {
-    this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus, patternConfiguration);
+    this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus);
   };
 
   getLayout(): HTMLDivElement {

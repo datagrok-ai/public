@@ -18,10 +18,9 @@ export class PatternAppLayout {
     const defaultStateConfigurator = new PatternDefaultsProvider();
     const eventBus = new EventBus(defaultStateConfigurator);
     const dataManager = new PatternAppDataManager(eventBus);
-    const patternConfigManager = new PatternConfigurationManager(eventBus); 
 
     this.leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultStateConfigurator);
-    this.rightSection = new PatternAppRightSection(eventBus, dataManager, patternConfigManager);
+    this.rightSection = new PatternAppRightSection(eventBus, dataManager);
   }
 
   generateHTML(): HTMLDivElement {
