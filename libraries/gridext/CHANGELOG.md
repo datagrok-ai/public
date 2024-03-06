@@ -1,5 +1,9 @@
 # gridext changelog
 
+## 1.3.71 (2024-03-06)
+
+Fix GridNeighbour resize observer
+
 ## 1.3.70 (2024-02-20)
 
 ## 1.3.69 (2024-02-20)
