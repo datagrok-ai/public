@@ -251,7 +251,7 @@ ${CONTROL_EXPR.DIF_EQ}:
   d(FKox)/dt = E61 - E62
 
   d(MEAthiol)/dt = 2 * (-E11 + E12 - E21 + E22 + E31 + E41 - E32 - E42 - E62 - ktox * E71 * E72)
-			- (MEAthiol + MA) * (Fin + Fper) / VL
+			            - (MEAthiol + MA) * (Fin + Fper) / VL
 
   d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR	- 0.5 * ktox * E71 * E72
 			
@@ -310,55 +310,55 @@ ${CONTROL_EXPR.EXPR}:
   E72 = (E70 >= 0) ? sqrt(E70) : 0  
 
 ${CONTROL_EXPR.ARG}: t
-  t0 = 0.0 {units: min; caption: Initial; category: Time} [Initial time of simulation]
-  t1 = 1000 {units: min; caption: Final; category: Time; min: 500; max: 1000} [Final time of simulation]
-  h = 1 {units: min; caption: Step; category: Time; min: 0.1; max: 2} [Time step of simlulation]
+  t0 = 0.0   {units: min; caption: Initial; category: Time}                       [Initial time of simulation]
+  t1 = 1000  {units: min; caption: Final;   category: Time; min: 500; max: 1000}  [Final time of simulation]
+   h = 1     {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simlulation]
 
 ${CONTROL_EXPR.INITS}:  
-  FFox = 0.2 {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01} [FF oxidized]
-  KKox = 0.2 {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01} [KK oxidized]
-  FFred = 0.1 {units: mmol/L; category: Initial values} [FF reduced]
-  KKred = 0.1 {units: mmol/L; category: Initial values} [KK reduced]
-  Ffree = 0 {units: mmol/L; category: Initial values} [F free]
-  Kfree = 0 {units: mmol/L; category: Initial values} [K free]
-  FKred = 0 {units: mmol/L; category: Initial values} [FK reduced]
-  FKox = 0 {units: mmol/L; category: Initial values} [FK oxidized]
-  MEAthiol = 15 {units: mmol/L; category: Initial values} [MEAthiol]
-  CO2 = 0.12 {units: mmol/L; category: Initial values} [Dissolved oxygen]
-  yO2P = 0.209 {units: atm; category: Initial values} [Atm headspace]
-  CYST = 0 {units: mmol/L; category: Initial values} [Cystamine]
-  VL = 7.2 {units: L; category: Initial values} [Liquid volume]
+  FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [FF oxidized]
+  KKox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [KK oxidized]
+  FFred    = 0.1   {units: mmol/L; category: Initial values}                                  [FF reduced]
+  KKred    = 0.1   {units: mmol/L; category: Initial values}                                  [KK reduced]
+  Ffree    = 0     {units: mmol/L; category: Initial values}                                  [F free]
+  Kfree    = 0     {units: mmol/L; category: Initial values}                                  [K free]
+  FKred    = 0     {units: mmol/L; category: Initial values}                                  [FK reduced]
+  FKox     = 0     {units: mmol/L; category: Initial values}                                  [FK oxidized]
+  MEAthiol = 15    {units: mmol/L; category: Initial values}                                  [MEAthiol]
+  CO2      = 0.12  {units: mmol/L; category: Initial values}                                  [Dissolved oxygen]
+  yO2P     = 0.209 {units: atm;    category: Initial values}                                  [Atm headspace]
+  CYST     = 0     {units: mmol/L; category: Initial values}                                  [Cystamine]
+  VL       = 7.2   {units: L;      category: Initial values}                                  [Liquid volume]
 
 ${CONTROL_EXPR.CONSTS}:
-  VLinit = 7.2
-  VTV = 10
-  speed = 400
-  diam = 6
-  power = 2.1
-  pH = 7.4
-  k1red =  5.604e-2
-  k1ox = 1.08e-2
-  k2Fd =  1.35
-  k2Fa =  1.104e8
-  k2Kd =  4.038e-2
-  k2Ka =  1.2e8
-  k3FKa =  1.812e8
-  k3FKd =  1.188e-2
-  k4ox =  1.08e-2
-  k4red =  5.604e-2
-  ktox = 5e-3
-  krcyst = 0
-  pO2sat = 100
+   VLinit = 7.2
+      VTV = 10
+    speed = 400
+     diam = 6
+    power = 2.1
+       pH = 7.4
+    k1red = 5.604e-2
+     k1ox = 1.08e-2
+     k2Fd = 1.35
+     k2Fa = 1.104e8
+     k2Kd = 4.038e-2
+     k2Ka = 1.2e8
+    k3FKa = 1.812e8
+    k3FKd = 1.188e-2
+     k4ox = 1.08e-2
+    k4red = 5.604e-2
+     ktox = 5e-3
+   krcyst = 0
+   pO2sat = 100
   pKa2MEA = 8.18
-  H = 1.072069378
-  R = 8.2e-2
+        H = 1.072069378
+        R = 8.2e-2
 
 ${CONTROL_EXPR.PARAMS}:
-  qin = 1 {units: L/min; caption: Gas; category: Parameters; min: 0.5; max: 1.5} [Gas to headspace]
-  yO2in = 0.21 {category: Parameters; caption: O2 fraction; min: 0.1; max: 0.9} [Oxygen mole fraction]
-  T = 300 {units: K; category: Parameters; caption: temperature; min: 250; max: 350} [System temperature]
-  P = 1 {units: atm; category: Parameters; caption: pressure; min: 1; max: 2} [Headspace pressure]
-  switchTime = 135 {units: min; caption: switch at; category: Time; min: 50; max: 200; step: 10} [Switch mode time]`;
+         qin =    1  {units: L/min; caption: Gas;         category: Parameters;  min: 0.5; max: 1.5}            [Gas to headspace]
+       yO2in = 0.21  {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
+           T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
+           P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
+  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 50;  max: 200; step: 10}  [Switch mode time]`;
 
 /** Initial value problem use cases */
 export enum USE_CASES {
