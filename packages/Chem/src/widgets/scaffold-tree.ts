@@ -1416,22 +1416,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const first = this.paletteColors.shift();
     this.paletteColors[this.paletteColors.length] = first!;
     
-    const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
-      chosenColor = value;
-    });
-    const paletteIcon = ui.iconFA('palette', () => {
-      ui.dialog('Choose color')
-      .add(colorPicker)
-      .onOK(() => {
-        groupValue.colorOn = true;
-        chosenColor = colorPicker.stringValue;
-        this.updateColorIcon(colorIcon, chosenColor);
-        groupValue.chosenColor = chosenColor;
-        this.setColorToHighlight(group, chosenColor, true);
-        this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-      })
-      .show()
-    }, 'Choose color to highlight');
+    const paletteIcon = ui.iconFA('palette');
+
+    const colorPicker = ui.colorPicker(DG.Color.fromHtml(chosenColor), (color: number) => {
+      colorPicker.style.cssText += 'background-color: hsla(0, 0%, 0%, 0) !important';
+      groupValue.colorOn = true;
+      chosenColor = DG.Color.toHtml(color);
+      this.updateColorIcon(colorIcon, chosenColor);
+      groupValue.chosenColor = chosenColor;
+      this.setColorToHighlight(group, chosenColor, true);
+      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
+    }, paletteIcon);
+
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);
     paletteIcon.onclick = (e) => {
