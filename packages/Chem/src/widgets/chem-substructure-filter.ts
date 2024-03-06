@@ -331,8 +331,7 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs?.push(this.sketcher.onHighlightChanged.subscribe(async (_: any) => {
       this.highlightSync === true ? this.highlightSync = false : this.setFilterScaffoldTagAndFireSync();
     }));
-    let searchTypeChanged = this.searchTypeChanged.pipe(debounceTime(this._debounceTime));
-    this.onSketcherChangedSubs?.push(searchTypeChanged.subscribe(async (_: any) => {
+    this.onSketcherChangedSubs?.push(this.searchTypeChanged.subscribe(async (_: any) => {
       await this._onSketchChanged();
     }));
   }
