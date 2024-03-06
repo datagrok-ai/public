@@ -1343,8 +1343,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     
     const paletteIcon = ui.iconFA('palette');
 
-    //@ts-ignore
     const colorPicker = ui.colorPicker(DG.Color.fromHtml(chosenColor), (color: number) => {
+      colorPicker.style.cssText += 'background-color: hsla(0, 0%, 0%, 0) !important';
       groupValue.colorOn = true;
       chosenColor = DG.Color.toHtml(color);
       this.updateColorIcon(colorIcon, chosenColor);
