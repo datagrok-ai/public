@@ -82,14 +82,14 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         if (ArrayBuffer.isView(values) && type.bitWidth < 64)
           columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
         else if (type.bitWidth === 64)
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values));
+          columns.push(DG.Column.fromBigInt64Array(name, values));
         else
           columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
         break;
       case arrow.Type.Uint32:
       case arrow.Type.Int64:
       case arrow.Type.Uint64:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values));
+        columns.push(DG.Column.fromBigInt64Array(name, values));
         break;
       case arrow.Type.Float:
       case arrow.Type.Decimal:
@@ -116,7 +116,7 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         if (type?.bitWidth < 64 && ArrayBuffer.isView(values))
           columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values));
+          columns.push(DG.Column.fromBigInt64Array(name, values));
         break;
       default:
         columns.push(DG.Column.fromStrings(name, values));

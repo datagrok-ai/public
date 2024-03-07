@@ -640,6 +640,12 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
+  /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
+  static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
+    return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
+      (<any>window).grok_BigIntJs_To_BigInt(v.toString())));
+  }
+
   /**
    * Creates a {@link Column} from the list of values.
    * @param {string} type
