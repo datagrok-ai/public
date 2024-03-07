@@ -28,11 +28,11 @@ export function toFeather(table: DG.DataFrame): Uint8Array | null {
     let column = table.columns.byName(column_names[i]);
     if (['int', 'float', 'qnum'].includes(column.type))
       t[column_names[i]] = column.getRawData();
-    else if (table.col(column_names[i])?.type === 'datetime') {
+    else if (column.type === 'datetime') {
       const rawData: Float64Array = (column.getRawData() as Float64Array);
       t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
     }
-    else if (table.col(column_names[i])?.type === 'string') {
+    else if (column.type === 'string') {
       const indexes = column.getRawData();
       t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
     }
@@ -82,41 +82,41 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         if (ArrayBuffer.isView(values) && type.bitWidth < 64)
           columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
         else if (type.bitWidth === 64)
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
         break;
       case arrow.Type.Uint32:
       case arrow.Type.Int64:
       case arrow.Type.Uint64:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values));
         break;
       case arrow.Type.Float:
       case arrow.Type.Decimal:
         if (ArrayBuffer.isView(values))
           columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT as DG.ColumnType, name, values));
         break;
       case arrow.Type.Utf8:
       case arrow.Type.Interval:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values));
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
         break;
       case arrow.Type.Bool:
         if (ArrayBuffer.isView(values))
           columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer, table.numRows)));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name, values));
         break;
       case arrow.Type.Date:
       case arrow.Type.Timestamp:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, values));
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values));
         break;
       case arrow.Type.Time:
         if (type?.bitWidth < 64 && ArrayBuffer.isView(values))
           columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values));
         break;
       default:
         columns.push(DG.Column.fromStrings(name, values));
@@ -143,8 +143,13 @@ export function toParquet(table: DG.DataFrame, compression?: Compression): Uint8
 //output: dataframe table
 export function fromParquet(bytes: Uint8Array): DG.DataFrame | null {
   if (bytes == null) return null;
+  let date = new Date();
   const arrowUint8Array = readParquet(bytes).intoIPCStream();
-  return fromFeather(arrowUint8Array);
+  console.log(new Date().getTime() - date.getTime());
+  date = new Date();
+  let df = fromFeather(arrowUint8Array);
+  console.log(new Date().getTime() - date.getTime());
+  return df;
 }
 
 //input: list bytes
