@@ -1,10 +1,16 @@
 # Dendrogram changelog
 
+## 1.2.27 (2024-03-07)
+
+### Bug fixes
+
+* Bump dependencies version, NEWICK_EMPTY
+
 ## 1.2.26 (2024-03-06)
 
 ### Bug fixes
 
-* Bump dependencies version 
+* Bump dependencies version
 * Fix tree traverse order, fix tests
 
 ## 1.2.18 (2023-07-21)

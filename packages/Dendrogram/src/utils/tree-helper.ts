@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
@@ -111,7 +112,7 @@ export class TreeHelper implements ITreeHelper {
       }
     }
 
-    return !node ? ';' : `${toNewickInt(node)};`;
+    return !node ? NEWICK_EMPTY : `${toNewickInt(node)};`;
   }
 
   getLeafList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
