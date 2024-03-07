@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.97",
+  "version": "3.7.98",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3369,9 +3369,12 @@
         },
         "1.2.9": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.2.11": {
+          "datagrok-api": "^1.15.2"
         }
       },
-      "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
+      "description": "Phylogenetic trees visualization.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -3468,6 +3471,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.2.26": {
+          "datagrok-api": "^1.17.4"
+        },
+        "1.2.27": {
           "datagrok-api": "^1.17.4"
         }
       },
