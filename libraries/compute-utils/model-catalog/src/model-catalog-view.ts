@@ -11,10 +11,6 @@ export class ModelCatalogView extends DG.CustomCardView {
     funcName: string,
     currentPackage: DG.Package,
   ): ModelCatalogView {
-
-    // this should make it a view app
-    //return this.findModelCatalogView(funcName) ?? this.createModelCatalogView(viewName, funcName, currentPackage);
-
     let modelsView = this.findModelCatalogView(funcName);
     if (modelsView == null) {
       modelsView = this.createModelCatalogView(viewName, funcName, currentPackage);
@@ -25,10 +21,14 @@ export class ModelCatalogView extends DG.CustomCardView {
     return modelsView as ModelCatalogView;
   }
 
-  private static createModelCatalogView(viewName: string, funcName: string, currentPackage: DG.Package): ModelCatalogView {
+  private static createModelCatalogView(
+    viewName: string,
+    funcName: string,
+    currentPackage: DG.Package,
+  ): ModelCatalogView {
     const mc: DG.Func = DG.Func.find({package: currentPackage.name, name: funcName})[0];
     const fc = mc.prepare();
-    const view = new this(viewName, funcName, currentPackage);
+    const view = new this(viewName);
     view.parentCall = fc;
     return view;
   }
@@ -49,15 +49,15 @@ export class ModelCatalogView extends DG.CustomCardView {
     }
   }
 
+  private isHelpOpen = false;
+
   constructor(
-    private viewName: string,
-    private funcName: string,
-    private currentPackage: DG.Package,
+    viewName: string,
   ) {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
     this.root.classList.add('model-catalog-view');
-    this.meta = new ModelHandler(this.viewName, this.funcName, this.currentPackage);
+    this.meta = new ModelHandler();
     this.name = viewName;
     this.permanentFilter = '#model';
     this.renderMode = DG.RENDER_MODE.BRIEF;
@@ -92,13 +92,20 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.initRibbon();
     this.initMenu();
     grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = true;
+    grok.shell.windows.showHelp = this.isHelpOpen;
 
     setTimeout(async () => {
-      grok.functions.onBeforeRunAction.subscribe((fc) => {
+      const bindSub = grok.functions.onBeforeRunAction.subscribe((fc) => {
         if (fc.func.hasTag('model'))
           this.bindModel(fc);
       });
+
+      const helpOpenSub = grok.events.onCurrentViewChanged.subscribe(async () => {
+        if (grok.shell.v.path === this.path)
+          grok.shell.windows.showHelp = this.isHelpOpen;
+      });
+
+      this.subs.push(bindSub, helpOpenSub);
     });
   }
 

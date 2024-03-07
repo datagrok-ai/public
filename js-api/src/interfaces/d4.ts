@@ -480,6 +480,10 @@ export interface IScatterPlotLookSettings {
 
   categoricalColorScheme: Array<number>;
 
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
+
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
   /// set for the corresponding column.
   axesUseColumnFormat: boolean;
@@ -1223,6 +1227,9 @@ export interface ISummaryLookSettings {
   /// Color aggregation type.
   colorAggrType: string;
 
+  /// Whether to apply color coding to the background or to the text.
+  applyTo: string;
+
   /// Custom color scheme for the color-coding.
   colorSchemes: Array<Array<number>>;
 
@@ -1254,6 +1261,9 @@ export interface ISummaryLookSettings {
 export interface ISparklinesLookSettings {
   /// List of columns to show aggregations on
   columnNames: Array<string>;
+
+  /// Aggregation that will be used for the columns
+  aggregation: string;
 
   /// List of aggregations for the columns
   aggregations: Array<string>;
@@ -1350,14 +1360,16 @@ export interface IGridLookSettings {
   allowBlockSelection: boolean;
 
   /// Shift+click on a header to select a column
+  /// Shift+mouse drag on the headers to select multiple columns
   /// Ctrl+click to invert selection
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Reorder rows by drag-and-dropping
+  /// Mouse drag on the rows header selects rows
+  /// Reorder rows by dragging them
   allowRowReordering: boolean;
 
-  /// Mouse drag on the row header selects rows
+  /// Mouse drag on the rows headers selects rows
   /// Ctrl+click to invert selection
   /// Shift+mouse drag to select multiple rows
   /// Ctrl+Shift+mouse drag to unselect
@@ -1371,7 +1383,7 @@ export interface IGridLookSettings {
   /// when the mouse is over its header
   allowColumnMenu: boolean;
 
-  /// Automatically scroll current row into view when this column becomes current
+  /// Automatically scroll column into view when this column becomes current
   autoScrollColumnIntoView: boolean;
 
   /// Automatically scroll current row into view when it is set from outside
@@ -1387,7 +1399,7 @@ export interface IGridLookSettings {
   /// when you click on a column header.
   allowChangeCurrentObject: boolean;
 
-  /// Whether row rows can be dragged out of the grid.
+  /// Whether row (rows) can be dragged out of the grid.
   allowRowDragging: boolean;
 
   extendLastColumn: boolean;
@@ -1453,6 +1465,10 @@ export interface IGridLookSettings {
   currentCellTextColor: number;
 
   rowHeaderBackColor: number;
+
+  /// true: colors are scaled based on the global min/max in all numerical columns
+  /// false: colors are scaled based on the column min/max.
+  globalColorScaling: boolean;
 
   /// Controls grid tooltip visibility
   showTooltip: string;
@@ -1554,6 +1570,8 @@ export interface ITrellisPlotLookSettings {
   yColumnNames: Array<string>;
 
   viewerType: string;
+
+  filter: string;
 
   categoryLabelFont: string;
 

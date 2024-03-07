@@ -1,5 +1,25 @@
 # Chem changelog
 
+## 1.8.13 (2024-02-29)
+
+### Bug Fixes
+
+* Warm up substructure search web workers only once when first filter is created on column
+
+## 1.8.12 (2024-02-15)
+
+### Bug Fixes
+
+* Fixed multiple substructure search calls with the same structure (in case multiple layouts are applied to cloned views at once)
+
+## 1.8.11 (2024-02-08)
+
+### Bug Fixes
+
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases
+* [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases
+* [#2646](https://github.com/datagrok-ai/public/issues/2646): Structure highlighting is not removed when filters panel is closed
+
 ## 1.8.10 (2024-01-19)
 
 ### Features

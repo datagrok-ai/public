@@ -12,8 +12,8 @@ import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {attachDivToGrid} from '../utils';
 import {
-  PROPS as D_PROPS,
-  PROPS_CATS as D_PROPS_CATS,
+  PROPS as _D_PROPS,
+  PROPS_CATS as _D_PROPS_CATS,
 } from './dendrogram';
 import {RectangleTreeHoverType} from './tree-renderers/rectangle-tree-placer';
 import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
@@ -189,8 +189,8 @@ export function injectTreeForGridUI2(
           renderer.selectedNodes
             .map((sn) => th.getNodeList(sn).map((n) => n.name))
             .flat());
-        console.debug('Dendrogram: Dendrogram.rendererOnSelectionChanged(), ' +
-          `nodeNameSet = ${JSON.stringify([...nodeNameSet])}`);
+        // console.debug('Dendrogram: Dendrogram.rendererOnSelectionChanged(), ' +
+        //   `nodeNameSet = ${JSON.stringify([...nodeNameSet])}`);
 
         grid.dataFrame.selection.init(
           (rowI) => {

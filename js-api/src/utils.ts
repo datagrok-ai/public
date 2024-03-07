@@ -230,6 +230,9 @@ export class DartList<T> implements Iterable<T> {
   /** Sets the value at the given [index] in the list to [value]. */
   set(index: number, value: T): T { return api.grok_List_Set(this.dart, index, value); }
 
+  /** Removes the first occurrence of [value] from the list. */
+  remove(value: T) { api.grok_List_Remove(this.dart, value); }
+
   includes(item: T, start?: number) {
     const length = this.length;
     for (let i = (start ? start : 0); i < length; i++) {

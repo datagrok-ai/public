@@ -271,6 +271,7 @@ export function modifySelection(selection: type.Selection, clusterOrMonomerPosit
  */
 export function highlightMonomerPosition(monomerPosition: type.SelectionItem, dataFrame: DG.DataFrame,
   monomerPositionStats: MonomerPositionStats): void {
+  if (!dataFrame) return;
   const bitArray = new BitArray(dataFrame.rowCount);
   if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
     const positionStats = Object.values(monomerPositionStats);
@@ -386,4 +387,15 @@ export function getTotalAggColumns(viewerSelectedColNames: string[], aggColsView
 export function isApplicableDataframe(table: DG.DataFrame, minRows: number = 2): boolean {
   return table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE).length > 0 &&
     wu(table.columns.numerical).toArray().length > 0 && table.rowCount >= minRows;
+}
+
+export function debounce<T extends Array<any>, K>(f: (...args: T) => Promise<K>, timeout: number = 500,
+): (...args: T) => Promise<K> {
+  let timer: NodeJS.Timeout | number | undefined;
+  return async (...args: T) => {
+    return new Promise<K>((resolve) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => resolve(f(...args)), timeout);
+    });
+  };
 }

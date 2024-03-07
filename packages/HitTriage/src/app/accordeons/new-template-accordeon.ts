@@ -8,9 +8,11 @@ import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
+import {HitAppBase} from '../hit-app-base';
 
 
-export async function createTemplateAccordeon(dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery },
+export async function createTemplateAccordeon(app: HitAppBase<any>,
+  dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery },
 ): Promise<INewTemplateResult<HitTriageTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
   const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
@@ -77,7 +79,7 @@ export async function createTemplateAccordeon(dataSourceFunctionMap: { [key: str
       functions: [],
     },
   } as unknown as HitTriageTemplate;
-  const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
+  const funcInput = await chemFunctionsDialog(app, (res) => {funcDialogRes = res;}, () => null,
     dummyTemplate, false);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
   if (Object.entries(dataSourceFunctionMap).length === 0) {
@@ -160,6 +162,16 @@ export async function createTemplateAccordeon(dataSourceFunctionMap: { [key: str
               return ({
                 name: scriptNameParts[1] ?? '',
                 id: scriptNameParts[2] ?? '',
+                args: args,
+              });
+            }),
+          queries: Object.entries(funcDialogRes?.queries ?? {})
+            .filter(([name, _]) => name.startsWith(C.HTQueryPrefix) && name.split(':').length === 3)
+            .map(([queryName, args]) => {
+              const queryNameParts = queryName.split(':');
+              return ({
+                name: queryNameParts[1] ?? '',
+                id: queryNameParts[2] ?? '',
                 args: args,
               });
             }),

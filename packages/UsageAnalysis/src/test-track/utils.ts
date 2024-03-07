@@ -3,7 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
+import {colors} from '../utils';
 
+export {colors};
 export const FILENAME = 'test-cases.csv';
 export const PASSED = 'passed';
 export const FAILED = 'failed';
@@ -15,8 +17,6 @@ const map = {
   [FAILED]: {name: 'times', color: 'var(--red-3)'},
   [SKIPPED]: {name: 'forward', color: 'var(--orange-2)'},
 };
-
-export const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);

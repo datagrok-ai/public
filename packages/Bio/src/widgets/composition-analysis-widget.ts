@@ -11,7 +11,7 @@ import '../../css/composition-analysis.css';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 
-export function getCompositionAnalysisWidget(val: DG.SemanticValue) {
+export function getCompositionAnalysisWidget(val: DG.SemanticValue): DG.Widget {
   const host = ui.div();
   host.classList.add('macromolecule-cell-comp-analysis-host');
   const alphabet = val.cell.column.tags[bioTAGS.alphabet];

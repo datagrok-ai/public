@@ -427,6 +427,47 @@ the package. To do that, you should specify the eligible user groups in the `pac
 To see packages available to you, click on `Manage | Packages`, or
 follow [this link](https://public.datagrok.ai/packages) from outside the platform.
 
+### Connections
+
+Data connections in Datagrok allow users to connect to various data sources such as databases, cloud storage, and APIs.
+These connections are defined in JSON files stored under the `/connections` folder.
+
+When defining a connection, users can include credentials for authentication. To ensure security, Datagrok provides a mechanism
+to substitute placeholders in the credentials section with environment variables during the deployment process.
+
+For example, consider the following JSON file defining a connection to the CHEMBL database:
+
+```json
+{
+  "#type": "DataConnection",
+  "name": "Chembl",
+  "friendlyName": "CHEMBL",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 54325,
+    "db": "chembl",
+    "cacheResults": true
+  },
+  "credentials": {
+    "parameters": {
+      "login": "${CHEMBL_LOGIN}",
+      "password": "${CHEMBL_PASSWORD}"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "CHEMBL DB",
+  "tags": [
+    "demo",
+    "chem"
+  ]
+}
+
+```
+In this example, `${CHEMBL_LOGIN}` and `${CHEMBL_PASSWORD}` are placeholders for the login and password credentials.
+During deployment using the [grok publish](https://github.com/datagrok-ai/public/blob/master/tools/README.md#commands) command,
+Datagrok automatically replaces these placeholders with the corresponding environment variables, such
+as `process.env.CHEMBL_LOGIN` and `process.env.CHEMBL_PASSWORD`, respectively.
+
 ## Debugging
 
 See [debugging](advanced/debugging.md) for details.

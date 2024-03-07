@@ -6,7 +6,7 @@ import {before, category, expect, test} from '@datagrok-libraries/utils/src/test
 export function hasTag(colTags: string[], colTagValue: string): boolean {
   for (let i = 0; i < colTags.length; i++) {
     for (let j = 0; j < colTags[i].length; j++) {
-      console.log('TAG Value: ' + colTags[i][j]);
+      // console.log('TAG Value: ' + colTags[i][j]);
       if (colTags[i][j] == colTagValue)
         return true;
     }

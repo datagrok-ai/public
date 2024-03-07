@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.19.2",
+  "version": "1.25.3",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -13,18 +13,15 @@
     "directory": "packages/Compute"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.19.2",
+    "rxjs": "^6.6.7",
+    "@datagrok-libraries/compute-utils": "^1.25.2",
     "cash-dom": "latest",
     "datagrok-api": "^1.17.0",
-    "dayjs": "^1.11.10",
-    "rxjs": "^6.5.5",
     "source-map-loader": "^4.0.1",
     "ts-loader": "latest",
-    "typescript": "latest",
-    "wu": "latest"
+    "typescript": "latest"
   },
   "devDependencies": {
-    "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^5.1.0",
     "@typescript-eslint/parser": "^5.1.0",
     "css-loader": "^6.5.1",
@@ -53,10 +50,6 @@
     "release-compute-compose": "grok publish compose --release",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
   },
-  "sources": [
-    "common/exceljs.min.js",
-    "common/html2canvas.min.js"
-  ],
   "canEdit": [
     "Developers"
   ],

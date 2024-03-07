@@ -211,6 +211,15 @@ export class Tags {
   /// Used for dynamic forms construction, etc
   static Hierarchy = 'hierarchy';
 
+  /// Links column and db property
+  static DbPropertyName = 'dbPropertyName';
+
+  /// Links column and db property schema
+  static DbPropertySchema = 'dbPropertySchema';
+
+  /// Specifies the column that has entity key
+  static DbPropertyReference = 'dbPropertyReference';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls

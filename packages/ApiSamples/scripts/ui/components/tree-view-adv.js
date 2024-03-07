@@ -4,6 +4,8 @@ let banana = { name: 'banana', type: 'fruit', color: 'orange' }
 let ferrari = { name: 'ferrari', type: 'car', color: 'red' }
 let items = [apple, cherry, banana, ferrari];
 
-DG.TreeViewNode.fromItemCategories(items,
+const tree = DG.TreeViewGroup.fromItemCategories(items,
   ['color', 'type'],
   { itemToString: (x) => x.name }).root
+
+grok.shell.newView('Tree', [tree]);

@@ -73,6 +73,40 @@ by type, name, optional default value, options, and optional description, just l
 #output: double price
 ```
 
+:::warning Parameters mapping for functions
+There is a crucial difference between annotation of 
+[scrips](../../../compute/scripting.md) 
+and Javascript functions in 
+[packages](../../../develop/develop.md#packages).
+When you annotate a script in any supported language, parameters are mapped by the parameter name.
+So the parameter name and value always are consistent.
+
+When you annotate a Javascript function from a package, parameters are mapped 
+by **parameter order** instead of name.
+Let's explore it on the following example:
+
+```javascript 
+//name: ParameterTestFunction
+//description: Small fucntion to illustrate parameter mapping
+//language: javascript
+//input: int one=1 {caption: First} [First farameter]
+//input: int two=2 {caption: Second} [First farameter]
+export function ParameterTestFunctionPkg(two, one) {
+    const result = `First:${one}, second:${two}`;
+    console.log(result);
+}
+```
+
+In the function signature, the parameter names go in the different order: `(two, one)`,
+comparing to the annotation.
+As a result, the function will produce the unexpected result: `First:2, second:1`
+
+To avoid mistakes, we suggest that you always use 
+exactly the same parameter order in the function annotation 
+and the function signature. 
+:::
+
+
 ### Parameter types and options
 
 Datagrok supports the following types in all scripting languages: 

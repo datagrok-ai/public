@@ -3,10 +3,18 @@
   "friendlyName": "CruddyDemo",
   "version": "0.0.1",
   "description": "",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "sources": [
+    "css/cruddy.css"
+  ],
   "dependencies": {
     "datagrok-api": "latest",
     "cash-dom": "latest",
     "dayjs": "latest",
+    "rxjs": "^6.5.5",
     "@datagrok-libraries/utils": "latest"
   },
   "devDependencies": {
@@ -14,10 +22,11 @@
     "webpack": "latest",
     "webpack-cli": "latest",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "css-loader": "latest"
   },
   "scripts": {
-    "link-all": "",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "debug-cruddydemo": "webpack && grok publish",
     "release-cruddydemo": "webpack && grok publish --release",
     "build-cruddydemo": "webpack",
@@ -25,7 +34,8 @@
     "debug-cruddydemo-dev": "webpack && grok publish dev",
     "release-cruddydemo-dev": "webpack && grok publish dev --release",
     "debug-cruddydemo-public": "webpack && grok publish public",
-    "release-cruddydemo-public": "webpack && grok publish public --release"
+    "release-cruddydemo-public": "webpack && grok publish public --release",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
     "Developers"

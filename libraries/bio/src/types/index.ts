@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
 import {
-  HELM_REQUIRED_FIELDS as REQ,
+  HELM_REQUIRED_FIELD as REQ,
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT
 } from '../utils/const';
 

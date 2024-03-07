@@ -4,7 +4,7 @@ import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
 import {_identityInt32, _toIterable} from './utils';
 import {Observable} from 'rxjs';
-import {RangeSlider} from './widgets';
+import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
 import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
@@ -702,6 +702,9 @@ export class GridColumn {
   /** Use this field to keep auxiliary data. It is not serialized. See also {@link tags}. */
   get temp(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Temp(this.dart); }
 
+  /** Returns null if column is editable, or the reason of not being editable, otherwise */
+  checkEditable(): string { return api.grok_GridColumn_CheckEditable(this.dart); }
+
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
 
@@ -1069,10 +1072,12 @@ export class GridCellStyle {
   /** Text color (RGBA-encoded) */
   get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }
   set textColor(x: number) { api.grok_GridCellStyle_Set_TextColor(this.dart, x); }
+  get textColorHtml(): string { return Color.toHtml(this.textColor); }
 
   /** Background color (RGBA-encoded) */
   get backColor(): number { return api.grok_GridCellStyle_Get_BackColor(this.dart); }
   set backColor(x: number) { api.grok_GridCellStyle_Set_BackColor(this.dart, x); }
+  get backColorHtml(): string { return Color.toHtml(this.backColor); }
 
   /** DOM Element to put in the cell */
   get element(): HTMLElement { return api.grok_GridCellStyle_Get_Element(this.dart); }
@@ -1128,6 +1133,8 @@ export class CanvasRenderer {
 
 
 export class GridCellRenderer extends CanvasRenderer {
+  clip: boolean = true;
+
   get name(): string {
     throw 'Not implemented';
   }
@@ -1139,7 +1146,18 @@ export class GridCellRenderer extends CanvasRenderer {
   renderSettings(gridColumn: GridColumn): Element | null { return null; }
 
   renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
-    this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    try {
+      if (this.clip) {
+        g.save()
+        g.rect(x, y, w, h);
+        g.clip();
+      }
+      this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    }
+    finally {
+      if (this.clip)
+        g.restore();
+    }
   }
 
   static register(renderer: any): void {

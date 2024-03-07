@@ -154,6 +154,11 @@ export class TimelinesViewer extends EChartViewer {
     if (!this.initialized) return;
     if (property.name === 'axisPointer')
       this.option.tooltip.axisPointer.type = property.get(this);
+      if (property.name === 'table') {
+        this.updateTable();
+        this.onTableAttached();
+        this.render();
+      }
     else if (property.name === 'showZoomSliders') {
       (this.option.dataZoom as echarts.EChartOption.DataZoom[]).forEach((z) => {
         if (z.type === 'slider') (<echarts.EChartOption.DataZoom.Slider>z).show = this.showZoomSliders;

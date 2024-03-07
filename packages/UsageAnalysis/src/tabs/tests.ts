@@ -5,15 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
-import {getDate} from '../utils';
+import {getDate, colors} from '../utils';
 
-const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 export const filters = ui.box();
 filters.id = 'ua-tests-filters';
+const counters = ['passed', 'failed', 'skipped'];
 
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
   cardFilter: string | null = null;
+  platformFilter: boolean = false;
   filterGroup: DG.FilterGroup | undefined = undefined;
   grid?: DG.Grid;
   leftDate = ui.label(getDate(new Date()));
@@ -21,6 +22,7 @@ export class TestsView extends UaView {
   leftDf?: DG.DataFrame;
   rightDf?: DG.DataFrame;
   current = this.leftDate;
+  cardsView: HTMLDivElement = ui.div([], {classes: 'ua-cards'});
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -38,10 +40,11 @@ export class TestsView extends UaView {
         if (!this.grid) return;
         ui.setUpdateIndicator(this.grid.root);
         const date = dfMonth.get('date', dfMonth.selection.getSelectedIndexes()[0]);
+        this.updateCards(date);
         this.current.innerText = getDate(date.toDate());
         if (!!this.rightDate.innerText)
           done.disabled = false;
-        const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: date});
+        const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date});
         this.updateGrid(df);
         ui.setUpdateIndicator(this.grid.root, false);
       });
@@ -58,30 +61,7 @@ export class TestsView extends UaView {
     });
 
     // Cards
-    const cardsView = ui.div([], {classes: 'ua-cards'});
-    const counters = ['passed', 'failed', 'skipped'];
-    cardsView.textContent = '';
-    const cardsDfP: Promise<DG.DataFrame> = grok.functions.call('UsageAnalysis:TestsCount');
-    for (let i = 0; i < 3; i++) {
-      const c = counters[i];
-      const card = ui.div([ui.divText(c), ui.wait(async () => {
-        const cardsDf = await cardsDfP;
-        const valuePrev = cardsDf.get(c, 0);
-        const valueNow = cardsDf.get(c, 1);
-        const d = valueNow - valuePrev;
-        return ui.div([ui.divText(`${valueNow}`),
-          ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : '', style: {color: getColor(c, d)}})]);
-      })], 'ua-card ua-test-card');
-      card.addEventListener('click', () => {
-        this.cardFilter = this.cardFilter === c ? null : c;
-        this.filterGroup?.updateOrAdd({
-          type: DG.FILTER_TYPE.CATEGORICAL,
-          column: 'status',
-          selected: this.cardFilter ? [c] : undefined,
-        });
-      });
-      cardsView.append(card);
-    }
+    this.updateCards(getDate(new Date()));
 
     // Compare section
     const compare = ui.button('compare to', () => {
@@ -107,15 +87,51 @@ export class TestsView extends UaView {
       done.disabled = true;
     }, 'Reset');
     const compareSection = ui.divH([this.leftDate, compare, this.rightDate, done, reset], 'ua-tt-compare');
-    const cardsAndCompare = ui.divV([
-      ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}),
+
+    // Platfrom filter
+    const platform = ui.button('platform', () => {
+      this.filterGroup?.updateOrAdd({
+        type: DG.FILTER_TYPE.CATEGORICAL,
+        column: 'package',
+        selected: this.platformFilter ? null : ['ApiTests', 'UiTests', 'Dbtests', 'DevTools'],
+      });
+      this.platformFilter = !this.platformFilter;
+    });
+
+    const leftSide = ui.divV([
+      ui.box(this.cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}),
       compareSection,
     ]);
-    // cardsAndCompare.parentElement!.style.maxWidth = '400px';
+    // leftSide.parentElement!.style.maxWidth = '400px';
 
     this.root.append(ui.splitV([
-      ui.splitH([cardsAndCompare, chart], {style: {height: '150px'}}),
+      ui.splitH([ui.divH([leftSide, platform]), chart], {style: {height: '150px'}}),
       grid], null, true));
+  }
+
+  updateCards(date: any): void {
+    this.cardsView.innerHTML = '';
+    const cardsDfP: Promise<DG.DataFrame> = grok.functions.call('UsageAnalysis:TestsCount', {date});
+    for (let i = 0; i < 3; i++) {
+      const c = counters[i];
+      const card = ui.div([ui.divText(c), ui.wait(async () => {
+        const cardsDf = await cardsDfP;
+        const valuePrev = cardsDf.get(c, 0);
+        const valueNow = cardsDf.get(c, 1);
+        const d = valueNow - valuePrev;
+        return ui.div([ui.divText(`${valueNow}`),
+          ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : '', style: {color: getColor(c, d)}})]);
+      })], 'ua-card ua-test-card');
+      card.addEventListener('click', () => {
+        this.cardFilter = this.cardFilter === c ? null : c;
+        this.filterGroup?.updateOrAdd({
+          type: DG.FILTER_TYPE.CATEGORICAL,
+          column: 'status',
+          selected: this.cardFilter ? [c] : null,
+        });
+      });
+      this.cardsView.append(card);
+    }
   }
 
   updateGrid(df: DG.DataFrame): void {
@@ -209,7 +225,7 @@ function getColor(status: string, d: number): string {
 }
 
 const filtersStyle = {
-  columnNames: ['type', 'package', 'status', 'ms', 'category'],
+  columnNames: ['type', 'version', 'package', 'status', 'ms'], // category
 };
 
 const historyStyle = {

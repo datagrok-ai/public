@@ -703,6 +703,25 @@ To save the file, right-click on the highlighted file link and choose the **Down
 The file name always matches the output variable name.
 Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
 
+:::info
+Some Python functions 
+(for example, Numpy [Save](https://numpy.org/doc/stable/reference/generated/numpy.save.html))
+automatically add an extension to the file name if it is provided without an extension.
+In this case, Datagrok won't be able to locate output file, 
+and you'll see empty file in the Datagrok output.
+
+To override this behavior, you can open the file via the Python `open` function,
+and use the file object instead of the file name.
+
+```python
+#output: file array_file_binary
+...
+with open(array_file_binary, 'wb') as npfile:
+ np.save(npfile, array)
+...
+```
+:::
+
 ### Semantic types
 
 The Datagrok [semantic types](../govern/catalog/semantic-types) is a very powerful concept,
@@ -817,10 +836,14 @@ Most of them are hints to improve the interface for your scripts.
 You should list options in curly braces in corresponding header lines.
 The order of the hints makes no difference. All options are optional.
 
-### Input captions
+### Input captions and hints
 
 You can add an arbitrary caption for an input parameter. 
 Proper caption helps the user to understand the meaning of the parameter.
+
+To add a hint to the input parameter, place the hint text in the square brackets 
+after the parameter annotation.
+
 
 ```mdx-code-block
 <Tabs>
@@ -843,7 +866,7 @@ Proper caption helps the user to understand the meaning of the parameter.
 ```
 
 ```python
-#input: double V1 { caption: Initial volume of liquid }
+#input: double V1 { caption: Initial volume of liquid } [Used to calculate the initial concentration and the volume change]
 ```
 
 ```mdx-code-block
@@ -1086,13 +1109,22 @@ You can use [smart search](../explore/search-filter-select/smart-search.md) to f
 
 <div style = {{ width: '50%' }}>
 
-Currently, Datagrok has limited debugging capabilities.
+Datagrok has limited debugging capabilities. 
 All scripts except Javascript are executed in isolated environments,
-and the only way of communication between the script and Datagrok is output parameters.
+and the only ways of communication between the script and Datagrok are 
+console log and the script output parameters.
 
-If the script throws an unhandled exception, Datagrok catches it and displays an error popup (shown on the right).
+When you run a script, Datagrok catches all log messages 
+and displays it in the log panel below the script.
+If the script throws an unhandled exception, 
+Datagrok catches it and displays an error popup (shown on the right).
 
-Now, there is no convenient way to access regular script output.
+To include additional debug information in the log, 
+run the script using **Debug script** button in the ribbon menu.
+Alternatively, run the script normally and press the 
+**Debug** button on the bottom part of the input parameter window.
+
+![Script debug output](pics/script-debud-output-enable.png)
 
 For big and complicated scripts, we recommend you develop them locally in your IDE,
 and then integrate them into Datagrok.

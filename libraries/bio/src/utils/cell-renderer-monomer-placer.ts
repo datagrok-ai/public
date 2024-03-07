@@ -51,12 +51,20 @@ export class MonomerPlacer {
     if (this.grid) {
       // Changes handling is available only in with a view
       this.subs.push(col.dataFrame.onDataChanged.subscribe(() => {
-        this.props = this.propsProvider();
-        this._monomerLengthList = null;
-        this._rowsProcessed = DG.BitSet.create(this.col.length);
+        try {
+          this.props = this.propsProvider();
+          this._monomerLengthList = null;
+          this._rowsProcessed = DG.BitSet.create(this.col.length);
+        } catch (e) {
+          console.error(e);
+        }
       }));
       this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
-        if (this.grid?.view?.id === view.id) this.destroy();
+        try {
+          if (this.grid?.view?.id === view.id) this.destroy();
+        } catch (e) {
+          console.error(e);
+        }
       }));
     }
   }
@@ -106,8 +114,20 @@ export class MonomerPlacer {
     }
     this._monomerLengthList[0] ??= new Array(0);
     const res = this._monomerLengthList[0];
-    const startIdx = Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0);
-    const endIdx = Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length);
+    // const startIdx = Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0);
+    // const endIdx = Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length);
+
+    const {startIdx, endIdx} = (() => {
+      try {
+        if (this.grid && this.grid.dart) {
+          return {startIdx: Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0),
+            endIdx: Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length)};
+        } else return {startIdx: 0, endIdx: Math.min(this.col.length, 10)};
+      } catch (_e) {
+        return {startIdx: 0, endIdx: Math.min(this.col.length, 10)};
+      }
+    })();
+
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._rowsProcessed.get(seqIdx))
         continue;
@@ -127,7 +147,7 @@ export class MonomerPlacer {
 
   /** Returns seq position for pointer x */
   public getPosition(rowIdx: number, x: number): number | null {
-    const [monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
+    const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
     const seq: string = this.col.get(rowIdx)!;
     const seqMonList: string[] = wu(this._splitter(seq)).toArray();
     if (seqMonList.length === 0) return null;

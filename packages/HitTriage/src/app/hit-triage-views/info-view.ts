@@ -12,6 +12,7 @@ import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
 import {HitBaseView} from '../base-view';
+import {u2} from '@datagrok-libraries/utils/src/u2';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   public readmePath = _package.webRoot + 'README_HT.md';
@@ -35,17 +36,15 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     try {
       const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
       const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-      const description = '- Configure your own workflow using the template editor.\n'+
-    '- Calculate different molecular properties.\n'+
-    '- Filter molecules using different criteria.\n'+
-    '- Submit processed dataframe to the function of your choice.\n'+
-    '- Save campaigns and continue any time from where you left off.\n ';
-      const appDescription = ui.div([
-        ui.h1('Process, analyse and filter molecules for your needs using Hit Triage:'),
-        ui.div(ui.markdown(description), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
-        ui.link('Read more',
-          'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage'),
-      ]);
+      const appHeader = u2.appHeader({
+        iconPath: _package.webRoot + '/images/icons/hit-triage-icon.png',
+        learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HT.md',
+        description: '- Configure your own workflow using the template editor.\n'+
+        '- Calculate different molecular properties.\n'+
+        '- Filter molecules using different criteria.\n'+
+        '- Submit processed dataframe to the function of your choice.\n'+
+        '- Save campaigns and continue any time from where you left off.\n ',
+      });
 
       const campaignAccordionDiv = ui.div();
       const templatesDiv = ui.div([], {classes: 'ui-form'});
@@ -55,8 +54,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       await this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate);
       $(this.root).empty();
       this.root.appendChild(ui.div([
-        appDescription,
-        continueCampaignsHeader,
+        ui.divV([appHeader, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
         campaignsTable,
         createNewCampaignHeader,
         templatesDiv,
@@ -185,7 +183,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   private async createNewTemplate() {
-    const newTemplateAccordeon = await createTemplateAccordeon(this.dataSourceFunctionsMap);
+    const newTemplateAccordeon = await createTemplateAccordeon(this.app, this.dataSourceFunctionsMap);
     // hideComponents(toRemove);
     // $(containerDiv).empty();
     // $(templateInputDiv).empty();

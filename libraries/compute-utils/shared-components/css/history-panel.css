@@ -17,16 +17,12 @@
     display: none;
 }
 
+.hp-no-elements-label {
+    margin: 12px;
+}
+
 .hp-funccall-card:hover .hp-funccall-card-hover-icon {
     display: flex;
-}
-
-.hp-funccall-card-def-icon {
-    display: flex;
-}
-
-.hp-funccall-card:hover .hp-funccall-card-def-icon {
-    display: none;
 }
 
 .hp-funccall-card .hp-card-content {
@@ -43,7 +39,7 @@
 }
 
 .hp-funccall-card-icon {
-    margin: 5px;
+    margin: 2px 5px;
 }
 
 .hp-funccall-card .description {

@@ -3,14 +3,14 @@
 }
 
 .chem-sketch-link {
-    color: var(--blue-1);
-    height: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-left: 0px;
-    margin-left: 0px;
-  }
+  color: var(--blue-1);
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 0px;
+  margin-left: 0px;
+}
   
 
 .chem-sketcher-host {
@@ -48,4 +48,14 @@
   bottom: 10px;
   left: 20px;
   gap: 10px;
+}
+
+.chem-external-sketcher-canvas {
+  min-width: 100px;
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.ui-input-root.ui-input-textarea.ui-input-code > .d4-editor {
+  border: 1px solid var(--grey-2);
 }

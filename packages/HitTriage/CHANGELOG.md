@@ -1,5 +1,19 @@
 # HitTriage changelog
 
+## 1.1.8 (2024-02-22)
+
+Add python script support.
+
+## 1.1.6 (2024-01-26)
+
+* Fixes to adding new functions to the campaign.
+* Conversion to canonical smiles format before calling compute functions.
+
+## 1.1.5 (2024-01-25)
+
+* Ability to use queries with `HitTriageFunction` tag directly as compute functions.
+* Fixes and improvements to performance.
+
 ## 1.1.4 (2024-01-17)
 
 * Add ability to use queries directly as source functions.

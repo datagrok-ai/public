@@ -67,7 +67,8 @@ class BiostructureViewerPackageDetectors extends DG.Package {
         ) {
           grok.functions.call('BiostructureViewer:addContextMenu', {event: event})
             .catch((err) => {
-              grok.shell.error(err.message);
+              this.logger.error('addContextMenu must not throw any exception');
+              this.logger.error(error);
             });
         }
       }

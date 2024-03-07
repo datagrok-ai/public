@@ -114,28 +114,35 @@ export class TreeHelper implements ITreeHelper {
     return !node ? ';' : `${toNewickInt(node)};`;
   }
 
-  getLeafList<TNode extends NodeType>(node: TNode | null): TNode[] {
+  getLeafList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
     if (!node) return [];
+    if (!list) list = [];
 
     if (isLeaf(node)) {
+      list.push(node);
       return [node]; // node is a leaf
     } else {
-      return ([] as TNode[]).concat(
-        ...(node.children ?? []).map((child) => this.getLeafList(child as TNode)));
+      for (const child of node.children ?? [])
+        this.getLeafList(child as TNode, list);
+      //(node.children ?? []).forEach((child) => this.getLeafList(child as TNode, list));
+      return list;
     }
   }
 
-  getNodeList<TNode extends NodeType>(node: TNode | null): TNode[] {
+  getNodeList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
     if (!node) return [];
-
+    if (!list) list = [];
     if (isLeaf(node)) {
+      list.push(node);
       return [node]; // node is a leaf
     } else {
-      const childNodeListList: TNode[][] = node.children!
-        .map((child) => { return this.getNodeList(child as TNode); });
-      return ([] as TNode[]).concat(
-        [node],
-        ...childNodeListList);
+      // const childNodeListList: TNode[][] = node.children!
+      //   .map((child) => { return this.getNodeList(child as TNode); });
+      // const childNodeListList: TNode[][] = [];
+      for (const child of node.children!)
+        this.getNodeList(child as TNode, list);
+      list.push(node);
+      return list;
     }
   }
 
@@ -160,9 +167,13 @@ export class TreeHelper implements ITreeHelper {
     if (isLeaf(resNode)) {
       return resNode.name in leaves ? resNode : null;
     } else {
-      resNode.children = node.children!
-        .map((child) => this.filterTreeByLeaves(child, leaves))
-        .filter((child) => child != null) as NodeType[];
+      resNode.children = [];
+      for (const child of node.children!) {
+        const resChild = this.filterTreeByLeaves(child, leaves);
+        if (resChild) resNode.children.push(resChild);
+      }
+      // .map((child) => this.filterTreeByLeaves(child, leaves))
+      // .filter((child) => child != null) as NodeType[];
 
       return resNode.children.length > 0 ? resNode : null;
     }
@@ -175,9 +186,14 @@ export class TreeHelper implements ITreeHelper {
       return node.name in leaves ? [node] : [];
     } else {
       const children: TNode[] = node.children as TNode[] ?? [];
-      const childrenRes: TNode[] = children.map((child) => {
-        return this.getNodesByLeaves(child, leaves);
-      }).flat();
+      const childrenRes: TNode[] = [];
+      for (const child of children) {
+        const childRes = this.getNodesByLeaves(child, leaves);
+        childrenRes.push(...childRes);
+      }
+      //  children.map((child) => {
+      //   return this.getNodesByLeaves(child, leaves);
+      // }).flat();
 
       return (childrenRes.length == children.length &&
         children.every((child, i) => child == childrenRes[i])) ? [node] : childrenRes;

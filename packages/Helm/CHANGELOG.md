@@ -1,6 +1,28 @@
 # Helm changelog
 
-## 2.2.0 (WIP)
+## 2.1.29 (2024-02-21)
+
+* Fix Unkown monomers breaking grid rendering.
+
+## 2.1.28 (2024-02-19)
+
+* Fix TS config file.
+
+## 2.1.27 (2024-02-15)
+
+### Bug fixes
+
+* Fix dojo patch dependency on package init
+* Fix getMolfiles without current table view
+* Fix initHelm/rewriteLibraries without current table view
+
+## 2.1.26 (2024-02-14)
+
+### Bug fixes
+
+* Fix Properties panel of Context panel for sequences of MSA with gaps
+
+## 2.1.25 (2024-02-09)
 
 ### Features
 
@@ -15,7 +37,12 @@
 * Fix Pistoia Helm WebEditor settings for case-sensitive monomer libs.
 * Fix cell renderer monomer tooltip for polymer type
 * Patch WebEditor hanging on getTextWidth
-* Fix error bioSubstructureFilter for Helm on size changed
+
+## 2.1.24 (2024-01-09)
+
+### Bug Fixes
+
+* GROK-13798: Fix error bioSubstructureFilter for Helm on size changed
 
 ## 2.1.16 (2023-07-21)
 

@@ -57,6 +57,7 @@ ATC-G-TTGC--
       for (const m of positions[i].getMonomers())
         expect(positions[i].getFreq(m).rowCount, resAllDf1[i].getFreq(m).rowCount);
     }
+    await wlViewer.awaitRendered();
   });
 
   test('positions with shrinkEmptyTail option true (filtered)', async () => {
@@ -106,6 +107,7 @@ ATC-G-TTGC--
       for (const m of positions[i].getMonomers())
         expect(positions[i].getFreq(m).rowCount, resAllDf1[i].getFreq(m).rowCount);
     }
+    await wlViewer.awaitRendered();
   });
 
   test('positions with skipEmptyPositions option', async () => {
@@ -143,6 +145,7 @@ ATC-G-TTGC--
       const tgtPos = tgtPosList[posI];
       expectPositionInfo(resPos, tgtPos);
     }
+    await wlViewer.awaitRendered();
   });
 
   test('count sequences for monomer at position', async () => {
@@ -178,6 +181,7 @@ ATC-G-TTGC--
     const uh = UnitsHandler.getOrCreate(seqCol);
     const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
+    await wlViewer.awaitRendered();
   });
 
   test('empty', async () => {
@@ -196,6 +200,7 @@ ATC-G-TTGC--
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
     }, 500);
     const resPosList: PI[] = wlViewer['positions'];
+    await wlViewer.awaitRendered();
   });
 });
 

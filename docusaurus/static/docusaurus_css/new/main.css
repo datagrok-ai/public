@@ -179,9 +179,9 @@
     color: white;
 }
 
-.new h1 { font-size: 3rem; font-weight: 500;}
-.new h2 { font-size: 2.5rem; font-weight: 500;}
-.new h3 { font-size: 2rem; font-weight: 500;}
+.new h1 { font-size: 3rem; font-weight: 600;}
+.new h2 { font-size: 2.5rem; font-weight: 600;}
+.new h3 { font-size: 2rem; font-weight: 600;}
 .new h4 { font-size: 1.8rem; font-weight: 500;}
 .new h5 { font-size: 1.6rem; font-weight: 500;}
 .new h6 { font-size: 1.4rem; font-weight: 500;}
@@ -326,6 +326,10 @@
     color: var(--ifm-color-gray-900);
 }
 
+.new .tab-content > .tab-pane.active {
+    display: block;
+}
+
 .new .tab-body-link {
     margin-left: 15px;
     padding-bottom: 5px;
@@ -400,7 +404,7 @@
     color: white;
 }
 .new .footer-brand > p, 
-.new .footer-bottom * { color: white; opacity: 0.7; }
+.new .footer-bottom *:not(.footer-icons) { color: white; opacity: 0.7; }
 .new .footer-bottom {
     font-size: .9rem;
 }
@@ -424,4 +428,18 @@
     color:var(--brand-accent);
     opacity: 1;
     transition: opacity 0.25s linear;
+}
+.new .footer-icons ul {
+    list-style: none;
+    display: inline-flex;
+    gap: 12px;
+}
+.new .footer-icons i::before {
+    font-family: "Font Awesome 5 Brands";
+    font-weight: 500;
+    font-size: 20px;
+}
+.new .footer-icons a:hover{
+    cursor: pointer;
+    opacity: 1;
 }

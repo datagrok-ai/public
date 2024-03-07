@@ -9,7 +9,7 @@ export enum HOT_KEY {
 export enum HINT {
   HELP = 'Open help in a new tab',
   OPEN = 'Open model',
-  SAVE = 'Save model to local file',
+  SAVE_LOC = 'Save model to local file',
   LOAD = 'Load model from local file',
   BASIC = 'Open basic template',
   ADV = 'Open advanced template',
@@ -20,37 +20,54 @@ export enum HINT {
   PKPD = 'Pharmacokinetic-pharmacodynamic model',
   ACID = 'Gluconic acid production model',
   NIM = 'Nimotuzumab disposition model',
+  BIO = 'Bioreactor simulation',
   CLEAR = 'Clear model',
   TO_JS = 'Export model to JavaScript script',
   APP = 'Export model to platform application with user interface',
-  RUN = `Solve (${HOT_KEY.RUN})`,
+  OPEN_DS = 'Open model in Diff Studio',
+  SAVE = 'Save changes', 
 };
 
 /** UI titles */
 export enum TITLE {
-  SAVE = 'Save...',
+  SAVE_DOTS = 'Save...',
   LOAD = 'Load...',
   FROM_FILE = 'From file...',
   TEMPL = 'Templates',
-  BASIC = 'Basic...',  
-  ADV = 'Advanced...',
-  EXT = 'Extended...',
+  BASIC = 'Basic',  
+  ADV = 'Advanced',
+  EXT = 'Extended',
   CASES = 'Examples',
-  CHEM = 'Chem reactions...',
-  ROB = "Robertson's model...",  
-  FERM = 'Fermentation...',
-  PKPD = 'PK-PD...',
-  ACID = 'Acid production...',
-  NIM = 'Nimotuzumab...',
-  CLEAR = 'Clear...',
+  CHEM = 'Chem reactions',
+  ROB = "Robertson's model",  
+  FERM = 'Fermentation',
+  PKPD = 'PK-PD',
+  ACID = 'Acid production',
+  NIM = 'Nimotuzumab',
+  BIO = 'Bioreactor',
+  CLEAR = 'Clear',
   TO_JS = 'js',
-  APP = 'app',
+  MISC = 'Misc',
+  VARY = 'Vary inputs',
+  MODEL = 'Model',
+  IPUTS = 'Run',
+  SOLUTION = 'Solution',
+  OPEN = 'Open',
+  BROWSE = 'Browse',
+  SAVE = 'Save',
 };
 
 /** Help links */
-export enum LINK {
-  DIF_STUDIO_MD = '/help/compute/diff-studio.md',
-  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
+export enum LINK {  
+  DIF_STUDIO_REL = '/help/compute/diff-studio',
+  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',  
+  CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
+  FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
+  GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
+  NIMOTUZUMAB = `${DIF_STUDIO_REL}#nimotuzumab`,
+  PKPD = `${DIF_STUDIO_REL}#pk-pd`,
+  ROBERTSON = `${DIF_STUDIO_REL}#robertson-model`,
+  BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
 };
 
 /** Error messages */
@@ -58,21 +75,30 @@ export enum ERROR_MSG {
   SOLVING_FAILS = 'Solving fails',
   APP_CREATING_FAILS = 'Application creating fails',
   EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
-  CORE_ISSUE = 'Core issue',
+  SCRIPTING_ISSUE = 'Platform scripting issue',
+  UI_ISSUE = 'UI creating issue',
+  MISSING_CLOSING_BRACKET = 'Annotation: "]" is missing',
+  INCORRECT_BRACES_USE = 'Annotation: incorrect use of "{}"',
+  MISSING_COLON = 'Annotation: ":" is missing',
+  CHECK_ARGUMENTS = ' (check the "argument" section)',
+  INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',
+  OPEN_IN_DIF_STUD = 'To change the model, open it in Diff Studio.',
+  FAILED_TO_SAVE = 'Failed to save model to the file',
+  INCORRECT_MODEL = 'Incorrect model',
 };
 
 /** Warning dialog lines */
 export enum WARNING {
-  TITLE = 'Overwrite?',
+  TITLE = 'WARNING',
   CHECK = 'Show this warning',
-  MES = 'This will overwrite the current project.',
-  QUE = 'Do you want to go on?',
+  MES = 'Overwrite the current model?',
 };
 
 /** Other UI constants */
 export enum MISC {
-  VIEW_DEFAULT_NAME = 'Template',
-  FILE_DEFAULT_NAME = 'equations.txt',
+  VIEW_DEFAULT_NAME = 'Template',  
+  FILE_EXT = 'ivp',
+  FILE_DEFAULT_NAME = `equations.${FILE_EXT}`,
 };
 
 /** Code completion infos */
@@ -95,13 +121,13 @@ export enum INFO {
 
 /** Demo app help info */
 export const demoInfo = `# Try
-Modify formulas and press <i class="fas fa-play"></i> **Run** button.
+Modify formulas and go to the **${TITLE.IPUTS}** tab.
 
 # No-code
 Define equations in a declarative form.
 
-# UI
-Press **APP** button and get Datagrok application.
+# Interactivity
+Play with model inputs on the **${TITLE.IPUTS}** tab.
 
 # Examples
 Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
@@ -110,5 +136,29 @@ Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
 Press **JS** button and export model to JavaScript script.
 
 # Learn more
-* [Compute](https://datagrok.ai/help/compute)
-* [Diff Studio](${LINK.DIF_STUDIO})`;
+* [Diff Studio](${LINK.DIF_STUDIO})
+* [Compute](https://datagrok.ai/help/compute)`;
+
+/** Inputs types */
+export enum INPUT_TYPE {
+  FLOAT = 'Float',
+  INT = 'Int',
+};
+
+/** Path related consts */
+export enum PATH {
+  APP_DATA_DS = '/files/system.appdata/diffstudio',
+  APPS_DS = '/apps/DiffStudio',
+  MODEL = `?model=`,
+  CUSTOM = `${MODEL}custom`,
+  EMPTY = `${MODEL}empty`,  
+  EQ = '=',
+  AND = '&',
+  PARAM = `?params:`,
+};
+
+/** UI timeouts */
+export enum TIMEOUT {
+  PREVIEW_DOCK_EDITOR = 1000,
+  PREVIEW_RUN_SOLVING = 1100,
+};

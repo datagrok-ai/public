@@ -1,26 +1,75 @@
 # Usage Analysis changelog
 
-## 1.0.1 (WIP)
+## 1.1.0 (WIP)
 
-This release focuses on improvements and bug fixes.
-
-*Dependency: datagarok-api >= 1.15.4*
+*Dependency: datagarok-api >= 1.18.0*
 
 ### Features
 
-* GROK-13154 UsageAnalysis: Load tabs separately
-* Speed, styles fixes & improvements
-* GROK-13342 Resurrect test tracking system
-* GROK-12578 UsageAnalysis: add & fix tests
+* GROK-14344 UA: Functions execution time
+* UA: update routing, overall improvements
+* UA: Test results for selected date in Test Track
+* UA: Compare test results in Test Track
+* GROK-14402 UA: Test Track
+
+## 1.0.4 (2023-11-27)
+
+*Dependency: datagarok-api >= 1.17.3*
+
+### Features
+
+* GROK-13271 Usage Analysis: Logs view (#2363)
+* UA: Refactor Usage tab for Packages & fixes
 
 ### Bug Fixes
 
-* GROK-13498 UA | Overview: Context Pane > Functions > details throws an error in console
-* GROK-13500 UA: error on the Packages tab when clicking Details
+* UA: Tests fixes
+* Enabled cards caching
+
+## 1.0.3 (2023-11-09)
+
+*Dependency: datagarok-api >= 1.16.1*
+
+### Features
+
+* UA: Packages installation time
+* Overall improvements
+
+## 1.0.2 (2023-10-31)
+
+*Dependency: datagarok-api >= 1.16.1*
+
+### Features
+
+* GROK-13425 UA: Ability to call query without loading from server
+* GROK-12578 UA: Tests
+* GROK-13721 Test Track (WIP)
+* UA:
+    * Speedup
+    * CSS tweaks
+    * Better choiceInput
+    * Client side cache
+* GROK-13947 UA | TM: Usage tab for packages
+
+### Bug Fixes
+
+* UA: Fixes GROK-13498 & GROK-13500
+* UA: Queries & widget fixes
+
+## 1.0.1 (2023-07-03)
+
+*Dependency: datagarok-api >= 1.13.8*
+
+### Features
+
+* Speedup, cleanup and styles fixes
+* GROK-13342 Resurrect test tracking system
+
+### Bug Fixes
+
+* Query deploy bugfix
 
 ## 1.0.0 (2023-05-10)
-
-Released package.
 
 *Dependency: datagarok-api >= 1.13.8*
 

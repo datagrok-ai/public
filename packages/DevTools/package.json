@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/dev-tools",
   "friendlyName": "DevTools",
-  "version": "1.3.43",
+  "version": "1.3.42",
   "author": {
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/DevTools"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.1.41",
     "codemirror": "^5.65.15",
     "datagrok-api": "^1.17.3",
     "rxjs": "^6.5.5"

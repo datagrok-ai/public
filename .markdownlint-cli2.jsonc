@@ -9,6 +9,7 @@
     "js-api/docs/**",
     "js-api/help/**",
     "LICENSE.md",
-    "help/develop/admin/releases/changelog-policy.md"
+    "help/develop/admin/releases/changelog-policy.md",
+    "packages/UsageAnalysis/files/**"
   ]
 }

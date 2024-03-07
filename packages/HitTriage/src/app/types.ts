@@ -27,12 +27,19 @@ export type HitTriageTemplateScript = {
     id: string,
 }
 
+export type HitTriageComputeQuery = HitTriageTemplateScript & {
+    inputName: string,
+}
+
 export type IComputeDialogResult = {
     descriptors: string[],
     externals: {
         [_: string]: IFunctionArgs
     },
     scripts?: {
+        [_: string]: IFunctionArgs
+    }
+    queries?: {
         [_: string]: IFunctionArgs
     }
 }
@@ -76,6 +83,7 @@ export type HitTriageTemplateCompute = {
     }
     functions: HitTriageTemplateFunction[],
     scripts?: HitTriageTemplateScript[],
+    queries?: HitTriageTemplateScript[],
 };
 
 export type HitTriageTemplateSubmit = {
@@ -117,3 +125,9 @@ export type INewTemplateResult<T> = {
 export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> & {stages: string[]};
 
 export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'>;
+
+export type ComputeFunctions = {
+    functions: DG.Func[],
+    scripts: DG.Script[],
+    queries: DG.DataQuery[],
+};

@@ -18,13 +18,17 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 import {oneWayAnova} from './stat-tools';
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
-import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+import {DistanceAggregationMethod, DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 import {MultiColumnDimReductionEditor} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
 import {multiColReduceDimensionality} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+
+import {runKNNImputer} from './missing-values-imputation/ui';
+import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
+import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 
 export const _package = new DG.Package();
 
@@ -46,13 +50,15 @@ export async function init(): Promise<void> {
 //input: column yCol {type: numerical}
 //input: double epsilon = 0.02 {caption: Epsilon} [The maximum distance between two samples for them to be considered as in the same neighborhood.]
 //input: int minPts = 4 {caption: Minimum points} [The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.]
+//output: column cluster
 export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column, epsilon: number, minPts: number) {
   const x = xCol.getRawData() as Float32Array;
   const y = yCol.getRawData() as Float32Array;
   const res = await getDbscanWorker(x, y, epsilon, minPts);
-  const clusterColName = df.columns.getUnusedName('Cluster');
+  const clusterColName = df.columns.getUnusedName('Cluster (DBSCAN)');
   const cluster = DG.Column.fromInt32Array(clusterColName, res);
   df.columns.add(cluster);
+  return cluster;
 }
 
 //top-menu: ML | Analyze | PCA...
@@ -63,14 +69,47 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //input: int components = 2 {caption: Components} [Number of components.]
 //input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
-//output: dataframe result {action:join(table)}
-export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  center: boolean, scale: boolean): Promise<DG.DataFrame> {
+export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
   const pcaTable = await computePCA(table, features, components, center, scale);
   addPrefixToEachColumnName('PCA', pcaTable.columns);
-  return pcaTable;
+
+  if (table.id === null) // table is loaded from a local file
+    grok.shell.addTableView(pcaTable);
+  else {
+    const cols = table.columns;
+
+    for (const col of pcaTable.columns) {
+      col.name = cols.getUnusedName(col.name);
+      cols.add(col);
+    }
+  }
 }
 
+//name: DBSCAN clustering
+//tags: dim-red-postprocessing-function
+//meta.defaultPostProcessingFunction: true
+//input: column col1
+//input: column col2
+//input: double epsilon = 0.01 {default: 0.01}[Minimum distance between two points to be considered as in the same neighborhood.]
+//input: int minimumPoints = 5 {default: 5}[Minimum number of points to form a dense region.]
+export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Column, epsilon: number, minimumPoints: number) {
+  const df = col1.dataFrame;
+  if (df === null)
+    return;
+  const resCol = await dbScan(df, col1, col2, epsilon, minimumPoints);
+  df.changeColumnType(resCol, 'string');
+  const colNames = [col1.name, col2.name];
+  const tv = grok.shell.tableView(df.name);
+  if (!tv)
+    return;
+  // find the correct scatterPlotViewer and set the colorColumnName
+  for (const v of tv.viewers) {
+    if (v instanceof DG.ScatterPlotViewer && colNames.includes(v.props.xColumnName) && colNames.includes(v.props.yColumnName)) {
+      v.props.colorColumnName = resCol.name;
+      return;
+    }
+  }
+}
 
 //name: None (number)
 //tags: dim-red-preprocessing-function
@@ -80,8 +119,9 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //input: string _metric {optional: true}
 //output: object result
 export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
+  const range = col.stats.max - col.stats.min;
   const entries = col.toList();
-  return {entries, options: {}};
+  return {entries, options: {range}};
 }
 
 //name: None (string)
@@ -109,8 +149,53 @@ export async function reduceDimensionality(): Promise<void> {
       params.weights, params.preprocessingFunctions, params.aggreaggregationMethod as DistanceAggregationMethods,
       !!params.plotEmbeddings, !!params.clusterEmbeddings, params.options, {
         fastRowCount: 10000,
-      });
+      }, params.postProcessingFunction, params.postProcessingFunctionArgs);
   }).show();
+}
+
+//name: GetMCLEditor
+//tags: editor
+//input: funccall call
+export function GetMCLEditor(call: DG.FuncCall): void {
+  try {
+    const funcEditor = new MCLEditor();
+    ui.dialog('Markov clustering')
+      .add(funcEditor.getEditor())
+      .onOK(async () => {
+        const params = funcEditor.params;
+        return call.func.prepare({
+          df: params.table, cols: params.columns, metrics: params.distanceMetrics,
+          weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
+          preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
+        }).call(true);
+      }).show();
+  } catch (err: any) {
+    const errMsg = err instanceof Error ? err.message : err.toString();
+    const errStack = err instanceof Error ? err.stack : undefined;
+    grok.shell.error(`Get region editor error: ${errMsg}`);
+    _package.logger.error(errMsg, undefined, errStack);
+  }
+}
+
+
+//top-menu: ML | Cluster | MCL...
+//name: MCL
+//description: Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.
+//input: dataframe df
+//input: list<column> cols
+//input: list<string> metrics
+//input: list<double> weights
+//input: string aggregationMethod
+//input: list<func> preprocessingFuncs
+//input: object preprocessingFuncArgs
+//input: int threshold = 80
+//input: int maxIterations = 10
+//editor: EDA: GetMCLEditor
+export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
+  weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
+  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10) {
+  return await markovCluster(df, cols, metrics, weights,
+    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations);
 }
 
 //top-menu: ML | Analyze | Multivariate Analysis...
@@ -342,4 +427,11 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
   addOneWayAnovaVizualization(table, factor, feature, res);
+}
+
+//top-menu: ML | Missing Values Imputation ...
+//name: KNN impute
+//desription: Missing values imputation using the k-nearest neighbors method
+export function kNNImputation() {
+  runKNNImputer();
 }

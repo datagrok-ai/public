@@ -3,584 +3,227 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import wu from 'wu';
-import {BehaviorSubject, Subject} from 'rxjs';
+import {BehaviorSubject, Subject, merge} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
+import {getObservable, properUpdateIndicator} from '../../function-views/src/shared/utils';
+import {HistoricalRunsList} from './history-list';
 
-class HistoryPanelStore {
-  filteringOptions = {text: ''} as {
-    text: string,
-    author?: DG.User,
-    startedAfter?: dayjs.Dayjs,
-    tags?: string[]
-  };
+type FilterOptions = {
+  isOnlyFavorites: boolean,
+  text: string,
+  author?: DG.User,
+  startedAfter?: dayjs.Dayjs,
+  tags?: string[]
+}
 
-  allRuns = new BehaviorSubject<DG.FuncCall[]>([]);
+class HistoryFilter extends DG.Widget {
+  public onFilteringChanged = new BehaviorSubject<FilterOptions>({text: '', isOnlyFavorites: false});
 
-  get myRuns() {
-    return this.allRuns.value.filter((run) => run.author.id === grok.shell.user.id);
-  }
+  private onFuncCallListChanged = new BehaviorSubject<DG.FuncCall[]>([]);
 
-  get favoriteRuns() {
-    return this.allRuns.value.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
-  }
+  constructor() {
+    super(ui.div());
 
-  get filteredMyRuns() {
-    return this.myRuns.filter((run) => {
-      const startedAfter = (this.filteringOptions.startedAfter ? run.started > this.filteringOptions.startedAfter : true);
-      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(this.filteringOptions.text): false;
-      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(this.filteringOptions.text): false;
+    const favoritesInput = ui.switchInput('Only favorites', false);
 
+    const textInput = ui.stringInput('Search', '', null, {clearIcon: true, placeholder: 'Type here to filter...'});
+    const dateInput = ui.dateInput('Started after', dayjs().subtract(1, 'week'));
+    dateInput.addPatternMenu('datetime');
+    const tagInput = ui.choiceInput<string>('Tag', 'Choose tag to filter', ['Choose tag to filter']);
 
-      const hasTags = (!this.filteringOptions.tags || this.filteringOptions.tags.length === 0) ? true :
-        (!!run.options['tags']) ? this.filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
+    const filterTagEditor = DG.TagEditor.create();
+    const dummyInput = ui.stringInput(' ', '');
+    dummyInput.input.replaceWith(filterTagEditor.root);
+    ui.setDisplay(dummyInput.root, false);
 
-      return (titleContainsText || descContainsText) && startedAfter && hasTags;
+    const addTagSub = getObservable<string | null>(tagInput.onChanged.bind(tagInput))
+      .subscribe(() => {
+        const tag = tagInput.value;
+        //@ts-ignore
+        if (!!tag && tag !== 'Choose tag to filter' && !filterTagEditor.tags.includes(tag))
+          filterTagEditor.addTag(tag);
+        tagInput.notify = false;
+        tagInput.value = 'Choose tag to filter';
+        tagInput.notify = true;
+      });
+
+    const filterChangeSub = merge(
+      getObservable<boolean>(favoritesInput.onInput.bind(favoritesInput)),
+      DG.debounce(getObservable<string>(textInput.onInput.bind(textInput))),
+      getObservable<dayjs.Dayjs>(dateInput.onInput.bind(dateInput)),
+      getObservable<string[]>(filterTagEditor.onChanged.bind(filterTagEditor)),
+    ).subscribe(() => {
+      const isOnlyFavorites = favoritesInput.value;
+      const text = textInput.value;
+      const startedAfter = dateInput.value ?? undefined;
+      //@ts-ignore
+      const tags: string[] = filterTagEditor.tags.filter((tag) => !!tag) ?? [];
+      this.onFilteringChanged.next({isOnlyFavorites, text, startedAfter, tags});
+
+      if (tags.length === 0)
+        ui.setDisplay(dummyInput.root, false);
+      else
+        ui.setDisplay(dummyInput.root, true);
     });
+
+    const updateInputsSub = this.onFuncCallListChanged.subscribe((newFuncCalls) => {
+      properUpdateIndicator(tagInput.root, true);
+      const newTags = newFuncCalls
+        .map((run) => run.options['tags'] as string[])
+        .reduce((acc, runTags) => {
+          if (!!runTags) runTags.forEach((runTag) => {if (!acc.includes(runTag)) acc.push(runTag);});
+          return acc;
+        }, [] as string[]);
+
+      tagInput.items = ['Choose tag to filter', ...newTags];
+      dateInput.value = newFuncCalls.reduce((minDate, call) => {
+        if (call.started < minDate)
+          minDate = call.started;
+
+        return minDate;
+      }, dayjs()).subtract(1, 'week');
+      properUpdateIndicator(tagInput.root, false);
+    });
+
+    this.subs.push(filterChangeSub, addTagSub, updateInputsSub);
+
+    const form = ui.divV([
+      favoritesInput,
+      textInput,
+      dateInput,
+      tagInput,
+      dummyInput,
+    ], 'ui-form ui-form-wide ui-form-left');
+
+    this.root.appendChild(form);
   }
 
-  get filteredFavoriteRuns() {
-    return this.favoriteRuns.filter((run) => {
-      const startedAfter = (this.filteringOptions.startedAfter ? run.started > this.filteringOptions.startedAfter : true);
-      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(this.filteringOptions.text): false;
-      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(this.filteringOptions.text): false;
-      const hasTags = (!this.filteringOptions.tags || this.filteringOptions.tags.length === 0) ? true :
-        (!!run.options['tags']) ? this.filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
+  public addTag(funccall: DG.FuncCall) {
+    const newFunccalls = this.onFuncCallListChanged.value.filter((fc) => fc.id !== funccall.id);
+    this.onFuncCallListChanged.next([...newFunccalls, funccall]);
+  }
 
-      return (titleContainsText || descContainsText) && startedAfter && hasTags;
-    });
+  public removeTag(funccall: DG.FuncCall) {
+    const newFunccalls = this.onFuncCallListChanged.value.filter((fc) => fc.id !== funccall.id);
+    this.onFuncCallListChanged.next(newFunccalls);
+  }
+
+  public updateTagList(funccalls: DG.FuncCall[]) {
+    this.onFuncCallListChanged.next(funccalls);
   }
 }
 
-const MY_PANE_LABEL = 'HISTORY' as const;
-const FAVORITES_LABEL = 'FAVORITES' as const;
-
-type TAB_LABELS = typeof MY_PANE_LABEL | typeof FAVORITES_LABEL;
-
-export class HistoryPanel {
+export class HistoryPanel extends DG.Widget {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
 
   // Emitted when FuncCalls are called for comparison. Contains FuncCalls' IDs
   public onComparison = new Subject<string[]>();
 
-  // Emitted when FuncCall is added to favorites
-  public beforeRunAddToFavorites = new Subject<DG.FuncCall>();
-
-  // Emitted when FuncCall is removed from favorites
-  public beforeRunRemoveFromFavorites = new Subject<DG.FuncCall>();
+  // Emitted when FuncCall is edited
+  public onRunEdited = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is deleted
-  public beforeRunDeleted = new Subject<string>();
-
-  // Emitted when FuncCall is added to favorites
-  public afterRunAddToFavorites = new Subject<DG.FuncCall>();
-
-  // Emitted when FuncCall is removed from favorites
-  public afterRunRemoveFromFavorites = new Subject<DG.FuncCall>();
-
-  // Emitted when FuncCall is deleted
-  public afterRunDeleted = new Subject<string>();
-
-  private store = new HistoryPanelStore();
-
-  private myRunsFilter = new Subject<true>();
-  private favRunsFilter = new Subject<true>();
-
-  private mySelectedCallsSet = new Set<DG.FuncCall>;
-  private favoritesSelectedCallsSet = new Set<DG.FuncCall>;
-
-  private get selectedCallsSet() {
-    const tabName = this.tabs.currentPane.name;
-    if (tabName === MY_PANE_LABEL) return this.mySelectedCallsSet;
-    if (tabName === FAVORITES_LABEL) return this.favoritesSelectedCallsSet;
-
-    throw new Error('Unknown tab is selected');
-  }
+  public afterRunDeleted = new Subject<DG.FuncCall>();
 
   public allRunsFetch = new Subject<true>();
 
-  historyTab = ui.div();
-  favTab = ui.div();
-  filterPane = ui.div();
-  tabs = ui.tabControl({
-    [MY_PANE_LABEL]: ui.box(this.historyTab),
-    [FAVORITES_LABEL]: ui.box(this.favTab),
-  });
-  myActionsSection = this.buildActionsSection(MY_PANE_LABEL);
-  favActionsSection = this.buildActionsSection(FAVORITES_LABEL);
-
-  private _root = ui.divV([
-    this.tabs.root,
-  ], {style: {width: '100%', height: '100%'}});
-
-  myCards = [] as HTMLElement[];
-  favoriteCards = [] as HTMLElement[];
-
-  buildActionsSection(tabName: TAB_LABELS) {
-    const getSelectedSet = () => {
-      if (tabName === MY_PANE_LABEL) return this.mySelectedCallsSet;
-      if (tabName === FAVORITES_LABEL) return this.favoritesSelectedCallsSet;
-
-      throw new Error('Unknown tab is selected');
-    };
-    const currentSelectedSet = getSelectedSet();
-    return ui.divH([
-      ui.span([`Selected: ${currentSelectedSet.size}`], {style: {'align-self': 'center'}}),
-      ui.divH([
-        (() => {
-          const t = ui.iconFA('exchange', async () => {
-            this.onComparison.next([...wu(currentSelectedSet.keys()).map((selected) => selected.id)]);
-          }, 'Compare selected runs');
-          t.style.margin = '5px';
-          if (currentSelectedSet.size < 2)
-            t.classList.add('hp-disabled');
-          return t;
-        })(),
-        (() => {
-          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(currentSelectedSet), 'Delete selected runs');
-          t.style.margin = '5px';
-          if (currentSelectedSet.size === 0)
-            t.classList.add('hp-disabled');
-          return t;
-        })(),
-        ...currentSelectedSet.size === 0 ? [(() => {
-          const t = ui.iconFA('square', () => {
-            switch (this.tabs.currentPane.name) {
-            case MY_PANE_LABEL:
-              this.store.myRuns.forEach((run) => currentSelectedSet.add(run));
-              this.myRunsFilter.next();
-              break;
-            case FAVORITES_LABEL:
-              this.store.favoriteRuns.forEach((run) => currentSelectedSet.add(run));
-              this.favRunsFilter.next();
-              break;
-            }
-            this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
-          }, 'Select all'); t.style.margin = '5px'; return t;
-        })()]: [
-          (() => {
-            let fullListCount = 0;
-            switch (this.tabs.currentPane.name) {
-            case MY_PANE_LABEL:
-              fullListCount = this.store.myRuns.length;
-              break;
-            case FAVORITES_LABEL:
-              fullListCount = this.store.favoriteRuns.length;
-              break;
-            }
-
-            const iconType = currentSelectedSet.size === fullListCount? 'check-square': 'minus-square';
-            const t = ui.iconFA(iconType, () => {
-              switch (this.tabs.currentPane.name) {
-              case MY_PANE_LABEL:
-                this.store.myRuns.forEach((run) => currentSelectedSet.delete(run));
-                this.myRunsFilter.next();
-                break;
-              case FAVORITES_LABEL:
-                this.store.favoriteRuns.forEach((run) => currentSelectedSet.delete(run));
-                this.favRunsFilter.next();
-                break;
-              }
-              this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
-            }, 'Unselect all');
-
-            t.style.margin = '5px';
-            return t;
-          })(),
-        ],
-      ]),
-    ], {style: {
-      'justify-content': 'space-between',
-      'padding': '0 12px',
-    }});
+  private historyFilter = new HistoryFilter();
+  private historyList = new HistoricalRunsList([], {fallbackText: 'No runs are found in history',
+    showAuthorIcon: true, showDelete: true, showEdit: true, showFavorite: true, showCompare: true});
+  private panel = ui.divV([
+    this.historyFilter.root,
+    this.historyList.root,
+  ]);
+  private allRuns = new BehaviorSubject<DG.FuncCall[]>([]);
+  private get historyRuns() {
+    return this.allRuns.value.filter((run) => run.author.id === grok.shell.user.id);
   }
+  private get filteredHistoryRuns() {
+    const filteringOptions = this.historyFilter.onFilteringChanged.value;
+    return this.historyRuns.filter((run) => {
+      const isFavorite = filteringOptions.isOnlyFavorites ? run.options['isFavorite'] : true;
+      const startedAfter = (filteringOptions.startedAfter ? run.started > filteringOptions.startedAfter : true);
+      const titleContainsText = (!filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(filteringOptions.text): false;
+      const descContainsText = (!filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(filteringOptions.text): false;
 
-  buildFilterPane(currentTabName: string) {
-    return ui.wait(async () => {
-      const filteringText = new Subject();
+      const hasTags = (!filteringOptions.tags || filteringOptions.tags.length === 0) ? true :
+        (!!run.options['tags']) ? filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
 
-      const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
-      DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
-        this.store.filteringOptions.text = textInput.stringValue;
-        this.myRunsFilter.next();
-        this.favRunsFilter.next();
-      });
-
-      const dateInput = ui.dateInput('Started after', dayjs().subtract(1, 'week'), (v: dayjs.Dayjs) => {
-        this.store.filteringOptions.startedAfter = v;
-        this.myRunsFilter.next();
-        this.favRunsFilter.next();
-      });
-
-      let tagInput = ui.choiceInput<string>('Tag', 'Choose tag to filter', ['Choose tag to filter']);
-
-      const filterTagEditor = DG.TagEditor.create();
-      const dummyInput = ui.stringInput(' ', '');
-      dummyInput.input.replaceWith(filterTagEditor.root);
-      dummyInput.root.style.display = 'none';
-
-      filterTagEditor.onChanged(() => {
-        //@ts-ignore
-        this.store.filteringOptions.tags = filterTagEditor.tags.filter((tag) => !!tag);
-
-        if (this.store.filteringOptions.tags!.length === 0)
-          dummyInput.root.style.display = 'none';
-        else
-          dummyInput.root.style.removeProperty('display');
-
-        this.myRunsFilter.next();
-        this.favRunsFilter.next();
-      });
-
-      this.store.allRuns.subscribe(() => {
-        const tags = this.store.allRuns.value
-          .map((run) => run.options['tags'] as string[])
-          .reduce((acc, runTags) => {
-            if (!!runTags) runTags.forEach((runTag) => {if (!acc.includes(runTag)) acc.push(runTag);});
-            return acc;
-          }, [] as string[]);
-
-        const newTagInput = ui.choiceInput<string>('Tag', 'Choose tag to filter', ['Choose tag to filter', ...tags]);
-        tagInput.root.replaceWith(newTagInput.root);
-        tagInput = newTagInput;
-
-        tagInput.onChanged(() => {
-          if (
-            tagInput.value &&
-            tagInput.value !== 'Choose tag to filter' &&
-            //@ts-ignore
-            !filterTagEditor.tags.includes(tagInput.value)
-          )
-            filterTagEditor.addTag(tagInput.value);
-        });
-      });
-
-      dateInput.addPatternMenu('datetime');
-      const form = ui.divV([
-        textInput,
-        dateInput,
-        tagInput,
-        dummyInput,
-      ], 'ui-form ui-form-wide ui-form-left');
-
-      if (currentTabName === MY_PANE_LABEL)
-        dateInput.root.style.removeProperty('display');
-
-      if (currentTabName === FAVORITES_LABEL)
-        dateInput.root.style.removeProperty('display');
-
-
-      return form;
+      return isFavorite && (titleContainsText || descContainsText) && startedAfter && hasTags;
     });
-  };
-
-  myPaneFilter = this.buildFilterPane(MY_PANE_LABEL) as HTMLElement;
-  favoritesPaneFilter = this.buildFilterPane(FAVORITES_LABEL) as HTMLElement;
-
-  showDeleteRunDialog(funcCalls: Set<DG.FuncCall>) {
-    ui.dialog({title: `Delete ${funcCalls.size} ${funcCalls.size > 1 ? 'runs': 'run'}`})
-      .add(ui.divText(`Deleted ${funcCalls.size} ${funcCalls.size > 1 ? 'runs': 'run'} ${funcCalls.size > 1 ? 'are': 'is'} impossible to restore. Are you sure?`))
-      .onOK(async () => {
-        funcCalls.forEach(async (funcCall) => {
-          this.beforeRunDeleted.next(funcCall.id);
-          this.selectedCallsSet.delete(funcCall);
-          await historyUtils.deleteRun(funcCall);
-          this.afterRunDeleted.next(funcCall.id);
-        });
-      })
-      .show({center: true});
-  };
-
-  updateActionsSection(tabName: TAB_LABELS) {
-    const newActionsSection = this.buildActionsSection(tabName);
-    const updateSelectedActionsSection = () => {
-      if (tabName === MY_PANE_LABEL) {
-        this.myActionsSection.replaceWith(newActionsSection);
-        this.myActionsSection = newActionsSection;
-      }
-      if (tabName === FAVORITES_LABEL) {
-        this.favActionsSection.replaceWith(newActionsSection);
-        this.favActionsSection = newActionsSection;
-      }
-    };
-    updateSelectedActionsSection();
   }
 
-  updateFavoritesPane(favoriteRuns: DG.FuncCall[]) {
-    const favCards = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'hi-no-elements-label');
-    const favTab = ui.divV([
-      this.favoritesPaneFilter,
-      this.favActionsSection,
-      ui.element('div', 'splitbar-horizontal'),
-      favCards,
-    ]);
-    this.favTab.replaceWith(favTab);
-    this.favTab = favTab;
+  private updateHistoryPane(historyRuns: DG.FuncCall[]) {
+    this.historyList.updateList(historyRuns);
+    this.historyFilter.updateTagList(historyRuns);
   };
 
-  updateMyPane(myRuns: DG.FuncCall[]) {
-    const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'hi-no-elements-label');
-    const newTab = ui.divV([
-      this.myPaneFilter,
-      this.myActionsSection,
-      ui.element('div', 'splitbar-horizontal'),
-      myCards,
-    ]);
-    this.historyTab.replaceWith(newTab);
-    this.historyTab = newTab;
-  };
-
-  renderCard(funcCall: DG.FuncCall) {
-    const icon = funcCall.author.picture as HTMLElement;
-    icon.style.width = '25px';
-    icon.style.height = '25px';
-    icon.style.fontSize = '20px';
-    const cardLabel = ui.label(funcCall.options['title'] ?? funcCall.author.friendlyName, {style: {'color': 'var(--blue-1)'}});
-    ui.bind(funcCall.author, icon);
-
-    const addToSelected = ui.iconFA('square', (ev) => {
-      ev.stopPropagation();
-      this.selectedCallsSet.add(funcCall);
-
-      addToSelected.style.display = 'none';
-      removeFromSelected.style.removeProperty('display');
-      this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
-    }, 'Select this run');
-    addToSelected.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-    const removeFromSelected = ui.iconFA('check-square', (ev) => {
-      ev.stopPropagation();
-      this.selectedCallsSet.delete(funcCall);
-      removeFromSelected.style.display = 'none';
-
-      this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
-      addToSelected.style.removeProperty('display');
-    }, 'Unselect this run');
-    removeFromSelected.classList.add('hp-funccall-card-icon');
-
-    if (!this.selectedCallsSet.has(funcCall)) {
-      addToSelected.style.removeProperty('display');
-      removeFromSelected.style.display = 'none';
-    } else {
-      addToSelected.style.display = 'none';
-      removeFromSelected.style.removeProperty('display');
-    }
-
-    const editIcon = ui.iconFA('edit', (ev) => {
-      ev.stopPropagation();
-      this.showEditDialog(funcCall);
-    }, 'Edit selected run');
-    editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-    const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
-      ev.stopPropagation();
-      const tempSet = new Set<DG.FuncCall>();
-      tempSet.add(funcCall);
-      this.showDeleteRunDialog(tempSet);
-    }, 'Delete selected runs');
-    deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-    const favoritedIcon = ui.iconFA('star', null, 'Unfavorite the run');
-    favoritedIcon.classList.add('fas', 'hp-funccall-card-def-icon');
-
-    const dateStarted = new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
-
-    const card = ui.divH([
-      ui.divH([
-        icon,
-        ui.divV([
-          cardLabel,
-          ui.span([dateStarted]),
-          ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
-          ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
-            [ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
-        ], 'hp-card-content'),
-      ]),
-      ui.divH([
-        editIcon, deleteIcon,
-        ...(funcCall.options['isFavorite']) ? [favoritedIcon] : [],
-        addToSelected, removeFromSelected,
-      ]),
-    ], 'hp-funccall-card');
-
-    card.addEventListener('click', async () => {
-      this.onRunChosen.next(funcCall.id);
-
-      const allCards = [...this.myCards, ...this.favoriteCards];
-      allCards.forEach((c) => c.classList.remove('clicked')); ``;
-
-      card.classList.add('clicked');
-    });
-    ui.tooltip.bind(card, () => ui.tableFromMap({
-      Author: grok.shell.user.toMarkup(),
-      Date: dateStarted,
-      ...(funcCall.options['title']) ? {'Title': funcCall.options['title']}:{},
-      ...(funcCall.options['description']) ? {'Description': funcCall.options['description']}:{},
-      ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
-        {'Tags': ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor')}:{},
-    }));
-    return card;
+  public updateRun(updatedRun: DG.FuncCall) {
+    this.historyList.updateItem(updatedRun);
   }
 
-  showEditDialog(funcCall: DG.FuncCall) {
-    const dlg = ui.dialog({title: 'Edit run'});
+  public addRun(newRun: DG.FuncCall) {
+    this.historyList.addItem(newRun);
 
-    let title = funcCall.options['title'] ?? '';
-    let description = funcCall.options['description'] ?? '';
-    const titleInput = ui.stringInput('Title', title, (s: string) => title = s);
-    let isFavorite = funcCall.options['isFavorite'] ?? false;
-
-    const tagsLine = DG.TagEditor.create();
-    (funcCall.options['tags'] || []).forEach((tag: string) => {
-      tagsLine.addTag(tag);
-    });
-
-    const dummyInput = ui.stringInput(' ', '');
-    dummyInput.input.replaceWith(tagsLine.root);
-
-    const tagInput = ui.stringInput('Tag', '');
-    const addNewTag = () => {
-      if (tagInput.value === '' ||
-        // @ts-ignore
-        tagsLine.tags.includes(tagInput.value)
-      )
-        return;
-
-      tagsLine.addTag(tagInput.value);
-      tagInput.value = '';
-    };
-
-    tagInput.addOptions(ui.iconFA('plus', addNewTag, 'Add this tag'));
-
-    tagInput.input.onkeydown = async (ev) => {
-      if (ev.key == 'Enter') {
-        ev.stopPropagation();
-        addNewTag();
-      }
-    };
-
-    dlg.add(ui.form([
-      titleInput,
-      ui.stringInput('Description', description, (s: string) => {description = s;}),
-      ui.boolInput('Favorites', isFavorite, (b: boolean) => isFavorite = b),
-      tagInput,
-      dummyInput,
-    ]))
-      .onOK(async () => {
-        funcCall = await historyUtils.loadRun(funcCall.id);
-        funcCall.options['title'] = title !== '' ? title : null;
-        funcCall.options['description'] = description !== '' ? description : null;
-        funcCall.options['tags'] = [...tagsLine.tags];
-
-        if (!!isFavorite === !!funcCall.options['isFavorite']) {
-          ui.setUpdateIndicator(this.tabs.root, true);
-          await historyUtils.saveRun(funcCall);
-
-          const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id)!;
-          editedRun.options['title'] = title !== '' ? title : null;
-          editedRun.options['description'] = description !== '' ? description : null;
-          editedRun.options['tags'] = [...funcCall.options['tags']];
-
-          this.store.allRuns.next(this.store.allRuns.value);
-          ui.setUpdateIndicator(this.tabs.root, false);
-          return;
-        }
-
-        if (isFavorite && !funcCall.options['isFavorite']) {
-          funcCall.options['isFavorite'] = isFavorite;
-          ui.setUpdateIndicator(this.tabs.root, true);
-          await this.addRunToFavorites(funcCall);
-          ui.setUpdateIndicator(this.tabs.root, false);
-        }
-
-        if (!isFavorite && funcCall.options['isFavorite']) {
-          funcCall.options['isFavorite'] = isFavorite;
-          ui.setUpdateIndicator(this.tabs.root, true);
-          await this.removeRunFromFavorites(funcCall);
-          ui.setUpdateIndicator(this.tabs.root, false);
-        }
-      })
-      .show({center: true, width: 500});
+    this.allRuns.value.push(newRun);
   }
 
-  renderFavoriteCards(funcCalls: DG.FuncCall[]) {
-    this.favoriteCards = funcCalls.map((funcCall) => this.renderCard(funcCall));
-    return ui.divV(this.favoriteCards);
-  };
-
-  renderHistoryCards(funcCalls: DG.FuncCall[]) {
-    this.myCards = funcCalls.map((funcCall) => this.renderCard(funcCall));
-    return ui.divV(this.myCards, {style: {height: '100%'}});
-  };
+  public get history() {
+    return this.allRuns.value;
+  }
 
   constructor(
     private func: DG.Func,
   ) {
-    this.tabs.root.style.width = '100%';
-    this.tabs.root.style.height = '100%';
+    super(ui.box(null, {style: {height: '100%'}}));
 
-    this.myRunsFilter.subscribe(() => this.updateMyPane(this.store.filteredMyRuns));
-    this.favRunsFilter.subscribe(() => this.updateFavoritesPane(this.store.filteredFavoriteRuns));
+    this.root.appendChild(this.panel);
 
-    this.store.allRuns.subscribe(() => {
-      this.updateMyPane(this.store.filteredMyRuns);
-      this.updateFavoritesPane(this.store.filteredFavoriteRuns);
-    });
+    const updateHistoryPaneSub = this.historyFilter.onFilteringChanged.subscribe(() => this.historyList.updateList(this.filteredHistoryRuns));
 
-    this.allRunsFetch.subscribe(async () => {
+    const clickedSub = this.historyList.onClicked.subscribe((clickedCall) => this.onRunChosen.next(clickedCall.id));
+
+    const comparisonSub = this.historyList.onComparisonCalled.subscribe((ids) => this.onComparison.next(ids));
+
+    const allRunsSub = this.allRuns.subscribe(() => this.updateHistoryPane(this.filteredHistoryRuns));
+
+    const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
       const allRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.allRuns.next(allRuns);
+      this.allRuns.next(allRuns);
       ui.setUpdateIndicator(this.root, false);
     });
 
-    this.afterRunAddToFavorites.subscribe((added) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id)!;
-      editedRun.options['title'] = added.options['title'];
-      editedRun.options['description'] = added.options['description'];
-      editedRun.options['tags'] = added.options['tags'];
-      editedRun.options['isFavorite'] = true;
-      this.store.allRuns.next(this.store.allRuns.value);
+    const onMetadataEdit = this.historyList.onMetadataEdit.subscribe((editedCall) => {
+      {
+        const run = this.allRuns.value.find((call) => call.id === editedCall.id);
+        if (run) run.options = {...editedCall.options};
+      }
+
+      this.onRunEdited.next(editedCall);
+
+      this.historyFilter.addTag(editedCall);
     });
 
-    this.afterRunRemoveFromFavorites.subscribe((removed) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
-      editedRun.options['title'] = removed.options['title'];
-      editedRun.options['description'] = removed.options['description'];
-      editedRun.options['tags'] = removed.options['tags'];
-      editedRun.options['isFavorite'] = false;
-      this.store.allRuns.next(this.store.allRuns.value);
+    const onDeleteSub = this.historyList.onDelete.subscribe((deleteCall) => {
+      const runIdx = this.allRuns.value.findIndex((call) => call.id === deleteCall.id);
+      if (runIdx >=0) this.allRuns.value.splice(runIdx, 1);
+      this.historyFilter.removeTag(deleteCall);
+
+      this.afterRunDeleted.next(deleteCall);
     });
 
-    this.afterRunDeleted.subscribe((id) => {
-      this.store.allRuns.next(this.store.allRuns.value.filter((call) => call.id !== id));
-      this.updateActionsSection(this.tabs.currentPane.name as TAB_LABELS);
-    });
+    this.subs.push(
+      clickedSub,
+      allRunsSub, allRunsFetch,
+      onMetadataEdit,
+      comparisonSub,
+      onDeleteSub,
+      updateHistoryPaneSub,
+    );
 
     this.allRunsFetch.next();
-  }
-
-  private async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToFavorite.options['isFavorite'] = true;
-
-    this.beforeRunAddToFavorites.next(callToFavorite);
-    const savedFavorite = await grok.dapi.functions.calls.allPackageVersions().save(callToFavorite);
-    this.afterRunAddToFavorites.next(savedFavorite);
-    return savedFavorite;
-  }
-
-  private async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnfavorite.options['isFavorite'] = false;
-
-    this.beforeRunRemoveFromFavorites.next(callToUnfavorite);
-    const favoriteSave = await grok.dapi.functions.calls.allPackageVersions().save(callToUnfavorite);
-    this.afterRunRemoveFromFavorites.next(favoriteSave);
-    return favoriteSave;
-  }
-
-  public get root() {
-    return this._root;
   }
 }

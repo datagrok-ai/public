@@ -59,7 +59,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 
   const x = currentMeanDifference >= 0 ? pValComplement : -pValComplement;
   const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
-    DG.Color.scaleColor(x, -centeredPValLimit, centeredPValLimit));
+    DG.Color.scaleColor(x, -centeredPValLimit, centeredPValLimit, 255));
 
   const halfWidth = bounds.width / 2;
   const maxMeanDifference = Math.max(Math.abs(viewer.monomerPositionStats.general.minMeanDifference),
@@ -110,13 +110,17 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
  * @param bounds - Cell bounds.
  * @param color - Cell color.
  */
+
+function setAlpha(color: number, alpha: number): number {
+  return (color & 0x00ffffff | (alpha << 24)) >>> 0;
+}
 export function renderInvariantMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, invariantMapSelection: type.Selection, cellValue: number, bounds: DG.Rect,
   color: number): void {
   //FIXME: This is a hack, because `color` value sometimes comes incomplete. E.g. we found that here `color` value is
   // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
   // is actually 4278190335.
-  color = DG.Color.fromHtml(DG.Color.toHtml(color));
+  color = DG.Color.fromHtml(DG.Color.toHtml(setAlpha(color, 255)));
   canvasContext.fillStyle = DG.Color.toHtml(color);
   canvasContext.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';

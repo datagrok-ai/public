@@ -140,7 +140,14 @@ export async function hierarchicalClusteringUI(
     //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
     loaderNB.close();
     injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
-
+    const viewRemoveSub = grok.events.onViewRemoved.subscribe((view) => {
+      if (view === tv) {
+        try {
+          viewRemoveSub.unsubscribe();
+          loaderNB.close();
+        } catch {}
+      };
+    });
     tv.grid.invalidate();
   } catch (err) {
     console.error(err);

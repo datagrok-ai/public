@@ -3,7 +3,8 @@ export {
   VectorMetricsNames,
   BitArrayMetricsNames,
   DistanceMetricsSubjects,
-  NumberMetricsNames
+  NumberMetricsNames,
+  NumberArrayMetricsNames
 } from './consts';
 
 export {

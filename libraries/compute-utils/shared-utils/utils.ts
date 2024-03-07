@@ -8,7 +8,6 @@ import html2canvas from 'html2canvas';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
-import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FunctionView, RichFunctionView} from '../function-views';
 
 export function isInputBase(input: FuncCallInput): input is DG.InputBase {
@@ -30,10 +29,6 @@ export const deepCopy = (call: DG.FuncCall) => {
     deepClone.inputs[input.name] = call.inputs[input.name].clone();
 
   return deepClone;
-};
-
-export const boundImportFunction = (func: DG.Func): string | undefined => {
-  return func.options['getRealData'];
 };
 
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
@@ -136,6 +131,16 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
 
     t.input.classList.remove('d4-invalid');
     t.input.classList.remove('d4-partially-invalid');
+    if (
+      (messages?.errors && messages.errors.length) ||
+      (messages?.warnings && messages.warnings.length) ||
+      (messages?.notifications && messages.notifications.length) ||
+      messages?.pending
+    )
+      $(validationIndicator).css('display', 'flex');
+    else
+      $(validationIndicator).hide();
+
     if (messages?.errors && messages.errors.length)
       t.input.classList.add('d4-invalid');
     else if (messages?.warnings && messages.warnings.length)
@@ -180,6 +185,8 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
 export const plotToSheet =
   async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
     columnForImage: number, rowForImage: number = 0) => {
+    DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+
     const canvas = await html2canvas(plot as HTMLElement, {logging: false});
     const dataUrl = canvas.toDataURL('image/png');
 

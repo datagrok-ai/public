@@ -1,6 +1,20 @@
 import Markdown from 'markdown-to-jsx';
 import React from 'react';
 
+const footerIcons = [
+    {
+        icon: "linkedin-in",
+        href: "https://www.linkedin.com/company/datagrok/"
+    },
+    {
+        icon: "youtube",
+        href: "https://www.youtube.com/@Datagrok"
+    },
+    {
+        icon: 'github',
+        href: 'https://github.com/datagrok-ai'
+    }
+];
 
 const footerLinks = [
     {
@@ -30,8 +44,21 @@ const footerLinks = [
             { name: "User Meetings", href: "#" },
         ],
     },
-    // другие категории
 ];
+
+function FooterIconsSection({links }) {
+    return (
+        <div className="ml-auto footer-icons">
+            <ul className='p-0'>
+                {links.map((link, index) => (
+                    <li key={index}>
+                        <a href={link.href} target='_blank'><i className={"fa fa-brands fa-" +link.icon}></i></a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    )
+}
 
 function FooterLinkSection({ title, links }) {
     return (
@@ -64,9 +91,9 @@ export default function Footer() {
                     ))}
                     </div>
                 </div>
-                <div className="footer-bottom pt-5">
-                    <p>© {new Date().getFullYear()} Datagrok.inc. All rights reserved.</p>
-                    {/* Дополнительные элементы, такие как ссылки на соцсети, могут быть добавлены здесь */}
+                <div className="row footer-bottom pt-5"> 
+                    <p style={{opacity: "35%"}}>© {new Date().getFullYear()} Datagrok, Inc. All rights reserved.</p>
+                    <FooterIconsSection links={footerIcons} /> 
                 </div>
             </div>
         </footer>
