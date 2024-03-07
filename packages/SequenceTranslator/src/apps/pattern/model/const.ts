@@ -48,7 +48,7 @@ export const enum PATTERN_KEY {
   COMMENT = 'comment',
 };
 
-export const USER_STORAGE_KEY: string = 'SequenceTranslator';
+export const STORAGE_NAME: string = 'TestOligoTools1';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
 
 // todo: remove after refactoring
@@ -65,3 +65,41 @@ export namespace DEFAULT_PATTERN_CONFIG {
   export const PATTERN_NAME = 'Pattern';
   export const MODIFICATIONS_WITH_NUMERIC_LABELS = [] as string[];
 }
+
+export namespace GRAPH_SETTINGS_KEYS {
+  export const IS_ANTISENSE_STRAND_INCLUDED = 'isAntisenseStrandIncluded';
+  export const NUCLEOTIDE_SEQUENCES = 'nucleotideSequences';
+  export const PHOSPHOROTHIOATE_LINKAGE_FLAGS = 'phosphorothioateLinkageFlags';
+  export const STRAND_TERMINUS_MODIFICATIONS = 'strandTerminusModifications';
+}
+
+export namespace LEGEND_SETTINGS_KEYS {
+  export const PATTERN_NAME = 'patternName';
+  export const PATTERN_COMMENT = 'patternComment';
+  export const NUCLEOTIDES_WITH_NUMERIC_LABELS = 'nucleotidesWithNumericLabels';
+}
+
+export namespace PATTERN_RECORD_KEYS {
+  export const PATTERN_GRAPH_SETTINGS = 'patternGraphSettings';
+  export const PATTERN_LEGEND_SETTINGS = 'patternLegendSettings';
+  export const AUTHOR_ID = 'authorID';
+}
+
+export const GRAPH_SETTINGS_KEY_LIST = [
+  GRAPH_SETTINGS_KEYS.IS_ANTISENSE_STRAND_INCLUDED,
+  GRAPH_SETTINGS_KEYS.NUCLEOTIDE_SEQUENCES,
+  GRAPH_SETTINGS_KEYS.PHOSPHOROTHIOATE_LINKAGE_FLAGS,
+  GRAPH_SETTINGS_KEYS.STRAND_TERMINUS_MODIFICATIONS
+];
+
+export const LEGEND_SETTINGS_KEY_LIST = [
+  LEGEND_SETTINGS_KEYS.PATTERN_NAME,
+  LEGEND_SETTINGS_KEYS.PATTERN_COMMENT,
+  LEGEND_SETTINGS_KEYS.NUCLEOTIDES_WITH_NUMERIC_LABELS
+];
+
+export const PATTERN_RECORD_KEY_LIST = [
+  PATTERN_RECORD_KEYS.PATTERN_GRAPH_SETTINGS,
+  PATTERN_RECORD_KEYS.PATTERN_LEGEND_SETTINGS,
+  PATTERN_RECORD_KEYS.AUTHOR_ID
+];

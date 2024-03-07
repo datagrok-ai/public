@@ -4,59 +4,52 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {isPatternCreatedByCurrentUser} from './utils';
-import {USER_STORAGE_KEY} from './const';
-import {PatternConfiguration} from './types';
+import {STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL} from './const';
+import {PatternGraphSettings, PatternConfigRecord, PatternConfiguration, PatternLegendSettings} from './types';
 import {EventBus} from './event-bus';
 import {PatternConfigurationManager} from './pattern-config-manager';
 
-type PatternsRecord = {[patternName: string]: string};
+import * as getHash from 'object-hash';
+
+type RawPatternRecords = {[patternName: string]: string};
 
 export class PatternAppDataManager {
   constructor(private eventBus: EventBus) {
-    this.patternListManager = new PatternListManager(eventBus);
-    this.patternListManager.init();
+    this.patternConfigManager = new PatternConfigManager(eventBus);
+    this.patternConfigManager.init();
   }
-  private patternListManager: PatternListManager;
+  private patternConfigManager: PatternConfigManager;
 
   getCurrentUserPatternNames(): string[] {
-    return this.patternListManager.getCurrentUserPatternNames() || [];
+    return this.patternConfigManager.getCurrentUserPatternNames() || [];
   }
 
   getOtherUsersPatternNames(): string[] {
-    return this.patternListManager.getOtherUsersPatternNames() || [];
+    return this.patternConfigManager.getOtherUsersPatternNames() || [];
   }
 
   getCurrentUserName(): string {
-    return this.patternListManager.getCurrentUserName();
+    return this.patternConfigManager.getCurrentUserName();
   }
 
   async savePatternToUserStorage(patternName: string): Promise<void> {
     const patternConfig = PatternConfigurationManager.getConfig(this.eventBus);
-    const userName = this.patternListManager.getCurrentUserName();
-    await PatternConfigLoader.savePatternToUserDataStorage(patternConfig, patternName, userName);
+    const userName = this.patternConfigManager.getCurrentUserName();
+    await PatternConfigLoader.savePattern(patternConfig, patternName, userName);
   }
 
 }
 
-class PatternListManager {
-  private currentUserPatterns: string[] = [];
-  private otherUsersPatterns: string[] = [];
-  private currentUserFriendlyName = '';
+class PatternConfigManager {
 
-  private eventBus: EventBus
+  private otherUsersPatterns = new Map<string, string>();
+  private currentUserPatterns = new Map<string, string>();
 
-  constructor(eventBus: EventBus) {
-    this.eventBus = eventBus;
-  }
+  constructor(private eventBus: EventBus) { }
 
   async init(): Promise<void> {
     try {
-      const patternRecords = await PatternConfigLoader.fetchPatternsFromUserDataStorage();
-      const categorizedPatterns = await this.categorizePatternsByUserOwnership(patternRecords);
-
-      this.currentUserPatterns = categorizedPatterns.currentUserPatterns;
-      this.otherUsersPatterns = categorizedPatterns.otherUsersPatterns;
-      this.currentUserFriendlyName = await this.fetchCurrentUserName();
+      const patternRecords = await PatternConfigLoader.fetchPatterns();
 
       this.eventBus.updatePatternList();
     } catch (e) {
@@ -65,31 +58,11 @@ class PatternListManager {
   }
 
   getCurrentUserPatternNames(): string[] {
-    return this.currentUserPatterns;
+    return Array.from(this.currentUserPatterns.keys());
   }
 
   getOtherUsersPatternNames(): string[] {
-    return this.otherUsersPatterns;
-  }
-
-  getCurrentUserName(): string {
-    return this.currentUserFriendlyName;
-  }
-
-  private async categorizePatternsByUserOwnership(
-    patternsRecords: PatternsRecord
-  ): Promise<{ currentUserPatterns: string[], otherUsersPatterns: string[] }> {
-    const currentUserPatterns: string[] = [];
-    const otherUsersPatterns: string[] = [];
-
-    for (const patternName of Object.keys(patternsRecords)) {
-      if (await isPatternCreatedByCurrentUser(patternName))
-        otherUsersPatterns.push(patternName);
-      else
-        currentUserPatterns.push(patternName);
-    }
-
-    return { currentUserPatterns, otherUsersPatterns };
+    return Array.from(this.otherUsersPatterns.keys());
   }
 
   private async fetchCurrentUserName(): Promise<string> {
@@ -99,18 +72,21 @@ class PatternListManager {
 }
 
 namespace PatternConfigLoader {
-  export async function fetchPatternsFromUserDataStorage() {
-    const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false) as PatternsRecord;
-    return patternsData;
+  export async function fetchPatterns() {
+    const patternsRecord = await grok.dapi.userDataStorage.get(STORAGE_NAME, false) as RawPatternRecords;
+    return patternsRecord;
   }
 
-  export async function savePatternToUserDataStorage(patternConfig: PatternConfiguration, patternName: string, userName: string) {
-    const stringifiedPatternConfig = JSON.stringify(patternConfig);
-    const fullPatternName = patternName + createPatternNamePostfix(userName);
-    await grok.dapi.userDataStorage.postValue(USER_STORAGE_KEY, fullPatternName, stringifiedPatternConfig, false);
+  export async function savePattern(patternConfig: PatternConfiguration, patternName: string) {
+    // create graphSettings from patternConfig
+    const graphSettings = GKL.reduce((acc, key) => {
+      acc[key] = patternConfig[key];
+      return acc;
+    }, {} as PatternGraphSettings);
+    // await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, stringifiedRecord, false);
   }
 
-  function createPatternNamePostfix(userName: string): string {
-    return ` (created by ${userName})`;
+  function createPatternNamePostfix(friendlyUserName: string): string {
+    return ` (created by ${friendlyUserName})`;
   }
 }

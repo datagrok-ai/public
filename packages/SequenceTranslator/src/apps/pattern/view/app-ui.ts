@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 import {
-  DEFAULT_PATTERN_CONFIG as DEFAULT, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
+  DEFAULT_PATTERN_CONFIG as DEFAULT, MAX_SEQUENCE_LENGTH, STORAGE_NAME, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
 } from '../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 import {isOverhangNucleotide} from '../model/helpers';
@@ -258,7 +258,7 @@ export class PatternLayoutHandler {
     }
 
     async function fetchPatternFromStorage(newName: string): Promise<LegacyPatternConfig> {
-      const entities = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      const entities = await grok.dapi.userDataStorage.get(STORAGE_NAME, false);
       return JSON.parse(entities[newName]);
     }
 
@@ -369,7 +369,7 @@ export class PatternLayoutHandler {
       patternNameInput.value = createPatternNameForSaving(currUserName);
 
       const patternData = assemblePatternData();
-      await grok.dapi.userDataStorage.postValue(USER_STORAGE_KEY, patternNameInput.value, JSON.stringify(patternData), false);
+      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, patternNameInput.value, JSON.stringify(patternData), false);
 
       grok.shell.info(`Pattern '${patternNameInput.value}' was successfully uploaded!`);
     }
@@ -446,12 +446,12 @@ export class PatternLayoutHandler {
     }
 
     async function removePatternFromStorage(patternName: string) {
-      await grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+      await grok.dapi.userDataStorage.remove(STORAGE_NAME, patternName, false);
       grok.shell.info(`Pattern '${patternName}' deleted`);
     }
 
     async function refreshPatternsList() {
-      const patternsData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      const patternsData = await grok.dapi.userDataStorage.get(STORAGE_NAME, false);
       const { ownPatterns, otherUsersPatterns } = await sortPatternsByUserOwnership(patternsData);
 
       const currentUserName = (await grok.dapi.users.current()).friendlyName;
@@ -493,11 +493,11 @@ export class PatternLayoutHandler {
     }
 
     async function deletePatternFromStorage(patternName: string) {
-      return grok.dapi.userDataStorage.remove(USER_STORAGE_KEY, patternName, false);
+      return grok.dapi.userDataStorage.remove(STORAGE_NAME, patternName, false);
     }
 
     async function savePatternInUserDataStorage(): Promise<void> {
-      const patternData = await grok.dapi.userDataStorage.get(USER_STORAGE_KEY, false);
+      const patternData = await grok.dapi.userDataStorage.get(STORAGE_NAME, false);
 
       const patternName = patternNameInput.value;
 

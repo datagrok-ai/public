@@ -3,7 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PATTERN_KEY, TERMINI, STRANDS} from './const';
+import {
+  PATTERN_KEY, TERMINI, STRANDS,
+  GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R
+} from './const';
 
 // todo: remove after full refactoring
 export interface LegacyPatternConfig {
@@ -25,14 +28,23 @@ export type NucleotideSequences = Record<StrandType, string[]>;
 export type PhosphorothioateLinkageFlags = Record<StrandType, boolean[]>;
 export type StrandTerminusModifications = Record<StrandType, Record<TerminalType, string>>;
 
-export type PatternConfiguration = {
-  patternName: string,
-  isAntisenseStrandIncluded: boolean,
-  nucleotideSequences: NucleotideSequences,
-  phosphorothioateLinkageFlags: PhosphorothioateLinkageFlags,
-  strandTerminusModifications: StrandTerminusModifications,
-  patternComment: string,
-  nucleotidesWithNumericLabels: string[],
+export type PatternGraphSettings = {
+  [G.IS_ANTISENSE_STRAND_INCLUDED]: boolean,
+  [G.NUCLEOTIDE_SEQUENCES]: NucleotideSequences,
+  [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: PhosphorothioateLinkageFlags,
+  [G.STRAND_TERMINUS_MODIFICATIONS]: StrandTerminusModifications,
 }
 
+export type PatternLegendSettings = {
+  [L.PATTERN_NAME]: string,
+  [L.PATTERN_COMMENT]: string,
+  [L.NUCLEOTIDES_WITH_NUMERIC_LABELS]: string[],
+}
 
+export type PatternConfiguration = PatternGraphSettings & PatternLegendSettings;
+
+export type PatternConfigRecord = {
+  [R.PATTERN_GRAPH_SETTINGS]: PatternGraphSettings,
+  [R.PATTERN_LEGEND_SETTINGS]: PatternLegendSettings,
+  [R.AUTHOR_ID]: string,
+}
