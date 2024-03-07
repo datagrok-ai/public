@@ -18,7 +18,7 @@ category('GridWithTree', () => {
   after(async () => {
     for (const df of dfList) grok.shell.closeTable(df);
     for (const v of vList) v.close();
-    grok.shell.v = currentView;
+    if (!!currentView) grok.shell.v = currentView;
   });
 
   test('open', async () => {
