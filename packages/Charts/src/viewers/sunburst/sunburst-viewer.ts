@@ -204,20 +204,19 @@ export class SunburstViewer extends EChartViewer {
   formatLabel(params: any) {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
-    const getCurrentItemIndex = params.seriesIndex;
+    const getCurrentItemIndex = params.dataIndex - 1;
     const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => {
       if (getCurrentItemIndex === index)
         return item;
     });
     const r = ItemLayoutInfo.r;
+    const r0 = ItemLayoutInfo.r0;
     const startAngle = ItemLayoutInfo.startAngle;
     const endAngle = ItemLayoutInfo.endAngle;
-    const cx = ItemLayoutInfo.cx;
-    const cy = ItemLayoutInfo.cy;
-    const {width, height} = this.calculateSectorDimensions(cx, cy, r, startAngle, endAngle);
+    const {width, height} = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
-    const averageCharWidth = 0.01;
-    const averageCharHeight = 0.1;
+    const averageCharWidth = 5;
+    const averageCharHeight = 10;
     const maxWidthCharacters = Math.floor(width / averageCharWidth);
     const maxHeightCharacters = Math.floor(height / averageCharHeight);
     const maxLength = maxWidthCharacters;
@@ -247,23 +246,15 @@ export class SunburstViewer extends EChartViewer {
     const resultWidth = result.length * averageCharWidth;
     const resultHeight = result.split('\n').length * averageCharHeight;
     if (resultWidth > width || resultHeight > height)
-      return '';
+      result = '...';
+    
     return result;
   }
-  
-  calculateSectorDimensions(centerX: number, centerY: number, radius: number, startAngle: number, endAngle: number) {
-    const startAngleRad = (startAngle * Math.PI) / 180;
-    const endAngleRad = (endAngle * Math.PI) / 180;
 
-    const startX = centerX + radius * Math.cos(startAngleRad);
-    const startY = centerY + radius * Math.sin(startAngleRad);
-    const endX = centerX + radius * Math.cos(endAngleRad);
-    const endY = centerY + radius * Math.sin(endAngleRad);
-
-    const width = Math.abs(endX - startX);
-    const height = Math.abs(endY - startY);
-
-    return { width, height };
+  calculateRingDimensions(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) {
+    let width = outerRadius - innerRadius;
+    let height = Math.abs(endAngle - startAngle) * outerRadius;
+    return { height, width };
   }
 
   async checkAndCreateMoleculeImage(name: string): Promise<{ isSmiles: boolean, image: HTMLCanvasElement | null }> {
