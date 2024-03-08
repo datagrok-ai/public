@@ -48,7 +48,7 @@
     "release-powerpack": "webpack && grok publish dev",
     "build-powerpack": "webpack && grok publish",
     "build": "webpack",
-    "debug-powerpack-dev": "webpack && grok publish dev",
+    "debug-powerpack-dev": "webpack && grok publish release --release",
     "release-powerpack-dev": "grok publish dev --release",
     "debug-powerpack-public": "grok publish public",
     "release-powerpack-public": "grok publish public --release",
