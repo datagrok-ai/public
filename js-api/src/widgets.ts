@@ -2207,6 +2207,49 @@ export class TagsInput extends InputBase {
   }
 }
 
+export class MarkdownInput extends InputBase {
+  editor: any; // Quill.js instance - loaded from the core .min.js file
+  private _onValueChanged: Subject<string> = new Subject<string>();
+
+  constructor(name: string) {
+    super(ui.input.textArea(name).dart);
+  }
+
+  static async create(name: string): Promise<MarkdownInput> {
+    const input = new MarkdownInput(name);
+    input.input.style.display = 'none';
+
+    const editorDiv = ui.div();
+    const editorParentDiv = ui.div([editorDiv]);
+    editorParentDiv.style.minHeight = '200px';
+    input.root.append(editorParentDiv);
+
+    await DG.Utils.loadJsCss([
+      '/js/common/quill/quill.min.js',
+      '/js/common/quill/quill.snow.css',
+    ])
+    //@ts-ignore
+    input.editor = new Quill(editorDiv, {
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['blockquote', 'code-block', 'image'],
+        ],
+      },
+      theme: 'snow', // or 'bubble'
+    });
+    input.editor.on('text-change', () => input._onValueChanged.next(input.value));
+    return input;
+  }
+
+  get value(): string { return this.editor.getText(); }
+  set value(x: string) { this.editor.setText(x); }
+
+  get onValueChanged(): Observable<string> { return this._onValueChanged; }
+}
+
 export class CodeInput extends InputBase {
   dart: any;
   editor: CodeEditor;
