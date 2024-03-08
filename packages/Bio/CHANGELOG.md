@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.11.37 (2024-03-08)
+
+### Bug fixes
+
+* Check Bio publishing, PepSeA docker
+
 ## 2.11.36 (2024-02-28)
 
 ### Bug fixes

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {runPepsea} from '../utils/pepsea';
 import {awaitContainerStart} from './utils';
 
@@ -12,13 +12,16 @@ category('PepSeA', () => {
   "PEPTIDE1{F.L.R.G.Y.[MeF].Y.W.S.N.D.C}$$$$","F.L.R.G.Y.MeF.Y.W.S.N.D.C"
   "PEPTIDE1{F.V.R.G.Y.[MeF].Y.W.S.N.C}$$$$","F.V.R.G.Y.MeF.Y.W.S..N.C"`;
 
-  test('Basic alignment', async () => {
+  before(async () => {
     await awaitContainerStart();
+  });
+
+  test('Basic alignment', async () => {
     const table = DG.DataFrame.fromCsv(testCsv);
     const alignedCol = await runPepsea(table.getCol('HELM'), 'msa(HELM)');
     expect(alignedCol !== null, true, 'PepSeA container has not started');
     const alignedTestCol = table.getCol('MSA');
     for (let i = 0; i < alignedCol!.length; ++i)
       expect(alignedCol!.get(i) == alignedTestCol.get(i), true);
-  }, {timeout: 60000});
+  }, {timeout: 60000 /* docker */});
 });
