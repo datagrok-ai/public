@@ -44,7 +44,6 @@ export type PatternLegendSettings = {
 export type PatternConfiguration = PatternGraphSettings & PatternLegendSettings;
 
 export type PatternConfigRecord = {
-  [R.PATTERN_GRAPH_SETTINGS]: PatternGraphSettings,
-  [R.PATTERN_LEGEND_SETTINGS]: PatternLegendSettings,
+  [R.PATTERN_CONFIG]: PatternConfiguration,
   [R.AUTHOR_ID]: string,
 }

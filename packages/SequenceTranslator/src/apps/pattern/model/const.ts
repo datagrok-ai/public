@@ -80,8 +80,7 @@ export namespace LEGEND_SETTINGS_KEYS {
 }
 
 export namespace PATTERN_RECORD_KEYS {
-  export const PATTERN_GRAPH_SETTINGS = 'patternGraphSettings';
-  export const PATTERN_LEGEND_SETTINGS = 'patternLegendSettings';
+  export const PATTERN_CONFIG = 'patternConfig';
   export const AUTHOR_ID = 'authorID';
 }
 
@@ -99,7 +98,6 @@ export const LEGEND_SETTINGS_KEY_LIST = [
 ];
 
 export const PATTERN_RECORD_KEY_LIST = [
-  PATTERN_RECORD_KEYS.PATTERN_GRAPH_SETTINGS,
-  PATTERN_RECORD_KEYS.PATTERN_LEGEND_SETTINGS,
+  PATTERN_RECORD_KEYS.PATTERN_CONFIG,
   PATTERN_RECORD_KEYS.AUTHOR_ID
 ];

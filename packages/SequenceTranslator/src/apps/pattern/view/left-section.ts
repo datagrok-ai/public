@@ -306,7 +306,7 @@ class PatternNameControls {
       grok.shell.warning(`Insert pattern name`);
       return;
     }
-    this.dataManager.savePatternToUserStorage(patternName);
+    this.dataManager.savePatternToUserStorage();
     // this.eventBus.requestPatternSave();
     grok.shell.info(`Pattern ${patternName} saved`);
   }
