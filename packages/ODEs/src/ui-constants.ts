@@ -25,7 +25,8 @@ export enum HINT {
   TO_JS = 'Export model to JavaScript script',
   APP = 'Export model to platform application with user interface',
   OPEN_DS = 'Open model in Diff Studio',
-  SAVE = 'Save changes', 
+  SAVE = 'Save changes',
+  SENS_AN = 'Run sensitivity analysis',
 };
 
 /** UI titles */
@@ -60,7 +61,8 @@ export enum TITLE {
 /** Help links */
 export enum LINK {  
   DIF_STUDIO_REL = '/help/compute/diff-studio',
-  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',  
+  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
+  SENS_AN = 'https://datagrok.ai/help/compute#sensitivity-analysis',
   CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
   FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
   GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
@@ -85,6 +87,7 @@ export enum ERROR_MSG {
   OPEN_IN_DIF_STUD = 'To change the model, open it in Diff Studio.',
   FAILED_TO_SAVE = 'Failed to save model to the file',
   INCORRECT_MODEL = 'Incorrect model',
+  SENS_AN_FAILS = 'Sensitivity Analysis fails',
 };
 
 /** Warning dialog lines */
@@ -135,9 +138,12 @@ Press <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
 # Scripting
 Press **JS** button and export model to JavaScript script.
 
+# Analysis
+Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon to explore model
+
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
-* [Compute](https://datagrok.ai/help/compute)`;
+* [Sensitivity Analysis](${LINK.SENS_AN})`;
 
 /** Inputs types */
 export enum INPUT_TYPE {

@@ -27,7 +27,7 @@
   eff = 0.2 {category: Initial values} [Effective compartment rate]
 
 #parameters:  
-  dose = 10000 {category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
+  dose = 1E4 {category: Dosing; min: 1E3; max: 2E4; step: 1E3} [Dosage]
   KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
   CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
   V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
@@ -37,4 +37,4 @@
   Kin = 0.2 {caption: Kin; category: Paramters; min: 0.1; max: 0.5} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Paramters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
-#tolerance: 0.000000001
+#tolerance: 1E-9
