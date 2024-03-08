@@ -6,7 +6,7 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
-import {awaitContainerStart} from './utils';
+import {awaitContainerStart} from '../utils/docker';
 
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
