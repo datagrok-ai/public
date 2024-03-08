@@ -135,6 +135,8 @@ enum ERROR_MSG {
   INCOR_STEP = `Step is greater than the length of solution interval ${SEE_ARG}`,
   MISS_COLON = `Missing "${CONTROL_SEP}"`,
   NAN = `is not a number. Check the line`,
+  SERVICE_START = `Variable names should not start with '${SERVICE}'`,
+  REUSE_NAME = 'Variable reuse (case-insensitive): rename ',
 }
 
 /** Datagrok annatations */
@@ -1125,4 +1127,36 @@ function checkCorrectness(ivp: IVP): void {
 
   if (ivp.arg.step.value > ivp.arg.final.value - ivp.arg.initial.value)
     throw new Error(ERROR_MSG.INCOR_STEP);
+
+  // 4. Check script inputs, due to https://reddata.atlassian.net/browse/GROK-15152
+  const scriptInputs = [] as string[];
+  let current: string;
+
+  // 4.1) initial values
+  ivp.inits.forEach((_, key) => {
+    if (key[0] === SERVICE)
+      throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.INITS}-block`);
+
+    current = key.toLocaleLowerCase();
+
+    if (scriptInputs.includes(current))
+      throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.INITS}-block)`);
+
+    scriptInputs.push(current);
+  })
+
+  // 4.2) parameters
+  if (ivp.params !== null)
+    ivp.params.forEach((_, key) => {
+      if (key[0] === SERVICE)
+        throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.PARAMS}-block`);
+
+      current = key.toLocaleLowerCase();
+
+      if (scriptInputs.includes(current))
+        throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.PARAMS}-block)`);
+
+      scriptInputs.push(current);
+    })
+
 } // checkCorrectness
