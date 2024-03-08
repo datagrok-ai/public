@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as arrow from 'apache-arrow';
-import {Compression, Table, WriterPropertiesBuilder, default as init, readParquet, writeParquet} from "parquet-wasm/esm/arrow1";
+import {Compression, default as init, readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm/esm/arrow1";
 
 export const _package = new DG.Package();
 
@@ -17,34 +17,38 @@ export async function parquetInit() {
 }
 
 //name: toFeather
-//description: Converts DG.DataFrame to arrow ipc stream
+//description: Converts DG.DataFrame to arrow
 //input: dataframe table
+//input: bool asStream = true
 //output: blob bytes
-export function toFeather(table: DG.DataFrame): Uint8Array | null {
-  if (table == null) return null;
+export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8Array | null {
+  //todo: use direct creation of vectors from typed arrays
+  if (!table) return null;
   let column_names = table.columns.names();
   const t: { [_: string]: any } = {};
   for (let i = 0; i < column_names.length; i++) {
     let column = table.columns.byName(column_names[i]);
-    if (['int', 'float', 'qnum'].includes(column.type))
-      t[column_names[i]] = column.getRawData();
-    else if (column.type === 'datetime') {
-      const rawData: Float64Array = (column.getRawData() as Float64Array);
+    let columnType = column.type;
+    if (['int', 'double', 'qnum'].includes(columnType))
+      t[column_names[i]] = column.getRawData().subarray(0, column.length);
+    else if (columnType === 'datetime') {
+      const rawData: Float64Array = (column.getRawData() as Float64Array).subarray(0, column.length);
       t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
     }
-    else if (column.type === 'string') {
+    else if (columnType === 'string') {
       const indexes = column.getRawData();
       t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
     }
     else {
-      const array = new Array(column.length);
-      for (let i = 0; i < column.length; i++)
+      const columnLength = column.length;
+      const array = new Array(columnLength);
+      for (let i = 0; i < columnLength; i++)
         array[i] = column.get(i);
       t[column_names[i]] = array;
     }
   }
   const res = arrow.tableFromArrays(t);
-  return arrow.tableToIPC(res, "stream");
+  return arrow.tableToIPC(res, asStream ? "stream" : "file");
 }
 
 //name: fromFeather
@@ -52,7 +56,7 @@ export function toFeather(table: DG.DataFrame): Uint8Array | null {
 //input: blob bytes
 //output: dataframe table
 export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
-  if (bytes == null) return null;
+  if (!bytes) return null;
   const table = arrow.tableFromIPC(bytes);
   let columns = [];
   for (let i = 0; i < table.numCols; i++) {
@@ -63,9 +67,7 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
     if (arrow.DataType.isDictionary(type)) {
       type = vector.data[vector.data.length - 1].dictionary?.type;
       if (type.typeId === arrow.Type.Utf8) {
-        const col = stringColumnFromDictionary(name, vector);
-        col.name = name;
-        columns.push(col);
+        columns.push(stringColumnFromDictionary(name, vector));
         continue;
       }
       else
@@ -129,6 +131,7 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
 //name: toParquet
 //description: Converts DG.DataFrame to parquet
 //input: dataframe table
+//input: int compression {nullable: true}
 //output: blob bytes
 export function toParquet(table: DG.DataFrame, compression?: Compression): Uint8Array | null {
   const arrowUint8Array = toFeather(table);
@@ -142,14 +145,9 @@ export function toParquet(table: DG.DataFrame, compression?: Compression): Uint8
 //input: blob bytes
 //output: dataframe table
 export function fromParquet(bytes: Uint8Array): DG.DataFrame | null {
-  if (bytes == null) return null;
-  let date = new Date();
+  if (!bytes) return null;
   const arrowUint8Array = readParquet(bytes).intoIPCStream();
-  console.log(new Date().getTime() - date.getTime());
-  date = new Date();
-  let df = fromFeather(arrowUint8Array);
-  console.log(new Date().getTime() - date.getTime());
-  return df;
+  return fromFeather(arrowUint8Array);
 }
 
 //input: list bytes
@@ -184,14 +182,15 @@ export function saveAsParquet() {
 //tags: fileExporter
 export function saveAsFeather() {
   let table = grok.shell.t;
-  const arrowUint8Array = toFeather(table);
+  const arrowUint8Array = toFeather(table, false);
   DG.Utils.download(table.name + '.feather', arrowUint8Array ?? new Uint8Array(0));
 }
 
 // Unpacks dictionary vector to array. This method is much faster than calling directly toArray() on vector
 function unpackDictionaryColumn(vector: arrow.Vector) {
   const codes = new Array(vector.length);
-  // Gets unique values, a.k.a categories
+  // Gets unique values, a.k.a categories.
+  // TODO: This call .toArray() is slow
   const ks = vector?.data[vector.data.length - 1]?.dictionary?.toArray();
   let i = 0;
   // Iterate over chunks of indexes and insert data to codes array
