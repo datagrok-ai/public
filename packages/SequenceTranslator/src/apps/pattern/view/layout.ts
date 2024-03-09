@@ -6,7 +6,6 @@ import * as DG from 'datagrok-api/dg';
 import {PatternAppLeftSection} from './left-section';
 import {PatternAppRightSection} from './right-section';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {PatternConfigurationManager} from '../model/pattern-config-manager';
 import {EventBus} from '../model/event-bus';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 
@@ -20,7 +19,7 @@ export class PatternAppLayout {
     const dataManager = new PatternAppDataManager(eventBus);
 
     this.leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultStateConfigurator);
-    this.rightSection = new PatternAppRightSection(eventBus, dataManager);
+    this.rightSection = new PatternAppRightSection(eventBus);
   }
 
   generateHTML(): HTMLDivElement {

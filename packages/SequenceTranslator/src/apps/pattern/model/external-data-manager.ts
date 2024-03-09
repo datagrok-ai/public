@@ -43,9 +43,8 @@ class PatternConfigManager {
   private currentUserName: string;
   private currentUserId: string;
 
-  private patterns = new Map<string, PatternConfigRecord>();
-  private otherUsersPatterns = new Map<string, string>();
-  private currentUserPatterns = new Map<string, string>();
+  private otherUsersPatternNameToHash = new Map<string, string>();
+  private currentUserPatternNameToHash = new Map<string, string>();
 
   constructor(private eventBus: EventBus) { }
 
@@ -75,14 +74,14 @@ class PatternConfigManager {
       const patternName = patternConfig.patternName;
       const authorID = record[R.AUTHOR_ID];
       if (authorID === this.currentUserId) {
-        this.currentUserPatterns.set(patternName, patternHash);
+        this.currentUserPatternNameToHash.set(patternName, patternHash);
       } else {
         if (!userIdsToUserNames.has(authorID)) {
           const userFriendlyName = (await grok.dapi.users.find(authorID)).friendlyName;
           userIdsToUserNames.set(authorID, userFriendlyName);
         }
         const fullPatternName = patternName + ` (created by ${userIdsToUserNames.get(authorID)})`;
-        this.otherUsersPatterns.set(fullPatternName, patternHash);
+        this.otherUsersPatternNameToHash.set(fullPatternName, patternHash);
       }
     }
   }
@@ -92,11 +91,11 @@ class PatternConfigManager {
   }
 
   getCurrentUserPatternNames(): string[] {
-    return Array.from(this.currentUserPatterns.keys());
+    return Array.from(this.currentUserPatternNameToHash.keys());
   }
 
   getOtherUsersPatternNames(): string[] {
-    return Array.from(this.otherUsersPatterns.keys());
+    return Array.from(this.otherUsersPatternNameToHash.keys());
   }
 
   private async fetchCurrentUserName(): Promise<string> {
@@ -123,8 +122,8 @@ namespace PatternConfigLoader {
       [R.AUTHOR_ID]: await grok.dapi.users.current().then(u => u.id),
     };
     const stringifiedRecord = JSON.stringify(record);
-    console.log(`hash:`, hash);
-    console.log(`record:`, record);
+    // console.log(`hash:`, hash);
+    // console.log(`record:`, record);
     await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, stringifiedRecord, false);
   }
 

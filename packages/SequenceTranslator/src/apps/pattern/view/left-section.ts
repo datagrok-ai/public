@@ -461,7 +461,7 @@ class ColumnInputManager {
 
   private createIdColumnInput(): HTMLElement {
     const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
-    console.log(`cols:`, columns);
+    // console.log(`cols:`, columns);
     const idColumnInput = ui.choiceInput('ID column', columns[0], columns, (colName: string) => { });
     return idColumnInput.root;
   }

@@ -23,9 +23,12 @@ export class EventBus {
   private _patternLoadRequested$ = new rxjs.Subject<string>();
   private _patternSaveRequested$ = new rxjs.Subject<void>();
   private _sequenceBaseReplacementRequested$ = new rxjs.Subject<string>();
+  private _uniqueNucleotideBases$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
+
+  private _svgSaveRequested$ = new rxjs.Subject<void>();
 
 
   constructor(defaults: PatternDefaultsProvider) {
@@ -37,9 +40,22 @@ export class EventBus {
       STRANDS.forEach((strand) => {
         newNucleotideSequences[strand] = oldNucleotideSequences[strand].map((_: string) => newBase);
       });
-
-      this._nucleotideSequences$.next(newNucleotideSequences);
     });
+
+    this._nucleotideSequences$.subscribe(() => {
+      this.updateUniqueNucleotideBases();
+    });
+  }
+
+  private updateUniqueNucleotideBases(): void {
+    const nucleotideSequences = this._nucleotideSequences$.getValue();
+    const uniqueNucleotideBases = new Set<string>();
+    STRANDS.forEach((strand) => {
+      nucleotideSequences[strand].forEach((nucleotide: string) => {
+        uniqueNucleotideBases.add(nucleotide);
+      });
+    });
+    this._uniqueNucleotideBases$.next(Array.from(uniqueNucleotideBases).sort());
   }
 
   private initializeDefaultState(defaults: PatternDefaultsProvider) {
@@ -182,5 +198,25 @@ export class EventBus {
       this._comment$,
       this._modificationsWithNumericLabels$,
     );
+  }
+
+  getSequenceBase(): string {
+    return this._sequenceBase$.getValue();
+  }
+
+  uniqueNucleotideBasesChanged$(): rxjs.Observable<string[]> {
+    return this._uniqueNucleotideBases$.asObservable();
+  }
+
+  getUniqueNucleotideBases(): string[] {
+    return this._uniqueNucleotideBases$.getValue();
+  }
+
+  get svgSaveRequested$(): rxjs.Observable<void> {
+    return this._svgSaveRequested$.asObservable();
+  }
+
+  requestSvgSave() {
+    this._svgSaveRequested$.next();
   }
 }
