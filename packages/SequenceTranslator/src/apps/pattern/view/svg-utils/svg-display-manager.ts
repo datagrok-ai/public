@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { PatternConfiguration, StrandType } from '../../model/types';
-import {PatternConfigurationManager} from '../../model/pattern-config-manager';
 import {EventBus} from '../../model/event-bus';
 import {NucleotidePatternSVGRenderer} from './svg-renderer';
 //@ts-ignore
@@ -28,7 +27,7 @@ export class SvgDisplayManager {
 
   private updateSvgContainer(): void {
     $(this.svgDisplayDiv).empty();
-    const patternConfig = PatternConfigurationManager.getConfig(this.eventBus);
+    const patternConfig = this.eventBus.getPatternConfig();
     this.svgElement = this.createSvg(patternConfig);
     this.svgDisplayDiv.append(this.svgElement);
   }

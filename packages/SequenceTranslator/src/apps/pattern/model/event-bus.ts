@@ -233,7 +233,7 @@ export class EventBus {
     this.updatePhosphorothioateLinkageFlags(flags);
   }
 
-  setPattern(patternConfiguration: PatternConfiguration) {
+  setPatternConfig(patternConfiguration: PatternConfiguration) {
     this._patternName$.next(patternConfiguration[L.PATTERN_NAME]);
     this._isAntisenseStrandVisible$.next(patternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]);
     this._nucleotideSequences$.next(patternConfiguration[G.NUCLEOTIDE_SEQUENCES]);
@@ -241,5 +241,17 @@ export class EventBus {
     this._terminalModifications.next(patternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]);
     this._comment$.next(patternConfiguration[L.PATTERN_COMMENT]);
     this._modificationsWithNumericLabels$.next(patternConfiguration[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]);
+  }
+
+  getPatternConfig(): PatternConfiguration {
+    return {
+      [L.PATTERN_NAME]: this.getPatternName(),
+      [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntiSenseStrandVisible(),
+      [G.NUCLEOTIDE_SEQUENCES]: this.getNucleotideSequences(),
+      [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: this.getPhosphorothioateLinkageFlags(),
+      [G.STRAND_TERMINUS_MODIFICATIONS]: this.getTerminalModifications(),
+      [L.PATTERN_COMMENT]: this.getComment(),
+      [L.NUCLEOTIDES_WITH_NUMERIC_LABELS]: this.getModificationsWithNumericLabels(),
+    };
   }
 }

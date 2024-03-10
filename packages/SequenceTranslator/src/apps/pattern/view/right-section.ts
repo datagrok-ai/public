@@ -8,7 +8,6 @@ import * as _ from 'lodash';
 
 import {EventBus} from '../model/event-bus';
 import {BooleanInput} from './types';
-import {PatternConfigurationManager} from '../model/pattern-config-manager';
 import {PatternConfiguration} from '../model/types';
 
 import $ from 'cash-dom';
@@ -97,7 +96,7 @@ class PatternEditorDialog {
   constructor(
     private eventBus: EventBus,
   ) {
-    this.initialPatternConfig = _.cloneDeep(PatternConfigurationManager.getConfig(this.eventBus));
+    this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
   }
 
   open(): void {
@@ -159,10 +158,17 @@ class PatternEditorDialog {
     return dialog;
   }
 
-  // private createSetFirstPtoInputs(): BooleanInput[] {
-  // }
+  private createFirstPtoInputs(): BooleanInput[] {
+    return STRANDS.map((strand) => {
+      const firstPto = ui.boolInput(`First PTO ${strand}`, false, (value: boolean) => {
+        grok.shell.info(`First PTO ${strand} is ${value ? 'checked' : 'unchecked'}`);
+      });
+      // this.addStyleToFirstPtoInput(firstPto);
+      return firstPto;
+    });
+  }
 
   private resetToInitialState(): void {
-    this.eventBus.setPattern(this.initialPatternConfig);
+    this.eventBus.setPatternConfig(this.initialPatternConfig);
   }
 }

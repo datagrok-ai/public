@@ -272,7 +272,6 @@ class PatternNameControls {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    // private patternConfiguration: PatternConfigurationManager,
   ) { }
 
   createPatternNameInputBlock(): HTMLElement {

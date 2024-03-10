@@ -6,7 +6,6 @@ import * as DG from 'datagrok-api/dg';
 import {STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL, PATTERN_RECORD_KEYS as R} from './const';
 import {PatternGraphSettings, PatternConfigRecord, PatternConfiguration, PatternLegendSettings} from './types';
 import {EventBus} from './event-bus';
-import {PatternConfigurationManager} from './pattern-config-manager';
 
 import objectHash from 'object-hash';
 
@@ -32,7 +31,7 @@ export class PatternAppDataManager {
   }
 
   async savePatternToUserStorage(): Promise<void> {
-    const patternConfig = PatternConfigurationManager.getConfig(this.eventBus);
+    const patternConfig = this.eventBus.getPatternConfig();
     await PatternConfigLoader.savePattern(patternConfig);
   }
 
