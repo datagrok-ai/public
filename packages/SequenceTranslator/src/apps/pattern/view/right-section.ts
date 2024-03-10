@@ -136,6 +136,7 @@ class PatternEditorDialog {
       width: 'auto'
     });
   }
+
   private createDialog(): DG.Dialog {
     const dialog = ui.dialog('Edit pattern')
     .add(ui.divV([
@@ -150,14 +151,16 @@ class PatternEditorDialog {
     //   modificationSection[STRAND.SENSE],
     //   modificationSection[STRAND.ANTISENSE],
     // ], {style:{gap:'24px'}}))
-    .onOK(()=>{grok.shell.info('Saved')})
+    .onOK(() => grok.shell.info('Applied'))
     .onCancel(() => this.resetToInitialState());
 
-    dialog.onClose.subscribe(() => this.resetToInitialState());
+    // dialog.onClose.subscribe(() => this.resetToInitialState());
 
     return dialog;
-    
   }
+
+  // private createSetFirstPtoInputs(): BooleanInput[] {
+  // }
 
   private resetToInitialState(): void {
     this.eventBus.setPattern(this.initialPatternConfig);

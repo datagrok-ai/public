@@ -99,12 +99,17 @@ export class EventBus {
 
   changeStrandLength(strand: StrandType, length: number) {
     const sequence = this.getNucleotideSequences()[strand];
+    const phosphorothioateLinkageFlags = this.getPhosphorothioateLinkageFlags()[strand];
     if (sequence.length > length) {
       const newSequence = sequence.slice(0, length);
+      const newFlags = phosphorothioateLinkageFlags.slice(0, length + 1);
       this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
+      this.updatePhosphorothioateLinkageFlags({...this.getPhosphorothioateLinkageFlags(), [strand]: newFlags});
     } else {
       const newSequence = sequence.concat(new Array(length - sequence.length).fill(this._sequenceBase$.getValue()));
+      const newFlags = phosphorothioateLinkageFlags.concat(new Array(length - sequence.length + 1).fill(true));
       this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
+      this.updatePhosphorothioateLinkageFlags({...this.getPhosphorothioateLinkageFlags(), [strand]: newFlags});
     }
   }
 
