@@ -146,7 +146,8 @@ export class EventBus {
   }
 
   updateModificationsWithNumericLabels(modificationsWithNumericLabels: string[]) {
-    this._modificationsWithNumericLabels$.next(modificationsWithNumericLabels);
+    const newValue = Array.from(new Set(modificationsWithNumericLabels)).sort();
+    this._modificationsWithNumericLabels$.next(newValue);
   }
 
   changeSequenceBase(base: string) {

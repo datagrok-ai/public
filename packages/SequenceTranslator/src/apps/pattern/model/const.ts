@@ -36,6 +36,7 @@ export const STRAND_TO_END_TERMINUS_MAP = {
 
 export const MAX_SEQUENCE_LENGTH = 35;
 
+// todo: remove after refactoring
 export const enum PATTERN_KEY {
   SS_BASES = 'ssBases',
   AS_BASES = 'asBases',
