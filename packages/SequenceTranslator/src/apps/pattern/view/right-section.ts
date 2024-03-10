@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {SvgDisplayManager} from './svg-utils/svg-display-manager';
+import * as _ from 'lodash';
 
 import {EventBus} from '../model/event-bus';
 import {BooleanInput} from './types';
@@ -91,12 +92,12 @@ class NumericLabelToggles {
 }
 
 class PatternEditorDialog {
-  private patternConfig: PatternConfiguration;
+  private initialPatternConfig: PatternConfiguration;
 
   constructor(
     private eventBus: EventBus,
   ) {
-    this.patternConfig = PatternConfigurationManager.getConfig(this.eventBus);
+    this.initialPatternConfig = _.cloneDeep(PatternConfigurationManager.getConfig(this.eventBus));
   }
 
   open(): void {
@@ -104,9 +105,12 @@ class PatternEditorDialog {
   }
 
   private createAllPtoActivationInput(): BooleanInput {
-    const flags = this.patternConfig.phosphorothioateLinkageFlags;
-    const totalNumberOfPTOFlags = STRANDS.map((strand) => flags[strand].length).reduce((a, b) => a + b, 0);
-    const totalNumberOfNucleotides = STRANDS.map((strand) => this.patternConfig.nucleotideSequences[strand].length).reduce((a, b) => a + b, 0);
+    const flags = this.initialPatternConfig.phosphorothioateLinkageFlags;
+    const totalNumberOfPTOFlags = STRANDS.map(
+      (strand) => flags[strand].filter((flag) => flag).length
+    )
+      .reduce((a, b) => a + b, 0);
+    const totalNumberOfNucleotides = STRANDS.map((strand) => this.initialPatternConfig.nucleotideSequences[strand].length).reduce((a, b) => a + b, 0);
 
     // WARNING: +2 because there are +1 more PTO flags in each strand than there are nucleotides
     const allPTOLinkagesSet = totalNumberOfPTOFlags === totalNumberOfNucleotides + 2;
@@ -116,10 +120,14 @@ class PatternEditorDialog {
       (value: boolean) => this.eventBus.setAllPTOLinkages(value)
     );
 
-    ui.tooltip.bind(allPtoActivationInput.root, 'Activate all phosphothioate linkages');
+    this.addStyleToAllPtoActivationInput(allPtoActivationInput);
 
+    return allPtoActivationInput;
+  }
+
+  private addStyleToAllPtoActivationInput(allPtoActivationInput: BooleanInput): void {
     const label = allPtoActivationInput.captionLabel;
-
+    ui.tooltip.bind(label, 'Activate all phosphothioate linkages');
     label.classList.add('ui-label-right');
     Object.assign(label.style, {
       textAlign: 'left',
@@ -127,11 +135,9 @@ class PatternEditorDialog {
       minWidth: '40px',
       width: 'auto'
     });
-    return allPtoActivationInput;
   }
-
   private createDialog(): DG.Dialog {
-    return ui.dialog('Edit pattern')
+    const dialog = ui.dialog('Edit pattern')
     .add(ui.divV([
       ui.h1('PTO'),
       ui.divH([
@@ -145,5 +151,15 @@ class PatternEditorDialog {
     //   modificationSection[STRAND.ANTISENSE],
     // ], {style:{gap:'24px'}}))
     .onOK(()=>{grok.shell.info('Saved')})
+    .onCancel(() => this.resetToInitialState());
+
+    dialog.onClose.subscribe(() => this.resetToInitialState());
+
+    return dialog;
+    
+  }
+
+  private resetToInitialState(): void {
+    this.eventBus.setPattern(this.initialPatternConfig);
   }
 }
