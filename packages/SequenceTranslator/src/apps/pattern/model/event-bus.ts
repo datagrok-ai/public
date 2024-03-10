@@ -3,8 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {STRANDS} from './const';
-import {StrandType, TerminalType} from './types';
+import {PatternConfiguration, StrandType, TerminalType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
+import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L} from './const';
 
 import * as rxjs from 'rxjs';
 import {PatternDefaultsProvider} from './defaults-provider';
@@ -29,7 +30,6 @@ export class EventBus {
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
 
   private _svgSaveRequested$ = new rxjs.Subject<void>();
-
 
   constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
@@ -218,5 +218,23 @@ export class EventBus {
 
   requestSvgSave() {
     this._svgSaveRequested$.next();
+  }
+  
+  setAllPTOLinkages(value: boolean) {
+    const flags = this.getPhosphorothioateLinkageFlags();
+    STRANDS.forEach((strand) => {
+      flags[strand] = flags[strand].map(() => value);
+    });
+    this.updatePhosphorothioateLinkageFlags(flags);
+  }
+
+  setPattern(patternConfiguration: PatternConfiguration) {
+    this._patternName$.next(patternConfiguration[L.PATTERN_NAME]);
+    this._isAntisenseStrandVisible$.next(patternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]);
+    this._nucleotideSequences$.next(patternConfiguration[G.NUCLEOTIDE_SEQUENCES]);
+    this._phosphorothioateLinkageFlags.next(patternConfiguration[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]);
+    this._terminalModifications.next(patternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]);
+    this._comment$.next(patternConfiguration[L.PATTERN_COMMENT]);
+    this._modificationsWithNumericLabels$.next(patternConfiguration[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]);
   }
 }

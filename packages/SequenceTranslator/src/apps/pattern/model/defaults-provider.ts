@@ -32,7 +32,7 @@ export class PatternDefaultsProvider {
   getPhosphorothioateLinkageFlags(): PhosphorothioateLinkageFlags {
     const phosphorothioateLinkageFlags = {} as PhosphorothioateLinkageFlags;
     STRANDS.forEach((strand) => {
-      phosphorothioateLinkageFlags[strand] = new Array(DEFAULT.SEQUENCE_LENGTH).fill(DEFAULT.PHOSPHOROTHIOATE);
+      phosphorothioateLinkageFlags[strand] = new Array(DEFAULT.SEQUENCE_LENGTH + 1).fill(DEFAULT.PHOSPHOROTHIOATE);
     });
 
     return phosphorothioateLinkageFlags;
