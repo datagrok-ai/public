@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS } from '../model/const';
+import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS, MAX_SEQUENCE_LENGTH } from '../model/const';
 import { StrandType } from '../model/types';
 
 import {StringInput, NumberInput} from './types';
@@ -96,22 +96,27 @@ class PatternControlsManager {
 
       const input = ui.intInput(
         `${STRAND_LABEL[strand]} length`,
-        sequenceLength,
-        (value: number) => updateStrandLengthInputs(strand, value, input)
+        sequenceLength
       );
+      input.onInput(() => updateStrandLengthInputs(strand, input));
       input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
       return [strand, input];
     }
 
-    const updateStrandLengthInputs = (strand: StrandType, length: number, input: DG.InputBase) => {
-      if (length < 0 || length > this.defaultState.getMaxSequenceLength()) {
-        const oldValue = this.eventBus.getNucleotideSequences()[strand].length; 
-        grok.shell.warning(`Sequence length must be between 0 and ${this.defaultState.getMaxSequenceLength()}`);
-        input.value = oldValue;
-        return;
+    const updateStrandLengthInputs = (strand: StrandType, input: DG.InputBase<number | null>) => {
+      const length = input.value;
+      if (length === null) return;
+
+      if (length <= 0) {
+        grok.shell.warning(`Sequence length must be greater than 0}`);
+        input.value = 1;
+      }
+      if (length > MAX_SEQUENCE_LENGTH) {
+        grok.shell.warning(`Sequence length must be less than ${MAX_SEQUENCE_LENGTH + 1}`);
+        input.value = MAX_SEQUENCE_LENGTH;
       }
 
-      this.eventBus.changeStrandLength(strand, length);
+      this.eventBus.changeStrandLength(strand, input.value!);
     }
 
     const strandLengthInputs = Object.fromEntries(

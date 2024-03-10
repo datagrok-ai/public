@@ -1,5 +1,5 @@
-import {STRANDS, TERMINI, DEFAULT_PHOSPHOROTHIOATE} from './const';
-import {TerminalType, NucleotideSequences, StrandType, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
+import {STRANDS, TERMINI} from './const';
+import {TerminalType, NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 import {DEFAULT_PATTERN_CONFIG as DEFAULT} from './const';
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 

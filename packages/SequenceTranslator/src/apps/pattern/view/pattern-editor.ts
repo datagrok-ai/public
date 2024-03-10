@@ -109,7 +109,7 @@ class HeaderControls {
   private createFirstPtoInputs(): BooleanInput[] {
     return STRANDS.map((strand) => {
       const initialValue = this.isFirstPtoActive(strand);
-      const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue, );
+      const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue);
 
       firstPtoInput.onInput(() => {
         const value = firstPtoInput.value!;
