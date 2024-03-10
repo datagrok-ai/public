@@ -52,7 +52,10 @@ export class PatternDefaultsProvider {
 
   getComment(): string { return DEFAULT.COMMENT; }
   
-  getModificationsWithNumericLabels(): string[] { return DEFAULT.MODIFICATIONS_WITH_NUMERIC_LABELS; }
+  getModificationsWithNumericLabels(): string[] {
+    return [ this.fetchDefaultNucleobase() ];
+
+  }
 
   getMaxSequenceLength(): number { return DEFAULT.SEQUENCE_LENGTH; }
 }

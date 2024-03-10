@@ -64,7 +64,6 @@ export namespace DEFAULT_PATTERN_CONFIG {
   export const COMMENT = '';
   export const IS_ANTISENSE_STRAND_VISIBLE = true;
   export const PATTERN_NAME = 'Pattern';
-  export const MODIFICATIONS_WITH_NUMERIC_LABELS = [] as string[];
 }
 
 export namespace GRAPH_SETTINGS_KEYS {
