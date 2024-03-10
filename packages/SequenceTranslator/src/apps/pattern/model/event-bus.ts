@@ -121,6 +121,10 @@ export class EventBus {
     this._phosphorothioateLinkageFlags.next(phosphorothioateLinkageFlags);
   }
 
+  get phosphorothioateLingeFlagsChanged$(): rxjs.Observable<PhosphorothioateLinkageFlags> {
+    return this._phosphorothioateLinkageFlags.asObservable();
+  }
+
   getTerminalModifications(): StrandTerminusModifications {
     return this._terminalModifications.getValue();
   }
@@ -253,5 +257,11 @@ export class EventBus {
       [L.PATTERN_COMMENT]: this.getComment(),
       [L.NUCLEOTIDES_WITH_NUMERIC_LABELS]: this.getModificationsWithNumericLabels(),
     };
+  }
+
+  setFirstPhosphorothioateLinkageFlag(strand: StrandType, value: boolean) {
+    const flags = this.getPhosphorothioateLinkageFlags();
+    flags[strand][0] = value;
+    this.updatePhosphorothioateLinkageFlags(flags);
   }
 }

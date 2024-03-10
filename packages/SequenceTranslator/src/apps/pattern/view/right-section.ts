@@ -4,14 +4,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {SvgDisplayManager} from './svg-utils/svg-display-manager';
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 import {EventBus} from '../model/event-bus';
 import {BooleanInput} from './types';
-import {PatternConfiguration} from '../model/types';
+import {PatternConfiguration, PhosphorothioateLinkageFlags} from '../model/types';
 
 import $ from 'cash-dom';
-import {STRANDS} from '../model/const';
+import {STRAND, STRANDS} from '../model/const';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -103,8 +103,7 @@ class PatternEditorDialog {
     this.createDialog().show();
   }
 
-  private createAllPtoActivationInput(): BooleanInput {
-    const flags = this.initialPatternConfig.phosphorothioateLinkageFlags;
+  private areAllPtoLinkagesSet(flags: PhosphorothioateLinkageFlags): boolean {
     const totalNumberOfPTOFlags = STRANDS.map(
       (strand) => flags[strand].filter((flag) => flag).length
     )
@@ -112,19 +111,31 @@ class PatternEditorDialog {
     const totalNumberOfNucleotides = STRANDS.map((strand) => this.initialPatternConfig.nucleotideSequences[strand].length).reduce((a, b) => a + b, 0);
 
     // WARNING: +2 because there are +1 more PTO flags in each strand than there are nucleotides
-    const allPTOLinkagesSet = totalNumberOfPTOFlags === totalNumberOfNucleotides + 2;
+    return totalNumberOfPTOFlags === totalNumberOfNucleotides + 2;
+  }
 
-    const allPtoActivationInput = ui.boolInput('All PTO',
-      allPTOLinkagesSet,
-      (value: boolean) => this.eventBus.setAllPTOLinkages(value)
-    );
+  private createAllPtoActivationInput(): BooleanInput {
+    const flags = this.initialPatternConfig.phosphorothioateLinkageFlags;
+    const initialValue = this.areAllPtoLinkagesSet(flags);
+    const allPtoActivationInput = ui.boolInput('All PTO', initialValue);
 
-    this.addStyleToAllPtoActivationInput(allPtoActivationInput);
+    allPtoActivationInput.onInput(() => {
+      const value = allPtoActivationInput.value!;
+      this.eventBus.setAllPTOLinkages(value);
+    });
+
+    this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe(() => {
+      const flags = this.eventBus.getPatternConfig().phosphorothioateLinkageFlags;
+      const newValue = this.areAllPtoLinkagesSet(flags);
+      allPtoActivationInput.value = newValue;
+    });
+
+    this.addStyleToPtoInput(allPtoActivationInput);
 
     return allPtoActivationInput;
   }
 
-  private addStyleToAllPtoActivationInput(allPtoActivationInput: BooleanInput): void {
+  private addStyleToPtoInput(allPtoActivationInput: BooleanInput): void {
     const label = allPtoActivationInput.captionLabel;
     ui.tooltip.bind(label, 'Activate all phosphothioate linkages');
     label.classList.add('ui-label-right');
@@ -142,8 +153,7 @@ class PatternEditorDialog {
       ui.h1('PTO'),
       ui.divH([
         this.createAllPtoActivationInput().root,
-        // firstPto[STRAND.SENSE].root,
-        // firstPto[STRAND.ANTISENSE].root,
+        ...this.createFirstPtoInputs().map((input) => input.root),
       ], {style:{gap:'12px'}})
     ]))
     // .add(ui.divH([
@@ -160,12 +170,26 @@ class PatternEditorDialog {
 
   private createFirstPtoInputs(): BooleanInput[] {
     return STRANDS.map((strand) => {
-      const firstPto = ui.boolInput(`First PTO ${strand}`, false, (value: boolean) => {
-        grok.shell.info(`First PTO ${strand} is ${value ? 'checked' : 'unchecked'}`);
+      const initialValue = this.isFirstPtoActive(strand);
+      const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue, );
+
+      firstPtoInput.onInput(() => {
+        const value = firstPtoInput.value!;
+        this.eventBus.setFirstPhosphorothioateLinkageFlag(strand, value);
       });
-      // this.addStyleToFirstPtoInput(firstPto);
-      return firstPto;
+
+      this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
+        const newValue = flags[strand][0];
+        firstPtoInput.value = newValue;
+      });
+      
+      this.addStyleToPtoInput(firstPtoInput);
+      return firstPtoInput;
     });
+  }
+
+  private isFirstPtoActive(strand: STRAND): boolean {
+    return this.initialPatternConfig.phosphorothioateLinkageFlags[strand][0];
   }
 
   private resetToInitialState(): void {
