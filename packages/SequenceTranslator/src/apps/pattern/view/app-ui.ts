@@ -8,7 +8,6 @@ import {
   DEFAULT_PATTERN_CONFIG as DEFAULT, MAX_SEQUENCE_LENGTH, STORAGE_NAME, STRAND, STRAND_LABEL, STRANDS, TERMINI, PATTERN_KEY, TERMINUS
 } from '../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
-import {isOverhangNucleotide} from '../model/helpers';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/utils';
 // import {renderNucleotidePattern} from './svg-utils/render-svg';
 
@@ -39,9 +38,9 @@ export class PatternLayoutHandler {
         updateSinglePhosphorothioateLinkageInput(strand, i);
         updateSingleNucleotideBaseInput(strand, i);
 
-        if (!isOverhangNucleotide(getBaseInputValue(strand, i))) {
-          nucleotideCounter++;
-        }
+        // if (!isOverhangNucleotide(getBaseInputValue(strand, i))) {
+        //   nucleotideCounter++;
+        // }
 
         const modificationControlGroup = generateSingleModificationControlGroup(strand, nucleotideCounter, i);
         modificationControls[strand].append(modificationControlGroup);
@@ -122,7 +121,7 @@ export class PatternLayoutHandler {
     }
 
     function generateSingleModificationControlGroup(strand: string, nucleotideCounter: number, index: number) {
-      const labelText = isOverhangNucleotide(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
+      const labelText = String(nucleotideCounter);
       const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
       const baseInputUI = ui.block75([nucleobaseInputs[strand][index].root]);
       const ptoLinkageUI = ui.div([ptoLinkageInputs[strand][index]]);

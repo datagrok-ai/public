@@ -108,7 +108,7 @@ class PatternControlsManager {
       if (length === null) return;
 
       if (length <= 0) {
-        grok.shell.warning(`Sequence length must be greater than 0}`);
+        grok.shell.warning(`Sequence length must be greater than 0`);
         input.value = 1;
       }
       if (length > MAX_SEQUENCE_LENGTH) {

@@ -20,7 +20,7 @@ export class PatternAppRightSection {
   };
 
   getLayout(): HTMLDivElement {
-    const numericLabelTogglesContainer = new NumericLabelToggles(this.eventBus).getContainer();
+    const numericLabelTogglesContainer = new NumericLabelVisibilityControls(this.eventBus).getContainer();
     const downloadAndEditControls = this.generateDownloadAndEditControls();
     const layout = ui.panel([
       this.svgDisplay,
@@ -52,7 +52,7 @@ export class PatternAppRightSection {
   }
 }
 
-class NumericLabelToggles {
+class NumericLabelVisibilityControls {
   private togglesContainer: HTMLDivElement = ui.div([]);
 
   constructor(

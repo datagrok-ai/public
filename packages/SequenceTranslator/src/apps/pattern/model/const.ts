@@ -34,7 +34,7 @@ export const STRAND_TO_END_TERMINUS_MAP = {
   }
 } as const;
 
-export const MAX_SEQUENCE_LENGTH = 35;
+export const MAX_SEQUENCE_LENGTH = 34;
 
 // todo: remove after refactoring
 export const enum PATTERN_KEY {

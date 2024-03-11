@@ -6,9 +6,10 @@ import * as DG from 'datagrok-api/dg';
 import _ from 'lodash';
 
 import {EventBus} from '../model/event-bus';
-import {BooleanInput} from './types';
-import {PatternConfiguration, PhosphorothioateLinkageFlags} from '../model/types';
-import {STRAND, STRANDS} from '../model/const';
+import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
+import {BooleanInput, StringInput} from './types';
+import {PatternConfiguration, PhosphorothioateLinkageFlags, StrandType} from '../model/types';
+import {STRAND, STRANDS, STRAND_LABEL} from '../model/const';
 
 export class PatternEditorDialog {
   private initialPatternConfig: PatternConfiguration;
@@ -25,12 +26,10 @@ export class PatternEditorDialog {
 
   private createDialog(): DG.Dialog {
     const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
+    const controls = new StrandControls(this.eventBus, this.initialPatternConfig).create();
     const dialog = ui.dialog('Edit pattern')
     .add(header)
-    // .add(ui.divH([
-    //   modificationSection[STRAND.SENSE],
-    //   modificationSection[STRAND.ANTISENSE],
-    // ], {style:{gap:'24px'}}))
+    .add(controls)
     .onOK(() => grok.shell.info('Applied'))
     .onCancel(() => this.resetToInitialState());
 
@@ -137,4 +136,98 @@ class StrandControls {
     private eventBus: EventBus,
     private initialPatternConfig: PatternConfiguration,
   ) { }
+
+  create(): HTMLDivElement {
+    const inputPanels = STRANDS.map((strand) => this.constructControlsPanel(strand));
+
+    const container = ui.divH(inputPanels, {style:{gap:'24px'}})
+    return container;
+  }
+
+  private constructControlsPanel(strand: StrandType): HTMLDivElement {
+    const header = this.constructHeader();
+    const modificationControls = this.createModificationControlsForStrand(strand);
+
+    const container = ui.block([
+      ui.h1(`${STRAND_LABEL[strand]}`),
+      header,
+      modificationControls,
+    ], {style: {paddingTop: '12px'}});
+
+    return container;
+  }
+
+  private constructHeader() {
+    return ui.divH([
+      ui.div([ui.divText('#')], {style: {width: '20px'}}),
+      ui.block75([ui.divText('Modification')]),
+      ui.div([ui.divText('PTO')]),
+    ]);
+  }
+
+  private createModificationControlsForStrand(strand: StrandType): HTMLDivElement {
+    // const phosphothioateFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
+
+    const nucleobaseInputs = this.createNucleobaseInputs(strand);
+    const container = ui.div(nucleobaseInputs.map((input) => input.root));
+    return container;
+  }
+
+  private createNucleobaseInputs(strand: StrandType): StringInput[] {
+    const nucleotideBaseChoices: string[] = Object.keys(AXOLABS_STYLE_MAP).sort();
+    const nucleotides = this.eventBus.getNucleotideSequences()[strand];
+    const choiceInputs = nucleotides.map((nucleotide, index) => {
+      const input = ui.choiceInput<string>('', nucleotide, nucleotideBaseChoices);
+      return input;
+    });
+
+    return choiceInputs;
+  }
+
+  private createPTOFlagInputs(strand: StrandType): BooleanInput[] {
+    const ptoLinkageFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
+    const ptoLinkageInputs = ptoLinkageFlags.map((flag, index) => {
+      const input = ui.boolInput('', flag);
+      return input;
+    });
+
+    return ptoLinkageInputs;
+  }
+
+  private createLabels(strand: StrandType): string[] {
+    const nucleotides = this.eventBus.getNucleotideSequences()[strand];
+    let nucleotideCounter = 1;
+    const labels = Array<string>(nucleotides.length);
+    for (let i = 0; i < nucleotides.length; i++) {
+      if (!this.isOverhangNucleotide(nucleotides[i])) {
+        labels[i] = String(nucleotideCounter);
+      } else {
+        nucleotides[i] = '';
+        nucleotideCounter++;
+      }
+      nucleotideCounter++;
+    }
+
+    return labels;
+  }
+
+  private createLabelDivs(strand: StrandType): HTMLElement[] {
+    const labels = this.createLabels(strand);
+    const labelDivs = labels.map((label) => ui.div([ui.label(label)], {style: {width: '20px'}}));
+
+    return labelDivs;
+  }
+
+  private isOverhangNucleotide(modification: string): boolean {
+    return modification.endsWith('(o)');
+  }
+
+  // private generateSingleModificationControlGroup(strand: string, nucleotideCounter: number, index: number) {
+  //   const labelText = isOverhangNucleotide(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
+  //   const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
+  //   const baseInputUI = ui.block75([nucleobaseInputs[strand][index].root]);
+  //   const ptoLinkageUI = ui.div([ptoLinkageInputs[strand][index]]);
+
+  //   return ui.divH([labelUI, baseInputUI, ptoLinkageUI], {style: {alignItems: 'center'}});
+  // }
 }
