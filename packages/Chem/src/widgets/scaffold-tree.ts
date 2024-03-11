@@ -1430,10 +1430,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);
-    paletteIcon.onclick = (e) => {
-      colorPicker.stringValue = (groupValue.chosenColor ?? groupValue.parentColor) ?? chosenColor;
-      e.stopImmediatePropagation()
-    };
+    paletteIcon.onclick = (e) => e.stopImmediatePropagation();
     paletteIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const colorIcon = ui.iconFA('circle', async () => {
