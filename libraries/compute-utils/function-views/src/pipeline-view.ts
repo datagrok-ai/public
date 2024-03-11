@@ -8,7 +8,7 @@ import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} 
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
-import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
+import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE, storageName} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
@@ -30,8 +30,6 @@ type StepState = {
 const getVisibleStepName = (step: StepState) => {
   return step.options?.friendlyName ?? step.func.name;
 };
-
-const storageName = `ModelStorage`;
 
 export class PipelineView extends FunctionView {
   public steps = {} as {[scriptNqName: string]: StepState};
@@ -682,7 +680,6 @@ export class PipelineView extends FunctionView {
 
       await this.onAfterRun(this.funcCall);
 
-      this.funcCall.options['isFavorite'] = undefined;
       if (this.funcCall.options['title'])
         this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
 

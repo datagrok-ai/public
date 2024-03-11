@@ -465,7 +465,7 @@ export class RichFunctionView extends FunctionView {
       if (simulatedFunccalls.length === 0) {
         compareDialog
           .addButton(compareSelected, async () => {
-            const fullHistoryRuns = await Promise.all([...historyRuns.selected.values()].map((funcCall) => historyUtils.loadRun(funcCall.id)));
+            const fullHistoryRuns = await Promise.all([...historyRuns.selected].map((funcCall) => historyUtils.loadRun(funcCall.id)));
             this.onComparisonLaunch([...fullHistoryRuns, ...uploadedRuns.selected.values()]);
 
             compareDialog.close();
