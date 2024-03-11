@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.26.0 (2024-03-11)
+
+### Features
+
+- RFV: Moved favorites to UserStorage
+
 ## 1.25.3 (2024-03-06)
 
 ### Features
