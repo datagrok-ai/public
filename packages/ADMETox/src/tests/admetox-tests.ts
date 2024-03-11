@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { runAdmetox, performChemicalPropertyPredictions, getQueryParams } from '../utils/admetox-utils';
-import { properties } from '../utils/const';
+//import { properties } from '../utils/const';
 
 category('Admetox', () => {
   let v: DG.TableView;
@@ -43,7 +43,9 @@ category('Admetox', () => {
     const expandBtn = admetoxDialog!.querySelectorAll('.d4-tree-view-tri')[0] as HTMLElement;
     expandBtn.click();
     await delay(2000);
+    //@ts-ignore
     const models = Object.keys(properties)
+    //@ts-ignore
       .flatMap(property => properties[property]['models'])
       .filter(obj => obj['skip'] !== true)
       .map(obj => obj['name']);
@@ -90,7 +92,7 @@ category('Admetox', () => {
         const molecules = grok.data.demo.molecules(moleculesCount);
         molecules.columns.remove('logD');
         const iterations = DG.Test.isInBenchmark ? 100 : 5;
-        const args = [molecules.toCsv(), getQueryParams(), 'false'];
+        const args = [molecules.toCsv(), await getQueryParams(), 'false'];
         return await runInLoop(iterations, runAdmetox, ...args);
     };
 
@@ -105,6 +107,7 @@ category('Admetox', () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const iterations = DG.Test.isInBenchmark ? 100 : 10;
+    //@ts-ignore
     const distributionModels = properties['Distribution'].models
       .filter((model: any) => model.skip !== true)
       .map((model: any) => model.name);

@@ -23,7 +23,7 @@
 
 .admetox-input-form {
   display: flex;
-  margin-left: -60px;
+  justify-content: flex-start;
   gap: 10px;
 }
 

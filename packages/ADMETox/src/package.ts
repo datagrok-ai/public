@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { getModelsSingle, addAllModelPredictions, addCalculationsToTable, addColorCoding, performChemicalPropertyPredictions } from './utils/admetox-utils';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
-import { properties } from './utils/const';
+import { properties } from './utils/admetox-utils';
 
 export const _package = new DG.Package();
 
@@ -21,7 +21,7 @@ export async function admetWidget(semValue: DG.SemanticValue): Promise<DG.Widget
   const smiles = await grok.functions.call('Chem:convertMolNotation',
     {molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles});
 
-  return getModelsSingle(smiles);
+  return await getModelsSingle(smiles);
 }
 
 //top-menu: Chem | ADME/Tox | Calculate...
@@ -74,6 +74,7 @@ export async function addFormViewer(molecules: DG.Column) {
 //input: string property
 //output: list<string> result
 export function getModels(property: string): string[] {
+  //@ts-ignore
   return properties[property].models
     .filter((model: any) => !model.skip)
     .map((model: any) => model.name);;

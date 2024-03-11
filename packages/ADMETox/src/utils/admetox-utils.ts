@@ -2,14 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { properties, models, template } from './const';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
-import $ from 'cash-dom';
 import '../css/admetox.css';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
-let propertiesNew: { [s: string]: unknown; } | ArrayLike<unknown>;
+export let properties: any;
 
 export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
@@ -36,6 +34,12 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
     //grok.log.error(error);
     return null;
   }
+}
+
+async function setProperties() {
+  const items = (await grok.dapi.files.list('System:AppData/Admetox/templates')).map((file) => file.fileName.split('.')[0]);
+  const propertiesJson = await grok.dapi.files.readAsText(`System:AppData/Admetox/templates/${items[0]}.json`);
+  properties = properties ? properties : JSON.parse(propertiesJson);
 }
 
 export async function addCalculationsToTable(viewTable: DG.DataFrame) {
@@ -94,14 +98,10 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[]) {
 
   for (const columnName of columnNames) {
     const col = tv.grid.col(columnName);
-    /*const model = Object.values(propertiesNew)
-      .flatMap((category: any) => category.models)
-      .find((m: any) => columnName.includes(m.name));*/
-    
-    //@ts-ignore
-    const model = template.subgroup.models.find(model => columnName.includes(model.name));
+    const model = properties.subgroup.flatMap((subg: any) => subg.models)
+      .find((model: any) => columnName.includes(model.name));
 
-    //if (!model!.coloring || model.coloring === "") continue;
+    if (!model!.coloring || model.coloring === "") continue;
 
     if (!col) continue;
 
@@ -124,7 +124,7 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[]) {
 }
 
 export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.DataFrame) {
-  const queryParams = getQueryParams();
+  const queryParams = await getQueryParams();
   try {
     await performChemicalPropertyPredictions(molCol, viewTable, queryParams, false);
   } catch (e) {
@@ -132,20 +132,14 @@ export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.Da
   }
 }
 
-export function getQueryParams(): string {
-  return Object.keys(properties)
-    .flatMap(property => properties[property]['models'])
-    .filter(obj => obj['skip'] !== true)
-    .map(obj => obj['name'])
-    .join(',');
+export async function getQueryParams(): Promise<string> {
+  await setProperties();
+  return properties.subgroup.flatMap((subg: any) => subg.models)
+      .map((model: any) => model.name).join(',');
 }
 
 function normalizeValue(value: number, minValue: number, maxValue: number): number {
   return (value - minValue) / (maxValue - minValue);
-}
-
-function minMaxNormalization(value: number, oldMin: number, oldMax: number, newMin: number = 0, newMax: number = 10): number {
-  return ((value - oldMin) * (newMax - newMin)) / (oldMax - oldMin) + newMin;
 }
 
 function addNormalizedColumns(table: DG.DataFrame, columnNames: string[]) {
@@ -157,7 +151,8 @@ function addNormalizedColumns(table: DG.DataFrame, columnNames: string[]) {
     columnNames[i] = savedColumnName;
     const newCol = table.columns.getOrCreate(savedColumnName, DG.TYPE.FLOAT, table.rowCount);
     newCol.init((i) => {
-      const model = Object.values(propertiesNew).flatMap((category: any) => category.models).find((m: any) => column.name.includes(m.name));
+      const model = properties.subgroup.flatMap((subg: any) => subg.models)
+      .find((model: any) => column.name.includes(model.name));
       const normalized = normalizeValue(column.get(i), column.stats.min, column.stats.max);
       if (model.preference === 'higher')
         return normalized;
@@ -166,14 +161,8 @@ function addNormalizedColumns(table: DG.DataFrame, columnNames: string[]) {
     newCol.setTag(DG.Tags.IncludeInCsvExport, 'false');
     newCol.setTag(DG.Tags.IncludeInBinaryExport, 'false');
   }
-  const sparkline = tv.grid.columns.add({cellType: 'sparkline'});
-  sparkline.settings = {columnNames: columnNames};
-  const radar = tv.grid.columns.add({cellType: 'radar'});
-  radar.settings = {columnNames: columnNames};
   const bar = tv.grid.columns.add({cellType: 'barchart'});
   bar.settings = {columnNames: columnNames};
-  const pie = tv.grid.columns.add({cellType: 'piechart'});
-  pie.settings = {columnNames: columnNames};
 }
 
 function addCustomTooltip(table: string) {
@@ -182,17 +171,15 @@ function addCustomTooltip(table: string) {
     if (cell.isTableCell) {
       const subgroup = cell.tableColumn!.name;
       const value = cell.cell.value;
-      //@ts-ignore
-      const model = template.subgroup.models.find(model => subgroup.includes(model.name));
-      //const model = Object.values(propertiesNew).flatMap((category: any) => category.models).find((m: any) => subgroup.includes(m.name));
+      const model = properties.subgroup.flatMap((subg: any) => subg.models)
+        .find((model: any) => subgroup.includes(model.name));
       if (!model) return;
-      const interpretation = model;
-  
+      const rangesProp = model.properties.find((prop: any) => prop.property.name === 'ranges');
+
       let tooltipContent = '';
-      //@ts-ignore
-      if (interpretation && interpretation.ranges) {
-        //@ts-ignore
-        for (let rangeKey in interpretation.ranges) {
+      if (model && rangesProp) {
+        const ranges = rangesProp.object.ranges;
+        for (let rangeKey in ranges) {
           const rangeParts = rangeKey.split(' ');
           const rangeType = rangeParts.includes('-') ? '-' : rangeParts[0];
           const rangeStart = rangeParts.includes('-') ? parseFloat(rangeParts[0]) : parseFloat(rangeParts[1]);
@@ -200,14 +187,16 @@ function addCustomTooltip(table: string) {
           if ((rangeType === '-' && value >= rangeStart && value <= rangeEnd) ||
               (rangeType === '<' && value < rangeStart) ||
               (rangeType === '>' && value > rangeStart)) {
-                //@ts-ignore
-            tooltipContent += `${interpretation.ranges[rangeKey as keyof typeof interpretation.ranges]}\n`;
+            tooltipContent += `${ranges[rangeKey as keyof typeof ranges]}\n`;
             break;
           }
         }
-      } else
+      } else {
+        const direction = model.properties.find((prop: any) => prop.property.name === 'direction');
+        const interpretation = direction ? direction.object.direction : '';
         tooltipContent += `${interpretation}\n`;
-    
+      }
+
       ui.tooltip.show(ui.divV([
         ui.divText(tooltipContent)
       ]), x, y);
@@ -225,6 +214,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
 
   const modelNames: string[] = table.columns.names();
   const updatedModelNames: string[] = [];
+  const models = properties.subgroup.flatMap((subgroup: any) => subgroup.models.map((model: any) => model));
 
   for (let i = 0; i < modelNames.length; ++i) {
     let column: DG.Column = table.columns.byName(modelNames[i]);
@@ -232,10 +222,10 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
     column.name = newColumnName;
     column.setTag(DG.TAGS.FORMAT, '0.00');
 
-    for (const key in models) {
-      if (modelNames[i].includes(key)) {
-        column.setTag(DG.TAGS.DESCRIPTION, models[key]);
-        column.setTag(DG.TAGS.UNITS, getModelUnits(key));
+    for (const model of models) {
+      if (model.name === modelNames[i]) {
+        column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
+        column.setTag(DG.TAGS.UNITS, model.properties.find((prop: any) => prop.property.name === 'units').object.units);
         break;
       }
     }
@@ -245,26 +235,16 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
   }
 
   addColorCoding(viewTable, updatedModelNames);
-  //addNormalizedColumns(viewTable, updatedModelNames);
+  addNormalizedColumns(viewTable, updatedModelNames);
   addCustomTooltip(viewTable.name);
 }
 
-export function getModelUnits(modelName: string): string {
-  //@ts-ignore
-  //const modelCategories = Object.values(propertiesNew['subgroup']);
-  //const model = modelCategories.flatMap((category: any) => category.models).find((m: any) => m.name === modelName);
-  const model = template.subgroup.models.find(model => modelName.includes(model.name));
-  //@ts-ignore
-  return model!.units!;
-};
-
-export function getModelsSingle(smiles: string): DG.Accordion {
+export async function getModelsSingle(smiles: string): Promise<DG.Accordion> {
   const acc = ui.accordion('ADME/Tox');
-
+  await setProperties();
   const update = async (result: HTMLDivElement, modelName: string) => {
-    const queryParams = properties[modelName]['models']
-      .filter((model: any) => !model.skip)
-      .map((model: any) => model.name);
+      const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
+        ['models'].map((model: any) => model.name);
 
     if (smiles === 'MALFORMED_INPUT_VALUE') {
       result.appendChild(ui.divText('The molecule is possibly malformed'));
@@ -287,40 +267,38 @@ export function getModelsSingle(smiles: string): DG.Accordion {
     }
   };
 
-  for (const property of Object.keys(properties)) {
-    const models = properties[property]['models'];
-    const shouldAddProperty = models.some((model: any) => !model.skip);
-
-    if (shouldAddProperty) {
-      const result = ui.div();
-      acc.addPane(property, () => {
-        update(result, property);
-        return result;
-      }, false);
-    }
+  for (const subgroup of properties.subgroup) {
+    const result = ui.div();
+    acc.addPane(subgroup.name, () => {
+      update(result, subgroup.name);
+      return result;
+    }, false);
   }
 
   return acc;
 }
 
-async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: any): Promise<void> {
-  //const jsonData = await _package.files.readAsText('template.json');
-  const items = (await grok.dapi.files.list('System:AppData/Admetox/templates')).map((file) => file.fileName.split('.')[0]);
-  const templates = ui.choiceInput('Template', items[0], items);
-  let templateCopy = template; 
-  const host = ui.div([]);
-  const tabsV = ui.tabControl(null, true);
-  templateCopy.subgroup.forEach((subgroup) => {
-    subgroup.models.forEach((model) => {
+function createTabControl(template: any, selected: string[]) {
+  let tabsV = ui.tabControl(null, true);
+  template.subgroup.forEach((subgroup: any) => {
+    subgroup.models.forEach((model: any) => {
       const inputs = ui.divV([]);
       inputs.classList.add('admetox-input-form');
       const properties = model.properties;
-      properties.map((p) => {
-        let object: any = {};
-        object[p.name] = p.defaultValue;
-        const prop = DG.Property.fromOptions(p);
+      properties.map((p: any) => {
+        const object = p.property.inputType === DG.InputType.Map ? {} : p.object;
+        const property = p.property;
+
+        const prop = DG.Property.fromOptions(property);
         const input = DG.InputBase.forProperty(prop, object);
-        input.enabled = p.enable;
+        input.enabled = property.enable;
+        const key = property.name as keyof typeof p.object;;
+        input.value = p.object[key];
+        input.addCaption(property.name);
+        input.onChanged(() => {
+          p.object[key] = input.value;
+          grok.shell.info(input.value);
+        });
         inputs.appendChild(input.root);
       });
       tabsV.addPane(model.name, () => inputs);
@@ -328,144 +306,51 @@ async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: an
   });
 
   tabsV.panes.forEach((pane)=> {
-    const functionCheck = ui.boolInput('', false//, (v:boolean) => {
-     // calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
-      /*if (!v)
-        $(pane.content).find('input').attr('disabled', 'true');
+    const functionCheck = ui.boolInput('', false, (v:boolean) => {
+      if (v)
+        selected.push(pane.name);
       else
-        $(pane.content).find('input').removeAttr('disabled');*/
-    /*}*/);
-    pane.header.appendChild(functionCheck.root);
+        selected.splice(selected.indexOf(pane.name), 1);
+    });
+    pane.header.insertBefore(functionCheck.root, pane.header.firstChild);
     pane.header.classList.add('admetox-pane-header');
   });
-  /*templateCopy.subgroup.models.forEach((model) => {
-    const inputs = ui.divV([]);
-    Object.entries(model.ranges).map(([range, meaning]) => {
-      const input = ui.divH([
-        ui.stringInput('', range, (value: string) => {
-          const newRanges = { ...model.ranges }; // Create a shallow copy of the ranges object
-          const meaningValue = newRanges[range as keyof typeof model.ranges]; // Store the meaning value of the old range
-          delete newRanges[range as keyof typeof model.ranges]; // Delete the old range
-          newRanges[value as keyof typeof model.ranges] = meaningValue; // Add the new range with the old meaning value
-          model.ranges = newRanges;
-          range = value;
-        }).root,
-        ui.stringInput('', meaning, (value: string) => {
-          const r = range as keyof typeof model.ranges;
-          model.ranges[r] = value;
-        }).root
-      ]);
-      inputs.appendChild(input);
-    });
-    inputs.appendChild(ui.boolInput('Desirable', true).root);
-    tabsV.addPane(model.name, () => inputs);
-  });*/
+  return {tabsV, selected};
+}
+
+async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: any): Promise<void> {
+  let selectedItems: string[] = [];
+  await setProperties();
+  const items = (await grok.dapi.files.list('System:AppData/Admetox/templates')).map((file) => file.fileName.split('.')[0]);
+  const result = createTabControl(properties, selectedItems);
+  const tabsV = result.tabsV;
+  selectedItems = result.selected;
+  const templates = ui.choiceInput('Template', items[0], items);
+  let templateCopy = properties;
+  const loadButton = ui.button('Load', () => {
+    DG.Utils.download('template.json', JSON.stringify(templateCopy));
+  });
+  const buttons = ui.divH([loadButton]);
+  const host = ui.div([]);
+  
   host.appendChild(tabsV.root);
 
-  
-  /*const tree = ui.tree();
-  tree.root.classList.add('admetox-dialog-tree');
-
-  const groups: { [_: string]: any } = {};
-  const items: DG.TreeViewNode[] = [];
-  const selectedModels: { [_: string]: string } = {};
-
-  const checkAll = (val: boolean) => {
-    for (const g of Object.values(groups))
-      g.checked = val;
-    for (const i of items)
-      i.checked = val;
-  };
-
-  const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => checkAll(true)});
-  selectAll.classList.add('admetox-dialog-select-all');
-  const selectNone = ui.label('None', {classes: 'd4-link-label', onClick: () => checkAll(false)});
-  const countLabel = ui.label('0 checked');
-  countLabel.classList.add('admetox-dialog-count');
-
-  const keys = Object.keys(properties);
-  for (const groupName of keys) {
-    const group = tree.group(groupName, null, false);
-    group.enableCheckBox();
-    groups[groupName] = group;
-
-    group.checkBox!.onchange = (_e) => {
-      countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-      if (group.checked) 
-        selectedModels[group.text] = group.text;
-      group.items.filter((i) => {
-        if (i.checked) 
-          selectedModels[i.text] = group.text;
-      })
-    };
-
-    for (const property of properties[groupName]['models']) {
-      if (property['skip'] === false) {
-        const item = group.item(property['name'], property);
-        item.enableCheckBox(selected.includes(property['name']));
-        items.push(item);
-        
-        item.checkBox!.onchange = (_e) => {
-          countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-          if (item.checked) 
-            selectedModels[item.text] = groupName;
-        };
-      }
-    }
-
-    if (group.items.length === 0) 
-      group.remove(); 
-    
-    checkAll(false);
-  }
-
-  const saveInputHistory = (): any => {
-    let resultHistory: { [_: string]: any } = {};
-    const modelNames = Object.keys(selectedModels);
-    for (const modelName of modelNames) 
-      resultHistory[modelName] = selectedModels[modelName];
-    return resultHistory;
-  }
-
-  const loadInputHistory = (history: any): void => {
-    checkAll(false);
-    const keys: string[] = Object.keys(history);
-    for (const key of keys) {
-      groups[history[key]].items.filter(function (i: any) {
-        if (i.text === key) 
-          i.checked = true;
-      })
-      if (key === history[key])
-        groups[history[key]].checked = true;
-    }
-    countLabel.textContent = `${keys.length} checked`;
-  }*/
-  
   let smilesCol = viewTable.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  /*const molInput = ui.columnInput('Molecules', viewTable, smilesCol, async (col: DG.Column) => {
+  const molInput = ui.columnInput('Molecules', viewTable, smilesCol, async (col: DG.Column) => {
     smilesCol = col;
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
-  molInput.root.classList.add('admetox-mol-input');
-  const boolInput = ui.boolInput('Probability', false);
-  boolInput.root.classList.add('admetox-bool-input');*/
 
   const dlg = ui.dialog('ADME/Tox');
   dlg
+    .add(molInput)
     .add(templates)
     .add(host)
-    //.add(molInput)
-    //.add(ui.divH([selectAll, selectNone, countLabel]))
-    //.add(tree.root)
-    //.add(boolInput)
+    .add(buttons)
     .onOK(() => {
-      propertiesNew = templateCopy;
-      onOK(['Caco2','PPBR'], false, smilesCol);
+      properties = templateCopy;
+      onOK(selectedItems, false, smilesCol);
     })
     .show()
-    //.history(
-      //() => saveInputHistory(),
-      //(x) => loadInputHistory(x) 
-    //);
 }
 
 async function getSelected() : Promise<any> {
