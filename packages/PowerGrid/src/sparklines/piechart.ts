@@ -10,7 +10,7 @@ import {
   isSummarySettingsBase
 } from './shared';
 
-const minRadius = 10;
+let minRadius: number;
 
 enum PieChartStyle {
   Radius = 'Radius',
@@ -54,7 +54,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   if (settings.style == PieChartStyle.Radius) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
-    r = r < minRadius ? minRadius : r;
+    r = Math.max(r, minRadius);
   } else {
     const sum = getColumnsSum(cols, row);
     r = (gridCell.bounds.width - 4) / 2;
@@ -115,13 +115,14 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const row: number = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
+    minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius) {
       for (let i = 0; i < cols.length; i++) {
         if (cols[i].isNone(row))
           continue;
 
         let r = cols[i].scale(row) * box.width / 2;
-        r = r < minRadius ? minRadius : r;
+        r = Math.max(r, minRadius);
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r,
