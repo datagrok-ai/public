@@ -9,7 +9,7 @@ import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult}
   from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import { CompositionPipeline } from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import { CompositionPipeline, PipelineCompositionConfiguration } from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
@@ -414,6 +414,90 @@ export async function TestCompositionPipeline5() {
       enableOnStart: true,
     }]
   });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+
+//name: TestCompositionPipeline6
+export async function TestCompositionPipeline6() {
+  const conf1 = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper6',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['step2', 'a'],
+    }, {
+      id: 'link2',
+      from: ['step2', 'res'],
+      to: ['testPipeline2', 'step1', 'a'],
+    }]
+  };
+  const conf2 = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper6',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn1',
+      },
+    ]
+  }
+  const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline7
+export async function TestCompositionPipeline7() {
+  const conf1: PipelineCompositionConfiguration = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper7',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+    ],
+    stepsToAdd: [[
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+      ['testPipeline2', 'step1']
+    ]],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['testPipeline2', 'step1', 'a'],
+    }, {
+      id: 'link2',
+      from: ['testPipeline2', 'step1', 'res'],
+      to: ['testPipeline2', 'step2', 'a'],
+    }]
+  };
+  const conf2 = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper7',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestFn1',
+      },
+    ]
+  }
+  const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
 }

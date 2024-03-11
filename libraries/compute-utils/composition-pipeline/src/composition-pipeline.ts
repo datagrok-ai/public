@@ -699,8 +699,8 @@ export class CompositionPipeline {
   private isInit = false;
 
   static compose(
-    items: PipelineConfigVariants[],
     config: PipelineCompositionConfiguration,
+    items: PipelineConfigVariants[],
   ): CompositionGraphConfig {
     const nestedPipelines: {
       [key: PathKey]: PipelineConfigVariants;

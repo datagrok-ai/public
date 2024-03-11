@@ -330,7 +330,7 @@ category('CompositionPipeline composition config', async () => {
   };
 
   test('2 configs simple', async () => {
-    const composedConfig = CompositionPipeline.compose([sconfig1], sconfig2);
+    const composedConfig = CompositionPipeline.compose(sconfig2, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -339,7 +339,7 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs simple configs', async () => {
-    const composedConfig = CompositionPipeline.compose([sconfig1, sconfig2], sconfig3);
+    const composedConfig = CompositionPipeline.compose(sconfig3, [sconfig1, sconfig2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -348,7 +348,7 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs simple nested composition',  async () => {
-    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([sconfig1], sconfig2)], sconfig3);
+    const composedConfig = CompositionPipeline.compose(sconfig3, [CompositionPipeline.compose(sconfig2, [sconfig1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -357,7 +357,7 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('2 configs', async () => {
-    const composedConfig = CompositionPipeline.compose([conf1], conf2);
+    const composedConfig = CompositionPipeline.compose(conf2, [conf1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -366,7 +366,7 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs', async () => {
-    const composedConfig = CompositionPipeline.compose([conf1, conf2], conf3);
+    const composedConfig = CompositionPipeline.compose(conf3, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -375,7 +375,7 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs nested composition',  async () => {
-    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], conf2)], conf3);
+    const composedConfig = CompositionPipeline.compose(conf3, [CompositionPipeline.compose(conf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -393,7 +393,7 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline2', 'link1']
       ]
     };
-    const composedConfig = CompositionPipeline.compose([conf1, conf2], cconf);
+    const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -411,7 +411,7 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline2', 'link1']
       ]
     };
-    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], conf2)], cconf);
+    const composedConfig = CompositionPipeline.compose(cconf, [CompositionPipeline.compose(conf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -445,7 +445,7 @@ category('CompositionPipeline composition config', async () => {
         }, ['testPipeline2', 'step2']]
       ]
     };
-    const composedConfig = CompositionPipeline.compose([conf1, conf2], cconf);
+    const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -482,7 +482,7 @@ category('CompositionPipeline composition config', async () => {
         }, ['testPipeline1', 'step2']]
       ]
     };
-    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], cconf2)], cconf3);
+    const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -501,7 +501,7 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline1', 'step1'],
       ]]
     };
-    const composedConfig = CompositionPipeline.compose([sconfig1], cconf);
+    const composedConfig = CompositionPipeline.compose(cconf, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -523,7 +523,7 @@ category('CompositionPipeline composition config', async () => {
         'testPipeline1', 'step2'
       ]]
     };
-    const composedConfig = CompositionPipeline.compose([sconfig1], cconf);
+    const composedConfig = CompositionPipeline.compose(cconf, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
@@ -552,13 +552,12 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline1', 'step2'],
       ]],
     };
-    const composedConfig = CompositionPipeline.compose([CompositionPipeline.compose([conf1], cconf2)], cconf3);
+    const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
     console.log(actual);
   });
-
 
 });
