@@ -976,7 +976,8 @@ export class CompositionPipeline {
 
 
   private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
-    const nodePath = this.updateFullPathLink(conf, path);
+    this.updateFullPathLink(conf, pipelinePath, false);
+    const nodePath = this.updateFullPathNode(conf, path);
     const viewPath = nodePath.slice(0, nodePath.length - 1);
     const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
@@ -999,7 +1000,7 @@ export class CompositionPipeline {
   }
 
   private processLinkConfig(conf: PipelineLinkConfiguration, pipelinePath: ItemPath, toRemove: Set<string>) {
-    const linkPath= this.updateFullPathLink(conf, pipelinePath);
+    const linkPath = this.updateFullPathLink(conf, pipelinePath);
     const linkKey = pathToKey(linkPath);
     if (toRemove.has(linkKey))
       return;
@@ -1008,7 +1009,7 @@ export class CompositionPipeline {
     return conf;
   }
 
-  private updateFullPathLink(target: { id: string, from?: ItemPath | ItemPath[], to?: ItemPath | ItemPath[] }, currentPath: ItemPath) {
+  private updateFullPathLink(target: { id: string, from?: ItemPath | ItemPath[], to?: ItemPath | ItemPath[] }, currentPath: ItemPath, updateId = true) {
     if (target.from) {
       if (Array.isArray(target.from[0]))
         target.from = target.from.map((path) => [...currentPath, ...path]);
@@ -1023,7 +1024,10 @@ export class CompositionPipeline {
         target.to = [...currentPath, ...(target.to as ItemPath)];
     }
 
-    return this.updateFullPathNode(target, currentPath);
+    if (updateId)
+      return this.updateFullPathNode(target, currentPath);
+
+    return [target.id];
   }
 
   private updateFullPathNode(target: { id: string }, path: ItemPath) {
