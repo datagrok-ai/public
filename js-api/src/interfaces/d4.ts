@@ -155,6 +155,9 @@ export interface IHistogramLookSettings {
   /// Requires *Split Column Name* to be set.
   normalizeValues: boolean;
 
+  /// If true, split are shown as stacked bins
+  splitStack: boolean;
+
   /// Spline tension in case multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   splineTension: number;
@@ -200,6 +203,8 @@ export interface IHistogramLookSettings {
   fillSpline: boolean;
 
   showColumnSelector: boolean;
+
+  showSplitSelector: boolean;
 
   showRangeSlider: boolean;
 
@@ -287,6 +292,15 @@ export interface IFiltersLookSettings {
   showMinMax: boolean;
 
   showSearchBox: boolean;
+
+  // shows the current mouse over row in the table using grey vertical bar in corresponding row
+  showMouseOverRow: boolean;
+
+  // shows the current row in the table using green vertical bar in corresponding row
+  showCurrentRow: boolean;
+
+  // shouws the mouse over group porportion in the filter (similar to how selection proportion is shown).
+  showMouseOverGroupRow: boolean;
 
   /// Show a filter that represents all boolean columns in the table.
   showBoolCombinedFilter: boolean;
@@ -1887,8 +1901,11 @@ export interface IMarkupViewerLookSettings {
   markupEnabled: boolean;
 
   //StreamController _changes;
+  //StreamController _changes;
   allowDynamicMenus: boolean;
 
+  // Properties common for all viewers
+  // todo: use code generation
   // Properties common for all viewers
   // todo: use code generation
   showContextMenu: boolean;
@@ -1901,8 +1918,12 @@ export interface IMarkupViewerLookSettings {
 
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
+  // Viewer description that gets shown at the *Descriptor Position*.
+  // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
   // Help to be shown when user clicks on the '?' icon on top.
   // Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
@@ -2077,8 +2098,11 @@ export interface ITileViewerLookSettings {
   lanes: Array<string>;
 
   //StreamController _changes;
+  //StreamController _changes;
   allowDynamicMenus: boolean;
 
+  // Properties common for all viewers
+  // todo: use code generation
   // Properties common for all viewers
   // todo: use code generation
   showContextMenu: boolean;
@@ -2091,8 +2115,12 @@ export interface ITileViewerLookSettings {
 
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
+  // Viewer description that gets shown at the *Descriptor Position*.
+  // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
   // Help to be shown when user clicks on the '?' icon on top.
   // Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
