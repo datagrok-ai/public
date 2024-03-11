@@ -59,6 +59,10 @@ export async function multipleSequenceAlignmentUI(
     const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);
     const msaParamsButton = ui.button('Alignment parameters', () => {
       msaParamsDiv.hidden = !msaParamsDiv.hidden;
+      [gapOpenInput, gapExtendInput, terminalGapInput].forEach((input) => {
+        input.root.style.removeProperty('max-width');
+        input.captionLabel.style.removeProperty('max-width');
+      });
     }, 'Adjust alignment parameters such as penalties for opening and extending gaps');
     msaParamsButton.classList.add('msa-params-button');
     msaParamsDiv.hidden = true;

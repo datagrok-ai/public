@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.11.39 (2024-03-11)
+
+### Bug fixes
+
+* GROK-15150: Fix display hidden/showed inputs
+
 ## 2.11.38 (2024-03-08)
 
 ### Bug fixes
