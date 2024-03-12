@@ -182,7 +182,7 @@ export class SunburstViewer extends EChartViewer {
   onTableAttached(propertyChanged?: boolean): void {
     let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
-    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length);
+    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length && !col.name.startsWith('~'));
 
     if (categoricalColumns.length < 1)
       return;
