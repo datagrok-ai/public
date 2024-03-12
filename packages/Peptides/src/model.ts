@@ -1126,6 +1126,7 @@ export class PeptidesModel {
       activityColumnName: this.settings!.activityColumnName,
       sequenceColumnName: this.settings!.sequenceColumnName,
       minActivityDelta: 0,
+      activityTarget: C.ACTIVITY_TARGET.HIGH,
     };
     const monomerPosition = await this.df.plot
       .fromType(VIEWER_TYPE.MONOMER_POSITION, viewerProperties) as MonomerPosition;
@@ -1147,6 +1148,7 @@ export class PeptidesModel {
       sequenceColumnName: this.settings!.sequenceColumnName,
       minActivityDelta: 0,
       maxMutations: 1,
+      activityTarget: C.ACTIVITY_TARGET.HIGH,
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;

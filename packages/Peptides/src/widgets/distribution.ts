@@ -81,7 +81,7 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
   }
 
   const inputsHost = ui.form(inputsArray);
-  $(inputsHost).css('display', 'inline-flex');
+  // $(inputsHost).css('display', 'inline-flex');
   return ui.divV([inputsHost, distributionCategoriesHost]);
 }
 

@@ -10,7 +10,7 @@ import * as rxjs from 'rxjs';
 import {showTooltipAt, TooltipOptions} from './tooltips';
 import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './statistics';
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
-import {SARViewer} from '../viewers/sar-viewer';
+import {MonomerPosition, MostPotentResidues, SARViewer} from '../viewers/sar-viewer';
 
 /**
  * Renders cell selection border.
@@ -44,37 +44,61 @@ export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
  */
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, viewer: SARViewer, bounds: DG.Rect): void {
-  const positionStats = viewer.monomerPositionStats[currentPosition];
-  const pVal = positionStats![currentMonomer]!.pValue;
-  const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
-
-  // Transform p-value to increase intensity for smaller values and decrease for larger values
-  const maxPValComplement = 1 - positionStats!.general.maxPValue;
-  const minPValComplement = 1 - positionStats!.general.minPValue;
-  const pValCentering = Math.min(maxPValComplement, minPValComplement);
-  const centeredMaxPValComplement = maxPValComplement - pValCentering;
-  const centeredMinPValComplement = minPValComplement - pValCentering;
-  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement);
-  const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
-
-  const x = currentMeanDifference >= 0 ? pValComplement : -pValComplement;
-  const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
-    DG.Color.scaleColor(x, -centeredPValLimit, centeredPValLimit, 255));
-
   const halfWidth = bounds.width / 2;
-  const maxMeanDifference = Math.max(Math.abs(viewer.monomerPositionStats.general.minMeanDifference),
-    viewer.monomerPositionStats.general.maxMeanDifference);
-  const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
-  const maxRadius = 0.9 * halfWidth / 2; // Fill at most 90% of the half of the cell width
-  const radius = Math.floor(maxRadius * rCoef);
-
   const midX = Math.ceil(bounds.x + 1 + halfWidth);
   const midY = Math.ceil(bounds.y + 1 + bounds.height / 2);
-  canvasContext.beginPath();
-  canvasContext.fillStyle = coef;
-  canvasContext.arc(midX - halfWidth / 2, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
-  canvasContext.closePath();
-  canvasContext.fill();
+  const maxRadius = 0.9 * halfWidth / 2; // Fill at most 90% of the half of the cell width
+  // render most potent residues cells according to the p-value (color) and mean difference (size)
+  if (viewer instanceof MostPotentResidues) {
+    const positionStats = viewer.monomerPositionStats[currentPosition];
+    const pVal = positionStats![currentMonomer]!.pValue;
+    const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
+
+    // Transform p-value to increase intensity for smaller values and decrease for larger values
+    const maxPValComplement = 1 - positionStats!.general.maxPValue;
+    const minPValComplement = 1 - positionStats!.general.minPValue;
+    const pValCentering = Math.min(maxPValComplement, minPValComplement);
+    const centeredMaxPValComplement = maxPValComplement - pValCentering;
+    const centeredMinPValComplement = minPValComplement - pValCentering;
+    const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement);
+    const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
+
+    const x = currentMeanDifference >= 0 ? pValComplement : -pValComplement;
+    const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
+      DG.Color.scaleColor(x, -centeredPValLimit, centeredPValLimit, 255));
+
+
+    const maxMeanDifference = Math.max(Math.abs(viewer.monomerPositionStats.general.minMeanDifference),
+      viewer.monomerPositionStats.general.maxMeanDifference);
+    const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
+
+    const radius = Math.floor(maxRadius * rCoef);
+
+
+    canvasContext.beginPath();
+    canvasContext.fillStyle = coef;
+    canvasContext.arc(midX - halfWidth / 2, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
+    canvasContext.closePath();
+    canvasContext.fill();
+  } else if (viewer instanceof MonomerPosition && viewer.mutationCliffs && viewer.cliffStats) {
+    const maxCount = viewer.cliffStats.maxCount;
+    const minDiff = viewer.cliffStats.minDiff;
+    const maxDiff = viewer.cliffStats.maxDiff;
+    const stats = viewer.cliffStats?.stats?.get(currentMonomer)?.get(currentPosition);
+    if (stats) {
+      const count = stats.count;
+      const diff = stats.meanDifference;
+      const radius = Math.floor(Math.abs((count / Math.max(maxCount, 2))) * maxRadius);
+      const diffScalingFactor = Math.max(Math.abs(minDiff), Math.abs(maxDiff));
+      const colorCoef = DG.Color.toHtml(diff === null ? DG.Color.lightLightGray :
+        DG.Color.scaleColor(diff, -diffScalingFactor, diffScalingFactor, 255));
+      canvasContext.beginPath();
+      canvasContext.fillStyle = colorCoef;
+      canvasContext.arc(midX - halfWidth / 2, midY, radius < 3 || count == 0 ? 3 : radius, 0, Math.PI * 2, true);
+      canvasContext.closePath();
+      canvasContext.fill();
+    }
+  }
 
   canvasContext.textBaseline = 'middle';
   canvasContext.textAlign = 'end';
@@ -404,6 +428,8 @@ function requestWebLogoAction(ev: MouseEvent, monomerPosition: type.SelectionIte
 function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBounds: WebLogoBounds,
 ): type.SelectionItem | null {
   const barCoords = webLogoBounds[cell.tableColumn!.name];
+  if (!barCoords)
+    return null;
   for (const [monomer, coords] of Object.entries(barCoords)) {
     const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
     const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;

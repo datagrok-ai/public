@@ -44,6 +44,44 @@ export async function findMutations(activityArray: type.RawData, monomerInfoArra
 }
 
 /**
+ * Calculates statistics for mutation cliffs, used for mutation cliffst table (coloring, tooltips, distribution...)
+ * @param cliffs - mutation cliffs data
+ * @param activityArray - array of activities
+ *
+ */
+export function calculateCliffsStatistics(
+  cliffs: type.MutationCliffs, activityArray: type.RawData,
+): type.MutationCliffStats {
+  const res: type.MutationCliffStats['stats'] = new Map();
+  let minDiff = 999999; let maxDiff = -999999; let minCount = 2; let maxCount = 2;
+  for (const monomer of cliffs.keys()) {
+    const monomerStatsMap: Map<string, StatsItem> = new Map();
+    res.set(monomer, monomerStatsMap);
+    // monomer substitutions map from mutations cliffs
+    const monomerSubMap = cliffs.get(monomer)!;
+    for (const position of monomerSubMap.keys()) {
+      const subMap = monomerSubMap.get(position)!;
+      const mask = new BitArray(activityArray.length, false);
+      if (subMap.size === 0)
+        continue;
+      for (const index of subMap.keys()) {
+        mask.setFast(index, true);
+        const toIndexes = subMap.get(index)!;
+        toIndexes.forEach((i) => mask.setFast(i, true));
+      }
+      const stats = getStats(activityArray, mask);
+      minDiff = Math.min(minDiff, stats.meanDifference);
+      maxDiff = Math.max(maxDiff, stats.meanDifference);
+      minCount = Math.min(minCount, stats.count);
+      maxCount = Math.max(maxCount, stats.count);
+      monomerStatsMap.set(position, stats);
+    }
+  }
+  return {stats: res, minDiff, maxDiff, minCount, maxCount};
+}
+
+
+/**
  * Calculates statistics for each monomer position.
  * @param activityCol - Activity column.
  * @param filter - Dataframe filter to consider.
