@@ -285,4 +285,14 @@ category('Dapi: functions', async () => {
   
     expect(loadedFunc.package.name, 'ApiTests');  
   });
+
+  test('Filter functions by nqName (script)', async () => {
+    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageFunction"`).list();
+    expect(loadedFuncCalls.length, 1);
+  }, {skipReason: 'GROK-15175'});
+
+  test('Filter functions by nqName (package function)', async () => {
+    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageScript"`).list();
+    expect(loadedFuncCalls.length, 1);
+  }, {skipReason: 'GROK-15175'});
 });
