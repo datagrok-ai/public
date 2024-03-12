@@ -89,6 +89,7 @@ class NumericLabelVisibilityControls {
         initialValue,
         (value: boolean) => this.handleNumericLabelToggle(nucleotide, value)
       );
+      $(input.root).css('padding-right', '20px');
       inputBases.push(input);
     });
 

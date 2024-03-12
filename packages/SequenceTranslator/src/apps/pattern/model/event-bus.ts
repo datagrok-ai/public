@@ -273,6 +273,8 @@ export class EventBus {
   setNucleotideBase(strand: StrandType, index: number, value: string) {
     const sequences = this.getNucleotideSequences();
     sequences[strand][index] = value;
+    const labelledModifications = this.getModificationsWithNumericLabels();
+    this.updateModificationsWithNumericLabels(labelledModifications.concat(value));
     this.updateNucleotideSequences(sequences);
   }
 }

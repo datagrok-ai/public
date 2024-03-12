@@ -9,7 +9,6 @@ import {
 } from '../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../model/types';
 import {generateExample, translateSequence, getShortName, isPatternCreatedByCurrentUser, findDuplicates, addColumnWithIds, addColumnWithTranslatedSequences} from '../model/utils';
-// import {renderNucleotidePattern} from './svg-utils/render-svg';
 
 import { BooleanInput, StringInput} from './types';
 import {LegacyPatternConfig} from '../model/types';

@@ -34,7 +34,7 @@ export class PatternEditorDialog {
     const dialog = ui.dialog('Edit pattern')
     .add(header)
     .add(controls)
-    // .onOK(() => grok.shell.info('Applied'))
+    .onOK(() => {})
     .onCancel(() => this.resetToInitialState());
 
     dialog.onClose.subscribe(() => isDialogOpen = false);

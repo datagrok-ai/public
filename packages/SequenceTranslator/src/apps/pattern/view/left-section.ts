@@ -198,7 +198,7 @@ class PatternChoiceControls {
 
   private handlePatternChoice(patternName: string) {
     this.selectedPattern = patternName;
-    grok.shell.info(`Pattern ${patternName} selected`);
+    // grok.shell.info(`Pattern ${patternName} selected`);
   }
 
   private isCurrentUserSelected(): boolean {
@@ -403,7 +403,7 @@ class TableInputManager {
     if (!table) return;
     if (!this.isTableDisplayed(table))
       this.displayTable(table);
-    grok.shell.info(`Table ${table?.name} selected`);
+    // grok.shell.info(`Table ${table?.name} selected`);
   }
 
   private isTableDisplayed(table: DG.DataFrame): boolean {
