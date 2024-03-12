@@ -93,7 +93,7 @@ export class SunburstViewer extends EChartViewer {
       const selectedSectors: string[] = [];
       if (!params.data.path)
         return;
-      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
         this.handleDataframeFiltering(path, this.dataFrame);
@@ -117,7 +117,7 @@ export class SunburstViewer extends EChartViewer {
       }
     });
     this.chart.on('mouseover', async (params: any) => {
-      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const matchDf = this.dataFrame.clone();
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
