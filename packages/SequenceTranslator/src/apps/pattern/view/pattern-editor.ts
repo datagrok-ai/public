@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import _ from 'lodash';
+import $ from 'cash-dom';
 
 import {EventBus} from '../model/event-bus';
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
@@ -132,10 +133,16 @@ class HeaderControls {
 }
 
 class StrandControls {
+  private displayedInputLabels: Map<StrandType, string[]>;
+
   constructor(
     private eventBus: EventBus,
     private initialPatternConfig: PatternConfiguration,
-  ) { }
+  ) {
+    this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
+      this.displayedInputLabels = this.computeDisplayedInputLabels();
+    });
+  }
 
   create(): HTMLDivElement {
     const inputPanels = STRANDS.map((strand) => this.constructControlsPanel(strand));
@@ -146,7 +153,7 @@ class StrandControls {
 
   private constructControlsPanel(strand: StrandType): HTMLDivElement {
     const header = this.constructHeader();
-    const modificationControls = this.createModificationControlsForStrand(strand);
+    const modificationControls = this.createControls(strand);
 
     const container = ui.block([
       ui.h1(`${STRAND_LABEL[strand]}`),
@@ -165,11 +172,15 @@ class StrandControls {
     ]);
   }
 
-  private createModificationControlsForStrand(strand: StrandType): HTMLDivElement {
+  private createControls(strand: StrandType): HTMLDivElement {
     // const phosphothioateFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
 
     const nucleobaseInputs = this.createNucleobaseInputs(strand);
-    const container = ui.div(nucleobaseInputs.map((input) => input.root));
+    const labels = this.createLabelDivs(strand);
+    const container = ui.div(nucleobaseInputs.map(
+      (nucleobaseInput, idx) => {
+        return ui.divH([labels[idx], nucleobaseInput.root], {style: {alignItems: 'center'}});
+    }));
     return container;
   }
 
@@ -194,29 +205,51 @@ class StrandControls {
     return ptoLinkageInputs;
   }
 
-  private createLabels(strand: StrandType): string[] {
-    const nucleotides = this.eventBus.getNucleotideSequences()[strand];
-    let nucleotideCounter = 1;
-    const labels = Array<string>(nucleotides.length);
-    for (let i = 0; i < nucleotides.length; i++) {
-      if (!this.isOverhangNucleotide(nucleotides[i])) {
-        labels[i] = String(nucleotideCounter);
-      } else {
-        nucleotides[i] = '';
-        nucleotideCounter++;
-      }
-      nucleotideCounter++;
-    }
+  private computeDisplayedInputLabels(): Map<StrandType, string[]> {
+    const nucleotides = this.eventBus.getNucleotideSequences();
+    const labels = new Map<StrandType, string[]>();
+    STRANDS.forEach((strand) => {
+      let counter = 1;
+      const strandNucleotides = nucleotides[strand];
+      const strandLabels = strandNucleotides.map((nucleotide) => {
+        if (this.isOverhangNucleotide(nucleotide)) {
+          return '';
+        }
+        const label = String(counter);
+        counter++;
+        return label;
+      });
+      labels.set(strand, strandLabels);
+    });
 
     return labels;
   }
 
   private createLabelDivs(strand: StrandType): HTMLElement[] {
     const labels = this.createLabels(strand);
-    const labelDivs = labels.map((label) => ui.div([ui.label(label)], {style: {width: '20px'}}));
+    const labelDivs = labels.map((label) => ui.div([label], {style: {width: '20px'}}));
+
+    this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
+      const newLabels = this.createLabels(strand);
+      newLabels.forEach((newLabel, index) => {
+        $(labelDivs[index]).empty();
+        $(labelDivs[index]).append(newLabel);
+      });
+    });
 
     return labelDivs;
   }
+
+  private createLabels(strand: StrandType): HTMLLabelElement[] {
+    const nucleotides = this.eventBus.getNucleotideSequences()[strand];
+    const labels = nucleotides.map((_, index) => {
+      const labelText = this.displayedInputLabels.get(strand)![index];
+      return ui.label(labelText);
+    });
+
+    return labels;
+  }
+
 
   private isOverhangNucleotide(modification: string): boolean {
     return modification.endsWith('(o)');

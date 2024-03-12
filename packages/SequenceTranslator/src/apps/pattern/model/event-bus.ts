@@ -58,6 +58,10 @@ export class EventBus {
     this._uniqueNucleotideBases$.next(Array.from(uniqueNucleotideBases).sort());
   }
 
+  get nucleotideSequencesChanged$(): rxjs.Observable<NucleotideSequences> {
+    return this._nucleotideSequences$.asObservable();
+  }
+
   private initializeDefaultState(defaults: PatternDefaultsProvider) {
     this._patternName$ = new rxjs.BehaviorSubject(defaults.getPatternName());
     this._isAntisenseStrandVisible$ = new rxjs.BehaviorSubject(defaults.getAntiSenseStrandVisibilityFlag());
