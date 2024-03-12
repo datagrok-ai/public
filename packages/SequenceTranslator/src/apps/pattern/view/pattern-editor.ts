@@ -12,6 +12,8 @@ import {BooleanInput, StringInput} from './types';
 import {PatternConfiguration, PhosphorothioateLinkageFlags, StrandType} from '../model/types';
 import {STRAND, STRANDS, STRAND_LABEL} from '../model/const';
 
+export let isDialogOpen = false;
+
 export class PatternEditorDialog {
   private initialPatternConfig: PatternConfiguration;
 
@@ -22,6 +24,7 @@ export class PatternEditorDialog {
   }
 
   open(): void {
+    isDialogOpen = true;
     this.createDialog().show();
   }
 
@@ -31,10 +34,10 @@ export class PatternEditorDialog {
     const dialog = ui.dialog('Edit pattern')
     .add(header)
     .add(controls)
-    .onOK(() => grok.shell.info('Applied'))
+    // .onOK(() => grok.shell.info('Applied'))
     .onCancel(() => this.resetToInitialState());
 
-    dialog.onClose.subscribe(() => grok.shell.warning('Closed'));
+    dialog.onClose.subscribe(() => isDialogOpen = false);
 
     return dialog;
   }

@@ -7,6 +7,8 @@ import {SvgDisplayManager} from './svg-utils/svg-display-manager';
 
 import {EventBus} from '../model/event-bus';
 import {PatternEditorDialog} from './pattern-editor';
+import {isDialogOpen} from './pattern-editor';
+
 
 import $ from 'cash-dom';
 import {BooleanInput} from './types';
@@ -43,8 +45,10 @@ export class PatternAppRightSection {
 
     const editPatternButton = ui.button(
       'Edit pattern',
-      () => new PatternEditorDialog(this.eventBus).open()
-    );
+      () => {
+        if (!isDialogOpen)
+          new PatternEditorDialog(this.eventBus).open();
+      });
 
     return ui.divH([
       svgDownloadButton,
