@@ -34,7 +34,7 @@ export class PatternEditorDialog {
     .onOK(() => grok.shell.info('Applied'))
     .onCancel(() => this.resetToInitialState());
 
-    // dialog.onClose.subscribe(() => this.resetToInitialState());
+    dialog.onClose.subscribe(() => grok.shell.warning('Closed'));
 
     return dialog;
   }
@@ -113,7 +113,7 @@ class HeaderControls {
 
       firstPtoInput.onInput(() => {
         const value = firstPtoInput.value!;
-        this.eventBus.setFirstPhosphorothioateLinkageFlag(strand, value);
+        this.eventBus.setPhosphorothioateLinkageFlag(strand, 0, value);
       });
 
       this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
@@ -173,13 +173,16 @@ class StrandControls {
   }
 
   private createControls(strand: StrandType): HTMLDivElement {
-    // const phosphothioateFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
-
     const nucleobaseInputs = this.createNucleobaseInputs(strand);
     const labels = this.createLabelDivs(strand);
+    const ptoLinkageInputs = this.createPTOFlagInputs(strand);
     const container = ui.div(nucleobaseInputs.map(
       (nucleobaseInput, idx) => {
-        return ui.divH([labels[idx], nucleobaseInput.root], {style: {alignItems: 'center'}});
+        return ui.divH([
+          labels[idx],
+          nucleobaseInput.root,
+          ptoLinkageInputs[idx].root,
+        ], {style: {alignItems: 'center'}});
     }));
     return container;
   }
@@ -189,16 +192,24 @@ class StrandControls {
     const nucleotides = this.eventBus.getNucleotideSequences()[strand];
     const choiceInputs = nucleotides.map((nucleotide, index) => {
       const input = ui.choiceInput<string>('', nucleotide, nucleotideBaseChoices);
+      input.onInput(() => {
+        const newValue = input.value!;
+        this.eventBus.setNucleotideBase(strand, index, newValue);
+      });
       return input;
     });
 
     return choiceInputs;
   }
-
+  
   private createPTOFlagInputs(strand: StrandType): BooleanInput[] {
     const ptoLinkageFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
     const ptoLinkageInputs = ptoLinkageFlags.map((flag, index) => {
       const input = ui.boolInput('', flag);
+      input.onInput(() => {
+        const newValue = input.value!;
+        this.eventBus.setPhosphorothioateLinkageFlag(strand, index + 1, newValue);
+      })
       return input;
     });
 

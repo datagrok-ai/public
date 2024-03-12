@@ -9,6 +9,7 @@ import {EventBus} from '../model/event-bus';
 import {PatternEditorDialog} from './pattern-editor';
 
 import $ from 'cash-dom';
+import {BooleanInput} from './types';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -68,24 +69,28 @@ class NumericLabelVisibilityControls {
   }
 
   private updateContainer(): void {
+    const newInputs = this.createInputs();
     $(this.togglesContainer).empty();
-    const newToggles = this.createNucleotideToggles();
-    this.togglesContainer.append(...newToggles);
+    $(this.togglesContainer).append(newInputs);
+    // this.togglesContainer.append(...newInputs);
   }
 
-  private createNucleotideToggles(): HTMLElement[] {
-    const toggles = [] as HTMLElement[];
+  private createInputs(): HTMLDivElement {
+    const inputBases = [] as BooleanInput[];
     const uniqueNucleotideBases = this.eventBus.getUniqueNucleotideBases();
     uniqueNucleotideBases.forEach((nucleotide: string) => {
       const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
-      const toggle = ui.boolInput(
+      const input = ui.boolInput(
         nucleotide,
         initialValue,
         (value: boolean) => this.handleNumericLabelToggle(nucleotide, value)
       );
-      toggles.push(toggle.root);
+      inputBases.push(input);
     });
-    return toggles;
+
+    inputBases.sort((inputA, inputB) => inputA.captionLabel.textContent!.localeCompare(inputB.captionLabel.textContent!));
+
+    return ui.divH(inputBases.map((input) => input.root));
   }
 
   private handleNumericLabelToggle(nucleotide: string, isVisible: boolean): void {

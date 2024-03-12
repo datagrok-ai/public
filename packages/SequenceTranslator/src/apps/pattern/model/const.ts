@@ -49,11 +49,8 @@ export const enum PATTERN_KEY {
   COMMENT = 'comment',
 };
 
-export const STORAGE_NAME: string = 'TestOligoTools1';
+export const STORAGE_NAME: string = 'OligoToolkit';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
-
-// todo: remove after refactoring
-export const DEFAULT_PHOSPHOROTHIOATE: boolean = true;
 
 export const OTHER_USERS = 'Other users';
 

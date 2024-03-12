@@ -264,9 +264,15 @@ export class EventBus {
     };
   }
 
-  setFirstPhosphorothioateLinkageFlag(strand: StrandType, value: boolean) {
+  setPhosphorothioateLinkageFlag(strand: StrandType, index: number, newValue: boolean) {
     const flags = this.getPhosphorothioateLinkageFlags();
-    flags[strand][0] = value;
+    flags[strand][index] = newValue;
     this.updatePhosphorothioateLinkageFlags(flags);
+  }
+
+  setNucleotideBase(strand: StrandType, index: number, value: string) {
+    const sequences = this.getNucleotideSequences();
+    sequences[strand][index] = value;
+    this.updateNucleotideSequences(sequences);
   }
 }
