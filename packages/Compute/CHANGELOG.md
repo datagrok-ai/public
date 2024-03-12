@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.27.0 (2024-03-12)
+
+### Features
+
+- RFV: Added last values restoring
+
 ## 1.26.0 (2024-03-11)
 
 ### Features
