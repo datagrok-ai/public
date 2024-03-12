@@ -130,7 +130,7 @@ export async function getConfigFiles(): Promise<string[]> {
 //input: dataframe table [Input data table]
 //input: column ligands {type:categorical; semType: Molecule} [Small molecules to dock]
 //input: string target {choices: Docking: getConfigFiles} [Folder with config and macromolecule]
-//input: int confirmations = 10 [Number of confirmations]
+//input: int conformations = 10 [Number of output conformations for each small molecule]
 export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, confirmations: number): Promise<void> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
