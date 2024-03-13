@@ -37,7 +37,8 @@
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.18.0",
     "eslint-config-google": "^0.14.0",
-    "@datagrok/bio": "^2.11.38"
+    "@datagrok/bio": "^2.11.38",
+    "@datagrok/chem": "^1.8.13"
   },
   "scripts": {
     "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
