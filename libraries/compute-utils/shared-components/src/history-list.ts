@@ -149,9 +149,9 @@ class HistoricalRunCard extends DG.Widget {
           if (editOptions.description) fullCall.options['description'] = editOptions.description;
           if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
 
-          return historyUtils.saveRun(fullCall);
+          return Promise.all([historyUtils.saveRun(fullCall), fullCall]);
         })
-        .then((fullCall) => {
+        .then(([, fullCall]) => {
           this._onMetadataEdit.next(fullCall);
           this._onFuncCallChanged.next(fullCall);
 

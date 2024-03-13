@@ -670,8 +670,7 @@ export class PipelineView extends FunctionView {
           scriptCall.options['parentCallId'] = this.funcCall.id;
           scriptCall.newId();
 
-          this.steps[scriptCall.func.nqName].view.lastCall =
-            await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+          await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
 
           return Promise.resolve();
         });
