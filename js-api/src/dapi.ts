@@ -404,6 +404,10 @@ export class AdminDataSource {
       throw new Error('Recipients list shouldn\'t be empty');
     return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
   }
+
+  getUserReport(reportId: string): Promise<Uint8Array> {
+    return api.grok_Dapi_Admin_Get_User_Report(this.dart, reportId);
+  }
 }
 
 /**
