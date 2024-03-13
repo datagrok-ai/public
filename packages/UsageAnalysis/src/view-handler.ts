@@ -10,6 +10,7 @@ import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
 import {TestsView, filters} from './tabs/tests';
+import {ReportsView} from "./tabs/reports";
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -34,7 +35,7 @@ export class ViewHandler {
     toolbox.filters.root.after(filters);
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ReportsView];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       currentView.tryToinitViewers();

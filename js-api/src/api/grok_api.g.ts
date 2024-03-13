@@ -79,6 +79,7 @@ export interface IDartApi {
   grok_Dapi_Admin(): any;
   grok_Dapi_Admin_GetServiceInfos(adminClient: any): Promise<any>;
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
+  grok_Dapi_Admin_Get_User_Report(adminClient: any, reportId: String): any;
   grok_Dapi_Log(): any;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_DockerImages(): any;
