@@ -1,5 +1,17 @@
 # bio changelog
 
+## 5.39.29 (2024-03-07)
+
+### Features
+
+* Add NEWICK_EMPTY const
+
+## 5.39.28 (2024-03-04)
+
+### Bug fixes
+
+* GROK-15086: Fix GetRegion, Notation: doesn't work
+
 ## 5.39.27 (2024-02-20)
 
 ### Bug fixes

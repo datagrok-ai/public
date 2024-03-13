@@ -397,7 +397,7 @@ export abstract class FunctionView extends DG.ViewBase {
         await this.onComparisonLaunch(fullFuncCalls);
         properUpdateIndicator(newHistoryBlock.root, false);
       }),
-      newHistoryBlock.onRunEdited.subscribe((editedCall) => {
+      newHistoryBlock.afterRunEdited.subscribe((editedCall) => {
         if (editedCall.id === this.funcCall.id && editedCall.options['title']) {
           this.path = `?id=${this.funcCall.id}`;
           const dateStarted = new Date(editedCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
@@ -454,33 +454,7 @@ export abstract class FunctionView extends DG.ViewBase {
     const editBtn = ui.iconFA('edit', () => {
       if (!this.historyBlock || !this.lastCall) return;
 
-      const editDialog = new HistoricalRunEdit(this.funcCall);
-
-      const onEditSub = editDialog.onMetadataEdit.subscribe(async (editOptions) => {
-        ui.setUpdateIndicator(this.root, true);
-        return historyUtils.loadRun(this.funcCall.id, false)
-          .then((fullCall) => {
-            if (editOptions.title) fullCall.options['title'] = editOptions.title;
-            if (editOptions.description) fullCall.options['description'] = editOptions.description;
-            if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-            if (editOptions.favorite !== 'same') fullCall.options['isFavorite'] = (editOptions.favorite === 'favorited');
-
-            return historyUtils.saveRun(fullCall);
-          })
-          .then((fullCall) => {
-            this.historyBlock!.updateRun(fullCall);
-
-            this.funcCall.options = {...fullCall.options};
-
-            onEditSub.unsubscribe();
-          })
-          .catch((err) => {
-            grok.shell.error(err);
-          }).finally(() => {
-            ui.setUpdateIndicator(this.root, false);
-          });
-      });
-      editDialog.show({center: true, width: 500});
+      this.historyBlock.showEditDialog(this.lastCall);
     }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
@@ -841,6 +815,38 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get mandatoryConsistent() {
     return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
+  }
+
+  protected get hasContextHelp() {
+    const readmePath = this.func.options['help'] as string | undefined;
+
+    return !!readmePath;
+  }
+
+  private helpCache = null as string | null;
+
+  protected async getContextHelp() {
+    const helpPath = this.func.options['help'];
+
+    if (!helpPath) return null;
+
+    if (this.helpCache) return this.helpCache;
+
+    const packagePath = `System:AppData/${helpPath}`;
+    if (await grok.dapi.files.exists(packagePath)) {
+      const readme = await grok.dapi.files.readAsText(packagePath);
+      this.helpCache = readme;
+      return readme;
+    }
+
+    const homePath = `${grok.shell.user.name}.home/${helpPath}`;
+    if (await grok.dapi.files.exists(homePath)) {
+      const readme = await grok.dapi.files.readAsText(homePath);
+      this.helpCache = readme;
+      return readme;
+    }
+
+    return null;
   }
 
   protected get features(): Record<string, boolean> | string[] {

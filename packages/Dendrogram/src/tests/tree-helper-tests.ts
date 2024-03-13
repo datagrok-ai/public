@@ -32,13 +32,14 @@ const data: {
   )node-l2-l3:0.17
 )node-l1-l2-l3:0.14;`,
     tgtLeafNameList: ['leaf1', 'leaf2', 'leaf3'],
-    tgtNodeNameList: ['node-l1-l2-l3', 'leaf1', 'node-l2-l3', 'leaf2', 'leaf3'],
+    tgtNodeNameList: ['leaf1', 'leaf2', 'leaf3', 'node-l2-l3', 'node-l1-l2-l3'],
     tgtNewickToDf: DG.DataFrame.fromCsv(`node,parent,leaf,distance
-node-l1-l2-l3,,false,0.14
 leaf1,node-l1-l2-l3,true,0.18
-node-l2-l3,node-l1-l2-l3,false,0.17
 leaf2,node-l2-l3,true,0.13
-leaf3,node-l2-l3,true,0.01`),
+leaf3,node-l2-l3,true,0.01
+node-l2-l3,node-l1-l2-l3,false,0.17
+node-l1-l2-l3,,false,0.14
+`),
   },
 
   // -- NoRootName
@@ -51,13 +52,14 @@ leaf3,node-l2-l3,true,0.01`),
   )node-l2-l3:0.17
 ):0.14;`,
     tgtLeafNameList: ['leaf1', 'leaf2', 'leaf3'],
-    tgtNodeNameList: ['[root]', 'leaf1', 'node-l2-l3', 'leaf2', 'leaf3'],
+    tgtNodeNameList: ['leaf1', 'leaf2', 'leaf3', 'node-l2-l3', '[root]'],
     tgtNewickToDf: DG.DataFrame.fromCsv(`node,parent,leaf,distance
-${NO_NAME_ROOT},,false,0.14
 leaf1,${NO_NAME_ROOT},true,0.18
-node-l2-l3,[root],false,0.17
 leaf2,node-l2-l3,true,0.13
-leaf3,node-l2-l3,true,0.01`),
+leaf3,node-l2-l3,true,0.01
+node-l2-l3,[root],false,0.17
+${NO_NAME_ROOT},,false,0.14
+`),
   },
 };
 

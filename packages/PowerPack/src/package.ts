@@ -185,7 +185,7 @@ export function viewerGallery(): void {
 }
 
 function _viewerGallery(view: DG.ViewBase): void {
-  if (view.type == 'TableView') {
+  if (view?.type == 'TableView') {
     const panels = view.getRibbonPanels();
     for (const p of panels) {
       for (const d of p) {

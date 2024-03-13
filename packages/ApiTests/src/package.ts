@@ -10,7 +10,7 @@ import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 //input: string path {optional: true}
 //output: dataframe result
 export async function getTable(name: string, path: string): Promise<DG.DataFrame> {
-  const file = (await grok.dapi.files.list(path ? `system:appdata/${path}/` : 'Samples:Files/', true, name))[0];
+  const file = (await grok.dapi.files.list(path ? `system:appdata/${path}/` : 'System:DemoFiles/', true, name))[0];
   const str = await file.readAsString();
   const result = DG.DataFrame.fromCsv(str);
   return result;

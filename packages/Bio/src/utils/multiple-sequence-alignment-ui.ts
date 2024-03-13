@@ -11,6 +11,7 @@ import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumnUI} from './check-input-column';
 import {multipleSequenceAlginmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
+import {awaitContainerStart} from './docker';
 
 import {_package} from '../package';
 
@@ -68,7 +69,7 @@ export async function multipleSequenceAlignmentUI(
     let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
     //TODO: remove when the new version of datagrok-api is available
-    //TODO: allow only macromolecule colums to be chosen
+    //TODO: allow only macromolecule columns to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
         performAlignment = await onColInputChange(
           colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
@@ -166,8 +167,11 @@ async function onColInputChange(
       gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
       gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
 
-      return async () => await runPepsea(col, unusedName, methodInput.value!,
-        gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+      return async () => {
+        await awaitContainerStart();
+        return runPepsea(col, unusedName, methodInput.value!,
+          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+      };
     } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
       //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
       const potentialColUH = UnitsHandler.getOrCreate(col);
@@ -177,8 +181,11 @@ async function onColInputChange(
       gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
       // convert to helm and assign alignment function to PepSea
 
-      return async () => await runPepsea(helmCol, unusedName, methodInput.value!,
-        gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+      return async () => {
+        await awaitContainerStart();
+        return runPepsea(helmCol, unusedName, methodInput.value!,
+          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+      };
     } else {
       gapOpenInput.value = null;
       gapExtendInput.value = null;

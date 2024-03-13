@@ -8,7 +8,7 @@ import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
-const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
+const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
 export async function demoBio01UI() {
   let view: DG.TableView;

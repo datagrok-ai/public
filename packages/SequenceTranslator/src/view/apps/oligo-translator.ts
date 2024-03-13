@@ -12,10 +12,10 @@ import '../style/translator-app.css';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {SequenceToMolfileConverter} from '../../model/structure-app/sequence-to-molfile';
-import {getTranslatedSequences} from '../../model/translator-app/conversion-utils';
+import {getTranslatedSequences, convert, getSupportedTargetFormats} from '../../model/translator-app/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
-import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, NUCLEOTIDES} from '../const/oligo-translator';
+import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, NUCLEOTIDES_FORMAT} from '../const/oligo-translator';
 import {DEFAULT_AXOLABS_INPUT} from '../const/ui';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
@@ -93,7 +93,7 @@ export class TranslatorLayoutHandler {
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
     const inputFormats = ui.choiceInput('Input format', DEFAULT_FORMATS.AXOLABS, this.inputFormats, (value: string) => this.eventBus.selectInputFormat(value));
-    const outputFormats = ui.choiceInput('Output format', NUCLEOTIDES, [NUCLEOTIDES], () => {});
+    const outputFormats = ui.choiceInput('Output format', NUCLEOTIDES_FORMAT, getSupportedTargetFormats(), (value: string) => this.eventBus.selectOutputFormat(value));
     const convertBulkButton = this.createConvertBulkButton();
 
     const tableControlsContainer = ui.div([
@@ -130,7 +130,7 @@ export class TranslatorLayoutHandler {
     }
 
     const inputFormat = this.eventBus.getSelectedInputFormat();
-    const outputFormat = NUCLEOTIDES;
+    const outputFormat = this.eventBus.getSelectedOutputFormat();
     const sequenceColumn = this.eventBus.getSelectedColumn(REQUIRED_COLUMN_LABEL.SEQUENCE);
     if (!sequenceColumn) {
       grok.shell.warning('No sequence column selected');
@@ -142,15 +142,19 @@ export class TranslatorLayoutHandler {
       DG.TYPE.STRING,
       newColumnName,
       sequenceColumn.toList().map((sequence: string) => {
-        const translatedSequences = getTranslatedSequences(sequence, -1, inputFormat);
-        return translatedSequences[outputFormat];
+        const result = convert(sequence, inputFormat, outputFormat);
+        return result;
       })
     );
 
-    translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    translatedColumn.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    const unitsHandler = UnitsHandler.getOrCreate(translatedColumn);
-    UnitsHandler.setUnitsToFastaColumn(unitsHandler);
+    if (outputFormat === NUCLEOTIDES_FORMAT || outputFormat === DEFAULT_FORMATS.HELM) {
+      translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
+      const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
+      translatedColumn.setTag(DG.TAGS.UNITS, units);
+      const unitsHandler = UnitsHandler.getOrCreate(translatedColumn);
+      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? UnitsHandler.setUnitsToFastaColumn : UnitsHandler.setUnitsToHelmColumn;
+      setUnits(unitsHandler);
+    }
 
     // add newColumn to the table
     selectedTable.columns.add(translatedColumn);
@@ -462,6 +466,7 @@ export class EventBus {
     return [columnLabel, columnSelection$];
   }));
   private _inputFormatSelection$ = new rxjs.BehaviorSubject<string>(DEFAULT_FORMATS.AXOLABS);
+  private _outputFormatSelection$ = new rxjs.BehaviorSubject<string>(NUCLEOTIDES_FORMAT);
 
   private constructor() {}
 
@@ -497,5 +502,13 @@ export class EventBus {
 
   selectInputFormat(format: string): void {
     this._inputFormatSelection$.next(format);
+  }
+
+  selectOutputFormat(format: string): void {
+    this._outputFormatSelection$.next(format);
+  }
+
+  getSelectedOutputFormat(): string {
+    return this._outputFormatSelection$.getValue();
   }
 }

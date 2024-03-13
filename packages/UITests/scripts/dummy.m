@@ -3,7 +3,6 @@
 #input: string stringInput { caption: stringCaption }
 #input: int intInput { caption: intCaption; units: kg }
 #input: double doubleInput { caption: doubleCaption; units: m/s }
-#input: double boolInput { caption: boolCaption }
+#input: bool boolInput { caption: boolCaption }
 #input: string choiceInput { caption: choiceCaption; choices: ["1", "2", "3"] }
 #input: dataframe tableInput { caption: dataframeCaption }
-      

@@ -39,17 +39,19 @@ export class GridNeighbor {
         const neighborThis = this;
         const eThis = e;
         this.m_observerResizeGrid = new ResizeObserver(function (entries : any) {
-            const viewTable = grid.view;
-            const bCurrent =  DG.toDart(grok.shell.v) === DG.toDart(viewTable);
-            if(!bCurrent)
-                return;
+            requestAnimationFrame(() => {
+                const viewTable = grid.view;
+                const bCurrent =  DG.toDart(grok.shell.v) === DG.toDart(viewTable);
+                if(!bCurrent)
+                    return;
 
-            if(grid.canvas.height !== eThis.offsetHeight) {
-                eThis.style.top = grid.canvas.offsetTop + "px";
-                eThis.style.width = nW + "px";
-                eThis.style.height = Math.round(grid.canvas.height/window.devicePixelRatio) + "px";
-            }
-           neighborThis.onSizeChanged();
+                if(grid.canvas.height !== eThis.offsetHeight) {
+                    eThis.style.top = grid.canvas.offsetTop + "px";
+                    eThis.style.width = nW + "px";
+                    eThis.style.height = Math.round(grid.canvas.height/window.devicePixelRatio) + "px";
+                }
+            neighborThis.onSizeChanged();
+            });
         });
 
         this.m_observerResizeGrid?.observe(grid.canvas);

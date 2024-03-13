@@ -5,10 +5,6 @@
     width: 24px
 }
 
-.windows-manager-sidebar .windows-manager-toggle {
-    height: 28px;
-}
-
 .windows-manager-sidebar .windows-manager-toggle i.grok-icon {
     font-size: 12px;
     font-weight: normal;
@@ -16,7 +12,6 @@
 
 .windows-manager-toggle {
     color: var(--warm-grey-4);
-    height: 28px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -38,6 +33,7 @@
 .windows-manager-statusbar {
     display: flex;
     flex-direction: row;
+    align-self: stretch;
 }
 
 .windows-manager-statusbar .windows-manager-toggle {

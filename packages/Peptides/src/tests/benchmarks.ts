@@ -16,7 +16,7 @@ const benchmarkDatasetSizes = [5, 50, 100, 200];
 
 category('Benchmarks: Mutation Cliffs', () => {
   for (const size of benchmarkDatasetSizes)
-    test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 180000});
+    test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 300000});
 });
 
 category('Benchmarks: Cluster stats', () => {

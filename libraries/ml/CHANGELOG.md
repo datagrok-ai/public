@@ -1,8 +1,16 @@
 # ml changelog
 
+## 6.4.12 (2024-03-06)
+
+### Bug fixes
+
+* Fix `values` type to ArrayLike for DistanceMatrixService.calc
+
 ## 6.4.11 (2024-02-27)
 
-Add support for post processing function in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.
+Add support for post-processing function in dimensionality reduction. The method `Dimensionality Reduction`
+(see Top Menu > ML > Dimensionality Reduction) now allows to apply post-processing functions to the resulting
+embeddings.
 
 ## 6.3.39 (2023-07-21)
 

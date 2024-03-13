@@ -19,7 +19,7 @@ export class GridTreePlacer<TNode extends MarkupNodeType> extends RectangleTreeP
     this.grid = grid;
 
     this.grid.onBeforeDrawContent.subscribe(this.gridOnChanged.bind(this));
-    ui.onSizeChanged(this.grid.root).subscribe(this.gridOnChanged.bind(this));
+    grid.subs.push(ui.onSizeChanged(this.grid.root).subscribe(this.gridOnChanged.bind(this)));
   }
 
   // getNode(node: MarkupNodeType, point: DG.Point): RectangleTreeHoverType | null {

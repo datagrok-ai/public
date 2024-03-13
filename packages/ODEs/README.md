@@ -20,18 +20,24 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Click **F5** or go to **Run** tab
   * Cahnge inputs and explore your model
 * Use an advanced template:
-  * Press **Open** icon on the top panel
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
   * Select **Templates > Advanced...**
   * Modify formulas and click **F5**
 * Save formulas in a local file:
-  * Press **Save** icon on the top panel  
+  * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
   * Find the *ivp*-file in Downloads, modify it using any text editor
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
-  * Press **Open** icon on the top panel
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
   * Select **From file...**
   * Select a file with formulas
+* Explore model:
+  * Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+  * Analyze the relationship between inputs and outputs using one of the following methods:
+    * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
+    * [Sobol](https://datagrok.ai/help/compute#sobol)
+    * [Grid](https://datagrok.ai/help/compute#grid)
 
 ## Create model from template
 
@@ -66,6 +72,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 * `Nimotuzumab`
   * models population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147)
   * demonstrates the `output` feature
+* `Bioreactor`
+  * simulates the bioreactor [processes](https://doi.org/10.1074/jbc.RA117.000303)
+  * illustrates the capability of modeling complex processes described by a large number of equations
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
@@ -163,6 +172,6 @@ Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-s
 
 See also
 
-* [Scripting](https://datagrok.ai/help/compute/scripting)
-* [Function annotations](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#parameter-types-and-options)
+* [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
 * [Viewers gallery](https://datagrok.ai/help/visualize/gallery)
+* [Scripting](https://datagrok.ai/help/compute/scripting)
