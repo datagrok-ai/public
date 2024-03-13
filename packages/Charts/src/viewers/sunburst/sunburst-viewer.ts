@@ -9,7 +9,6 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
-type RowPredicate = (row: any) => boolean;
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -67,19 +66,22 @@ export class SunburstViewer extends EChartViewer {
   }
 
   handleDataframeFiltering(path: string[], dataFrame: DG.DataFrame) {
-    const rowPredicate = this.buildRowPredicate(path);
-    const filterFunction: RowPredicate = new Function('row', `return ${rowPredicate};`) as RowPredicate;
+    const filterFunction = this.buildFilterFunction(path);
     dataFrame.rows.filter(filterFunction);
   }
-
-  buildRowPredicate(path: string[]): string {
-    const conditions = path.map((value, i) => {
-      const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
-      const formattedValue = columnType === 'string' ? `'${value}'` : value;
-      return `row.get('${this.hierarchyColumnNames[i]}') === ${formattedValue}`;
-    });
-
-    return conditions.join(' && ');
+  
+  buildFilterFunction(path: string[]): (row: any) => boolean {
+    return (row) => {
+      for (let i = 0; i < path.length; ++i) {
+        const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
+        const columnValue = row.get(this.hierarchyColumnNames[i]);
+        const formattedValue = columnType !== 'string' ? columnValue.toString() : columnValue;
+        const expectedValue = path[i];
+        if (formattedValue !== expectedValue)
+          return false;
+      }
+      return true;
+    };
   }
 
   removeFiltering() {
@@ -197,7 +199,8 @@ export class SunburstViewer extends EChartViewer {
   }
 
   getSeriesData(): treeDataType[] | undefined {
-    const rowSource = this.rowSource === 'Selected';
+    const selectedOptions = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
+    const rowSource = selectedOptions.includes(this.rowSource!);
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource);
   }
 
