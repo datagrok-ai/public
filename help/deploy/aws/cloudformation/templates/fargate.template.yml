@@ -3146,10 +3146,13 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
+        Condition:
+          StringEquals:
+            "ecs:CreateAction":
+              - "CreateService"
+              - "RegisterTaskDefinition"
+              - "UpdateService"
         - Action:
-            - ecs:CreateService
-            - ecs:RegisterTaskDefinition
-            - ecs:UpdateService
             - ecs:TagResource 
           Effect: Allow
           Resource:
