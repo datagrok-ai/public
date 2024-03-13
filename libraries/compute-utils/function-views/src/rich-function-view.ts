@@ -743,6 +743,8 @@ export class RichFunctionView extends FunctionView {
               loadedViewer.root.replaceWith(newViewer.root);
               loadedViewer = newViewer;
             }
+            // Workaround for https://reddata.atlassian.net/browse/GROK-13884
+            if (Object.keys(parsedTabDfProps[dfIndex][viewerIdx]).includes('color')) loadedViewer.setOptions({'color': parsedTabDfProps[dfIndex][viewerIdx]['color']});
             this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
           };
 
