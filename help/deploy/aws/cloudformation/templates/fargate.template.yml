@@ -3159,6 +3159,8 @@ Resources:
             Fn::Sub:
               - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
               - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
+              - cluster_name:
+                    Ref: DatagrokCluster
 
   DatagrokKanikoPolicy:
     Type: AWS::IAM::ManagedPolicy
