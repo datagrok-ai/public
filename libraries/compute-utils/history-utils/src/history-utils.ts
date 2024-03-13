@@ -86,13 +86,17 @@ export namespace historyUtils {
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
         .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-      for (const output of dfOutputs)
+      await Promise.all(dfOutputs.map(async (output) => {
         pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+        return Promise.resolve();
+      }));
 
       const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
         .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-      for (const input of dfInputs)
+      await Promise.all(dfInputs.map(async (input) => {
         pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+        return Promise.resolve();
+      }));
     }
 
     return pulledRun;
@@ -114,19 +118,19 @@ export namespace historyUtils {
 
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs) {
+    await Promise.all(dfOutputs.map(async (output) => {
       callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
       await grok.dapi.permissions.grant(callToSave.outputs[output.name].getTableInfo(), allGroup, false);
-    }
+    }));
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs) {
+    await Promise.all(dfInputs.map(async (input) => {
       callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
       await grok.dapi.permissions.grant(callToSave.inputs[input.name].getTableInfo(), allGroup, false);
-    }
+    }));
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }
