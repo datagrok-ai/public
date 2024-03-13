@@ -605,7 +605,7 @@ export interface ICompositionView {
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
   private hooks: HookSpec[] = [];
   private rt?: PipelineRuntime;
-  public customViews = new Map<string, RichFunctionView>();
+  public customViews = new Map<string, RFVPopup>();
 
   constructor(funcName: string) {
     super(funcName, [], {historyEnabled: true, isTabbed: false, skipInit: true});
@@ -672,6 +672,9 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
 
   override close() {
     this.rt!.pipelineState.closed.next(true);
+    for (const v of this.customViews.values()) {
+      v.customClose();
+    }
     super.close();
   }
 
@@ -686,6 +689,17 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
         await callHandler(handler, params);
       }
     }
+  }
+}
+
+export class RFVPopup extends RichFunctionView {
+  override detach() {
+
+  }
+
+  customClose() {
+    super.detach();
+    super.close();
   }
 }
 
@@ -785,7 +799,7 @@ export class CompositionPipeline {
       id: '_SystemViewsAdd_',
       handler: async () => {
         for (const [k, nqName] of additionalViewNames.entries()) {
-          const view = new RichFunctionView(nqName, {historyEnabled: false, isTabbed: true});
+          const view = new RFVPopup(nqName, {historyEnabled: false, isTabbed: true});
           await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
           additionalViews.set(k, view);
         }
