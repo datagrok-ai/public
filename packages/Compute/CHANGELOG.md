@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.28.0 (2024-03-13)
+
+### Features
+
+- Adapted lib for Datagrok v1.18
+
 ## 1.27.0 (2024-03-12)
 
 ### Features
