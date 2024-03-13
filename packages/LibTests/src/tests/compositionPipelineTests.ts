@@ -1,13 +1,44 @@
 import * as DG from 'datagrok-api/dg';
-import {serialize, deserialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
+import {serialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import { CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import cloneDeepWith from 'lodash.clonedeepwith';
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
+import simpleConfData from './snapshots/simple-conf-data.json';
+import complexConfData from './snapshots/complex-conf-data.json';
+import twoConfsSimple from './snapshots/2-confs-simple.json';
+import threeConfsSimple from './snapshots/3-confs-simple.json';
+import threeConfsSimpleNested from './snapshots/3-confs-simple-nested.json';
+import twoConfs from './snapshots/2-confs.json';
+import threeConfs from './snapshots/3-confs.json';
+import threeConfsNested from './snapshots/3-confs-nested.json';
+import threeConfsRemove from './snapshots/3-confs-remove-items.json';
+import threeConfsRemoveNested from './snapshots/3-confs-remove-nested-items.json';
+import threeConfsAdd from './snapshots/3-confs-add-items.json';
+import threeConfsAddNested from './snapshots/3-confs-add-nested-items.json';
+import twoConfsAddSteps from './snapshots/2-confs-add-steps.json';
+import twoConfsAddRemoveSteps from './snapshots/2-confs-add-remove-steps.json';
+import threeConfsAddNestedSteps from './snapshots/3-confs-nested-add-steps.json';
+
+export function removeObservables<T>(config: T): T {
+  return cloneDeepWith(config, (val) => {
+    if (val instanceof Map) {
+      const entries = removeObservables([...val.entries()]);
+      return new Map(entries);
+    }
+    if ((val instanceof Subject) || (val instanceof BehaviorSubject) || (val instanceof Observable))
+      return '$observable';
+    if (val instanceof Function)
+      return 'function';
+  });
+}
 
 function pickPipelineConfData(obj: any) {
   const res = {};
   Object.assign(res, ...['config', 'ioInfo', 'nodes', 'links', 'hooks', 'steps'].map((key) => ({[key]: obj[key]})));
-  return res;
+  // return serialize(removeObservables(res));
+  return removeObservables(res);
 }
 
 category('CompositionPipeline single config', async () => {
@@ -34,10 +65,11 @@ category('CompositionPipeline single config', async () => {
       }]
     };
     const pipeline = new CompositionPipeline(config);
-    const _view = pipeline.makePipelineView();
+    pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(simpleConfData));
   });
 
   test('Complex Config', async () => {
@@ -98,7 +130,8 @@ category('CompositionPipeline single config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(complexConfData));
   });
 });
 
@@ -335,7 +368,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(twoConfsSimple));
   });
 
   test('3 configs simple configs', async () => {
@@ -344,7 +378,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsSimple));
   });
 
   test('3 configs simple nested composition',  async () => {
@@ -354,6 +389,7 @@ category('CompositionPipeline composition config', async () => {
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
     console.log(actual);
+    // expectDeepEqual(actual, applyTransformations(threeConfsSimpleNested));
   });
 
   test('2 configs', async () => {
@@ -362,7 +398,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(twoConfs));
   });
 
   test('3 configs', async () => {
@@ -371,7 +408,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfs));
   });
 
   test('3 configs nested composition',  async () => {
@@ -380,7 +418,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsNested));
   });
 
   test('3 configs remove items', async () => {
@@ -398,7 +437,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsRemove));
   });
 
   test('3 configs nested remove items', async () => {
@@ -416,7 +456,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsRemoveNested));
   });
 
   test('3 configs add items', async () => {
@@ -450,7 +491,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsAdd));
   });
 
   test('3 configs nested add items', async () => {
@@ -487,7 +529,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsAddNested));
   });
 
   test('2 configs add steps', async () => {
@@ -506,7 +549,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(twoConfsAddSteps));
   });
 
   test('2 configs add/remove steps', async () => {
@@ -528,7 +572,8 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(twoConfsAddRemoveSteps));
   });
 
   test('3 configs nested add steps',  async () => {
@@ -557,7 +602,113 @@ category('CompositionPipeline composition config', async () => {
     const _view = pipeline.makePipelineView();
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
+    // console.log(actual);
+    expectDeepEqual(actual, applyTransformations(threeConfsAddNestedSteps));
+  });
+
+});
+
+category('CompositionPipeline reactivity', async () => {
+  test('simple link',  async () => {
+    const pipeline = new CompositionPipeline({
+      id: 'testPipeline',
+      nqName: 'LibTests:MockWrapper1',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:AddMock',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:MulMock',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: ['step1', 'res'],
+        to: ['step2', 'a'],
+      }]
+    });
+    const view = pipeline.makePipelineView();
+    await pipeline.init();
+    const rfv1 = view.getStepView('LibTests:AddMock');
+    rfv1.setInput('a', 2);
+    rfv1.setInput('b', 3);
+    await delay(300);
+    await rfv1.run();
+    await delay(300);
+    const rfv2 = view.getStepView('LibTests:MulMock');
+    rfv2.setInput('b', 4);
+    await delay(300);
+    await rfv2.run();
+    await delay(300);
+    const a = rfv2.getParamValue('a');
+    const res = rfv2.getParamValue('res');
+    expectDeepEqual(a, 5);
+    expectDeepEqual(res, 20);
+  });
+
+  test('composition links',  async () => {
+    const conf1: PipelineCompositionConfiguration = {
+      id: 'testPipeline1',
+      nqName: 'LibTests:MockWrapper7',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:AddMock',
+        },
+      ],
+      stepsToAdd: [[
+        {
+          id: 'step2',
+          nqName: 'LibTests:MulMock',
+        },
+        ['testPipeline2', 'step1']
+      ]],
+      links: [{
+        id: 'link1',
+        from: ['step1', 'res'],
+        to: ['testPipeline2', 'step1', 'a'],
+      }, {
+        id: 'link2',
+        from: ['testPipeline2', 'step1', 'res'],
+        to: ['testPipeline2', 'step2', 'a'],
+      }]
+    };
+    const conf2 = {
+      id: 'testPipeline2',
+      nqName: 'LibTests:MockWrapper7',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestFn1',
+        },
+      ]
+    }
+    const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
+    const view = pipeline.makePipelineView();
+    await pipeline.init();
+    const rfv1 = view.getStepView('LibTests:AddMock');
+    rfv1.setInput('a', 1);
+    rfv1.setInput('b', 2);
+    await delay(300);
+    await rfv1.run();
+    await delay(300);
+    const rfv2 = view.getStepView('LibTests:TestFn1');
+    rfv2.setInput('b', 4);
+    rfv2.setInput('c', 5);
+    await delay(300);
+    await rfv2.run();
+    await delay(300);
+    const rfv3 = view.getStepView('LibTests:MulMock');
+    rfv3.setInput('b', 10);
+    await delay(300);
+    await rfv3.run();
+    await delay(300);
+    const a = rfv3.getParamValue('a');
+    const res = rfv3.getParamValue('res');
+    expectDeepEqual(a, 12);
+    expectDeepEqual(res, 120);
   });
 
 });

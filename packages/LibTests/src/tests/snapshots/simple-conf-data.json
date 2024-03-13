@@ -1,0 +1,424 @@
+{
+  "config": {
+    "id": "testPipeline",
+    "nqName": "LibTests:MockWrapper",
+    "steps": [
+      {
+        "id": "testPipeline/step1",
+        "nqName": "LibTests:AddMock",
+        "states": [
+          {
+            "id": "a",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "b",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "res",
+            "type": "double",
+            "stateType": "output"
+          }
+        ],
+        "popups": [],
+        "actions": []
+      },
+      {
+        "id": "testPipeline/step2",
+        "nqName": "LibTests:MulMock",
+        "states": [
+          {
+            "id": "a",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "b",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "res",
+            "type": "double",
+            "stateType": "output"
+          }
+        ],
+        "popups": [],
+        "actions": []
+      }
+    ],
+    "links": [
+      {
+        "id": "testPipeline/link1",
+        "from": [
+          "testPipeline",
+          "step1",
+          "a"
+        ],
+        "to": [
+          "testPipeline",
+          "step2",
+          "a"
+        ]
+      }
+    ],
+    "hooks": {}
+  },
+  "ioInfo": {
+    "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+    "value": [
+      [
+        "LibTests:AddMock",
+        [
+          {
+            "id": "a",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "b",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "res",
+            "type": "double",
+            "stateType": "output"
+          }
+        ]
+      ],
+      [
+        "LibTests:MulMock",
+        [
+          {
+            "id": "a",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "b",
+            "type": "double",
+            "stateType": "input"
+          },
+          {
+            "id": "res",
+            "type": "double",
+            "stateType": "output"
+          }
+        ]
+      ]
+    ]
+  },
+  "nodes": {
+    "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+    "value": [
+      [
+        "testPipeline/step1",
+        {
+          "conf": {
+            "id": "testPipeline/step1",
+            "nqName": "LibTests:AddMock",
+            "states": [
+              {
+                "id": "a",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "b",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "res",
+                "type": "double",
+                "stateType": "output"
+              }
+            ],
+            "popups": [],
+            "actions": []
+          },
+          "type": "step",
+          "pipelinePath": [
+            "testPipeline"
+          ],
+          "parrentNodePath": [
+            "testPipeline"
+          ],
+          "pipelineState": {
+            "initialLoading": "$observable",
+            "runChanging": "$observable",
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "a",
+                {
+                  "conf": {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "initialLoading": "$observable",
+                    "runChanging": "$observable",
+                    "closed": "$observable"
+                  },
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "b",
+                {
+                  "conf": {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "initialLoading": "$observable",
+                    "runChanging": "$observable",
+                    "closed": "$observable"
+                  },
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "res",
+                {
+                  "conf": {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  },
+                  "pipelineState": {
+                    "initialLoading": "$observable",
+                    "runChanging": "$observable",
+                    "closed": "$observable"
+                  },
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
+        }
+      ],
+      [
+        "testPipeline/step2",
+        {
+          "conf": {
+            "id": "testPipeline/step2",
+            "nqName": "LibTests:MulMock",
+            "states": [
+              {
+                "id": "a",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "b",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "res",
+                "type": "double",
+                "stateType": "output"
+              }
+            ],
+            "popups": [],
+            "actions": []
+          },
+          "type": "step",
+          "pipelinePath": [
+            "testPipeline"
+          ],
+          "parrentNodePath": [
+            "testPipeline"
+          ],
+          "pipelineState": {
+            "initialLoading": "$observable",
+            "runChanging": "$observable",
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "a",
+                {
+                  "conf": {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "initialLoading": "$observable",
+                    "runChanging": "$observable",
+                    "closed": "$observable"
+                  },
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "b",
+                {
+                  "conf": {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "initialLoading": "$observable",
+                    "runChanging": "$observable",
+                    "closed": "$observable"
+                  },
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "res",
+                {
+                  "conf": {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  },
+                  "pipelineState": {
+                    "initialLoading": "$observable",
+                    "runChanging": "$observable",
+                    "closed": "$observable"
+                  },
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
+        }
+      ]
+    ]
+  },
+  "links": {
+    "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+    "value": [
+      [
+        "testPipeline/link1",
+        {
+          "conf": {
+            "id": "testPipeline/link1",
+            "from": [
+              "testPipeline",
+              "step1",
+              "a"
+            ],
+            "to": [
+              "testPipeline",
+              "step2",
+              "a"
+            ]
+          },
+          "pipelinePath": [
+            "testPipeline"
+          ],
+          "pipelineState": {
+            "initialLoading": "$observable",
+            "runChanging": "$observable",
+            "closed": "$observable"
+          },
+          "enabled": "$observable",
+          "currentSource": "$observable",
+          "valueChanges": "$observable",
+          "controllerConfig": {
+            "pipelinePath": [
+              "testPipeline"
+            ],
+            "from": [
+              [
+                "testPipeline",
+                "step1",
+                "a"
+              ]
+            ],
+            "to": [
+              [
+                "testPipeline",
+                "step2",
+                "a"
+              ]
+            ],
+            "fromKeys": {
+              "_DG_CUSTOM_SERIALIZED_TOKEN_": "Set",
+              "value": [
+                "testPipeline/step1/a"
+              ]
+            },
+            "toKeys": {
+              "_DG_CUSTOM_SERIALIZED_TOKEN_": "Set",
+              "value": [
+                "testPipeline/step2/a"
+              ]
+            }
+          }
+        }
+      ]
+    ]
+  },
+  "hooks": [
+    {
+      "pipelinePath": [],
+      "hooks": {
+        "beforeInit": [
+          {
+            "id": "_SystemViewsAdd_",
+            "handler": "function"
+          }
+        ],
+        "onViewReady": [
+          {
+            "id": "_SystemButtonsAdd_",
+            "handler": "function"
+          }
+        ]
+      }
+    },
+    {
+      "hooks": {},
+      "pipelinePath": [
+        "testPipeline"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "funcName": "LibTests:AddMock"
+    },
+    {
+      "funcName": "LibTests:MulMock"
+    }
+  ]
+}

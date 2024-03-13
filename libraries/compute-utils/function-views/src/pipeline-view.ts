@@ -43,7 +43,7 @@ export class PipelineView extends FunctionView {
       this.stepTabs.currentPane = this.stepTabs.getPane(name);
   }
 
-  public getStepView<T extends FunctionView>(name: string) {
+  public getStepView<T extends FunctionView = RichFunctionView>(name: string) {
     return this.steps[name]?.view as T;
   }
 

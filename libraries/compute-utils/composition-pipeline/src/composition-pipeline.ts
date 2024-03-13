@@ -1,11 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, merge, of, from, Subject} from 'rxjs';
-import {PipelineView, RichFunctionView} from '../../function-views';
-import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample, tap} from 'rxjs/operators';
+import {FunctionView, PipelineView, RichFunctionView} from '../../function-views';
+import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample} from 'rxjs/operators';
 
 //
 // State values
@@ -144,8 +143,6 @@ export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguratio
 export type PipelineConfigVariants = PipelineConfiguration | CompositionGraphConfig;
 
 export type CompositionGraphConfig = (PipelineConfiguration | PipelineCompositionConfiguration) & {
-  id: ItemName;
-  nqName: NqName;
   nestedPipelines?: {
     [key: ItemName]: PipelineConfiguration | CompositionGraphConfig;
   };
@@ -261,7 +258,7 @@ export class NodeItemState<T = any> {
       this.notifier ? sample(this.notifier) : map((x) => x),
       takeUntil(this.pipelineState.closed),
     ).subscribe((x) => {
-      console.log('state', this.conf.id, x);
+      // console.log('state', this.conf.id, x);
       this.value.next(x);
     });
   }
@@ -290,7 +287,7 @@ export class NodeState {
     public conf: NodeConf,
     public type: SubNodeConfTypes,
     public pipelinePath: ItemPath,
-    public viewNodePath: ItemPath,
+    public parrentNodePath: ItemPath,
     public pipelineState: PipelineState,
   ) {
     if (type === 'step' || type === 'popup') {
@@ -343,7 +340,7 @@ export class LinkState {
 
         return true;
       }),
-      tap(() => console.log('link', this.conf.id)),
+      // tap(() => console.log('link', this.conf.id)),
       map(() => true),
     );
   }
@@ -415,7 +412,7 @@ export class PipelineRuntime {
     const k = pathToKey(path);
     const conf = this.nodes.get(k)?.conf;
     if (conf)
-      return this.view.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName);
+      return this.view.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName, k);
   }
 
   wireView() {
@@ -426,7 +423,7 @@ export class PipelineRuntime {
           const conf = node.conf as PipelinePopupConfiguration | PipelineStepConfiguration;
           const stepId = getStepId(conf);
           const stateId = state.conf.id;
-          const {changes, setter} = this.view.getStateBindings(stepId, stateId);
+          const {changes, setter} = this.view.getStateBindings(stepId, stateId, node.conf.id);
           state.linkState(changes, setter);
         }
       }
@@ -439,10 +436,12 @@ export class PipelineRuntime {
         return this.getNodeState(input)!.state.value;
       });
       const handler = link.conf.handler ?? (async () => {
-        console.log('default handler', link.conf.id);
+        // console.log('default handler', link.conf.id);
         const nLinks = Math.min(link.controllerConfig.from.length, link.controllerConfig.to.length);
         for (let idx = 0; idx < nLinks; idx++) {
-          const state = this.getState(link.controllerConfig.from[idx]);
+          let state = this.getState(link.controllerConfig.from[idx]);
+          if (state instanceof DG.DataFrame)
+            state = state.clone();
           this.updateState(link.controllerConfig.to[idx], state);
         }
       });
@@ -599,12 +598,14 @@ export interface ICompositionView {
   hideSteps(...id: string[]): void;
   getStepView<T extends RichFunctionView>(id: string): T;
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
-  getStateBindings<T = any>(stepId: string, stateId: string): {changes: Observable<T>, setter: (x: any) => void};
+  getStateBindings<T = any>(stepId: string, stateId: string, k: string): {changes: Observable<T>, setter: (x: any) => void};
+  getStepView<T = RichFunctionView>(name: string, k?: string): T;
 }
 
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
   private hooks: HookSpec[] = [];
   private rt?: PipelineRuntime;
+  public customViews = new Map<string, RichFunctionView>();
 
   constructor(funcName: string) {
     super(funcName, [], {historyEnabled: true, isTabbed: false, skipInit: true});
@@ -619,11 +620,19 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     this.rt = rt;
   }
 
-  public getStateBindings(stepId: string, stateId: string) {
-    const stepView = this.getStepView<RichFunctionView>(stepId);
+  public getStateBindings(stepId: string, stateId: string, k: string) {
+    const stepView = this.getStepView<RichFunctionView>(stepId, k);
     const changes = stepView.getParamChanges(stateId);
     const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => stepView.setInput(stateId, x, inputState);
     return {changes, setter};
+  }
+
+  override getStepView<T = RichFunctionView>(name: string, k?: string) {
+    const view = super.getStepView<RichFunctionView>(name);
+    if (!view && k)
+      return this.customViews.get(k)! as T;
+
+    return view as T;
   }
 
   override async init() {
@@ -756,36 +765,29 @@ export class CompositionPipeline {
   private addSystemHooks() {
     // TODO: set menu as buttons for now;
     const stepIdsToNodes = new Map<string, NodeState[]>();
-    const additionalViewNames = new Map<string, NqName[]>();
-    const additionalViews = new Map<string, Map<string, RichFunctionView>>();
+    const additionalViewNames = new Map<string, NqName>();
+    const additionalViews = this.viewInst!.customViews;
 
     for (const node of this.nodes.values()) {
       if (node.type === 'popup' || node.type === 'action') {
-        const conf = node.conf as PipelinePopupConfiguration | ActionConfiguraion;
-        const viewPathKey = pathToKey(node.viewNodePath);
-        const nodes = stepIdsToNodes.get(viewPathKey) ?? [];
+        const parrentPathKey = pathToKey(node.parrentNodePath);
+        const nodes = stepIdsToNodes.get(parrentPathKey) ?? [];
         nodes.push(node);
-        stepIdsToNodes.set(viewPathKey, nodes);
+        stepIdsToNodes.set(parrentPathKey, nodes);
         if (node.type === 'popup') {
           const conf = node.conf as PipelinePopupConfiguration;
-          const viewNames = additionalViewNames.get(viewPathKey) ?? [];
-          viewNames.push(conf.nqName);
-          additionalViewNames.set(viewPathKey, viewNames);
+          additionalViewNames.set(conf.id, conf.nqName);
         }
       }
     }
 
-    const onBeforeInit = [{
+    const beforeInit = [{
       id: '_SystemViewsAdd_',
-      handler: async ({controller}: { controller: RuntimeController }) => {
-        for (const [viewKey, views] of additionalViewNames.entries()) {
-          const popupMap = new Map<string, RichFunctionView>();
-          for (const nqName of views) {
-            const view = new RichFunctionView(nqName, {historyEnabled: false, isTabbed: true});
-            await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-            popupMap.set(nqName, view);
-          }
-          additionalViews.set(viewKey, popupMap);
+      handler: async () => {
+        for (const [k, nqName] of additionalViewNames.entries()) {
+          const view = new RichFunctionView(nqName, {historyEnabled: false, isTabbed: true});
+          await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
+          additionalViews.set(k, view);
         }
       },
     }];
@@ -805,14 +807,12 @@ export class CompositionPipeline {
               });
             } else if (node.type === 'popup') {
               const conf = node.conf as PipelinePopupConfiguration;
-              const nqName = conf.nqName;
-              const view = additionalViews.get(viewKey)?.get(nqName);
+              const view = additionalViews.get(conf.id)!;
+              (view.root).style.width = '100%';
+              (view.root).style.height = '100%';
+              (view.root).style.overflow = 'hidden';
               const buttonName = conf.friendlyName;
               return ui.button(buttonName, async () => {
-                if (!view) {
-                  grok.shell.error(`Popup ${nqName} for button ${buttonName} not found`);
-                  return;
-                }
                 await new Promise((resolve, _reject) => {
                   ui.dialog(buttonName)
                     .add(view.root)
@@ -820,7 +820,9 @@ export class CompositionPipeline {
                       node.notifier.next(true);
                       resolve(true);
                     })
-                    .onCancel(() => resolve(false))
+                    .onCancel(() => {
+                      resolve(false);
+                    })
                     .showModal(true);
                 });
               });
@@ -833,10 +835,9 @@ export class CompositionPipeline {
       },
     }];
     const hooks = {
-      onBeforeInit,
+      beforeInit,
       onViewReady,
     };
-    // TODO: check
     this.hooks.unshift({
       pipelinePath: [],
       hooks,
@@ -913,11 +914,11 @@ export class CompositionPipeline {
   private processPipelineConfig(pipelineConf: PipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const subPath = this.updateFullPathNode(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
-    for (const stepConf of this.processSteps(pipelineConf.steps, subPath, toRemove, toAdd)) {
+    for (const stepConf of this.getAllSteps(pipelineConf.steps, subPath, toRemove, toAdd)) {
       const sKey = stepConf.id;
       const popups: PipelinePopupConfiguration[] = [];
       for (const popupConf of this.getAllConfItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
-        const pPopupConf = this.processNodeConfig(popupConf, keyToPath(sKey), subPath, toRemove, 'action');
+        const pPopupConf = this.processNodeConfig(popupConf, keyToPath(sKey), subPath, toRemove, 'popup');
         if (!pPopupConf)
           continue;
 
@@ -956,7 +957,7 @@ export class CompositionPipeline {
     pipelineConf.links = links;
   }
 
-  private processSteps(data: PipelineStepConfiguration[], pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+  private getAllSteps(data: PipelineStepConfiguration[], pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const nData: PipelineStepConfiguration[] = data.flatMap((conf) => {
       const pconf = this.processNodeConfig<PipelineStepConfiguration>(conf, pipelinePath, pipelinePath, toRemove, 'step');
       const addConfs = (toAdd.get(conf.id)?.step ?? [])
@@ -978,24 +979,24 @@ export class CompositionPipeline {
   private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
     this.updateFullPathLink(conf, pipelinePath, false);
     const nodePath = this.updateFullPathNode(conf, path);
-    const viewPath = nodePath.slice(0, nodePath.length - 1);
+    const parrentPath = nodePath.slice(0, nodePath.length - 1);
     const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, viewPath, this.pipelineState));
+    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, parrentPath, this.pipelineState));
     return conf;
   }
 
   private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: SubNodeConfTypes) {
     const nodePath = this.updateFullPathNode(conf, path);
     const nodeKey = pathToKey(nodePath);
-    const viewPath = nodePath.slice(0, nodePath.length - 1);
+    const parrentPath = nodePath.slice(0, nodePath.length - 1);
 
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, viewPath, this.pipelineState));
+    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, parrentPath, this.pipelineState));
     return conf;
   }
 
