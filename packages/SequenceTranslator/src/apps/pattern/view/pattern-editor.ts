@@ -29,11 +29,18 @@ export class PatternEditorDialog {
   }
 
   private createDialog(): DG.Dialog {
-    const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
-    const controls = new StrandControls(this.eventBus, this.initialPatternConfig).create();
+    const editorBody = ui.divV([]);
+    this.eventBus.updatePatternEditor$.subscribe(() => {
+      this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
+      const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
+      const controls = new StrandControls(this.eventBus, this.initialPatternConfig).create();
+
+      $(editorBody).empty();
+      $(editorBody).append(header, controls);
+    });
+
     const dialog = ui.dialog('Edit pattern')
-    .add(header)
-    .add(controls)
+    .add(editorBody)
     .onOK(() => {})
     .onCancel(() => this.resetToInitialState());
 

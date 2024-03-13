@@ -2,17 +2,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {STRANDS} from './const';
+import {STRANDS, STRAND} from './const';
 import {PatternConfiguration, StrandType, TerminalType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L} from './const';
 
 import * as rxjs from 'rxjs';
+import {map, debounceTime} from 'rxjs/operators';
 import {PatternDefaultsProvider} from './defaults-provider';
 
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
-  private _isAntisenseStrandVisible$: rxjs.BehaviorSubject<boolean>;
+
+  // todo: redundant, remove
+  private _isAntisenseStrandActive$: rxjs.BehaviorSubject<boolean>;
+
   private _nucleotideSequences$: rxjs.BehaviorSubject<NucleotideSequences>;
   private _phosphorothioateLinkageFlags: rxjs.BehaviorSubject<PhosphorothioateLinkageFlags>;
   private _terminalModifications: rxjs.BehaviorSubject<StrandTerminusModifications>;
@@ -64,7 +68,7 @@ export class EventBus {
 
   private initializeDefaultState(defaults: PatternDefaultsProvider) {
     this._patternName$ = new rxjs.BehaviorSubject(defaults.getPatternName());
-    this._isAntisenseStrandVisible$ = new rxjs.BehaviorSubject(defaults.getAntiSenseStrandVisibilityFlag());
+    this._isAntisenseStrandActive$ = new rxjs.BehaviorSubject(defaults.getAntiSenseStrandVisibilityFlag());
     this._nucleotideSequences$ = new rxjs.BehaviorSubject(defaults.getNucleotideSequences());
     this._phosphorothioateLinkageFlags = new rxjs.BehaviorSubject(defaults.getPhosphorothioateLinkageFlags());
     this._terminalModifications = new rxjs.BehaviorSubject(defaults.getTerminusModifications());
@@ -82,15 +86,20 @@ export class EventBus {
   }
 
   get antisenseStrandToggled$(): rxjs.Observable<boolean> {
-    return this._isAntisenseStrandVisible$.asObservable();
+    return this._isAntisenseStrandActive$.asObservable();
   }
 
   toggleAntisenseStrand(isActive: boolean) {
-    this._isAntisenseStrandVisible$.next(isActive);
+    if (!isActive)
+      this.updateStrandLength(STRAND.ANTISENSE, 0)
+    else
+      this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.SENSE].length);
+
+    this._isAntisenseStrandActive$.next(isActive);
   }
 
   isAntiSenseStrandVisible(): boolean {
-    return this._isAntisenseStrandVisible$.getValue();
+    return this._isAntisenseStrandActive$.getValue();
   }
 
   getNucleotideSequences(): NucleotideSequences {
@@ -101,20 +110,46 @@ export class EventBus {
     this._nucleotideSequences$.next(nucleotideSequences);
   }
 
-  changeStrandLength(strand: StrandType, length: number) {
+  updateStrandLength(strand: StrandType, newStrandLength: number): void {
     const sequence = this.getNucleotideSequences()[strand];
+    if (sequence.length === newStrandLength) return;
+
     const phosphorothioateLinkageFlags = this.getPhosphorothioateLinkageFlags()[strand];
-    if (sequence.length > length) {
-      const newSequence = sequence.slice(0, length);
-      const newFlags = phosphorothioateLinkageFlags.slice(0, length + 1);
-      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
-      this.updatePhosphorothioateLinkageFlags({...this.getPhosphorothioateLinkageFlags(), [strand]: newFlags});
-    } else {
-      const newSequence = sequence.concat(new Array(length - sequence.length).fill(this._sequenceBase$.getValue()));
-      const newFlags = phosphorothioateLinkageFlags.concat(new Array(length - sequence.length + 1).fill(true));
-      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
-      this.updatePhosphorothioateLinkageFlags({...this.getPhosphorothioateLinkageFlags(), [strand]: newFlags});
+
+    if (newStrandLength === 0) {
+      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: []});
+      this.updatePhosphorothioateLinkageFlags({
+        ...this.getPhosphorothioateLinkageFlags(),
+        [strand]: []
+      });
+      return;
     }
+
+    if (sequence.length > newStrandLength) {
+      const newSequence = sequence.slice(0, newStrandLength);
+      const newFlags = phosphorothioateLinkageFlags.slice(0, newStrandLength + 1);
+      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
+      this.updatePhosphorothioateLinkageFlags({
+        ...this.getPhosphorothioateLinkageFlags(),
+        [strand]: newFlags
+      });
+      return;
+    }
+
+    const appendedNucleotidesLength = newStrandLength - sequence.length;
+    const newSequence = sequence.concat(new Array(newStrandLength - sequence.length).fill(this._sequenceBase$.getValue()));
+    const appendedFlagsLength = (sequence.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
+    const newFlags = phosphorothioateLinkageFlags.concat(
+      new Array(appendedFlagsLength).fill(true)
+    );
+    this.updateNucleotideSequences({
+      ...this.getNucleotideSequences(),
+      [strand]: newSequence
+    });
+    this.updatePhosphorothioateLinkageFlags({
+      ...this.getPhosphorothioateLinkageFlags(),
+      [strand]: newFlags
+    });
   }
 
   getPhosphorothioateLinkageFlags(): PhosphorothioateLinkageFlags {
@@ -203,15 +238,17 @@ export class EventBus {
   }
 
   get patternStateChanged$(): rxjs.Observable<void> {
-    return rxjs.merge(
+    const observable = rxjs.merge(
       this._patternName$,
-      this._isAntisenseStrandVisible$,
+      this._isAntisenseStrandActive$,
       this._nucleotideSequences$,
       this._phosphorothioateLinkageFlags,
       this._terminalModifications,
       this._comment$,
       this._modificationsWithNumericLabels$,
-    );
+    ) as rxjs.Observable<void>;
+
+    return observable.pipe(debounceTime(50));
   }
 
   getSequenceBase(): string {
@@ -244,7 +281,7 @@ export class EventBus {
 
   setPatternConfig(patternConfiguration: PatternConfiguration) {
     this._patternName$.next(patternConfiguration[L.PATTERN_NAME]);
-    this._isAntisenseStrandVisible$.next(patternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]);
+    this._isAntisenseStrandActive$.next(patternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]);
     this._nucleotideSequences$.next(patternConfiguration[G.NUCLEOTIDE_SEQUENCES]);
     this._phosphorothioateLinkageFlags.next(patternConfiguration[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]);
     this._terminalModifications.next(patternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]);
@@ -276,5 +313,12 @@ export class EventBus {
     const labelledModifications = this.getModificationsWithNumericLabels();
     this.updateModificationsWithNumericLabels(labelledModifications.concat(value));
     this.updateNucleotideSequences(sequences);
+  }
+
+  get updatePatternEditor$(): rxjs.Observable<void> {
+    return rxjs.merge(
+      this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
+      this._nucleotideSequences$.asObservable().pipe(map(() => {})),
+    ).pipe(debounceTime(50)) as rxjs.Observable<void>;
   }
 }

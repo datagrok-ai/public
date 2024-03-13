@@ -116,7 +116,7 @@ class PatternControlsManager {
         input.value = MAX_SEQUENCE_LENGTH;
       }
 
-      this.eventBus.changeStrandLength(strand, input.value!);
+      this.eventBus.updateStrandLength(strand, input.value!);
     }
 
     const strandLengthInputs = Object.fromEntries(
