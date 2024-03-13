@@ -3138,6 +3138,25 @@ Resources:
                         - Arn
       ManagedPolicyName:
         Fn::Sub: "${AWS::StackName}-GrokSpawner-Kaniko-${AWS::Region}"
+  DatagrokSpawnerTagsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description:
+        Fn::Sub: "${AWS::StackName} Policy for tagging resources"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+            - ecs:CreateService
+            - ecs:RegisterTaskDefinition
+            - ecs:UpdateService
+            - ecs:TagResource 
+          Effect: Allow
+          Resource:
+            Fn::Sub:
+              - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+              - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
+
   DatagrokKanikoPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -3198,6 +3217,7 @@ Resources:
         - Ref: GrokSpawnerECRPolicy
         - Ref: GrokSpawnerKanikoPolicy
         - Ref: DatagrokECSPolicy
+        - Ref: DatagrokSpawnerTagsPolicy
       Tags:
         - Key: datagrok.component
           Value: datagrok
