@@ -334,6 +334,7 @@ same way as for
 ```javascript title="https://public.datagrok.ai/scripts"
 //name: Viewer properties demo
 //language: javascript
+//sample: demog.csv
 //input: dataframe test { viewer: Line chart | Grid }
 //output: dataframe test2
 //editor: Compute:RichFunctionViewEditor
@@ -361,17 +362,11 @@ By default, any viewer occupies all available space.
 <BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
 ```
 
-<img src={require('./output-categories.gif').default} style={{'border-radius': '5px'}}/>
+<img src={require('./viewers-block.png').default} style={{'border-radius': '5px'}}/>
 
 ```mdx-code-block
 </BrowserWindow>
 ```
-
-:::tip
-
-The view includes 4 tabs in total since there is a separate tab for input dataframe viewers.
-
-:::
 
 ```mdx-code-block
 </TabItem>
@@ -379,7 +374,7 @@ The view includes 4 tabs in total since there is a separate tab for input datafr
 ```
 
 ```javascript title="Your script header"
-//input: dataframe test { viewer: Line chart(block: 75) | Filters(block: 25) }
+//input: dataframe demog { viewer: Line chart(block: 75) | Filters(block: 25) }
 ```
 
 ```mdx-code-block
@@ -388,9 +383,9 @@ The view includes 4 tabs in total since there is a separate tab for input datafr
 ```
 
 ```javascript title="https://public.datagrok.ai/scripts"
-//name: Viewer properties demo
+//name: Viewer block option demo
 //language: javascript
-//input: dataframe test { viewer: Line chart(block: 75) | Filters(block: 25) }
+//input: dataframe demog { viewer: Line chart(block: 75) | Filters(block: 25) }
 //output: dataframe test2
 //editor: Compute:RichFunctionViewEditor
 test2 = test.clone();
@@ -447,6 +442,27 @@ The following code generates UI with three output tabs:
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./output-categories.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+:::tip
+
+The view includes 4 tabs in total since there is a separate tab for input dataframe viewers.
+
+:::
+
+```mdx-code-block
+</TabItem>
 <TabItem value="short" label="Short sample">
 ```
 
