@@ -9,6 +9,7 @@ import { _convertMolNotation } from '../utils/convert-notation-utils';
 import { SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import { getUncommonAtomsAndBonds } from '../utils/chem-common-rdkit';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 
 let latestAnalysisCols: string[] = [];
@@ -79,8 +80,10 @@ export function rGroupAnalysis(col: DG.Column): void {
       ui.divH([visualAnalysisCheck.root, replaceLatest.root, undoLatestAnalysis])
     ]))
     .onOK(async () => {
-      if (replaceLatest.value)
+      if (replaceLatest.value) {
         removeLatestAnalysis(col);
+        await delay(50);
+      }
       const getPrefixIdx = (colPrefix: string) => {
         let prefixIdx = 0;
         col = col.dataFrame.columns.byName(columnInput.value!);
@@ -189,10 +192,13 @@ export function rGroupAnalysis(col: DG.Column): void {
           //make highlight column invisible
           view.grid.col(highlightColName)!.visible = false;
           if (visualAnalysisCheck.value && view) {
-            latestTrellisPlot = view.trellisPlot({
-              xColumnNames: [res.columns.byIndex(1).name], // column 0 is Core column
-              yColumnNames: [res.columns.byIndex(2).name],
-            });
+            if (res.columns.length < 3)
+              grok.shell.warning(`Not enough R group columns to create trellis plot`);
+            else
+              latestTrellisPlot = view.trellisPlot({
+                xColumnNames: [res.columns.byIndex(1).name], // column 0 is Core column
+                yColumnNames: [res.columns.byIndex(2).name],
+              });
           }
         } else
           grok.shell.error('None R-Groups were found');
@@ -208,7 +214,8 @@ export function rGroupAnalysis(col: DG.Column): void {
 }
 
 function removeLatestAnalysis(col: DG.Column) {
-  latestTrellisPlot?.close();
+  if(latestTrellisPlot && latestTrellisPlot.dataFrame) 
+    latestTrellisPlot.close();
   latestTrellisPlot = null;
   latestAnalysisCols.forEach((colName: string) => col.dataFrame.columns.remove(colName));
   latestAnalysisCols = [];
