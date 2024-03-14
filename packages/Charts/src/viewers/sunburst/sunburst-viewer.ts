@@ -121,16 +121,7 @@ export class SunburstViewer extends EChartViewer {
     });
     this.chart.on('mouseover', async (params: any) => {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
-      const rowSource = this.rowSource!.toLowerCase();
-      const isFiltered = this.dataFrame.filter.anyFalse && rowSource!.includes('filter');
-      const isSelected = this.dataFrame.selection.anyFalse && rowSource!.includes('select');
-      let bitset: DG.BitSet;
-      if (isFiltered) {
-        bitset = this.dataFrame.filter.clone();
-        if (isSelected)
-          bitset.and(this.dataFrame.selection);
-      } else if (isSelected)
-        bitset = this.dataFrame.selection.clone();
+      const bitset = this.filter;
       const matchDf = this.dataFrame.clone();
       matchDf.rows.removeWhere(row => bitset && !bitset.get(row.idx));
 
