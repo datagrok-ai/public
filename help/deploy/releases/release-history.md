@@ -26,8 +26,8 @@ See also:
 Datagrok 1.18 release focuses on usability improvements and stability:
 
 * New **Browse** is designed for navigation, previewing, and convenient access to everything available on the platform, including features, applications, plugins, models, shared dashboards, etc. Note: Namespace and project management are in Beta version.
-* Ability to clone project. The user can view the project and then save a new version in the desired state: with links or clones of tables.
-* New script execution queue – a horizontally scaling scripting work mechanism, enabling multiple nodes with their own settings. It provides efficient and scalable script execution.
+* Ability to clone projects.
+* New CVM queue employs multiple JKG nodes to ensure scalable and streamlined script execution.
 * New MultiChoice cell renderer to show a number of checkboxes within a cell. For details, see [Add multiple check box and dropdown list to cell of table](https://community.datagrok.ai/t/add-multiple-check-box-and-dropdown-list-to-cell-of-table/835/9?u=oahadzhanian.datagrok.ai).
 * New Tags cell renderer for comma-separated rows.
 * Automatic error handling report: A "Report an Error" dialog box appears when you click the exclamation point icon (Beta version).
