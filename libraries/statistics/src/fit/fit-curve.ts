@@ -239,7 +239,8 @@ export const fitSeriesProperties: DG.Property[] = [
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
-      caption: 'Confidence interval'}),
+      //@ts-ignore
+      friendlyName: 'Confidence interval'}),
   DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
