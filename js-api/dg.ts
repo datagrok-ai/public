@@ -28,6 +28,7 @@ export * from './src/wrappers_impl';
 export * from './src/ui/wizard';
 export {time, timeAsync, Utils, HtmlUtils, LruCache, Paint} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
+export * from './src/sticky_meta';
 export * from './src/data';
 export * from './src/helpers';
 export * from './src/logger';
