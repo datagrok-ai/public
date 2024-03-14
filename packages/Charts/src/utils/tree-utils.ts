@@ -105,6 +105,8 @@ export class TreeUtils {
 
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
+      if (idx === -1)
+        continue;
       const value = countCol.get(i);
       const aggrValues = aggrColumns.reduce((obj, col) =>
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});

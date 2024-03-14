@@ -36,7 +36,7 @@ ${CONTROL_EXPR.ARG}: t
   final = 6 {units: min; caption: Final; category: Time; min: 6; max: 10} [Final time of simulation]
   step = 0.01 {units: min; caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 5e-5`;
 
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `${CONTROL_EXPR.NAME}: Robertson
@@ -44,9 +44,9 @@ ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
 ${CONTROL_EXPR.COMMENT}: This is classic example of stiff ODEs.
 ${CONTROL_EXPR.DIF_EQ}:
-  dA/dt = -0.04 * A + 10000 * B * C
-  dB/dt = 0.04 * A - 10000 * B * C - 30000000 * B**2
-  dC/dt = 30000000 * B**2
+  dA/dt = -0.04 * A + 1e4 * B * C
+  dB/dt = 0.04 * A - 1e4 * B * C - 3e7 * B**2
+  dC/dt = 3e7 * B**2
 
 ${CONTROL_EXPR.INITS}:
   A = 1 {units: mol/L; category: Initial concentrations; min: 0; max: 5}
@@ -58,7 +58,7 @@ ${CONTROL_EXPR.ARG}: t
   finish = 40 {units: sec; caption: Final; category: Time; min: 2; max: 50} [Final time of simulation]
   step = 0.01 {units: sec; caption: Step; category: Time; min: 0.01; max: 0.1} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 1e-7`;
 
 /** Fermentation process simulation */
 const FERMENTATION_MODEL = `${CONTROL_EXPR.NAME}: Fermentation
@@ -78,15 +78,15 @@ ${CONTROL_EXPR.ARG}: t
 ${CONTROL_EXPR.INITS}:  
   P = 4.276 {units: ml/ml; caption: ethanol, P; category: Initials; min: 3; max: 6} [Concentration of ethanol]
   S = 0.3185 {units: mg/ml; caption: glucose, S; category: Initials; min: 0.1; max: 0.5} [Concentration of glucose]
-  X = 0.092 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
+  X = 9.2e-2 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
 
 ${CONTROL_EXPR.PARAMS}:
   r = 1.3455 {units: mg/ml; category: Parameters; min: 1; max: 2} [The growth rate of ethanol]
-  q = 0.011129 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
-  V = 0.087 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
-  K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
+  q = 1.1129e-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
+  V = 8.7e-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
+  K = 6.28e-2 {category: Parameters} [Michaelis-Menten constant]
   
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 1e-7`;
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
@@ -118,7 +118,7 @@ ${CONTROL_EXPR.INITS}:
   eff = 0.2 {category: Initial values} [Effective compartment rate]
 
 ${CONTROL_EXPR.PARAMS}:  
-  dose = 10000 {category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
+  dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
   KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
   CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
   V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
@@ -128,7 +128,7 @@ ${CONTROL_EXPR.PARAMS}:
   Kin = 0.2 {caption: Kin; category: Paramters; min: 0.1; max: 0.5} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Paramters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
-${CONTROL_EXPR.TOL}: 0.000000001`;
+${CONTROL_EXPR.TOL}: 1e-9`;
 
 /** Gluconic acid production */
 const ACID_PROD_MODEL = `${CONTROL_EXPR.NAME}: GA-production
@@ -174,13 +174,13 @@ ${CONTROL_EXPR.PARAMS}:
   gamma = 2.12 {category: Parameters} [Monod type model parameter]
   lambda = 0.232 {units: 1/h; category: Parameters} [Monod type model parameter]
   delta = 0.278 {category: Parameters} [Monod type model parameter]
-  phi = 0.00487 {units: 1/h; category: Parameters} [Monod type model parameter]
-  Ks = 130.9 {units: g/L; category: Parameters} [Monod type model parameter]
-  Ko = 0.000363 {units: g/L; category: Parameters} [Monod type model parameter]
-  Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
+  phi = 4.87e-3 {units: 1/h; category: Parameters} [Monod type model parameter]
+  Ks = 1.309e2 {units: g/L; category: Parameters} [Monod type model parameter]
+  Ko = 3.63e-4 {units: g/L; category: Parameters} [Monod type model parameter]
+  Kla = 1.7e-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
-${CONTROL_EXPR.TOL}: 0.000000001`;
+${CONTROL_EXPR.TOL}: 1e-9`;
 
 /** Nimotuzumab disposition model */
 const NIMOTUZUMAB_MODEL = `${CONTROL_EXPR.NAME}: Nimotuzumab
@@ -211,21 +211,21 @@ ${CONTROL_EXPR.OUTPUT}:
   A2 {caption: Periferal}
 
 ${CONTROL_EXPR.PARAMS}:
-  CL = 0.00964 {category: Parameters; min: 0.005; max: 0.015} [Non-specific clearance]
+  CL = 9.64e-3 {category: Parameters; min: 0.005; max: 0.015} [Non-specific clearance]
   V1 = 2.63 {category: Parameters; min: 0.7; max: 3} [Apparent volume of distribution of the central compartment]
-  Q = 0.0288 {category: Parameters; min: 0.015; max: 0.035} [Distribution clearance of free nimotuzumab between the central and peripheral compartment]
-  V2 = 0.00992 {category: Parameters; min: 0.0067; max: 0.0265} [Apparent volume of distribution of the peripheral compartment]
+  Q = 2.88e-2 {category: Parameters; min: 0.015; max: 0.035} [Distribution clearance of free nimotuzumab between the central and peripheral compartment]
+  V2 = 9.92e-3 {category: Parameters; min: 0.0067; max: 0.0265} [Apparent volume of distribution of the peripheral compartment]
   Kss = 15.5 {category: Parameters; min: 10; max: 45} [Quasi steady state constant for the EGFR]
-  kint = 0.01 {category: Parameters; min: 0.01; max: 0.05} [Internalization rate for nimotuzumab-EGFR]
-  Rtot = 0.0105 {category: Parameters; min: 0.007; max: 0.032} [EGFR in the central compartment]
+  kint = 1e-2 {category: Parameters; min: 0.01; max: 0.05} [Internalization rate for nimotuzumab-EGFR]
+  Rtot = 1.05e-2 {category: Parameters; min: 0.007; max: 0.032} [EGFR in the central compartment]
   Rtotp = 956 {category: Parameters; min: 120; max: 3500} [EGFR in the peripheral compartment]
-  Kin = 0.0133 {category: Parameters; min: 0.01; max: 0.05} [Zero-order synthesis rate constant]
-  Kout = 0.0133 {category: Parameters; min: 0.001; max: 0.02} [First-order elimination rate constant]
+  Kin = 1.33e-2 {category: Parameters; min: 0.01; max: 0.05} [Zero-order synthesis rate constant]
+  Kout = 1.33e-2 {category: Parameters; min: 0.001; max: 0.02} [First-order elimination rate constant]
   S50 = 8.57 {category: Parameters; min: 5; max: 12} [Concentration of free nimotuzumab in the central compartment that achieves the half of Smax]
   Smax = 3.18 {category: Parameters; min: 1; max: 5} [Maximal effect of the stimulation]
-  gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]
+  gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]  
 
-${CONTROL_EXPR.TOL}: 0.0000001`;
+${CONTROL_EXPR.TOL}: 1e-7`;
 
 /** Bioreactor simulation */
 const BIOREACTOR_MODEL = `${CONTROL_EXPR.NAME}: Bioreactor
@@ -251,7 +251,7 @@ ${CONTROL_EXPR.DIF_EQ}:
   d(FKox)/dt = E61 - E62
 
   d(MEAthiol)/dt = 2 * (-E11 + E12 - E21 + E22 + E31 + E41 - E32 - E42 - E62 - ktox * E71 * E72)
-			- (MEAthiol + MA) * (Fin + Fper) / VL
+			            - (MEAthiol + MA) * (Fin + Fper) / VL
 
   d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR	- 0.5 * ktox * E71 * E72
 			
@@ -263,7 +263,7 @@ ${CONTROL_EXPR.DIF_EQ}:
 
 ${CONTROL_EXPR.EXPR}:
 
-  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2160000000000, 0.361)
+  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2.16e12, 0.361)
 
   MA = MEAthiol * pow(10, pH - pKa2MEA)
 
@@ -310,55 +310,55 @@ ${CONTROL_EXPR.EXPR}:
   E72 = (E70 >= 0) ? sqrt(E70) : 0  
 
 ${CONTROL_EXPR.ARG}: t
-  t0 = 0.0 {units: min; caption: Initial; category: Time} [Initial time of simulation]
-  t1 = 1000 {units: min; caption: Final; category: Time; min: 500; max: 1000} [Final time of simulation]
-  h = 1 {units: min; caption: Step; category: Time; min: 0.1; max: 2} [Time step of simlulation]
+  t0 = 0.0   {units: min; caption: Initial; category: Time}                       [Initial time of simulation]
+  t1 = 1000  {units: min; caption: Final;   category: Time; min: 500; max: 1000}  [Final time of simulation]
+   h = 1     {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simlulation]
 
 ${CONTROL_EXPR.INITS}:  
-  FFox = 0.2 {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01} [FF oxidized]
-  KKox = 0.2 {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01} [KK oxidized]
-  FFred = 0.1 {units: mmol/L; category: Initial values} [FF reduced]
-  KKred = 0.1 {units: mmol/L; category: Initial values} [KK reduced]
-  Ffree = 0 {units: mmol/L; category: Initial values} [F free]
-  Kfree = 0 {units: mmol/L; category: Initial values} [K free]
-  FKred = 0 {units: mmol/L; category: Initial values} [FK reduced]
-  FKox = 0 {units: mmol/L; category: Initial values} [FK oxidized]
-  MEAthiol = 15 {units: mmol/L; category: Initial values} [MEAthiol]
-  CO2 = 0.12 {units: mmol/L; category: Initial values} [Dissolved oxygen]
-  yO2P = 0.209 {units: atm; category: Initial values} [Atm headspace]
-  CYST = 0 {units: mmol/L; category: Initial values} [Cystamine]
-  VL = 7.2 {units: L; category: Initial values} [Liquid volume]
+  FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [FF oxidized]
+  KKox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [KK oxidized]
+  FFred    = 0.1   {units: mmol/L; category: Initial values}                                  [FF reduced]
+  KKred    = 0.1   {units: mmol/L; category: Initial values}                                  [KK reduced]
+  Ffree    = 0     {units: mmol/L; category: Initial values}                                  [F free]
+  Kfree    = 0     {units: mmol/L; category: Initial values}                                  [K free]
+  FKred    = 0     {units: mmol/L; category: Initial values}                                  [FK reduced]
+  FKox     = 0     {units: mmol/L; category: Initial values}                                  [FK oxidized]
+  MEAthiol = 15    {units: mmol/L; category: Initial values}                                  [MEAthiol]
+  CO2      = 0.12  {units: mmol/L; category: Initial values}                                  [Dissolved oxygen]
+  yO2P     = 0.209 {units: atm;    category: Initial values}                                  [Atm headspace]
+  CYST     = 0     {units: mmol/L; category: Initial values}                                  [Cystamine]
+  VL       = 7.2   {units: L;      category: Initial values}                                  [Liquid volume]
 
 ${CONTROL_EXPR.CONSTS}:
-  VLinit = 7.2
-  VTV = 10
-  speed = 400
-  diam = 6
-  power = 2.1
-  pH = 7.4
-  k1red =  0.05604
-  k1ox = 0.0108
-  k2Fd =  1.35
-  k2Fa =  110400000
-  k2Kd =  0.04038
-  k2Ka =  120000000
-  k3FKa =  181200000
-  k3FKd =  0.01188
-  k4ox =  0.0108
-  k4red =  0.05604
-  ktox = 0.005
-  krcyst = 0
-  pO2sat = 100
+   VLinit = 7.2
+      VTV = 10
+    speed = 400
+     diam = 6
+    power = 2.1
+       pH = 7.4
+    k1red = 5.604e-2
+     k1ox = 1.08e-2
+     k2Fd = 1.35
+     k2Fa = 1.104e8
+     k2Kd = 4.038e-2
+     k2Ka = 1.2e8
+    k3FKa = 1.812e8
+    k3FKd = 1.188e-2
+     k4ox = 1.08e-2
+    k4red = 5.604e-2
+     ktox = 5e-3
+   krcyst = 0
+   pO2sat = 100
   pKa2MEA = 8.18
-  H = 1.072069378
-  R = 0.082
+        H = 1.072069378
+        R = 8.2e-2
 
 ${CONTROL_EXPR.PARAMS}:
-  qin = 1 {units: L/min; caption: Gas; category: Parameters; min: 0.5; max: 1.5} [Gas to headspace]
-  yO2in = 0.21 {category: Parameters; caption: O2 fraction; min: 0.1; max: 0.9} [Oxygen mole fraction]
-  T = 300 {units: K; category: Parameters; caption: temperature; min: 250; max: 350} [System temperature]
-  P = 1 {units: atm; category: Parameters; caption: pressure; min: 1; max: 2} [Headspace pressure]
-  switchTime = 135 {units: min; caption: switch at; category: Time; min: 50; max: 200; step: 10} [Switch mode time]`;
+         qin =    1  {units: L/min; caption: Gas;         category: Parameters;  min: 0.5; max: 1.5}            [Gas to headspace]
+       yO2in = 0.21  {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
+           T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
+           P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
+  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 50;  max: 200; step: 10}  [Switch mode time]`;
 
 /** Initial value problem use cases */
 export enum USE_CASES {

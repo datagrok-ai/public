@@ -41,10 +41,10 @@
   gamma = 2.12 {category: Parameters} [Monod type model parameter]
   lambda = 0.232 {units: 1/h; category: Parameters} [Monod type model parameter]
   delta = 0.278 {category: Parameters} [Monod type model parameter]
-  phi = 0.00487 {units: 1/h; category: Parameters} [Monod type model parameter]
-  Ks = 130.9 {units: g/L; category: Parameters} [Monod type model parameter]
-  Ko = 0.000363 {units: g/L; category: Parameters} [Monod type model parameter]
-  Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
+  phi = 4.87E-3 {units: 1/h; category: Parameters} [Monod type model parameter]
+  Ks = 1.309E2 {units: g/L; category: Parameters} [Monod type model parameter]
+  Ko = 3.63E-4 {units: g/L; category: Parameters} [Monod type model parameter]
+  Kla = 1.7E-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
-#tolerance: 0.000000001
+#tolerance: 1E-9

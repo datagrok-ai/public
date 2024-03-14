@@ -401,6 +401,7 @@ export class SubstructureFilter extends DG.Filter {
     // in case dataframe has been changed (rows added/removed) while filter was disabled
     // or applyState with molfile was called on inactive filter -> need to recalculate results
     if ((this.bitset && this.dataFrame?.filter.length !== this.bitset.length) || this.recalculateFilter) {
+      this.recalculateFilter = true;
       this._onSketchChanged();
       return;
     }

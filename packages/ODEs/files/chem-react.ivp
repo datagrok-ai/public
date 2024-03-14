@@ -32,4 +32,4 @@
   final = 6 {units: min; caption: Final; category: Time; min: 6; max: 10} [Final time of simulation]
   step = 0.01 {units: min; caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
 
-#tolerance: 0.00005
+#tolerance: 5e-5

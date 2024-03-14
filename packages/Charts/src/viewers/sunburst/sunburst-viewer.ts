@@ -9,7 +9,6 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
-type RowPredicate = (row: any) => boolean;
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -22,6 +21,7 @@ export class SunburstViewer extends EChartViewer {
   hierarchyColumnNames: string[];
   hierarchyLevel: number;
   onClick: onClickOptions;
+  selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
 
   constructor() {
     super();
@@ -67,19 +67,22 @@ export class SunburstViewer extends EChartViewer {
   }
 
   handleDataframeFiltering(path: string[], dataFrame: DG.DataFrame) {
-    const rowPredicate = this.buildRowPredicate(path);
-    const filterFunction: RowPredicate = new Function('row', `return ${rowPredicate};`) as RowPredicate;
+    const filterFunction = this.buildFilterFunction(path);
     dataFrame.rows.filter(filterFunction);
   }
-
-  buildRowPredicate(path: string[]): string {
-    const conditions = path.map((value, i) => {
-      const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
-      const formattedValue = columnType === 'string' ? `'${value}'` : value;
-      return `row.get('${this.hierarchyColumnNames[i]}') === ${formattedValue}`;
-    });
-
-    return conditions.join(' && ');
+  
+  buildFilterFunction(path: string[]): (row: any) => boolean {
+    return (row) => {
+      for (let i = 0; i < path.length; ++i) {
+        const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
+        const columnValue = row.get(this.hierarchyColumnNames[i]);
+        const formattedValue = columnType !== 'string' ? columnValue.toString() : columnValue;
+        const expectedValue = path[i];
+        if (formattedValue !== expectedValue)
+          return false;
+      }
+      return true;
+    };
   }
 
   removeFiltering() {
@@ -93,7 +96,7 @@ export class SunburstViewer extends EChartViewer {
       const selectedSectors: string[] = [];
       if (!params.data.path)
         return;
-      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
         this.handleDataframeFiltering(path, this.dataFrame);
@@ -117,8 +120,13 @@ export class SunburstViewer extends EChartViewer {
       }
     });
     this.chart.on('mouseover', async (params: any) => {
-      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
+      const isSelected = this.dataFrame.selection.anyTrue && 
+        this.selectedOptions.includes(this.rowSource!);
       const matchDf = this.dataFrame.clone();
+      const bitset = isSelected ? this.dataFrame.selection : this.dataFrame.filter;
+      matchDf.rows.removeWhere((row) => !bitset.get(row.idx));
+
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
@@ -182,7 +190,7 @@ export class SunburstViewer extends EChartViewer {
   onTableAttached(propertyChanged?: boolean): void {
     let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
-    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length);
+    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length && !col.name.startsWith('~'));
 
     if (categoricalColumns.length < 1)
       return;
@@ -197,27 +205,26 @@ export class SunburstViewer extends EChartViewer {
   }
 
   getSeriesData(): treeDataType[] | undefined {
-    const rowSource = this.rowSource === 'Selected';
+    const rowSource = this.selectedOptions.includes(this.rowSource!);
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource);
   }
 
   formatLabel(params: any) {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
-    const getCurrentItemIndex = params.seriesIndex;
+    const getCurrentItemIndex = params.dataIndex - 1;
     const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => {
       if (getCurrentItemIndex === index)
         return item;
     });
     const r = ItemLayoutInfo.r;
+    const r0 = ItemLayoutInfo.r0;
     const startAngle = ItemLayoutInfo.startAngle;
     const endAngle = ItemLayoutInfo.endAngle;
-    const cx = ItemLayoutInfo.cx;
-    const cy = ItemLayoutInfo.cy;
-    const {width, height} = this.calculateSectorDimensions(cx, cy, r, startAngle, endAngle);
+    const {width, height} = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
-    const averageCharWidth = 0.01;
-    const averageCharHeight = 0.1;
+    const averageCharWidth = 5;
+    const averageCharHeight = 10;
     const maxWidthCharacters = Math.floor(width / averageCharWidth);
     const maxHeightCharacters = Math.floor(height / averageCharHeight);
     const maxLength = maxWidthCharacters;
@@ -247,23 +254,15 @@ export class SunburstViewer extends EChartViewer {
     const resultWidth = result.length * averageCharWidth;
     const resultHeight = result.split('\n').length * averageCharHeight;
     if (resultWidth > width || resultHeight > height)
-      return '';
+      result = '...';
+    
     return result;
   }
-  
-  calculateSectorDimensions(centerX: number, centerY: number, radius: number, startAngle: number, endAngle: number) {
-    const startAngleRad = (startAngle * Math.PI) / 180;
-    const endAngleRad = (endAngle * Math.PI) / 180;
 
-    const startX = centerX + radius * Math.cos(startAngleRad);
-    const startY = centerY + radius * Math.sin(startAngleRad);
-    const endX = centerX + radius * Math.cos(endAngleRad);
-    const endY = centerY + radius * Math.sin(endAngleRad);
-
-    const width = Math.abs(endX - startX);
-    const height = Math.abs(endY - startY);
-
-    return { width, height };
+  calculateRingDimensions(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) {
+    let width = outerRadius - innerRadius;
+    let height = Math.abs(endAngle - startAngle) * outerRadius;
+    return { height, width };
   }
 
   async checkAndCreateMoleculeImage(name: string): Promise<{ isSmiles: boolean, image: HTMLCanvasElement | null }> {

@@ -23,7 +23,7 @@ category('phylocanvasGlViewer', () => {
   after(async () => {
     viewList.forEach((v) => { v.close(); });
     dfList.forEach((df) => { grok.shell.closeTable(df); });
-    grok.shell.v = currentView;
+    if (!!currentView) grok.shell.v = currentView;
   });
 
   test('open', async () => {

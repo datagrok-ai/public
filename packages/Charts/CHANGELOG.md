@@ -2,10 +2,21 @@
 
 ## 1.2.3 (WIP)
 
+### Features
+
+* [#2500](https://github.com/datagrok-ai/public/issues/2500): Sunburst: Improvements:
+  * Implemented on-click filtering
+  * Added Row Source
+  * Provide a dialog like Order and Hide with all/visible/ hidden
+  * Turned off the ability to drill down on click (ctrl +click or cmd+click)
+  * Implemented the logic of wrapping the long labels
+  * Added a tooltip: label + row count
+
 ### Bug Fixes
 
 * Radar viewer minor imrpovements
 * Links fixes
+* [#2500](https://github.com/datagrok-ai/public/issues/2500): Sunburst: Labels were hidden after the structures were added
 
 ## 1.2.2 (2023-09-19)
 

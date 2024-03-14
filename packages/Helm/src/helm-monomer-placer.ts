@@ -49,6 +49,7 @@ export class HelmMonomerPlacer {
 
   public monomerCharWidth: number = 7;
   public leftPadding: number = 5;
+  public monomerTextSizeMap: { [p: string]: TextMetrics } = {};
 
   constructor(public readonly col: DG.Column<string>) {
     this.col.dataFrame.onDataChanged.subscribe();

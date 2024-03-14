@@ -2,6 +2,14 @@
 import { toDart } from "../wrappers";
 let api = <any>window;
 
+export class UsageType {
+  static MENU_CLICK = 'menu click';
+
+  static DIALOG_OK = 'dialog ok';
+
+  static DIALOG_SHOW = 'dialog show';
+
+}
 export class ViewerEvent {
   public dart: any;
   constructor(dart: any) {
@@ -70,11 +78,13 @@ export class InputType {
 
   static Molecule = 'Molecule';
 
-  static User = 'User';
+  static Users = 'Users';
 
   static UserGroups = 'UserGroups';
 
   static Dynamic = 'Dynamic';
+
+  static Image = 'Image';
 
   static JsInputProxy = 'JsInputProxy';
 

@@ -14,14 +14,14 @@ export class HistoricalRunEdit extends DG.Dialog {
   private _onMetadataEdit = new Subject<EditOptions>();
   public onMetadataEdit = this._onMetadataEdit.asObservable();
 
-  constructor(funcCall: DG.FuncCall) {
+  constructor(funcCall: DG.FuncCall, oldIsFavorite: boolean) {
     const dlg = ui.dialog({title: 'Edit run metadata'});
 
     super(dlg.dart);
 
     let title = funcCall.options['title'] ?? '';
     let description = funcCall.options['description'] ?? '';
-    let isFavorite = funcCall.options['isFavorite'] ?? false;
+    let isFavorite = oldIsFavorite;
     const titleInput = ui.stringInput('Title', title, (s: string) => title = s);
 
     const dummyInput = ui.stringInput(' ', '');
@@ -66,8 +66,8 @@ export class HistoricalRunEdit extends DG.Dialog {
       }
 
       let favorite = 'same';
-      if (isFavorite && !funcCall.options['isFavorite']) favorite = 'favorited';
-      if (!isFavorite && funcCall.options['isFavorite']) favorite = 'unfavorited';
+      if (isFavorite && !oldIsFavorite) favorite = 'favorited';
+      if (!isFavorite && oldIsFavorite) favorite = 'unfavorited';
 
       const editOptions = {
         title: (title !== '') ? title : null,

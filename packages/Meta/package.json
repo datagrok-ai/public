@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.7.96",
+  "version": "3.8.9",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -942,6 +942,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.17.5"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.18.0"
         }
       },
       "description": "Commonly used platform enhancements",
@@ -1275,6 +1278,9 @@
         },
         "1.17.10": {
           "datagrok-api": "^1.17.9"
+        },
+        "1.17.11": {
+          "datagrok-api": "^1.17.9"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1534,6 +1540,9 @@
         },
         "1.7.12": {
           "datagrok-api": "^1.17.0"
+        },
+        "1.7.13": {
+          "datagrok-api": "^1.18.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1913,6 +1922,15 @@
           "datagrok-api": "^1.17.0"
         },
         "1.25.3": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.26.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.27.0": {
+          "datagrok-api": "^1.17.0"
+        },
+        "1.28.0": {
           "datagrok-api": "^1.17.0"
         }
       },
@@ -2794,6 +2812,15 @@
         },
         "2.11.36": {
           "datagrok-api": "^1.17.4"
+        },
+        "2.11.37": {
+          "datagrok-api": "^1.17.4"
+        },
+        "2.11.38": {
+          "datagrok-api": "^1.17.4"
+        },
+        "2.11.39": {
+          "datagrok-api": "^1.17.4"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3243,6 +3270,9 @@
         },
         "2.1.29": {
           "datagrok-api": "^1.17.0"
+        },
+        "2.1.30": {
+          "datagrok-api": "^1.17.0"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -3369,9 +3399,12 @@
         },
         "1.2.9": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.2.11": {
+          "datagrok-api": "^1.15.2"
         }
       },
-      "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
+      "description": "Phylogenetic trees visualization.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -3466,6 +3499,12 @@
         },
         "1.2.22": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.26": {
+          "datagrok-api": "^1.17.4"
+        },
+        "1.2.27": {
+          "datagrok-api": "^1.17.4"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -3986,6 +4025,9 @@
           "datagrok-api": "^1.17.12"
         },
         "1.0.5": {
+          "datagrok-api": "^1.17.12"
+        },
+        "1.0.6": {
           "datagrok-api": "^1.17.12"
         }
       },

@@ -9,7 +9,7 @@ import '../css/history-panel.css';
 import {getObservable, properUpdateIndicator} from '../../function-views/src/shared/utils';
 import {HistoricalRunsList} from './history-list';
 
-type FilterOptions = {
+export type FilterOptions = {
   isOnlyFavorites: boolean,
   text: string,
   author?: DG.User,
@@ -96,7 +96,7 @@ class HistoryFilter extends DG.Widget {
       dummyInput,
     ], 'ui-form ui-form-wide ui-form-left');
 
-    this.root.appendChild(form);
+    this.root.appendChild(ui.panel([form]));
   }
 
   public addTag(funccall: DG.FuncCall) {
@@ -122,7 +122,7 @@ export class HistoryPanel extends DG.Widget {
   public onComparison = new Subject<string[]>();
 
   // Emitted when FuncCall is edited
-  public onRunEdited = new Subject<DG.FuncCall>();
+  public afterRunEdited = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is deleted
   public afterRunDeleted = new Subject<DG.FuncCall>();
@@ -136,88 +136,60 @@ export class HistoryPanel extends DG.Widget {
     this.historyFilter.root,
     this.historyList.root,
   ]);
-  private allRuns = new BehaviorSubject<DG.FuncCall[]>([]);
-  private get historyRuns() {
-    return this.allRuns.value.filter((run) => run.author.id === grok.shell.user.id);
-  }
-  private get filteredHistoryRuns() {
-    const filteringOptions = this.historyFilter.onFilteringChanged.value;
-    return this.historyRuns.filter((run) => {
-      const isFavorite = filteringOptions.isOnlyFavorites ? run.options['isFavorite'] : true;
-      const startedAfter = (filteringOptions.startedAfter ? run.started > filteringOptions.startedAfter : true);
-      const titleContainsText = (!filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(filteringOptions.text): false;
-      const descContainsText = (!filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(filteringOptions.text): false;
-
-      const hasTags = (!filteringOptions.tags || filteringOptions.tags.length === 0) ? true :
-        (!!run.options['tags']) ? filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
-
-      return isFavorite && (titleContainsText || descContainsText) && startedAfter && hasTags;
-    });
-  }
 
   private updateHistoryPane(historyRuns: DG.FuncCall[]) {
-    this.historyList.updateList(historyRuns);
+    this.historyList.updateRuns(historyRuns);
     this.historyFilter.updateTagList(historyRuns);
   };
 
-  public updateRun(updatedRun: DG.FuncCall) {
-    this.historyList.updateItem(updatedRun);
+  public showEditDialog(editedCall: DG.FuncCall) {
+    this.historyList.editRun(editedCall);
   }
 
   public addRun(newRun: DG.FuncCall) {
-    this.historyList.addItem(newRun);
-
-    this.allRuns.value.push(newRun);
+    this.historyList.addRun(newRun);
   }
 
   public get history() {
-    return this.allRuns.value;
+    return this.historyList.runs;
   }
 
   constructor(
     private func: DG.Func,
   ) {
-    super(ui.box(null, {style: {height: '100%'}}));
+    super(ui.box(ui.divText('No historical runs loaded', 'hp-no-elements-label'), {style: {height: '100%'}}));
 
-    this.root.appendChild(this.panel);
-
-    const updateHistoryPaneSub = this.historyFilter.onFilteringChanged.subscribe(() => this.historyList.updateList(this.filteredHistoryRuns));
+    const updateHistoryPaneSub = this.historyFilter.onFilteringChanged.subscribe((options) => this.historyList.setFiltering(options));
 
     const clickedSub = this.historyList.onClicked.subscribe((clickedCall) => this.onRunChosen.next(clickedCall.id));
 
     const comparisonSub = this.historyList.onComparisonCalled.subscribe((ids) => this.onComparison.next(ids));
 
-    const allRunsSub = this.allRuns.subscribe(() => this.updateHistoryPane(this.filteredHistoryRuns));
-
     const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
-      const allRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.allRuns.next(allRuns);
-      ui.setUpdateIndicator(this.root, false);
+      historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])
+        .then((historicalRuns) => {
+          ui.empty(this.root);
+          this.root.appendChild(this.panel);
+          this.updateHistoryPane(historicalRuns.reverse());
+        })
+        .catch((e) => grok.shell.error(e))
+        .finally(() => ui.setUpdateIndicator(this.root, false));
     });
 
     const onMetadataEdit = this.historyList.onMetadataEdit.subscribe((editedCall) => {
-      {
-        const run = this.allRuns.value.find((call) => call.id === editedCall.id);
-        if (run) run.options = {...editedCall.options};
-      }
-
-      this.onRunEdited.next(editedCall);
-
       this.historyFilter.addTag(editedCall);
+      this.afterRunEdited.next(editedCall);
     });
 
     const onDeleteSub = this.historyList.onDelete.subscribe((deleteCall) => {
-      const runIdx = this.allRuns.value.findIndex((call) => call.id === deleteCall.id);
-      if (runIdx >=0) this.allRuns.value.splice(runIdx, 1);
       this.historyFilter.removeTag(deleteCall);
-
       this.afterRunDeleted.next(deleteCall);
     });
 
     this.subs.push(
       clickedSub,
-      allRunsSub, allRunsFetch,
+      allRunsFetch,
       onMetadataEdit,
       comparisonSub,
       onDeleteSub,

@@ -44,7 +44,7 @@ ${CONTROL_EXPR.PARAMS}:
   P1 = 1
   P2 = -1
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 5e-5`;
 
 /** Extended template illustrating extanded features */
 const TEMPLATE_EXTENDED = `${CONTROL_EXPR.NAME}: Extended
@@ -79,7 +79,7 @@ ${CONTROL_EXPR.ARG}: t
   finish = 10 {caption: Final; category: Time; min: 10; max: 20} [Final time of simulation]
   step = 0.01 {caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
 
-${CONTROL_EXPR.TOL}: 0.00005`;
+${CONTROL_EXPR.TOL}: 5e-5`;
 
 /** Initial value problem templates */
 export enum TEMPLATES {

@@ -1,5 +1,23 @@
 # Compute changelog
 
+## 1.28.0 (2024-03-13)
+
+### Features
+
+- Adapted lib for Datagrok v1.18
+
+## 1.27.0 (2024-03-12)
+
+### Features
+
+- RFV: Added last values restoring
+
+## 1.26.0 (2024-03-11)
+
+### Features
+
+- RFV: Moved favorites to UserStorage
+
 ## 1.25.3 (2024-03-06)
 
 ### Features

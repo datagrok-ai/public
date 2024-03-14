@@ -110,6 +110,24 @@ category('Dapi: functions calls', async () => {
     expect(loadedCall.author.id, grok.shell.user.id);
   });
 
+  test('load package function with func and package', async () => {
+    const packFunc = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedCall = await GDF.calls.include('func.package').find(funcCall.id);
+    expect(loadedCall.func.package.name, 'ApiTests');
+  }, {skipReason: 'GROK-15174'});
+
+  test('load script with func and package', async () => {
+    const packFunc = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedCall = await GDF.calls.include('func.package').find(funcCall.id);
+    expect(loadedCall.func.package.name, 'ApiTests');
+  }, {skipReason: 'GROK-15174'});
+
   test('load script call inputs & outputs', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
@@ -267,4 +285,14 @@ category('Dapi: functions', async () => {
   
     expect(loadedFunc.package.name, 'ApiTests');  
   });
+
+  test('Filter functions by nqName (script)', async () => {
+    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageFunction"`).list();
+    expect(loadedFuncCalls.length, 1);
+  }, {skipReason: 'GROK-15175'});
+
+  test('Filter functions by nqName (package function)', async () => {
+    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageScript"`).list();
+    expect(loadedFuncCalls.length, 1);
+  }, {skipReason: 'GROK-15175'});
 });

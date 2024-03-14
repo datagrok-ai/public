@@ -20,18 +20,24 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Click **F5** or go to **Run** tab
   * Cahnge inputs and explore your model
 * Use an advanced template:
-  * Press **Open** icon on the top panel
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
   * Select **Templates > Advanced...**
   * Modify formulas and click **F5**
 * Save formulas in a local file:
-  * Press **Save** icon on the top panel  
+  * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
   * Find the *ivp*-file in Downloads, modify it using any text editor
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
-  * Press **Open** icon on the top panel
+  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
   * Select **From file...**
   * Select a file with formulas
+* Explore model:
+  * Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+  * Analyze the relationship between inputs and outputs using one of the following methods:
+    * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
+    * [Sobol](https://datagrok.ai/help/compute#sobol)
+    * [Grid](https://datagrok.ai/help/compute#grid)
 
 ## Create model from template
 
