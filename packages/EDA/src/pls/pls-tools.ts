@@ -1,10 +1,10 @@
-// PLS user interface
+// Tools for multivariate analysis by PLS
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT, PREFIX} from './pls-constants';
+import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT, RESULT} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 
@@ -53,20 +53,90 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   };
 }
 
-/** Compute PLS components and add them to the table */
-async function addPLS(input: PlsInput): Promise<void> {
+/** Perform multivariate analysis using the PLS regression */
+async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
   const res = await getPlsAnalysis(input);
   const plsCols = res.tScores;
   const cols = input.table.columns;
+  const featuresNames = input.features.names();
 
+  // add PLS components to the table
   plsCols.forEach((col, idx) => {
-    col.name = cols.getUnusedName(`${PREFIX}${idx}`);
+    col.name = cols.getUnusedName(`${RESULT.PREFIX}${idx + 1}`);
     cols.add(col);
   });
-}
+
+  if (type === PLS_ANALYSIS.COMPUTE_COMPONENTS)
+    return;
+
+  const view = grok.shell.tableView(input.table.name);
+
+  // 0.1 Buffer table
+  const buffer = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(TITLE.FEATURE, featuresNames),
+    res.regressionCoefficients,
+  ]);
+
+  // 0.2. Add X-Loadings
+  res.xLoadings.forEach((col, idx) => {
+    col.name = buffer.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
+    buffer.columns.add(col);
+  });
+
+  // 1. Predicted vs Reference scatter plot
+  const pred = res.prediction;
+  pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT.SUFFIX}`);
+  cols.add(pred);
+  view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+    title: TITLE.MODEL,
+    xColumnName: input.predict.name,
+    yColumnName: pred.name,
+    showRegressionLine: true,
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    labels: input.names?.name,
+    help: LINK.MODEL,
+  });
+
+  // 2. Regression Coefficients Bar Chart
+  res.regressionCoefficients.name = TITLE.REGR_COEFS;
+  view.addViewer(DG.Viewer.barChart(buffer, {
+    title: TITLE.REGR_COEFS,
+    splitColumnName: TITLE.FEATURE,
+    valueColumnName: res.regressionCoefficients.name,
+    valueAggrType: DG.AGG.AVG,
+    help: LINK.COEFFS,
+  }));
+
+  // 3. Loading Scatter Plot
+  res.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
+  view.addViewer(DG.Viewer.scatterPlot(buffer, {
+    title: TITLE.LOADINGS,
+    xColumnName: `${TITLE.XLOADING}1`,
+    yColumnName: `${TITLE.XLOADING}${res.xLoadings.length > 1 ? '2' : '1'}`,
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    labels: TITLE.FEATURE,
+    help: LINK.LOADINGS,
+  },
+  ));
+
+  // 4. Scores Scatter Plot
+  plsCols.forEach((col, idx) => col.name = cols.getUnusedName(`${TITLE.XSCORE}${idx + 1}`));
+  res.uScores.forEach((col, idx) => {
+    col.name = cols.getUnusedName(`${TITLE.YSCORE}${idx + 1}`);
+    cols.add(col);
+  });
+  view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+    title: TITLE.SCORES,
+    xColumnName: plsCols[0].name,
+    yColumnName: (plsCols.length > 1) ? plsCols[1].name : res.uScores[0],
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    labels: input.names?.name,
+    help: LINK.MODEL,
+  });
+} // performMVA
 
 /** Run PLS */
-export async function runPLS(type: PLS_ANALYSIS): Promise<void> {
+export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
   const table = grok.shell.t;
 
   if (table === null) {
@@ -164,19 +234,15 @@ export async function runPLS(type: PLS_ANALYSIS): Promise<void> {
   const dlg = ui.dialog({title: dlgTitle, helpUrl: dlgHelpUrl})
     .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
     .addButton(TITLE.RUN, async () => {
-      const plsInput = {
+      dlg.close();
+
+      await performMVA({
         table: table,
         features: DG.DataFrame.fromColumns(features).columns,
         predict: predict,
         components: components,
         names: names,
-      };
-
-      console.log(plsInput);
-      dlg.close();
-
-      if (type === PLS_ANALYSIS.COMPUTE_COMPONENTS)
-        await addPLS(plsInput);
+      }, type);
     }, undefined, dlgRunBtnTooltip)
     .show();
 

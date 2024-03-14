@@ -22,6 +22,14 @@ export enum TITLE {
   MVA = 'Multivariate analysis (PLS)',
   RUN = 'RUN',
   NAMES = 'Names',
+  MODEL = 'Observed vs. Predicted',
+  FEATURE = 'Feature',
+  REGR_COEFS = 'Regression Coefficients',
+  XLOADING = 'x.loading.p',
+  LOADINGS = 'Loadings',
+  XSCORE = 'x.score.t',
+  YSCORE = 'y.score.u',
+  SCORES = 'Scores',
 }
 
 /** Tooltips */
@@ -38,6 +46,9 @@ export enum HINT {
 export enum LINK {
   PLS = 'https://datagrok.ai/help/explore/multivariate-analysis/pls#pls-components',
   MVA = 'https://datagrok.ai/help/explore/multivariate-analysis/pls',
+  MODEL = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference',
+  COEFFS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients',
+  LOADINGS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/correlation-loadings',
 }
 
 /** Components consts */
@@ -46,6 +57,11 @@ export enum COMPONENTS {
   MIN = 1,
 }
 
+/**  */
+export enum RESULT {
+  PREFIX = 'PLS',
+  SUFFIX = '(predicted)',
+}
+
 export const INT = 'Int';
 export const TIMEOUT = 6;
-export const PREFIX = 'PLS';

@@ -10,15 +10,14 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart,
-  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization,
-  addPlsVisualization} from './eda-ui';
+  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
 import {getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
-import {runPLS} from './pls/pls-tools';
+import {runMVA} from './pls/pls-tools';
 
 import {oneWayAnova} from './stat-tools';
 import {getDbscanWorker} from '@datagrok-libraries/math';
@@ -239,14 +238,14 @@ export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict:
 //name: topMenuPLS_to_delete
 //description: Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the response variable.
 export async function topMenuPLS(): Promise<void> {
-  await runPLS(PLS_ANALYSIS.COMPUTE_COMPONENTS);
+  await runMVA(PLS_ANALYSIS.COMPUTE_COMPONENTS);
 }
 
 //top-menu: ML | Analyze | Multivariate Analysis...
 //name: multivariateAnalysis
 //description: Multidimensional data analysis using partial least squares (PLS) regression.
 export async function MVA(): Promise<void> {
-  await runPLS(PLS_ANALYSIS.PERFORM_MVA);
+  await runMVA(PLS_ANALYSIS.PERFORM_MVA);
 }
 
 //name: MVA demo
