@@ -20,6 +20,13 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-03-14 1.18.1
+
+### Addressed Issues
+
+* (Improvement) GROK-14698: Color coding: improve traffic lights schemas 
+
+
 ## 2024-03-08 1.18.0
 
 ### Addressed Issues
