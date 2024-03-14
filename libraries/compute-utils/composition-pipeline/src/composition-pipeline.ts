@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, merge, of, from, Subject} from 'rxjs';
-import {FunctionView, PipelineView, RichFunctionView} from '../../function-views';
+import {PipelineView, RichFunctionView} from '../../function-views';
 import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample} from 'rxjs/operators';
 
 //
@@ -693,9 +693,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
 }
 
 export class RFVPopup extends RichFunctionView {
-  override detach() {
-
-  }
+  override detach() {}
 
   customClose() {
     super.detach();
@@ -722,17 +720,17 @@ export class CompositionPipeline {
   private isInit = false;
 
   static compose(
-    config: PipelineCompositionConfiguration,
-    items: PipelineConfigVariants[],
+    compositionConfig: PipelineCompositionConfiguration,
+    nestedConfigs: PipelineConfigVariants[],
   ): CompositionGraphConfig {
     const nestedPipelines: {
       [key: PathKey]: PipelineConfigVariants;
     } = {};
-    for (const conf of items) {
+    for (const conf of nestedConfigs) {
       const {id} = conf;
       nestedPipelines[id] = cloneConfig(conf);
     }
-    return {...config, nestedPipelines};
+    return {...compositionConfig, nestedPipelines};
   }
 
   constructor(conf: PipelineConfigVariants) {

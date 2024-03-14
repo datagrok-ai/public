@@ -8,7 +8,7 @@ import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {CompositionPipeline, PipelineCompositionConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import { CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration } from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
@@ -149,6 +149,10 @@ export function MockWrapper9() {}
 //name: MockWrapper10
 export function MockWrapper10() {}
 
+//name: MockWrapper11
+export function MockWrapper11() {}
+
+
 
 //name: MockHook1
 //input: object params
@@ -174,6 +178,12 @@ export function MockHandler2(params: any) {
   return;
 }
 
+//name: MockTripple
+//input: double a
+//output: double res
+export function MockTripple(a: number) {
+  return 3 * a;
+}
 
 //name: MockPopup1
 //input: double a
@@ -574,6 +584,93 @@ export async function TestCompositionPipeline9() {
       to: ['step1', 'b'],
     }]
   });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline10
+export async function TestCompositionPipeline10() {
+  const conf1: PipelineConfiguration = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper1',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['step2', 'a'],
+    }]
+  }
+  const conf2: PipelineCompositionConfiguration = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper10',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:MockTripple',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['testPipeline1', 'step1', 'a'],
+    }]
+
+  }
+  const conf = CompositionPipeline.compose(conf2, [conf1]);
+  const pipeline = new CompositionPipeline(conf);
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+
+//name: TestCompositionPipeline11
+export async function TestCompositionPipeline11() {
+  const conf1: PipelineConfiguration = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper1',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['step2', 'a'],
+    }]
+  }
+  const conf2: PipelineCompositionConfiguration = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper11',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:MockTripple',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: ['step1', 'res'],
+      to: ['testPipeline1', 'step2', 'a'],
+    }],
+    itemsToRemove: [['testPipeline1', 'step1'], ['testPipeline1', 'link1']],
+  }
+  const conf = CompositionPipeline.compose(conf2, [conf1]);
+  const pipeline = new CompositionPipeline(conf);
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
 }
