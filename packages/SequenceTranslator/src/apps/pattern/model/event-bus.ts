@@ -1,9 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {STRANDS, STRAND} from './const';
-import {PatternConfiguration, StrandType, TerminalType} from './types';
+import {PatternConfiguration, StrandType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L} from './const';
 
@@ -111,44 +109,64 @@ export class EventBus {
   }
 
   updateStrandLength(strand: StrandType, newStrandLength: number): void {
-    const sequence = this.getNucleotideSequences()[strand];
-    if (sequence.length === newStrandLength) return;
+    const originalNucleotides = this.getNucleotideSequences()[strand];
+    if (originalNucleotides.length === newStrandLength) return;
 
-    const phosphorothioateLinkageFlags = this.getPhosphorothioateLinkageFlags()[strand];
+    const originalPTOFlags = this.getPhosphorothioateLinkageFlags()[strand];
 
     if (newStrandLength === 0) {
-      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: []});
-      this.updatePhosphorothioateLinkageFlags({
-        ...this.getPhosphorothioateLinkageFlags(),
-        [strand]: []
-      });
+      this.setNewStrandData([], [], strand);
       return;
     }
 
-    if (sequence.length > newStrandLength) {
-      const newSequence = sequence.slice(0, newStrandLength);
-      const newFlags = phosphorothioateLinkageFlags.slice(0, newStrandLength + 1);
-      this.updateNucleotideSequences({...this.getNucleotideSequences(), [strand]: newSequence});
-      this.updatePhosphorothioateLinkageFlags({
-        ...this.getPhosphorothioateLinkageFlags(),
-        [strand]: newFlags
-      });
+    if (originalNucleotides.length > newStrandLength) {
+      const {nucleotides, ptoFlags} = this.getTruncatedStrandData(originalNucleotides, originalPTOFlags, newStrandLength);
+      this.setNewStrandData(nucleotides, ptoFlags, strand);
       return;
     }
 
-    const appendedNucleotidesLength = newStrandLength - sequence.length;
-    const newSequence = sequence.concat(new Array(newStrandLength - sequence.length).fill(this._sequenceBase$.getValue()));
-    const appendedFlagsLength = (sequence.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
-    const newFlags = phosphorothioateLinkageFlags.concat(
+    const {nucleotides, ptoFlags} = this.getExtendedStrandData(originalNucleotides, originalPTOFlags, newStrandLength);
+    this.setNewStrandData(nucleotides, ptoFlags, strand);
+  }
+
+  private getTruncatedStrandData(
+    originalNucleotides: string[],
+    originalPTOFlags: boolean[],
+    newStrandLength: number
+  ): {nucleotides: string[], ptoFlags: boolean[]} {
+    const nucleotides = originalNucleotides.slice(0, newStrandLength);
+    const ptoFlags = originalPTOFlags.slice(0, newStrandLength + 1);
+    return {nucleotides, ptoFlags};
+  }
+
+  private getExtendedStrandData(
+    originalNucleotides: string[],
+    originalPTOFlags: boolean[],
+    newStrandLength: number
+  ): {nucleotides: string[], ptoFlags: boolean[]} {
+    const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
+    const nucleotides = originalNucleotides.concat(new Array(newStrandLength - originalNucleotides.length).fill(this._sequenceBase$.getValue()));
+
+    const appendedFlagsLength = (originalNucleotides.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
+    const ptoFlags = originalPTOFlags.concat(
       new Array(appendedFlagsLength).fill(true)
     );
+
+    return {nucleotides, ptoFlags};
+  }
+
+  private setNewStrandData(
+    nucleotides: string[],
+    ptoFlags: boolean[],
+    strand: StrandType,
+  ): void {
     this.updateNucleotideSequences({
       ...this.getNucleotideSequences(),
-      [strand]: newSequence
+      [strand]: nucleotides
     });
     this.updatePhosphorothioateLinkageFlags({
       ...this.getPhosphorothioateLinkageFlags(),
-      [strand]: newFlags
+      [strand]: ptoFlags
     });
   }
 

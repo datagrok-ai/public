@@ -100,7 +100,7 @@ class HeaderControls {
     });
 
     this.addStyleToPtoInput(allPtoActivationInput);
-    ui.tooltip.bind(allPtoActivationInput.captionLabel, 'Include all phosphothioates in the pattern');
+    ui.tooltip.bind(allPtoActivationInput.captionLabel, 'Activate all phosphothioates');
 
     return allPtoActivationInput;
   }
@@ -132,7 +132,7 @@ class HeaderControls {
       });
       
       this.addStyleToPtoInput(firstPtoInput);
-      ui.tooltip.bind(firstPtoInput.captionLabel, `Include first phosphothioate in ${strand}`);
+      ui.tooltip.bind(firstPtoInput.captionLabel, `Activate first phosphothioate in ${strand}`);
       return firstPtoInput;
     });
   }
