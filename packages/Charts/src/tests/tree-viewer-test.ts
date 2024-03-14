@@ -25,6 +25,8 @@ category('TreeViewer', () => {
   test('Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
+      rowSource: 'Filtered',
+      filter: '',
       top: '5px',
       left: '5px',
       bottom: '5px',
