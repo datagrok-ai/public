@@ -1,5 +1,5 @@
 import {SVGElementFactory} from './svg-element-factory';
-import {isOverhangNucleotide} from '../../model/helpers';
+import {isOverhangNucleotide} from '../../model/utils';
 import { STRAND, STRANDS, STRAND_END, STRAND_ENDS, TERMINUS, TERMINI } from '../../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../../model/types';
 import { SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, SVG_ELEMENT_COLORS, STRAND_END_LABEL_TEXT} from './const';

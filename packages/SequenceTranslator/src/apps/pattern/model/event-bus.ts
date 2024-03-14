@@ -120,53 +120,32 @@ export class EventBus {
     }
 
     if (originalNucleotides.length > newStrandLength) {
-      const {nucleotides, ptoFlags} = this.getTruncatedStrandData(originalNucleotides, originalPTOFlags, newStrandLength);
+      const {nucleotides, ptoFlags} = StrandUtils.getTruncatedStrandData(
+        originalNucleotides, originalPTOFlags, newStrandLength
+      );
       this.setNewStrandData(nucleotides, ptoFlags, strand);
       return;
     }
 
-    const {nucleotides, ptoFlags} = this.getExtendedStrandData(originalNucleotides, originalPTOFlags, newStrandLength);
+    const sequenceBase = this.getSequenceBase();
+    const {nucleotides, ptoFlags} = StrandUtils.getExtendedStrandData(
+      originalNucleotides, originalPTOFlags, newStrandLength, sequenceBase
+    );
     this.setNewStrandData(nucleotides, ptoFlags, strand);
   }
 
-  private getTruncatedStrandData(
-    originalNucleotides: string[],
-    originalPTOFlags: boolean[],
-    newStrandLength: number
-  ): {nucleotides: string[], ptoFlags: boolean[]} {
-    const nucleotides = originalNucleotides.slice(0, newStrandLength);
-    const ptoFlags = originalPTOFlags.slice(0, newStrandLength + 1);
-    return {nucleotides, ptoFlags};
-  }
-
-  private getExtendedStrandData(
-    originalNucleotides: string[],
-    originalPTOFlags: boolean[],
-    newStrandLength: number
-  ): {nucleotides: string[], ptoFlags: boolean[]} {
-    const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
-    const nucleotides = originalNucleotides.concat(new Array(newStrandLength - originalNucleotides.length).fill(this._sequenceBase$.getValue()));
-
-    const appendedFlagsLength = (originalNucleotides.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
-    const ptoFlags = originalPTOFlags.concat(
-      new Array(appendedFlagsLength).fill(true)
-    );
-
-    return {nucleotides, ptoFlags};
-  }
-
   private setNewStrandData(
-    nucleotides: string[],
-    ptoFlags: boolean[],
+    newNucleotides: string[],
+    newPTOFlags: boolean[],
     strand: StrandType,
   ): void {
     this.updateNucleotideSequences({
       ...this.getNucleotideSequences(),
-      [strand]: nucleotides
+      [strand]: newNucleotides
     });
     this.updatePhosphorothioateLinkageFlags({
       ...this.getPhosphorothioateLinkageFlags(),
-      [strand]: ptoFlags
+      [strand]: newPTOFlags
     });
   }
 
@@ -338,5 +317,34 @@ export class EventBus {
       this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
       this._nucleotideSequences$.asObservable().pipe(map(() => {})),
     ).pipe(debounceTime(50)) as rxjs.Observable<void>;
+  }
+}
+
+namespace StrandUtils {
+  export function getTruncatedStrandData(
+    originalNucleotides: string[],
+    originalPTOFlags: boolean[],
+    newStrandLength: number
+  ): {nucleotides: string[], ptoFlags: boolean[]} {
+    const nucleotides = originalNucleotides.slice(0, newStrandLength);
+    const ptoFlags = originalPTOFlags.slice(0, newStrandLength + 1);
+    return {nucleotides, ptoFlags};
+  }
+
+  export function getExtendedStrandData(
+    originalNucleotides: string[],
+    originalPTOFlags: boolean[],
+    newStrandLength: number,
+    sequenceBase: string
+  ): {nucleotides: string[], ptoFlags: boolean[]} {
+    const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
+    const nucleotides = originalNucleotides.concat(new Array(newStrandLength - originalNucleotides.length).fill(sequenceBase));
+
+    const appendedFlagsLength = (originalNucleotides.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
+    const ptoFlags = originalPTOFlags.concat(
+      new Array(appendedFlagsLength).fill(true)
+    );
+
+    return {nucleotides, ptoFlags};
   }
 }

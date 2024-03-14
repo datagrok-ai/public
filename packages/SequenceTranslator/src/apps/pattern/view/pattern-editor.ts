@@ -1,5 +1,4 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -33,7 +32,7 @@ export class PatternEditorDialog {
     this.eventBus.updatePatternEditor$.subscribe(() => {
       this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
       const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
-      const controls = new StrandControls(this.eventBus, this.initialPatternConfig).create();
+      const controls = new StrandControls(this.eventBus).create();
 
       $(editorBody).empty();
       $(editorBody).append(header, controls);
@@ -79,8 +78,9 @@ class HeaderControls {
       .reduce((a, b) => a + b, 0);
     const totalNumberOfNucleotides = STRANDS.map((strand) => this.initialPatternConfig.nucleotideSequences[strand].length).reduce((a, b) => a + b, 0);
 
-    // WARNING: +2 because there are +1 more PTO flags in each strand than there are nucleotides
-    return totalNumberOfPTOFlags === totalNumberOfNucleotides + 2;
+    // There are +1 more PTO flags in each strand than there are nucleotides
+    const addendum = STRANDS.filter((strand) => flags[strand].length).length;
+    return totalNumberOfPTOFlags === totalNumberOfNucleotides + addendum;
   }
 
   private createAllPtoActivationInput(): BooleanInput {
@@ -147,7 +147,6 @@ class StrandControls {
 
   constructor(
     private eventBus: EventBus,
-    private initialPatternConfig: PatternConfiguration,
   ) {
     this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       this.displayedInputLabels = this.computeDisplayedInputLabels();
@@ -271,17 +270,7 @@ class StrandControls {
     return labels;
   }
 
-
   private isOverhangNucleotide(modification: string): boolean {
     return modification.endsWith('(o)');
   }
-
-  // private generateSingleModificationControlGroup(strand: string, nucleotideCounter: number, index: number) {
-  //   const labelText = isOverhangNucleotide(getBaseInputValue(strand, index)) ? '' : String(nucleotideCounter);
-  //   const labelUI = ui.div([ui.label(labelText)], {style: {width: '20px'}});
-  //   const baseInputUI = ui.block75([nucleobaseInputs[strand][index].root]);
-  //   const ptoLinkageUI = ui.div([ptoLinkageInputs[strand][index]]);
-
-  //   return ui.divH([labelUI, baseInputUI, ptoLinkageUI], {style: {alignItems: 'center'}});
-  // }
 }

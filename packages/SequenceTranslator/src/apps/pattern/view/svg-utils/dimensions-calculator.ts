@@ -3,7 +3,7 @@ import { STRAND, STRANDS, STRAND_END, STRAND_TO_END_TERMINUS_MAP, STRAND_ENDS } 
 import {PatternConfiguration} from '../../model/types';
 import { SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS, STRAND_END_LABEL_TEXT} from './const';
 import {Position, StrandToNumberMap, StrandEndToNumberMap} from '../types';
-import {isOverhangNucleotide} from '../../model/helpers';
+import {isOverhangNucleotide} from '../../model/utils';
 
 export class PatternSVGDimensionsCalculator {
   private canvasDimensions: CanvasDimensionCalculator;

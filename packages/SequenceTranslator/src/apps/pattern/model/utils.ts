@@ -1,12 +1,11 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// @ts-ignore
-import * as svg from 'save-svg-as-png';
-import $ from 'cash-dom';
 
-import {isOverhangNucleotide} from './helpers';
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
+
+export function isOverhangNucleotide(modification: string): boolean {
+  return modification.endsWith('(o)');
+}
 
 export function generateExample(sequenceLength: number, sequenceBasis: string): string {
   const AXOLABS_MAP = AXOLABS_STYLE_MAP;
