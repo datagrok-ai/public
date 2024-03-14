@@ -4,6 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {PlsAnalysis} from './eda-tools';
+
 // Rename PCA columns
 export function renamePCAcolumns(pcaTable: DG.DataFrame): DG.DataFrame {
   for (const col of pcaTable.columns.toList())
@@ -130,6 +132,25 @@ export function addPLSvisualization(
 
   // 4. Scores Scatter Plot
   view.addViewer(scoresScatterPlot(samplesNames, plsOutput[2], plsOutput[3]));
+}
+
+/** Add multivariate analysis (PLS) visualization */
+export function addPlsVisualization(
+  table: DG.DataFrame, samplesNames: DG.Column, features: DG.ColumnList, predict: DG.Column, plsResults: PlsAnalysis,
+): void {
+  const view = (table.id !== null) ? grok.shell.getTableView(table.name) : grok.shell.addTableView(table);
+
+  // 1. Predicted vs Reference scatter plot
+  view.addViewer(predictedVersusReferenceScatterPlot(samplesNames, predict, plsResults.prediction));
+
+  // 2. Regression Coefficients Bar Chart
+  view.addViewer(regressionCoefficientsBarChart(features, plsResults.regressionCoefficients));
+
+  // 3. Loading Scatter Plot
+  view.addViewer(loadingScatterPlot(features, plsResults.xLoadings));
+
+  // 4. Scores Scatter Plot
+  view.addViewer(scoresScatterPlot(samplesNames, plsResults.tScores, plsResults.uScores));
 }
 
 // Add one-way ANOVA results
