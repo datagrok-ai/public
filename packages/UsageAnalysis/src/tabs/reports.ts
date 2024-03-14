@@ -29,7 +29,7 @@ export class ReportsView extends UaView {
     const filters = ui.box();
     filters.style.maxWidth = '250px';
 
-    const logViewer = new UaFilterableQueryViewer({
+    const reportsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'User reports',
       queryName: 'UserReports',
@@ -92,11 +92,11 @@ export class ReportsView extends UaView {
       },
     });
 
-    logViewer.root.classList.add('ui-panel');
-    this.viewers.push(logViewer);
+    reportsViewer.root.classList.add('ui-panel');
+    this.viewers.push(reportsViewer);
     this.root.append(ui.splitH([
       filters,
-      logViewer.root,
+      reportsViewer.root,
     ]));
   }
 }
