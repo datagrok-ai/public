@@ -266,6 +266,17 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       }
     }
 
+    if (!isColorValid(dfChartOptions.seriesOptions?.outlierColor) && !isColorValid(columnChartOptions.seriesOptions?.outlierColor)) {
+      if (chartData.seriesOptions) {
+        if (!isColorValid(chartData.seriesOptions.outlierColor))
+          chartData.seriesOptions.outlierColor = DG.Color.toHtml(DG.Color.red);
+      }
+      else {
+        if (!isColorValid(chartData.series ? chartData.series![0].outlierColor : ''))
+          chartData.series![0].outlierColor = DG.Color.toHtml(DG.Color.red);
+      }
+    }
+
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
     mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
