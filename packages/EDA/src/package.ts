@@ -9,7 +9,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './eda-tools';
-import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart,
+import {addPrefixToEachColumnName, regressionCoefficientsBarChart,
   scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
 import {getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
@@ -202,20 +202,6 @@ export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMet
     aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations);
 }
 
-//top-menu: ML | Analyze | Multivariate Analysis(old)...
-//name: Multivariate Analysis (PLS old)
-//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
-//input: dataframe table
-//input: column names
-//input: column_list features {type: numerical}
-//input: column predict {type: numerical}
-//input: int components = 3
-export async function PLSold(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList,
-  predict: DG.Column, components: number): Promise<void> {
-  const plsResults = await computePLS(table, features, predict, components);
-  addPLSvisualization(table, names, features, predict, plsResults);
-}
-
 //name: PLS
 //description: Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.
 //input: dataframe table
@@ -235,7 +221,7 @@ export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict:
 }
 
 //top-menu: ML | Analyze | PLS...
-//name: topMenuPLS_to_delete
+//name: topMenuPLS
 //description: Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the response variable.
 export async function topMenuPLS(): Promise<void> {
   await runMVA(PLS_ANALYSIS.COMPUTE_COMPONENTS);
