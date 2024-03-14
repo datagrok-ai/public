@@ -17,9 +17,9 @@ export function computeTextColorForNucleobaseLabel(nucleobase: string): string {
   const nucleobaseColor = styleMap[nucleobase]?.color || '';
 
   const rgbValues = nucleobaseColor.match(/\d+/g)?.map(Number);
-  if (!rgbValues || rgbValues.length < 3) {
+  if (!rgbValues || rgbValues.length < 3)
     return TEXT_COLOR.LIGHT;
-  }
+
 
   const [r, g, b] = rgbValues;
   const luminance = r * LUMINANCE_COEFFICIENTS.RED + g * LUMINANCE_COEFFICIENTS.GREEN + b * LUMINANCE_COEFFICIENTS.BLUE;

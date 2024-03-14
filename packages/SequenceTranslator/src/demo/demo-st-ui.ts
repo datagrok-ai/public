@@ -39,7 +39,7 @@ export async function demoOligoPatternUI() {
     asNewValues.forEach(async (value, idx) => {
       emulateUserInput(value, idx, (i) => (len - 2 - 2 * i));
     });
-  })
+  });
 }
 
 export async function demoOligoStructureUI() {
@@ -56,6 +56,6 @@ export async function demoOligoStructureUI() {
     const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
     inputSequences.forEach(async (sequence, idx) => {
       await setInputValue(idx, sequence);
-    })
+    });
   });
 }

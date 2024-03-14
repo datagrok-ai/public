@@ -98,7 +98,7 @@ export class StructureAppLayout {
           const selected = (idx === 0) ? DIRECTION.STRAIGHT : DIRECTION.INVERSE;
           return [key, ui.choiceInput(
             `${key.toUpperCase()} direction`, selected, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
-          )]
+          )];
         }
       )
     );
@@ -107,7 +107,7 @@ export class StructureAppLayout {
       directionChoiceInput[strand].onChanged(() => {
         let value = directionChoiceInput[strand].value === DIRECTION.INVERSE;
         // warning: the next line is necessary until the legacy notion of direction used in the molfile generation gets fixed
-        if (idx > 0) { value = !value; }
+        if (idx > 0) value = !value;
         this.directionInversion[strand] = value;
         this.onInput.next();
       });
@@ -126,7 +126,7 @@ export class StructureAppLayout {
     const clearBlock = Object.fromEntries(
       STRANDS.map(
         (key) => {
-          const clearIcon = ui.icons.delete(() => { coloredInput[key].inputBase.value = '' });
+          const clearIcon = ui.icons.delete(() => { coloredInput[key].inputBase.value = ''; });
           const clearButton = ui.button(clearIcon, () => {});
           ui.tooltip.bind(clearButton, `Clear ${key.toUpperCase()}`);
           return [key, clearIcon];
@@ -164,11 +164,11 @@ export class StructureAppLayout {
   private getStrandData() {
     return Object.fromEntries(
       STRANDS.map((strand, idx) => {
-        let invert = this.directionInversion[strand];
+        const invert = this.directionInversion[strand];
         return [strand, {
           strand: this.inputBase[strand].value.replace(/\s*/g, ''),
           invert: invert
-        }]
+        }];
       })
     );
   }

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { PatternConfiguration, StrandType } from '../../model/types';
+import {PatternConfiguration, StrandType} from '../../model/types';
 import {EventBus} from '../../model/event-bus';
 import {NucleotidePatternSVGRenderer} from './svg-renderer';
 //@ts-ignore

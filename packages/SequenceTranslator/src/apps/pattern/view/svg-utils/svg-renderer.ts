@@ -1,8 +1,8 @@
 import {SVGElementFactory} from './svg-element-factory';
 import {isOverhangNucleotide} from '../../model/utils';
-import { STRAND, STRANDS, STRAND_END, STRAND_ENDS, TERMINUS, TERMINI } from '../../model/const';
+import {STRAND, STRANDS, STRAND_END, STRAND_ENDS, TERMINUS, TERMINI} from '../../model/const';
 import {PatternConfiguration, StrandType, TerminalType} from '../../model/types';
-import { SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, SVG_ELEMENT_COLORS, STRAND_END_LABEL_TEXT} from './const';
+import {SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, SVG_ELEMENT_COLORS, STRAND_END_LABEL_TEXT} from './const';
 import {StrandToNumberMap, StrandEndToSVGElementsMap, TerminusToSVGElementMap} from '../types';
 import {
   getNucleobaseLabelForCircle,
@@ -47,7 +47,7 @@ export class NucleotidePatternSVGRenderer {
 
   private countNucleotidesExcludingOverhangs(): StrandToNumberMap {
     return STRANDS.reduce((acc, strand) => {
-      acc[strand] = this.config.nucleotideSequences[strand].filter(value => !isOverhangNucleotide(value)).length;
+      acc[strand] = this.config.nucleotideSequences[strand].filter((value) => !isOverhangNucleotide(value)).length;
       return acc;
     }, {} as StrandToNumberMap);
   }
@@ -57,11 +57,11 @@ export class NucleotidePatternSVGRenderer {
     const labelsTerminusModification = this.getTerminusModificationLabels();
 
     const labelElements = [
-      ...STRANDS.flatMap(strand => [
+      ...STRANDS.flatMap((strand) => [
         ...Object.values(strandEndLabels[strand]),
         ...Object.values(labelsTerminusModification[strand])
       ]),
-    ].filter(element => element !== null) as SVGElement[];
+    ].filter((element) => element !== null) as SVGElement[];
 
     return labelElements;
   }
@@ -103,7 +103,7 @@ class LegendBuilder {
   private containsPhosphorothioateLinkages: boolean;
   constructor(
     private svgFactory: SVGElementFactoryWrapper,
-    private config: PatternConfiguration,
+    private config: PatternConfiguration
   ) {
     this.containsPhosphorothioateLinkages = this.checkAnyPhosphorothioateLinkages();
   }
@@ -131,7 +131,7 @@ class LegendBuilder {
     const starLinkageLegendLabel = this.svgFactory.createLinkageStarLegendLabel(containsPhosphorothioateLinkages);
     const phosphorothioateLinkageLabel = this.svgFactory.createPhosphorothioateLinkageLabel(containsPhosphorothioateLinkages);
 
-    return [starLinkageLegendLabel, phosphorothioateLinkageLabel].filter(element => element !== null) as SVGElement[];
+    return [starLinkageLegendLabel, phosphorothioateLinkageLabel].filter((element) => element !== null) as SVGElement[];
   }
 
   private extractNucleotideTypes(): string[] {
@@ -147,7 +147,7 @@ class LegendBuilder {
   private checkAnyPhosphorothioateLinkages(): boolean {
     return [...this.config.phosphorothioateLinkageFlags[STRAND.SENSE],
       ...(this.config.isAntisenseStrandIncluded ? this.config.phosphorothioateLinkageFlags[STRAND.ANTISENSE] : [])
-    ].some(linkage => linkage);
+    ].some((linkage) => linkage);
   }
 }
 
@@ -172,7 +172,7 @@ class SVGElementFactoryWrapper {
   constructor(
     private svgElementFactory: SVGElementFactory,
     private config: PatternConfiguration,
-    private dimensionsCalculator: PatternSVGDimensionsCalculator,
+    private dimensionsCalculator: PatternSVGDimensionsCalculator
   ) { }
 
   createCanvas(): SVGElement {
@@ -219,9 +219,9 @@ class SVGElementFactoryWrapper {
     const isOverhang = isOverhangNucleotide(nucleotide);
     const labelPosition = this.dimensionsCalculator.getNumericLabelPosition(indexOfNucleotide, strand, displayedNucleotideNumber);
 
-    const labelText = (!isOverhang && this.config.nucleotidesWithNumericLabels.includes(nucleotide))
-      ? String(displayedNucleotideNumber)
-      : '';
+    const labelText = (!isOverhang && this.config.nucleotidesWithNumericLabels.includes(nucleotide)) ?
+      String(displayedNucleotideNumber) :
+      '';
 
     const nucleotideNumericLabel = this.svgElementFactory.createTextElement(
       labelText, labelPosition, SVG_TEXT_FONT_SIZES.COMMENT, SVG_ELEMENT_COLORS.TEXT
@@ -263,31 +263,31 @@ class SVGElementFactoryWrapper {
 
   createLinkageStarLegendLabel(isPhosphorothioateLinkageActive: boolean): SVGElement | null {
     const starLabelPosition = this.dimensionsCalculator.getStarLabelPosition();
-    const starLabel = isPhosphorothioateLinkageActive
-      ? this.svgElementFactory.createStarElement(starLabelPosition, SVG_ELEMENT_COLORS.LINKAGE_STAR)
-      : null;
+    const starLabel = isPhosphorothioateLinkageActive ?
+      this.svgElementFactory.createStarElement(starLabelPosition, SVG_ELEMENT_COLORS.LINKAGE_STAR) :
+      null;
 
     return starLabel;
   }
 
-  createPhosphorothioateLinkageLabel(isPhosphorothioateLinkageActive: boolean): SVGElement | null{
+  createPhosphorothioateLinkageLabel(isPhosphorothioateLinkageActive: boolean): SVGElement | null {
     const position = this.dimensionsCalculator.getPhosphorothioateLinkageLabelPosition();
-    const phosphorothioateLinkageLabel = isPhosphorothioateLinkageActive
-      ? this.svgElementFactory.createTextElement(
+    const phosphorothioateLinkageLabel = isPhosphorothioateLinkageActive ?
+      this.svgElementFactory.createTextElement(
         'ps linkage',
         position,
         SVG_TEXT_FONT_SIZES.COMMENT,
-        SVG_ELEMENT_COLORS.TEXT)
-      : null;
+        SVG_ELEMENT_COLORS.TEXT) :
+      null;
 
     return phosphorothioateLinkageLabel;
   };
 
   createLabelForStrandEnd(strand: StrandType, end: STRAND_END): SVGElement | null {
     const isLabelActive = (strand === STRAND.SENSE) || (strand === STRAND.ANTISENSE && this.config.isAntisenseStrandIncluded);
-    if (!isLabelActive) {
+    if (!isLabelActive)
       return null;
-    }
+
 
     const labelText = STRAND_END_LABEL_TEXT[end][strand];
     const labelPosition = this.dimensionsCalculator.getStrandEndLabelPosition(strand, end);
@@ -296,9 +296,9 @@ class SVGElementFactoryWrapper {
   }
 
   createTerminusModificationLabel(strand: StrandType, terminus: TerminalType): SVGElement | null {
-    if (strand === STRAND.ANTISENSE && !this.config.isAntisenseStrandIncluded) {
+    if (strand === STRAND.ANTISENSE && !this.config.isAntisenseStrandIncluded)
       return null;
-    }
+
 
     const end = (strand === STRAND.SENSE && terminus === TERMINUS.FIVE_PRIME) ||
       (strand === STRAND.ANTISENSE && terminus === TERMINUS.THREE_PRIME) ? STRAND_END.LEFT : STRAND_END.RIGHT;
@@ -325,7 +325,7 @@ class SVGElementFactoryWrapper {
 class StrandElementBuilder {
   constructor(
     private svgFactory: SVGElementFactoryWrapper,
-    private config: PatternConfiguration,
+    private config: PatternConfiguration
   ) { }
 
   createStrandElements(countOfNucleotidesExcludingOverhangs: StrandToNumberMap): SVGElement[] {
@@ -333,7 +333,7 @@ class StrandElementBuilder {
 
     const nucleotideCounter = new NucleotideCountTracker(countOfNucleotidesExcludingOverhangs);
 
-    STRANDS.forEach(strand => {
+    STRANDS.forEach((strand) => {
       const criterion = strand === STRAND.SENSE || (strand === STRAND.ANTISENSE && this.config.isAntisenseStrandIncluded);
       if (!criterion)
         return;
@@ -364,8 +364,8 @@ class StrandElementBuilder {
 
 
     const nucleotideNumericLabel = this.svgFactory.createNucleotideNumericLabel(indexOfNucleotide, strand, displayedNucleotideNumber);
-    const nucleotideCircle = this.svgFactory.  createNucleotideCircle(indexOfNucleotide, strand);
-    const nucleotideNameLabel = this.svgFactory.  createNucleotideNameLabel(indexOfNucleotide, strand);
+    const nucleotideCircle = this.svgFactory. createNucleotideCircle(indexOfNucleotide, strand);
+    const nucleotideNameLabel = this.svgFactory. createNucleotideNameLabel(indexOfNucleotide, strand);
 
     const phosphorothioateLinkageStar = this.svgFactory.createPhosphorothioateLinkageStar(strand, indexOfNucleotide);
 

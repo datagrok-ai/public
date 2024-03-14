@@ -19,7 +19,7 @@ function getTranslationObject(sequence: string, format: string): {[format: strin
 const inputs = {
   [DEFAULT_FORMATS.AXOLABS]: 'Afcgacsu',
   [DEFAULT_FORMATS.HELM]: 'RNA1{[fR](A)p.[25r](C)p.[25r](G)p.[25r](A)p.[25r](C)[sp].[25r](U)}$$$$'
-}
+};
 
 category('Formats support', () => {
   before(async () => {

@@ -37,7 +37,7 @@ export class MonomerLibWrapper {
       const map = CODES_TO_SYMBOLS_DICT[format];
       const codes = Object.keys(map).filter((code) => map[code] === sourceObj.symbol);
       formattedObject[format] = codes.join(', ');
-    })
+    });
 
     return formattedObject;
   }

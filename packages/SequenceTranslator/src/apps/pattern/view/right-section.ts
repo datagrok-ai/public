@@ -17,7 +17,7 @@ export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
 
   constructor(
-    private eventBus: EventBus,
+    private eventBus: EventBus
   ) {
     this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus);
   };
@@ -36,7 +36,7 @@ export class PatternAppRightSection {
       //   terminalModificationInputs[STRAND.SENSE][THREE_PRIME_END],
       // ]),
       // asModificationDiv,
-      ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
+    ], {style: {overflowX: 'scroll', padding: '12px 24px'}});
     return layout;
   }
 
@@ -61,7 +61,7 @@ class NumericLabelVisibilityControls {
   private togglesContainer: HTMLDivElement = ui.div([]);
 
   constructor(
-    private eventBus: EventBus,
+    private eventBus: EventBus
   ) {
     this.eventBus.uniqueNucleotideBasesChanged$().subscribe(() => {
       this.updateContainer();

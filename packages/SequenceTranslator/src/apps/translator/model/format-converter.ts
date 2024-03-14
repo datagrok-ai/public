@@ -16,21 +16,16 @@ export class FormatConverter {
   convertTo(targetFormat: string): string {
     const formats = this.formats.getFormatNames();
 
-    if (this.sourceFormat === DEFAULT_FORMATS.HELM && formats.includes(targetFormat))
-      return this.helmToFormat(this.sequence, targetFormat);
-    else if (formats.includes(this.sourceFormat) && targetFormat === DEFAULT_FORMATS.HELM)
-      return this.formatToHelm(this.sequence, this.sourceFormat);
-    else if ([this.sourceFormat, targetFormat].every((el) => formats.includes(el))) {
+    if (this.sourceFormat === DEFAULT_FORMATS.HELM && formats.includes(targetFormat)) { return this.helmToFormat(this.sequence, targetFormat); } else if (formats.includes(this.sourceFormat) && targetFormat === DEFAULT_FORMATS.HELM) { return this.formatToHelm(this.sequence, this.sourceFormat); } else if ([this.sourceFormat, targetFormat].every((el) => formats.includes(el))) {
       const helm = this.formatToHelm(this.sequence, this.sourceFormat);
       return this.helmToFormat(helm, targetFormat);
-    }
-    else {
-      throw new Error (`ST: unsupported translation direction ${this.sourceFormat} -> ${targetFormat}`);
+    } else {
+      throw new Error(`ST: unsupported translation direction ${this.sourceFormat} -> ${targetFormat}`);
     }
   }
 
   private helmToFormat(helmSequence: string, targetFormat: string): string {
-    const wrapperRegExp = new RegExp(getRegExpPattern(Object.values(HELM_WRAPPER)), 'g')
+    const wrapperRegExp = new RegExp(getRegExpPattern(Object.values(HELM_WRAPPER)), 'g');
     let result = helmSequence.replace(wrapperRegExp, '');
 
     const dict = this.formats.getHelmToFormatDict(targetFormat);
@@ -54,7 +49,7 @@ export class FormatConverter {
     const phosphateRegExp = this.formats.getPhosphateHelmCodesRegExp(sourceFormat);
 
     let helm = sequence.replace(formatRegExp, (match) => {
-      const result = formatCodes.includes(match) ?  dict[match] + '.' : '?';
+      const result = formatCodes.includes(match) ? dict[match] + '.' : '?';
       return result;
     });
     helm = helm.replace(/\?+/g, `${UNKNOWN_SYMBOL}.`);

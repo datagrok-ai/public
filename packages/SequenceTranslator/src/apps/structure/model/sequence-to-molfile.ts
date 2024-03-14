@@ -24,7 +24,7 @@ export class SequenceToMolfileConverter {
     parsedSequence.forEach((monomerSymbol, idx) => {
       const monomerMolfile = this.getMonomerMolfile(monomerSymbol, idx);
       monomerMolfiles.push(monomerMolfile);
-    })
+    });
     let molfile = this.getPolymerMolfile(monomerMolfiles);
     if (this.invert) {
       molfile = this.reflect(molfile);

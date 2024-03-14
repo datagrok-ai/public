@@ -1,7 +1,7 @@
 import {NUCLEOTIDES} from '../../../common/model/const';
-import { STRAND, STRANDS, STRAND_END, STRAND_TO_END_TERMINUS_MAP, STRAND_ENDS } from '../../model/const';
+import {STRAND, STRANDS, STRAND_END, STRAND_TO_END_TERMINUS_MAP, STRAND_ENDS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
-import { SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS, STRAND_END_LABEL_TEXT} from './const';
+import {SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS, STRAND_END_LABEL_TEXT} from './const';
 import {Position, StrandToNumberMap, StrandEndToNumberMap} from '../types';
 import {isOverhangNucleotide} from '../../model/utils';
 
@@ -13,7 +13,7 @@ export class PatternSVGDimensionsCalculator {
   private linkageStarPositionCalculator: LinkageStarPositionCalculator;
 
   constructor(
-    private config: PatternConfiguration,
+    private config: PatternConfiguration
   ) {
     const rightOverhangNucleotideCounts = this.computeRightOverhangNucleotideCounts();
     const maxEffectiveStrandLength = this.computeMaxEffectiveStrandLength(rightOverhangNucleotideCounts);
@@ -26,7 +26,7 @@ export class PatternSVGDimensionsCalculator {
       maxEffectiveStrandLength,
       maxWidthOfRightOverhangs,
       strandLabelWidth,
-      maxTerminusLabelWidthByEnd,
+      maxTerminusLabelWidthByEnd
     );
   }
 
@@ -35,26 +35,26 @@ export class PatternSVGDimensionsCalculator {
     maxEffectiveStrandLength: number,
     maxWidthOfRightOverhangs: number,
     strandLabelWidth: StrandEndToNumberMap,
-    maxTerminusLabelWidthByEnd: StrandEndToNumberMap,
+    maxTerminusLabelWidthByEnd: StrandEndToNumberMap
   ): void {
     this.canvasDimensions = new CanvasDimensionCalculator(
       this.config,
       maxEffectiveStrandLength,
       maxWidthOfRightOverhangs,
       strandLabelWidth,
-      maxTerminusLabelWidthByEnd,
+      maxTerminusLabelWidthByEnd
     );
 
     this.nucleotidePositionCalculator = new NucleotidePositionCalculator(
       this.config,
       maxEffectiveStrandLength,
       rightOverhangNucleotideCounts,
-      maxTerminusLabelWidthByEnd,
+      maxTerminusLabelWidthByEnd
     );
 
     this.legendPositionCalculator = new LegendPositionCalculator(
       this.config,
-      this.canvasDimensions,
+      this.canvasDimensions
     );
 
     this.labelPositionCalculator = new LabelPositionCalculator(
@@ -63,12 +63,12 @@ export class PatternSVGDimensionsCalculator {
       maxTerminusLabelWidthByEnd,
       strandLabelWidth,
       rightOverhangNucleotideCounts,
-      this.nucleotidePositionCalculator,
+      this.nucleotidePositionCalculator
     );
 
     this.linkageStarPositionCalculator = new LinkageStarPositionCalculator(
       this.nucleotidePositionCalculator,
-      rightOverhangNucleotideCounts,
+      rightOverhangNucleotideCounts
     );
   }
 
@@ -80,7 +80,7 @@ export class PatternSVGDimensionsCalculator {
   }
 
   private computeMaxEffectiveStrandLength(rightOverhangNucleotideCounts: StrandToNumberMap): number {
-    return Math.max(...STRANDS.map(strand => this.config.nucleotideSequences[strand].length - rightOverhangNucleotideCounts[strand]));
+    return Math.max(...STRANDS.map((strand) => this.config.nucleotideSequences[strand].length - rightOverhangNucleotideCounts[strand]));
   }
 
   private computeMaxWidthOfRightOverhangs(rightOverhangNucleotideCounts: StrandToNumberMap): number {
@@ -151,7 +151,7 @@ export class PatternSVGDimensionsCalculator {
   private computeStrandLabelWidth(): StrandEndToNumberMap {
     const widthOfStrandLabel = Object.fromEntries(
       STRAND_ENDS.map(
-        strandEnd => [strandEnd, this.getMaxWidthStrandEndLabelsByEnd(strandEnd)]
+        (strandEnd) => [strandEnd, this.getMaxWidthStrandEndLabelsByEnd(strandEnd)]
       )
     ) as StrandEndToNumberMap;
 
@@ -169,20 +169,20 @@ export class PatternSVGDimensionsCalculator {
 
   private getMaxWidthOfTerminusLabelsByEnd(end: STRAND_END): number {
     return this.calculateMaxWidthOfStrandEndLabel(
-      strand => this.config.strandTerminusModifications[strand][STRAND_TO_END_TERMINUS_MAP[strand][end]]
+      (strand) => this.config.strandTerminusModifications[strand][STRAND_TO_END_TERMINUS_MAP[strand][end]]
     );
   }
 
   private getMaxWidthStrandEndLabelsByEnd(strandEnd: STRAND_END): number {
     return this.calculateMaxWidthOfStrandEndLabel(
-      strand => STRAND_END_LABEL_TEXT[strandEnd][strand]
+      (strand) => STRAND_END_LABEL_TEXT[strandEnd][strand]
     );
   }
 
   private calculateMaxWidthOfStrandEndLabel(getLabelText: (strand: STRAND) => string): number {
     const textWidthCalculator = TextWidthCalculator.getInstance();
     return Math.max(
-      ...STRANDS.map(strand =>
+      ...STRANDS.map((strand) =>
         textWidthCalculator.computeTextWidth(
           getLabelText(strand),
           SVG_TEXT_FONT_SIZES.NUCLEOBASE,
@@ -246,7 +246,7 @@ class CanvasDimensionCalculator {
     private maxEffectiveStrandLength: number,
     private maxWidthOfRightOverhangs: number,
     private strandLabelWidth: StrandEndToNumberMap,
-    private maxTerminusWidthByEnd: StrandEndToNumberMap,
+    private maxTerminusWidthByEnd: StrandEndToNumberMap
   ) {}
 
   getCanvasWidth(): number {
@@ -270,7 +270,7 @@ class NucleotidePositionCalculator {
     private config: PatternConfiguration,
     private maxEffectiveStrandLength: number,
     private rightOverhangNucleotideCounts: StrandToNumberMap,
-    private maxTerminusWidthByEnd: StrandEndToNumberMap,
+    private maxTerminusWidthByEnd: StrandEndToNumberMap
   ) {}
 
   getNucleotideCirclePosition(indexOfNucleotide: number, strand: STRAND): Position {
@@ -312,7 +312,7 @@ class NucleotidePositionCalculator {
     const numericLabelOffset = this.computeNumericLabelXOffset(
       this.config.nucleotideSequences[strand],
       indexForVisualStrand,
-      displayedNucleotideNumber,
+      displayedNucleotideNumber
     );
 
     const numericLabelXPosition = this.computeNucleotideCircleXPositionByStrand(indexOfNucleotide, strand) + numericLabelOffset;
@@ -344,7 +344,7 @@ class NucleotidePositionCalculator {
 class LegendPositionCalculator {
   constructor(
     private config: PatternConfiguration,
-    private canvasDimensionCalculator: CanvasDimensionCalculator,
+    private canvasDimensionCalculator: CanvasDimensionCalculator
   ) {}
 
   getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
@@ -405,7 +405,7 @@ class LabelPositionCalculator {
     private maxTerminusWidthByEnd: StrandEndToNumberMap,
     private strandLabelWidth: StrandEndToNumberMap,
     private rightOverhangNucleotideCounts: StrandToNumberMap,
-    private nucleotidePositionCalculator: NucleotidePositionCalculator,
+    private nucleotidePositionCalculator: NucleotidePositionCalculator
   ) {
     this.xPositionOfTerminusModifications = this.computeXPositionOfTerminusModifications();
   }
@@ -437,17 +437,17 @@ class LabelPositionCalculator {
     const y = (this.config.isAntisenseStrandIncluded ? 11 : 8.5) * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
 
     const x = this.getXPositionOfStrandLabels()[STRAND_END.LEFT];
-    return { x, y };
+    return {x, y};
   }
 
   private getXPositionOfStrandLabels(): StrandEndToNumberMap {
     const maxRightTerminusModificationShift = Math.max(
-      ...STRANDS.map(strand => this.xPositionOfTerminusModifications[STRAND_END.RIGHT][strand])
+      ...STRANDS.map((strand) => this.xPositionOfTerminusModifications[STRAND_END.RIGHT][strand])
     );
 
-    const rightEndXPosition = maxRightTerminusModificationShift
-      + this.maxTerminusWidthByEnd[STRAND_END.LEFT]
-      + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * this.maxWidthOfRightOverhangs;
+    const rightEndXPosition = maxRightTerminusModificationShift +
+      this.maxTerminusWidthByEnd[STRAND_END.LEFT] +
+      SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER * this.maxWidthOfRightOverhangs;
 
     return {
       [STRAND_END.LEFT]: 0,
@@ -457,14 +457,14 @@ class LabelPositionCalculator {
 
   private computeXPositionOfTerminusModifications(): Record<typeof STRAND_ENDS[number], StrandToNumberMap> {
     const xPositionOfTerminusModifications = Object.fromEntries(
-      STRAND_ENDS.map(end => [
+      STRAND_ENDS.map((end) => [
         end,
         Object.fromEntries(
-          STRANDS.map(strand => [
+          STRANDS.map((strand) => [
             strand,
-            end === STRAND_END.LEFT
-            ? this.strandLabelWidth[STRAND_END.LEFT] - 5
-            : this.rightOverhangNucleotideCounts[strand] * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + this.nucleotidePositionCalculator.computeNucleobaseCircleXPosition(-0.5, 0)
+            end === STRAND_END.LEFT ?
+              this.strandLabelWidth[STRAND_END.LEFT] - 5 :
+              this.rightOverhangNucleotideCounts[strand] * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + this.nucleotidePositionCalculator.computeNucleobaseCircleXPosition(-0.5, 0)
           ])
         )
       ])
@@ -472,13 +472,12 @@ class LabelPositionCalculator {
 
     return xPositionOfTerminusModifications;
   }
-
 }
 
 class LinkageStarPositionCalculator {
   constructor(
     private nucleotidePositionCalculator: NucleotidePositionCalculator,
-    private rightOverhangNucleotideCounts: StrandToNumberMap,
+    private rightOverhangNucleotideCounts: StrandToNumberMap
   ) {}
 
   getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {

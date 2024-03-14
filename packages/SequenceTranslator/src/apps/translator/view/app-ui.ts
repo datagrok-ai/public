@@ -27,7 +27,7 @@ import {NUCLEOTIDES_FORMAT} from './const';
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',
 }
-const REQUIRED_COLUMN_LABELS = [ REQUIRED_COLUMN_LABEL.SEQUENCE ];
+const REQUIRED_COLUMN_LABELS = [REQUIRED_COLUMN_LABEL.SEQUENCE];
 
 export class TranslatorAppLayout {
   private eventBus: EventBus;
@@ -79,7 +79,7 @@ export class TranslatorAppLayout {
         singleSequenceControls,
         bulkControls,
         ui.block([ui.box(this.moleculeImgDiv)])
-      ]),
+      ])
     );
 
     this.formatChoiceInput.value = this.format;
@@ -102,7 +102,7 @@ export class TranslatorAppLayout {
       ...tableControls,
       inputFormats,
       outputFormats,
-      convertBulkButton 
+      convertBulkButton
     ], 'ui-form');
 
     const bulkTranslationControls = ui.block25([
@@ -182,7 +182,7 @@ export class TranslatorAppLayout {
     const formatChoiceInput = ui.div([this.formatChoiceInput]);
 
     const clearButton = ui.button(
-      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = '' }),
+      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = ''; }),
       () => {}
     );
     ui.tooltip.bind(clearButton, 'Clear input');
@@ -207,7 +207,7 @@ export class TranslatorAppLayout {
       ui.h1('Single sequence'),
       singleSequenceInputControls,
       singleSequenceOutputTable,
-    ])
+    ]);
 
     return singleSequenceControls;
   }
@@ -497,7 +497,7 @@ export class EventBus {
   getSelectedColumn(columnLabel: REQUIRED_COLUMN_LABEL): DG.Column<string> | null {
     return this._columnSelection[columnLabel].getValue();
   }
-  
+
   getSelectedInputFormat(): string {
     return this._inputFormatSelection$.getValue();
   }

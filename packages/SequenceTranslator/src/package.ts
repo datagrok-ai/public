@@ -23,7 +23,7 @@ class StPackage extends DG.Package {
 
   get monomerLib(): IMonomerLib {
     if (!this._monomerLib)
-      throw new Error ('Monomer lib not loaded')
+      throw new Error('Monomer lib not loaded');
     return this._monomerLib!;
   }
 

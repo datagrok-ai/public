@@ -11,11 +11,11 @@ import {MERMADE} from './const';
 
 export async function getExternalAppViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
   const externalPluginData = {
-  [MERMADE.FUNCTION_NAME]: {
+    [MERMADE.FUNCTION_NAME]: {
       tabName: MERMADE.TAB_NAME,
       parameters: getMerMadeParameters()
     },
-  }
+  };
 
   const result: {[tabName: string]: () => DG.View} = {};
 
@@ -30,7 +30,7 @@ export async function getExternalAppViewFactories(): Promise<{[name: string]: ()
 
       result[data.tabName] = () => pluginUI.getView();
     } catch (err) {
-      console.warn(`Plugin ${pluginName} not loaded, reason:`, err)
+      console.warn(`Plugin ${pluginName} not loaded, reason:`, err);
       continue;
     }
   }
@@ -44,5 +44,5 @@ function getMerMadeParameters(): {[name: string]: any} {
   return {
     coloredInput: input,
     codes: CODES_TO_SYMBOLS_DICT
-  }
+  };
 }

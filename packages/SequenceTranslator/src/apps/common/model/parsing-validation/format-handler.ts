@@ -106,7 +106,7 @@ export class FormatHandler {
     const formatCodes = Object.keys(dict).sort(inverseLengthComparator);
     return formatCodes;
   }
-  
+
   private getNonHelmFormatRegExp(format: string): RegExp {
     const formatCodes = this.getCodesByFormat(format);
     const formatRegExp = new RegExp(getRegExpPattern(formatCodes) + '|\\([^()]*\\)|.', 'g'); // the added group before '|.' is to avoid mismatch inside parenths
@@ -116,14 +116,14 @@ export class FormatHandler {
 
 export function getRegExpPattern(arr: string[]): string {
   const negativeLookBehind = '(?<!\\([^()]*)'; // not '(' followed by non-parenths
-  const negativeLookAhead = '(?![^()]*\\))';  // not ')' preceded by non-parenths
+  const negativeLookAhead = '(?![^()]*\\))'; // not ')' preceded by non-parenths
   const escaped = arr.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .map((key) => {
-    if (!key.includes('(') && !key.includes(')'))
-      return `${negativeLookBehind}${key}${negativeLookAhead}`;
-    return key;
-  });
-  const result =  escaped.join('|');
+      if (!key.includes('(') && !key.includes(')'))
+        return `${negativeLookBehind}${key}${negativeLookAhead}`;
+      return key;
+    });
+  const result = escaped.join('|');
   return result;
 }
 
@@ -132,16 +132,15 @@ function getHelmToCodeDict(infoObj: CodesInfo) {
   Object.values(infoObj).forEach((obj: {[code: string]: string}) => {
     Object.entries(obj).forEach(([code, helm]) => {
       const key = helm.replace(/\)p/g, ')').replace(/\]p/g, ']');
-      if (result[key] === undefined) {
+      if (result[key] === undefined)
         result[key] = [code];
-      } else {
+      else
         (result[key] as string[]).push(code);
-      }
-    })
+    });
   });
   Object.entries(result).forEach(([key, value]) => {
     const sorted = (value as string[]).sort(inverseLengthComparator);
     result[key] = sorted[0] as string;
-  })
+  });
   return result as {[key: string]: string};
 }

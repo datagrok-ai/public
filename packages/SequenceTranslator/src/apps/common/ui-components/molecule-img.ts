@@ -64,7 +64,7 @@ export class MoleculeImage {
   }
 
   private async zoomIn(): Promise<void> {
-    const dialog = ui.dialog({title: 'Molecule', showFooter:false});
+    const dialog = ui.dialog({title: 'Molecule', showFooter: false});
     const dialogDivStyle = {
       overflowX: 'scroll',
     };
@@ -79,7 +79,7 @@ export class MoleculeImage {
 
     const dialogCanvas = ui.canvas(dialogCanvasWidth, dialogCanvasHeight);
     await this.drawMolBlockOnCanvas(dialogCanvas);
-    
+
     const dialogDiv = ui.block([dialogCanvas], {style: dialogDivStyle});
     dialog.add(dialogDiv).showModal(true);
 
@@ -117,6 +117,6 @@ export class MoleculeImage {
     //$(canvas).on('mouseover', () => $(canvas).css('cursor', 'grab')); // for some reason 'zoom-in' value wouldn't work
     //$(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
 
-    moleculeImgDiv.append(ui.tooltip.bind(canvas,'Click to zoom'));
+    moleculeImgDiv.append(ui.tooltip.bind(canvas, 'Click to zoom'));
   }
 }

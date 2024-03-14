@@ -12,7 +12,7 @@ import {
 export interface LegacyPatternConfig {
   [PATTERN_KEY.SS_BASES]: string[];
   [PATTERN_KEY.AS_BASES]: string[];
-  [PATTERN_KEY.SS_PTO]:  boolean[];
+  [PATTERN_KEY.SS_PTO]: boolean[];
   [PATTERN_KEY.AS_PTO]: boolean[];
   [PATTERN_KEY.SS_3]: string;
   [PATTERN_KEY.SS_5]: string;

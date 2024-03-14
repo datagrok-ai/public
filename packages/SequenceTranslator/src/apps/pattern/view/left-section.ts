@@ -4,8 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import { STRAND, STRAND_LABEL, STRANDS, OTHER_USERS, MAX_SEQUENCE_LENGTH } from '../model/const';
-import { StrandType } from '../model/types';
+import {STRAND, STRAND_LABEL, STRANDS, OTHER_USERS, MAX_SEQUENCE_LENGTH} from '../model/const';
+import {StrandType} from '../model/types';
 
 import {StringInput, NumberInput} from './types';
 
@@ -18,14 +18,14 @@ export class PatternAppLeftSection {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    private defaults: PatternDefaultsProvider,
+    private defaults: PatternDefaultsProvider
   ) { };
 
   getLayout(): HTMLDivElement {
     const patternControlsManager = new PatternControlsManager(
       this.eventBus,
       this.dataManager,
-      this.defaults,
+      this.defaults
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
 
@@ -34,10 +34,10 @@ export class PatternAppLeftSection {
 
     const layout = ui.box(
       ui.div([
-          ...patternConstrolsBlock,
-          ...tableControlsBlock
-        ],
-        'ui-form'
+        ...patternConstrolsBlock,
+        ...tableControlsBlock
+      ],
+      'ui-form'
       ),
       {style: {maxWidth: '450px'}}
     );
@@ -49,7 +49,7 @@ class PatternControlsManager {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
-    private defaultState: PatternDefaultsProvider,
+    private defaultState: PatternDefaultsProvider
   ) { }
 
   createUIComponents(): HTMLElement[] {
@@ -91,7 +91,6 @@ class PatternControlsManager {
 
   private createStrandLengthInputs(): Record<string, NumberInput> {
     const createStrandLengthInput = (strand: StrandType) => {
-
       const sequenceLength = this.eventBus.getNucleotideSequences()[strand].length;
 
       const input = ui.intInput(
@@ -101,7 +100,7 @@ class PatternControlsManager {
       input.onInput(() => updateStrandLengthInputs(strand, input));
       input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
       return [strand, input];
-    }
+    };
 
     const updateStrandLengthInputs = (strand: StrandType, input: DG.InputBase<number | null>) => {
       const length = input.value;
@@ -117,7 +116,7 @@ class PatternControlsManager {
       }
 
       this.eventBus.updateStrandLength(strand, input.value!);
-    }
+    };
 
     const strandLengthInputs = Object.fromEntries(
       STRANDS.map((strand) => createStrandLengthInput(strand))
@@ -125,7 +124,7 @@ class PatternControlsManager {
 
     this.eventBus.antisenseStrandToggled$.subscribe((active: boolean) => {
       $(strandLengthInputs[STRAND.ANTISENSE].root).toggle(active);
-    })
+    });
 
     return strandLengthInputs;
   }
@@ -156,7 +155,7 @@ class PatternControlsManager {
   private createPatternSelectionBlock(): HTMLDivElement {
     const patternChoiceControls = new PatternChoiceControls(
       this.eventBus,
-      this.dataManager,
+      this.dataManager
     );
     return patternChoiceControls.getControlsContainer();
   }
@@ -164,7 +163,7 @@ class PatternControlsManager {
   private createPatternNameInputBlock(): HTMLElement {
     const patternNameControls = new PatternNameControls(
       this.eventBus,
-      this.dataManager,
+      this.dataManager
     );
     return patternNameControls.createPatternNameInputBlock();
   }
@@ -173,7 +172,7 @@ class PatternControlsManager {
 class PatternChoiceControls {
   constructor(
     private eventBus: EventBus,
-    private dataManager: PatternAppDataManager,
+    private dataManager: PatternAppDataManager
   ) {
     this.eventBus.patternLoadRequested$.subscribe((value: string) => this.handlePatternChoice(value));
 
@@ -202,7 +201,7 @@ class PatternChoiceControls {
   }
 
   private isCurrentUserSelected(): boolean {
-    return this.selectedUser !==  OTHER_USERS;
+    return this.selectedUser !== OTHER_USERS;
   }
 
   getControlsContainer(): HTMLDivElement {
@@ -217,7 +216,7 @@ class PatternChoiceControls {
 
     patternChoiceInput.root.append(
       userChoiceInput.input,
-      patternChoiceInput.input,
+      patternChoiceInput.input
     );
 
     this.setPatternChoiceInputStyle(patternChoiceInput);
@@ -263,7 +262,7 @@ class PatternChoiceControls {
   private createDeletePatternButton(): HTMLDivElement {
     const button = ui.button(ui.iconFA('trash-alt'), () => this.eventBus.deletePattern(this.selectedPattern));
 
-    return ui.div([ button ], 'ui-input-options');
+    return ui.div([button], 'ui-input-options');
   }
 
   private updatePatternChoiceInputContainer(): void {
@@ -276,7 +275,7 @@ class PatternChoiceControls {
 class PatternNameControls {
   constructor(
     private eventBus: EventBus,
-    private dataManager: PatternAppDataManager,
+    private dataManager: PatternAppDataManager
   ) { }
 
   createPatternNameInputBlock(): HTMLElement {
@@ -366,9 +365,9 @@ class TableInputManager {
   }
 
   private handleTableAdded(table: DG.DataFrame): void {
-    if (this.availableTables.some((availableTable: DG.DataFrame) => availableTable.name === table.name)) {
+    if (this.availableTables.some((availableTable: DG.DataFrame) => availableTable.name === table.name))
       return;
-    }
+
 
     this.availableTables.push(table);
 
@@ -450,7 +449,7 @@ class ColumnInputManager {
     this.columnControlsContainer.append(
       senseStrandColumnInput,
       antisenseStrandColumnInput,
-      idColumnInput,
+      idColumnInput
     );
   }
 

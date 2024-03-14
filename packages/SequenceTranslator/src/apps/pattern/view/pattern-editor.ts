@@ -10,6 +10,7 @@ import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
 import {BooleanInput, StringInput} from './types';
 import {PatternConfiguration, PhosphorothioateLinkageFlags, StrandType} from '../model/types';
 import {STRAND, STRANDS, STRAND_LABEL} from '../model/const';
+import {isOverhangNucleotide} from '../model/utils';
 
 export let isDialogOpen = false;
 
@@ -17,7 +18,7 @@ export class PatternEditorDialog {
   private initialPatternConfig: PatternConfiguration;
 
   constructor(
-    private eventBus: EventBus,
+    private eventBus: EventBus
   ) {
     this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
   }
@@ -39,9 +40,9 @@ export class PatternEditorDialog {
     });
 
     const dialog = ui.dialog('Edit pattern')
-    .add(editorBody)
-    .onOK(() => {})
-    .onCancel(() => this.resetToInitialState());
+      .add(editorBody)
+      .onOK(() => {})
+      .onCancel(() => this.resetToInitialState());
 
     dialog.onClose.subscribe(() => isDialogOpen = false);
 
@@ -65,8 +66,8 @@ class HeaderControls {
       ui.divH([
         this.createAllPtoActivationInput().root,
         ...this.createFirstPtoInputs().map((input) => input.root),
-      ], {style:{gap:'12px'}})
-    ])
+      ], {style: {gap: '12px'}})
+    ]);
 
     return container;
   }
@@ -76,7 +77,9 @@ class HeaderControls {
       (strand) => flags[strand].filter((flag) => flag).length
     )
       .reduce((a, b) => a + b, 0);
-    const totalNumberOfNucleotides = STRANDS.map((strand) => this.initialPatternConfig.nucleotideSequences[strand].length).reduce((a, b) => a + b, 0);
+    const totalNumberOfNucleotides = STRANDS.map(
+      (strand) => this.initialPatternConfig.nucleotideSequences[strand].length
+    ).reduce((a, b) => a + b, 0);
 
     // There are +1 more PTO flags in each strand than there are nucleotides
     const addendum = STRANDS.filter((strand) => flags[strand].length).length;
@@ -130,7 +133,7 @@ class HeaderControls {
         const newValue = flags[strand][0];
         firstPtoInput.value = newValue;
       });
-      
+
       this.addStyleToPtoInput(firstPtoInput);
       ui.tooltip.bind(firstPtoInput.captionLabel, `Activate first phosphothioate in ${strand}`);
       return firstPtoInput;
@@ -146,7 +149,7 @@ class StrandControls {
   private displayedInputLabels: Map<StrandType, string[]>;
 
   constructor(
-    private eventBus: EventBus,
+    private eventBus: EventBus
   ) {
     this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       this.displayedInputLabels = this.computeDisplayedInputLabels();
@@ -156,11 +159,15 @@ class StrandControls {
   create(): HTMLDivElement {
     const inputPanels = STRANDS.map((strand) => this.constructControlsPanel(strand));
 
-    const container = ui.divH(inputPanels, {style:{gap:'24px'}})
+    const container = ui.divH(inputPanels, {style: {gap: '24px'}});
     return container;
   }
 
   private constructControlsPanel(strand: StrandType): HTMLDivElement {
+    if (!this.eventBus.isAntiSenseStrandVisible() && strand === STRAND.ANTISENSE)
+      return ui.div([]);
+
+
     const header = this.constructHeader();
     const modificationControls = this.createControls(strand);
 
@@ -192,7 +199,7 @@ class StrandControls {
           nucleobaseInput.root,
           ptoLinkageInputs[idx].root,
         ], {style: {alignItems: 'center'}});
-    }));
+      }));
     return container;
   }
 
@@ -210,7 +217,7 @@ class StrandControls {
 
     return choiceInputs;
   }
-  
+
   private createPTOFlagInputs(strand: StrandType): BooleanInput[] {
     const ptoLinkageFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
     const ptoLinkageInputs = ptoLinkageFlags.map((flag, index) => {
@@ -218,7 +225,12 @@ class StrandControls {
       input.onInput(() => {
         const newValue = input.value!;
         this.eventBus.setPhosphorothioateLinkageFlag(strand, index + 1, newValue);
-      })
+      });
+
+      this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
+        const newValue = flags[strand][index + 1];
+        input.value = newValue;
+      });
       return input;
     });
 
@@ -232,9 +244,9 @@ class StrandControls {
       let counter = 1;
       const strandNucleotides = nucleotides[strand];
       const strandLabels = strandNucleotides.map((nucleotide) => {
-        if (this.isOverhangNucleotide(nucleotide)) {
+        if (isOverhangNucleotide(nucleotide))
           return '';
-        }
+
         const label = String(counter);
         counter++;
         return label;
@@ -268,9 +280,5 @@ class StrandControls {
     });
 
     return labels;
-  }
-
-  private isOverhangNucleotide(modification: string): boolean {
-    return modification.endsWith('(o)');
   }
 }

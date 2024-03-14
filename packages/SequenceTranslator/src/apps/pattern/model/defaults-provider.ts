@@ -23,7 +23,7 @@ export class PatternDefaultsProvider {
   fetchDefaultNucleobase(): string {
     return this.fetchAvailableNucleotideBases()[0];
   }
-  
+
   fetchAvailableNucleotideBases(): string[] {
     const nucleotideBases: string[] = Object.keys(AXOLABS_STYLE_MAP);
     return nucleotideBases;
@@ -37,7 +37,7 @@ export class PatternDefaultsProvider {
 
     return phosphorothioateLinkageFlags;
   }
-  
+
   getTerminusModifications(): StrandTerminusModifications {
     const terminusModifications = {} as StrandTerminusModifications;
     STRANDS.forEach((strand) => {
@@ -51,10 +51,9 @@ export class PatternDefaultsProvider {
   }
 
   getComment(): string { return DEFAULT.COMMENT; }
-  
-  getModificationsWithNumericLabels(): string[] {
-    return [ this.fetchDefaultNucleobase() ];
 
+  getModificationsWithNumericLabels(): string[] {
+    return [this.fetchDefaultNucleobase()];
   }
 
   getMaxSequenceLength(): number { return DEFAULT.SEQUENCE_LENGTH; }

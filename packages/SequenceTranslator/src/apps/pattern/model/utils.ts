@@ -108,3 +108,32 @@ export function addColumnWithTranslatedSequences(
         firstPtoExist);
   });
 }
+
+export namespace StrandEditingUtils {
+  export function getTruncatedStrandData(
+    originalNucleotides: string[],
+    originalPTOFlags: boolean[],
+    newStrandLength: number
+  ): {nucleotides: string[], ptoFlags: boolean[]} {
+    const nucleotides = originalNucleotides.slice(0, newStrandLength);
+    const ptoFlags = originalPTOFlags.slice(0, newStrandLength + 1);
+    return {nucleotides, ptoFlags};
+  }
+
+  export function getExtendedStrandData(
+    originalNucleotides: string[],
+    originalPTOFlags: boolean[],
+    newStrandLength: number,
+    sequenceBase: string
+  ): {nucleotides: string[], ptoFlags: boolean[]} {
+    const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
+    const nucleotides = originalNucleotides.concat(new Array(newStrandLength - originalNucleotides.length).fill(sequenceBase));
+
+    const appendedFlagsLength = (originalNucleotides.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
+    const ptoFlags = originalPTOFlags.concat(
+      new Array(appendedFlagsLength).fill(true)
+    );
+
+    return {nucleotides, ptoFlags};
+  }
+}

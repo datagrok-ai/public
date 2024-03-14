@@ -21,7 +21,7 @@ export abstract class AppUIBase {
   async initializeAppLayout(): Promise<void> {
     const progressIndicator: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${this.appName}...`);
 
-    let currentView = grok.shell.v?.root;
+    const currentView = grok.shell.v?.root;
     if (currentView)
       ui.setUpdateIndicator(currentView, true);
 
@@ -72,10 +72,10 @@ abstract class SimpleAppUIBase extends AppUIBase {
 
 export class CombinedAppUI extends AppUIBase {
   constructor(externalViewFactories: ViewFactories) {
-    super(APP.COMBINED)
+    super(APP.COMBINED);
     this.externalViewFactories = externalViewFactories;
     const factories = this.getViewFactories();
-    this.multiView = new DG.MultiView({viewFactories: factories}); 
+    this.multiView = new DG.MultiView({viewFactories: factories});
   }
 
   private multiView: DG.MultiView;
@@ -94,12 +94,12 @@ export class CombinedAppUI extends AppUIBase {
       [TAB.TRANSLATOR]: viewFactory(OligoTranslatorUI),
       [TAB.PATTERN]: viewFactory(OligoPatternUI),
       [TAB.STRUCTRE]: viewFactory(OligoStructureUI),
-    }
+    };
 
     if (this.externalViewFactories)
       result = Object.assign({}, result, this.externalViewFactories);
 
-    return result
+    return result;
   }
 
   private getCurrentPanePath(): string {
@@ -138,14 +138,14 @@ export class AppUIFactory {
 
   static createAppUIInstance(appName: string): SimpleAppUIBase {
     switch (appName) {
-      case APP.TRANSLATOR:
-        return new OligoTranslatorUI();
-      case APP.PATTERN:
-        return new OligoPatternUI();
-      case APP.STRUCTRE:
-        return new OligoStructureUI();
-      default:
-        throw new Error(`Unknown app name: ${appName}`);
+    case APP.TRANSLATOR:
+      return new OligoTranslatorUI();
+    case APP.PATTERN:
+      return new OligoPatternUI();
+    case APP.STRUCTRE:
+      return new OligoStructureUI();
+    default:
+      throw new Error(`Unknown app name: ${appName}`);
     }
   }
 }
@@ -183,7 +183,7 @@ class OligoPatternUI extends SimpleAppUIBase {
 
 class OligoStructureUI extends SimpleAppUIBase {
   constructor() {
-    super(APP.STRUCTRE)
+    super(APP.STRUCTRE);
     this.layout = new StructureAppLayout();
   }
   private readonly layout: StructureAppLayout;

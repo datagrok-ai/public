@@ -10,7 +10,7 @@ import {CODES_TO_HELM_DICT} from '../../data-loader/json-loader';
 import {SequenceValidator} from './sequence-validator';
 
 export class FormatDetector {
-  constructor (private sequence: string) {
+  constructor(private sequence: string) {
     this.libWrapper = MonomerLibWrapper.getInstance();
     this.formats = Object.keys(CODES_TO_HELM_DICT);
   };
@@ -39,9 +39,9 @@ export class FormatDetector {
   // todo: rename
   private getListOfPossibleSynthesizersByFirstMatchedCode(): string[] {
     const sequence = this.sequence;
-    let synthesizers: string[] = [];
+    const synthesizers: string[] = [];
     for (const format of this.formats) {
-      let codes = sortByReverseLength(this.libWrapper.getCodesByFormat(format));
+      const codes = sortByReverseLength(this.libWrapper.getCodesByFormat(format));
       let start = 0;
       for (let i = 0; i < sequence.length; i++) {
         if (sequence[i] === ')' && i !== sequence.length - 1) {

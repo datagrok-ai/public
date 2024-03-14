@@ -34,7 +34,6 @@ export class PatternAppDataManager {
     const patternConfig = this.eventBus.getPatternConfig();
     await PatternConfigLoader.savePattern(patternConfig);
   }
-
 }
 
 class PatternConfigManager {
@@ -61,9 +60,9 @@ class PatternConfigManager {
   }
 
   private async initializePatterns(patternRecords: RawPatternRecords) {
-    if (!this.currentUserId) {
+    if (!this.currentUserId)
       throw new Error('Current user ID is not set');
-    }
+
 
     const userIdsToUserNames = new Map<string, string>();
 
@@ -118,11 +117,9 @@ namespace PatternConfigLoader {
     const hash = getHash(patternConfig);
     const record = {
       [R.PATTERN_CONFIG]: patternConfig,
-      [R.AUTHOR_ID]: await grok.dapi.users.current().then(u => u.id),
+      [R.AUTHOR_ID]: await grok.dapi.users.current().then((u) => u.id),
     };
     const stringifiedRecord = JSON.stringify(record);
-    // console.log(`hash:`, hash);
-    // console.log(`record:`, record);
     await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, stringifiedRecord, false);
   }
 

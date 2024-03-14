@@ -42,7 +42,7 @@ export class SequenceValidator {
       indexOfFirstInvalidChar += matchedCode.length;
     }
     if (indexOfFirstInvalidChar === this.sequence.length)
-      indexOfFirstInvalidChar = -1
+      indexOfFirstInvalidChar = -1;
     return indexOfFirstInvalidChar;
   }
 

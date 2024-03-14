@@ -4,6 +4,7 @@ import {STRANDS, STRAND} from './const';
 import {PatternConfiguration, StrandType} from './types';
 import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L} from './const';
+import {StrandEditingUtils} from './utils';
 
 import * as rxjs from 'rxjs';
 import {map, debounceTime} from 'rxjs/operators';
@@ -89,7 +90,7 @@ export class EventBus {
 
   toggleAntisenseStrand(isActive: boolean) {
     if (!isActive)
-      this.updateStrandLength(STRAND.ANTISENSE, 0)
+      this.updateStrandLength(STRAND.ANTISENSE, 0);
     else
       this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.SENSE].length);
 
@@ -120,7 +121,7 @@ export class EventBus {
     }
 
     if (originalNucleotides.length > newStrandLength) {
-      const {nucleotides, ptoFlags} = StrandUtils.getTruncatedStrandData(
+      const {nucleotides, ptoFlags} = StrandEditingUtils.getTruncatedStrandData(
         originalNucleotides, originalPTOFlags, newStrandLength
       );
       this.setNewStrandData(nucleotides, ptoFlags, strand);
@@ -128,7 +129,7 @@ export class EventBus {
     }
 
     const sequenceBase = this.getSequenceBase();
-    const {nucleotides, ptoFlags} = StrandUtils.getExtendedStrandData(
+    const {nucleotides, ptoFlags} = StrandEditingUtils.getExtendedStrandData(
       originalNucleotides, originalPTOFlags, newStrandLength, sequenceBase
     );
     this.setNewStrandData(nucleotides, ptoFlags, strand);
@@ -137,7 +138,7 @@ export class EventBus {
   private setNewStrandData(
     newNucleotides: string[],
     newPTOFlags: boolean[],
-    strand: StrandType,
+    strand: StrandType
   ): void {
     this.updateNucleotideSequences({
       ...this.getNucleotideSequences(),
@@ -236,16 +237,16 @@ export class EventBus {
 
   get patternStateChanged$(): rxjs.Observable<void> {
     const observable = rxjs.merge(
-      this._patternName$,
+      this._patternName$.pipe(debounceTime(300), map(() => {})),
       this._isAntisenseStrandActive$,
       this._nucleotideSequences$,
       this._phosphorothioateLinkageFlags,
       this._terminalModifications,
-      this._comment$,
-      this._modificationsWithNumericLabels$,
+      this._comment$.pipe(debounceTime(300)),
+      this._modificationsWithNumericLabels$
     ) as rxjs.Observable<void>;
 
-    return observable.pipe(debounceTime(50));
+    return observable;
   }
 
   getSequenceBase(): string {
@@ -267,7 +268,7 @@ export class EventBus {
   requestSvgSave() {
     this._svgSaveRequested$.next();
   }
-  
+
   setAllPTOLinkages(value: boolean) {
     const flags = this.getPhosphorothioateLinkageFlags();
     STRANDS.forEach((strand) => {
@@ -315,36 +316,8 @@ export class EventBus {
   get updatePatternEditor$(): rxjs.Observable<void> {
     return rxjs.merge(
       this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
-      this._nucleotideSequences$.asObservable().pipe(map(() => {})),
-    ).pipe(debounceTime(50)) as rxjs.Observable<void>;
+      this._nucleotideSequences$.asObservable().pipe(map(() => {}))
+    ) as rxjs.Observable<void>;
   }
 }
 
-namespace StrandUtils {
-  export function getTruncatedStrandData(
-    originalNucleotides: string[],
-    originalPTOFlags: boolean[],
-    newStrandLength: number
-  ): {nucleotides: string[], ptoFlags: boolean[]} {
-    const nucleotides = originalNucleotides.slice(0, newStrandLength);
-    const ptoFlags = originalPTOFlags.slice(0, newStrandLength + 1);
-    return {nucleotides, ptoFlags};
-  }
-
-  export function getExtendedStrandData(
-    originalNucleotides: string[],
-    originalPTOFlags: boolean[],
-    newStrandLength: number,
-    sequenceBase: string
-  ): {nucleotides: string[], ptoFlags: boolean[]} {
-    const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
-    const nucleotides = originalNucleotides.concat(new Array(newStrandLength - originalNucleotides.length).fill(sequenceBase));
-
-    const appendedFlagsLength = (originalNucleotides.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
-    const ptoFlags = originalPTOFlags.concat(
-      new Array(appendedFlagsLength).fill(true)
-    );
-
-    return {nucleotides, ptoFlags};
-  }
-}

@@ -37,12 +37,12 @@ export class SVGElementFactory {
   public createTextElement(textContent: string, position: Position, fontSize: number, color: string): SVGTextElement {
     const textElement = this.createElement('text') as SVGTextElement;
     this.setAttributes(textElement, {
-      x: position.x,
-      y: position.y,
+      'x': position.x,
+      'y': position.y,
       'font-size': fontSize,
       'font-weight': 'normal',
       'font-family': 'Arial',
-      fill: color,
+      'fill': color,
     });
     textElement.textContent = textContent;
     return textElement;
@@ -51,7 +51,7 @@ export class SVGElementFactory {
   public createStarElement(centerPosition: Position, color: string): SVGPolygonElement {
     const star = this.createElement('polygon') as SVGPolygonElement;
     const points = this.computeStarVertexCoordinates(centerPosition);
-    const pointsAttribute = points.map(point => point.join(',')).join(' ');
+    const pointsAttribute = points.map((point) => point.join(',')).join(' ');
 
     this.setAttributes(star, {
       points: pointsAttribute,
@@ -68,7 +68,7 @@ export class SVGElementFactory {
     const radiansOffset = - radiansPerVertex / 2;
     const totalNumberOfVertices = outerVerticesPerStar * 2;
 
-    const points: [number, number][] = Array.from({ length: totalNumberOfVertices }, (_, i) => {
+    const points: [number, number][] = Array.from({length: totalNumberOfVertices}, (_, i) => {
       const isOuterVertex = i % 2 === 0;
       const radius = isOuterVertex ? outerVertexRadius : innerVertexRadius;
       const angle = i * radiansPerVertex + radiansOffset;

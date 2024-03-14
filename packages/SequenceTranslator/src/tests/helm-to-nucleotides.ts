@@ -22,5 +22,5 @@ category('HELM to Nucleotides', () => {
       const result = getNucleotidesSequence(helm, MonomerLibWrapper.getInstance());
       expect(result, expected);
     });
-  })
+  });
 });

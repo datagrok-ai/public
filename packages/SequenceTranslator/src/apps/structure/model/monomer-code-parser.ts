@@ -12,7 +12,7 @@ import {MONOMERS_WITH_PHOSPHATE} from '../../common/data-loader/json-loader';
  * omitted linkers, if needed)  */
 export class MonomerSequenceParser {
   constructor(
-    private sequence: string, 
+    private sequence: string,
     // todo: remove from the list of parameters
     private codeMap: Map<string, string>
   ) {
@@ -39,9 +39,8 @@ export class MonomerSequenceParser {
       const nextMonomerIsPhosphate = (i + 1 < parsedRawCodes.length && monomerIsPhosphateLinker(this.getSymbolForCode(parsedRawCodes[i + 1])));
 
       // todo: refactor as molfile-specific
-      if (!isPhosphate && !monomerHasRightPhosphateLinker(monomerSymbol) && !nextMonomerIsPhosphate && !lastMonomer) {
+      if (!isPhosphate && !monomerHasRightPhosphateLinker(monomerSymbol) && !nextMonomerIsPhosphate && !lastMonomer)
         monomerSymbolSequence.push(PHOSPHATE_SYMBOL);
-      }
     });
     return monomerSymbolSequence;
   }
@@ -70,7 +69,7 @@ export class MonomerSequenceParser {
 
   // todo: port to monomer handler
   private getAllCodesOfFormat(): string[] {
-    let allCodesInTheFormat = Array.from(this.codeMap.keys());
+    const allCodesInTheFormat = Array.from(this.codeMap.keys());
     return sortByReverseLength(allCodesInTheFormat);
   }
 }

@@ -1,4 +1,4 @@
-import { STRAND, TERMINUS, STRAND_END } from '../../model/const';
+import {STRAND, TERMINUS, STRAND_END} from '../../model/const';
 
 export const enum LUMINANCE_COEFFICIENTS {
   RED = 0.299,

@@ -1,5 +1,5 @@
 import {DEFAULT_FORMATS, NUCLEOTIDES} from '../../common/model/const';
-import {NUCLEOTIDES_FORMAT} from '../view/const'
+import {NUCLEOTIDES_FORMAT} from '../view/const';
 import {UNKNOWN_SYMBOL} from './const';
 import {FormatConverter} from './format-converter';
 import {CODES_TO_HELM_DICT} from '../../common/data-loader/json-loader';
@@ -12,7 +12,7 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
     return {};
 
   if (!supportedFormats.includes(sourceFormat))
-    throw new Error(`${sourceFormat} format is not supported by SequenceTranslator`)
+    throw new Error(`${sourceFormat} format is not supported by SequenceTranslator`);
 
   const outputFormats = supportedFormats.filter((el) => el != sourceFormat)
     .sort((a, b) => a.localeCompare(b));
@@ -27,7 +27,7 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
       }
       return [format, translation];
     }).filter(([_, translation]) => translation)
-  )
+  );
   const helm = (sourceFormat === DEFAULT_FORMATS.HELM) ? sequence : result[DEFAULT_FORMATS.HELM];
   const nucleotides = getNucleotidesSequence(helm, MonomerLibWrapper.getInstance());
   if (nucleotides)

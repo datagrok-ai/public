@@ -25,7 +25,7 @@ export async function loadJsonData(): Promise<void> {
     CODES_TO_SYMBOLS_DICT,
     MONOMERS_WITH_PHOSPHATE
   ] = await Promise.all(
-    jsonFileNames.map(fileName => loadAndParseJson(fileName))
+    jsonFileNames.map((fileName) => loadAndParseJson(fileName))
   );
 }
 
