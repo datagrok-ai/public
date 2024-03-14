@@ -1346,3 +1346,48 @@ export class HistoryEntry {
   get object(): object { return toJs(api.grok_HistoryEntry_Get_Object(this.dart)); }
   get time(): object { return toJs(api.grok_HistoryEntry_Get_Time(this.dart)); }
 }
+
+export class EntityType {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  };
+
+  static create(name: string, matching: string): EntityType {
+    return toJs(api.grok_EntityType_Create(toJs(name), toJs(matching)));
+  }
+
+  get name(): string { return toJs(api.grok_EntityType_Get_Name(this.dart)); }
+  set name(s: string) { api.grok_EntityType_Set_Name(this.dart, toDart(s)); }
+  get matching(): string { return toJs(api.grok_EntityType_Get_Matching(this.dart)); }
+  set matching(s: string) { api.grok_EntityType_Set_Matching(this.dart, toDart(s)); }
+}
+
+export class EntityProperty extends Property {
+  constructor(dart: any) {
+    super(dart);
+  };
+
+  static create(name: string, type: string): EntityProperty {
+    return toJs(api.grok_EntityProperty_Create(toDart(name), toDart(type)));
+  }
+}
+
+export class Schema {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  };
+
+  static create(name: string): Schema {
+    return toJs(api.grok_Schema_Create(toDart(name)));
+  }
+
+  get name(): string { return api.grok_Schema_Get_Name(this.dart); }
+  get properties(): EntityProperty[] { return toJs(api.grok_Schema_Get_Properties(this.dart)); }
+  set properties(p: EntityProperty[]) { api.grok_Schema_Set_Properties(this.dart, p); }
+  get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
+  set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
+}
