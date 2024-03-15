@@ -25,7 +25,7 @@ See also:
 
 Datagrok 1.18 release focuses on usability improvements and stability:
 
-* New **Browse** is designed for navigation, previewing, and convenient access to everything available on the platform, including features, applications, plugins, models, shared dashboards, etc. Note: Namespace and project management are in Beta version.
+* Improved **Browser** for navigation, preview, and convenient interaction with all available functionality on the Datagrok platform.
 * Ability to clone projects.
 * New CVM queue employs multiple JKG nodes to ensure scalable and streamlined script execution.
 * New MultiChoice cell renderer to show a number of checkboxes within a cell. For details, see [Add multiple check box and dropdown list to cell of table](https://community.datagrok.ai/t/add-multiple-check-box-and-dropdown-list-to-cell-of-table/835/9?u=oahadzhanian.datagrok.ai).
@@ -104,8 +104,6 @@ Datagrok 1.18 release focuses on usability improvements and stability:
    * [#2623](https://github.com/datagrok-ai/public/issues/2623): implement the one-click way to set the Split by columns.
    *  Interactivity on a stacked bar chart.
    * Fixed:
-     * [#2388](https://github.com/datagrok-ai/public/issues/2388): Optimize the display of labels on the x-axis.
-     * [#2395](https://github.com/datagrok-ai/public/issues/2395): unaggregated tooltip and hovered row do not match in some cases.
      * [#2485](https://github.com/datagrok-ai/public/issues/2485): too much empty space if Y axis is logarithmic for specific data.
      * [#2577](https://github.com/datagrok-ai/public/issues/2577): colors in the legend do not match color in the plot in some cases.
      * [#2608](https://github.com/datagrok-ai/public/issues/2608): Line chart with row source = selected: all rows are deselected on clicking line in some cases.
