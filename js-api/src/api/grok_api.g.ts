@@ -521,6 +521,7 @@ export interface IDartApi {
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
   grok_Column_FromList(type: String, name: String, list: any): any;
+  grok_Column_FromIndexes(name: String, categories: any, indexes: any): any;
   grok_Column_FromType(type: String, name: String, length: Num): any;
   grok_Column_FromBitSet(name: String, bitset: any): any;
   grok_Column_Get_Type(c: any): any;
@@ -572,6 +573,7 @@ export interface IDartApi {
   grok_Column_GetAutoFormat(column: any): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
+  grok_BigIntJs_To_BigInt(bigint: String): any;
   grok_DateTimeColumn_GetValue(c: any, i: Num): any;
   grok_DateTimeColumn_SetValue(c: any, i: Num, x: any, notify: Bool): any;
   grok_ColumnsArgs_Get_Columns(args: any): any;

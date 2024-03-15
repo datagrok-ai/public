@@ -1,186 +1,124 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as arrow from 'apache-arrow';
+import {Compression, default as init, readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm/esm/arrow1";
 
-import {tableFromIPC, tableFromArrays, tableToIPC, DataType, Type, Vector} from 'apache-arrow';
-//@ts-ignore
-import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from './arrow1';
-import { Buffer } from 'buffer';
 export const _package = new DG.Package();
-
-
 
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-
 //tags: autostart
 export async function parquetInit() {
   await init(_package.webRoot + 'dist/arrow1_bg.wasm');
 }
 
-//input: list bytes
-//output: list tables
-//tags: file-handler
-//meta.ext: parquet
-export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-  const table = tableFromIPC(readParquet(bytes)).toArray();
-  const df = DG.DataFrame.fromObjects(table);
-  if (df)
-    return [df];
-}
-
-//input: list bytes
-//output: list tables
-//tags: file-handler
-//meta.ext: feather
-export function featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-  const arrow = Buffer.from(bytes);
-  const table = tableFromIPC(arrow).toArray();
-  const df = DG.DataFrame.fromObjects(table);
-  if (df) 
-    return [df];
-}
-
-//name: saveAsParquet
-//description: Save as Parquet
-//tags: fileExporter
-export function saveAsParquet(){
-  let table = grok.shell.t;
-  let column_names = table.columns.names();
-  const t: { [_: string]: any }= {};
-  for(var i = 0; i < column_names.length; i++){
-    if(table.col(column_names[i])?.type === 'int'){
-      t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
-    }
-    else{
-      t[column_names[i]] = table.columns.byName(column_names[i]).toList();
-    }
-  }
-  const res = tableFromArrays(t);
-  const arrowUint8Array = tableToIPC(res, "stream");
-  const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
-  const parquetUint8Array = writeParquet(arrowUint8Array, writerProperties);
-  DG.Utils.download(table.name + '.parquet', parquetUint8Array);
-}
-
-
-//name: saveAsFeather
-//description: Save as Feather
-//tags: fileExporter
-export function saveAsFeather(){
-  let table = grok.shell.t;
+//name: toFeather
+//description: Converts DG.DataFrame to arrow
+//input: dataframe table
+//input: bool asStream = true
+//output: blob bytes
+export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8Array | null {
+  //todo: use direct creation of vectors from typed arrays
+  if (!table) return null;
   let column_names = table.columns.names();
   const t: { [_: string]: any } = {};
-  for(var i = 0; i < column_names.length; i++){
-    if(table.col(column_names[i])?.type === 'int'){
-      t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
-    }
-    else{
-      t[column_names[i]] = table.columns.byName(column_names[i]).toList();
-    }
-  }
-  const res = tableFromArrays(t);
-  const arrowUint8Array = tableToIPC(res, "stream");
-  DG.Utils.download(table.name + '.feather', arrowUint8Array);
-}
-
-//name: toParquet
-//description: Convert DataFrame to parquet
-//input: dataframe table
-//output: blob bytes
-export function toParquet(table: DG.DataFrame) {
-  if (table === null) return null;
-  let column_names = table.columns.names();
-  const t: { [_: string]: any }= {};
-  for(let i = 0; i < column_names.length; i++) {
+  for (let i = 0; i < column_names.length; i++) {
     let column = table.columns.byName(column_names[i]);
-    if(['int', 'float', 'qnum'].includes(column.type)) {
-      t[column_names[i]] = column.getRawData();
+    let columnType = column.type;
+    if (['int', 'double', 'qnum'].includes(columnType))
+      t[column_names[i]] = column.getRawData().subarray(0, column.length);
+    else if (columnType === 'datetime') {
+      const rawData: Float64Array = (column.getRawData() as Float64Array).subarray(0, column.length);
+      t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
     }
-    else if (table.col(column_names[i])!.type === 'datetime') {
-      const rawData = column.getRawData();
-      t[column_names[i]] = Array.from(rawData, (v, _) =>
-        v === DG.FLOAT_NULL ? null : new Date(v / 1000));
-    }
-    else if (['string', 'bigint'].includes(column.type)) {
+    else if (columnType === 'string') {
       const indexes = column.getRawData();
       t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
     }
-    else
-      t[column_names[i]] = column.toList();
+    else {
+      const columnLength = column.length;
+      const array = new Array(columnLength);
+      for (let i = 0; i < columnLength; i++)
+        array[i] = column.get(i);
+      t[column_names[i]] = array;
+    }
   }
-  const res = tableFromArrays(t);
-  const arrowUint8Array = tableToIPC(res, "stream");
-  const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
-  return writeParquet(arrowUint8Array, writerProperties);
+  const res = arrow.tableFromArrays(t);
+  return arrow.tableToIPC(res, asStream ? "stream" : "file");
 }
 
-//name: fromParquet
-//description: Convert parquet to dataframe
+//name: fromFeather
+//description: Converts arrow ipc stream to DG.DataFrame
 //input: blob bytes
 //output: dataframe table
-export function fromParquet(bytes: Uint8Array | null) {
-  if (bytes === null) return null;
-  const table = tableFromIPC(readParquet(bytes))
+export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
+  if (!bytes) return null;
+  const table = arrow.tableFromIPC(bytes);
   let columns = [];
   for (let i = 0; i < table.numCols; i++) {
     const vector = table.getChildAt(i)!;
     let values: any;
     let type = vector.type;
-    if (DataType.isDictionary(type)) {
-      values = unpackDictionaryColumn(vector);
+    const name = table.schema.fields[i].name;
+    if (arrow.DataType.isDictionary(type)) {
       type = vector.data[vector.data.length - 1].dictionary?.type;
+      if (type.typeId === arrow.Type.Utf8) {
+        columns.push(stringColumnFromDictionary(name, vector));
+        continue;
+      }
+      else
+        values = unpackDictionaryColumn(vector);
     }
     else
       values = vector.toArray();
-    const name = table.schema.fields[i].name;
+
     switch (type.typeId) {
-      case Type.Int8:
-      case Type.Int16:
-      case Type.Int32:
-      case Type.Int:
+      case arrow.Type.Int8:
+      case arrow.Type.Int16:
+      case arrow.Type.Int32:
+      case arrow.Type.Int:
         if (ArrayBuffer.isView(values) && type.bitWidth < 64)
           columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
         else if (type.bitWidth === 64)
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+          columns.push(DG.Column.fromBigInt64Array(name, values));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
         break;
-      case Type.Uint32:
-      case Type.Int64:
-      case Type.Uint64:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+      case arrow.Type.Uint32:
+      case arrow.Type.Int64:
+      case arrow.Type.Uint64:
+        columns.push(DG.Column.fromBigInt64Array(name, values));
         break;
-      case Type.Float:
-      case Type.Decimal:
+      case arrow.Type.Float:
+      case arrow.Type.Decimal:
         if (ArrayBuffer.isView(values))
           columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT as DG.ColumnType, name, values));
         break;
-      case Type.Utf8:
-      case Type.Interval:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values));
+      case arrow.Type.Utf8:
+      case arrow.Type.Interval:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
         break;
-      case Type.Bool:
+      case arrow.Type.Bool:
         if (ArrayBuffer.isView(values))
           columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer, table.numRows)));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, values));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name, values));
         break;
-      case Type.Date:
-      case Type.Timestamp:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, values));
+      case arrow.Type.Date:
+      case arrow.Type.Timestamp:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values));
         break;
-      case Type.Time:
+      case arrow.Type.Time:
         if (type?.bitWidth < 64 && ArrayBuffer.isView(values))
           columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
         else
-          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT, name, values));
+          columns.push(DG.Column.fromBigInt64Array(name, values));
         break;
       default:
         columns.push(DG.Column.fromStrings(name, values));
@@ -190,20 +128,81 @@ export function fromParquet(bytes: Uint8Array | null) {
   return DG.DataFrame.fromColumns(columns);
 }
 
-function unpackDictionaryColumn(vector: Vector) {
+//name: toParquet
+//description: Converts DG.DataFrame to parquet
+//input: dataframe table
+//input: int compression {nullable: true}
+//output: blob bytes
+export function toParquet(table: DG.DataFrame, compression?: Compression): Uint8Array | null {
+  const arrowUint8Array = toFeather(table);
+  if (arrowUint8Array == null) return null;
+  const writerProperties = new WriterPropertiesBuilder().setCompression(compression ?? Compression.SNAPPY).build();
+  return writeParquet(Table.fromIPCStream(arrowUint8Array), writerProperties);
+}
+
+//name: fromParquet
+//description: Converts binary data in parquet format to DG.DataFrame
+//input: blob bytes
+//output: dataframe table
+export function fromParquet(bytes: Uint8Array): DG.DataFrame | null {
+  if (!bytes) return null;
+  const arrowUint8Array = readParquet(bytes).intoIPCStream();
+  return fromFeather(arrowUint8Array);
+}
+
+//input: list bytes
+//output: list tables
+//tags: file-handler
+//meta.ext: parquet
+export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
+  return [fromParquet(bytes as Uint8Array)];
+}
+
+//input: list bytes
+//output: list tables
+//tags: file-handler
+//meta.ext: feather
+export function featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
+  const df = fromFeather(bytes as Uint8Array);
+  if (df)
+    return [df];
+}
+
+//name: saveAsParquet
+//description: Save as Parquet
+//tags: fileExporter
+export function saveAsParquet() {
+  let table = grok.shell.t;
+  const parquetUint8Array = toParquet(table);
+  DG.Utils.download(table.name + '.parquet', parquetUint8Array ?? new Uint8Array(0));
+}
+
+//name: saveAsFeather
+//description: Save as Feather
+//tags: fileExporter
+export function saveAsFeather() {
+  let table = grok.shell.t;
+  const arrowUint8Array = toFeather(table, false);
+  DG.Utils.download(table.name + '.feather', arrowUint8Array ?? new Uint8Array(0));
+}
+
+// Unpacks dictionary vector to array. This method is much faster than calling directly toArray() on vector
+function unpackDictionaryColumn(vector: arrow.Vector) {
   const codes = new Array(vector.length);
+  // Gets unique values, a.k.a categories.
+  // TODO: This call .toArray() is slow
   const ks = vector?.data[vector.data.length - 1]?.dictionary?.toArray();
   let i = 0;
+  // Iterate over chunks of indexes and insert data to codes array
   for (const chunk of vector.data) {
-    const nullMap = chunk.nullBitmap || [];
+    const nullMap = chunk.nullBitmap || []; // nullBitMap can be null if no null values
     for (let j = 0; j < chunk.values.length; j++) {
       const ix = chunk.values[j];
       // Fancy bit operations because the null masks pack 8 observations into each bit.
       // ix >> 3 advances the byte every 8 bits;
       // (1 << (ix % 8) checks if the bit is set for the particular position inside the byte.
 
-      // You must check nullmap.length because if there are no null values in a chunk,
-      // the nullmap doesn't exist.
+      // Check nullMap.length because it can be null if there are no null values
       if (nullMap.length && !(nullMap[j >> 3] & (1 << (j % 8))))
         codes[i] = null;
       else
@@ -212,4 +211,26 @@ function unpackDictionaryColumn(vector: Vector) {
     }
   }
   return codes
+}
+
+// Unpacks dictionary vector to DG.Column of string type. Uses direct creation of column from indexes
+// and categories without copying a data
+function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Column {
+  // Gets unique values, a.k.a categories
+  const data = vector?.data[vector.data.length - 1]?.dictionary?.toArray();
+  // Creates array for indexes
+  const indexes = new Int32Array(vector.length);
+  let i = 0;
+  // Iterate over chunks of indexes and insert into array index. If category value is null inserts -1.
+  for (const chunk of vector.data) {
+    const nullMap = chunk.nullBitmap || [];
+    for (let j = 0; j < chunk.values.length; j++) {
+      if (nullMap.length && !(nullMap[j >> 3] & (1 << (j % 8))))
+        indexes[i] = -1;
+      else
+        indexes[i] = chunk.values[j];
+      i++;
+    }
+  }
+  return DG.Column.fromIndexes(name, data, indexes);
 }
