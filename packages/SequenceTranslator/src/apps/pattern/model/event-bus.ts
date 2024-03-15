@@ -23,9 +23,8 @@ export class EventBus {
   private _modificationsWithNumericLabels$: rxjs.BehaviorSubject<string[]>;
   private _sequenceBase$: rxjs.BehaviorSubject<string>;
 
-  private _patternListUpdated$ = new rxjs.Subject<void>();
+  private _patternListUpdated$ = new rxjs.Subject<string>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
-  private _patternSaveRequested$ = new rxjs.Subject<void>();
   private _sequenceBaseReplacementRequested$ = new rxjs.Subject<string>();
   private _uniqueNucleotideBases$ = new rxjs.BehaviorSubject<string[]>([]);
 
@@ -206,7 +205,7 @@ export class EventBus {
     this._patternLoadRequested$.next(patternName);
   }
 
-  get patternListUpdated$(): rxjs.Observable<void> {
+  get patternListUpdated$(): rxjs.Observable<string> {
     return this._patternListUpdated$.asObservable();
   }
 
@@ -228,14 +227,6 @@ export class EventBus {
 
   deletePattern(patternName: string) {
     this._patternDeletionRequested$.next(patternName);
-  }
-
-  requestPatternSave() {
-    this._patternSaveRequested$.next();
-  }
-
-  patternSaveRequested$(): rxjs.Observable<void> {
-    return this._patternSaveRequested$.asObservable();
   }
 
   replaceSequenceBase(newNucleobase: string) {

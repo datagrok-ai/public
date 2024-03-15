@@ -47,3 +47,17 @@ export type PatternConfigRecord = {
   [R.PATTERN_CONFIG]: PatternConfiguration,
   [R.AUTHOR_ID]: string,
 }
+
+export class PatternNameExistsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PatternNameExistsError';
+  }
+}
+
+export class PatternExistsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PatternExistsError';
+  }
+}

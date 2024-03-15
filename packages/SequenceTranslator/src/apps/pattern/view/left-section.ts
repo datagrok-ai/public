@@ -212,11 +212,13 @@ class PatternChoiceControls {
 
   private getPatternInputs(): StringInput {
     const userChoiceInput = this.createUserChoiceInput();
-    const patternChoiceInput = this.getPatternChoiceInput();
+    const patternChoiceInput = this.createPatternChoiceInput();
+
+    const patternInputContainer = ui.div([patternChoiceInput.input]);
 
     patternChoiceInput.root.append(
       userChoiceInput.input,
-      patternChoiceInput.input
+      patternInputContainer
     );
 
     this.setPatternChoiceInputStyle(patternChoiceInput);
@@ -251,11 +253,20 @@ class PatternChoiceControls {
     userChoiceInput.input.style.maxWidth = '142px';
   }
 
-  private getPatternChoiceInput(): StringInput {
-    const patternList = this.isCurrentUserSelected() ? this.dataManager.getCurrentUserPatternNames() : this.dataManager.getOtherUsersPatternNames();
-    this.selectedPattern = patternList[0] || '';
+  private createPatternChoiceInput(): StringInput {
+    const patternList = this.isCurrentUserSelected() ?
+      [' '].concat(this.dataManager.getCurrentUserPatternNames()) :
+      this.dataManager.getOtherUsersPatternNames();
+    this.selectedPattern = patternList[0] || '<default>';
     this.eventBus.requestPatternLoad(this.selectedPattern);
-    const choiceInput = ui.choiceInput('Load pattern', this.selectedPattern, patternList, (value: string) => this.eventBus.requestPatternLoad(value));
+    const choiceInput = ui.choiceInput(
+      'Load pattern',
+      this.selectedPattern,
+      patternList
+    );
+    choiceInput.onInput(
+      () => this.eventBus.requestPatternLoad(choiceInput.value!)
+    );
     return choiceInput;
   }
 
@@ -310,7 +321,6 @@ class PatternNameControls {
       return;
     }
     this.dataManager.savePatternToUserStorage();
-    // this.eventBus.requestPatternSave();
     grok.shell.info(`Pattern ${patternName} saved`);
   }
 }
