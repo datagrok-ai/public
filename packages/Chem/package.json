@@ -49,7 +49,7 @@
     "file-loader": "latest",
     "jstat": "^1.9.5",
     "offscreen-canvas": "latest",
-    "openchemlib": "^8.7.2",
+    "openchemlib": "^7.2.3",
     "rxjs": "^6.5.5",
     "typescript": "latest",
     "worker-loader": "latest",
