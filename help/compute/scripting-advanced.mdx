@@ -14,25 +14,26 @@ import BrowserWindow from '@site/src/components/browser-window';
 
 ### Python (using Conda)
 
-You can specify an environment for the script to use, 
-including the language version and a set of libraries. 
+You can specify an environment for the script to use,
+including the language version and a set of libraries.
 
 Datagrok uses [Conda](https://docs.Conda.io/en/latest/)
-as the environment management system. 
+as the environment management system.
 A Conda environment:
+
 - isolates each script run,
 - resolves dependencies,
 - and takes time to be created before a script run.
 
 Later, the script uses the pre-created environment with *no delay* for resolving dependencies.
 
-In Datagrok, Conda environment configuration can be specified either [right inside the script](#specify-environment-in-place), 
-or as [part of a package](#specify-the-environment-in-a-package). 
+In Datagrok, Conda environment configuration can be specified either [right inside the script](#specify-environment-in-place),
+or as [part of a package](#specify-the-environment-in-a-package).
 
 #### Specify environment in-place
 
-Set an `environment` parameter of the script 
-to a one-liner YAML following the standard Conda YAML config (omit it's name). 
+Set an `environment` parameter of the script
+to a one-liner YAML following the standard Conda YAML config (omit it's name).
 
 For example, we need to use the following Conda config:
 
@@ -66,14 +67,14 @@ result = glom(target, 'a.b.c')  # returns 'd'
 :::tip First launch may take time
 
 When the script runs the first time, Datagrok creates the environment on
-the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components), 
-which may take up to several minutes. 
-For all next script runs, Datagrok will reuse this environment. 
+the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components),
+which may take up to several minutes.
+For all next script runs, Datagrok will reuse this environment.
 
 :::
 
 Datagrok distinguishes in-place environments using *MD5 hashes* of their body strings.
-If there is a ready-to-use environment with the same environment config, Datagrok will reuse it. 
+If there is a ready-to-use environment with the same environment config, Datagrok will reuse it.
 
 #### Specify the environment in a package
 
@@ -84,14 +85,14 @@ or
 [export it](https://docs.Conda.io/projects/Conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
 form your existing Conda environment.
 
-If the `environment` tag in the script header is not specified, the script uses 
+If the `environment` tag in the script header is not specified, the script uses
 [the default configuration](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
 
 :::tip
 
 Here is an
 [example of configuration](https://github.com/datagrok-ai/public/tree/master/environments)
-for the Datagrok public repository. 
+for the Datagrok public repository.
 Also, a package can define its own
 configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts)).
 
@@ -106,13 +107,13 @@ This is how to define the "Chemprop" environment in the script header:
 In this case, the environment `Chemprop` should be specified in a file
 `environments/Chemprop.yaml` inside the package where this script belongs.
 
-Datagrok distinguishes package environments by their *names*. 
-Datagrok will reuse a previously created environment for all subsequent runs 
+Datagrok distinguishes package environments by their *names*.
+Datagrok will reuse a previously created environment for all subsequent runs
 with no delay.
 
 #### Sharing environments
 
-You may share environments by referencing them in your scripts. 
+You may share environments by referencing them in your scripts.
 Conda environment will be re-used by many users, which is more space- and time-efficient.
 
 To achieve it, do the following steps:
@@ -125,10 +126,10 @@ To achieve it, do the following steps:
 
 #### Conda and Pip custom repositories
 
-By default, Conda uses [Conda-forge](https://Conda-forge.org/) and [PyPI](https://pypi.org/) repositories to install packages. 
+By default, Conda uses [Conda-forge](https://Conda-forge.org/) and [PyPI](https://pypi.org/) repositories to install packages.
 You may specify your own package repositories in the environment specification.
 
-For example, to use `http://my-repo/custom/` as Conda repository 
+For example, to use `http://my-repo/custom/` as Conda repository
 and `https://mirrors.sustech.edu.cn/pypi/simple` as PIP repository use the following code:
 
 ```python
@@ -139,8 +140,8 @@ and `https://mirrors.sustech.edu.cn/pypi/simple` as PIP repository use the follo
 
 There is a [known](https://github.com/Conda/Conda/issues/8051#issuecomment-464199791)
 [issue](https://github.com/Conda/Conda/issues/8051#issuecomment-631862928)
-[of Conda](https://github.com/Conda/Conda/issues/8051#issuecomment-808789923) 
-that sometimes it takes a long time to resolve dependencies. 
+[of Conda](https://github.com/Conda/Conda/issues/8051#issuecomment-808789923)
+that sometimes it takes a long time to resolve dependencies.
 Datagrok will interrupt Conda environment creation if it takes more than 5 minutes.
 
 If you encounter a timing problem, try to find an equivalent set of packages from PIP repositories.
@@ -164,19 +165,19 @@ renv::install("hunspell@3.0.1")
 Renv session only impacts the R environment for this one single run.
 No other R scripts are aware of this local script environment.
 
-Renv uses a global package cache. 
+Renv uses a global package cache.
 It caches a package requested once with `renv::install` and re-uses it whenever it is
-requested. 
+requested.
 
-In case the latest package version is requested, 
-such as in `renv::install("hunspell")`, 
-Renv connects to remote R package repositories 
+In case the latest package version is requested,
+such as in `renv::install("hunspell")`,
+Renv connects to remote R package repositories
 assuring if the cached package needs to be updated to the newer version.
-This may introduce a significant delay in the script run, several seconds in practice. 
+This may introduce a significant delay in the script run, several seconds in practice.
 To avoid this, we recommend
 installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`.
 
-_Note_. At the R script's start and finish, 
+*Note*. At the R script's start and finish,
 Datagrok calls `renv::deactivate()` to assure the script's body isolation.
 You don't have to call `renv::deactivate()` manually.
 
@@ -195,10 +196,10 @@ as described in [run script section](scripting-for-non-developers#how-to-run-a-s
 In this case, it gets registered in the platform as a
 [function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
 
-* From the [Datagrok console](../datagrok/navigation/navigation.md#console)
-* From the data job
-* From the [transformations editor](../transform/recipe-editor.md)
-* From the [function browser](https://public.datagrok.ai/functions)
+- From the [Datagrok console](../datagrok/navigation/navigation.md#console)
+- From the data job
+- From the [transformations editor](../transform/recipe-editor.md)
+- From the [function browser](https://public.datagrok.ai/functions)
 
 Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
 
@@ -216,7 +217,7 @@ The single output will be assigned to `result` directly. Multiple outputs will b
 You can retrieve any output value by accessing `result` object fields (e.g. `result['<MY_OUTPUT>']`).
 
 To see it in action, open this
-[code snippet](https://public.datagrok.ai/js/samples/scripting/scripting) from our samples gallery. 
+[code snippet](https://public.datagrok.ai/js/samples/scripting/scripting) from our samples gallery.
 There, you can find more examples, such as
 [adding a progress indicator](https://public.datagrok.ai/js/samples/functions/progress) to the user interface.
 
@@ -233,15 +234,15 @@ etc.
 
 In addition to it, you can:
 
-* Add [viewers for input dataframes](#adding-input-dataframe-viewers)
-* Group [outputs](#grouping-outputs)
-* [Automatically re-run calculations](#re-running-script-on-opening--on-input-change)
-* [Validate inputs](#validating-inputs)
-* [Automate export](#exporting-run-results-to-a-file) of script results.
-* Use [custom inputs](#using-custom-inputs)
-* Save and access [run history](#history)
+- Add [viewers for input dataframes](#adding-input-dataframe-viewers)
+- Group [outputs](#grouping-outputs)
+- [Automatically re-run calculations](#re-running-script-on-opening--on-input-change)
+- [Validate inputs](#validating-inputs)
+- [Automate export](#exporting-run-results-to-a-file) of script results.
+- Use [custom inputs](#using-custom-inputs)
+- Save and access [run history](#history)
 
-To enable **RichFunctionView**, add `editor: Compute:RichFunctionViewEditor` tag 
+To enable **RichFunctionView**, add `editor: Compute:RichFunctionViewEditor` tag
 to your following code as it is shown:
 
 ```mdx-code-block
@@ -299,7 +300,7 @@ Features of the RichFunctionView affect GUI only and do not affect computations.
 ### Adding input dataframe viewers
 
 You can add viewers for input dataframes to review input data before starting computations,
-same way as for 
+same way as for
 [output viewers](scripting-for-non-developers#adding-viewers-for-output-dataframes).
 
 ```mdx-code-block
@@ -346,12 +347,12 @@ test2 = test.clone();
 </Tabs>
 ```
 
-You can specify input viewer's properties to control their appearance. 
-Viewer's properties are listed in the braces right after the viewer's name. 
+You can specify input viewer's properties to control their appearance.
+Viewer's properties are listed in the braces right after the viewer's name.
 A full list of the viewer's properties may be found by right-clicking on it and selecting the `Properties...` menu item.
 
 RichFunctionView supports the `block` option to control the viewer's width.
-By default, any viewer occupies all available space. 
+By default, any viewer occupies all available space.
 
 ```mdx-code-block
 <Tabs>
@@ -436,7 +437,7 @@ To fold input category, use the `meta.foldedCategories` annotation.
 
 You can use the `category` keyword to group output parameters,
 similar to the [input categories](scripting-for-non-developers#grouping-inputs).
-In the case of output parameters, the `category` tag specifies 
+In the case of output parameters, the `category` tag specifies
 the output tab used to show the output parameter values.
 The following code generates UI with three output tabs:
 
@@ -507,7 +508,7 @@ IC4 = test.rowCount;
 
 ### Adding readme
 
-You may add customized readme file to your script. 
+You may add customized readme file to your script.
 The linked Markdown file will be available by clicking <i class="fal fa-info"></i> icon on the ribbon panel.
 The readme file will appear inside of the panel on the right side.
 
@@ -568,26 +569,26 @@ outputDf = inputDf.clone();
 
 ### File upload
 
-You can use a file as a function input via RichFunctionView, 
-similar to the default [FileIO UI](scripting-for-non-developers#file-input). 
-Generated UI allows you to choose any local file or drag'n'drop it directly. 
+You can use a file as a function input via RichFunctionView,
+similar to the default [FileIO UI](scripting-for-non-developers#file-input).
+Generated UI allows you to choose any local file or drag'n'drop it directly.
 The chosen file will be available in the
 code as JS [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
 
 :::caution Restriction
 
-Currently, RichFunctionView supports the `file` input 
+Currently, RichFunctionView supports the `file` input
 only for JavaScript functions.
 
 :::
 
 ### Re-running script on opening & on input change
 
-You can run scripts automatically on UI opening and/or on any input change. 
-This feature is useful for fast prototyping. We recommend using it only 
+You can run scripts automatically on UI opening and/or on any input change.
+This feature is useful for fast prototyping. We recommend using it only
 on fast `Javascript` scripts only to avoid repeatable runs of computational-heavy code.
 
-The automatic function calls are not saved, 
+The automatic function calls are not saved,
 so to save results to the [run history](#history) you should press **Save** button manually.
 
 ```mdx-code-block
@@ -640,10 +641,10 @@ outputDf = inputDf.clone();
 
 ### Validating inputs
 
-You can use validator functions to validate inputs, similar to the 
-[platform validators](../datagrok/concepts/functions/func-params-annotation#validation). 
-Validation functions have full access to the 
-UI and to the context of the script. For example, you can create a function to validate min-max values, 
+You can use validator functions to validate inputs, similar to the
+[platform validators](../datagrok/concepts/functions/func-params-annotation#validation).
+Validation functions have full access to the
+UI and to the context of the script. For example, you can create a function to validate min-max values,
 assuring that the minimum value is less than the maximum value.
 
 :::caution
@@ -653,6 +654,7 @@ Validation functions should be written in JavaScript to avoid client-server comm
 :::
 
 Validation functions have a single input and a single output.
+
 - `params` object may have arbitrary data for the validator to behave differently in certain situations.
 - `validator` object is a JS function (e.g. arrow function) that actually will be called each time the input is changed.
 
@@ -712,15 +714,15 @@ export function DesiredTempValidator(params: any) {
 </Tabs>
 ```
 
-This function accesses other inputs' values via the `info` object. 
+This function accesses other inputs' values via the `info` object.
 It compares the validated input using contextual information.
-If validation fails, it returns an error and possible action to make validation pass 
-(structure with `actionName` and `action` fields). You may make your validation interactive 
+If validation fails, it returns an error and possible action to make validation pass
+(structure with `actionName` and `action` fields). You may make your validation interactive
 and educational using such errors, warnings, and proposed actions.
 
 :::tip
 
-We suggest you using functions from 
+We suggest you using functions from
 [packages](../develop/develop.md#packages)
 instead of scripts for easier code management.
 
@@ -738,7 +740,7 @@ Custom input functions should be written in JavaScript.
 :::
 
 Here is an example of a custom input for string values. It behaves exactly the same as the default string input
-but has `aqua` background color. 
+but has `aqua` background color.
 
 ```mdx-code-block
 <Tabs>
@@ -788,7 +790,7 @@ export function CustomStringInput(params: any) {
 
 ### Exporting run results to a file
 
-Enabled by default. 
+Enabled by default.
 
 You can use the one-click export feature to save the entire script run to a local file.
 To generate the export file,
@@ -824,13 +826,13 @@ This feature is available for all scripts using the RichFunctionView.
 
 <div style = {{ width: '60%' }}>
 
-Enabled by default. 
+Enabled by default.
 
 When enabled, the server saves each script run. The saved script run includes both the input and output values of the run.
 To review the history of runs, click on the <i class="fas fa-history"></i> **History** button on the top panel.
 
 The history panel appears on the right side. To load the run into the UI, click on the corresponding card.
-The historical runs are immutable. Thus, if you load a historical run, 
+The historical runs are immutable. Thus, if you load a historical run,
 change input values, and then rerun it,
 the platform will create a new historical run.
 
@@ -865,7 +867,7 @@ the platform will create a new historical run.
 
 ### Comparing the historical runs
 
-You may compare historical runs using history panel. Select the historical runs of the interest 
+You may compare historical runs using history panel. Select the historical runs of the interest
 and click <i class="fas fa-exchange"></i> icon to open the comparison view.
 
 :::tip
@@ -913,7 +915,7 @@ Click on the column header with table data (e.g. `Temp. vs time`) to see convini
 
 ### Customizing the comparison
 
-You may provide a Datagrok function to customize the comparison of the historical runs. 
+You may provide a Datagrok function to customize the comparison of the historical runs.
 For example, you may add particular viewers to your comparison or make additional comparative analysis.
 
 ```mdx-code-block
@@ -966,16 +968,16 @@ export function CustomCustomizer(params: {defaultView: DG.TableView}) {
 <summary> Comparison customization API </summary>
 <div>
 
-Customizer function should have `//input: object params` in the header. 
+Customizer function should have `//input: object params` in the header.
 This object will contain `defaultView` reference to the default-contructed DG.TableView.
-Customizations may be applied directly using this reference. 
+Customizations may be applied directly using this reference.
 
 </div>
 </details>
 
 ### Sensitivity analysis
 
-Disabled by default. 
+Disabled by default.
 
 You may use sensitivity analysis (SA) to explore function behavior when inputs are varied in predefined ranges.
 Enable this feature and click **<i class="fas fa-analytics"></i> SA** icon on the top panel.
@@ -1060,21 +1062,21 @@ simulation = DG.DataFrame.fromColumns([
 
 ### Uploading experimental data
 
-Disabled by default. 
+Disabled by default.
 
-Using this mode, 
-you can create in the run history a "fake" run by uploading data from some external source instead of 
+Using this mode,
+you can create in the run history a "fake" run by uploading data from some external source instead of
 running the script.
 Saved historical run with external data will have the `experimental` tag.
 
-After uploading experimental data to the history, you can compare it with other history records 
+After uploading experimental data to the history, you can compare it with other history records
 using build-in **Compare runs** capability.
-This specific capability is beneficial when you're developing a 
+This specific capability is beneficial when you're developing a
 model, predicting the behavior of some real-world process.
 
 To enable this feature,
-add `//meta.features: {"upload": true}` tag to your script. 
-This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI. 
+add `//meta.features: {"upload": true}` tag to your script.
+This will add the <i class="fas fa-upload"></i> **Upload mode** button to the generated GUI.
 RichFunctionView automatically collects all data fields you need to mimic script run,
 and creates corresponding UI elements.
 
@@ -1131,9 +1133,9 @@ Experimental run in history:
 
 ### Customizing the experimental data upload
 
-You may customize the data upload using Datagrok functions and `meta.uploadFunc` tag. 
+You may customize the data upload using Datagrok functions and `meta.uploadFunc` tag.
 The function mentioned in this tag will be called on clicking <i class="fas fa-upload"></i> button instead of the basic data upload.
-You may use it to extract the experimental data from the external resource (e.g., a database). 
+You may use it to extract the experimental data from the external resource (e.g., a database).
 Extracted data could be saved to the history or could be used directly to compare the computed and experimental results.
 
 <details>
@@ -1141,7 +1143,7 @@ Extracted data could be saved to the history or could be used directly to compar
 <div>
 
 The custom upload funcion should return `uploadWidget` (of type DG.Widget) and `uploadFuncCall` (of type DG.FuncCall).
-`uploadWidget` will be shown on the UI; `uploadFuncCall`, in turn, should return the experimental runs typed as array of DG.FuncCalls. 
+`uploadWidget` will be shown on the UI; `uploadFuncCall`, in turn, should return the experimental runs typed as array of DG.FuncCalls.
 
 </div>
 </details>
@@ -1231,60 +1233,73 @@ You can convert your script in the application, regardless of the script languag
 Briefly, you need to do the follows:
 
 1. Create a TypeScript [package](../develop/packages).
-   ```shell
-   grok init package_name --ts
-   ```
-2. Install required NodeJs modules:
-   ```shell
-   npm install
-   ```
-3. Add your script to the package. 
-   * If you are writing in Javascript/Typescript, 
-     you can convert your script to the JS function, annotate it, and add directly to `src` folder:
-     ```typescript
-     //name: DemoScript
-     //tags: demo
-     //language: javascript
-     //input: int input1
-     ...
-     export async function DemoScript(input1: int, ...) {
-     ...
-     }
-     ```
-   * Alternatively, create the `scripts` folder in your package directory and place your script file in it. 
-     This approach works for all script languages.
-4. Add the application function to the `src/package.ts`:
-   ```typescript
-   //name: ApplicationFromScript
-   //tags: app, demo
-   //description: Demo application created from a script
-   //language: javascript
-   export async function DemoAppCreate() {
-     const func = await grok.functions.eval(`${_package.name}:DemoScript`);
-     const call = func.prepare(); 
-     call.edit(); 
-   }
-   ```
-    Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
-    (what you used in the `//name:` annotation, not the file name).
-5. Compile and [publish](../develop/develop.md#publishing) the package:
-   ```shell
-   npm run build && grok publish your_environment
-   ```
-   If you want to make your package publicly available, use the `--release` [publishing mode](../develop/develop.md#publishing-modes).
-   ```shell
-   npm run build && grok publish your_environment --release
-   ```
 
-That's all.
-Now you can run your application from the **Functions > Apps** section
-of the Datagrok UI.
+  ```shell
+  grok init package_name --ts
+  ```
+
+2. Install required NodeJs modules:
+
+  ```shell
+  npm install
+  ```
+
+3. Add your script to the package.
+
+- If you are writing in Javascript/Typescript,
+    you can convert your script to the JS function, annotate it, and add directly to `src` folder:
+
+    ```typescript
+    //name: DemoScript
+    //tags: demo
+    //language: javascript
+    //input: int input1
+    ...
+    export async function DemoScript(input1: int, ...) {
+    ...
+    }
+    ```
+
+- Alternatively, create the `scripts` folder in your package directory and place your script file in it.
+  This approach works for all script languages.
+
+4. Add the application function to the `src/package.ts`:
+
+  ```typescript
+  //name: ApplicationFromScript
+  //tags: app, demo
+  //description: Demo application created from a script
+  //language: javascript
+  export async function DemoAppCreate() {
+    const func = await grok.functions.eval(`${_package.name}:DemoScript`);
+    const call = func.prepare(); 
+    call.edit(); 
+  }
+  ```
+
+  Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
+  (what you used in the `//name:` annotation, not the file name).
+5. Compile and [publish](../develop/develop.md#publishing) the package:
+
+  ```shell
+  npm run build && grok publish your_environment
+  ```
+
+  If you want to make your package publicly available, use the `--release` [publishing mode](../develop/develop.md#publishing-modes).
+
+  ```shell
+  npm run build && grok publish your_environment --release
+  ```
+
+  That's all.
+  Now you can run your application from the **Functions > Apps** section
+  of the Datagrok UI.
 
 ## Integration
 
 Datagrok is designed to be as extensible and as easy to integrate as possible.
-So, out of the box, we get many platform integration capabilities such as authentication, data access, 
-and many others. 
+So, out of the box, we get many platform integration capabilities such as authentication, data access,
+and many others.
 In addition to that,
 there are some capabilities specific for developers: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
@@ -1319,18 +1334,16 @@ Save your script and reload the page to see the new element in the top menu.
 
 Add your function to the [info panel](../explore/data-augmentation/info-panels)
 to display custom information for your data.
-To do this, specify [semantic type](scripting-for-non-developers.mdx#semantic-types), 
+To do this, specify [semantic type](scripting-for-non-developers.mdx#semantic-types),
 for the script input, add `panel` tag and `condition` annotation.
-Read the detailed instruction in the corresponding 
+Read the detailed instruction in the corresponding
 [developer's howto sections](../develop/how-to/add-info-panel#scripts).
-
-
 
 ### REST API
 
-Once registered, each function gets assigned a REST API endpoint 
+Once registered, each function gets assigned a REST API endpoint
 that allows external code to execute it by passing the
-input parameters, along with the authentication token. 
+input parameters, along with the authentication token.
 This allows instantaneous deployment of scientific methods for
 external consumption. To find out how to use it:
 
@@ -1351,15 +1364,15 @@ Both JavaScript and Curl samples are provided.
 
 ### JS API
 
-JavaScript-based apps have access to the whole Datagrok platform via the 
+JavaScript-based apps have access to the whole Datagrok platform via the
 [JS API](../develop/packages/js-api.md).
 
 ### Embedding as iframe
 
 Sometimes, an app has to be included in the external web page.
-The simplest way to achieve it is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP) element. 
+The simplest way to achieve it is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP) element.
 To embed a model, click on the hamburger icon in the top left corner and choose `Embed...`.
-You will see a dialog with the HTML code on top that you can use to embed this into an external site. 
+You will see a dialog with the HTML code on top that you can use to embed this into an external site.
 Note that you can change parameter values right in the URL.
 
 <details>
@@ -1378,15 +1391,12 @@ Feel free to play around with them to explore different Datagrok capabilities.
 
 You may use debugging output and write messages:
 
-* into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
-* into the console (use `console.log()` and developer console available by F12)
+- into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
+- into the console (use `console.log()` and developer console available by F12)
 
-In addition, you can use the built-in Inspector to see what's happening "under the hood" of the platform. 
+In addition, you can use the built-in Inspector to see what's happening "under the hood" of the platform.
 To open Inspector, use the `Alt+I` hotkey.
 For example, the Inspector provides information about triggered events.
-
-
-
 
 ## Parameters
 
@@ -1398,7 +1408,6 @@ A null indicates that the value is valid, anything else indicates an error which
 
 A validator is a function that accepts one parameter of any type and returns a string. Choice providers are applicable
 only to string parameters.
-
 
 ```mdx-code-block
 <Tabs>
@@ -1608,7 +1617,6 @@ The list of parameter examples can be used:
 #output: graphics scatter [scatter plot]
 ```
 
-
 </div>
 
 ## Output values validation
@@ -1618,9 +1626,9 @@ Datagrok expects that all variables are defined in the script code and have prop
 If this doesn't happen, the two things will follow:
 
 1. The unset output values will be returned as `null`-s.
-2. A warning `Output value ${output.param.name} was not set` will be printed in the 
-   [Datagrok Console](../datagrok/navigation/navigation.md#console). 
-   Open it pressing `~` key or clicking **Console** <i class="fas fa-terminal"></i> button 
+2. A warning `Output value ${output.param.name} was not set` will be printed in the
+   [Datagrok Console](../datagrok/navigation/navigation.md#console).
+   Open it pressing `~` key or clicking **Console** <i class="fas fa-terminal"></i> button
    in the right bottom corner of the screen.
 
 In this script, the value `c3` is missed to be set:

@@ -22,15 +22,17 @@ Code examples are provided in **Python**, **R**, and **JavaScript**.
 
 :::tip Consider JavaScript
 
-In Datagrok, JavaScript offers unique benefits compared to traditional 
+In Datagrok, JavaScript offers unique benefits compared to traditional
 data science languages like Python or R.
 
 JavaScript script executes right in your browser, leading to:
+
 * shorter spin-up time,
 * and better debugging experience.
 
 Datagrok provides an extensive JavaScript API, giving you:
-* detailed control over viewer parameters, 
+
+* detailed control over viewer parameters,
 * access to core Datagrok functions.
 
 :::
@@ -57,10 +59,10 @@ You can create a script directly on the platform in two ways:
 
 <div style = {{ width: '50%', display: 'flex', 'justify-content': 'end' }}>
 
-
 ```mdx-code-block
 <BrowserWindow url="" bodyStyle={{'padding': '0px'}}>
 ```
+
 <img
   src={require('./scripts.png').default}
   style= {{ height: '400px', 'border-radius': '5px'}}
@@ -169,7 +171,6 @@ For more details, refer to the [functions parameter annotation](../datagrok/conc
 
 For each language, Datagrok uses a predefined header and creates an environment with the set of pre-installed packages.
 
-
 ```mdx-code-block
 <Tabs>
 <TabItem value="python" label="Python" default>
@@ -205,8 +206,8 @@ require(R.utils)
 
 Octave scripts run in a separate container on server. This container has following Octave packages pre-installed:
 
-- [symbolic](https://gnu-octave.github.io/packages/symbolic/)
-- [optim](https://gnu-octave.github.io/packages/optim/)
+* [symbolic](https://gnu-octave.github.io/packages/symbolic/)
+* [optim](https://gnu-octave.github.io/packages/optim/)
 
 Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
 
@@ -272,7 +273,7 @@ Press it to run a script. You will see the following window:
 </BrowserWindow>
 ```
 
-When you run a script, 
+When you run a script,
 Datagrok analyzes header parameters
 to create an input form and show the outputs.
 
@@ -303,7 +304,7 @@ You will see the following output:
 Depending on the metadata associated with the parameters, the editor can be
 enriched by [validators](./scripting-advanced#parameter-validators), [choices](scripting-advanced#parameter-choices),
 and [suggestions](scripting-advanced#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways 
+[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways
 (database query, script, etc.), and reused.
 
 :::
@@ -330,24 +331,24 @@ For additional capabilities of the Datagrok script editor, see the
 ### Input and output parameters
 
 Each script should specify its' input and output parameters.
-Datagrok automatically injects _input_ parameters' values before the script starts
-and captures _output_ parameters' values when the script finishes.
+Datagrok automatically injects *input* parameters' values before the script starts
+and captures *output* parameters' values when the script finishes.
 
-Datagrok natively supports standard scalar data types: 
+Datagrok natively supports standard scalar data types:
 `int`, `double`, `bool`, `string`.
 
 For table data, Datagrok supports **Dataframe** as input/output parameters.
 You can pass to the script the whole dataframe (`dataframe` type), dataframe column (`column`), list of columns (`column_list`),
 or a binary file (`file`, `blob`).
 
-:::note 
+:::note
 
 Datagrok's dataframe converts to:
-- Pandas [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) for Python,
-- Native [data frames](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame) for R,
-- [Cell arrays](https://docs.octave.org/v8.4.0/Cell-Arrays.html) for Octave
-- [DataFrame](https://dataframes.juliadata.org/stable/man/getting_started/#The-DataFrame-Type) for Julia
-- [DG.DataFrame](https://datagrok.ai/help/develop/advanced/data-frame) for JavaScript
+* Pandas [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) for Python,
+* Native [data frames](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame) for R,
+* [Cell arrays](https://docs.octave.org/v8.4.0/Cell-Arrays.html) for Octave
+* [DataFrame](https://dataframes.juliadata.org/stable/man/getting_started/#The-DataFrame-Type) for Julia
+* [DG.DataFrame](https://datagrok.ai/help/develop/advanced/data-frame) for JavaScript
 
 :::
 
@@ -441,7 +442,6 @@ const last_row = new_table.rowCount;
 new_table.col(id_column).init((i) => `${id_prefix}${i}`);
 ```
 
-
 ```mdx-code-block
 </TabItem>
 </Tabs>
@@ -455,25 +455,25 @@ It will contain an additional column **ID** with the generated row ID.
 
 :::warning Case-insensitive column names
 
-In Datagrok, unlike `Python`/`R` dataframes, column names are case-insensitive. 
-If you return a dataframe with columns whose names differ only by letter case, 
+In Datagrok, unlike `Python`/`R` dataframes, column names are case-insensitive.
+If you return a dataframe with columns whose names differ only by letter case,
 Datagrok will automatically add a number to the column header to differentiate them.
 
-
-To prevent any confusion or issues with column names, 
-we recommend using unique names that are distinct regardless of case. 
+To prevent any confusion or issues with column names,
+we recommend using unique names that are distinct regardless of case.
 
 :::
 
 ### Using column inputs
 
 Datagrok provides you with data inputs to select one or multiple columns from a dataframe.
+
 * The `column` input parameter allows you to select one column from the dataframe.
   In the script, the `column` parameter is a string variable containing header name of the selected column.
 * The `column_list` input parameter allows you to select multiple columns from the dataframe.
   In the script, the `column_list` parameter is a list of strings containing header names of the selected columns.
 
-Both of these selectors require at least one **Dataframe** input 
+Both of these selectors require at least one **Dataframe** input
 to choose a dataframe.
 
 ```mdx-code-block
@@ -643,8 +643,8 @@ The `blob` input works in a very similar way, but provides the binary stream ins
 typeofblob = type(array_blob)
 ```
 
-You can use this capability to effectively transfer a large set of data 
-from one Datagrok function/script to another. 
+You can use this capability to effectively transfer a large set of data
+from one Datagrok function/script to another.
 
 ### File output
 
@@ -652,7 +652,7 @@ You can use files as input or output parameters
 using `file` and `blob` annotations.
 
 The `file` parameter type allows you to read and write a file.
-Inside the `Python`/`R` script this parameter will be a string variable 
+Inside the `Python`/`R` script this parameter will be a string variable
 containing a path to the local file.
 
 For example, let's save a dataframe to a JSON file:
@@ -703,10 +703,10 @@ The file name always matches the output variable name.
 Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
 
 :::info
-Some Python functions 
+Some Python functions
 (for example, Numpy [Save](https://numpy.org/doc/stable/reference/generated/numpy.save.html))
 automatically add an extension to the file name if it is provided without an extension.
-In this case, Datagrok won't be able to locate output file, 
+In this case, Datagrok won't be able to locate output file,
 and you'll see empty file in the Datagrok output.
 
 To override this behavior, you can open the file via the Python `open` function,
@@ -719,16 +719,17 @@ with open(array_file_binary, 'wb') as npfile:
  np.save(npfile, array)
 ...
 ```
+
 :::
 
 ### Semantic types
 
 The Datagrok [semantic types](../govern/catalog/semantic-types) is a very powerful concept,
-allowing you to define the _meaning_ of your data,
-For example, you can specify that a particular string contains a chemical molecule in SMILES format, 
-E-mail, or URL address. 
+allowing you to define the *meaning* of your data,
+For example, you can specify that a particular string contains a chemical molecule in SMILES format,
+E-mail, or URL address.
 
-For example, let's explore the **Gasteiger partial charges** script, 
+For example, let's explore the **Gasteiger partial charges** script,
 which takes a molecule in SMILES format as input
 and calculates the Gasteiger charges distribution.
 The script is provided with the `Chem` package.
@@ -786,20 +787,20 @@ if mol is not None:
 ```
 
 Datagrok recognized the `Molecule` semantic types and created the custom UI displaying molecule formula.
-Click on it to open 
+Click on it to open
 [chemical sketcher](../datagrok/solutions/domains/chem/chem.md#sketching)
 and draw your own molecule.
 Datagrok has outstanding [chemoinformatics support](../datagrok/solutions/domains/chem/chem.md),
 so almost all UI elements provide you special viewing and editing options for chemical structures.
 
 You can assign a semantic type to output variables in the same way.
-The semantic types annotation has no benefits for simple scalar output, 
+The semantic types annotation has no benefits for simple scalar output,
 but it is extremely helpful when you integrate your script with the Datagrok platform.
 
 #### Semantic types for columns
 
 Similarly, you can specify the semantic type for dataframe columns.
-For example, let `column` or `column_list` selectors accept only 
+For example, let `column` or `column_list` selectors accept only
 columns containing chemical molecules.
 
 ```python
@@ -809,24 +810,23 @@ columns containing chemical molecules.
 
 ### Graphics output
 
-The script in the [previous section](#semantic-types) 
-returns the `graphics` object. 
+The script in the [previous section](#semantic-types)
+returns the `graphics` object.
 This is a special data type to transfer graphs from scripts to Datagrok.
 For `Python`, this variable can contain any graph created by the
 `Matplotlib` library (the `matplotlib.figure.Fugure` class).
-When you run the script manually, Datagrok captures the graphics object 
+When you run the script manually, Datagrok captures the graphics object
 and creates a separate tab to view the results.
-Datagrok can also save the `graphics` output in a dataframe, 
+Datagrok can also save the `graphics` output in a dataframe,
 or display it in the cell properties.
 
 :::tip Datagrok Viewers
-Out-of-the-box Datagrok contains many flexible interactive 
+Out-of-the-box Datagrok contains many flexible interactive
 [viewers](../visualize/viewers/viewers.md),
-suitable for almost all data visualization tasks. 
+suitable for almost all data visualization tasks.
 
 We suggest you exploring it before implementing custom graphs.
 :::
-
 
 ## Enhancing script input view
 
@@ -837,12 +837,11 @@ The order of the hints makes no difference. All options are optional.
 
 ### Input captions and hints
 
-You can add an arbitrary caption for an input parameter. 
+You can add an arbitrary caption for an input parameter.
 Proper caption helps the user to understand the meaning of the parameter.
 
-To add a hint to the input parameter, place the hint text in the square brackets 
+To add a hint to the input parameter, place the hint text in the square brackets
 after the parameter annotation.
-
 
 ```mdx-code-block
 <Tabs>
@@ -875,7 +874,7 @@ after the parameter annotation.
 
 ### Units
 
-You can add a proper unit label for an input parameter. 
+You can add a proper unit label for an input parameter.
 The unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
@@ -917,7 +916,6 @@ RichFunctionView renders categories as separate blocks of the input form.
 <TabItem value="result" label="Result">
 ```
 
-
 ```mdx-code-block
 <BrowserWindow url=''>
 ```
@@ -956,7 +954,6 @@ RichFunctionView renders categories as separate blocks of the input form.
 #input: double desiredHumidity { caption: Goal humidity; category: Goals }
 ```
 
-
 ```mdx-code-block
 </TabItem>
 </Tabs>
@@ -969,7 +966,7 @@ Each dataframe parameter may have a list of viewers.
 For instance, the following code adds `Scatter plot`
 and `Line chart` viewers on the input dataframe.
 
-You may see all available viewers opening 
+You may see all available viewers opening
 [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv)
 and opening the toolbox on the left.
 
@@ -1028,8 +1025,8 @@ outputDF.name = "DF with linechart"
 
 :::tip
 
-The default script view supports viewers for _output_ dataframes only.
-You may specify viewers _input_ dataframes using
+The default script view supports viewers for *output* dataframes only.
+You may specify viewers *input* dataframes using
 [Rich function view](scripting-advanced.mdx#using-richfunctionview-input-control)
 
 :::
@@ -1113,19 +1110,19 @@ You can use [smart search](../explore/search-filter-select/smart-search.md) to f
 
 <div style = {{ width: '50%' }}>
 
-Datagrok has limited debugging capabilities. 
+Datagrok has limited debugging capabilities.
 All scripts except Javascript are executed in isolated environments,
-and the only ways of communication between the script and Datagrok are 
+and the only ways of communication between the script and Datagrok are
 console log and the script output parameters.
 
-When you run a script, Datagrok catches all log messages 
+When you run a script, Datagrok catches all log messages
 and displays it in the log panel below the script.
-If the script throws an unhandled exception, 
+If the script throws an unhandled exception,
 Datagrok catches it and displays an error popup (shown on the right).
 
-To include additional debug information in the log, 
+To include additional debug information in the log,
 run the script using **Debug script** button in the ribbon menu.
-Alternatively, run the script normally and press the 
+Alternatively, run the script normally and press the
 **Debug** button on the bottom part of the input parameter window.
 
 ![Script debug output](pics/script-debud-output-enable.png)
@@ -1164,7 +1161,7 @@ make it available to the whole community!
 All sharing features are in the **Sharing** dialog.
 
 * To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right-click on it.
-* Choose the "Share..." option in the context menu. 
+* Choose the "Share..." option in the context menu.
 In the dialog, you will see groups and users with their privileges.
 * You may edit the list of collaborators and grant or revoke privileges at any moment.
 
