@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT, RESULT} from './pls-constants';
+import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
+  INT, TIMEOUT, RESULT_NAMES, WASM_OUTPUT_IDX} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 
@@ -18,6 +19,7 @@ export type PlsOutput = {
   tScores: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
   uScores: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
   xLoadings: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
+  yLoadings: DG.Column<DG.COLUMN_TYPE.FLOAT>,
 };
 
 /** PLS analysis input */
@@ -45,24 +47,26 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   );
 
   return {
-    prediction: result[0],
-    regressionCoefficients: result[1],
-    tScores: result[2],
-    uScores: result[3],
-    xLoadings: result[4],
+    prediction: result[WASM_OUTPUT_IDX.PREDICTION],
+    regressionCoefficients: result[WASM_OUTPUT_IDX.REGR_COEFFS],
+    tScores: result[WASM_OUTPUT_IDX.T_SCORES],
+    uScores: result[WASM_OUTPUT_IDX.U_SCORES],
+    xLoadings: result[WASM_OUTPUT_IDX.X_LOADINGS],
+    yLoadings: result[WASM_OUTPUT_IDX.Y_LOADINGS],
   };
 }
 
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
   const res = await getPlsAnalysis(input);
+
   const plsCols = res.tScores;
   const cols = input.table.columns;
   const featuresNames = input.features.names();
 
   // add PLS components to the table
   plsCols.forEach((col, idx) => {
-    col.name = cols.getUnusedName(`${RESULT.PREFIX}${idx + 1}`);
+    col.name = cols.getUnusedName(`${RESULT_NAMES.PREFIX}${idx + 1}`);
     cols.add(col);
   });
 
@@ -85,7 +89,7 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
 
   // 1. Predicted vs Reference scatter plot
   const pred = res.prediction;
-  pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT.SUFFIX}`);
+  pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
   view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     title: TITLE.MODEL,
@@ -133,6 +137,36 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
     labels: input.names?.name,
     help: LINK.MODEL,
   });
+
+  // 5. Explained Variances
+
+  // 5.1) computation, source: the paper https://doi.org/10.1002/cem.2589
+  //      here, we use notations from this paper
+  const q = res.yLoadings.getRawData();
+  const n = input.table.rowCount;
+  const A = input.components;
+  const explVars = new Float32Array(A);
+  const compNames = [] as string[];
+
+  explVars[0] = q[0]**2 / n;
+  compNames.push(`1 ${RESULT_NAMES.COMP}`);
+
+  for (let i = 1; i < A; ++i) {
+    explVars[i] = explVars[i - 1] + q[i]**2 / n;
+    compNames.push(`${i + 1} ${RESULT_NAMES.COMPS}`);
+  }
+
+  // 5.2) bar chart
+  view.addViewer(DG.Viewer.barChart(DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(TITLE.COMPONENTS, compNames),
+    DG.Column.fromFloat32Array(TITLE.EXPL_VAR, explVars),
+  ]), {
+    title: TITLE.EXPL_VAR,
+    splitColumnName: TITLE.COMPONENTS,
+    valueColumnName: TITLE.EXPL_VAR,
+    valueAggrType: DG.AGG.AVG,
+    help: LINK.EXPL_VARS,
+  }));
 } // performMVA
 
 /** Run PLS */
@@ -141,6 +175,11 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);
+    return;
+  }
+
+  if (table.rowCount === 0) {
+    grok.shell.warning(ERROR_MSG.EMPTY_DF);
     return;
   }
 
@@ -246,7 +285,7 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
     }, undefined, dlgRunBtnTooltip)
     .show();
 
-  // the following delay provides correct styles
+  // the following delay provides correct styles (see https://reddata.atlassian.net/browse/GROK-15196)
   setTimeout(() => {
     featuresInput.value = numCols.filter((col) => col !== predict);
     features = featuresInput.value;
