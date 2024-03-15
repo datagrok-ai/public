@@ -45,6 +45,8 @@ Datagrok 1.18 release focuses on usability improvements and stability:
 * [#2664](https://github.com/datagrok-ai/public/issues/2664): Implement a cascade column renaming used by Formula lines.
 * [#2467](https://github.com/datagrok-ai/public/issues/2467): Allow to set tab label for stacked viewers programmatically.
 * [#2598](https://github.com/datagrok-ai/public/issues/2598): Context menus to hide selectors.
+* [#2564](https://github.com/datagrok-ai/public/issues/2564): Column selectors should not overlap the viewer.
+* [#2299](https://github.com/datagrok-ai/public/issues/2299): Make viewers aware of surroundings.
 * Rename viewer by hotkey **F2**.
 * Column selectors: ESC should close the popup.
 * Fixed:
