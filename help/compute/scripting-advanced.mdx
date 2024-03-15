@@ -1138,18 +1138,10 @@ The function mentioned in this tag will be called on clicking <i class="fas fa-u
 You may use it to extract the experimental data from the external resource (e.g., a database).
 Extracted data could be saved to the history or could be used directly to compare the computed and experimental results.
 
-<details>
-<summary> Data upload API </summary>
-<div>
-
-The custom upload funcion should return `uploadWidget` (of type DG.Widget) and `uploadFuncCall` (of type DG.FuncCall).
-`uploadWidget` will be shown on the UI; `uploadFuncCall`, in turn, should return the experimental runs typed as array of DG.FuncCalls.
-
-</div>
-</details>
-
+```mdx-code-block
 <Tabs>
 <TabItem value="enable custom" label="Enabling custom data upload">
+```
 
 ```javascript title="Your script header"
 //meta.uploadFunc: Compute:CustomUploader
@@ -1222,6 +1214,17 @@ export async function DataExtractor(func: DG.Func) {
 ```mdx-code-block
 </TabItem>
 </Tabs>
+```
+
+<details>
+<summary> Data upload API </summary>
+<div>
+
+The custom upload funcion should return `uploadWidget` (of type DG.Widget) and `uploadFuncCall` (of type DG.FuncCall).
+`uploadWidget` will be shown on the UI; `uploadFuncCall`, in turn, should return the experimental runs typed as array of DG.FuncCalls.
+
+</div>
+</details>
 
 ## Converting your script to an application
 
@@ -1238,15 +1241,15 @@ Briefly, you need to do the follows:
   grok init package_name --ts
   ```
 
-2. Install required NodeJs modules:
+1. Install required NodeJs modules:
 
   ```shell
   npm install
   ```
 
-3. Add your script to the package.
+1. Add your script to the package.
 
-- If you are writing in Javascript/Typescript,
+    - If you are writing in Javascript/Typescript,
     you can convert your script to the JS function, annotate it, and add directly to `src` folder:
 
     ```typescript
@@ -1260,10 +1263,10 @@ Briefly, you need to do the follows:
     }
     ```
 
-- Alternatively, create the `scripts` folder in your package directory and place your script file in it.
-  This approach works for all script languages.
+    - Alternatively, create the `scripts` folder in your package directory and place your script file in it.
+    This approach works for all script languages.
 
-4. Add the application function to the `src/package.ts`:
+1. Add the application function to the `src/package.ts`:
 
   ```typescript
   //name: ApplicationFromScript
@@ -1279,7 +1282,8 @@ Briefly, you need to do the follows:
 
   Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
   (what you used in the `//name:` annotation, not the file name).
-5. Compile and [publish](../develop/develop.md#publishing) the package:
+
+1. Compile and [publish](../develop/develop.md#publishing) the package:
 
   ```shell
   npm run build && grok publish your_environment
@@ -1617,8 +1621,6 @@ The list of parameter examples can be used:
 #output: graphics scatter [scatter plot]
 ```
 
-</div>
-
 ## Output values validation
 
 Datagrok functions return zero, one or more typed variables.
@@ -1659,3 +1661,5 @@ Output value c3 was not set
 ```mdx-code-block
 </BrowserWindow>
 ```
+
+</div>
