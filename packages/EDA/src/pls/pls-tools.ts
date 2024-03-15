@@ -143,27 +143,39 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
   // 5.1) computation, source: the paper https://doi.org/10.1002/cem.2589
   //      here, we use notations from this paper
   const q = res.yLoadings.getRawData();
+  const p = res.xLoadings.map((col) => col.getRawData());
   const n = input.table.rowCount;
+  const m = featuresNames.length;
   const A = input.components;
-  const explVars = new Float32Array(A);
+  const yExplVars = new Float32Array(A);
   const compNames = [] as string[];
+  const xExplVars = [] as Float32Array[];
+  for (let i = 0; i < m; ++i)
+    xExplVars.push(new Float32Array(A));
 
-  explVars[0] = q[0]**2 / n;
+  yExplVars[0] = q[0]**2 / n;
   compNames.push(`1 ${RESULT_NAMES.COMP}`);
+  xExplVars.forEach((arr, idx) => {arr[0] = p[0][idx]**2 / n;});
 
-  for (let i = 1; i < A; ++i) {
-    explVars[i] = explVars[i - 1] + q[i]**2 / n;
-    compNames.push(`${i + 1} ${RESULT_NAMES.COMPS}`);
+  for (let comp = 1; comp < A; ++comp) {
+    yExplVars[comp] = yExplVars[comp - 1] + q[comp]**2 / n;
+    xExplVars.forEach((arr, idx) => arr[comp] = arr[comp - 1] + p[comp][idx]**2 / n);
+    compNames.push(`${comp + 1} ${RESULT_NAMES.COMPS}`);
   }
 
-  // 5.2) bar chart
-  view.addViewer(DG.Viewer.barChart(DG.DataFrame.fromColumns([
+  // 5.2) create df
+  const explVarsDF = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(TITLE.COMPONENTS, compNames),
-    DG.Column.fromFloat32Array(TITLE.EXPL_VAR, explVars),
-  ]), {
+    DG.Column.fromFloat32Array(input.predict.name, yExplVars),
+  ]);
+
+  xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
+
+  // 5.3) bar chart
+  view.addViewer(DG.Viewer.barChart(explVarsDF, {
     title: TITLE.EXPL_VAR,
     splitColumnName: TITLE.COMPONENTS,
-    valueColumnName: TITLE.EXPL_VAR,
+    valueColumnName: input.predict.name,
     valueAggrType: DG.AGG.AVG,
     help: LINK.EXPL_VARS,
   }));
