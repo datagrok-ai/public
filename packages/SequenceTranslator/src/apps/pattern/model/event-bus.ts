@@ -1,14 +1,14 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
-import {STRANDS, STRAND} from './const';
-import {PatternConfiguration, StrandType} from './types';
-import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
-import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L} from './const';
-import {StrandEditingUtils} from './utils';
-
 import * as rxjs from 'rxjs';
-import {map, debounceTime} from 'rxjs/operators';
+import {debounceTime, map, switchMap} from 'rxjs/operators';
+
+import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, STRAND, STRANDS} from './const';
 import {PatternDefaultsProvider} from './defaults-provider';
+import {
+  NucleotideSequences, PatternConfiguration, PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
+} from './types';
+import {StrandEditingUtils} from './utils';
 
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
@@ -37,17 +37,24 @@ export class EventBus {
   constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
 
-    this._sequenceBaseReplacementRequested$.subscribe((newBase: string) => {
-      const oldNucleotideSequences = this._nucleotideSequences$.getValue();
-      const newNucleotideSequences = {} as NucleotideSequences;
-      STRANDS.forEach((strand) => {
-        newNucleotideSequences[strand] = oldNucleotideSequences[strand].map((_: string) => newBase);
-      });
-    });
+    this._sequenceBaseReplacementRequested$.subscribe((newBase: string) => this.handleNewBaseChoice(newBase));
 
     this._nucleotideSequences$.subscribe(() => {
       this.updateUniqueNucleotideBases();
     });
+  }
+
+  private handleNewBaseChoice(newBase: string) {
+    const oldNucleotideSequences = this._nucleotideSequences$.getValue();
+    const newNucleotideSequences = {} as NucleotideSequences;
+    STRANDS.forEach((strand) => {
+      newNucleotideSequences[strand] = oldNucleotideSequences[strand].map(() => newBase);
+    });
+    this._nucleotideSequences$.next(newNucleotideSequences);
+
+    const labelledNucleotides = this._modificationsWithNumericLabels$.getValue();
+    if (!labelledNucleotides.includes(newBase))
+      this.updateModificationsWithNumericLabels(labelledNucleotides.concat(newBase));
   }
 
   private updateUniqueNucleotideBases(): void {
@@ -254,7 +261,12 @@ export class EventBus {
   }
 
   uniqueNucleotideBasesChanged$(): rxjs.Observable<string[]> {
-    return this._uniqueNucleotideBases$.asObservable();
+    // WARNING: switchMap is used to prevent race conditions
+    const observable = this.patternStateChanged$.pipe(
+      switchMap(() => this._uniqueNucleotideBases$)
+    );
+
+    return observable;
   }
 
   getUniqueNucleotideBases(): string[] {

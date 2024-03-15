@@ -1,7 +1,4 @@
-/* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
 import {SvgDisplayManager} from './svg-utils/svg-display-manager';
 
@@ -93,7 +90,9 @@ class NumericLabelVisibilityControls {
       inputBases.push(input);
     });
 
-    inputBases.sort((inputA, inputB) => inputA.captionLabel.textContent!.localeCompare(inputB.captionLabel.textContent!));
+    inputBases.sort(
+      (inputA, inputB) => inputA.captionLabel.textContent!.localeCompare(inputB.captionLabel.textContent!)
+    );
 
     return ui.divH(inputBases.map((input) => input.root));
   }
@@ -104,7 +103,8 @@ class NumericLabelVisibilityControls {
     if (hasNumericLabel === isVisible)
       return;
 
-    const newArray = isVisible ? labelledNucleotides.concat(nucleotide) : labelledNucleotides.filter((n) => n !== nucleotide);
+    const newArray = isVisible ? labelledNucleotides.concat(nucleotide) :
+      labelledNucleotides.filter((n) => n !== nucleotide);
     this.eventBus.updateModificationsWithNumericLabels(newArray);
   }
 }

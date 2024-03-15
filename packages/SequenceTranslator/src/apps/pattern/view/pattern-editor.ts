@@ -1,16 +1,16 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
-import _ from 'lodash';
 import $ from 'cash-dom';
+import _ from 'lodash';
 
-import {EventBus} from '../model/event-bus';
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
-import {BooleanInput, StringInput} from './types';
-import {PatternConfiguration, PhosphorothioateLinkageFlags, StrandType} from '../model/types';
 import {STRAND, STRANDS, STRAND_LABEL} from '../model/const';
+import {EventBus} from '../model/event-bus';
+import {PatternConfiguration, PhosphorothioateLinkageFlags, StrandType} from '../model/types';
 import {isOverhangNucleotide} from '../model/utils';
+import {BooleanInput, StringInput} from './types';
 
 export let isDialogOpen = false;
 
@@ -119,8 +119,10 @@ class HeaderControls {
     });
   }
 
-  private createFirstPtoInputs(): BooleanInput[] {
+  private createFirstPtoInputs(): BooleanInput [] {
     return STRANDS.map((strand) => {
+      if (!this.eventBus.isAntiSenseStrandVisible() && strand === STRAND.ANTISENSE)
+        return;
       const initialValue = this.isFirstPtoActive(strand);
       const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue);
 
@@ -137,7 +139,7 @@ class HeaderControls {
       this.addStyleToPtoInput(firstPtoInput);
       ui.tooltip.bind(firstPtoInput.captionLabel, `Activate first phosphothioate in ${strand}`);
       return firstPtoInput;
-    });
+    }).filter((input) => input !== undefined) as BooleanInput[];
   }
 
   private isFirstPtoActive(strand: STRAND): boolean {
@@ -196,7 +198,7 @@ class StrandControls {
       (nucleobaseInput, idx) => {
         return ui.divH([
           labels[idx],
-          nucleobaseInput.root,
+          ui.block75([nucleobaseInput.root]),
           ptoLinkageInputs[idx].root,
         ], {style: {alignItems: 'center'}});
       }));

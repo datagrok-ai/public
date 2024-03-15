@@ -1,18 +1,18 @@
 /* Do not change these import lines to match external modules in webpack configuration */
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
 
-import {STRAND, STRAND_LABEL, STRANDS, OTHER_USERS, MAX_SEQUENCE_LENGTH} from '../model/const';
+import {MAX_SEQUENCE_LENGTH, OTHER_USERS, STRAND, STRANDS, STRAND_LABEL} from '../model/const';
 import {StrandType} from '../model/types';
 
-import {StringInput, NumberInput} from './types';
+import {NumberInput, StringInput} from './types';
 
+import $ from 'cash-dom';
+import {PatternDefaultsProvider} from '../model/defaults-provider';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {PatternDefaultsProvider} from '../model/defaults-provider';
-import $ from 'cash-dom';
 
 export class PatternAppLeftSection {
   constructor(
@@ -139,7 +139,7 @@ class PatternControlsManager {
 
     sequenceBaseInput.onChanged(() => this.eventBus.changeSequenceBase(sequenceBaseInput.value!));
 
-    sequenceBaseInput.setTooltip('Nucleotide base to use for the sequence');
+    sequenceBaseInput.setTooltip('Most common nucleobase in the sequence');
     return sequenceBaseInput;
   }
 
