@@ -505,6 +505,67 @@ IC4 = test.rowCount;
 </Tabs>
 ```
 
+### Adding readme
+
+You may add customized readme file to your script. 
+The linked Markdown file will be available by clicking <i class="fal fa-info"></i> icon on the ribbon panel.
+The readme file will appear inside of the panel on the right side.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./rfv-help.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="short" label="Short sample">
+```
+
+Following code will search for the help file in the particular package (e.g., `Compute`).
+
+```javascript title="Your script header (w/ package file)"
+//meta.help: Compute/readme.md
+```
+
+Following code will search for the help file in your Datagrok's Home folder.
+
+```javascript title="Your script header (w/ personal file)"
+//meta.help: readme.md
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript title="https://public.datagrok.ai/scripts"
+//name: Data stats
+//language: javascript
+//tags: demo
+//input: dataframe inputDf {caption: Input dataframe; viewer: Grid(); category: Input data}
+//output: dataframe outputDf {caption: Output dataframe; viewer: Line chart(block: 50) | Scatter plot(block: 50) | Statistics(block: 100); category: Stats}
+//editor: Compute:RichFunctionViewEditor
+//meta.runOnOpen: true
+//meta.runOnInput: true
+
+outputDf = inputDf.clone();
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
 ### File upload
 
 You can use a file as a function input via RichFunctionView, 
@@ -802,6 +863,116 @@ the platform will create a new historical run.
 </div>
 </details>
 
+### Comparing the historical runs
+
+You may compare historical runs using history panel. Select the historical runs of the interest 
+and click <i class="fas fa-exchange"></i> icon to open the comparison view.
+
+:::tip
+
+Click on the column header with table data (e.g. `Temp. vs time`) to see convinient comparison chart.
+
+:::
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Comparison">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./comparsion-view.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="short" label="How to compare">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<div style={{'text-align': 'center'}}>
+<img src={require('./call-compare.png').default} style={{'border-radius': '5px'}}/>
+</div>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Customizing the comparison
+
+You may provide a Datagrok function to customize the comparison of the historical runs. 
+For example, you may add particular viewers to your comparison or make additional comparative analysis.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Custom comparison">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./custom-compare.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="enable custom" label="Enabling custom data upload">
+```
+
+```javascript title="Your script header"
+//meta.compareCustomizer: Compute:CustomCustomizer
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="custom comparator" label="Custom data uploader">
+```
+
+```javascript title="package.ts"
+//name: CustomCustomizer
+//input: object params
+export function CustomCustomizer(params: {defaultView: DG.TableView}) {
+  const comparisonView = params.defaultView;
+  comparisonView.scatterPlot({
+    "xColumnName": "Initial temperature",
+    "yColumnName": "Time to cool",
+  });
+}
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+<details>
+<summary> Comparison customization API </summary>
+<div>
+
+Customizer function should have `//input: object params` in the header. 
+This object will contain `defaultView` reference to the default-contructed DG.TableView.
+Customizations may be applied directly using this reference. 
+
+</div>
+</details>
+
 ### Sensitivity analysis
 
 Disabled by default. 
@@ -811,6 +982,21 @@ Enable this feature and click **<i class="fas fa-analytics"></i> SA** icon on th
 
 ```mdx-code-block
 <Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./sens-analysis.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
 <TabItem value="short" label="Short sample">
 ```
 
@@ -892,9 +1078,46 @@ This will add the <i class="fas fa-upload"></i> **Upload mode** button to the ge
 RichFunctionView automatically collects all data fields you need to mimic script run,
 and creates corresponding UI elements.
 
+Here is an example used in the default [Object cooling](https://public.datagrok.ai/scripts?q=object+cooling) script.  
+
 ```mdx-code-block
 <Tabs>
-<TabItem value="short" label="Short sample">
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<div style = {{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+<div style = {{maxWidth: '45%'}}>
+
+Data upload GUI:
+
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./basic-data-upload.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+</div>
+
+<div style = {{maxWidth: '50%'}}>
+
+Experimental run in history:
+
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('./exp-run-history.png').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+</div>
+</div>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="enable" label="Enabling data upload">
 ```
 
 ```javascript title="Your script header"
@@ -903,55 +1126,100 @@ and creates corresponding UI elements.
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="full" label="Full sample">
+</Tabs>
 ```
 
-```javascript title="https://public.datagrok.ai/scripts"
-//name: Object cooling
-//description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
-//language: javascript
-//tags: simulation, demo
-//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50; validator: Compute:AmbTempValidator; }
-//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50; validator: Compute:InitialTempValidator; }
-//input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment; validator: Compute:DesiredTempValidator; }
-//input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
-//input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties; validator: Compute:HeatCapValidator; }
-//input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
-//input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validator: Compute:SimTimeValidator; validatorOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
-//output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
-//output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
-//output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
-//output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
-//editor: Compute:RichFunctionViewEditor
-//meta.features: {"upload": true}
-//meta.foldedCategories: ["Object properties"]
+### Customizing the experimental data upload
 
-timeToCool = undefined;
+You may customize the data upload using Datagrok functions and `meta.uploadFunc` tag. 
+The function mentioned in this tag will be called on clicking <i class="fas fa-upload"></i> button instead of the basic data upload.
+You may use it to extract the experimental data from the external resource (e.g., a database). 
+Extracted data could be saved to the history or could be used directly to compare the computed and experimental results.
 
-const tempDiff = initTemp - ambTemp;
-const coolingFactor = heatTransferCoeff * area / heatCap;
+<details>
+<summary> Data upload API </summary>
+<div>
 
-const timeStamps = new Float32Array(simTime).map((_, idx) => idx);
-const simulatedTemp = timeStamps.map((timeStamp) => {
-  const currentTemp = ambTemp + (tempDiff * (Math.E ** -(coolingFactor * timeStamp)));
+The custom upload funcion should return `uploadWidget` (of type DG.Widget) and `uploadFuncCall` (of type DG.FuncCall).
+`uploadWidget` will be shown on the UI; `uploadFuncCall`, in turn, should return the experimental runs typed as array of DG.FuncCalls. 
 
-  if (!timeToCool && currentTemp < desiredTemp) {
-    timeToCool = timeStamp;
-  }
+</div>
+</details>
 
-  return currentTemp;
-});
+<Tabs>
+<TabItem value="enable custom" label="Enabling custom data upload">
 
-simulation = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Time', timeStamps),
-  DG.Column.fromFloat32Array('Temperature', simulatedTemp),
-]);
+```javascript title="Your script header"
+//meta.uploadFunc: Compute:CustomUploader
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="widget function" label="Widget generator">
+```
+
+```javascript title="package.ts"
+//name: CustomUploader
+//input: object params
+//output: widget uploadWidget
+//output: funccall uploadFuncCall
+export async function CustomUploader(params: {func: DG.Func}) {
+  const uploadFunc = await grok.functions.eval('Compute:DataExtractor') as DG.Func;
+  const uploadFuncCall = uploadFunc.prepare({func: params.func})
+  const uploadBtn = ui.bigButton('Click me to get mock calls', () => uploadFuncCall.call());
+
+  const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
+    ui.label('This part of dialog comes from my custom data uploader'),
+    ui.divH([uploadBtn], {style: {'justify-content': 'center'}})
+  ])]));  
+
+  const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
+    filter((call) => call.id === uploadFuncCall.id)
+  ).subscribe(() => {
+    ui.setUpdateIndicator(uploadBtn, true);
+  })
+
+  const unsetLoadingSub = grok.functions.onAfterRunAction.pipe(
+    filter((call) => call.id === uploadFuncCall.id)
+  ).subscribe(() => {
+    ui.setUpdateIndicator(uploadBtn, false);
+  })
+
+  dummyWidget.subs.push(setLoadingSub, unsetLoadingSub)
+
+  return {uploadWidget: dummyWidget, uploadFuncCall};
+}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="Data extraction function" label="Data extractor">
+```
+
+```javascript title="package.ts"
+//name: DataExtractor
+//input: func func
+//output: object uploadedCalls
+export async function DataExtractor(func: DG.Func) {
+  await new Promise((r) => setTimeout(r, 1000));
+
+  const dummyFunccall = await func.prepare({
+    'ambTemp': 22,
+    'initTemp': 100,
+    'desiredTemp': 30,
+    'area': 0.06,
+    'heatCap': 4200,
+    'heatTransferCoeff': 8.3,
+    'simTime': 21600,
+    }).call();
+    
+  return [dummyFunccall]
+}
 ```
 
 ```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
 ## Converting your script to an application
 
