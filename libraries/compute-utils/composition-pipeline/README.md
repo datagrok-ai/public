@@ -54,10 +54,10 @@ configurations.
 - **link** - is a description of a connection between inputs and
   outputs. It is defined by an array of input **item paths** with the
   correspoding array of output **item paths**. By default input[0]
-  value is set to output[0] and so on. Each change in any of link
-  inputs will trigger the whole link, so an update of all outputs to
-  the respective inputs values will happen. Note that links are
-  triggered once if multiple inputs are changed synchronously.
+  value is set to output[0] and so on. Any value change in any of link
+  inputs will trigger the link, so an update of all outputs to the
+  respective inputs values will happen. Note that links are triggered
+  once if multiple inputs are changed synchronously.
 
 - **handler** - is an asynchronous function, if defined it can
   override the default link behaviour when a link is triggered. It
