@@ -80,3 +80,9 @@ export enum WASM_OUTPUT_IDX {
 
 export const INT = 'Int';
 export const TIMEOUT = 6;
+export const RADIUS = [0.49, 0.79, 0.99];
+export const LINE_WIDTH = 1;
+export enum COLOR {
+  AXIS = '#838383',
+  CIRCLE = '#0000FF',
+};

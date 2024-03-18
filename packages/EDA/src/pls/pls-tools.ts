@@ -4,8 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
-  INT, TIMEOUT, RESULT_NAMES, WASM_OUTPUT_IDX} from './pls-constants';
+import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
+  RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 
@@ -124,19 +124,70 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
   ));
 
   // 4. Scores Scatter Plot
-  plsCols.forEach((col, idx) => col.name = cols.getUnusedName(`${TITLE.XSCORE}${idx + 1}`));
+
+  // 4.1) data
+  const scoreNames = [] as string[];
+
+  plsCols.forEach((col, idx) => {
+    col.name = cols.getUnusedName(`${TITLE.XSCORE}${idx + 1}`);
+    scoreNames.push(col.name);
+  });
   res.uScores.forEach((col, idx) => {
     col.name = cols.getUnusedName(`${TITLE.YSCORE}${idx + 1}`);
     cols.add(col);
+    scoreNames.push(col.name);
   });
-  view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+
+  // 4.2) add scatter
+  const scoresScatterPlt = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
     yColumnName: (plsCols.length > 1) ? plsCols[1].name : res.uScores[0],
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.MODEL,
+    showViewerFormulaLines: true,
   });
+
+  // 4.3) create lines & circles
+  const lines = [] as DG.FormulaLine[];
+
+  scoreNames.forEach((xName) => {
+    const x = '${' + xName + '}';
+    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
+
+    scoreNames.forEach((yName) => {
+      const y = '${' + yName + '}';
+
+      RADIUS.forEach((r) => {
+        const formula1 = x + ` = sqrt(${r*r} - ${y} * ${y})`;
+        lines.push({
+          type: 'line',
+          formula: formula1,
+          width: LINE_WIDTH,
+          visible: true,
+          title: ' ',
+          min: -r,
+          max: r,
+          color: COLOR.CIRCLE,
+        });
+
+        const formula2 = y + ` = -sqrt(${r*r} - ${x} * ${x})`;
+        lines.push({
+          type: 'line',
+          formula: formula2,
+          width: LINE_WIDTH,
+          visible: true,
+          title: ' ',
+          min: -r,
+          max: r,
+          color: COLOR.AXIS,
+        });
+      });
+    });
+  });
+
+  scoresScatterPlt.meta.formulaLines.addAll(lines);
 
   // 5. Explained Variances
 
