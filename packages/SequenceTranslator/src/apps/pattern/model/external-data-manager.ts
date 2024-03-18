@@ -3,7 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R} from './const';
+import {
+  STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R
+} from './const';
 import {PatternConfiguration, PatternExistsError, PatternNameExistsError} from './types';
 import {EventBus} from './event-bus';
 
@@ -35,7 +37,10 @@ export class PatternAppDataManager {
     try {
       await this.patternConfigManager.savePatternToUserStorage(patternConfig);
     } catch (e) {
-      console.error('Error while saving pattern to user storage', e);
+      if (e instanceof PatternNameExistsError || e instanceof PatternExistsError)
+        throw e;
+      else
+        console.error('Error while saving pattern to user storage', e);
     }
   }
 }

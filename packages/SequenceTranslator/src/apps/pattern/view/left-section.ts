@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 
 import {MAX_SEQUENCE_LENGTH, OTHER_USERS, STRAND, STRANDS, STRAND_LABEL} from '../model/const';
-import {StrandType} from '../model/types';
+import {StrandType, PatternNameExistsError, PatternExistsError} from '../model/types';
 
 import {NumberInput, StringInput} from './types';
 
@@ -320,8 +320,18 @@ class PatternNameControls {
       grok.shell.warning(`Insert pattern name`);
       return;
     }
-    this.dataManager.savePatternToUserStorage();
-    grok.shell.info(`Pattern ${patternName} saved`);
+    this.dataManager.savePatternToUserStorage()
+      .then(() => {
+        grok.shell.info(`Pattern ${patternName} saved`);
+      })
+      .catch((e) => {
+        if (e instanceof PatternNameExistsError)
+          grok.shell.warning(`Pattern with name ${patternName} already exists`);
+        else if (e instanceof PatternExistsError)
+          grok.shell.warning(`Pattern already exists`);
+        else
+          console.error('Error while saving pattern', e);
+      });
   }
 }
 
