@@ -8,6 +8,8 @@ import { checkPackage } from '../utils/elemental-analysis-utils';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
+const MW_DESC = 'exactmw';
+const MAX_MW_FOR_IDENTIFIERS = 1200;
 
 let unichemSources: DG.DataFrame;
 
@@ -136,9 +138,12 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
 export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   const mol = getMolSafe(molfile, {}, rdKitModule);
+  let fullIdentifiersPanel = true;
   if (mol.mol) {
     const inchi = mol.mol.get_inchi();
     const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
+    if (JSON.parse(mol.mol.get_descriptors())[MW_DESC] > MAX_MW_FOR_IDENTIFIERS)
+      fullIdentifiersPanel = false;
     mol.mol.delete();
 
     let idMap: {[k: string]: any} | null = null;
@@ -148,7 +153,7 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
       console.warn(e);
     }
 
-    const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap);
+    const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap, fullIdentifiersPanel);
     return new DG.Widget(ui.tableFromMap(mainIdentifiers));
   } else
     return new DG.Widget(ui.divText('Malformed molecule'));
@@ -156,26 +161,29 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
 
 
 function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
-  idMap: {[k: string]: any} | null): {[k: string]: any} {
+  idMap: {[k: string]: any} | null, fullIdentifiersPanel: boolean): {[k: string]: any} {
   const map: {[k: string]: any} = {};
   const smiles = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
-  addNameField(map, smiles);
+  if (fullIdentifiersPanel)
+    addNameField(map, smiles);
   map['Smiles'] = smiles;
   map['Inchi'] = inchi;
   map['Inchi key'] = inchiKey;
-  extractMainIdentifier(CHEMBL, map, idMap);
-  extractMainIdentifier(PUBCHEM, map, idMap);
-  if (idMap) {
-    for (const [source, identifier] of Object.entries(idMap))
-      map[source] = ui.link(identifier.id, () => window.open(identifier.link));
-  }
-  function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
-    const identifier = idMap ? idMap[source.toLowerCase()] : null;
-    if (identifier) {
-      map[source] = ui.link(identifier.id, () => window.open(identifier.link));
-      delete idMap![source.toLowerCase()];
-    } else
-      map[source] = '-';
+  if (fullIdentifiersPanel) {
+    extractMainIdentifier(CHEMBL, map, idMap);
+    extractMainIdentifier(PUBCHEM, map, idMap);
+    if (idMap) {
+      for (const [source, identifier] of Object.entries(idMap))
+        map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+    }
+    function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
+      const identifier = idMap ? idMap[source.toLowerCase()] : null;
+      if (identifier) {
+        map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+        delete idMap![source.toLowerCase()];
+      } else
+        map[source] = '-';
+    }
   }
   return map;
 }
