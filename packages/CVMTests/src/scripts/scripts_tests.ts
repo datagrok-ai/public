@@ -145,7 +145,7 @@ for (const lang of langs) {
       const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
       return `Execution time: ${Date.now() - start}`;
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+    }, {timeout: 120000});
 
     test(`Dataframe performance test sequentially`, async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -157,7 +157,7 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+    }, {timeout: 120000});
 
     test('Dataframe performance test parallel', async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -170,7 +170,7 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+    }, {timeout: 120000});
   });
 }
 
