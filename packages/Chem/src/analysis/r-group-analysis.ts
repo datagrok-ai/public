@@ -12,8 +12,8 @@ import { getUncommonAtomsAndBonds } from '../utils/chem-common-rdkit';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 
-let latestAnalysisCols: string[] = [];
-let latestTrellisPlot: DG.Viewer | null = null;
+let latestAnalysisCols: {[key: string]: string []} = {};
+let latestTrellisPlot: {[key: string]: DG.Viewer | null} = {};
 
 export function convertToRDKit(smiles: string): string {
   const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
@@ -128,6 +128,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         if (res.rowCount) {
           //unmatched are those items for which all R group cols are empty
           const unmatchedItems = new Uint8Array(res.rowCount).fill(0);
+          latestAnalysisCols[col.dataFrame.name] = [];
           for (const resCol of res.columns) {
             const molsArray = new Array<string>(resCol.length);
             for (let i = 0; i < resCol.length; i++) {
@@ -158,7 +159,7 @@ export function rGroupAnalysis(col: DG.Column): void {
             rCol.semType = DG.SEMTYPE.MOLECULE;
             rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
             col.dataFrame.columns.add(rCol);
-            latestAnalysisCols.push(rColName);
+            latestAnalysisCols[col.dataFrame.name].push(rColName);
           }
           //create column for highlight of uncommon structure
           const highlightColName = `r-groups-highlight_${rGroupPrefixIdx}`;
@@ -174,7 +175,7 @@ export function rGroupAnalysis(col: DG.Column): void {
             const substructCol = DG.Column.fromType('object', highlightColName, col.dataFrame.rowCount)
               .init((i) => getUncommonAtomsAndBonds(col.get(i), coreMolWithoutRGroups, module, '#bc131f', true));
             col.dataFrame.columns.add(substructCol);
-            latestAnalysisCols.push(highlightColName);
+            latestAnalysisCols[col.dataFrame.name].push(highlightColName);
             col.temp[SUBSTRUCT_COL] = highlightColName;
           } finally {
             coreMol?.delete();
@@ -184,7 +185,7 @@ export function rGroupAnalysis(col: DG.Column): void {
           const isHitCol = DG.Column.bool(`${rGroupPrefixIdx ? `isHit_${rGroupPrefixIdx}` : `isHit`}`, res.rowCount)
             .init((i) => unmatchedItems[i] !== res.columns.length - 1);
           col.dataFrame.columns.add(isHitCol);
-          latestAnalysisCols.push(isHitCol.name);
+          latestAnalysisCols[col.dataFrame.name].push(isHitCol.name);
           //filter out unmatched values
           const filterUnmatched = DG.BitSet.create(res.rowCount).init((i) => isHitCol.get(i));
           col.dataFrame.filter.copyFrom(filterUnmatched);
@@ -195,7 +196,7 @@ export function rGroupAnalysis(col: DG.Column): void {
             if (res.columns.length < 3)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
             else
-              latestTrellisPlot = view.trellisPlot({
+              latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
                 xColumnNames: [res.columns.byIndex(1).name], // column 0 is Core column
                 yColumnNames: [res.columns.byIndex(2).name],
               });
@@ -214,9 +215,10 @@ export function rGroupAnalysis(col: DG.Column): void {
 }
 
 function removeLatestAnalysis(col: DG.Column) {
-  if(latestTrellisPlot && latestTrellisPlot.dataFrame) 
-    latestTrellisPlot.close();
-  latestTrellisPlot = null;
-  latestAnalysisCols.forEach((colName: string) => col.dataFrame.columns.remove(colName));
-  latestAnalysisCols = [];
+  if(latestTrellisPlot[col.dataFrame.name] && latestTrellisPlot[col.dataFrame.name]!.dataFrame) 
+    latestTrellisPlot[col.dataFrame.name]!.close();
+  delete latestTrellisPlot[col.dataFrame.name];
+  if(latestAnalysisCols[col.dataFrame.name])
+    latestAnalysisCols[col.dataFrame.name]!.forEach((colName: string) => col.dataFrame.columns.remove(colName));
+  delete latestAnalysisCols[col.dataFrame.name];
 }
