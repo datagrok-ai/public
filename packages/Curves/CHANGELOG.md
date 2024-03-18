@@ -1,5 +1,17 @@
 # Curves changelog
 
+## 1.2.16 (2024-03-15)
+
+### Features
+
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Added outlier color property.
+
+### Bug Fixes
+
+* Renamed "Show curve confidence intervals" to "Confidence intervals"
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Fixed statistics calculation
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Made statistics columns adding functions DG functions
+
 ## 1.2.15 (2023-11-17)
 
 ### Features

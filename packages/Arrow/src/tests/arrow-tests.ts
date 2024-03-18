@@ -1,9 +1,10 @@
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {Table, tableFromIPC} from 'apache-arrow'
+import {tableFromIPC} from 'apache-arrow'
 import { Buffer } from 'buffer';
 import { _package } from '../package-test';
-//@ts-ignore
-import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from '../arrow1';
+
+import {default as init, readParquet} from "parquet-wasm/esm/arrow1";
+
 
 category('Arrow', () => {
   let bytes_arrow;

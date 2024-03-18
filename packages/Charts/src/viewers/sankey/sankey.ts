@@ -129,7 +129,12 @@ export class SankeyViewer extends DG.JsViewer {
     const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
     const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
-    const filteredIndexList = this.filter.getSelectedIndexes();
+    const selectedIndexes = this.filter.getSelectedIndexes();
+    const { rowCount } = this.dataFrame;
+    const filteredIndexList = selectedIndexes.length > 0 
+    ? selectedIndexes 
+    : Array.from({ length: rowCount }, (_, index) => index);
+
 
     const sourceList = new Array<string>(filteredIndexList.length);
     const targetList = new Array<string>(filteredIndexList.length);
@@ -149,8 +154,8 @@ export class SankeyViewer extends DG.JsViewer {
       .map((node: string, index: number) => ({node: index, name: node}));
 
     const links: Link[] = [];
-    const rowCount = filteredIndexList.length;
-    for (let i = 0; i < rowCount; i++) {
+    const filteredRowCount = filteredIndexList.length;
+    for (let i = 0; i < filteredRowCount; i++) {
       const source = nodes.findIndex((node) => node.name === sourceList[i]);
       const target = nodes.findIndex((node) => node.name === targetList[i]);
       if (source === -1 || target === -1)

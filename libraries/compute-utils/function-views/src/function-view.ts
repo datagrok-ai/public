@@ -87,8 +87,7 @@ export abstract class FunctionView extends DG.ViewBase {
   protected async onFuncCallReady() {
     await historyUtils.augmentCallWithFunc(this.funcCall, false);
     if (!this.options.isTabbed) {
-      if (!this.name || this.name === 'New view')
-        this.changeViewName(this.funcCall.func.friendlyName);
+      if (!this.name || this.name === 'New view') this.name = this.funcCall.func.friendlyName;
       try {
         if (this.func.package)
           await this.getPackageData();
@@ -112,26 +111,16 @@ export abstract class FunctionView extends DG.ViewBase {
           this.path = `?id=${this.funcCall.id}`;
           const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
           if ((this.name.indexOf(' — ') < 0))
-            this.changeViewName(`${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`);
+            this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
           else
-            this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`);
+            this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`;
         } else {
           this.path = ``;
-          this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
+          this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
         }
       });
       this.subs.push(historySub);
     }
-  }
-
-  /**
-   * Changes the name of the view. This method also deals with rare bug when view name is not updated after change.
-   * @param newName New name for the view
-   */
-  protected changeViewName(newName: string) {
-    this.name = newName;
-    // Workaround for https://reddata.atlassian.net/browse/GROK-14674
-    document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
   }
 
   private getStartId(): string | undefined {
@@ -413,9 +402,9 @@ export abstract class FunctionView extends DG.ViewBase {
           this.path = `?id=${this.funcCall.id}`;
           const dateStarted = new Date(editedCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
           if ((this.name.indexOf(' — ') < 0))
-            this.changeViewName(`${this.name} — ${editedCall.options['title'] ?? dateStarted}`);
+            this.name = `${this.name} — ${editedCall.options['title'] ?? dateStarted}`;
           else
-            this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${editedCall.options['title'] ?? dateStarted}`);
+            this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${editedCall.options['title'] ?? dateStarted}`;
         }
       }),
       grok.events.onCurrentViewChanged.subscribe(() => {

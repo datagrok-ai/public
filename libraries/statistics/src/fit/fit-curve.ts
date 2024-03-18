@@ -115,6 +115,7 @@ export interface IFitPoint {
   y: number;
   outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  outlierColor?: string;   // overrides the outlier color defined in IFitSeriesOptions
   marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   size?: number;           // overrides the default marker size
   stdev?: number;          // when defined, renders an error bar candlestick
@@ -180,6 +181,7 @@ export interface IFitSeriesOptions {
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
+  outlierColor?: string;                // overrides the standardized series outlier color
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
@@ -229,6 +231,8 @@ export const fitSeriesProperties: DG.Property[] = [
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('fitLineColor', DG.TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('outlierColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
   DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
@@ -239,7 +243,8 @@ export const fitSeriesProperties: DG.Property[] = [
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
-      caption: 'Confidence interval'}),
+      //@ts-ignore
+      friendlyName: 'Confidence interval'}),
   DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),

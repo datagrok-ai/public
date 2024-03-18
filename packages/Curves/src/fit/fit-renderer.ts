@@ -155,11 +155,12 @@ function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: B
 
 /** Performs points drawing */
 function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
-  transform: Viewport, ratio: number, logOptions: LogOptions, pointColor: number): void {
+  transform: Viewport, ratio: number, logOptions: LogOptions, pointColor: number, outlierColor: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
-    const color = p.outlier ? DG.Color.red :
-      p.color ? DG.Color.fromHtml(p.color) ? DG.Color.fromHtml(p.color) : pointColor : pointColor;
+    const color = p.outlier ? (p.outlierColor ? DG.Color.fromHtml(p.outlierColor) ?
+      DG.Color.fromHtml(p.outlierColor) : outlierColor : outlierColor) : p.color ? DG.Color.fromHtml(p.color) ?
+      DG.Color.fromHtml(p.color) : pointColor : pointColor;
     const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
     const size = p.outlier ? OUTLIER_PX_SIZE * ratio : p.size ? p.size : POINT_PX_SIZE * ratio;
     DG.Paint.marker(g,
@@ -455,9 +456,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showPoints ?? 'points') {
         const pointColor = series.pointColor ? DG.Color.fromHtml(series.pointColor) ?
           series.pointColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        const outlierColor = series.outlierColor ? DG.Color.fromHtml(series.outlierColor) ?
+          DG.Color.fromHtml(series.outlierColor) : DG.Color.red : DG.Color.red;
         g.strokeStyle = pointColor;
         if (series.showPoints === 'points')
-          drawPoints(g, series, viewport, ratio, chartLogOptions, DG.Color.fromHtml(pointColor));
+          drawPoints(g, series, viewport, ratio, chartLogOptions, DG.Color.fromHtml(pointColor), outlierColor);
         else if (['candlesticks', 'both'].includes(series.showPoints!))
           drawCandles(g, series, viewport, ratio, DG.Color.fromHtml(pointColor));
       }

@@ -96,7 +96,7 @@ class HistoryFilter extends DG.Widget {
       dummyInput,
     ], 'ui-form ui-form-wide ui-form-left');
 
-    this.root.appendChild(form);
+    this.root.appendChild(ui.panel([form]));
   }
 
   public addTag(funccall: DG.FuncCall) {

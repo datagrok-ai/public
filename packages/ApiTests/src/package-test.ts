@@ -30,6 +30,7 @@ import './dapi/layouts';
 import './dapi/packages';
 import './dapi/projects';
 import './dapi/tables';
+import './dapi/sticky_meta';
 import './dapi/user-data-storage';
 import './dapi/users';
 import './dapi/benchmarks';

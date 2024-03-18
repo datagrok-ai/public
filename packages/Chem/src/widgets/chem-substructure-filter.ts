@@ -28,7 +28,7 @@ const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 const PRE_CALCULATED_FP = 'chem-precalculated-fp';
 const ALIGN_SYNC_EVENT = 'chem-align-sync';
 const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
-let id = 0;
+let chemFilterid = 0;
 
 const searchTypeHints  = {
   [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
@@ -123,7 +123,7 @@ export class SubstructureFilter extends DG.Filter {
   constructor() {
     super();
     initRdKitService(); // No await
-    this.filterId = id++;
+    this.filterId = chemFilterid++;
     this.root = ui.divV([]);
     this.calculating = false;
 

@@ -282,7 +282,8 @@ export class TestTrack extends DG.ViewBase {
           (i) => {
             const status = i.toLowerCase() as Status;
             if (node.value.status === status) return;
-            data.args.menu.dart?.childMenuContainer?.remove();
+            data.args.menu.dart.childMenuContainer?.remove();
+            data.args.menu.dart.cx?.remove();
             if (status === PASSED)
               this.changeNodeStatus(node, status);
             else

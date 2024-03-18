@@ -4,11 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
+import { checkPackage } from '../utils/elemental-analysis-utils';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
-const TRIPLE_BOND = '#';
-const TRIPLE_BOND_REPLACE_SYMBOL = '%23';
 
 let unichemSources: DG.DataFrame;
 
@@ -134,16 +133,6 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
   return idMap;
 }
 
-async function getIUPACName(smiles: string): Promise<string> {
-  // need to escape # sign (triple bond) in URL
-  const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL);
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
-  const response = await fetch(url);
-  const responseJson = await response.json();
-  const result = responseJson.PropertyTable?.Properties;
-  return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
-}
-
 export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   const mol = getMolSafe(molfile, {}, rdKitModule);
@@ -170,7 +159,7 @@ function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
   idMap: {[k: string]: any} | null): {[k: string]: any} {
   const map: {[k: string]: any} = {};
   const smiles = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
-  map['Name'] = ui.wait(async () => ui.divText(await getIUPACName(smiles)));
+  addNameField(map, smiles);
   map['Smiles'] = smiles;
   map['Inchi'] = inchi;
   map['Inchi key'] = inchiKey;
@@ -189,4 +178,10 @@ function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
       map[source] = '-';
   }
   return map;
+}
+
+function addNameField(map: { [key: string]: any }, smiles: string) {
+  const packageExists = checkPackage('PubchemApi', 'GetIupacName');
+  if (packageExists)
+    map['Name'] = ui.wait(async () => ui.divText(await await grok.functions.call(`PubChemApi:GetIupacName`, { 'smiles': smiles })));
 }

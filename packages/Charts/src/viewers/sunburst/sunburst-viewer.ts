@@ -21,6 +21,7 @@ export class SunburstViewer extends EChartViewer {
   hierarchyColumnNames: string[];
   hierarchyLevel: number;
   onClick: onClickOptions;
+  selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
 
   constructor() {
     super();
@@ -119,8 +120,11 @@ export class SunburstViewer extends EChartViewer {
       }
     });
     this.chart.on('mouseover', async (params: any) => {
-      const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
+      const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
+      const bitset = this.filter;
       const matchDf = this.dataFrame.clone();
+      matchDf.rows.removeWhere(row => bitset && !bitset.get(row.idx));
+
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
@@ -189,9 +193,8 @@ export class SunburstViewer extends EChartViewer {
     if (categoricalColumns.length < 1)
       return;
 
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
-      this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
-    
+    this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
+
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.addSelectionOrDataSubs();
@@ -199,8 +202,7 @@ export class SunburstViewer extends EChartViewer {
   }
 
   getSeriesData(): treeDataType[] | undefined {
-    const selectedOptions = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
-    const rowSource = selectedOptions.includes(this.rowSource!);
+    const rowSource = this.selectedOptions.includes(this.rowSource!);
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource);
   }
 

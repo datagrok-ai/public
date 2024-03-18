@@ -735,17 +735,16 @@ export class RichFunctionView extends FunctionView {
 
             this.showOutputTabsElem();
 
-            // Filters: workaround for https://reddata.atlassian.net/browse/GROK-14270
-            if (Object.values(viewerTypesMapping).includes(loadedViewer.type) && loadedViewer.type !== DG.VIEWER.FILTERS) {
+            if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
               loadedViewer.dataFrame = currentParam.value;
-              loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-            } else {
+            else {
               // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
               const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
-              newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
               loadedViewer.root.replaceWith(newViewer.root);
               loadedViewer = newViewer;
             }
+            // Workaround for https://reddata.atlassian.net/browse/GROK-13884
+            if (Object.keys(parsedTabDfProps[dfIndex][viewerIdx]).includes('color')) loadedViewer.setOptions({'color': parsedTabDfProps[dfIndex][viewerIdx]['color']});
             this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
           };
 
