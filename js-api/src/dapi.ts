@@ -411,6 +411,10 @@ export class AdminDataSource {
   getUserReport(reportId: string): Promise<Uint8Array> {
     return api.grok_Dapi_Admin_Get_User_Report(this.dart, reportId);
   }
+
+  postEventReport(eventId: string): Promise<void> {
+    return api.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId);
+  }
 }
 
 /**

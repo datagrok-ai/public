@@ -9,7 +9,6 @@ const filtersStyle = {
   columnNames: ['error', 'reporter', 'report_time'],
 };
 
-
 export class ReportsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -45,12 +44,13 @@ export class ReportsView extends UaView {
           'defaultCellFont': '13px monospace',
         });
         filters.append(DG.Viewer.filters(t, filtersStyle).root);
-
-        viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
-        viewer.col('reporter')!.cellType = 'html';
-        viewer.col('reporter')!.width = 30;
-        viewer.col('report_id')!.cellType = 'html';
-        viewer.col('report_id')!.width = 20;
+        viewer.onBeforeDrawContent.subscribe(() => {
+          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
+          viewer.col('reporter')!.cellType = 'html';
+          viewer.col('reporter')!.width = 30;
+          viewer.col('report_id')!.cellType = 'html';
+          viewer.col('report_id')!.width = 20;
+        });
 
         viewer.onCellPrepare(async function(gc) {
           if (gc.gridColumn.name === 'report_time') {

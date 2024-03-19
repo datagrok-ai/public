@@ -30,7 +30,6 @@ export class ErrorsView extends UaView {
     const filters = ui.box();
     filters.style.maxWidth = '250px';
 
-    let f;
     const errorViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Event Errors',
@@ -56,8 +55,7 @@ export class ErrorsView extends UaView {
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace'
         });
-        f = DG.Viewer.filters(t, filtersStyle);
-        filters.append(f.root);
+        filters.appendChild(DG.Viewer.filters(t, filtersStyle).root);
 
         viewer.col('user')!.cellType = 'html';
         viewer.col('user')!.width = 30;
@@ -116,7 +114,13 @@ export class ErrorsView extends UaView {
           });
 
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-            //todo: change errorViewer
+            const df: DG.DataFrame | undefined = errorViewer.viewer?.dataFrame;
+            if (df) {
+              df.filter.handleClick((i) => {
+                const column = df.getCol('error_message');
+                return column.get(i) == args.args.categories[0];
+              }, new MouseEvent(''));
+            }
           });
           return viewer;
         }
@@ -156,23 +160,34 @@ export class ErrorsView extends UaView {
     }), true);
 
     accordion.addPane('Statistics', () => ui.wait(async () => {
-      const button = ui.button('Details', async () => {
+      const detailsButton = ui.button('Details', async () => {
         const ev = ViewHandler.getView('User reports');
-        ev.viewers[0].reloadViewer({'event_id': eventId});
-
-        if (!ev.viewers[0].activated)
-          ev.viewers[0].activated = true;
-
+        const viewer = ev.viewers[0];
+        viewer.reloadViewer({'event_id': eventId});
+        if (!viewer.activated)
+          viewer.activated = true;
         ViewHandler.changeTab('User reports');
         this.uaToolbox.drilldown = ViewHandler.getCurrentView();
       });
-      button.classList.add('ua-details-button');
+      detailsButton.classList.add('ua-details-button');
       const promises: Promise<any>[] = [
         grok.functions.call('UsageAnalysis:ReportsCount', {'event_id': eventId}),
         grok.functions.call('UsageAnalysis:SameErrors', {'event_id': eventId}),
       ];
       const results = await Promise.all(promises);
-      const div = ui.divH([ui.span([results[0]]), results[0] > 0 ? button : ui.span([])]);
+      let div: HTMLDivElement;
+      const createReportButton = ui.button('Report', async () => {
+        const prog = DG.TaskBarProgressIndicator.create('Reporting...');
+        await grok.dapi.admin.postEventReport(eventId);
+        const ev = ViewHandler.getView('User reports');
+        ev.viewers[0].reloadViewer();
+        while (div.hasChildNodes())
+          div.removeChild(div.lastChild!);
+        div.appendChild(ui.span([1]));
+        div.appendChild(detailsButton);
+        prog.close();
+      });
+      div = ui.divH([ui.span([results[0]]), results[0] > 0 ? detailsButton : createReportButton]);
       div.style.alignItems = 'center';
       const map = {'Reports': div, 'Same errors': results[1]};
       return ui.tableFromMap(map);
