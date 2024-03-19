@@ -41,9 +41,9 @@ category('TreeViewer', () => {
       edgeShape: 'curve',
       symbol: 'emptyCircle',
       symbolSize: 7,
-      sizeColumnName: null,
+      sizeColumnName: '',
       sizeAggrType: DG.AGG.AVG,
-      colorColumnName: null,
+      colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['sex', 'disease', 'site'],
     };
