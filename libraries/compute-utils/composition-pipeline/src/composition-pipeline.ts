@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, merge, of, from, Subject} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
-import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample} from 'rxjs/operators';
+import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample, finalize} from 'rxjs/operators';
 
 //
 // State values
@@ -370,6 +370,9 @@ export class ControllerConfig {
 }
 
 export class PipelineRuntime {
+  private runningLinks = new Set<string>();
+  public isUpdating = new BehaviorSubject<boolean>(false);
+
   constructor(
     private nodes: Map<PathKey, NodeState>,
     private links: Map<PathKey, LinkState>,
@@ -448,12 +451,13 @@ export class PipelineRuntime {
       link.getValuesChanges().pipe(
         debounceTime(0),
         switchMap(() => {
-          const abortController = new AbortController();
-          const signal = abortController.signal;
-          let done = false;
           const obs$ = new Observable((observer) => {
+            this.addRunningHandler(link.conf.id);
+            const abortController = new AbortController();
+            const signal = abortController.signal;
             const controller = new RuntimeControllerImpl(link.conf.id, link.controllerConfig, this, signal);
-            const sub = from(callHandler(handler, {controller})).subscribe((val) => {
+            let done = false;
+            const sub = from(callHandler(handler, {controller})).pipe(finalize(() => this.removeRunningHandler(link.conf.id))).subscribe((val) => {
               done = true;
               observer.next(val);
             }, (error: any) => {
@@ -478,6 +482,16 @@ export class PipelineRuntime {
 
   goToStep(path: ItemPath): void {
     console.log('TODO: goToStep not implemented');
+  }
+
+  private addRunningHandler(id: string) {
+    this.runningLinks.add(id);
+    this.isUpdating.next(true);
+  }
+
+  private removeRunningHandler(id: string) {
+    this.runningLinks.delete(id);
+    this.isUpdating.next(this.runningLinks.size !== 0);
   }
 
   private getNodeState(path: ItemPath) {
@@ -596,10 +610,11 @@ export class RuntimeControllerImpl implements RuntimeController {
 export interface ICompositionView {
   showSteps(...id: string[]): void;
   hideSteps(...id: string[]): void;
-  getStepView<T extends RichFunctionView>(id: string): T;
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
   getStateBindings<T = any>(stepId: string, stateId: string, k: string): {changes: Observable<T>, setter: (x: any) => void};
   getStepView<T = RichFunctionView>(name: string, k?: string): T;
+  isUpdating: BehaviorSubject<boolean>;
+  getRunningUpdates(): string[];
 }
 
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
@@ -618,6 +633,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     this.initialConfig = steps;
     this.hooks = hooks;
     this.rt = rt;
+    this.isUpdating = this.rt.isUpdating;
   }
 
   public getStateBindings(stepId: string, stateId: string, k: string) {

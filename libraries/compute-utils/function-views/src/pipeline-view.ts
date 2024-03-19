@@ -34,6 +34,7 @@ const getVisibleStepName = (step: StepState) => {
 export class PipelineView extends FunctionView {
   public steps = {} as {[scriptNqName: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
+  public isUpdating = new BehaviorSubject(false);
 
   private stepTabs!: DG.TabControl;
 
@@ -45,6 +46,10 @@ export class PipelineView extends FunctionView {
 
   public getStepView<T extends FunctionView = RichFunctionView>(name: string) {
     return this.steps[name]?.view as T;
+  }
+
+  public getRunningUpdates(): string[] {
+    return [];
   }
 
   // PipelineView unites several export files into single ZIP file
