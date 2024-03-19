@@ -20,6 +20,15 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-03-19 1.18.2
+
+### Addressed Issues
+
+* (Bug) GROK-15215: Async package functions don't work in Add new column 
+* (Bug) GROK-15216: Views migration didn't run 
+* (Bug) GROK-15166: Sunburst: error when trying to switch the Table property 
+
+
 ## 2024-03-14 1.18.1
 
 ### Addressed Issues
