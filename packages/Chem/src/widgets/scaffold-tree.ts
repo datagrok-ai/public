@@ -15,6 +15,7 @@ import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rend
 import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 let attached = false;
+let scaffoldTreeId = 0;
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -466,6 +467,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   allowGenerate: boolean;
   applyFilter: boolean = true;
   summary: string;
+  scaffoldTreeId: number = scaffoldTreeId;
 
   constructor() {
     super();
@@ -1056,9 +1058,22 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncodeUpdateInProgress = false;
 
     this.colorCodedScaffolds = [];
-    if (this.setHighlightTag && this.molColumn)
-      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
-
+    let scaffoldTag = this.molColumn!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    if (this.setHighlightTag && this.molColumn) {
+      if (scaffoldTag !== null) {
+        const parsedTag = JSON.parse(scaffoldTag);
+        const foundObj = parsedTag.find((obj: any) => this.scaffoldTreeId in obj);
+        if (foundObj) {
+          foundObj[this.scaffoldTreeId] = this.colorCodedScaffolds;
+        } else {
+          parsedTag[parsedTag.length] = {[this.scaffoldTreeId]: this.colorCodedScaffolds };
+        }
+        scaffoldTag = JSON.stringify(parsedTag);
+      } else {
+        scaffoldTag = JSON.stringify([{[this.scaffoldTreeId]: this.colorCodedScaffolds }]);
+      } 
+    }
+    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
     this.updateUI();
   }
 
@@ -1071,8 +1086,22 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.bitset = null;
     if (this.molColumn !== null) {
       removeElementByColor(this.colorCodedScaffolds, '');
-      if (this.setHighlightTag)
-        this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+      let scaffoldTag = this.molColumn!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+      if (this.setHighlightTag) {
+        if (scaffoldTag !== null) {
+          const parsedTag = JSON.parse(scaffoldTag);
+          const foundObj = parsedTag.find((obj: any) => this.scaffoldTreeId in obj);
+          if (foundObj) {
+            foundObj[this.scaffoldTreeId] = this.colorCodedScaffolds;
+          } else {
+            parsedTag[parsedTag.length] = {[this.scaffoldTreeId]: this.colorCodedScaffolds };
+          }
+          scaffoldTag = JSON.stringify(parsedTag);
+        } else {
+          scaffoldTag = JSON.stringify([{[this.scaffoldTreeId]: this.colorCodedScaffolds }]);
+        } 
+      }
+      this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
     }
 
     this.checkBoxesUpdateInProgress = true;
@@ -1096,8 +1125,22 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    if (this.setHighlightTag)  
-      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+    let scaffoldTag = this.molColumn!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    if (this.setHighlightTag) {
+      if (scaffoldTag !== null) {
+        const parsedTag = JSON.parse(scaffoldTag);
+        const foundObj = parsedTag.find((obj: any) => this.scaffoldTreeId in obj);
+        if (foundObj) {
+          foundObj[this.scaffoldTreeId] = this.colorCodedScaffolds;
+        } else {
+          parsedTag[parsedTag.length] = {[this.scaffoldTreeId]: this.colorCodedScaffolds };
+        }
+        scaffoldTag = JSON.stringify(parsedTag);
+      } else {
+        scaffoldTag = JSON.stringify([{[this.scaffoldTreeId]: this.colorCodedScaffolds }]);
+      } 
+    }
+    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1362,8 +1405,23 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } else {
       updatedTag = checkedString;
     }
-    if (this.setHighlightTag)  
-      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
+
+    let scaffoldTag = this.molColumn!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    if (this.setHighlightTag) {
+      if (scaffoldTag !== null) {
+        const parsedTag = JSON.parse(scaffoldTag);
+        const foundObj = parsedTag.find((obj: any) => this.scaffoldTreeId in obj);
+        if (foundObj) {
+          foundObj[this.scaffoldTreeId] = JSON.parse(updatedTag);
+        } else {
+          parsedTag[parsedTag.length] = {[this.scaffoldTreeId]: JSON.parse(updatedTag) };
+        }
+        scaffoldTag = JSON.stringify(parsedTag);
+      } else {
+        scaffoldTag = JSON.stringify([{[this.scaffoldTreeId]: JSON.parse(updatedTag) }]);
+      } 
+    }
+    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
   }
   
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
@@ -1912,6 +1970,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.allowGenerate)
       setTimeout(() => this.generateTree(), 1000);
     attached = true;
+    scaffoldTreeId += 1;
   }
 
   detach(): void {
@@ -1931,7 +1990,20 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.molColPropObserver = null;
 
     this.clearFilters();
-    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+    let scaffoldTag = this.molColumn!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    if (scaffoldTag !== null) {
+      const parsedTag = JSON.parse(scaffoldTag);
+      const foundObj = parsedTag.find((obj: any) => this.scaffoldTreeId in obj);
+      if (foundObj) {
+        foundObj[this.scaffoldTreeId] = [];
+      } else {
+        parsedTag[parsedTag.length] = {[this.scaffoldTreeId]: [] };
+      }
+      scaffoldTag = JSON.stringify(parsedTag);
+    } else {
+      scaffoldTag = JSON.stringify([{[this.scaffoldTreeId]: [] }]);
+    } 
+    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
     super.detach();
   }
 

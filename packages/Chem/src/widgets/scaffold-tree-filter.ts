@@ -45,8 +45,22 @@ export class ScaffoldTreeFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_) => {
         this.viewer.setHighlightTag = super.isFiltering;
+        let scaffoldTag = this.column!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+        if (scaffoldTag !== null) {
+          const parsedTag = JSON.parse(scaffoldTag);
+          const foundObj = parsedTag.find((obj: any) => this.viewer.scaffoldTreeId in obj);
+          if (foundObj) {
+            foundObj[this.viewer.scaffoldTreeId] = super.isFiltering ? this.viewer.colorCodedScaffolds : [];
+          } else {
+            parsedTag[parsedTag.length] = {[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] };
+          }
+          scaffoldTag = JSON.stringify(parsedTag);
+        } else {
+          scaffoldTag = JSON.stringify([{[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] }]);
+        } 
+        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
         // in case node is disabled - keep the highlight, in case whole filter is disabled - drop the highlight
-        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, super.isFiltering ? JSON.stringify(this.viewer.colorCodedScaffolds) : '');
+        //this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, super.isFiltering ? JSON.stringify(this.viewer.colorCodedScaffolds) : '');
       }),
     );
     this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
@@ -89,7 +103,20 @@ export class ScaffoldTreeFilter extends DG.Filter {
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
-    this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+    let scaffoldTag = this.viewer.molCol!.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    if (scaffoldTag !== null) {
+      const parsedTag = JSON.parse(scaffoldTag);
+      const foundObj = parsedTag.find((obj: any) => this.viewer.scaffoldTreeId in obj);
+      if (foundObj) {
+        foundObj[this.viewer.scaffoldTreeId] = super.isFiltering ? this.viewer.colorCodedScaffolds : [];
+      } else {
+        parsedTag[parsedTag.length] = {[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] };
+      }
+      scaffoldTag = JSON.stringify(parsedTag);
+    } else {
+      scaffoldTag = JSON.stringify([{[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] }]);
+    } 
+    this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
   }
 
   createViewer(dataFrame: DG.DataFrame) {
