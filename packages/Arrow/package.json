@@ -3,8 +3,8 @@
   "friendlyName": "Arrow",
   "version": "1.0.6",
   "author": {
-    "name": "Oleksandra Serhiienko",
-    "email": "oserhiienko@datagrok.ai"
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
   },
   "description": "Provides support for the Parquet and Feather file formats.",
   "repository": {
