@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
 
-const GDC = grok.dapi.connections;
 
 category('Dapi: connection', () => {
   const dcParams = {
@@ -11,13 +10,27 @@ category('Dapi: connection', () => {
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
-    dc = await GDC.save(dc);
+    expect(dc.credentials.parameters['login'], dcParams.login);
+    expect(dc.credentials.parameters['password'], dcParams.password);
+    dc = await grok.dapi.connections.save(dc);
     expect((dc.parameters as any)['schema'], null);
     expect((dc.parameters as any)['db'], dcParams.db);
     expect(dc.friendlyName, 'Local DG Test');
-    expect((await GDC.find(dc.id)).id, dc.id);
-    await GDC.delete(dc);
-    expect(await GDC.find(dc.id) == undefined);
+    expect((await grok.dapi.connections.find(dc.id)).id, dc.id);
+
+    // changing credentials
+    dc.credentials.parameters['login'] = 'changed_login';
+    dc = await grok.dapi.connections.save(dc);
+    expect(dc.credentials.openParameters['login'], 'changed_login');
+
+    // changing credentials forEntity
+    let credentials = await grok.dapi.credentials.forEntity(dc);
+    credentials.parameters['login'] = 'datagrok_dev';
+    credentials = await grok.dapi.credentials.save(credentials);
+    expect(credentials.openParameters['login'], 'datagrok_dev');
+
+    await grok.dapi.connections.delete(dc);
+    expect(await grok.dapi.connections.find(dc.id) == undefined);
   });
 
   test('JS postprocess', async () => {

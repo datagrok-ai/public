@@ -39,4 +39,19 @@ category('Functions: General', () => {
     expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
     await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
   });
+
+  test(`script's package load`, async () => {
+    const sin: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    expect(sin.package.nqName, 'ApiTests');
+  }, {skipReason: 'GROK-15178'});
+
+  test(`package func's package load`, async () => {
+    const sin: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    expect(sin.package.nqName, 'ApiTests');
+  }, {skipReason: 'GROK-15178'});
+
+  test(`core package load`, async () => {
+    const sin: DG.Func = await grok.functions.eval('Sin');
+    expect(sin.package.nqName, 'core');
+  }, {skipReason: 'GROK-15178'});
 });
