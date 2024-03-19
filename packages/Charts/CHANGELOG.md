@@ -1,6 +1,6 @@
 # Charts changelog
 
-## 1.2.3 (WIP)
+## 1.2.3 (2024-03-19)
 
 ### Features
 
@@ -17,6 +17,7 @@
 * Radar viewer minor imrpovements
 * Links fixes
 * [#2500](https://github.com/datagrok-ai/public/issues/2500): Sunburst: Labels were hidden after the structures were added
+* GROK-15166: Charts | Sunburst: Error when trying to switch the Table property
 
 ## 1.2.2 (2023-09-19)
 

@@ -161,6 +161,8 @@ export class TreeViewer extends EChartViewer {
 
     this.filter = this.dataFrame.filter;
     this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+    this.sizeColumnName = '';
+    this.colorColumnName = '';
 
     super.onTableAttached();
     this.initChartEventListeners();
