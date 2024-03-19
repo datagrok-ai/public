@@ -52,11 +52,11 @@ export class ScaffoldTreeFilter extends DG.Filter {
           if (foundObj) {
             foundObj[this.viewer.scaffoldTreeId] = super.isFiltering ? this.viewer.colorCodedScaffolds : [];
           } else {
-            parsedTag[parsedTag.length] = {[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] };
+            parsedTag[parsedTag.length] = {[this.viewer.scaffoldTreeId]: super.isFiltering ? this.viewer.colorCodedScaffolds : [] };
           }
           scaffoldTag = JSON.stringify(parsedTag);
         } else {
-          scaffoldTag = JSON.stringify([{[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] }]);
+          scaffoldTag = JSON.stringify([{[this.viewer.scaffoldTreeId]: super.isFiltering ? this.viewer.colorCodedScaffolds : [] }]);
         } 
         this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
         // in case node is disabled - keep the highlight, in case whole filter is disabled - drop the highlight
@@ -110,11 +110,11 @@ export class ScaffoldTreeFilter extends DG.Filter {
       if (foundObj) {
         foundObj[this.viewer.scaffoldTreeId] = super.isFiltering ? this.viewer.colorCodedScaffolds : [];
       } else {
-        parsedTag[parsedTag.length] = {[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] };
+        parsedTag[parsedTag.length] = {[this.viewer.scaffoldTreeId]: super.isFiltering ? this.viewer.colorCodedScaffolds : [] };
       }
       scaffoldTag = JSON.stringify(parsedTag);
     } else {
-      scaffoldTag = JSON.stringify([{[this.viewer.scaffoldTreeId]: [super.isFiltering ? this.viewer.colorCodedScaffolds : []] }]);
+      scaffoldTag = JSON.stringify([{[this.viewer.scaffoldTreeId]: super.isFiltering ? this.viewer.colorCodedScaffolds : [] }]);
     } 
     this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
   }
