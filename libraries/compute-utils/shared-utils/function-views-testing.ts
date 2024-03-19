@@ -48,21 +48,32 @@ export async function testPipeline(
 export async function testFunctionView(
   spec: any, view: FunctionView | RichFunctionView, options: FunctionViewTestOptions = {}
 ) {
+  // For RFV step inside of a pipeline:
+  // 0. waiting for step view ready
+  // 1. waiting for previous step releted parent logic to complete
+  // 2. setting current step inputs
+  // 3. waiting for current step inputs related parent logic to complete
+  // 4. waiting for RFV validators to complete
+  // 5. run the step
+
   await waitForViewReady(view, options.initWaitTimeout ?? defaultInitTimeout);
-  if (options.parent) {
-    const parentWaitTimeout = options.parentWaitTimeout ?? defaultParentTimeout;
-    const runningUpdates = await options.parent.isUpdating.pipe(
-      map(() => options.parent!.getRunningUpdates()),
-      debounceTime(100),
-      takeUntil(of(null).pipe(delay(parentWaitTimeout))),
-      takeWhile((updates) => updates.length !== 0, true),
-      last(),
-    ).toPromise();
-    if (runningUpdates?.length) {
-      const msg = `{options.prefix}: parent updates failed to complete in ${parentWaitTimeout}ms, updates: ${runningUpdates.join(',')}`;
-      throw new Error(msg);
+  const waitForParentReady = async () => {
+    if (options.parent) {
+      const parentWaitTimeout = options.parentWaitTimeout ?? defaultParentTimeout;
+      const runningUpdates = await options.parent.isUpdating.pipe(
+        map(() => options.parent!.getRunningUpdates()),
+        debounceTime(100),
+        takeUntil(of(null).pipe(delay(parentWaitTimeout))),
+        takeWhile((updates) => updates.length !== 0, true),
+        last(),
+      ).toPromise();
+      if (runningUpdates?.length) {
+        const msg = `{options.prefix}: parent updates failed to complete in ${parentWaitTimeout}ms, updates: ${runningUpdates.join(',')}`;
+        throw new Error(msg);
+      }
     }
   }
+  await waitForParentReady();
   for (const [name, data] of Object.entries(spec.inputs)) {
     const propertyType = view.funcCall.inputParams[name].property.propertyType;
     if (!options.updateMode)
@@ -73,20 +84,24 @@ export async function testFunctionView(
         view.funcCall.inputs[name] = await fcInputFromSerializable(propertyType, data);
     }
   }
-  if (view instanceof RichFunctionView) {
-    const validatorsWaitTimeout = options.validatorsWaitTimeout ?? defaultValidatorsTimeout;
-    const pendingValidators = await view.pendingValidations.pipe(
-      map(vals => Object.keys(vals)),
-      debounceTime(100),
-      takeUntil(of(null).pipe(delay(validatorsWaitTimeout))),
-      takeWhile(() => !view.isValid(), true),
-      last(),
-    ).toPromise();
-    if (pendingValidators?.length) {
-      const msg = `{options.prefix}: validators failed to accept input in ${validatorsWaitTimeout}ms, inputs: ${pendingValidators.join(',')}`;
-      throw new Error(msg);
+  await waitForParentReady();
+  const waitForValidators = async() => {
+    if (view instanceof RichFunctionView) {
+      const validatorsWaitTimeout = options.validatorsWaitTimeout ?? defaultValidatorsTimeout;
+      const pendingValidators = await view.pendingValidations.pipe(
+        map(vals => Object.keys(vals)),
+        debounceTime(100),
+        takeUntil(of(null).pipe(delay(validatorsWaitTimeout))),
+        takeWhile(() => !view.isValid(), true),
+        last(),
+      ).toPromise();
+      if (pendingValidators?.length) {
+        const msg = `{options.prefix}: validators failed to accept input in ${validatorsWaitTimeout}ms, inputs: ${pendingValidators.join(',')}`;
+        throw new Error(msg);
+      }
     }
   }
+  await waitForValidators();
   console.log(`running ${view.func.nqName}`);
   await view.run();
   if (!options.updateMode) {
