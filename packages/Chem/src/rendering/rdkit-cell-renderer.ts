@@ -396,8 +396,12 @@ M  END
   _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
     let scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
     const getSortedScaffolds = (): IColoredScaffold[] => {
-      const scaffoldArr: IColoredScaffold[] = scaffoldArrStr;
-      const scaffoldArrSorted = scaffoldArr.sort((a, b) => {
+      let scaffoldArr = JSON.parse(scaffoldArrStr);
+      if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule')) {
+        scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);    
+      }
+     // const scaffoldArr: IColoredScaffold[] = scaffoldArrStr;
+      const scaffoldArrSorted = scaffoldArr.sort((a: any, b: any) => {
         const getNumAtoms = (molecule: string) => {
           if (molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule)) {
             const mol = this._fetchMol(molecule, [], false, false, {}, false).molCtx.mol;
@@ -419,12 +423,8 @@ M  END
       return scaffoldArrSorted;
     }
     if (scaffoldArrStr) {
-      let scaffoldArr = JSON.parse(scaffoldArrStr);
-      if (!scaffoldArr[0].hasProperty('molecule')) {
-        scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);    
-      }
       const sortedScaffolds = this.sortedScaffoldsCache
-        .getOrCreate(JSON.stringify(scaffoldArr), () => getSortedScaffolds());
+        .getOrCreate(scaffoldArrStr, () => getSortedScaffolds());
       return sortedScaffolds;
     }    
     return [];
