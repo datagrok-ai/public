@@ -5,19 +5,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS} from './eda-tools';
-import {addPrefixToEachColumnName, regressionCoefficientsBarChart,
-  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
-import {getPlsAnalysis, PlsOutput} from './pls/pls-tools';
-import {carsDataframe, testDataForBinaryClassification} from './data-generators';
+import {computePCA} from './eda-tools';
+import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
+import {testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
-import {runMVA} from './pls/pls-tools';
+import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 
 import {oneWayAnova} from './stat-tools';
 import {getDbscanWorker} from '@datagrok-libraries/math';
@@ -237,51 +233,8 @@ export async function MVA(): Promise<void> {
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //meta.demoPath: Compute | Multivariate analysis
-//meta.isDemoScript: True
 export async function demoMultivariateAnalysis(): Promise<any> {
-  const demoScript = new DemoScript('Partial least squares regression',
-    'Analysis of multidimensional data.');
-
-  const cars = carsDataframe();
-
-  const components = 3;
-  const names = cars.columns.byName('model');
-  const predict = cars.columns.byName('price');
-  const features = cars.columns.remove('price').remove('model');
-  const plsOutput = await computePLS(cars, features, predict, components);
-
-  const sourceCars = carsDataframe();
-  sourceCars.name = 'Cars';
-  let view: any;
-  let dialog: any;
-
-  await demoScript
-    .step('Data', async () => {
-      grok.shell.addTableView(sourceCars);
-      view = grok.shell.getTableView(sourceCars.name);
-    }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
-    .step('Model', async () => {
-      dialog = ui.dialog({title: 'Multivariate Analysis (PLS)'})
-        .add(ui.tableInput('Table', sourceCars))
-        .add(ui.columnsInput('Features', cars, features.toList, {available: undefined, checked: features.names()}))
-        .add(ui.columnInput('Names', cars, names, undefined))
-        .add(ui.columnInput('Predict', cars, predict, undefined))
-        .add(ui.intInput('Components', components, undefined))
-        .onOK(() => {
-          grok.shell.info('Multivariate analysis has been already performed.');
-        })
-        .show({x: 400, y: 140});
-    }, {description: 'Predict car price by its other features.', delay: 0})
-    .step('Regression coeffcicients', async () => {
-      dialog.close();
-      view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]));
-    },
-    {description: 'The feature "diesel" affects the price the most.', delay: 0})
-    .step('Scores', async () => {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]));},
-      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
-    .step('Prediction', async () => {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]));},
-      {description: 'Closer to the line means better price prediction.', delay: 0})
-    .start();
+  runDemoMVA();
 }
 
 //name: Generate linear separable dataset

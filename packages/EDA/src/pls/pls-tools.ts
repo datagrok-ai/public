@@ -5,9 +5,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
-  RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR} from './pls-constants';
+  RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DELAY} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
+import {carsDataframe} from '../data-generators';
 
 const min = Math.min;
 const max = Math.max;
@@ -31,7 +33,7 @@ export type PlsInput = {
   names : DG.Column | null,
 };
 
-// Partial least square regression (PLS)
+/** Partial least square regression (PLS) */
 export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   checkWasmDimensionReducerInputs(input.features, input.components);
 
@@ -56,11 +58,16 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   };
 }
 
+/** Show demo results markdown in the context help */
+function showDemoResMD(idx: number) {
+  grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD.slice(0, idx + 1).join('\n\n')));
+}
+
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
-  const res = await getPlsAnalysis(input);
+  const result = await getPlsAnalysis(input);
 
-  const plsCols = res.tScores;
+  const plsCols = result.tScores;
   const cols = input.table.columns;
   const featuresNames = input.features.names();
 
@@ -74,24 +81,25 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
     return;
 
   const view = grok.shell.tableView(input.table.name);
+  const viewers = [] as DG.Viewer[];
 
   // 0.1 Buffer table
   const buffer = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(TITLE.FEATURE, featuresNames),
-    res.regressionCoefficients,
+    result.regressionCoefficients,
   ]);
 
   // 0.2. Add X-Loadings
-  res.xLoadings.forEach((col, idx) => {
+  result.xLoadings.forEach((col, idx) => {
     col.name = buffer.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
     buffer.columns.add(col);
   });
 
   // 1. Predicted vs Reference scatter plot
-  const pred = res.prediction;
+  const pred = result.prediction;
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
-  view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  viewers.push(DG.Viewer.scatterPlot(input.table, {
     title: TITLE.MODEL,
     xColumnName: input.predict.name,
     yColumnName: pred.name,
@@ -99,29 +107,28 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.MODEL,
-  });
+  }));
 
   // 2. Regression Coefficients Bar Chart
-  res.regressionCoefficients.name = TITLE.REGR_COEFS;
-  view.addViewer(DG.Viewer.barChart(buffer, {
+  result.regressionCoefficients.name = TITLE.REGR_COEFS;
+  viewers.push(DG.Viewer.barChart(buffer, {
     title: TITLE.REGR_COEFS,
     splitColumnName: TITLE.FEATURE,
-    valueColumnName: res.regressionCoefficients.name,
+    valueColumnName: result.regressionCoefficients.name,
     valueAggrType: DG.AGG.AVG,
     help: LINK.COEFFS,
   }));
 
-  // 3. Loading Scatter Plot
-  res.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
-  view.addViewer(DG.Viewer.scatterPlot(buffer, {
+  // 3. Loadings Scatter Plot
+  result.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
+  viewers.push(DG.Viewer.scatterPlot(buffer, {
     title: TITLE.LOADINGS,
     xColumnName: `${TITLE.XLOADING}1`,
-    yColumnName: `${TITLE.XLOADING}${res.xLoadings.length > 1 ? '2' : '1'}`,
+    yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: TITLE.FEATURE,
     help: LINK.LOADINGS,
-  },
-  ));
+  }));
 
   // 4. Scores Scatter Plot
 
@@ -132,17 +139,17 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
     col.name = cols.getUnusedName(`${TITLE.XSCORE}${idx + 1}`);
     scoreNames.push(col.name);
   });
-  res.uScores.forEach((col, idx) => {
+  result.uScores.forEach((col, idx) => {
     col.name = cols.getUnusedName(`${TITLE.YSCORE}${idx + 1}`);
     cols.add(col);
     scoreNames.push(col.name);
   });
 
-  // 4.2) add scatter
-  const scoresScatterPlt = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  // 4.2) create scatter
+  const scoresScatterPlt = DG.Viewer.scatterPlot(input.table, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
-    yColumnName: (plsCols.length > 1) ? plsCols[1].name : res.uScores[0],
+    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.MODEL,
@@ -181,20 +188,21 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
           title: ' ',
           min: -r,
           max: r,
-          color: COLOR.AXIS,
+          color: COLOR.CIRCLE,
         });
       });
     });
   });
 
   scoresScatterPlt.meta.formulaLines.addAll(lines);
+  viewers.push(scoresScatterPlt);
 
   // 5. Explained Variances
 
   // 5.1) computation, source: the paper https://doi.org/10.1002/cem.2589
   //      here, we use notations from this paper
-  const q = res.yLoadings.getRawData();
-  const p = res.xLoadings.map((col) => col.getRawData());
+  const q = result.yLoadings.getRawData();
+  const p = result.xLoadings.map((col) => col.getRawData());
   const n = input.table.rowCount;
   const m = featuresNames.length;
   const A = input.components;
@@ -223,16 +231,31 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
 
   // 5.3) bar chart
-  view.addViewer(DG.Viewer.barChart(explVarsDF, {
+  viewers.push(DG.Viewer.barChart(explVarsDF, {
     title: TITLE.EXPL_VAR,
     splitColumnName: TITLE.COMPONENTS,
     valueColumnName: input.predict.name,
     valueAggrType: DG.AGG.AVG,
     help: LINK.EXPL_VARS,
   }));
+
+  // add viewers
+  if (type !== PLS_ANALYSIS.DEMO)
+    viewers.forEach((v) => view.addViewer(v));
+  else {
+    viewers.forEach((v, i) => {
+      setTimeout(() => {
+        view.addViewer(v);
+        showDemoResMD(i);
+      }, DELAY * (i + 1));
+    });
+
+    const len = DEMO_RESULTS_MD.length;
+    setTimeout(() => showDemoResMD(len), len * DELAY);
+  }
 } // performMVA
 
-/** Run PLS */
+/** Run multivariate analysis (PLS) */
 export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
   const table = grok.shell.t;
 
@@ -346,7 +369,7 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
         names: names,
       }, type);
     }, undefined, dlgRunBtnTooltip)
-    .show();
+    .show({x: X_COORD, y: Y_COORD});
 
   // the following delay provides correct styles (see https://reddata.atlassian.net/browse/GROK-15196)
   setTimeout(() => {
@@ -355,4 +378,15 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
   }, TIMEOUT);
 
   grok.shell.v.append(dlg.root);
-} // addPLS
+} // runMVA
+
+/** Run multivariate analysis demo */
+export async function runDemoMVA(): Promise<void> {
+  grok.shell.addTableView(carsDataframe());
+  grok.shell.windows.help.visible = true;
+  grok.shell.windows.help.showHelp(ui.markdown(DEMO_INTRO_MD));
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showProperties = false;
+
+  await runMVA(PLS_ANALYSIS.DEMO);
+}
