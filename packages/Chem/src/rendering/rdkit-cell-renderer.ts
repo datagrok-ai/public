@@ -398,7 +398,7 @@ M  END
     const getSortedScaffolds = (): IColoredScaffold[] => {
       let scaffoldArr = JSON.parse(scaffoldArrStr);
       if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule')) {
-        scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);    
+        scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);
       }
      // const scaffoldArr: IColoredScaffold[] = scaffoldArrStr;
       const scaffoldArrSorted = scaffoldArr.sort((a: any, b: any) => {
