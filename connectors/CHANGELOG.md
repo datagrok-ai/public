@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-## 2.1.14 (2024-02-21) (WIP)
+# 2.1.15 (2024-03-19) (WIP)
+
+* Batch mode: use `--batch` for backward compatibility
+
+## 2.1.14 (2024-02-21)
 
 * Increase WebSocket max size of incoming string message
 
