@@ -70,7 +70,8 @@
     "css-loader": "latest",
     "ts-loader": "latest",
     "@datagrok/chembl": "^1.0.35",
-    "@datagrok/pubchem-api": "^1.1.16"
+    "@datagrok/pubchem-api": "^1.1.16",
+    "@datagrok/chembl-api": "^1.0.12"
   },
   "browser": {
     "fs": false,
