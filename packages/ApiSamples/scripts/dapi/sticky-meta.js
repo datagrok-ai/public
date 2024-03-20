@@ -13,7 +13,6 @@ for (var index in schemas) {
 
   if (schema.name === refSchema.name) {
     schema = refSchema;
-    console.log('assign');
   }
 }
 var hasProperty = false;
