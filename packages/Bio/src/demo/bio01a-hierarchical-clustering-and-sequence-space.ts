@@ -9,7 +9,7 @@ import {demoSequenceSpace, handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 
-const dataFn = 'data/sample_FASTA_PT_activity.csv';
+const dataFn = 'samples/FASTA_PT_activity.csv';
 const seqColName = 'sequence';
 
 export async function demoBio01aUI() {

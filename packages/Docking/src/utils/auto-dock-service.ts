@@ -174,6 +174,8 @@ export class AutoDockService implements IAutoDockService {
     // const adRes: Forms.runRes = JSON.parse(adResStr) as Forms.runRes;
     // TODO: Use the new dockerContainers API
     const adRes = (await this.fetchAndCheck(path, params)) as Forms.dockLigandRes;
+    const result = adRes as unknown as Forms.LigandResults;
+    const poses = result.poses;
 
     // const modelList: string[] = wu(adRes.poses.matchAll(/MODEL.*?ENDMDL/gs/* lazy, not greedy */))
     //   .map((ma) => ma[0]).toArray();
@@ -182,7 +184,9 @@ export class AutoDockService implements IAutoDockService {
     // // posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
     // const posesDf = DG.DataFrame.fromColumns([posesCol]);
 
-    const posesDf: DG.DataFrame = this.ph.parsePdbqt(adRes.poses, poseColName);
+    const posesDf: DG.DataFrame = poses 
+      ? this.ph.parsePdbqt(adRes.poses, poseColName) 
+      : DG.DataFrame.fromJson(JSON.stringify(result));
     return posesDf;
   }
 

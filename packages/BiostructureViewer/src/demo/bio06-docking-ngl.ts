@@ -35,7 +35,7 @@ export async function demoBio06NoScript(): Promise<void> {
     const [dfCsv, layoutStr] = await Promise.all([
       // Read through function to cache
       grok.functions.call(`${_package.name}:readAsTextDapi`,
-        {file: 'Samples:Files/bio/CHEMBL2366517/ic50.pose.flt2.mol.log-log.2.csv'}),
+        {file: 'System:AppData/BiostructureViewer/CHEMBL2366517/ic50.pose.flt2.mol.log-log.2.csv'}),
       // the structure for the viewer is stored within the layout
       _package.files.readAsText('CHEMBL2366517/demo-docking-conformations.layout'),
     ]);

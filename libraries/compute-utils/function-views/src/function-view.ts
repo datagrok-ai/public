@@ -16,6 +16,8 @@ import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
+import {properUpdateIndicator} from './shared/utils';
+import {HistoricalRunEdit} from '../../shared-components/src/history-dialogs';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -85,8 +87,7 @@ export abstract class FunctionView extends DG.ViewBase {
   protected async onFuncCallReady() {
     await historyUtils.augmentCallWithFunc(this.funcCall, false);
     if (!this.options.isTabbed) {
-      if (!this.name || this.name === 'New view')
-        this.changeViewName(this.funcCall.func.friendlyName);
+      if (!this.name || this.name === 'New view') this.name = this.funcCall.func.friendlyName;
       try {
         if (this.func.package)
           await this.getPackageData();
@@ -110,26 +111,16 @@ export abstract class FunctionView extends DG.ViewBase {
           this.path = `?id=${this.funcCall.id}`;
           const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
           if ((this.name.indexOf(' — ') < 0))
-            this.changeViewName(`${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`);
+            this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
           else
-            this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`);
+            this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`;
         } else {
           this.path = ``;
-          this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
+          this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
         }
       });
       this.subs.push(historySub);
     }
-  }
-
-  /**
-   * Changes the name of the view. This method also deals with rare bug when view name is not updated after change.
-   * @param newName New name for the view
-   */
-  protected changeViewName(newName: string) {
-    this.name = newName;
-    // TODO: Find a reproducible sample of the bug
-    document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
   }
 
   private getStartId(): string | undefined {
@@ -348,11 +339,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   /**
    * Override to change behavior on runs comparison
-   * @param funcCallIds FuncCalls to be compared
+   * @param fullFuncCalls FuncCalls to be compared
    */
-  public async onComparisonLaunch(funcCallIds: string[]) {
-    const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
-
+  public async onComparisonLaunch(fullFuncCalls: DG.FuncCall[]) {
     const comparator = this.comparatorFunc;
     if (comparator) {
       const comparatorFunc: DG.Func = await grok.functions.eval(comparator);
@@ -402,11 +391,28 @@ export abstract class FunctionView extends DG.ViewBase {
         await this.loadRun(id);
         ui.setUpdateIndicator(this.root, false);
       }),
-      newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
+      newHistoryBlock.onComparison.subscribe(async (ids) => {
+        properUpdateIndicator(newHistoryBlock.root, true);
+        const fullFuncCalls = await Promise.all(ids.map((funcCallId) => historyUtils.loadRun(funcCallId)));
+        await this.onComparisonLaunch(fullFuncCalls);
+        properUpdateIndicator(newHistoryBlock.root, false);
+      }),
+      newHistoryBlock.afterRunEdited.subscribe((editedCall) => {
+        if (editedCall.id === this.funcCall.id && editedCall.options['title']) {
+          this.path = `?id=${this.funcCall.id}`;
+          const dateStarted = new Date(editedCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+          if ((this.name.indexOf(' — ') < 0))
+            this.name = `${this.name} — ${editedCall.options['title'] ?? dateStarted}`;
+          else
+            this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${editedCall.options['title'] ?? dateStarted}`;
+        }
+      }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
-          if (isHistoryBlockOpened)
-            grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
+          if (isHistoryBlockOpened) {
+            grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
+            grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+          }
         } else {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
@@ -433,8 +439,10 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
-      if (!grok.shell.dockManager.findNode(this.historyRoot))
-        grok.shell.dockElement(this.historyRoot, null, 'right', 0.2);
+      if (!grok.shell.dockManager.findNode(this.historyRoot)) {
+        grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
+        grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+      }
     });
 
     const exportBtn = ui.comboPopup(
@@ -611,7 +619,9 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
 
-    if (this.options.historyEnabled && this.isHistoryEnabled) this.buildHistoryBlock();
+    if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
+      this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
+
     this.isHistorical.next(true);
 
     await this.onAfterSaveRun(savedCall);
@@ -758,7 +768,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public isHistorical = new BehaviorSubject<boolean>(false);
 
-  protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
+  protected historyRoot: HTMLDivElement = ui.box(null, {style: {height: '100%'}});
 
   public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
 
@@ -788,7 +798,11 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get comparatorFunc(): string | null {
-    return this.func.options['comparator'] ?? null;
+    return this.func.options['comparatorFunc'] ?? null;
+  }
+
+  protected get uploadFunc(): string | null {
+    return this.func.options['uploadFunc'] ?? null;
   }
 
   protected get runningOnInput() {
@@ -801,6 +815,38 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get mandatoryConsistent() {
     return this.parentCall?.func.options['mandatoryConsistent'] === 'true';
+  }
+
+  protected get hasContextHelp() {
+    const readmePath = this.func.options['help'] as string | undefined;
+
+    return !!readmePath;
+  }
+
+  private helpCache = null as string | null;
+
+  protected async getContextHelp() {
+    const helpPath = this.func.options['help'];
+
+    if (!helpPath) return null;
+
+    if (this.helpCache) return this.helpCache;
+
+    const packagePath = `System:AppData/${helpPath}`;
+    if (await grok.dapi.files.exists(packagePath)) {
+      const readme = await grok.dapi.files.readAsText(packagePath);
+      this.helpCache = readme;
+      return readme;
+    }
+
+    const homePath = `${grok.shell.user.name}.home/${helpPath}`;
+    if (await grok.dapi.files.exists(homePath)) {
+      const readme = await grok.dapi.files.readAsText(homePath);
+      this.helpCache = readme;
+      return readme;
+    }
+
+    return null;
   }
 
   protected get features(): Record<string, boolean> | string[] {

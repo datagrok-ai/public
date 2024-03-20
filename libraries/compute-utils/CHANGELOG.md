@@ -1,5 +1,61 @@
 # compute-utils changelog
 
+## 1.28.0 (2024-03-13)
+
+### Features
+
+- Adapted lib for Datagrok v1.18
+
+## 1.27.0 (2024-03-12)
+
+### Features
+
+- RFV: Added last values restoring
+
+## 1.26.0 (2024-03-11)
+
+### Features
+
+- RFV: Moved favorites to UserStorage
+
+## 1.25.3 (2024-03-06)
+
+### Features
+
+- RFV: "readme" tag replaced by "help"
+
+## 1.25.2 (2024-03-05)
+
+### Features
+
+- PLV: Added additional check on step enabling
+- ModelCatalog: Added help switching
+
+## 1.25.1 (2024-03-04)
+
+### Bug fixes
+
+- Sensitivity Analysis: fixed input form styles
+
+## 1.25.0 (2024-03-04)
+
+### Features
+
+- RFV: Now supports readme files via `meta.readme` tag
+- Wizard: Now support help panel state saving 
+
+## 1.24.1 (2024-03-02)
+
+### Bug fixes
+
+- ModelCatalog: Fixed error with mandatory groups
+
+## 1.24.0 (2024-03-01)
+
+### Features
+
+- RFV: Customizable data upload feature
+
 ## 1.23.0 (2024-02-28)
 
 ### Features

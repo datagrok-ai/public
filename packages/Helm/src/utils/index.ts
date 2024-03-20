@@ -11,6 +11,16 @@ import {
   SDF_MONOMER_NAME
 } from '../constants';
 
+// Global flag is for replaceAll
+const helmGapStartRe = /\{(\*\.)+/g;
+const helmGapIntRe = /\.(\*\.)+/g;
+const helmGapEndRe = /(\.\*)+\}/g;
+
+export function removeGapsFromHelm(srcHelm: string): string {
+  return srcHelm.replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.')
+    .replaceAll(helmGapEndRe, '}').replace('{*}', '{}');
+}
+
 export function getParts(subParts: string[], s: string): string[] {
   const j = 0;
   const allParts: string[] = [];
@@ -226,14 +236,14 @@ function unescape(s: string) {
 
   return s.replace(/[\\]./g, function(m) {
     switch (m) {
-      case '\\r':
-        return '\r';
-      case '\\n':
-        return '\n';
-      case '\\t':
-        return '\t';
-      default:
-        return m.substring(1);
+    case '\\r':
+      return '\r';
+    case '\\n':
+      return '\n';
+    case '\\t':
+      return '\t';
+    default:
+      return m.substring(1);
     }
   });
 }

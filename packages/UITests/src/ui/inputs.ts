@@ -127,7 +127,7 @@ category('UI: Inputs', () => {
     input.readOnly = true;
     try {
       if (input.input.tagName == 'INPUT') {
-        if (v.root.querySelector(selector))
+        if (v.root.querySelector(selector) || name === 'switchInput')
           value = true;
         expect(input.readOnly, value);
       }

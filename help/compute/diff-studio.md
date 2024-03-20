@@ -40,6 +40,19 @@ To run **Diff Studio**:
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
+### Sensitivity analysis
+
+Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](https://datagrok.ai/help/compute/#sensitivity-analysis) feature. Run it directly from Diff Studio:
+
+* Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+* Apply one of the following methods:
+  * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
+  * [Sobol](https://datagrok.ai/help/compute#sobol)
+  * [Grid](https://datagrok.ai/help/compute#grid)
+* Analyze model evaluations
+
+![Run Sens Analysis](pics/DiffStudio-run-sens-analysis.gif)
+
 ## Creating a custom differential equation model
 
 ### Basic model
@@ -301,6 +314,12 @@ PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their
 The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147). It demonstrates the `output` feature
 
 ![add-to-workspace](pics/DiffStudio-nimotuzumab.gif)
+
+### Bioreactor
+
+The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies.
+
+![add-to-workspace](pics/DiffStudio-bioreactor.png)
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.

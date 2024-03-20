@@ -93,7 +93,7 @@ export class TestsView extends UaView {
       this.filterGroup?.updateOrAdd({
         type: DG.FILTER_TYPE.CATEGORICAL,
         column: 'package',
-        selected: this.platformFilter ? [] : ['ApiTests', 'UiTests', 'Dbtests', 'DevTools'],
+        selected: this.platformFilter ? null : ['ApiTests', 'UiTests', 'Dbtests', 'DevTools'],
       });
       this.platformFilter = !this.platformFilter;
     });
@@ -127,7 +127,7 @@ export class TestsView extends UaView {
         this.filterGroup?.updateOrAdd({
           type: DG.FILTER_TYPE.CATEGORICAL,
           column: 'status',
-          selected: this.cardFilter ? [c] : [],
+          selected: this.cardFilter ? [c] : null,
         });
       });
       this.cardsView.append(card);

@@ -17,6 +17,7 @@ mols = []
 r_group_map = dict()
 ps = rdRGroupDecomposition.RGroupDecompositionParameters()
 ps.onlyMatchAtRGroups = onlyMatchAtRGroups
+ps.matchingStrategy = rdRGroupDecomposition.RGroupMatching.Greedy
 core = Chem.MolFromMolBlock(core, sanitize = True) if ("M  END" in core) else Chem.MolFromSmarts(core)
 if core is not None:
     for n in range(0, length):
@@ -25,8 +26,9 @@ if core is not None:
         except:
           mol = None
         if mol is None:
-          continue
-        mols.append(mol)
+          	mols.append(Chem.MolFromSmiles(''))
+        else:
+            mols.append(mol)
     rgd,fails = rdRGroupDecomposition.RGroupDecompose([core], mols, asRows = False, options = ps)
 
     for key in rgd.keys():

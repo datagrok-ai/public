@@ -185,7 +185,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
   options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   let model: PeptidesModel | null = null;
-  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT && activityColumn.type !== DG.COLUMN_TYPE.QNUM) {
+  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT &&
+    activityColumn.type !== DG.COLUMN_TYPE.QNUM
+  ) {
     grok.shell.error('The activity column must be of numeric type!');
     return model;
   }

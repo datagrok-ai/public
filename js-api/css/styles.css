@@ -55,3 +55,7 @@
   width: 100%!important;
   height: 100%!important;
 }
+
+.ui-input-root.ui-input-textarea.ui-input-code > .d4-editor {
+  border: 1px solid var(--grey-2);
+}

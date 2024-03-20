@@ -8,6 +8,8 @@ import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
+//import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -33,6 +35,7 @@ enum EDITOR_STATE {
   PKPD = 'pk-pd',
   ACID_PROD = 'ga-production',
   NIMOTUZUMAB = 'nimotuzumab',
+  BIOREACTOR = 'bioreactor',
 };
 
 /** State-to-template/use-case map */
@@ -46,6 +49,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.PKPD, USE_CASES.PK_PD],
   [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
+  [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
 ]);
 
 /** Models & templates */
@@ -58,6 +62,7 @@ const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.PKPD,
   EDITOR_STATE.ACID_PROD,
   EDITOR_STATE.NIMOTUZUMAB,
+  EDITOR_STATE.BIOREACTOR,
 ];
 
 /** Return help link with respect to IVP editor state */
@@ -80,6 +85,9 @@ function getLink(state: EDITOR_STATE): string {
 
   case EDITOR_STATE.NIMOTUZUMAB:
     return LINK.NIMOTUZUMAB;
+
+  case EDITOR_STATE.BIOREACTOR:
+    return LINK.BIOREACTOR;
 
   default:
     return LINK.DIF_STUDIO_REL;
@@ -142,14 +150,14 @@ export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string): Promise<void> {
     this.createEditorView(content, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
+    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
     this.toChangePath = true;
 
     // routing
-    if (content) {
+    if (content)
       await this.runSolving(false);
       // dfdf
-    }
+
 
     else {
       const modelIdx = this.startingPath.indexOf(PATH.MODEL);
@@ -182,8 +190,8 @@ export class DiffStudio {
 
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
-    this.createEditorView(DEMO_TEMPLATE, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon, this.exportButton, this.helpIcon]]);
+    this.createEditorView(DEMO_TEMPLATE, true);    
+    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
@@ -216,8 +224,11 @@ export class DiffStudio {
     saveBtn.hidden = true;
     let isSaveBtnAdded = false;
 
+    const ribbonPnls = browseView!.getRibbonPanels();
+    ribbonPnls.push([this.sensAnIcon]);
+    browseView!.setRibbonPanels(ribbonPnls);
+
     const addSaveBtnToRibbon = () => {
-      const ribbonPnls = browseView!.getRibbonPanels();
       ribbonPnls.push([saveBtn]);
       browseView!.setRibbonPanels(ribbonPnls);
       isSaveBtnAdded = true;
@@ -280,9 +291,10 @@ export class DiffStudio {
   private openIcon: HTMLElement;
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
-  private exportButton: HTMLElement;
+  private exportButton: HTMLButtonElement;
+  private sensAnIcon: HTMLElement;
 
-  private inputsByCategories = new Map<string, DG.InputBase[]>()
+  private inputsByCategories = new Map<string, DG.InputBase[]>();
 
   constructor(toAddTableView: boolean = true) {
     this.solverView = toAddTableView ?
@@ -336,12 +348,14 @@ export class DiffStudio {
       .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
       .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
       .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
       .endGroup();
 
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
     this.saveIcon = ui.iconFA('save', async () => {await this.saveFn();}, HINT.SAVE_LOC);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
+    this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis()}, HINT.SENS_AN);
   }; // constructor
 
   /** Create model editor */
@@ -361,9 +375,9 @@ export class DiffStudio {
         this.startingInputs = null;
         this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
         this.isSolvingSuccess = false;
-        this.runPane.header.hidden = false;
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
+        this.setCallWidgetsVisibility(true);
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -407,6 +421,9 @@ export class DiffStudio {
           )
           .item(TITLE.NIM, async () =>
             await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
+          )
+          .item(TITLE.BIO, async () =>
+            await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
           )
           .endGroup()
           .separator()
@@ -532,10 +549,8 @@ export class DiffStudio {
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     } catch (err) {
-      if (err instanceof Error)
-        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err.message}`);
-      else
-        grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.clearSolution();
+      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);      
     }
   }; // exportToJS
 
@@ -607,7 +622,7 @@ export class DiffStudio {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.getInputsForm(ivp);
-      this.runPane.header.hidden = !this.isSolvingSuccess;
+      this.setCallWidgetsVisibility(this.isSolvingSuccess);
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
@@ -644,19 +659,29 @@ export class DiffStudio {
           setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
       } else
         this.tabControl.currentPane = this.modelPane;
-    } catch (error) {
-      this.prevInputsNode = null;
-      this.tabControl.currentPane = this.modelPane;
+    } catch (error) {      
       this.clearSolution();
       grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
     }
   }; // runSolving
 
+  /** Show/hide model call widgets */
+  private setCallWidgetsVisibility(toShow: boolean): void {
+    this.runPane.header.hidden = !toShow;
+    this.exportButton.disabled = !toShow;
+    this.sensAnIcon.hidden = !toShow;    
+  }
+
   /** Clear solution table & viewer */
   private clearSolution() {
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
-    this.runPane.header.hidden = true;
+    this.setCallWidgetsVisibility(false);
+
+    if (this.prevInputsNode !== null)
+          this.inputsPanel.removeChild(this.prevInputsNode);
+    this.prevInputsNode = null;
+    this.tabControl.currentPane = this.modelPane;
 
     if (this.solutionViewer && this.viewerDockNode) {
       grok.shell.dockManager.close(this.viewerDockNode);
@@ -830,4 +855,24 @@ export class DiffStudio {
 
     this.inputsByCategories = inputsByCategories;
   } // getInputsUI
+
+  /** Run sensitivity analysis */
+  private async runSensitivityAnalysis(): Promise<void> {
+    try {
+      const ivp = getIVP(this.editorView!.state.doc.toString());
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);
+      const call = script.prepare(params);
+      await call.call();
+     
+      //@ts-ignore
+      await SensitivityAnalysisView.fromEmpty(script);
+    } catch (err) {
+        this.clearSolution();
+        grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }    
+  }
 };
