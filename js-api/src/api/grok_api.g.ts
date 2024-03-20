@@ -833,9 +833,17 @@ export interface IDartApi {
   grok_SemanticValue_Get_DataType(v: any): any;
   grok_SemanticValue_Get_SemType(v: any): any;
   grok_SemanticValue_Set_SemType(v: any, s: String): any;
+  grok_SemanticValue_Get_GridCell(v: any): any;
+  grok_SemanticValue_Set_GridCell(v: any, gridCell: any): any;
   grok_SemanticValue_Get_Cell(v: any): any;
+  grok_SemanticValue_Set_Cell(v: any, cell: any): any;
+  grok_SemanticValue_Get_Viewer(v: any): any;
+  grok_SemanticValue_Set_Viewer(v: any, viewer: any): any;
+  grok_SemanticValue_Get_Tags(v: any): any;
   grok_SemanticValue_Get_Meta(v: any, name: String): any;
   grok_SemanticValue_Set_Meta(v: any, name: String, value: any): any;
+  grok_SemanticValue_FromTableCell(cell: any): any;
+  grok_SemanticValue_FromGridCell(cell: any): any;
   grok_EntityType_Create(name: String, matching: String): any;
   grok_EntityType_Get_Name(et: any): any;
   grok_EntityType_Set_Name(et: any, s: String): any;

@@ -6,7 +6,7 @@ export interface IDetailedLogSettings {
 
   details: string;
 
-  error: string;
+  errors: string;
 
   stackTrace: string;
 
@@ -27,8 +27,6 @@ export interface IDetailedLogSettings {
   services: string;
 
   tables: Array<any>;
-
-  projects: Array<any>;
 
   screenshot: string;
 
