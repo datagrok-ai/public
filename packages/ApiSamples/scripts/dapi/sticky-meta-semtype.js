@@ -1,8 +1,7 @@
 //name: sticky-meta-semtype
 //tags: demo
 //language: javascript
-let t1 = grok.data.testData('molecules', 10000);
-console.log(t1);
+let t1 = grok.data.testData('molecules', 1000);
 let type = DG.EntityType.create('apisamples-molecule', 'semtype=molecule');
 let property = DG.EntityProperty.create('date', 'datetime');
 let schema = DG.Schema.create('Date');
@@ -39,16 +38,11 @@ if (!hasType) {
 await grok.dapi.stickyMeta.saveSchema(schema);
 var startView = grok.shell.addTableView(t1);
 
-
-
-var valuesColumn = DG.Column.dateTime('date', 1000);
-valuesColumn.set(0, '03/20/2024');
-
-
-await grok.dapi.stickyMeta.setAllValues(schema, t1.columns.byName('smiles'), DG.DataFrame.fromColumns([valuesColumn]));
-
-var autofilledColumn = t1.columns.addNew('sticky-meta-date', 'datetime');
-autofilledColumn.setTag('dbPropertyName', property.name);
-autofilledColumn.setTag('dbPropertySchema', schema.name);
-autofilledColumn.setTag('dbPropertyReference', 'smiles');
+// for fetching Chem's detectors and functions
+setTimeout(async () => {
+  var valuesColumn = DG.Column.dateTime('date', 1000);
+  valuesColumn.set(0, '03/20/2024');
+  
+  await grok.dapi.stickyMeta.setAllValues(schema, t1.columns.byName('smiles'), DG.DataFrame.fromColumns([valuesColumn]));
+}, 1000);
 
