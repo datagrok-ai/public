@@ -1,6 +1,6 @@
 # ChemblAPI changelog
 
-## 1.1.16 (2024-03-20)
+## 1.0.12 (2024-03-20)
 
 ### Features
 
