@@ -274,6 +274,7 @@ export class DiffStudio {
   private toRunWhenFormCreated = true;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
+  private fitPane: DG.TabPane;
   private editorView: EditorView | undefined;
   private openMenu: DG.Menu;
   private openIcon: HTMLElement;
@@ -298,6 +299,7 @@ export class DiffStudio {
       return this.modelDiv;
     });
     this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
+    this.fitPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
       if ((this.tabControl.currentPane === this.runPane) && this.toChangeInputs)
@@ -610,7 +612,7 @@ export class DiffStudio {
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
         this.tabControl.currentPane = this.runPane;
-        
+
         if (this.prevInputsNode !== null)
           this.inputsPanel.removeChild(this.prevInputsNode);
 
@@ -619,28 +621,27 @@ export class DiffStudio {
         if (this.inputsByCategories.size === 1)
           this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
         else {
-            this.inputsByCategories.forEach((inputs, category) => {
-              if (category !== TITLE.MISC) {
-                form.append(ui.h2(category));
-                inputs.forEach((inp) => {
-                  form.append(inp.root);
-                });
-              }
-            });
-      
-            if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
-              form.append(ui.h2(TITLE.MISC));
-              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+          this.inputsByCategories.forEach((inputs, category) => {
+            if (category !== TITLE.MISC) {
+              form.append(ui.h2(category));
+              inputs.forEach((inp) => {
                 form.append(inp.root);
               });
             }
+          });
+
+          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+            form.append(ui.h2(TITLE.MISC));
+              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
+                form.append(inp.root);
+              });
+          }
         }
 
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (!toShowInputsForm)
           setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
-        
       } else
         this.tabControl.currentPane = this.modelPane;
     } catch (error) {
