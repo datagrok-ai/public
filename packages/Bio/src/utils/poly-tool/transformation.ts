@@ -9,7 +9,7 @@ import {HELM_WRAPPER} from './const';
 import {getMolColumnFromHelm} from '../helm-to-molfile';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-const RULE_PATH = 'System:AppData/Bio/polytool-rules/';
+const RULE_PATH = 'System:AppData/Bio/polytool_rules/';
 
 type ConnectionData = {
   allPos1: number[],

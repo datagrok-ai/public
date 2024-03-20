@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {addTransformedColumn} from './transformation';
 
-const RULE_PATH = 'System:AppData/Bio/polytool-rules/';
+const RULE_PATH = 'System:AppData/Bio/polytool_rules/';
 const RULES_STORAGE_NAME = 'Polytools';
 
 export type UserRuleSettings = {
