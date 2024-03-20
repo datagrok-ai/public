@@ -1,8 +1,7 @@
-//name: sticky-meta
+//name: sticky-meta-tags
 //tags: demo
 //language: javascript
 let t1 = grok.data.testData('demog', 10000);
-console.log(t1);
 t1.columns.byName('study').setTag('source', 'study');
 let type = DG.EntityType.create('apisamples-study', 'source=study');
 let property = DG.EntityProperty.create('date', 'datetime');
@@ -38,7 +37,6 @@ if (!hasType) {
 
 
 await grok.dapi.stickyMeta.saveSchema(schema);
-grok.shell.addTableView(t1);
 
 var newColumn = DG.Column.string('studies', 100);
 newColumn.setTag('source', 'study');
@@ -48,5 +46,10 @@ for (var i = 0; i < newColumn.length; i++) {
   valuesColumn.set(i, '03/' + (i % 30 + 1) + '/2024');
 }
 
-await grok.dapi.stickyMeta.setAllValues(schema, newColumn, DG.DataFrame.fromColumns([valuesColumn]));
+var autofilledColumn = t1.columns.addNew('sticky-meta-date', 'datetime');
+autofilledColumn.setTag('dbPropertyName', property.name);
+autofilledColumn.setTag('dbPropertySchema', schema.name);
+autofilledColumn.setTag('dbPropertyReference', 'study');
 
+await grok.dapi.stickyMeta.setAllValues(schema, newColumn, DG.DataFrame.fromColumns([valuesColumn]));
+grok.shell.addTableView(t1);
