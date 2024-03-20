@@ -15,6 +15,7 @@ export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Arra
     innerViewerLook: {
       columnNames: activityMeanNames,
       aggrColumnName: '',
+      aggregation: DG.STATS.MED,
       aggregations: [DG.STATS.MED, DG.STATS.MED, DG.STATS.MED],
       visualizationType: 'bars',
       colorColumnName: MMP_COLOR,
