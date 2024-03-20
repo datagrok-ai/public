@@ -133,7 +133,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
 
 ### Data Access
 
-*  Azure Blob integration
+*  Azure Blob integration. For details, see [Azure Blob](../../access/files/shares/azure.md)
 
 ### Improvements for developers
 
