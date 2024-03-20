@@ -26,8 +26,9 @@ if core is not None:
         except:
           mol = None
         if mol is None:
-          continue
-        mols.append(mol)
+          	mols.append(Chem.MolFromSmiles(''))
+        else:
+            mols.append(mol)
     rgd,fails = rdRGroupDecomposition.RGroupDecompose([core], mols, asRows = False, options = ps)
 
     for key in rgd.keys():

@@ -139,7 +139,8 @@ export function rGroupAnalysis(col: DG.Column): void {
                 let mol: RDMol | null = null;
                 try {
                   mol = module.get_mol(molStr);
-                  molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+                  if (mol)
+                    molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
                 } catch (e) {
                   //do nothing here, molsArray[i] is empty for invalid molecules
                 } finally {
