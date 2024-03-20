@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R
+  STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, OTHER_USERS
 } from './const';
 import {PatternConfiguration, PatternExistsError, PatternNameExistsError} from './types';
 import {EventBus} from './event-bus';
@@ -119,11 +119,13 @@ class PatternConfigManager {
   }
 
   getCurrentUserPatternNames(): string[] {
-    return Array.from(this.currentUserPatternNameToHash.keys()).sort();
+    return Array.from(this.currentUserPatternNameToHash.keys())
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
   }
 
   getOtherUsersPatternNames(): string[] {
-    return Array.from(this.otherUsersPatternNameToHash.keys()).sort();
+    return Array.from(this.otherUsersPatternNameToHash.keys())
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
   }
 
   private async fetchCurrentUserName(): Promise<string> {
@@ -168,11 +170,41 @@ class PatternConfigManager {
     if (patternHash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
 
-    const patternsRecord = await grok.dapi.userDataStorage.get(STORAGE_NAME, false) as RawPatternRecords;
-    console.log(`pattern record:`, patternsRecord);
-    const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, patternHash, false);
+    return await this.getPatternConfigByHash(patternHash);
+  }
+
+  private async getPatternConfigByHash(hash: string): Promise<PatternConfiguration> {
+    const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
     const config = JSON.parse(patternConfig)[R.PATTERN_CONFIG] as PatternConfiguration;
     return config;
+  }
+
+  private getAuthorCategoryByHash(hash: string): string {
+    if (this.isCurrentUserPattern(hash))
+      return this.currentUserName;
+    else if (this.isOtherUserPattern(hash))
+      return OTHER_USERS;
+    else
+      throw new Error(`Pattern with hash ${hash} not found`);
+  }
+
+  private isCurrentUserPattern(hash: string): boolean {
+    return Array.from(this.currentUserPatternNameToHash.values()).includes(hash);
+  }
+
+  private isOtherUserPattern(hash: string): boolean {
+    return Array.from(this.otherUsersPatternNameToHash.values()).includes(hash);
+  }
+
+  private getPatternNameByHash(hash: string): string {
+    const maps = [this.currentUserPatternNameToHash, this.otherUsersPatternNameToHash];
+    for (const map of maps) {
+      for (const [patternName, patternHash] of map.entries()) {
+        if (patternHash === hash)
+          return patternName;
+      }
+    }
+    throw new Error(`Pattern with hash ${hash} not found`);
   }
 }
 

@@ -13,7 +13,6 @@ import {StrandEditingUtils} from './utils';
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
 
-  // todo: redundant, remove
   private _isAntisenseStrandActive$: rxjs.BehaviorSubject<boolean>;
 
   private _nucleotideSequences$: rxjs.BehaviorSubject<NucleotideSequences>;
@@ -25,7 +24,7 @@ export class EventBus {
 
   private _patternListUpdated$ = new rxjs.Subject<string>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
-  private _sequenceBaseReplacementRequested$ = new rxjs.Subject<string>();
+  private _patternLoaded = new rxjs.Subject<void>();
   private _uniqueNucleotideBases$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
@@ -36,7 +35,7 @@ export class EventBus {
   constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
 
-    this._sequenceBaseReplacementRequested$.subscribe((newBase: string) => this.handleNewBaseChoice(newBase));
+    this._sequenceBase$.subscribe((newBase: string) => this.handleNewBaseChoice(newBase));
 
     this._nucleotideSequences$.subscribe(() => {
       this.updateUniqueNucleotideBases();
@@ -92,6 +91,10 @@ export class EventBus {
 
   get antisenseStrandToggled$(): rxjs.Observable<boolean> {
     return this._isAntisenseStrandActive$.asObservable();
+  }
+
+  isAntisenseStrandActive(): boolean {
+    return this._isAntisenseStrandActive$.getValue();
   }
 
   toggleAntisenseStrand(isActive: boolean) {
@@ -193,10 +196,6 @@ export class EventBus {
     this._modificationsWithNumericLabels$.next(newValue);
   }
 
-  changeSequenceBase(base: string) {
-    this._sequenceBase$.next(base);
-  }
-
   get patternLoadRequested$(): rxjs.Observable<string> {
     return this._patternLoadRequested$.asObservable();
   }
@@ -230,7 +229,7 @@ export class EventBus {
   }
 
   replaceSequenceBase(newNucleobase: string) {
-    this._sequenceBaseReplacementRequested$.next(newNucleobase);
+    this._sequenceBase$.next(newNucleobase);
   }
 
   get patternStateChanged$(): rxjs.Observable<void> {
@@ -321,6 +320,14 @@ export class EventBus {
       this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
       this._nucleotideSequences$.asObservable().pipe(map(() => {}))
     ) as rxjs.Observable<void>;
+  }
+
+  updateControlsUponUponPatternLoaded(): void {
+    this._patternLoaded.next();
+  }
+
+  get patternLoaded$(): rxjs.Observable<void> {
+    return this._patternLoaded.asObservable();
   }
 }
 

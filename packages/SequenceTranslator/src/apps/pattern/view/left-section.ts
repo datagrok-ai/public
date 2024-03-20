@@ -81,9 +81,17 @@ class PatternControlsManager {
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
       `${STRAND_LABEL[STRAND.ANTISENSE]} strand`,
-      true,
-      (isActive: boolean) => this.eventBus.toggleAntisenseStrand(isActive)
+      true
     );
+
+    toggleAntisenseStrand.onInput(
+      () => this.eventBus.toggleAntisenseStrand(toggleAntisenseStrand.value)
+    );
+
+    this.eventBus.patternLoaded$.subscribe(() => {
+      toggleAntisenseStrand.value = this.eventBus.isAntisenseStrandActive();
+    });
+
     toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
     return toggleAntisenseStrand.root;
@@ -98,6 +106,11 @@ class PatternControlsManager {
         sequenceLength
       );
       input.onInput(() => updateStrandLengthInputs(strand, input));
+
+      this.eventBus.patternStateChanged$.subscribe(() => {
+        input.value = this.eventBus.getNucleotideSequences()[strand].length;
+      });
+
       input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
       return [strand, input];
     };
@@ -137,9 +150,11 @@ class PatternControlsManager {
 
     sequenceBaseInput.onInput(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
 
-    sequenceBaseInput.onChanged(() => this.eventBus.changeSequenceBase(sequenceBaseInput.value!));
+    this.eventBus.patternStateChanged$.subscribe(() => {
+      sequenceBaseInput.value = this.eventBus.getSequenceBase();
+    });
 
-    sequenceBaseInput.setTooltip('Most common nucleobase in the sequence');
+    sequenceBaseInput.setTooltip('Most frequent nucleobase in the sequence');
     return sequenceBaseInput;
   }
 
@@ -199,6 +214,8 @@ class PatternChoiceControls {
     const patternConfiguration = await this.dataManager.getPatternConfig(patternName, this.isCurrentUserSelected());
     this.eventBus.setPatternConfig(patternConfiguration);
     this.selectedPattern = patternName;
+
+    this.eventBus.updateControlsUponUponPatternLoaded();
   }
 
   private isCurrentUserSelected(): boolean {
