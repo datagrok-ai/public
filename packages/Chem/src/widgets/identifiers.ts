@@ -103,28 +103,18 @@ class UniChemSource {
   }
 }
 
-async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any} | undefined> {
-  const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
-  const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
-  const response = await grok.dapi.fetchProxy(url, params);
-  const json = await response.json();
-  if (json.error)
-    return;
+async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any}> {
+  const json = await grok.functions.call(`ChemblApi:getCompoundsIds`, { 'inchiKey': inchiKey });
   const sources: {[key: string]: any}[] = json.filter((s: {[key: string]: string | number}) => {
     const srcId = parseInt(`${s['src_id']}`);
     s['src_id'] = srcId;
     return srcId in UniChemSource.idNames;
   });
-
-  return response.status !== 200 ?
-    {} : Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
+  return Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
 }
 
 export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | null> {
   const idMap = await getCompoundsIds(inchiKey);
-
-  if (typeof idMap === 'undefined')
-    return null;
 
   await UniChemSource.refreshSources();
 
@@ -148,7 +138,8 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
 
     let idMap: {[k: string]: any} | null = null;
     try {
-      idMap = await getIdMap(inchiKey);
+      if (checkPackage('ChemblApi', 'getCompoundsIds'))
+        idMap = await getIdMap(inchiKey);
     } catch (e) {
       console.warn(e);
     }
@@ -170,9 +161,9 @@ function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
   map['Inchi'] = inchi;
   map['Inchi key'] = inchiKey;
   if (fullIdentifiersPanel) {
-    extractMainIdentifier(CHEMBL, map, idMap);
-    extractMainIdentifier(PUBCHEM, map, idMap);
-    if (idMap) {
+    if (idMap && Object.keys(idMap).length) {
+      extractMainIdentifier(CHEMBL, map, idMap);
+      extractMainIdentifier(PUBCHEM, map, idMap);
       for (const [source, identifier] of Object.entries(idMap))
         map[source] = ui.link(identifier.id, () => window.open(identifier.link));
     }
@@ -191,5 +182,5 @@ function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
 function addNameField(map: { [key: string]: any }, smiles: string) {
   const packageExists = checkPackage('PubchemApi', 'GetIupacName');
   if (packageExists)
-    map['Name'] = ui.wait(async () => ui.divText(await await grok.functions.call(`PubChemApi:GetIupacName`, { 'smiles': smiles })));
+    map['Name'] = ui.wait(async () => ui.divText(await grok.functions.call(`PubChemApi:GetIupacName`, { 'smiles': smiles })));
 }
