@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.1.15 (2024-03-19) (WIP)
+# 2.1.15 (2024-03-20) (WIP)
+
+* Fix bug with missing last rows of returned DataFrame
+
+# 2.1.15 (2024-03-19)
 
 * Batch mode: use `--batch` for backward compatibility
 
