@@ -394,7 +394,7 @@ M  END
   }
 
   _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
-    let scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
+    const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
     const getSortedScaffolds = (): IColoredScaffold[] => {
       let scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
       if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule')) {
@@ -425,7 +425,7 @@ M  END
       const sortedScaffolds = this.sortedScaffoldsCache
         .getOrCreate(scaffoldArrStr, () => getSortedScaffolds());
       return sortedScaffolds;
-    }    
+    }
     return [];
   }
 
