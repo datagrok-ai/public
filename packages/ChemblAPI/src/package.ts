@@ -213,3 +213,14 @@ export async function chemblSubstructureSearchPanel(mol: string): Promise<DG.Wid
 export async function chemblSimilaritySearchPanel(mol: string): Promise<DG.Widget> {
   return mol ? chemblSearchWidget(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
+
+//name: GetCompoundsIds
+//input: string inchiKey
+//output: object sources
+export async function getCompoundsIds(inchiKey: string): Promise<{[key: string]: string | number}[] | null> {
+  const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
+  const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
+  const response = await grok.dapi.fetchProxy(url, params);
+  const json = await response.json();
+  return response.status !== 200 || json.error ? {} : json;
+}
