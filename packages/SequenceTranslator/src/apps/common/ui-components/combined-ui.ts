@@ -172,12 +172,9 @@ class OligoTranslatorUI extends SimpleAppUIBase {
 class OligoPatternUI extends SimpleAppUIBase {
   constructor() {
     super(APP.PATTERN);
-    this.layout = new PatternAppLayout();
   }
-  private readonly layout: PatternAppLayout;
   protected getHtml(): Promise<HTMLDivElement> {
-    return Promise.resolve(this.layout.generateHTML());
-    // return Promise.resolve(new PatternLayoutHandler().htmlDivElement);
+    return PatternAppLayout.generateHTML();
   }
 }
 

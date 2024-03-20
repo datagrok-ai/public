@@ -14,11 +14,16 @@ import objectHash from 'object-hash';
 type RawPatternRecords = {[patternName: string]: string};
 
 export class PatternAppDataManager {
-  constructor(private eventBus: EventBus) {
-    this.patternConfigManager = new PatternConfigManager(eventBus);
-    this.patternConfigManager.init();
+  // WARNING: not a singleton, encapsulated async init logic in a static method
+  private constructor(
+    private eventBus: EventBus,
+    private patternConfigManager: PatternConfigManager
+  ) { }
+
+  static async getInstance(eventBus: EventBus): Promise<PatternAppDataManager> {
+    const patternConfigManager = await PatternConfigManager.getInstance(eventBus);
+    return new PatternAppDataManager(eventBus, patternConfigManager);
   }
-  private patternConfigManager: PatternConfigManager;
 
   getCurrentUserPatternNames(): string[] {
     return this.patternConfigManager.getCurrentUserPatternNames() || [];
@@ -43,6 +48,10 @@ export class PatternAppDataManager {
         console.error('Error while saving pattern to user storage', e);
     }
   }
+
+  getPatternConfig(patternName: string, isCurrentUserPattern: boolean): Promise<PatternConfiguration> {
+    return this.patternConfigManager.getPatternConfig(patternName, isCurrentUserPattern);
+  }
 }
 
 class PatternConfigManager {
@@ -53,9 +62,9 @@ class PatternConfigManager {
   private otherUsersPatternNameToHash = new Map<string, string>();
   private currentUserPatternNameToHash = new Map<string, string>();
 
-  constructor(private eventBus: EventBus) { }
+  private constructor(private eventBus: EventBus) { }
 
-  async init(): Promise<void> {
+  private async init(): Promise<void> {
     try {
       this.currentUserName = await this.fetchCurrentUserName();
       this.currentUserId = await this.fetchCurrentUserId();
@@ -66,6 +75,12 @@ class PatternConfigManager {
     } catch (e) {
       console.error('Error while initializing pattern list manager', e);
     }
+  }
+
+  static async getInstance(eventBus: EventBus): Promise<PatternConfigManager> {
+    const instance = new PatternConfigManager(eventBus);
+    await instance.init();
+    return instance;
   }
 
   private async initializePatterns(patternRecords: RawPatternRecords) {
@@ -144,6 +159,21 @@ class PatternConfigManager {
     if (existingHashes.includes(hash))
       throw new PatternExistsError(`Pattern with hash ${hash} already exists`);
   }
+
+  async getPatternConfig(patternName: string, isCurrentUserPattern: boolean): Promise<PatternConfiguration> {
+    const patternHash = isCurrentUserPattern ?
+      this.currentUserPatternNameToHash.get(patternName) :
+      this.otherUsersPatternNameToHash.get(patternName);
+
+    if (patternHash === undefined)
+      throw new Error(`Pattern with name ${patternName} not found`);
+
+    const patternsRecord = await grok.dapi.userDataStorage.get(STORAGE_NAME, false) as RawPatternRecords;
+    console.log(`pattern record:`, patternsRecord);
+    const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, patternHash, false);
+    const config = JSON.parse(patternConfig)[R.PATTERN_CONFIG] as PatternConfiguration;
+    return config;
+  }
 }
 
 namespace PatternConfigLoader {
@@ -152,13 +182,6 @@ namespace PatternConfigLoader {
     return patternsRecord;
   }
 
-  // /** Save pattern and get its hash */
-  // export async function savePattern(patternConfig: PatternConfiguration): Promise<string> {
-  //   const hash = getHash(patternConfig);
-  //   await savePatternWithSpecifiedHash(patternConfig, hash);
-  //   return hash;
-  // }
-
   export async function getRecordFromPattern(patternConfig: PatternConfiguration): Promise<string> {
     const record = {
       [R.PATTERN_CONFIG]: patternConfig,
@@ -166,7 +189,6 @@ namespace PatternConfigLoader {
     };
     const stringifiedRecord = JSON.stringify(record);
     return stringifiedRecord;
-    // await grok.dapi.userDataStorage.postValue(STORAGE_NAME, key, stringifiedRecord, false);
   }
 
   export function getHash(patternConfig: PatternConfiguration): string {

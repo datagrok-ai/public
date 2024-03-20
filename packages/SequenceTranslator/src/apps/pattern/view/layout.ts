@@ -10,21 +10,14 @@ import {EventBus} from '../model/event-bus';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 
 export class PatternAppLayout {
-  private leftSection: PatternAppLeftSection;
-  private rightSection: PatternAppRightSection;
+  static async generateHTML(): Promise<HTMLDivElement> {
+    const defaultsProvider = new PatternDefaultsProvider();
+    const eventBus = new EventBus(defaultsProvider);
 
-  constructor() {
-    const defaultStateConfigurator = new PatternDefaultsProvider();
-    const eventBus = new EventBus(defaultStateConfigurator);
-    const dataManager = new PatternAppDataManager(eventBus);
+    const dataManager = await PatternAppDataManager.getInstance(eventBus);
 
-    this.leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultStateConfigurator);
-    this.rightSection = new PatternAppRightSection(eventBus);
-  }
-
-  generateHTML(): HTMLDivElement {
-    const leftSection = this.leftSection.getLayout();
-    const rightSection = this.rightSection.getLayout();
+    const leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultsProvider).getLayout();
+    const rightSection = new PatternAppRightSection(eventBus).getLayout();
 
     const isResizeable = true;
 

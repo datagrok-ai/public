@@ -195,9 +195,10 @@ class PatternChoiceControls {
     this.updatePatternChoiceInputContainer();
   }
 
-  private handlePatternChoice(patternName: string) {
+  private async handlePatternChoice(patternName: string): Promise<void> {
+    const patternConfiguration = await this.dataManager.getPatternConfig(patternName, this.isCurrentUserSelected());
+    this.eventBus.setPatternConfig(patternConfiguration);
     this.selectedPattern = patternName;
-    // grok.shell.info(`Pattern ${patternName} selected`);
   }
 
   private isCurrentUserSelected(): boolean {

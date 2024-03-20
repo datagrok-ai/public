@@ -152,7 +152,9 @@ export async function demoOligoStructure(): Promise<void> {
 //input: string sourceFormat
 //input: string targetFormat
 //output: string result
-export async function translateOligonucleotideSequence(sequence: string, sourceFormat: string, targetFormat: string): Promise<string> {
+export async function translateOligonucleotideSequence(
+  sequence: string, sourceFormat: string, targetFormat: string
+): Promise<string> {
   await initSequenceTranslatorLibData();
   return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
 }
