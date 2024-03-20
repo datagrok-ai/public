@@ -325,12 +325,16 @@ class PatternNameControls {
         grok.shell.info(`Pattern ${patternName} saved`);
       })
       .catch((e) => {
-        if (e instanceof PatternNameExistsError)
+        if (e instanceof PatternNameExistsError) {
           grok.shell.warning(`Pattern with name ${patternName} already exists`);
-        else if (e instanceof PatternExistsError)
-          grok.shell.warning(`Pattern already exists`);
-        else
+        } else if (e instanceof PatternExistsError) {
+          grok.shell.warning(ui.div([
+            ui.divText(`Pattern already exists`),
+            ui.button('Load', () => {}),
+          ]));
+        } else {
           console.error('Error while saving pattern', e);
+        }
       });
   }
 }

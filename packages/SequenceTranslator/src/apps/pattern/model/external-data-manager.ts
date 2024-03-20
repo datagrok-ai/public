@@ -122,10 +122,10 @@ class PatternConfigManager {
 
   async savePatternToUserStorage(patternConfig: PatternConfiguration): Promise<void> {
     const hash = PatternConfigLoader.getHash(patternConfig);
-    this.verifyPatternUnique(hash);
+    this.validatePatternUniqueness(hash);
 
     const patternName = patternConfig[L.PATTERN_NAME];
-    this.verifyPatternNameUniquePerUser(patternName);
+    this.validatePatternNameUniqueness(patternName);
 
     const record = await PatternConfigLoader.getRecordFromPattern(patternConfig);
     await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
@@ -133,12 +133,12 @@ class PatternConfigManager {
     this.eventBus.updatePatternList();
   }
 
-  private verifyPatternNameUniquePerUser(patternName: string): void {
+  private validatePatternNameUniqueness(patternName: string): void {
     if (this.currentUserPatternNameToHash.has(patternName))
       throw new PatternNameExistsError(`Pattern with name ${patternName} already exists`);
   }
 
-  private verifyPatternUnique(hash: string): void {
+  private validatePatternUniqueness(hash: string): void {
     const existingHashes = Array.from(this.currentUserPatternNameToHash.values());
 
     if (existingHashes.includes(hash))
