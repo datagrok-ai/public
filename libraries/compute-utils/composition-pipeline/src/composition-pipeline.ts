@@ -5,6 +5,7 @@ import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, merge, of, from, Subject} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
 import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample, finalize} from 'rxjs/operators';
+import { ActionItem, ValidationResult, mergeValidationResults } from '../../shared-utils/validation';
 
 //
 // State values
@@ -74,7 +75,7 @@ export type PipelineHookConfiguration = {
 }
 
 export type ActionConfiguraion = PipelineHookConfiguration & {
-  position: 'buttons' | 'menu';
+  position: 'buttons' | 'none';
   friendlyName: string;
   runStepOnComplete?: boolean;
 }
@@ -82,7 +83,7 @@ export type ActionConfiguraion = PipelineHookConfiguration & {
 export type PipelinePopupConfiguration = {
   id: ItemName;
   nqName: NqName;
-  position: 'buttons' | 'menu';
+  position: 'buttons' | 'none';
   friendlyName: string;
   helpUrl?: string;
   states?: StateItemConfiguration[];
@@ -287,14 +288,21 @@ export class NodeState {
     public conf: NodeConf,
     public type: SubNodeConfTypes,
     public pipelinePath: ItemPath,
-    public parrentNodePath: ItemPath,
+    public parentNodePath: ItemPath,
     public pipelineState: PipelineState,
   ) {
-    if (type === 'step' || type === 'popup') {
-      const states = (conf as PipelineStepConfiguration | PipelinePopupConfiguration).states;
+    if (type === 'step') {
+      const states = (conf as PipelineStepConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState, type === 'popup' ? this.notifier : undefined));
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState));
     }
+
+    if (type === 'popup') {
+      const states = (conf as PipelinePopupConfiguration).states;
+      for (const state of states ?? [])
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState, this.notifier));
+    }
+
     if (type === 'action') {
       const link = conf as ActionConfiguraion;
       this.controllerConfig = new ControllerConfig(pipelinePath, link.from, link.to);
@@ -302,11 +310,6 @@ export class NodeState {
   }
 }
 
-export class PipelineState {
-  initialLoading = new BehaviorSubject<boolean>(true);
-  runChanging = new BehaviorSubject<boolean>(false);
-  closed = new Subject<true>();
-}
 
 export class LinkState {
   public controllerConfig: ControllerConfig;
@@ -346,6 +349,12 @@ export class LinkState {
   }
 }
 
+export class PipelineState {
+  initialLoading = new BehaviorSubject<boolean>(true);
+  runChanging = new BehaviorSubject<boolean>(false);
+  closed = new Subject<true>();
+}
+
 export class ControllerConfig {
   public from: ItemPath[] = [];
   public to: ItemPath[] = [];
@@ -371,6 +380,7 @@ export class ControllerConfig {
 
 export class PipelineRuntime {
   private runningLinks = new Set<string>();
+  private validationState = new Map<string, Map<string, ValidationResult | undefined>>();
   public isUpdating = new BehaviorSubject<boolean>(false);
 
   constructor(
@@ -418,6 +428,73 @@ export class PipelineRuntime {
       return this.view.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName, k);
   }
 
+  setValidation(targetPath: ItemPath, linkPath: ItemPath, validation: ValidationResult | undefined): void {
+    const targetId = pathToKey(targetPath);
+    const linkId = pathToKey(linkPath);
+    const targetState = this.validationState.get(targetId) ?? new Map<string, ValidationResult | undefined>();
+    targetState.set(linkId, validation);
+    this.validationState.set(targetId, targetState);
+    this.updateViewValidation(targetPath);
+  }
+
+  getValidationAction(path: ItemPath, name?: string): ActionItem {
+    const k = pathToKey(path);
+    const node = this.nodes.get(k);
+    if (node?.type !== 'action' && node?.type !== 'popup') {
+      const msg = `Node ${path.join(',')} is not an action/popup`;
+      grok.shell.error(msg);
+      throw new Error(msg);
+    }
+
+    if (node.type === 'action') {
+      const conf = node.conf as ActionConfiguraion;
+      const handler = conf.handler;
+      const ctrlConf = node.controllerConfig!;
+      return {
+        actionName: name ?? conf.friendlyName,
+        action: async () => {
+          try {
+            const controller = new RuntimeControllerImpl(node.conf.id, ctrlConf, this!);
+            await callHandler(handler, {controller});
+          } catch (e) {
+            grok.shell.error(String(e));
+            throw(e);
+          }
+        }
+      }
+    } else {
+      const conf = node.conf as PipelinePopupConfiguration;
+      const view = this.view.getStepView(conf.id);
+      if (!view) {
+        const msg = `Popup view ${conf.id} not found`;
+        grok.shell.error(msg);
+        throw new Error(msg);
+      }
+      return {
+        actionName: name ?? conf.friendlyName,
+        action: async () => {
+          try {
+            await new Promise((resolve, _reject) => {
+              ui.dialog(conf.friendlyName)
+                .add(view.root)
+                .onOK(() => {
+                  node.notifier.next(true);
+                  resolve(true);
+                })
+                .onCancel(() => {
+                  resolve(false);
+                })
+                .showModal(true);
+            });
+          } catch (e) {
+            grok.shell.error(String(e));
+            throw(e);
+          }
+        }
+      }
+    }
+  }
+
   wireView() {
     // wiring by nqName
     for (const [, node] of this.nodes) {
@@ -457,15 +534,19 @@ export class PipelineRuntime {
             const signal = abortController.signal;
             const controller = new RuntimeControllerImpl(link.conf.id, link.controllerConfig, this, signal);
             let done = false;
-            const sub = from(callHandler(handler, {controller})).pipe(finalize(() => this.removeRunningHandler(link.conf.id))).subscribe((val) => {
-              done = true;
-              observer.next(val);
-            }, (error: any) => {
-              if (!(error instanceof Aborted)) {
-                grok.shell.error(error);
-                console.error(error);
-              }
-            });
+            const sub = from(callHandler(handler, {controller})).pipe(
+              finalize(() => this.removeRunningHandler(link.conf.id))
+            ).subscribe(
+              (val) => {
+                done = true;
+                observer.next(val);
+              },
+              (error: any) => {
+                if (!(error instanceof Aborted)) {
+                  grok.shell.error(error);
+                  console.error(error);
+                }
+              });
             return () => {
               if (!done)
                 abortController.abort();
@@ -504,6 +585,15 @@ export class PipelineRuntime {
       if (state)
         return {node, state};
     }
+  }
+
+  private updateViewValidation(targetPath: ItemPath) {
+    const targetId = pathToKey(targetPath);
+    const targetState = this.validationState.get(targetId)!;
+    const keys = [...targetState.keys()].sort();
+    const validations = keys.map(k => targetState.get(k));
+    const {state, node} = this.getNodeState(targetPath)!;
+    this.view.setExternalValidationResults(node.conf.id, state.conf.id, mergeValidationResults(...validations));
   }
 }
 
@@ -581,6 +671,21 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.goToStep(fullPath);
   }
 
+  setValidation(targetPath: ItemPath, linkPath: ItemPath, validation: ValidationResult | undefined): void {
+    this.checkAborted();
+    const fullPathTarget = pathJoin(this.config.pipelinePath, targetPath);
+    const fullPathLinkPath = pathJoin(this.config.pipelinePath, linkPath);
+    if (!this.checkValidation(fullPathTarget))
+      return;
+    this.rt.setValidation(fullPathTarget, fullPathLinkPath, validation);
+  }
+
+  getValidationAction(path: ItemPath, name?: string): ActionItem {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    return this.rt.getValidationAction(fullPath, name);
+  }
+
   private checkAborted() {
     if (this.signal?.aborted)
       throw new Aborted();
@@ -599,6 +704,19 @@ export class RuntimeControllerImpl implements RuntimeController {
     if (!this.config.toKeys.has(key))
       grok.shell.warning(`Handler ${this.handlerId} has not declared access to output ${key}`);
 
+    if (this.config.fromKeys.has(key)) {
+      grok.shell.error(`Handler ${this.handlerId} trying to set output value which is input ${key}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  private checkValidation(path: ItemPath) {
+    const key = pathToKey(path);
+    if (!this.config.toKeys.has(key) || !this.config.fromKeys.has(key))
+      grok.shell.warning(`Handler ${this.handlerId} should declare both input and output access to set validation ${key}`);
+
     return true;
   }
 }
@@ -608,13 +726,14 @@ export class RuntimeControllerImpl implements RuntimeController {
 // Pipeline classes
 
 export interface ICompositionView {
-  showSteps(...id: string[]): void;
-  hideSteps(...id: string[]): void;
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
   getStateBindings<T = any>(stepId: string, stateId: string, k: string): {changes: Observable<T>, setter: (x: any) => void};
-  getStepView<T = RichFunctionView>(name: string, k?: string): T;
   isUpdating: BehaviorSubject<boolean>;
   getRunningUpdates(): string[];
+  showSteps(...id: string[]): void;
+  hideSteps(...id: string[]): void;
+  getStepView<T = RichFunctionView>(name: string, k?: string): T;
+  setExternalValidationResults(viewName: string, inputName: string, results: ValidationResult): void;
 }
 
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
@@ -641,6 +760,12 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     const changes = stepView.getParamChanges(stateId);
     const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => stepView.setInput(stateId, x, inputState);
     return {changes, setter};
+  }
+
+  public setExternalValidationResults(viewName: string, inputName: string, results: ValidationResult) {
+    const view = this.getStepView(viewName);
+    if (view)
+      view.setExternalValidationResults(inputName, results);
   }
 
   override getStepView<T = RichFunctionView>(name: string, k?: string) {
@@ -791,21 +916,25 @@ export class CompositionPipeline {
   }
 
   private addSystemHooks() {
-    // TODO: set menu as buttons for now;
     const stepIdsToNodes = new Map<string, NodeState[]>();
     const additionalViewNames = new Map<string, NqName>();
     const additionalViews = this.viewInst!.customViews;
 
     for (const node of this.nodes.values()) {
       if (node.type === 'popup' || node.type === 'action') {
-        const parrentPathKey = pathToKey(node.parrentNodePath);
-        const nodes = stepIdsToNodes.get(parrentPathKey) ?? [];
-        nodes.push(node);
-        stepIdsToNodes.set(parrentPathKey, nodes);
         if (node.type === 'popup') {
           const conf = node.conf as PipelinePopupConfiguration;
           additionalViewNames.set(conf.id, conf.nqName);
         }
+
+        const conf = node.conf as (ActionConfiguraion | PipelinePopupConfiguration);
+        if (conf.position === 'none')
+          continue;
+
+        const parrentPathKey = pathToKey(node.parentNodePath);
+        const nodes = stepIdsToNodes.get(parrentPathKey) ?? [];
+        nodes.push(node);
+        stepIdsToNodes.set(parrentPathKey, nodes);
       }
     }
 
@@ -815,6 +944,9 @@ export class CompositionPipeline {
         for (const [k, nqName] of additionalViewNames.entries()) {
           const view = new RFVPopup(nqName, {historyEnabled: false, isTabbed: true});
           await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
+          (view.root).style.width = '100%';
+          (view.root).style.height = '100%';
+          (view.root).style.overflow = 'hidden';
           additionalViews.set(k, view);
         }
       },
@@ -825,43 +957,16 @@ export class CompositionPipeline {
       handler: async ({controller}: { controller: RuntimeController }) => {
         for (const [viewKey, nodes] of stepIdsToNodes.entries()) {
           const btns = nodes.map((node) => {
-            if (node.type === 'action') {
-              const conf = node.conf as ActionConfiguraion;
-              const handler = conf.handler;
-              const ctrlConf = node.controllerConfig!;
-              return ui.button(conf.friendlyName, async () => {
-                const controller = new RuntimeControllerImpl(node.conf.id, ctrlConf, this.rt!);
-                await callHandler(handler, {controller});
-              });
-            } else if (node.type === 'popup') {
-              const conf = node.conf as PipelinePopupConfiguration;
-              const view = additionalViews.get(conf.id)!;
-              (view.root).style.width = '100%';
-              (view.root).style.height = '100%';
-              (view.root).style.overflow = 'hidden';
-              const buttonName = conf.friendlyName;
-              return ui.button(buttonName, async () => {
-                await new Promise((resolve, _reject) => {
-                  ui.dialog(buttonName)
-                    .add(view.root)
-                    .onOK(() => {
-                      node.notifier.next(true);
-                      resolve(true);
-                    })
-                    .onCancel(() => {
-                      resolve(false);
-                    })
-                    .showModal(true);
-                });
-              });
-            }
-            throw new Error(`No element for ${node.conf.id} ${node.type}`);
+            const conf = node.conf as (ActionConfiguraion | PipelinePopupConfiguration);
+            const action = this.rt!.getValidationAction(keyToPath(conf.id));
+            return ui.button(action.actionName, action.action);
           });
           const view = controller.getView(keyToPath(viewKey))!;
           view.setAdditionalButtons(btns);
         }
       },
     }];
+
     const hooks = {
       beforeInit,
       onViewReady,

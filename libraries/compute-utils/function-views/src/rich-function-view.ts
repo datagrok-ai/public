@@ -93,6 +93,9 @@ export class RichFunctionView extends FunctionView {
   private validators: Record<string, Validator> = {};
   private validationState: Record<string, ValidationResult | undefined> = {};
 
+  private externalValidatorsUpdates = new Subject<string>();
+  private externalValidatorsState: Record<string, ValidationResult | undefined> = {};
+
   public pendingValidations = this.validationUpdates.pipe(
     startWith(null),
     map(() => this.validationState),
@@ -158,7 +161,14 @@ export class RichFunctionView extends FunctionView {
       if (payload.field && this.runningOnInput && this.isRunnable())
         this.doRun();
     });
+
     this.subs.push(validationSub);
+
+    const externalValidationSub = this.externalValidatorsUpdates.subscribe((name) => {
+      this.updateInputValidationReuslts(name);
+    });
+
+    this.subs.push(externalValidationSub);
 
     // waiting for debounce and validation after enter is pressed
     const runSub = combineLatest([
@@ -734,6 +744,11 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  public setExternalValidationResults(inputName: string, results: ValidationResult) {
+    this.externalValidatorsState[inputName] = results;
+    this.externalValidatorsUpdates.next(inputName);
+  }
+
   private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
     if (state === 'restricted') {
       this.funcCall.options[RESTRICTED_PATH] = {
@@ -1273,9 +1288,15 @@ export class RichFunctionView extends FunctionView {
   private setValidationResults(results: Record<string, ValidationResult | undefined>) {
     for (const [inputName, validationMessages] of Object.entries(results)) {
       this.validationState[inputName] = validationMessages;
-      const input = this.inputsMap[inputName];
-      if (isFuncCallInputValidated(input))
-        input.setValidation(validationMessages);
+      this.updateInputValidationReuslts(inputName);
+    }
+  }
+
+  private updateInputValidationReuslts(inputName: string) {
+    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName])
+    const input = this.inputsMap[inputName];
+    if (isFuncCallInputValidated(input)) {
+      input.setValidation(results);
     }
   }
 
