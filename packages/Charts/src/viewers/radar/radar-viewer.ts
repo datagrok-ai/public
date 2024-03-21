@@ -87,7 +87,7 @@ export class RadarViewer extends DG.JsViewer {
 
     this.chart.on('mouseover', (params: any) => {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-        const currentRow = this.dataFrame.currentRowIdx ?? 0;
+        const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
         if (i === currentRow)
           return true;
         return false;
@@ -243,7 +243,7 @@ export class RadarViewer extends DG.JsViewer {
 
   updateShowValues() {
     option.series[2].data = [];
-    const currentRow = this.dataFrame.currentRowIdx ?? 0;
+    const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
     option.series[2].data.push({
       value: this.columns.map((c) => {
         const value = Number(c.get(currentRow));
@@ -298,7 +298,7 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   updateRow() {
-    const currentRow = this.dataFrame.currentRowIdx ?? 0;
+    const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
     option.series[2].data[0] = {
       value: this.columns.map((c) => {
         if (c.type === 'datetime')
