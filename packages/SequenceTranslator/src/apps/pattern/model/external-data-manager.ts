@@ -161,7 +161,8 @@ class PatternConfigManager {
   }
 
   private validatePatternUniqueness(hash: string): void {
-    const existingHashes = Array.from(this.currentUserPatternNameToHash.values());
+    const existingHashes = Array.from(this.currentUserPatternNameToHash.values())
+      .concat(Array.from(this.otherUsersPatternNameToHash.values()));
 
     if (existingHashes.includes(hash))
       throw new PatternExistsError(`Pattern with hash ${hash} already exists`);

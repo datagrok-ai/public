@@ -39,7 +39,7 @@ export class PatternEditorDialog {
       $(editorBody).append(header, controls);
     });
 
-    const dialog = ui.dialog('Edit pattern')
+    const dialog = ui.dialog('Tweak pattern')
       .add(editorBody)
       .onOK(() => {})
       .onCancel(() => this.resetToInitialState());

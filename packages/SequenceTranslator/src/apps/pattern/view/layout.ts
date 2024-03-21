@@ -17,7 +17,7 @@ export class PatternAppLayout {
     const dataManager = await PatternAppDataManager.getInstance(eventBus);
 
     const leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultsProvider).getLayout();
-    const rightSection = new PatternAppRightSection(eventBus).getLayout();
+    const rightSection = new PatternAppRightSection(eventBus, dataManager).getLayout();
 
     const isResizeable = true;
 

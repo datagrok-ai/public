@@ -13,6 +13,8 @@ import $ from 'cash-dom';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
+import {PatternEditorDialog} from './pattern-editor';
+import {isDialogOpen} from './pattern-editor';
 
 export class PatternAppLeftSection {
   constructor(
@@ -53,8 +55,6 @@ class PatternControlsManager {
   ) { }
 
   createUIComponents(): HTMLElement[] {
-    const title = ui.h1('Pattern');
-
     const antisenseStrandToggle = this.createAntisenseStrandToggle();
     const strandLengthInputs = this.createStrandLengthInputs();
 
@@ -66,17 +66,40 @@ class PatternControlsManager {
     const patternSelectionBlock = this.createPatternSelectionBlock();
     const patternNameInputBlock = this.createPatternNameInputBlock();
 
+    const editPatternButton = this.createEditPatternButton();
+    // const savePatternButton = this.createSavePatternButton();
+
     return [
-      title,
+      ui.h1('Select'),
+      patternSelectionBlock,
+
+      ui.h1('Edit'),
       antisenseStrandToggle,
       senseStrandLengthInput,
       antisenseStrandLengthInput,
       sequenceBaseInput,
-      patternCommentInput,
-      patternSelectionBlock,
       patternNameInputBlock,
+      patternCommentInput,
+      ui.buttonsInput([
+        editPatternButton,
+        // savePatternButton,
+      ]),
     ];
   }
+
+  private createEditPatternButton(): HTMLButtonElement {
+    const editPatternButton = ui.button(
+      'Tweak',
+      () => {
+        if (!isDialogOpen)
+          new PatternEditorDialog(this.eventBus).open();
+      });
+
+    ui.tooltip.bind(editPatternButton, 'Edit modifications and PTOs per strand');
+
+    return editPatternButton;
+  }
+
 
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
@@ -92,7 +115,7 @@ class PatternControlsManager {
       toggleAntisenseStrand.value = this.eventBus.isAntisenseStrandActive();
     });
 
-    toggleAntisenseStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
+    toggleAntisenseStrand.setTooltip('Toggle antisense strand');
 
     return toggleAntisenseStrand.root;
   }
@@ -111,7 +134,7 @@ class PatternControlsManager {
         input.value = this.eventBus.getNucleotideSequences()[strand].length;
       });
 
-      input.setTooltip(`Length of ${STRAND_LABEL[strand].toLowerCase()}, including overhangs`);
+      input.setTooltip(`Number of nucleotides in ${strand}, including overhangs`);
       return [strand, input];
     };
 
@@ -205,13 +228,9 @@ class PatternChoiceControls {
 
     const defaultPattern = this.dataManager.getCurrentUserPatternNames()[0];
     this.selectedPattern = defaultPattern;
-
-    this.patternChoiceContainer = ui.div([]);
-    this.eventBus.patternListUpdated$.subscribe(() => this.updatePatternChoiceInputContainer());
   }
 
   private selectedPattern: string;
-  private patternChoiceContainer: HTMLDivElement;
 
   private async handlePatternChoice(patternName: string): Promise<void> {
     const patternConfiguration = await this.dataManager.getPatternConfig(patternName, this.isCurrentUserSelected());
@@ -227,8 +246,11 @@ class PatternChoiceControls {
 
   getControlsContainer(): HTMLDivElement {
     const patternInputs = this.getPatternInputs();
-    this.patternChoiceContainer.append(patternInputs.root);
-    return this.patternChoiceContainer;
+
+    const container = ui.div([patternInputs.root]);
+    this.eventBus.patternListUpdated$.subscribe(() => this.updatePatternChoiceInputContainer(container));
+
+    return container;
   }
 
   private getPatternInputs(): StringInput {
@@ -258,14 +280,14 @@ class PatternChoiceControls {
   }
 
   private setPatternChoiceInputStyle(patternChoiceInput: StringInput): void {
-    patternChoiceInput.setTooltip('Choose and apply pattern');
-    patternChoiceInput.input.style.maxWidth = '120px';
+    patternChoiceInput.setTooltip('Select and apply pattern');
+    $(patternChoiceInput.input).css('max-width', '142px');
     patternChoiceInput.input.style.marginLeft = '12px';
   }
 
   private createUserChoiceInput(): StringInput {
     const currentUser = this.dataManager.getCurrentUserName();
-    const possibleValues = [currentUser, OTHER_USERS];
+    const possibleValues = [currentUser + ' (me)', OTHER_USERS];
 
     const userChoiceInput = ui.choiceInput(
       '',
@@ -279,8 +301,8 @@ class PatternChoiceControls {
   }
 
   private setUserChoiceInputStyle(userChoiceInput: StringInput): void {
-    userChoiceInput.setTooltip('Choose user to load pattern from');
-    userChoiceInput.input.style.maxWidth = '142px';
+    userChoiceInput.setTooltip('Select pattern author');
+    $(userChoiceInput.input).css('max-width', '140px');
   }
 
   private createPatternChoiceInput(): StringInput {
@@ -294,6 +316,10 @@ class PatternChoiceControls {
       this.selectedPattern,
       patternList
     );
+    $(choiceInput.input).css({
+      'max-width': '100px',
+      'min-width': '100px',
+    });
     choiceInput.onInput(
       () => this.eventBus.requestPatternLoad(choiceInput.value!)
     );
@@ -306,6 +332,8 @@ class PatternChoiceControls {
       () => this.showDeletePatternDialog()
     );
 
+    ui.tooltip.bind(button, 'Delete pattern from user storage');
+
     return ui.div([button], 'ui-input-options');
   }
 
@@ -316,10 +344,10 @@ class PatternChoiceControls {
     dialog.show();
   }
 
-  private updatePatternChoiceInputContainer(): void {
+  private updatePatternChoiceInputContainer(container: HTMLElement): void {
     const patternInputs = this.getPatternInputs();
-    $(this.patternChoiceContainer).empty();
-    this.patternChoiceContainer.append(patternInputs.root);
+    $(container).empty();
+    container.append(patternInputs.root);
   }
 }
 
@@ -331,7 +359,7 @@ class PatternNameControls {
 
   createPatternNameInputBlock(): HTMLElement {
     const patternNameInput = ui.textInput(
-      'Save as',
+      'Pattern name',
       this.eventBus.getPatternName()
     );
 
@@ -342,40 +370,11 @@ class PatternNameControls {
       patternNameInput.value = this.eventBus.getPatternName();
     });
 
-    const savePatternButton = this.createSavePatternButton();
+    // const savePatternButton = this.createSavePatternButton();
 
-    patternNameInput.addOptions(savePatternButton);
-    patternNameInput.setTooltip('Name of the pattern');
+    // patternNameInput.addOptions(savePatternButton);
+    // patternNameInput.setTooltip('Name of the pattern');
     return patternNameInput.root;
-  }
-
-  private createSavePatternButton(): HTMLElement {
-    const savePatternButton = ui.bigButton('Save', () => this.processSaveButtonClick());
-    return savePatternButton;
-  }
-
-  private processSaveButtonClick(): void {
-    const patternName = this.eventBus.getPatternName();
-    if (patternName === '') {
-      grok.shell.warning(`Insert pattern name`);
-      return;
-    }
-    this.dataManager.savePatternToUserStorage()
-      .then(() => {
-        grok.shell.info(`Pattern ${patternName} saved`);
-      })
-      .catch((e) => {
-        if (e instanceof PatternNameExistsError) {
-          grok.shell.warning(`Pattern with name ${patternName} already exists`);
-        } else if (e instanceof PatternExistsError) {
-          grok.shell.warning(ui.div([
-            ui.divText(`Pattern already exists`),
-            ui.button('Load', () => {}),
-          ]));
-        } else {
-          console.error('Error while saving pattern', e);
-        }
-      });
   }
 }
 
@@ -389,7 +388,7 @@ class TableControlsManager {
   }
 
   createUIComponents(): HTMLElement[] {
-    const title = ui.h1('Convert');
+    const title = ui.h1('Bulk convert');
     const tableInput = this.tableInputManager.getTableInputContainer();
     const columnControls = this.columnInputManager.getColumnControlsContainer();
 

@@ -1,11 +1,11 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import {SvgDisplayManager} from './svg-utils/svg-display-manager';
 
 import {EventBus} from '../model/event-bus';
-import {PatternEditorDialog} from './pattern-editor';
-import {isDialogOpen} from './pattern-editor';
-
+import {PatternAppDataManager} from '../model/external-data-manager';
+import {StrandType, PatternNameExistsError, PatternExistsError} from '../model/types';
 
 import $ from 'cash-dom';
 import {BooleanInput} from './types';
@@ -14,14 +14,15 @@ export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
 
   constructor(
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private dataManager: PatternAppDataManager
   ) {
     this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus);
   };
 
   getLayout(): HTMLDivElement {
     const numericLabelTogglesContainer = new NumericLabelVisibilityControls(this.eventBus).getContainer();
-    const downloadAndEditControls = this.generateDownloadAndEditControls();
+    const downloadAndEditControls = this.generateDownloadControls();
     const layout = ui.panel([
       this.svgDisplay,
       numericLabelTogglesContainer,
@@ -37,20 +38,51 @@ export class PatternAppRightSection {
     return layout;
   }
 
-  private generateDownloadAndEditControls(): HTMLDivElement {
-    const svgDownloadButton = ui.button('Save PNG', () => this.eventBus.requestSvgSave());
-
-    const editPatternButton = ui.button(
-      'Edit pattern',
-      () => {
-        if (!isDialogOpen)
-          new PatternEditorDialog(this.eventBus).open();
-      });
-
+  private generateDownloadControls(): HTMLDivElement {
     return ui.divH([
-      svgDownloadButton,
-      editPatternButton,
+      this.createSavePatternButton(),
+      this.createDownloadPngButton(),
     ], {style: {gap: '12px', marginTop: '12px'}});
+  }
+
+  private createDownloadPngButton(): HTMLButtonElement {
+    const svgDownloadButton = ui.button('Get PNG', () => this.eventBus.requestSvgSave());
+
+    ui.tooltip.bind(svgDownloadButton, 'Download pattern as PNG');
+
+    return svgDownloadButton;
+  }
+
+  private createSavePatternButton(): HTMLButtonElement {
+    const savePatternButton = ui.button('Save pattern', () => this.processSaveButtonClick());
+
+    ui.tooltip.bind(savePatternButton, 'Save pattern to user storage');
+
+    return savePatternButton;
+  }
+
+  private processSaveButtonClick(): void {
+    const patternName = this.eventBus.getPatternName();
+    if (patternName === '') {
+      grok.shell.warning(`Insert pattern name`);
+      return;
+    }
+    this.dataManager.savePatternToUserStorage()
+      .then(() => {
+        grok.shell.info(`Pattern ${patternName} saved`);
+      })
+      .catch((e) => {
+        if (e instanceof PatternNameExistsError) {
+          grok.shell.warning(`Pattern with name ${patternName} already exists`);
+        } else if (e instanceof PatternExistsError) {
+          grok.shell.warning(ui.div([
+            ui.divText(`Pattern already exists`),
+            ui.button('Load', () => {}),
+          ]));
+        } else {
+          console.error('Error while saving pattern', e);
+        }
+      });
   }
 }
 
