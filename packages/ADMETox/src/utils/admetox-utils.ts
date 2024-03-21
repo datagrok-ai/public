@@ -8,6 +8,14 @@ import '../css/admetox.css';
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 export let properties: any;
+interface Subsector {
+  name: string;
+}
+
+interface Sector {
+  sectorColor: string;
+  subsectors: Subsector[];
+}
 
 export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
@@ -161,8 +169,37 @@ function addNormalizedColumns(table: DG.DataFrame, columnNames: string[]) {
     newCol.setTag(DG.Tags.IncludeInCsvExport, 'false');
     newCol.setTag(DG.Tags.IncludeInBinaryExport, 'false');
   }
-  const bar = tv.grid.columns.add({cellType: 'barchart'});
-  bar.settings = {columnNames: columnNames};
+  const pie = tv.grid.columns.add({cellType: 'piechart'});
+  pie.settings = {columnNames: columnNames};
+  pie.settings = createPieSettings(columnNames, properties);
+}
+
+function createPieSettings(columnNames: any, properties: any) {
+  let sectors: Sector[] = [];
+  
+  for (let subgroup of properties.subgroup) {
+    let sector: Sector = {
+      sectorColor: randomColor(),
+      subsectors: []
+    };
+
+    for (let model of subgroup.models) {
+      const modelName = columnNames.find((name: string) => name.includes(model.name))
+      if (modelName) {
+        sector.subsectors.push({ name: modelName });
+      }
+    }
+
+    if (sector.subsectors.length > 0) {
+      sectors.push(sector);
+    }
+  }
+
+  return { sectors };
+}
+
+function randomColor() {
+  return '#' + Math.floor(Math.random() * 16777215).toString(16);
 }
 
 function addCustomTooltip(table: string) {

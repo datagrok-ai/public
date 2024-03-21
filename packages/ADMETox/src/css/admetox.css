@@ -31,3 +31,11 @@
   display: flex;
   align-items: center;
 }
+
+.d4-flex-col.ui-div.admetox-input-form > div:not(.ui-input-map) {
+  margin-left: -70px;
+}
+
+.d4-flex-col.ui-div.admetox-input-form .ui-input-textarea.ui-input-root.ui-input-disabled .ui-input-editor {
+  height: 150px;
+}
