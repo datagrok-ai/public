@@ -64,7 +64,7 @@ function showDemoResMD(idx: number) {
 }
 
 /** Perform multivariate analysis using the PLS regression */
-async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
+async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
   const result = await getPlsAnalysis(input);
 
   const plsCols = result.tScores;
@@ -77,7 +77,7 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
     cols.add(col);
   });
 
-  if (type === PLS_ANALYSIS.COMPUTE_COMPONENTS)
+  if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
   const view = grok.shell.tableView(input.table.name);
@@ -240,9 +240,10 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
   }));
 
   // add viewers
-  if (type !== PLS_ANALYSIS.DEMO)
+  if (analysisType !== PLS_ANALYSIS.DEMO)
     viewers.forEach((v) => view.addViewer(v));
   else {
+    // add viewer & update context help
     viewers.forEach((v, i) => {
       setTimeout(() => {
         view.addViewer(v);
@@ -256,7 +257,7 @@ async function performMVA(input: PlsInput, type: PLS_ANALYSIS): Promise<void> {
 } // performMVA
 
 /** Run multivariate analysis (PLS) */
-export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
+export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   const table = grok.shell.t;
 
   if (table === null) {
@@ -328,7 +329,7 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
   let dlgHelpUrl: string;
   let dlgRunBtnTooltip: string;
 
-  if (type === PLS_ANALYSIS.COMPUTE_COMPONENTS) {
+  if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) {
     dlgTitle = TITLE.PLS;
     dlgHelpUrl = LINK.PLS;
     dlgRunBtnTooltip = HINT.PLS;
@@ -354,7 +355,7 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
     {filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
-  namesInputs.root.hidden = (strCols.length === 0) || (type === PLS_ANALYSIS.COMPUTE_COMPONENTS);
+  namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);
 
   const dlg = ui.dialog({title: dlgTitle, helpUrl: dlgHelpUrl})
     .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
@@ -367,7 +368,7 @@ export async function runMVA(type: PLS_ANALYSIS): Promise<void> {
         predict: predict,
         components: components,
         names: names,
-      }, type);
+      }, analysisType);
     }, undefined, dlgRunBtnTooltip)
     .show({x: X_COORD, y: Y_COORD});
 

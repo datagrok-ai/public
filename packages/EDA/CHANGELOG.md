@@ -1,8 +1,9 @@
 # EDA changelog
 
-## 1.1.16 (2024-03-15)
+## 1.1.16 (2024-03-25)
 
-TO ADD.
+* PLS components computation
+* Update UI for `Multivariate Analysis` - main feature & demo app
 
 ## 1.1.15 (2024-02-27)
 
