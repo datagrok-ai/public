@@ -6,18 +6,28 @@ sidebar_position: 0
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
 and analysis of more than one statistical outcome variable at a time.
 
-Partial least squares regression (PLS regression) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on these components.
+Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It constructs linear model using latent factors that
+
+* maximally summarize the variation of the predictors
+* maximize correlation with the response variable.
 
 ## Regress and analyze
 
-* Open a table
-* Run from the top menu: `ML | Analyze | Multivariate Analysis...`
-* Select a table that contains features
-* Select feature columns
-* Select column with sample names
-* Select prediction column
-* Select the number of extracted PLS components
-* Press OK
+1. Open a table.
+2. On the Top Menu, select `ML | Analyze | Multivariate Analysis...`. A dialog opens.
+3. In the dialog, specify
+   * the column with responce variable (in the `Predict` field)
+   * the columns with the predictors (in the `Using` field)
+   * the number of `Components`, i.e. latent factors
+   * `Names` of data samples
+4. Click Run to execute.
+
+You get
+
+* the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot comparing the responce to 
+* the [Regression Coefficients](https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients) bar chart
+* the [Loadings](https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings) scatterplot indicating the impact of each feature on the latent factors
+* the [Scores](https://datagrok.ai/help/explore/multivariate-analysis/plots/scores) scatterplot showing 
 
 ![add-to-workspace](pls.gif)
 
