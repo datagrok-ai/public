@@ -47,6 +47,9 @@ def run_process(command, folder_path, shell=False):
     logging.debug('run_process: error\n{}'.format(error))
     logging.debug('run_process: error END\n')
 
+    if "Error" in output or "Error" in error:
+        return_code = 1
+
     return return_code, output, error
 
 def run_docking(receptor_name, folder_path, autodock_gpf, ligand_value, ligand_format, ligand_name, pose_count):

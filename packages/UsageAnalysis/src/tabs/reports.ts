@@ -1,14 +1,13 @@
-import {UaView} from "./ua";
-import {UaToolbox} from "../ua-toolbox";
-import * as grok from "datagrok-api/grok";
-import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
-import * as DG from "datagrok-api/dg";
-import * as ui from "datagrok-api/ui";
+import {UaView} from './ua';
+import {UaToolbox} from '../ua-toolbox';
+import * as grok from 'datagrok-api/grok';
+import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 const filtersStyle = {
   columnNames: ['error', 'reporter', 'report_time'],
 };
-
 
 export class ReportsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
@@ -29,7 +28,7 @@ export class ReportsView extends UaView {
     const filters = ui.box();
     filters.style.maxWidth = '250px';
 
-    const logViewer = new UaFilterableQueryViewer({
+    const reportsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'User reports',
       queryName: 'UserReports',
@@ -42,15 +41,16 @@ export class ReportsView extends UaView {
           'allowColumnSelection': false,
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
-          'defaultCellFont': '13px monospace'
+          'defaultCellFont': '13px monospace',
         });
         filters.append(DG.Viewer.filters(t, filtersStyle).root);
-
-        viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
-        viewer.col('reporter')!.cellType = 'html';
-        viewer.col('reporter')!.width = 30;
-        viewer.col('report_id')!.cellType = 'html';
-        viewer.col('report_id')!.width = 20;
+        viewer.onBeforeDrawContent.subscribe(() => {
+          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
+          viewer.col('reporter')!.cellType = 'html';
+          viewer.col('reporter')!.width = 30;
+          viewer.col('report_id')!.cellType = 'html';
+          viewer.col('report_id')!.width = 20;
+        });
 
         viewer.onCellPrepare(async function(gc) {
           if (gc.gridColumn.name === 'report_time') {
@@ -59,30 +59,31 @@ export class ReportsView extends UaView {
           }
 
           if (gc.gridColumn.name === 'reporter') {
-              const user = users[gc.cell.value];
-              const img = ui.div();
-              img.style.width = '20px';
-              img.style.height = '20px';
-              img.style.backgroundSize = 'contain';
-              img.style.margin = '5px 0 0 5px';
-              img.style.borderRadius = '100%';
-              if (gc.cell.value != 'Test')
-                img.style.backgroundImage = user.avatar.style.backgroundImage;
-              else
-                img.style.backgroundImage = 'url(/images/entities/grok.png);';
-              img.addEventListener('click', () => {
-                grok.shell.o = user.data;
-              });
-              gc.style.element = ui.tooltip.bind(img, user.name);
+            const user = users[gc.cell.value];
+            const img = ui.div();
+            img.style.width = '20px';
+            img.style.height = '20px';
+            img.style.backgroundSize = 'contain';
+            img.style.margin = '5px 0 0 5px';
+            img.style.borderRadius = '100%';
+            if (gc.cell.value != 'Test')
+              img.style.backgroundImage = user.avatar.style.backgroundImage;
+            else
+              img.style.backgroundImage = 'url(/images/entities/grok.png);';
+            img.addEventListener('click', () => {
+              grok.shell.o = user.data;
+            });
+            gc.style.element = ui.tooltip.bind(img, user.name);
           }
 
           if (gc.gridColumn.name === 'report_id') {
             const icon = ui.iconFA('arrow-to-bottom', () => {
               const indicator = DG.TaskBarProgressIndicator.create('Receiving user report...');
+              //@ts-ignore
               grok.dapi.admin.getUserReport(gc.cell.value)
-                .then((bytes) => DG.Utils.download(`report_${gc.cell.value}.zip`, bytes))
+                .then((bytes: any) => DG.Utils.download(`report_${gc.cell.value}.zip`, bytes))
                 .finally(() => indicator.close());
-            })
+            });
             icon.style.marginTop = '7px';
             gc.style.element = ui.tooltip.bind(icon, 'Download report');
           }
@@ -92,11 +93,11 @@ export class ReportsView extends UaView {
       },
     });
 
-    logViewer.root.classList.add('ui-panel');
-    this.viewers.push(logViewer);
+    reportsViewer.root.classList.add('ui-panel');
+    this.viewers.push(reportsViewer);
     this.root.append(ui.splitH([
       filters,
-      logViewer.root,
+      reportsViewer.root,
     ]));
   }
 }

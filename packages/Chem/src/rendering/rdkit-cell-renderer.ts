@@ -396,8 +396,11 @@ M  END
   _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
     const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
     const getSortedScaffolds = (): IColoredScaffold[] => {
-      const scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
-      const scaffoldArrSorted = scaffoldArr.sort((a, b) => {
+      let scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
+      if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule')) {
+        scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);
+      }
+      const scaffoldArrSorted = scaffoldArr.sort((a: any, b: any) => {
         const getNumAtoms = (molecule: string) => {
           if (molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule)) {
             const mol = this._fetchMol(molecule, [], false, false, {}, false).molCtx.mol;

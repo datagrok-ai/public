@@ -1,5 +1,11 @@
 # PubChemApi changelog
 
+## 1.1.16 (2024-03-18)
+
+### Features
+
+* Added GetIupacName function
+
 ## 1.1.15 (2023-09-18)
 
 ### Bug fixes

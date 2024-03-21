@@ -7,6 +7,7 @@ import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {curveDemo} from './fit/fit-demo';
 import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 
 export const _package = new DG.Package();
@@ -47,20 +48,23 @@ export function _initCurves(): void {
 }
 
 //name: addStatisticsColumn
-//input: dynamic chartColumn
-//input: dynamic p
+//tags: Transform
+//input: dataframe df
+//input: string colName
+//input: string propName
 //input: string seriesName
 //input: int seriesNumber
-export function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesName: string, seriesNumber: number): void {
-  const grid = chartColumn.grid;
-  const column = DG.Column.float(`${chartColumn.name}_${seriesName}_${p.name}`, chartColumn.column?.length);
-  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
+export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number): void {
+  const grid = DG.Viewer.grid(df);
+  const chartColumn = grid.col(colName)!;
+  const column = DG.Column.float(`${colName}_${seriesName}_${propName}`, chartColumn.column?.length);
+  column.tags[SOURCE_COLUMN_TAG] = colName;
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
-  column.tags[STATISTICS_TAG] = p.name;
+  column.tags[STATISTICS_TAG] = propName;
 
   column
     .init((i) => {
-      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
+      const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
       if (gridCell.cell.value === '')
         return null;
       const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
@@ -72,25 +76,28 @@ export function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, 
         substituteZeroes(chartData);
       const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
       const fitResult = calculateSeriesStats(chartData.series![seriesNumber], chartLogOptions);
-      return p.get(fitResult);
+      return fitResult[propName as keyof FitStatistics];
     });
-  grid.dataFrame.columns.insert(column, chartColumn.idx);
+  df.columns.insert(column, chartColumn.idx);
 }
 
 //name: addAggrStatisticsColumn
-//input: dynamic chartColumn
-//input: dynamic p
+//tags: Transform
+//input: dataframe df
+//input: string colName
+//input: string propName
 //input: string aggrType
-export function addAggrStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, aggrType: string): void {
-  const grid = chartColumn.grid;
-  const column = DG.Column.float(`${chartColumn.name}_${aggrType}_${p.name}`, chartColumn.column?.length);
-  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
+export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, aggrType: string): void {
+  const grid = DG.Viewer.grid(df);
+  const chartColumn = grid.col(colName)!;
+  const column = DG.Column.float(`${colName}_${aggrType}_${propName}`, chartColumn.column?.length);
+  column.tags[SOURCE_COLUMN_TAG] = colName;
   column.tags[SERIES_AGGREGATION_TAG] = aggrType;
-  column.tags[STATISTICS_TAG] = p.name;
+  column.tags[STATISTICS_TAG] = propName;
 
   column
     .init((i) => {
-      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
+      const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
       if (gridCell.cell.value === '')
         return null;
       const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
@@ -101,7 +108,7 @@ export function addAggrStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Proper
         chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
         substituteZeroes(chartData);
       const fitResult = getChartDataAggrStats(chartData, aggrType);
-      return p.get(fitResult);
+      return fitResult[propName as keyof FitStatistics];
     });
-  grid.dataFrame.columns.insert(column, chartColumn.idx);
+  df.columns.insert(column, chartColumn.idx);
 }

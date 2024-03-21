@@ -9,6 +9,8 @@ export class UsageType {
 
   static DIALOG_SHOW = 'dialog show';
 
+  static USER_REPORT_POSTED = 'user report posted';
+
 }
 export class ViewerEvent {
   public dart: any;

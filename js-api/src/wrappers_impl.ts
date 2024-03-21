@@ -50,6 +50,8 @@ export function toJs(dart: any, check: boolean = false): any {
     return new TypedEventArgs(dart);
   } else if (type === TYPE.DATE_TIME) {
     return dayjs(dart);
+  } else if (type === TYPE.BYTE_ARRAY) {
+    return dart;
   }
 
   let wrapper = (<any>window).grok_GetWrapper(dart);

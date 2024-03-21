@@ -79,7 +79,8 @@ export interface IDartApi {
   grok_Dapi_Admin(): any;
   grok_Dapi_Admin_GetServiceInfos(adminClient: any): Promise<any>;
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
-  grok_Dapi_Admin_Get_User_Report(adminClient: any, reportId: String): any;
+  grok_Dapi_Admin_Get_User_Report(adminClient: any, reportId: String): Promise<any>;
+  grok_Dapi_Admin_Post_Event_Report(adminClient: any, eventId: String): Promise<any>;
   grok_Dapi_Log(): any;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_DockerImages(): any;
@@ -521,6 +522,7 @@ export interface IDartApi {
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
   grok_Column_FromList(type: String, name: String, list: any): any;
+  grok_Column_FromIndexes(name: String, categories: any, indexes: any): any;
   grok_Column_FromType(type: String, name: String, length: Num): any;
   grok_Column_FromBitSet(name: String, bitset: any): any;
   grok_Column_Get_Type(c: any): any;
@@ -572,6 +574,7 @@ export interface IDartApi {
   grok_Column_GetAutoFormat(column: any): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
+  grok_BigIntJs_To_BigInt(bigint: String): any;
   grok_DateTimeColumn_GetValue(c: any, i: Num): any;
   grok_DateTimeColumn_SetValue(c: any, i: Num, x: any, notify: Bool): any;
   grok_ColumnsArgs_Get_Columns(args: any): any;
@@ -830,9 +833,17 @@ export interface IDartApi {
   grok_SemanticValue_Get_DataType(v: any): any;
   grok_SemanticValue_Get_SemType(v: any): any;
   grok_SemanticValue_Set_SemType(v: any, s: String): any;
+  grok_SemanticValue_Get_GridCell(v: any): any;
+  grok_SemanticValue_Set_GridCell(v: any, gridCell: any): any;
   grok_SemanticValue_Get_Cell(v: any): any;
+  grok_SemanticValue_Set_Cell(v: any, cell: any): any;
+  grok_SemanticValue_Get_Viewer(v: any): any;
+  grok_SemanticValue_Set_Viewer(v: any, viewer: any): any;
+  grok_SemanticValue_Get_Tags(v: any): any;
   grok_SemanticValue_Get_Meta(v: any, name: String): any;
   grok_SemanticValue_Set_Meta(v: any, name: String, value: any): any;
+  grok_SemanticValue_FromTableCell(cell: any): any;
+  grok_SemanticValue_FromGridCell(cell: any): any;
   grok_EntityType_Create(name: String, matching: String): any;
   grok_EntityType_Get_Name(et: any): any;
   grok_EntityType_Set_Name(et: any, s: String): any;

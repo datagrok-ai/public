@@ -22,7 +22,7 @@ enum MANIPULATION_LEVEL {
   DATAFRAME = 'Dataframe',
   COLUMN = 'Column',
   CELL = 'Cell'
-};
+}
 const AGGREGATION_TYPES: {[key: string]: string} = {
   'count': 'totalCount',
   'nulls': 'missingValueCount',
@@ -266,6 +266,17 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       }
     }
 
+    if (!isColorValid(dfChartOptions.seriesOptions?.outlierColor) && !isColorValid(columnChartOptions.seriesOptions?.outlierColor)) {
+      if (chartData.seriesOptions) {
+        if (!isColorValid(chartData.seriesOptions.outlierColor))
+          chartData.seriesOptions.outlierColor = DG.Color.toHtml(DG.Color.red);
+      }
+      else {
+        if (!isColorValid(chartData.series ? chartData.series![0].outlierColor : ''))
+          chartData.series![0].outlierColor = DG.Color.toHtml(DG.Color.red);
+      }
+    }
+
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
     mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
@@ -279,13 +290,11 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
       substituteZeroes(chartData);
 
-    acc.addPane('Options', () => ui.divV([
-      switchLevelInput.root,
-      ui.h3('Series options'),
-      ui.input.form(chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0], fitSeriesProperties, seriesOptionsRefresh),
-      ui.h3('Chart options'),
-      ui.input.form(chartData.chartOptions, fitChartDataProperties, chartOptionsRefresh),
-    ]));
+    const form = ui.form([switchLevelInput]);
+    const fitSeriesChildren = fitSeriesProperties.map((p) => ui.input.forProperty(p, chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0], seriesOptionsRefresh));
+    ui.forms.addGroup(form, 'Series options', fitSeriesChildren);
+    ui.forms.addGroup(form, 'Chart options', fitChartDataProperties.map((p) => ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
+    acc.addPane('Options', () => form);
 
     const seriesStatsProperty = DG.Property.js('series', DG.TYPE.STRING,
       {description: 'Controls whether to show series statistics or aggregated statistics',
@@ -318,7 +327,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
             ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
             ui.input.form(seriesStatistics, statisticsProperties, {
               onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
-                  const funcParams = {chartColumn: gridCell.gridColumn, p: input.property, seriesName: series.name, seriesNumber: i};
+                  const funcParams = {df: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, seriesName: series.name, seriesNumber: i};
                   await DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false})
                 }, `Calculate ${input.property.name} for the whole column`))
             })
@@ -331,8 +340,8 @@ export class FitGridCellHandler extends DG.ObjectHandler {
             ui.h1(`series ${aggrTypeInput.stringValue}`),
             ui.input.form(seriesStatistics, statisticsProperties, {
               onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
-                  const funcParams = {chartColumn: gridCell.gridColumn, p: input.property, aggrType: aggrTypeInput.stringValue};
-                  await DG.Func.find({name: 'addAggrStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false})
+                  const funcParams = {df: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, aggrType: aggrTypeInput.stringValue};
+                  await DG.Func.find({name: 'addAggrStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
                 }, `Calculate ${input.property.name} ${aggrTypeInput.stringValue} for the whole column`))
             })
           ]));

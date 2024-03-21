@@ -5,7 +5,7 @@
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Integrates Datagrok with molecular docking algorithms and tools.",
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok/biostructure-viewer": "^1.0.18",
+    "@datagrok/biostructure-viewer": "^1.0.23",
     "@types/wu": "latest",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
