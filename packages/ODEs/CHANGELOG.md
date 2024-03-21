@@ -1,5 +1,11 @@
 # Diff Studio changelog
 
+## 1.0.6 (2024-03-08)
+
+* E-notation use
+* Sensitivity Analysis
+* Extended model correctness check
+
 ## 1.0.5 (2024-03-01)
 
 Added the Bioreactor example

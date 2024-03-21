@@ -33,7 +33,7 @@
 
 #expressions:
 
-  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2160000000000, 0.361)
+  KF = pow(VL, -0.65) * 0.065 * pow(speed**3 * diam**5 * power / 2.16E12, 0.361)
 
   MA = MEAthiol * pow(10, pH - pKa2MEA)
 
@@ -106,22 +106,22 @@
   diam = 6
   power = 2.1
   pH = 7.4
-  k1red =  0.05604
-  k1ox = 0.0108
+  k1red =  5.604E-2
+  k1ox = 1.08E-2
   k2Fd =  1.35
-  k2Fa =  110400000
-  k2Kd =  0.04038
-  k2Ka =  120000000
-  k3FKa =  181200000
-  k3FKd =  0.01188
-  k4ox =  0.0108
-  k4red =  0.05604
-  ktox = 0.005
+  k2Fa =  1.104E8
+  k2Kd =  4.038E-2
+  k2Ka =  1.2E8
+  k3FKa =  1.812E8
+  k3FKd =  1.188E-2
+  k4ox =  1.08E-2
+  k4red =  5.604E-2
+  ktox = 5E-3
   krcyst = 0
   pO2sat = 100
   pKa2MEA = 8.18
   H = 1.072069378
-  R = 0.082
+  R = 8.2E-2
 
 #parameters:
   qin = 1 {units: L/min; caption: Gas; category: Parameters; min: 0.5; max: 1.5} [Gas to headspace]

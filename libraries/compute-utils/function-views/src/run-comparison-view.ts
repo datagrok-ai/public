@@ -195,11 +195,13 @@ export class RunComparisonView extends DG.TableView {
           grok.shell.dockManager.dock(unitedDfPlot, 'down', null, 'Comparison chart', 0.25);
 
         const getAppendedDfs = (column: DG.Column) => {
-          const appendedDf = column.get(0).clone() as DG.DataFrame;
+          // Workaround for https://reddata.atlassian.net/browse/GROK-14707
+          const appendedDf = DG.toJs(column.get(0)).clone() as DG.DataFrame;
           appendedDf.columns.addNew(RUN_ID_COL_LABEL, DG.TYPE.STRING).init(column.dataFrame.get(RUN_NAME_COL_LABEL, 0));
 
           for (let i = 1; i < column.length; i++) {
-            const newRunDf = column.get(i).clone() as DG.DataFrame;
+            // Workaround for https://reddata.atlassian.net/browse/GROK-14707
+            const newRunDf = DG.toJs(column.get(i)).clone() as DG.DataFrame;
             newRunDf.columns.addNew(RUN_ID_COL_LABEL, DG.TYPE.STRING).init(column.dataFrame.get(RUN_NAME_COL_LABEL, i));
 
             // If one of the columns is parsed as int, it could be converted into double for proper append

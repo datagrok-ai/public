@@ -32,9 +32,12 @@ export class RadarViewer extends DG.JsViewer {
   backgroundMaxColor: number;
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
+  title: string;
+  resizeScheduled: boolean = false;
 
   constructor() {
     super();
+    this.title = this.string('title', 'Radar');
     this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
@@ -53,7 +56,15 @@ export class RadarViewer extends DG.JsViewer {
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
+    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => {
+      if (!this.resizeScheduled) {
+        this.resizeScheduled = true;
+        requestAnimationFrame(() => {
+          this.chart.resize();
+          this.resizeScheduled = false;
+        });
+      }
+    }));
   }
 
   init() {

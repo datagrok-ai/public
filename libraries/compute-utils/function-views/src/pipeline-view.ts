@@ -8,7 +8,7 @@ import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} 
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
-import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
+import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE, storageName} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
@@ -277,7 +277,10 @@ export class PipelineView extends FunctionView {
       this.subs.push(disableMutationSub);
 
       const enableSub = grok.functions.onAfterRunAction.pipe(
-        filter((run) => step.view.funcCall && run && step.view.funcCall.id === run.id),
+        filter((run) =>
+          step.view.funcCall && run &&
+          !!run.id && step.view.funcCall.id === run.id,
+        ),
         withLatestFrom(step.visibility, step.ability),
         filter(([, visibility, ability]) =>
           !(visibility === VISIBILITY_STATE.HIDDEN || ability === ABILITY_STATE.DISABLED)),
@@ -328,27 +331,33 @@ export class PipelineView extends FunctionView {
     this.subs.push(plvHistorySub);
 
     await this.onFuncCallReady();
+
+    this.isReady.next(true);
+
     this.loadHelp().then(() => {
       this.buildRibbonPanels();
 
+      const restoreHelpState = () => {
+        const currentStep = this.findCurrentStep();
+
+        if (currentStep && this.helpFiles[currentStep.func.nqName]) {
+          this.getHelpState().then((state) => {
+            if (state === 'opened')
+              this.showHelpWithDelay(currentStep);
+          });
+        }
+      };
+
       const helpOpenSub = grok.events.onCurrentViewChanged.pipe(
         filter(() => grok.shell.v == this),
-      ).subscribe(async () => {
-        if (this.isStepHelpOpen) {
-          const currentStep = this.findCurrentStep();
+      ).subscribe(restoreHelpState);
 
-          if (currentStep)
-            await this.showHelpWithDelay(currentStep);
-        } else
-          grok.shell.windows.help.visible = false;
-      });
+      restoreHelpState();
+
       this.subs.push(helpOpenSub);
     });
-
-    this.isReady.next(true);
   }
 
-  private isStepHelpOpen = grok.shell.windows.help.visible;
   private helpFiles = {} as Record<string, string>;
   private async loadHelp() {
     return Promise.all(Object.values(this.steps).map(async (step) => {
@@ -548,7 +557,6 @@ export class PipelineView extends FunctionView {
     // Workaround to deal with help panel bug
     await new Promise((resolve) => setTimeout(resolve, 100));
     grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
-    this.isStepHelpOpen = true;
   }
 
   private findCurrentStep() {
@@ -570,12 +578,23 @@ export class PipelineView extends FunctionView {
     return hb;
   }
 
+  private async getHelpState(): Promise<'closed' | 'opened'> {
+    const storedValue = await grok.dapi.userDataStorage.getValue(storageName, `${this.func.name}_help_state`);
+    return storedValue === 'closed' ? 'closed' : 'opened';
+  }
+
+  private async saveHelpState(state: 'closed' | 'opened') {
+    return grok.dapi.userDataStorage.postValue(storageName, `${this.func.name}_help_state`, state);
+  }
+
   public override buildRibbonPanels(): HTMLElement[][] {
     const infoIcon = ui.iconFA('info', async () => {
       const currentStep = this.findCurrentStep();
 
-      if (currentStep && this.helpFiles[currentStep.func.nqName])
+      if (currentStep && this.helpFiles[currentStep.func.nqName]) {
         await this.showHelpWithDelay(currentStep);
+        this.saveHelpState('opened');
+      }
     });
 
     const updateInfoIconAndRibbons = () => {
@@ -591,14 +610,40 @@ export class PipelineView extends FunctionView {
 
       this.setRibbonPanels(newRibbonPanels);
 
-      if (grok.shell.windows.help.visible && currentStep && this.helpFiles[currentStep.func.nqName])
-        grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
+      if (currentStep && this.helpFiles[currentStep.func.nqName]) {
+        if (grok.shell.windows.help.visible)
+          this.showHelpWithDelay(currentStep);
+      }
 
       return newRibbonPanels;
     };
 
-    const tabSub = this.stepTabs.onTabChanged.subscribe(updateInfoIconAndRibbons);
-    this.subs.push(tabSub);
+    if (!this.isReady.value) {
+      const tabSub = this.stepTabs.onTabChanged.subscribe(updateInfoIconAndRibbons);
+      const helpSub = grok.events.onEvent('grok-panels-changed')
+        .pipe(filter(() => grok.shell.v === this))
+        .subscribe(async () => {
+          const savedState = await this.getHelpState();
+          if (grok.shell.windows.help.visible && savedState === 'closed') {
+            this.saveHelpState('opened');
+            return;
+          }
+
+          if (!grok.shell.windows.help.visible && savedState === 'opened') {
+            const info = ui.iconFA('info');
+            $(info).css('margin', '0px 3px');
+            grok.shell.info(ui.span([
+              `You can open help panel by clicking the`,
+              info,
+              `button on the ribbon menu`,
+            ]));
+
+            this.saveHelpState('closed');
+            return;
+          }
+        });
+      this.subs.push(tabSub, helpSub);
+    }
 
     const newRibbonPanels = updateInfoIconAndRibbons();
 
@@ -625,8 +670,7 @@ export class PipelineView extends FunctionView {
           scriptCall.options['parentCallId'] = this.funcCall.id;
           scriptCall.newId();
 
-          this.steps[scriptCall.func.nqName].view.lastCall =
-            await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+          await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
 
           return Promise.resolve();
         });
@@ -635,7 +679,6 @@ export class PipelineView extends FunctionView {
 
       await this.onAfterRun(this.funcCall);
 
-      this.funcCall.options['isFavorite'] = undefined;
       if (this.funcCall.options['title'])
         this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
 

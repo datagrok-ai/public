@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package-test';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {
   after,
   before,
@@ -13,9 +13,12 @@ import {
   expectObject,
   awaitCheck
 } from '@datagrok-libraries/utils/src/test';
+
 import {PhylocanvasGlService} from '../utils/phylocanvas-gl-service';
-import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TreeToGridApp} from '../apps/tree-to-grid-app';
+import {awaitGrid} from './utils';
+
+import {_package} from '../package-test';
 
 /** Tests for package functions, test apps, file previews, file handlers, ... */
 category('packageFuncs', () => {
@@ -30,12 +33,14 @@ category('packageFuncs', () => {
     const view: DG.TableView = grok.shell.addTableView(df);
     await grok.functions.call(`${_package.name}:injectTreeToGrid`,
       {grid: view.grid, newickText: nwk, leafColName: 'id'});
-    await awaitCheck(() => true, 'Error', 200);
+
+    await awaitGrid(view.grid);
   });
 
   test('treeToGridApp', async () => {
     const app: TreeToGridApp = await grok.functions.call(`${_package.name}:treeToGridApp`, {});
-    await awaitCheck(() => true, 'Error', 200);
+
+    await awaitGrid(app.tableView!.grid);
   });
 
   test('treeCutAsTreeApp', async () => {

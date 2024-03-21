@@ -13,14 +13,14 @@ export class DistanceMatrixService {
       this._terminateOnComplete = terminateOnComplete;
     };
 
-    public async calc(values: Array<any>, fnName: KnownMetrics,
+    public async calc(values: ArrayLike<any>, fnName: KnownMetrics,
       normalize = true, opts?: {[_: string]: any}): Promise<Float32Array> {
       return await this.calcMulti([values], [fnName], normalize,
         [opts ?? {}], [1], DistanceAggregationMethods.MANHATTAN);
     }
 
     public async calcMulti(
-      values: Array<any>[], fnNames: KnownMetrics[],
+      values: ArrayLike<any>[], fnNames: KnownMetrics[],
       normalize = true, opts: {[_: string]: any}[] = [{}],
       weights: number[] = [1], aggregationMethod: DistanceAggregationMethod = DistanceAggregationMethods.MANHATTAN
     ): Promise<Float32Array> {

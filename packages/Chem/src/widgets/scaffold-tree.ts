@@ -15,6 +15,7 @@ import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rend
 import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 let attached = false;
+let scaffoldTreeId = 0;
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -466,6 +467,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   allowGenerate: boolean;
   applyFilter: boolean = true;
   summary: string;
+  scaffoldTreeId: number = scaffoldTreeId;
 
   constructor() {
     super();
@@ -1057,8 +1059,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.colorCodedScaffolds = [];
     if (this.setHighlightTag && this.molColumn)
-      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
-
+      this.setScaffoldTag(this.molColumn, this.colorCodedScaffolds);
     this.updateUI();
   }
 
@@ -1072,7 +1073,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.molColumn !== null) {
       removeElementByColor(this.colorCodedScaffolds, '');
       if (this.setHighlightTag)
-        this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+        this.setScaffoldTag(this.molColumn, this.colorCodedScaffolds);
     }
 
     this.checkBoxesUpdateInProgress = true;
@@ -1096,8 +1097,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    if (this.setHighlightTag)  
-      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+    if (this.setHighlightTag)
+      this.setScaffoldTag(this.molColumn, this.colorCodedScaffolds);
+    
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1362,8 +1364,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } else {
       updatedTag = checkedString;
     }
-    if (this.setHighlightTag)  
-      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
+    if (this.setHighlightTag)
+      this.setScaffoldTag(this.molColumn!, JSON.parse(updatedTag));
   }
   
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
@@ -1416,28 +1418,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const first = this.paletteColors.shift();
     this.paletteColors[this.paletteColors.length] = first!;
     
-    const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
-      chosenColor = value;
-    });
-    const paletteIcon = ui.iconFA('palette', () => {
-      ui.dialog('Choose color')
-      .add(colorPicker)
-      .onOK(() => {
-        groupValue.colorOn = true;
-        chosenColor = colorPicker.stringValue;
-        this.updateColorIcon(colorIcon, chosenColor);
-        groupValue.chosenColor = chosenColor;
-        this.setColorToHighlight(group, chosenColor, true);
-        this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-      })
-      .show()
-    }, 'Choose color to highlight');
+    const paletteIcon = ui.iconFA('palette');
+
+    const colorPicker = ui.colorPicker(DG.Color.fromHtml(chosenColor), (color: number) => {
+      colorPicker.style.cssText += 'background-color: hsla(0, 0%, 0%, 0) !important';
+      groupValue.colorOn = true;
+      chosenColor = DG.Color.toHtml(color);
+      this.updateColorIcon(colorIcon, chosenColor);
+      groupValue.chosenColor = chosenColor;
+      this.setColorToHighlight(group, chosenColor, true);
+      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
+    }, paletteIcon);
+
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);
-    paletteIcon.onclick = (e) => {
-      colorPicker.stringValue = (groupValue.chosenColor ?? groupValue.parentColor) ?? chosenColor;
-      e.stopImmediatePropagation()
-    };
+    paletteIcon.onclick = (e) => e.stopImmediatePropagation();
     paletteIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const colorIcon = ui.iconFA('circle', async () => {
@@ -1919,6 +1914,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.allowGenerate)
       setTimeout(() => this.generateTree(), 1000);
     attached = true;
+    scaffoldTreeId += 1;
   }
 
   detach(): void {
@@ -1938,8 +1934,26 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.molColPropObserver = null;
 
     this.clearFilters();
-    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+    this.setScaffoldTag(this.molColumn!, [], true);
     super.detach();
+  }
+
+  setScaffoldTag(column: DG.Column, scaffolds: any, detach: boolean = false) {
+    let scaffoldTag = column.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    let parsedTag: any[] = scaffoldTag !== null ? JSON.parse(scaffoldTag) : [];
+
+    if (detach) {
+        parsedTag = parsedTag.filter(obj => !(this.scaffoldTreeId in obj));
+    } else {
+      const existingScaffold = parsedTag.find(obj => this.scaffoldTreeId in obj);
+      if (existingScaffold)
+        existingScaffold[this.scaffoldTreeId] = scaffolds;
+      else
+        parsedTag[parsedTag.length] = { [this.scaffoldTreeId]: scaffolds };
+    }
+
+    scaffoldTag = JSON.stringify(parsedTag);
+    column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
   }
 
   selectGroup(group: DG.TreeViewNode) : void {

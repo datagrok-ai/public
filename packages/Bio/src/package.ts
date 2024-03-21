@@ -912,7 +912,7 @@ export async function webLogoAggApp(): Promise<void> {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const app = new WebLogoApp(urlParams, 'webLogoAggApp');
-    const df: DG.DataFrame = await _package.files.readCsv('data/sample_FASTA_PT_activity.csv');
+    const df: DG.DataFrame = await _package.files.readCsv('samples/FASTA_PT_activity.csv');
     await grok.data.detectSemanticTypes(df);
     await app.init(df);
   } finally {
@@ -937,7 +937,7 @@ export async function getRegionHelmApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('getRegion ...');
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const df = await _package.files.readCsv('data/sample_HELM_empty_vals.csv');
+    const df = await _package.files.readCsv('samples/HELM_empty_vals.csv');
     const app = new GetRegionApp(urlParams, 'getRegionHelmApp');
     await app.init({df: df, colName: 'HELM'});
   } finally {

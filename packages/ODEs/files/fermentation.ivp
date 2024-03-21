@@ -15,12 +15,12 @@
 #inits:  
   P = 4.276 {units: ml/ml; caption: ethanol, P; category: Initials; min: 3; max: 6} [Concentration of ethanol]
   S = 0.3185 {units: mg/ml; caption: glucose, S; category: Initials; min: 0.1; max: 0.5} [Concentration of glucose]
-  X = 0.092 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
+  X = 9.2E-2 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
 
 #parameters:
   r = 1.3455 {units: mg/ml; category: Parameters; min: 1; max: 2} [The growth rate of ethanol]
-  q = 0.011129 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
-  V = 0.087 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
-  K = 0.0628 {category: Parameters} [Michaelis-Menten constant]
+  q = 1.1129E-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
+  V = 8.7E-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
+  K = 6.28E-2 {category: Parameters} [Michaelis-Menten constant]
   
-#tolerance: 0.0000001
+#tolerance: 1E-7

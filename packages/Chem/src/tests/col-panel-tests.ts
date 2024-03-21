@@ -16,7 +16,7 @@ CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`;
 category('column panel', () => {
   test('inchi', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable('Samples:Files/chem/smiles_200K.zip');
+      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
       addInchis(df, df.col('smiles')!);
     } else {
       await testInchiPanel('addInchisTopMenu', 'inchi', 'inchi',
@@ -26,7 +26,7 @@ category('column panel', () => {
 
   test('add inchi keys', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable('Samples:Files/chem/smiles_200K.zip');
+      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
       addInchiKeys(df, df.col('smiles')!);
     } else
       await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys', 'inchi_key', 'BRJLNESNMQYEGX-UHFFFAOYSA-N');

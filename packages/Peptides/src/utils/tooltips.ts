@@ -14,6 +14,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 export type TooltipOptions = {
   fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number, monomerPosition: type.SelectionItem,
   mpStats: MonomerPositionStats, aggrColValues?: StringDictionary,
+  isMostPotentResidues?: boolean, cliffStats?: type.MutationCliffStats['stats']
 };
 
 /**
@@ -55,6 +56,7 @@ export function showTooltip(df: DG.DataFrame, activityCol: DG.Column<number>, co
   options: TooltipOptions): boolean {
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
+  options.isMostPotentResidues ??= false;
   if (options.monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
     showMonomerTooltip(options.monomerPosition.monomerOrCluster, options.x, options.y);
   else
@@ -77,23 +79,45 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
   options: TooltipOptions): HTMLDivElement | null {
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
-  const stats = options
-    .mpStats[options.monomerPosition.positionOrClusterType]![options.monomerPosition.monomerOrCluster];
-  if (!stats?.count)
-    return null;
+  options.isMostPotentResidues ??= false;
+  if (!options.cliffStats || !options.isMutationCliffs) {
+    const stats = options
+      .mpStats[options.monomerPosition.positionOrClusterType]![options.monomerPosition.monomerOrCluster];
+    if (!stats?.count)
+      return null;
 
 
-  const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
-  const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
-  const tableMap = getStatsTableMap(stats);
-  if (options.fromViewer) {
-    tableMap['Mean difference'] = `${tableMap['Mean difference']}${options.isMutationCliffs ? ' (size)' : ''}`;
-    if (tableMap['p-value'])
-      tableMap['p-value'] = `${tableMap['p-value']}${options.isMutationCliffs ? ' (color)' : ''}`;
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
+    const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
+    const tableMap = getStatsTableMap(stats);
+    if (options.fromViewer) {
+      tableMap['Mean difference'] = `${tableMap['Mean difference']}${options.isMostPotentResidues ? ' (size)' : ''}`;
+      if (tableMap['p-value'])
+        tableMap['p-value'] = `${tableMap['p-value']}${options.isMostPotentResidues ? ' (color)' : ''}`;
+    }
+    const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
+    const resultMap = {...tableMap, ...aggregatedColMap};
+    const distroStatsElem = getDistributionPanel(hist, resultMap);
+    ui.tooltip.show(distroStatsElem, options.x, options.y);
+    return distroStatsElem;
+  } else {
+    const stats = options.cliffStats?.get(options.monomerPosition.monomerOrCluster)
+      ?.get(options.monomerPosition.positionOrClusterType)
+      ;
+    if (!stats)
+      return null;
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
+    const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
+    const tableMap = getStatsTableMap(stats);
+    if (options.fromViewer) {
+      tableMap['Mean difference'] = `${tableMap['Mean difference']}${' (Color)'}`;
+      if (tableMap['Count'])
+        tableMap['Count'] = `${tableMap['Count']}${' (Size)'}`;
+    }
+    const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
+    const resultMap = {...tableMap, ...aggregatedColMap};
+    const distroStatsElem = getDistributionPanel(hist, resultMap);
+    ui.tooltip.show(distroStatsElem, options.x, options.y);
+    return distroStatsElem;
   }
-  const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
-  const resultMap = {...tableMap, ...aggregatedColMap};
-  const distroStatsElem = getDistributionPanel(hist, resultMap);
-  ui.tooltip.show(distroStatsElem, options.x, options.y);
-  return distroStatsElem;
 }
