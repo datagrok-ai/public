@@ -14,56 +14,56 @@ SELECT * FROM mock_data WHERE id = @id;
 --name: PostgresqlStringTypeIntPatternOpMore
 --connection: PostgreSQLDBTests
 --input: string id = ">28" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpMore(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpMore('>28'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpMoreEq
 --connection: PostgreSQLDBTests
 --input: string id = ">=29" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpMoreEq('>=29'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpLessEq
 --connection: PostgreSQLDBTests
 --input: string id = "<=1" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpLessEq(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpLessEq('<=1'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpLess
 --connection: PostgreSQLDBTests
 --input: string id = "<2" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpLess(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpLess('<2'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpIn
 --connection: PostgreSQLDBTests
 --input: string id = "in(29, 30)" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpIn(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpIn(id='in(29, 30)'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpNotIn
 --connection: PostgreSQLDBTests
 --input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpNotIn(), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpNotIn(id='not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)'), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpMinMax
 --connection: PostgreSQLDBTests
 --input: string id = "min-max 29-30" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpMinMax(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpMinMax(id='min-max 29-30'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
 --name: PostgresqlStringTypeIntPatternOpNotEq
 --connection: PostgreSQLDBTests
 --input: string id = "!=1" {pattern: int}
---test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpNotEq(), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypeIntPatternOpNotEq('!=1'), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
@@ -77,28 +77,28 @@ SELECT * FROM mock_data WHERE some_number = @some_number;
 --name: PostgresqlStringTypePatternDoubleOpMore
 --connection: PostgreSQLDBTests
 --input: string some_number = ">975" {pattern: double}
---test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpMore(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 --end
 
 --name: PostgresqlStringTypePatternDoubleOpMoreEq
 --connection: PostgreSQLDBTests
 --input: string some_number = ">=975" {pattern: double}
---test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 --end
 
 --name: PostgresqlStringTypePatternDoubleOpLess
 --connection: PostgreSQLDBTests
 --input: string some_number = "<20" {pattern: double}
---test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpLess(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpLess('<20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 --end
 
 --name: PostgresqlStringTypePatternDoubleOpLessEq
 --connection: PostgreSQLDBTests
 --input: string some_number = "<=20" {pattern: double}
---test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypePatternDoubleOpLessEq('<=20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 --end
 
@@ -126,7 +126,7 @@ SELECT * FROM mock_data WHERE @first_name(first_name);
 --name: PostgresqlStringTypePatternStringOpIn
 --connection: PostgreSQLDBTests
 --input: string country = "in (Poland, Brazil)" {pattern: string}
---test: Dbtests:expectTable(PostgresqlStringTypePatternStringOpIn(), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: Postgresql
+--test: Dbtests:expectTable(PostgresqlStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: Postgresql
 SELECT * FROM mock_data WHERE @country(country);
 --end
 

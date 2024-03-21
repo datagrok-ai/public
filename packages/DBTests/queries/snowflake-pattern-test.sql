@@ -14,56 +14,56 @@ SELECT * FROM test.public.mock_data WHERE id = @id;
 --name: SnowflakeStringTypeIntPatternOpMore
 --connection: SnowflakeDBTests
 --input: string id = ">28" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpMore(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpMore('>28'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpMoreEq
 --connection: SnowflakeDBTests
 --input: string id = ">=29" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpMoreEq('>=29'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpLessEq
 --connection: SnowflakeDBTests
 --input: string id = "<=1" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpLessEq(), OpenFile('System:AppData/Dbtests/common/data1.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpLessEq('<=1'), OpenFile('System:AppData/Dbtests/common/data1.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpLess
 --connection: SnowflakeDBTests
 --input: string id = "<2" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpLess(), OpenFile('System:AppData/Dbtests/common/data1.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpLess('<2'), OpenFile('System:AppData/Dbtests/common/data1.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpIn
 --connection: SnowflakeDBTests
 --input: string id = "in(29, 30)" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpIn(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpIn(id='in(29, 30)'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpNotIn
 --connection: SnowflakeDBTests
 --input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpNotIn(), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpNotIn(id='not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)'), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpMinMax
 --connection: SnowflakeDBTests
 --input: string id = "min-max 29-30" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpMinMax(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpMinMax(id='min-max 29-30'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
 --name: SnowflakeStringTypeIntPatternOpNotEq
 --connection: SnowflakeDBTests
 --input: string id = "!=1" {pattern: int}
---test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpNotEq(), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypeIntPatternOpNotEq('!=1'), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @id(id)
 --end
 
@@ -77,28 +77,28 @@ SELECT * FROM test.public.mock_data WHERE some_number = @some_number;
 --name: SnowflakeStringTypePatternDoubleOpMore
 --connection: SnowflakeDBTests
 --input: string some_number = ">975" {pattern: double}
---test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpMore(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @some_number(some_number);
 --end
 
 --name: SnowflakeStringTypePatternDoubleOpMoreEq
 --connection: SnowflakeDBTests
 --input: string some_number = ">=975" {pattern: double}
---test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @some_number(some_number);
 --end
 
 --name: SnowflakeStringTypePatternDoubleOpLess
 --connection: SnowflakeDBTests
 --input: string some_number = "<20" {pattern: double}
---test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpLess(), OpenFile('System:AppData/Dbtests/common/data5.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpLess('<20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @some_number(some_number);
 --end
 
 --name: SnowflakeStringTypePatternDoubleOpLessEq
 --connection: SnowflakeDBTests
 --input: string some_number = "<=20" {pattern: double}
---test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/Dbtests/common/data5.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypePatternDoubleOpLessEq('<=20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @some_number(some_number);
 --end
 
@@ -126,7 +126,7 @@ SELECT * FROM test.public.mock_data WHERE @first_name(first_name);
 --name: SnowflakeStringTypePatternStringOpIn
 --connection: SnowflakeDBTests
 --input: string country = "in (Poland, Brazil)" {pattern: string}
---test: Dbtests:expectTable(SnowflakeStringTypePatternStringOpIn(), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) //cat: Snowflake
+--test: Dbtests:expectTable(SnowflakeStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) //cat: Snowflake
 SELECT * FROM test.public.mock_data WHERE @country(country);
 --end
 
