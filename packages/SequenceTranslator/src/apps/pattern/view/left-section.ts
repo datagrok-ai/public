@@ -161,9 +161,17 @@ class PatternControlsManager {
   private createPatternCommentInput(): StringInput {
     const patternCommentInput = ui.textInput(
       'Comment',
-      '',
-      (comment: string) => this.eventBus.updateComment(comment)
+      ''
     );
+
+    patternCommentInput.onInput(
+      () => this.eventBus.updateComment(patternCommentInput.value!)
+    );
+
+    this.eventBus.patternLoaded$.subscribe(() => {
+      patternCommentInput.value = this.eventBus.getComment();
+    });
+
     return patternCommentInput;
   }
 
@@ -215,7 +223,7 @@ class PatternChoiceControls {
     this.eventBus.setPatternConfig(patternConfiguration);
     this.selectedPattern = patternName;
 
-    this.eventBus.updateControlsUponUponPatternLoaded();
+    this.eventBus.updateControlsUponPatternLoaded();
   }
 
   private isCurrentUserSelected(): boolean {
@@ -310,11 +318,15 @@ class PatternNameControls {
   createPatternNameInputBlock(): HTMLElement {
     const patternNameInput = ui.textInput(
       'Save as',
-      this.eventBus.getPatternName(),
-      (newValue: string) => this.eventBus.updatePatternName(newValue)
+      this.eventBus.getPatternName()
     );
 
-    this.handlePatternNameChange(patternNameInput.value);
+    patternNameInput.onInput(
+      () => this.eventBus.updatePatternName(patternNameInput.value)
+    );
+    this.eventBus.patternLoaded$.subscribe(() => {
+      patternNameInput.value = this.eventBus.getPatternName();
+    });
 
     const savePatternButton = this.createSavePatternButton();
 
@@ -326,10 +338,6 @@ class PatternNameControls {
   private createSavePatternButton(): HTMLElement {
     const savePatternButton = ui.bigButton('Save', () => this.processSaveButtonClick());
     return savePatternButton;
-  }
-
-  private handlePatternNameChange(patternName: string): void {
-    this.eventBus.updatePatternName(patternName);
   }
 
   private processSaveButtonClick(): void {

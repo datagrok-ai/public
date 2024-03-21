@@ -24,7 +24,7 @@ export class EventBus {
 
   private _patternListUpdated$ = new rxjs.Subject<string>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
-  private _patternLoaded = new rxjs.Subject<void>();
+  private _patternLoaded$ = new rxjs.Subject<void>();
   private _uniqueNucleotideBases$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
@@ -35,24 +35,10 @@ export class EventBus {
   constructor(defaults: PatternDefaultsProvider) {
     this.initializeDefaultState(defaults);
 
-    this._sequenceBase$.subscribe((newBase: string) => this.handleNewBaseChoice(newBase));
-
     this._nucleotideSequences$.subscribe(() => {
       this.updateUniqueNucleotideBases();
+      this.updateSequenceBase();
     });
-  }
-
-  private handleNewBaseChoice(newBase: string) {
-    const oldNucleotideSequences = this._nucleotideSequences$.getValue();
-    const newNucleotideSequences = {} as NucleotideSequences;
-    STRANDS.forEach((strand) => {
-      newNucleotideSequences[strand] = oldNucleotideSequences[strand].map(() => newBase);
-    });
-    this._nucleotideSequences$.next(newNucleotideSequences);
-
-    const labelledNucleotides = this._modificationsWithNumericLabels$.getValue();
-    if (!labelledNucleotides.includes(newBase))
-      this.updateModificationsWithNumericLabels(labelledNucleotides.concat(newBase));
   }
 
   private updateUniqueNucleotideBases(): void {
@@ -64,6 +50,19 @@ export class EventBus {
       });
     });
     this._uniqueNucleotideBases$.next(Array.from(uniqueNucleotideBases).sort());
+  }
+
+  private updateSequenceBase(): void {
+    // Compute the most frequent nucleotide base
+    const nucleotideSequences = this._nucleotideSequences$.getValue();
+    const sequenceBase = Object.values(nucleotideSequences).flat().reduce((acc, nucleotide) => {
+      acc[nucleotide] = (acc[nucleotide] || 0) + 1;
+      return acc;
+    }, {} as {[key: string]: number});
+
+    const maxBase = Object.entries(sequenceBase).reduce((a, b) => a[1] > b[1] ? a : b, ['', 0])[0];
+
+    this._sequenceBase$.next(maxBase);
   }
 
   get nucleotideSequencesChanged$(): rxjs.Observable<NucleotideSequences> {
@@ -229,7 +228,16 @@ export class EventBus {
   }
 
   replaceSequenceBase(newNucleobase: string) {
-    this._sequenceBase$.next(newNucleobase);
+    const oldNucleotideSequences = this._nucleotideSequences$.getValue();
+    const newNucleotideSequences = {} as NucleotideSequences;
+    STRANDS.forEach((strand) => {
+      newNucleotideSequences[strand] = oldNucleotideSequences[strand].map(() => newNucleobase);
+    });
+    this._nucleotideSequences$.next(newNucleotideSequences);
+
+    const labelledNucleotides = this._modificationsWithNumericLabels$.getValue();
+    if (!labelledNucleotides.includes(newNucleobase))
+      this.updateModificationsWithNumericLabels(labelledNucleotides.concat(newNucleobase));
   }
 
   get patternStateChanged$(): rxjs.Observable<void> {
@@ -318,16 +326,17 @@ export class EventBus {
   get updatePatternEditor$(): rxjs.Observable<void> {
     return rxjs.merge(
       this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
-      this._nucleotideSequences$.asObservable().pipe(map(() => {}))
+      this._nucleotideSequences$.asObservable().pipe(map(() => {})),
+      this._patternLoaded$.asObservable().pipe(map(() => {}))
     ) as rxjs.Observable<void>;
   }
 
-  updateControlsUponUponPatternLoaded(): void {
-    this._patternLoaded.next();
+  updateControlsUponPatternLoaded(): void {
+    this._patternLoaded$.next();
   }
 
   get patternLoaded$(): rxjs.Observable<void> {
-    return this._patternLoaded.asObservable();
+    return this._patternLoaded$.asObservable();
   }
 }
 
