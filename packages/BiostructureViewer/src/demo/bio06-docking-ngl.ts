@@ -62,6 +62,7 @@ export async function demoBio06NoScript(): Promise<void> {
     //   const layout = DG.ViewLayout.fromJson(layoutStr);
     //   view.loadLayout(layout);
     // });
+    await awaitGrid(view.grid, 5000);
   } finally {
     pi.close();
   }
