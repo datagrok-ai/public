@@ -80,6 +80,11 @@ class PatternConfigManager {
   static async getInstance(eventBus: EventBus): Promise<PatternConfigManager> {
     const instance = new PatternConfigManager(eventBus);
     await instance.init();
+
+    eventBus.patternDeletionRequested$.subscribe(async (patternName: string) => {
+      await instance.deletePattern(patternName);
+    });
+
     return instance;
   }
 
@@ -205,6 +210,21 @@ class PatternConfigManager {
       }
     }
     throw new Error(`Pattern with hash ${hash} not found`);
+  }
+
+  private async deletePattern(patternName: string): Promise<void> {
+    const hash = this.currentUserPatternNameToHash.get(patternName);
+    if (hash === undefined)
+      throw new Error(`Pattern with name ${patternName} not found`);
+    await grok.dapi.userDataStorage.remove(STORAGE_NAME, hash, false);
+    this.currentUserPatternNameToHash.delete(patternName);
+    this.eventBus.updatePatternList();
+
+    const patternToBeLoaded = this.getCurrentUserPatternNames()[0];
+    if (patternToBeLoaded)
+      this.eventBus.requestPatternLoad(patternToBeLoaded);
+
+    // todo: load default pattern in case there are no patterns left
   }
 }
 

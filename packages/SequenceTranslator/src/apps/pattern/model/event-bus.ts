@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {debounceTime, map, switchMap} from 'rxjs/operators';
+import {debounceTime, skip, map, switchMap} from 'rxjs/operators';
 
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, STRAND, STRANDS} from './const';
 import {PatternDefaultsProvider} from './defaults-provider';
@@ -28,6 +28,7 @@ export class EventBus {
   private _uniqueNucleotideBases$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
+  private _userSelection$ = new rxjs.BehaviorSubject<string>('');
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
 
   private _svgSaveRequested$ = new rxjs.Subject<void>();
@@ -227,6 +228,10 @@ export class EventBus {
     this._patternDeletionRequested$.next(patternName);
   }
 
+  get patternDeletionRequested$(): rxjs.Observable<string> {
+    return this._patternDeletionRequested$.asObservable();
+  }
+
   replaceSequenceBase(newNucleobase: string) {
     const oldNucleotideSequences = this._nucleotideSequences$.getValue();
     const newNucleotideSequences = {} as NucleotideSequences;
@@ -337,6 +342,18 @@ export class EventBus {
 
   get patternLoaded$(): rxjs.Observable<void> {
     return this._patternLoaded$.asObservable();
+  }
+
+  get userSelection$(): rxjs.Observable<string> {
+    return this._userSelection$.asObservable().pipe(skip(1));
+  }
+
+  selectUser(username: string) {
+    this._userSelection$.next(username);
+  }
+
+  getSelectedUser(): string {
+    return this._userSelection$.getValue();
   }
 }
 

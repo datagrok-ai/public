@@ -143,7 +143,8 @@ class PatternControlsManager {
   }
 
   private createSequenceBaseInput(): StringInput {
-    const availableNucleoBases = this.defaultState.fetchAvailableNucleotideBases();
+    const availableNucleoBases = this.defaultState.fetchAvailableNucleotideBases()
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
     const defaultNucleotideBase = this.defaultState.fetchDefaultNucleobase();
 
     const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases);
@@ -200,7 +201,7 @@ class PatternChoiceControls {
     this.eventBus.patternLoadRequested$.subscribe((value: string) => this.handlePatternChoice(value));
 
     const defaultUser = this.dataManager.getCurrentUserName();
-    this.selectedUser = defaultUser;
+    this.eventBus.selectUser(defaultUser);
 
     const defaultPattern = this.dataManager.getCurrentUserPatternNames()[0];
     this.selectedPattern = defaultPattern;
@@ -209,14 +210,8 @@ class PatternChoiceControls {
     this.eventBus.patternListUpdated$.subscribe(() => this.updatePatternChoiceInputContainer());
   }
 
-  private selectedUser: string;
   private selectedPattern: string;
   private patternChoiceContainer: HTMLDivElement;
-
-  private handleUserChoice(userName: string) {
-    this.selectedUser = userName;
-    this.updatePatternChoiceInputContainer();
-  }
 
   private async handlePatternChoice(patternName: string): Promise<void> {
     const patternConfiguration = await this.dataManager.getPatternConfig(patternName, this.isCurrentUserSelected());
@@ -227,7 +222,7 @@ class PatternChoiceControls {
   }
 
   private isCurrentUserSelected(): boolean {
-    return this.selectedUser !== OTHER_USERS;
+    return this.eventBus.getSelectedUser() !== OTHER_USERS;
   }
 
   getControlsContainer(): HTMLDivElement {
@@ -241,6 +236,10 @@ class PatternChoiceControls {
     const patternChoiceInput = this.createPatternChoiceInput();
 
     const patternInputContainer = ui.div([patternChoiceInput.input]);
+    this.eventBus.userSelection$.subscribe(() => {
+      $(patternInputContainer).empty();
+      patternInputContainer.append(this.createPatternChoiceInput().input);
+    });
 
     patternChoiceInput.root.append(
       userChoiceInput.input,
@@ -250,6 +249,9 @@ class PatternChoiceControls {
     this.setPatternChoiceInputStyle(patternChoiceInput);
 
     const deletePatternButton = this.createDeletePatternButton();
+    this.eventBus.userSelection$.subscribe(() => {
+      $(deletePatternButton).toggle(this.isCurrentUserSelected());
+    });
     patternChoiceInput.addOptions(deletePatternButton);
 
     return patternChoiceInput;
@@ -266,8 +268,10 @@ class PatternChoiceControls {
     const possibleValues = [currentUser, OTHER_USERS];
 
     const userChoiceInput = ui.choiceInput(
-      '', this.selectedUser, possibleValues,
-      (userName: string) => this.handleUserChoice(userName)
+      '',
+      this.eventBus.getSelectedUser(),
+      possibleValues,
+      (userName: string) => this.eventBus.selectUser(userName)
     );
     this.setUserChoiceInputStyle(userChoiceInput);
 
@@ -297,9 +301,19 @@ class PatternChoiceControls {
   }
 
   private createDeletePatternButton(): HTMLDivElement {
-    const button = ui.button(ui.iconFA('trash-alt'), () => this.eventBus.deletePattern(this.selectedPattern));
+    const button = ui.button(
+      ui.iconFA('trash-alt'),
+      () => this.showDeletePatternDialog()
+    );
 
     return ui.div([button], 'ui-input-options');
+  }
+
+  private showDeletePatternDialog(): void {
+    const dialog = ui.dialog('Delete pattern');
+    dialog.add(ui.divText(`Are you sure you want to delete pattern ${this.selectedPattern}?`));
+    dialog.onOK(() => this.eventBus.deletePattern(this.selectedPattern));
+    dialog.show();
   }
 
   private updatePatternChoiceInputContainer(): void {
