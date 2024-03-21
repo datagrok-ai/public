@@ -1,11 +1,12 @@
 # Usage Analysis changelog
 
-## 1.1.0 (WIP)
+## 2.0.0 (2024-03-16)
 
 *Dependency: datagarok-api >= 1.18.0*
 
 ### Features
 
+* Test Track released
 * GROK-14344 UA: Functions execution time
 * UA: update routing, overall improvements
 * UA: Test results for selected date in Test Track

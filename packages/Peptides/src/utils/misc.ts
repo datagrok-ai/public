@@ -195,6 +195,66 @@ export function addExpandIcon(grid: DG.Grid): void {
   });
 }
 
+export function addExpandIconsToGridPair(grids: DG.Grid[], name: string, onCloseFunc?: Function): void {
+  //const host = ui.divV([], {style: {height: '100%'}});
+  grids.forEach((grid) => {
+    const fullscreenIcon = ui.iconFA('expand-alt', () => {
+      const fullscreenGrids = grids.map((g) => {
+        const out = g;
+        setGridProps(out, false);
+        return out;
+      });
+      //setGridProps(fullscreenGrid, false);
+      //fullscreenGrid.root.style.height = '100%';
+      const pairsFullscreenDialog = ui.dialog(name);
+      const host = ui.divV([], {style: {height: '100%'}});
+      pairsFullscreenDialog.add(host);
+      fullscreenGrids.forEach((g) => {
+        host.appendChild(ui.h1(g.dataFrame.name));
+        host.appendChild(g.root);
+      });
+      //pairsFullscreenDialog.add(fullscreenGrid.root);
+      pairsFullscreenDialog.showModal(true);
+      pairsFullscreenDialog.onClose.subscribe(() => {
+        onCloseFunc?.();
+      });
+      //fullscreenGrid.invalidate();
+      fullscreenGrids.forEach((g) => g.invalidate());
+    });
+    grid.root.appendChild(fullscreenIcon);
+    fullscreenIcon.style.position = 'absolute';
+    fullscreenIcon.style.right = '0px';
+    fullscreenIcon.style.top = '0px';
+    fullscreenIcon.style.visibility = 'hidden';
+    grid.root.addEventListener('mouseenter', (_) => {
+      fullscreenIcon.style.visibility = 'visible';
+    });
+    grid.root.addEventListener('mouseleave', (_) => {
+      fullscreenIcon.style.visibility = 'hidden';
+    });
+  });
+}
+
+export function addExpandIconGen(dialogName: string,
+  root: HTMLElement, mouseOverRoot: HTMLElement, onClickElementFunc: () => HTMLElement,
+): void {
+  const fullScreenIcon = ui.iconFA('expand-alt', () => {
+    const fullScreenElement = onClickElementFunc();
+    const fullScreenDialog = ui.dialog(dialogName);
+    fullScreenDialog.add(fullScreenElement);
+    fullScreenDialog.showModal(true);
+  }, 'Expand to full screen');
+  fullScreenIcon.style.marginLeft = 'auto';
+  fullScreenIcon.style.marginRight = '15px';
+  mouseOverRoot.addEventListener('mouseenter', () => {
+    fullScreenIcon.style.visibility = 'visible';
+  });
+  mouseOverRoot.addEventListener('mouseleave', () => {
+    fullScreenIcon.style.visibility = 'hidden';
+  });
+  root.appendChild(fullScreenIcon);
+}
+
 /**
  * Sets common properties for grid in property panel.
  * @param grid - Grid to set properties to.
@@ -319,8 +379,9 @@ export function getSelectionBitset(selection: type.Selection, stats: MasksInfo):
     const statsType = stats[positionOrClusterType];
     for (const monomerOrCluster of selected) {
       const statsItem = statsType[monomerOrCluster];
+      if (!statsItem) continue;
       combinedBitset ??= new BitArray(statsItem.mask.length, false);
-      combinedBitset!.or(statsType[monomerOrCluster].mask);
+      combinedBitset!.or(statsItem.mask);
     }
   }
 

@@ -5,15 +5,14 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {AutoDock, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, 
-  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity} from './utils/constants';
+  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME} from './utils/constants';
 import { _demoDocking } from './demo/demo-docking';
-import { delay } from '@datagrok-libraries/utils/src/test';
 
 //name: info
 export function info() {
@@ -130,7 +129,7 @@ export async function getConfigFiles(): Promise<string[]> {
 //input: dataframe table [Input data table]
 //input: column ligands {type:categorical; semType: Molecule} [Small molecules to dock]
 //input: string target {choices: Docking: getConfigFiles} [Folder with config and macromolecule]
-//input: int confirmations = 10 [Number of confirmations]
+//input: int conformations = 10 [Number of output conformations for each small molecule]
 export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, confirmations: number): Promise<void> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
@@ -163,7 +162,6 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     
     formatColumns(autodockResults);
     const processedResults = processAutodockResults(autodockResults, table);
-    
     for (let col of processedResults.columns)
       table.columns.add(col);
 
@@ -219,6 +217,10 @@ export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Wid
 
 //name: getAutodockSingle
 export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
+  const value = molecule.value;
+  if (value.toLowerCase().includes(ERROR_COL_NAME))
+    return new DG.Widget(ui.divText(value));
+
   const currentTable = grok.shell.tv.dataFrame;
   //@ts-ignore
   const index = CACHED_DOCKING.V.findIndex((cachedData: DG.DataFrame) => {
@@ -235,16 +237,14 @@ export async function getAutodockSingle(molecule: DG.SemanticValue): Promise<DG.
   const key = CACHED_DOCKING.K[index];
   //@ts-ignore
   const matchingValue = CACHED_DOCKING.V[index];
-  if (!matchingValue) {
+  if (!matchingValue)
     return new DG.Widget(ui.divText('Docking has not been run'));
-  }
 
-  const autodockResults = matchingValue.clone();
-
+  const autodockResults: DG.DataFrame = matchingValue.clone();
   const widget = new DG.Widget(ui.div([]));
   const targetViewer = await currentTable!.plot.fromType('Biostructure', {
     dataJson: BiostructureDataJson.fromData(key.receptor),
-    ligandColumnName: POSE_COL,
+    ligandColumnName: POSE_COL_UNUSED,
     zoom: true,
   });
   const result = ui.div();

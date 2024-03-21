@@ -29,7 +29,9 @@ export interface IColoredScaffold {
   molecule: string,
   color?: string,
   priority?: number,
-  isSuperstructure?: string
+  isSuperstructure?: string,
+  align?: boolean,
+  highlight?: boolean
 }
 
 export interface IHighlightTagInfo {
@@ -394,8 +396,11 @@ M  END
   _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
     const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
     const getSortedScaffolds = (): IColoredScaffold[] => {
-      const scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
-      const scaffoldArrSorted = scaffoldArr.sort((a, b) => {
+      let scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
+      if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule')) {
+        scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);
+      }
+      const scaffoldArrSorted = scaffoldArr.sort((a: any, b: any) => {
         const getNumAtoms = (molecule: string) => {
           if (molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule)) {
             const mol = this._fetchMol(molecule, [], false, false, {}, false).molCtx.mol;
@@ -457,7 +462,7 @@ M  END
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
-    const alignByStructure = !!(filter.length || align.length);
+    const alignByStructure = !!(filter.length && filter[0].align || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }

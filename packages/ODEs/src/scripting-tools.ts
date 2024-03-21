@@ -134,6 +134,9 @@ enum ERROR_MSG {
   NEGATIVE_STEP = `Incorrect step for`,
   INCOR_STEP = `Step is greater than the length of solution interval ${SEE_ARG}`,
   MISS_COLON = `Missing "${CONTROL_SEP}"`,
+  NAN = `is not a number. Check the line`,
+  SERVICE_START = `Variable names should not start with '${SERVICE}'`,
+  REUSE_NAME = 'Variable reuse (case-insensitive): rename ',
 }
 
 /** Datagrok annatations */
@@ -302,7 +305,7 @@ function getExpressions(lines: string[]): Map<string, string> {
 
   for (const line of lines) {
     eqIdx = line.indexOf(EQUAL_SIGN);
-    exprs.set(line.slice(0, eqIdx).replace(' ', ''), line.slice(eqIdx + 1).trim());
+    exprs.set(line.slice(0, eqIdx).replaceAll(' ', ''), line.slice(eqIdx + 1).trim());
   }
 
   return exprs;
@@ -312,16 +315,30 @@ function getExpressions(lines: string[]): Map<string, string> {
 function getInput(line: string) : Input {
   const str = line.slice(line.indexOf(EQUAL_SIGN) + 1).trim();
   const braceIdx = str.indexOf(BRACE_OPEN);
+  let val: number;
 
-  if (braceIdx === -1) {
+  if (braceIdx === -1) { // no annotation
+    val = Number(str);
+
+    // Check right-hand side
+    if (isNaN(val))
+      throw new Error(`'${str}' ${ERROR_MSG.NAN}: ${line}`);
+
     return {
-      value: Number(str),
+      value: val,
       annot: null,
     };
   }
 
+  // There is an annotation
+  val = Number(str.slice(0, braceIdx));
+
+  // Check right-hand side
+  if (isNaN(val))
+    throw new Error(`'${str.slice(0, braceIdx)}' ${ERROR_MSG.NAN}: ${line}`);
+
   return {
-    value: Number(str.slice(0, braceIdx)),
+    value: val,
     annot: str.slice(braceIdx),
   };
 }
@@ -354,7 +371,7 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
 
   for (const line of source) {
     eqIdx = line.indexOf(EQUAL_SIGN);
-    eqs.set(line.slice(0, eqIdx).replace(' ', ''), getInput(line.slice(eqIdx + 1).trim()));
+    eqs.set(line.slice(0, eqIdx).replaceAll(' ', ''), getInput(line));
   }
 
   return eqs;
@@ -481,7 +498,7 @@ export function getIVP(text: string): IVP {
   let outputs: Map<string, Output> | null = null;
 
   // 0. Split text into lines & remove comments
-  const lines = text.split('\n')
+  const lines = text.replaceAll('\t', ' ').split('\n')
     .map((s) => {
       const idx = s.indexOf(COMMENT_SEQ);
       return s.slice(0, (idx >= 0) ? idx : undefined).trimStart();
@@ -1110,4 +1127,36 @@ function checkCorrectness(ivp: IVP): void {
 
   if (ivp.arg.step.value > ivp.arg.final.value - ivp.arg.initial.value)
     throw new Error(ERROR_MSG.INCOR_STEP);
+
+  // 4. Check script inputs, due to https://reddata.atlassian.net/browse/GROK-15152
+  const scriptInputs = [] as string[];
+  let current: string;
+
+  // 4.1) initial values
+  ivp.inits.forEach((_, key) => {
+    if (key[0] === SERVICE)
+      throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.INITS}-block`);
+
+    current = key.toLocaleLowerCase();
+
+    if (scriptInputs.includes(current))
+      throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.INITS}-block)`);
+
+    scriptInputs.push(current);
+  })
+
+  // 4.2) parameters
+  if (ivp.params !== null)
+    ivp.params.forEach((_, key) => {
+      if (key[0] === SERVICE)
+        throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.PARAMS}-block`);
+
+      current = key.toLocaleLowerCase();
+
+      if (scriptInputs.includes(current))
+        throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.PARAMS}-block)`);
+
+      scriptInputs.push(current);
+    })
+
 } // checkCorrectness

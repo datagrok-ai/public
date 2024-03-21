@@ -40,6 +40,19 @@ To run **Diff Studio**:
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
+### Sensitivity analysis
+
+Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](https://datagrok.ai/help/compute/#sensitivity-analysis) feature. Run it directly from Diff Studio:
+
+* Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+* Apply one of the following methods:
+  * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
+  * [Sobol](https://datagrok.ai/help/compute#sobol)
+  * [Grid](https://datagrok.ai/help/compute#grid)
+* Analyze model evaluations
+
+![Run Sens Analysis](pics/DiffStudio-run-sens-analysis.gif)
+
 ## Creating a custom differential equation model
 
 ### Basic model

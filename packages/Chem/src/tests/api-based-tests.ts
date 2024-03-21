@@ -10,7 +10,7 @@ category('server features', () => {
   test('descriptors', async () => {
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_500K.zip') :
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_500K.zip') :
       DG.DataFrame.fromCsv(testCsv);
     const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
       ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);

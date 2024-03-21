@@ -34,6 +34,14 @@ for the details.
 Put these files in a folder under **System:AppData/Docking/targets**.
 The folder make will be the name of your target in the Datagrok plugin UI.
 
+**Atomic maps note:**
+
+The autodock calculation fails if for a particular ligand 
+corresponding atomic maps not available.
+To run docking on a big ligand dataset, we suggest including all available atomic map types:
+`A C HD N NA OA SA CL`.
+
+
 ### Prepare data
 
 Create or load a dataframe containing the ligands to be docked. 

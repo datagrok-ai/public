@@ -1,5 +1,14 @@
 # Peptides changelog
 
+## 1.17.11 (2024-03-12)
+
+* Fix context panel issues with mutation cliff pairs.
+* Fix filter crashing app and never recovering.
+* Precompute mutation cliffs statistics for correct rendering.
+* Use mutation cliffs statistics for rendering (instead of invariant map data)
+* Use Count and mean difference for size and color of mutation cliffs table.
+* Correct tooltip for mutation cliffs table to use mutation cliffs stats.
+
 ## 1.17.10 (2024-02-29)
 
 Fix context panel crashing and never recovering

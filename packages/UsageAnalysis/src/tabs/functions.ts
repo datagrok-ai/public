@@ -97,7 +97,7 @@ export class FunctionsView extends UaView {
     const typeAhead = ui.typeAhead('Function name', {source: {local:
     [...(await DG.Func.findAll()).map((f) => f.name), ...(await grok.dapi.queries.list()).map((q) => q.name)]},
     minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
-    onSubmit: (_, value) => {
+    onSubmit: (_: any, value: any) => {
       grok.functions.call('UsageAnalysis:FunctionsExecTime', {function: value?.label}).then((df: DG.DataFrame) => {
         if (df.rowCount === 0) {
           grid.dataFrame = DG.DataFrame.create(0);

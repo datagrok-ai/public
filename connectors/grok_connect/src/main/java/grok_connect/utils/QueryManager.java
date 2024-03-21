@@ -95,7 +95,7 @@ public class QueryManager {
 
     public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
-        if (!resultSet.isClosed() && !connection.isClosed()) {
+        if (!isFinished && !resultSet.isClosed() && !connection.isClosed()) {
             if (dfNumber != 1) resultSetManager.empty();
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
             df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);

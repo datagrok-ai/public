@@ -33,6 +33,8 @@ category('Timelines', () => {
   test('Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
+      rowSource: 'Filtered',
+      filter: '',
       splitByColumnName: 'USUBJID',
       startColumnName: 'AESTDY',
       endColumnName: 'AEENDY',

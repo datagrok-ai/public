@@ -1,5 +1,11 @@
 # PowerPack changelog
 
+## 1.1.5 (2023-11-28)
+
+### Bug Fixes
+
+* 1.18.0 Platform version compatibility, Recent projects widget
+
 ## 1.1.4 (2023-11-28)
 
 ### Bug Fixes

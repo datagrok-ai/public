@@ -72,7 +72,7 @@ category('activityCliffs', async () => {
   });
 
   test('Helm', async () => {
-    const df = await _package.files.readCsv('data/sample_HELM_50.csv');
+    const df = await _package.files.readCsv('samples/HELM_50.csv');
     const _view = grok.shell.addTableView(df);
 
     await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
