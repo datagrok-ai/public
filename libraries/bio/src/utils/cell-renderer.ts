@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {monomerToShort} from './macromolecule/utils';
-import {ISeqMonomer, ISeqSplitted} from './macromolecule/types';
+import {ISeqSplitted} from './macromolecule/types';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
@@ -46,8 +46,9 @@ export function printLeftOrCentered(
   pivot: number = 0, left: boolean = false, transparencyRate: number = 1.0,
   separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic,
   maxWord: number[] = [], wordIdx: number = 0, gridCell: DG.GridCell | null = null,
-  referenceSequence: ISeqSplitted = [], maxLengthOfMonomer: number | null = null,
-  monomerTextSizeMap: { [key: string]: TextMetrics } = {}): number {
+  referenceSequence: ISeqSplitted | null = null, maxLengthOfMonomer: number | null = null,
+  monomerTextSizeMap: { [key: string]: TextMetrics } = {}
+): number {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -61,11 +62,13 @@ export function printLeftOrCentered(
     highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
   }
 
-  const currentMonomer: ISeqMonomer = referenceSequence[wordIdx];
-  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference'))
-    transparencyRate = (colorPart == currentMonomer.canonical) ? 0.3 : transparencyRate;
-  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal'))
-    transparencyRate = (colorPart != currentMonomer.canonical) ? 0.3 : transparencyRate;
+  if (referenceSequence) {
+    const currentMonomerCanonical = referenceSequence.getCanonical(wordIdx);
+    if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference'))
+      transparencyRate = (colorPart == currentMonomerCanonical) ? 0.3 : transparencyRate;
+    if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal'))
+      transparencyRate = (colorPart != currentMonomerCanonical) ? 0.3 : transparencyRate;
+  }
   if (maxLengthOfMonomer != null)
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
 
@@ -107,4 +110,4 @@ export function printLeftOrCentered(
     draw(dx, dx + maxColorTextSize);
     return x + placeX + dx + maxColorTextSize;
   }
-};
+}

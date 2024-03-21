@@ -150,7 +150,7 @@ export class MonomerPlacer {
     const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
     const uh = UnitsHandler.getOrCreate(this.col);
     const seq: string = this.col.get(rowIdx)!;
-    const seqMonList: string[] = wu(uh.splitted[rowIdx]).map((m) => m.canonical).toArray();
+    const seqMonList: string[] = wu(uh.splitted[rowIdx].canonicals).map((cm) => cm).toArray();
     if (seqMonList.length === 0) return null;
 
     let iterationCount: number = 100;
@@ -183,7 +183,7 @@ export class MonomerPlacer {
 
   getSeqMonList(rowIdx: number): string[] {
     const uh = UnitsHandler.getOrCreate(this.col);
-    return wu(uh.splitted[rowIdx]).map((m) => m.canonical).toArray();
+    return wu(uh.splitted[rowIdx].canonicals).map((cm) => cm).toArray();
   }
 
   public getMonomer(symbol: string): Monomer | null {

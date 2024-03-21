@@ -8,45 +8,21 @@ import {UnitsHandler} from '../units-handler';
 /** Canonical gap symbol */
 export const GAP_SYMBOL: string = '';
 
-export interface ISeqMonomer {
-  get canonical(): string;
+export interface ISeqSplitted {
+  get canonicals(): Iterable<string>;
+  get originals(): Iterable<string>;
+
+  /** */
+  getCanonical(posIdx: number): string;
 
   /** For fasta and Helm must not be enclosed to square brackets [meA].*/
-  get original(): string;
-}
-
-export class GapSeqMonomer implements ISeqMonomer {
-  get canonical(): string { return GAP_SYMBOL; }
-
-  get original(): string { return this._original; }
-
-  get isGap(): boolean { return true; };
-
-  constructor(
-    private readonly _original: string
-  ) {}
-}
-
-export interface ISeqSplitted extends Iterable<ISeqMonomer> {
-  [jPos: number]: ISeqMonomer;
+  getOriginal(posIdx: number): string;
 
   length: number;
 }
 
-// export class SeqSplitted extends Array<ISeqMonomer> implements ISeqSplitted {
-//   [jPos: number]: ISeqMonomer;
-//
-//   constructor(
-//     mList: ISeqMonomer[],
-//     public readonly notation: NOTATION
-//   ) {
-//     super(...mList);
-//   }
-// }
-
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
-export type MonomerFunc = (original: string, jPos: number) => ISeqMonomer;
-export type SplitterFunc = (seq: string, getMonomer: MonomerFunc) => ISeqSplitted;
+export type SplitterFunc = (seq: string) => ISeqSplitted;
 export type MonomerFreqs = { [m: string]: number };
 
 /** Alphabet candidate type */

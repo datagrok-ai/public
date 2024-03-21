@@ -4,10 +4,8 @@ import wu from 'wu';
 import {
   CandidateSimType,
   CandidateType,
-  ISeqMonomer,
   ISeqSplitted,
   MonomerFreqs,
-  MonomerFunc,
   SeqColStats,
   SplitterFunc
 } from './types';
@@ -20,6 +18,39 @@ import {AminoacidsPalettes} from '../../aminoacids';
 import {NucleotidesPalettes} from '../../nucleotides';
 import {UnknownSeqPalettes} from '../../unknown';
 
+export class StringListSeqSplitted implements ISeqSplitted {
+  get length(): number { return this.mList.length; }
+
+  get canonicals(): Iterable<string> { return this.mList; }
+
+  get originals(): Iterable<string> { return this.mList; }
+
+  getCanonical(posIdx: number): string { return this.mList[posIdx]; }
+
+  getOriginal(posIdx: number): string { return this.mList[posIdx]; }
+
+  constructor(
+    private readonly mList: string[]
+  ) {}
+}
+
+export class FastaSimpleSeqSplitted implements ISeqSplitted {
+  get length(): number { return this.seqS.length; }
+
+  get canonicals(): Iterable<string> { return this.seqS; }
+
+  get originals(): Iterable<string> { return this.seqS; }
+
+  getCanonical(posIdx: number): string { return this.seqS[posIdx]; }
+
+  getOriginal(posIdx: number): string { return this.seqS[posIdx]; }
+
+
+  constructor(
+    private readonly seqS: string
+  ) {}
+}
+
 /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
  * @param {DG.Column} seqCol
  * @param {number} minLength
@@ -30,7 +61,7 @@ export function getStatsForCol(seqCol: DG.Column, minLength: number, splitter: S
   const uh = UnitsHandler.getOrCreate(seqCol);
   const cats = seqCol.categories;
   const splitted: Iterable<ISeqSplitted> = wu.enumerate(seqCol.getRawData())
-    .map(([catI, rowIdx]) => splitter(cats[catI], (m, jPos) => new SeqMonomer(m)));
+    .map(([catI, rowIdx]) => splitter(cats[catI]));
   return getStats(splitted, minLength);
 }
 
@@ -46,8 +77,7 @@ function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColSt
       sameLength = false;
 
     if (mSeq.length >= minLength) {
-      for (const m of mSeq) {
-        const cm: string = m.canonical;
+      for (const cm of mSeq.canonicals) {
         if (!(cm in freq))
           freq[cm] = 0;
         freq[cm] += 1;
@@ -62,13 +92,13 @@ function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColSt
  * @param getMonomer Source of the {@link seq} string
  * @return {string[]} array of monomers
  */
-export const splitterAsFasta: SplitterFunc = (seq: string, getMonomer: MonomerFunc): ISeqSplitted => {
+export const splitterAsFasta: SplitterFunc = (seq: string): ISeqSplitted => {
   const mmList = wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
     .map((ma: RegExpMatchArray) => {
       return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
     }).toArray();
 
-  return mmList.map((m, jPos) => getMonomer(m, jPos));
+  return new StringListSeqSplitted(mmList);
 
 
   // return new Proxy(splittedList as object, {
@@ -78,8 +108,8 @@ export const splitterAsFasta: SplitterFunc = (seq: string, getMonomer: MonomerFu
   // }) as ISeqSplitted;
 };
 
-export const splitterAsFastaSimple: SplitterFunc = (seq: string, getMonomer: MonomerFunc): ISeqSplitted => {
-  return wu<string>(!!seq ? seq : []).enumerate().map(([m, jPos]) => getMonomer(m, jPos)).toArray();
+export const splitterAsFastaSimple: SplitterFunc = (seq: string): ISeqSplitted => {
+  return !!seq ? new FastaSimpleSeqSplitted(seq) : new StringListSeqSplitted([]);
 };
 
 /** Gets method to split sequence by separator
@@ -88,12 +118,12 @@ export const splitterAsFastaSimple: SplitterFunc = (seq: string, getMonomer: Mon
  * @return {SplitterFunc}
  */
 export function getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
-  return (seq: string, getMonomer: MonomerFunc) => {
+  return (seq: string) => {
     if (!seq)
-      return [];
+      return new StringListSeqSplitted([]);
     else {
       const mmList: string[] = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
-      return mmList.map((m, jPos) => getMonomer(m, jPos));
+      return new StringListSeqSplitted(mmList);
     }
   };
 }
@@ -108,7 +138,7 @@ const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
  * @param {ISeqSource} src Source of the {@link seq} string
  * @return {string[]}
  */
-export const splitterAsHelm: SplitterFunc = (seq: any, getMonomer: MonomerFunc): ISeqSplitted => {
+export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
   helmRe.lastIndex = 0;
   const ea: RegExpExecArray | null = helmRe.exec(seq.toString());
   const inSeq: string | null = ea ? ea[2] : null;
@@ -125,86 +155,8 @@ export const splitterAsHelm: SplitterFunc = (seq: any, getMonomer: MonomerFunc):
   const mmList: string[] = inSeq ? inSeq.split('.') : [];
 
   // TODO: Lazy creation monomer objects
-  return mmList.map(mmPostProcess).map((m, jPos) => getMonomer(m, jPos));
-
-  // return new Proxy(mmList as any, new class implements ProxyHandler<ISeqSplitted> {
-  //   constructor(
-  //     private readonly mmList: string[],
-  //     private readonly src?: ISeqSource
-  //   ) {}
-  //
-  //   get(target: ISeqSplitted, p: string | symbol, receiver: any): any {
-  //     switch (p) {
-  //     case 'length':
-  //       return this.mmList.length;
-  //     case Symbol.iterator: {
-  //       const seqIter = new HelmSeqIterator(this.mmList, this.src); // one-time only
-  //       for (const m of seqIter) {
-  //         const mo = m.original;
-  //         const k = 11;
-  //       }
-  //       return seqIter;
-  //     }
-  //     default: {
-  //       const k = 42;
-  //     }
-  //     }
-  //     const k = 11;
-  //   }
-  //
-  //   has(target: ISeqSplitted, p: string | symbol): boolean {
-  //     const k = 11;
-  //     return true;
-  //   }
-  //
-  //   ownKeys(target: ISeqSplitted): ArrayLike<string | symbol> {
-  //     const k = 1;
-  //     return [];
-  //   }
-  //
-  //   getOwnPropertyDescriptor(target: ISeqSplitted, p: string | symbol): PropertyDescriptor | undefined {
-  //     const k = 11;
-  //     return undefined;
-  //   }
-  // }(mmList.map(mmPostProcess), src));
+  return new StringListSeqSplitted(mmList);
 };
-
-// class HelmSeqIterator implements IterableIterator<ISeqMonomer> {
-//   private readonly smList: (ISeqMonomer)[];
-//
-//   private idx: number = 0;
-//
-//   constructor(
-//     private readonly mmList: string[],
-//     private readonly src?: ISeqSource
-//   ) {
-//     this.smList = new Array<ISeqMonomer>(this.mmList.length); // .fill(undefined);
-//   }
-//
-//   [Symbol.iterator](): IterableIterator<ISeqMonomer> {
-//     this.idx = 0;
-//     return this;
-//   }
-//
-//   next(...args: any[]): IteratorResult<ISeqMonomer, any> {
-//     try {
-//       let sm = this.smList[this.idx];
-//       if (!sm) this.smList[this.idx] = sm = new SeqMonomer(this.mmList[this.idx], this.src);
-//       return {value: sm, done: this.idx === this.mmList.length - 1};
-//     } finally {
-//       this.idx += 1;
-//     }
-//   }
-// }
-
-export class SeqMonomer implements ISeqMonomer {
-  get canonical(): string { return this._canonical ?? this.original; }
-
-  constructor(
-    public readonly original: string,
-    private readonly _canonical?: string
-  ) {}
-}
 
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */
 export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
@@ -290,9 +242,8 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
   if (maxSim > 0) {
     const sim = candidatesSims.find((cs) => cs.similarity === maxSim)!;
     alphabetName = sim.name;
-  } else {
+  } else
     alphabetName = ALPHABET.UN;
-  }
   return alphabetName;
 }
 

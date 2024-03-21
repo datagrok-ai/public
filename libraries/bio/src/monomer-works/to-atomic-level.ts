@@ -100,8 +100,8 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     const seqSS = uh.splitted[rowIdx];
     containsEmptyValues ||= seqSS.length === 0;
-    result[rowIdx] = wu(seqSS)
-      .filter((m) => !uh.isGap(m)).map((m) => m.canonical).toArray();
+    result[rowIdx] = wu(seqSS.canonicals)
+      .filter((cm) => !uh.isGap(cm)).map((cm) => cm).toArray();
   }
 
   if (containsEmptyValues)
