@@ -13,7 +13,6 @@ export class PatternAppLayout {
   static async generateHTML(): Promise<HTMLDivElement> {
     const defaultsProvider = new PatternDefaultsProvider();
     const eventBus = new EventBus(defaultsProvider);
-
     const dataManager = await PatternAppDataManager.getInstance(eventBus);
 
     const leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultsProvider).getLayout();

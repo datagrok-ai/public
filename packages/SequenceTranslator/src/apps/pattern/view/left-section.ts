@@ -363,7 +363,7 @@ class PatternLoadControlsManager {
   private showDeletePatternDialog(): void {
     const dialog = ui.dialog('Delete pattern');
     dialog.add(ui.divText(`Are you sure you want to delete pattern ${this.selectedPattern}?`));
-    dialog.onOK(() => this.eventBus.deletePattern(this.selectedPattern));
+    dialog.onOK(() => this.eventBus.requestPatternDeletion(this.selectedPattern));
     dialog.show();
   }
 }

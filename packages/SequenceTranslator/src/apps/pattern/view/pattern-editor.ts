@@ -121,7 +121,7 @@ class HeaderControls {
 
   private createFirstPtoInputs(): BooleanInput [] {
     return STRANDS.map((strand) => {
-      if (!this.eventBus.isAntiSenseStrandVisible() && strand === STRAND.ANTISENSE)
+      if (!this.eventBus.isAntiSenseStrandActive() && strand === STRAND.ANTISENSE)
         return;
       const initialValue = this.isFirstPtoActive(strand);
       const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue);
@@ -166,7 +166,7 @@ class StrandControls {
   }
 
   private constructControlsPanel(strand: StrandType): HTMLDivElement {
-    if (!this.eventBus.isAntiSenseStrandVisible() && strand === STRAND.ANTISENSE)
+    if (!this.eventBus.isAntiSenseStrandActive() && strand === STRAND.ANTISENSE)
       return ui.div([]);
 
 
@@ -215,7 +215,7 @@ class StrandControls {
       const input = ui.choiceInput<string>('', nucleotide, nucleotideBaseChoices);
       input.onInput(() => {
         const newValue = input.value!;
-        this.eventBus.setNucleotideBase(strand, index, newValue);
+        this.eventBus.setNucleotide(strand, index, newValue);
       });
       return input;
     });

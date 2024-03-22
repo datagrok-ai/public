@@ -28,7 +28,7 @@ export class EventBus {
   private _patternListUpdated$ = new rxjs.Subject<string>();
   private _patternLoadRequested$ = new rxjs.Subject<string>();
   private _patternLoaded$ = new rxjs.Subject<void>();
-  private _uniqueNucleotideBases$ = new rxjs.BehaviorSubject<string[]>([]);
+  private _uniqueNucleotides$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
   private _userSelection$ = new rxjs.BehaviorSubject<string>('');
@@ -40,21 +40,21 @@ export class EventBus {
     this.initializeDefaultState(defaults);
 
     this._nucleotideSequences$.subscribe(() => {
-      this.updateUniqueNucleotideBases();
+      this.updateUniqueNucleotides();
       this.updateSequenceBase();
     });
   }
 
-  private updateUniqueNucleotideBases(): void {
+  private updateUniqueNucleotides(): void {
     const sequences = this._nucleotideSequences$.getValue();
-    const uniqueNucleotideBases = getUniqueNucleotides(sequences);
-    this._uniqueNucleotideBases$.next(uniqueNucleotideBases);
+    const uniqueNucleotides = getUniqueNucleotides(sequences);
+    this._uniqueNucleotides$.next(uniqueNucleotides);
   }
 
   private updateSequenceBase(): void {
     const nucleotideSequences = this._nucleotideSequences$.getValue();
-    const mostFrequentBase = getMostFrequentNucleotide(nucleotideSequences);
-    this._sequenceBase$.next(mostFrequentBase);
+    const mostFrequentNucleotide = getMostFrequentNucleotide(nucleotideSequences);
+    this._sequenceBase$.next(mostFrequentNucleotide);
   }
 
   get nucleotideSequencesChanged$(): rxjs.Observable<NucleotideSequences> {
@@ -97,7 +97,7 @@ export class EventBus {
     this._isAntisenseStrandActive$.next(isActive);
   }
 
-  isAntiSenseStrandVisible(): boolean {
+  isAntiSenseStrandActive(): boolean {
     return this._isAntisenseStrandActive$.getValue();
   }
 
@@ -215,7 +215,7 @@ export class EventBus {
     return this._tableSelection$.getValue();
   }
 
-  deletePattern(patternName: string) {
+  requestPatternDeletion(patternName: string) {
     this._patternDeletionRequested$.next(patternName);
   }
 
@@ -254,17 +254,17 @@ export class EventBus {
     return this._sequenceBase$.getValue();
   }
 
-  uniqueNucleotideBasesChanged$(): rxjs.Observable<string[]> {
+  uniqueNucleotidesChanged$(): rxjs.Observable<string[]> {
     // WARNING: switchMap is necessary to preserve order of events
     const observable = this.patternStateChanged$.pipe(
-      switchMap(() => this._uniqueNucleotideBases$)
+      switchMap(() => this._uniqueNucleotides$)
     );
 
     return observable;
   }
 
-  getUniqueNucleotideBases(): string[] {
-    return this._uniqueNucleotideBases$.getValue();
+  getUniqueNucleotides(): string[] {
+    return this._uniqueNucleotides$.getValue();
   }
 
   get svgSaveRequested$(): rxjs.Observable<void> {
@@ -296,7 +296,7 @@ export class EventBus {
   getPatternConfig(): PatternConfiguration {
     return {
       [L.PATTERN_NAME]: this.getPatternName(),
-      [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntiSenseStrandVisible(),
+      [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntiSenseStrandActive(),
       [G.NUCLEOTIDE_SEQUENCES]: this.getNucleotideSequences(),
       [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: this.getPhosphorothioateLinkageFlags(),
       [G.STRAND_TERMINUS_MODIFICATIONS]: this.getTerminalModifications(),
@@ -311,7 +311,7 @@ export class EventBus {
     this.updatePhosphorothioateLinkageFlags(flags);
   }
 
-  setNucleotideBase(strand: StrandType, index: number, value: string) {
+  setNucleotide(strand: StrandType, index: number, value: string) {
     const sequences = this.getNucleotideSequences();
     sequences[strand][index] = value;
     const labelledModifications = this.getModificationsWithNumericLabels();

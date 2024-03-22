@@ -93,7 +93,7 @@ class NumericLabelVisibilityControls {
   constructor(
     private eventBus: EventBus
   ) {
-    this.eventBus.uniqueNucleotideBasesChanged$().subscribe(() => {
+    this.eventBus.uniqueNucleotidesChanged$().subscribe(() => {
       this.updateContainer();
     });
   }
@@ -112,10 +112,10 @@ class NumericLabelVisibilityControls {
   private createInputs(): HTMLDivElement {
     const inputBases = [] as BooleanInput[];
 
-    const uniqueNucleotideBases = this.eventBus.getUniqueNucleotideBases();
-    const nucleobasesWithoutOverhangs = uniqueNucleotideBases.filter((n) => !isOverhangNucleotide(n));
+    const uniqueNucleotideBases = this.eventBus.getUniqueNucleotides();
+    const nucleotidesWithoutOverhangs = uniqueNucleotideBases.filter((n) => !isOverhangNucleotide(n));
 
-    nucleobasesWithoutOverhangs.forEach((nucleotide: string) => {
+    nucleotidesWithoutOverhangs.forEach((nucleotide: string) => {
       const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
       const input = ui.boolInput(
         nucleotide,
