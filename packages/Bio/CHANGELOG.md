@@ -6,6 +6,12 @@
 
 * #2707: Add original and canonical to monomer
 
+## 2.11.40 (2024-03-22)
+
+### Features
+
+* Polytool rules file handling
+
 ## 2.11.39 (2024-03-11)
 
 ### Bug fixes
