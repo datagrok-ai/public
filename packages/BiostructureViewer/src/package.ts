@@ -430,6 +430,7 @@ export function addContextMenu(event: DG.EventData): void {
 //descriptions: Display ligand poses along the structure
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
 //meta.demoWait: 2000
+//meta.demoSkip: GROK-15250
 //test: demoBioDockingConformations() //wait: 2000 //timeout: 60000
 export async function demoBioDockingConformations(): Promise<void> {
   await demoBio06NoScript();
@@ -441,6 +442,7 @@ export async function demoBioDockingConformations(): Promise<void> {
 //description: View structures PDB in grids
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Proteins
 //meta.demoWait: 2000
+//meta.demoSkip: GROK-15250
 //test: demoBioProteins() //wait: 2000 //timeout: 60000
 export async function demoBioProteins(): Promise<void> {
   const t1: number = window.performance.now();
