@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {debounceTime, skip, map, switchMap} from 'rxjs/operators';
+import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, STRAND, STRANDS} from './const';
 import {PatternDefaultsProvider} from './defaults-provider';
@@ -9,9 +9,10 @@ import {
   NucleotideSequences, PatternConfiguration, PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
 } from './types';
 import {
-  StrandEditingUtils, getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels
+  getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels, StrandEditingUtils
 } from './utils';
 
+/** Event bus for the application, central handler for all pattern state changes */
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
 

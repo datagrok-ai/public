@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 
 import {MAX_SEQUENCE_LENGTH, OTHER_USERS, STRAND, STRANDS, STRAND_LABEL} from '../model/const';
-import {StrandType, PatternNameExistsError, PatternExistsError} from '../model/types';
+import {StrandType} from '../model/types';
 
 import './style.css';
 
@@ -15,8 +15,7 @@ import $ from 'cash-dom';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
-import {PatternEditorDialog} from './pattern-editor';
-import {isDialogOpen} from './pattern-editor';
+import {isDialogOpen, PatternEditorDialog} from './pattern-editor';
 
 export class PatternAppLeftSection {
   constructor(
@@ -33,7 +32,6 @@ export class PatternAppLeftSection {
 
     const editControlsManager = new PatternEditControlsManager(
       this.eventBus,
-      this.dataManager,
       this.defaults
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
@@ -64,7 +62,6 @@ export class PatternAppLeftSection {
 class PatternEditControlsManager {
   constructor(
     private eventBus: EventBus,
-    private dataManager: PatternAppDataManager,
     private defaultState: PatternDefaultsProvider
   ) { }
 
@@ -82,9 +79,6 @@ class PatternEditControlsManager {
     const editPatternButton = this.createEditPatternButton();
 
     return [
-      // ui.h1('Load'),
-      // patternSelectionBlock,
-
       ui.h1('Edit'),
       antisenseStrandToggle,
       senseStrandLengthInput,
@@ -227,6 +221,8 @@ class PatternEditControlsManager {
       patternNameInput.value = this.eventBus.getPatternName();
     });
 
+    patternNameInput.setTooltip('Name under which pattern will be saved');
+
     return patternNameInput.root;
   }
 }
@@ -312,12 +308,16 @@ class PatternLoadControlsManager {
       (userName: string) => this.eventBus.selectUser(userName)
     );
     this.setUserChoiceInputStyle(userChoiceInput);
+    userChoiceInput.setTooltip('Select pattern author');
 
     return userChoiceInput;
   }
 
   private setUserChoiceInputStyle(userChoiceInput: StringInput): void {
-    userChoiceInput.setTooltip('Select pattern author');
+    $(userChoiceInput.input).css({
+      'max-width': '100px',
+      'min-width': '100px',
+    });
     $(userChoiceInput.root).css({
       'padding-right': '30px',
       'padding-left': '30px',
@@ -330,11 +330,10 @@ class PatternLoadControlsManager {
       this.dataManager.getOtherUsersPatternNames();
     this.selectedPattern = patternList[0] || '<default>';
     this.eventBus.requestPatternLoad(this.selectedPattern);
-    const choiceInput = ui.choiceInput(
-      'Pattern',
-      this.selectedPattern,
-      patternList
-    );
+
+    const choiceInput = ui.choiceInput('Pattern', this.selectedPattern, patternList);
+    choiceInput.setTooltip('Select pattern to load');
+
     $(choiceInput.input).css({
       'max-width': '100px',
       'min-width': '100px',
@@ -456,7 +455,6 @@ class TableInputManager {
     if (!table) return;
     if (!this.isTableDisplayed(table))
       this.displayTable(table);
-    // grok.shell.info(`Table ${table?.name} selected`);
   }
 
   private isTableDisplayed(table: DG.DataFrame): boolean {
@@ -495,7 +493,6 @@ class ColumnInputManager {
     const strandColumnInput = this.createStrandColumnInput();
     const senseStrandColumnInput = strandColumnInput[STRAND.SENSE];
     const antisenseStrandColumnInput = strandColumnInput[STRAND.ANTISENSE];
-    // $(antisenseStrandColumnInput).toggle();
 
     const idColumnInput = this.createIdColumnInput();
 
@@ -510,7 +507,7 @@ class ColumnInputManager {
   private createStrandColumnInput(): Record<StrandType, HTMLElement> {
     const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
     const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, (colName: string) => { });
+      const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, () => { });
       return [strand, input.root];
     })) as Record<StrandType, HTMLElement>;
     return strandColumnInput;
@@ -518,8 +515,7 @@ class ColumnInputManager {
 
   private createIdColumnInput(): HTMLElement {
     const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
-    // console.log(`cols:`, columns);
-    const idColumnInput = ui.choiceInput('ID column', columns[0], columns, (colName: string) => { });
+    const idColumnInput = ui.choiceInput('ID column', columns[0], columns, () => { });
     return idColumnInput.root;
   }
 }
