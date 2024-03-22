@@ -6,7 +6,7 @@ sidebar_position: 0
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
 and analysis of more than one statistical outcome variable at a time.
 
-Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It constructs linear model using latent factors that
+Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It constructs linear model using **latent factors** that
 
 * maximally summarize the variation of the predictors
 * maximize correlation with the response variable.
@@ -31,35 +31,21 @@ Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki
 
 ## PLS components
 
+Compute the predictors representation by the latent factors:
 
+1. Open a table.
+2. On the Top Menu, select `ML | Analyze | PLS...`. A dialog opens.
+3. In the dialog, specify
+   * the column with responce variable (in the `Predict` field)
+   * the columns with the predictors (in the `Using` field)
+   * the number of `Components`, i.e. latent factors
 
-## Outputs
+PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)):
 
-### Loadings
+![add-to-workspace](pls_vs_pca.png)
 
-The loadings plot shows correlations between variables. Comparing the correlation loadings to the scores shows how the variables relate to the observations.
+## See also
 
-![loadings.png](loadings.png)
-
-### Reference vs. predicted
-
-A scatter plot and a regression line indicate how the model fits and predicts.
-
-![reference-vs-predicted.png](reference-vs-predicted.png)
-
-### Scores
-
-The scores plot shows object similarities and dissimilarities.
-
-![scores.png](scores.png)
-
-### Regression coefficients
-
-A bar chart illustrates features influence on the predicted value.
-
-![regression-coefficients.png](regression-coefficients.png)
-
-See also:
-
-* [Multivariate analysis](https://en.wikipedia.org/wiki/Multivariate_analysis)
-* [Partial Least Squares (PLS)](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+* [Partial least squares regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+* [Principal component analysis](https://datagrok.ai/help/explore/dim-reduction#pca)
+* [Principal component regression](https://en.wikipedia.org/wiki/Principal_component_regression)
