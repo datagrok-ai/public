@@ -59,7 +59,7 @@ import {BioPackage, BioPackageProperties} from './package-types';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getPolyToolDialog} from './utils/poly-tool/ui';
+import {PolyTool} from './utils/poly-tool/ui';
 import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
@@ -689,10 +689,11 @@ export function convertDialog() {
 //top-menu: Bio | Convert | PolyTool
 //name: polyTool
 //description: Perform cyclization of polymers
-export function polyTool(): void {
+export async function polyTool(): Promise<void> {
+  const polytool = new PolyTool();
   let dialog: DG.Dialog;
   try {
-    dialog = getPolyToolDialog();
+    dialog = await polytool.getPolyToolDialog();
     dialog.show();
   } catch (err: any) {
     grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
