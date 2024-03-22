@@ -20,16 +20,18 @@ Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki
    * the columns with the predictors (in the `Using` field)
    * the number of `Components`, i.e. latent factors
    * `Names` of data samples
-4. Click Run to execute.
-
-You get
-
-* the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot comparing the responce to 
-* the [Regression Coefficients](https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients) bar chart
-* the [Loadings](https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings) scatterplot indicating the impact of each feature on the latent factors
-* the [Scores](https://datagrok.ai/help/explore/multivariate-analysis/plots/scores) scatterplot showing 
+4. Press `Run` to execute. You get
+   * the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot comparing the responce to its prediction
+   * the [Regression Coefficients](https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients) bar chart presenting parameters of the obtained linear model
+   * the [Loadings](https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings) scatterplot indicating the impact of each feature on the latent factors
+   * the [Scores](https://datagrok.ai/help/explore/multivariate-analysis/plots/scores) scatterplot showing data samples similarities/dissimilarities
+   * the [Explained Variance](https://datagrok.ai/help/explore/multivariate-analysis/plots/explained-variance) bar chart measuring how well the latent factors fit source data
 
 ![add-to-workspace](pls.gif)
+
+## PLS components
+
+
 
 ## Outputs
 
