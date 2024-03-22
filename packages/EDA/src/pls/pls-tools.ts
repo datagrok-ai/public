@@ -167,7 +167,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
       const y = '${' + yName + '}';
 
       RADIUS.forEach((r) => {
-        const formula1 = x + ` = sqrt(${r*r} - ${y} * ${y})`;
+        const formula1 = y + ` = sqrt(${r*r} - ${x} * ${x})`;
         lines.push({
           type: 'line',
           formula: formula1,

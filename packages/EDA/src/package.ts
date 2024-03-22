@@ -71,7 +71,7 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
   const pcaTable = await computePCA(table, features, components, center, scale);
-  addPrefixToEachColumnName('PCA', pcaTable.columns);
+  addPrefixToEachColumnName('PC', pcaTable.columns);
 
   if (table.id === null) // table is loaded from a local file
     grok.shell.addTableView(pcaTable);
