@@ -8,7 +8,9 @@ import {PatternDefaultsProvider} from './defaults-provider';
 import {
   NucleotideSequences, PatternConfiguration, PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
 } from './types';
-import {StrandEditingUtils} from './utils';
+import {
+  StrandEditingUtils, getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels
+} from './utils';
 
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
@@ -43,27 +45,15 @@ export class EventBus {
   }
 
   private updateUniqueNucleotideBases(): void {
-    const nucleotideSequences = this._nucleotideSequences$.getValue();
-    const uniqueNucleotideBases = new Set<string>();
-    STRANDS.forEach((strand) => {
-      nucleotideSequences[strand].forEach((nucleotide: string) => {
-        uniqueNucleotideBases.add(nucleotide);
-      });
-    });
-    this._uniqueNucleotideBases$.next(Array.from(uniqueNucleotideBases).sort());
+    const sequences = this._nucleotideSequences$.getValue();
+    const uniqueNucleotideBases = getUniqueNucleotides(sequences);
+    this._uniqueNucleotideBases$.next(uniqueNucleotideBases);
   }
 
   private updateSequenceBase(): void {
-    // Compute the most frequent nucleotide base
     const nucleotideSequences = this._nucleotideSequences$.getValue();
-    const sequenceBase = Object.values(nucleotideSequences).flat().reduce((acc, nucleotide) => {
-      acc[nucleotide] = (acc[nucleotide] || 0) + 1;
-      return acc;
-    }, {} as {[key: string]: number});
-
-    const maxBase = Object.entries(sequenceBase).reduce((a, b) => a[1] > b[1] ? a : b, ['', 0])[0];
-
-    this._sequenceBase$.next(maxBase);
+    const mostFrequentBase = getMostFrequentNucleotide(nucleotideSequences);
+    this._sequenceBase$.next(mostFrequentBase);
   }
 
   get nucleotideSequencesChanged$(): rxjs.Observable<NucleotideSequences> {
@@ -192,7 +182,7 @@ export class EventBus {
   }
 
   updateModificationsWithNumericLabels(modificationsWithNumericLabels: string[]) {
-    const newValue = Array.from(new Set(modificationsWithNumericLabels)).sort();
+    const newValue = getUniqueNucleotidesWithNumericLabels(modificationsWithNumericLabels);
     this._modificationsWithNumericLabels$.next(newValue);
   }
 
@@ -264,7 +254,7 @@ export class EventBus {
   }
 
   uniqueNucleotideBasesChanged$(): rxjs.Observable<string[]> {
-    // WARNING: switchMap is used to prevent race conditions
+    // WARNING: switchMap is necessary to preserve order of events
     const observable = this.patternStateChanged$.pipe(
       switchMap(() => this._uniqueNucleotideBases$)
     );

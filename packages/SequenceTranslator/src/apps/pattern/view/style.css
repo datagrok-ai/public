@@ -1,1 +1,5 @@
 /* Naming convention: class names should begin with st and app name to avoid naming collitions */
+
+.st-pattern-text-input > textarea {
+  resize: none;
+}

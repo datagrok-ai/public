@@ -39,7 +39,7 @@ export class PatternEditorDialog {
       $(editorBody).append(header, controls);
     });
 
-    const dialog = ui.dialog('Tweak pattern')
+    const dialog = ui.dialog('Edit strands')
       .add(editorBody)
       .onOK(() => {})
       .onCancel(() => this.resetToInitialState());
@@ -206,7 +206,10 @@ class StrandControls {
   }
 
   private createNucleobaseInputs(strand: StrandType): StringInput[] {
-    const nucleotideBaseChoices: string[] = Object.keys(AXOLABS_STYLE_MAP).sort();
+    const nucleotideBaseChoices: string[] = Object.keys(AXOLABS_STYLE_MAP)
+      .sort(
+        (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+      );
     const nucleotides = this.eventBus.getNucleotideSequences()[strand];
     const choiceInputs = nucleotides.map((nucleotide, index) => {
       const input = ui.choiceInput<string>('', nucleotide, nucleotideBaseChoices);

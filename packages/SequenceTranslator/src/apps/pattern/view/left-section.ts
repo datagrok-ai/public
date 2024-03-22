@@ -7,6 +7,8 @@ import * as ui from 'datagrok-api/ui';
 import {MAX_SEQUENCE_LENGTH, OTHER_USERS, STRAND, STRANDS, STRAND_LABEL} from '../model/const';
 import {StrandType, PatternNameExistsError, PatternExistsError} from '../model/types';
 
+import './style.css';
+
 import {NumberInput, StringInput} from './types';
 
 import $ from 'cash-dom';
@@ -24,30 +26,42 @@ export class PatternAppLeftSection {
   ) { };
 
   getLayout(): HTMLDivElement {
-    const patternControlsManager = new PatternControlsManager(
+    const loadControlsManager = new PatternLoadControlsManager(
+      this.eventBus,
+      this.dataManager
+    );
+
+    const editControlsManager = new PatternEditControlsManager(
       this.eventBus,
       this.dataManager,
       this.defaults
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
 
-    const patternConstrolsBlock = patternControlsManager.createUIComponents();
-    const tableControlsBlock = tableControlsManager.createUIComponents();
+    const loadControls = loadControlsManager.createUIComponents();
+    const editControls = editControlsManager.createUIComponents();
+    const tableControls = tableControlsManager.createUIComponents();
 
-    const layout = ui.box(
-      ui.div([
-        ...patternConstrolsBlock,
-        ...tableControlsBlock
-      ],
-      'ui-form'
-      ),
-      {style: {maxWidth: '450px'}}
-    );
+    const loadControlsContainer = ui.div(loadControls);
+    $(loadControlsContainer).css({'padding-bottom': '20px'});
+
+    const form = ui.div([
+      ...editControls,
+      ...tableControls
+    ], 'ui-form');
+
+    const container = ui.div([
+      loadControlsContainer,
+      form
+    ]);
+    $(container).css({'padding': '25px'});
+
+    const layout = ui.box(container, {style: {'maxWidth': '450px'}});
     return layout;
   }
 }
 
-class PatternControlsManager {
+class PatternEditControlsManager {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager,
@@ -63,15 +77,13 @@ class PatternControlsManager {
 
     const sequenceBaseInput = this.createSequenceBaseInput().root;
     const patternCommentInput = this.createPatternCommentInput().root;
-    const patternSelectionBlock = this.createPatternSelectionBlock();
     const patternNameInputBlock = this.createPatternNameInputBlock();
 
     const editPatternButton = this.createEditPatternButton();
-    // const savePatternButton = this.createSavePatternButton();
 
     return [
-      ui.h1('Select'),
-      patternSelectionBlock,
+      // ui.h1('Load'),
+      // patternSelectionBlock,
 
       ui.h1('Edit'),
       antisenseStrandToggle,
@@ -82,14 +94,13 @@ class PatternControlsManager {
       patternCommentInput,
       ui.buttonsInput([
         editPatternButton,
-        // savePatternButton,
       ]),
     ];
   }
 
   private createEditPatternButton(): HTMLButtonElement {
     const editPatternButton = ui.button(
-      'Tweak',
+      'Edit strands',
       () => {
         if (!isDialogOpen)
           new PatternEditorDialog(this.eventBus).open();
@@ -188,6 +199,8 @@ class PatternControlsManager {
       ''
     );
 
+    $(patternCommentInput.root).addClass('st-pattern-text-input');
+
     patternCommentInput.onInput(
       () => this.eventBus.updateComment(patternCommentInput.value!)
     );
@@ -199,24 +212,26 @@ class PatternControlsManager {
     return patternCommentInput;
   }
 
-  private createPatternSelectionBlock(): HTMLDivElement {
-    const patternChoiceControls = new PatternChoiceControls(
-      this.eventBus,
-      this.dataManager
-    );
-    return patternChoiceControls.getControlsContainer();
-  }
-
   private createPatternNameInputBlock(): HTMLElement {
-    const patternNameControls = new PatternNameControls(
-      this.eventBus,
-      this.dataManager
+    const patternNameInput = ui.textInput(
+      'Pattern name',
+      this.eventBus.getPatternName()
     );
-    return patternNameControls.createPatternNameInputBlock();
+
+    $(patternNameInput.root).addClass('st-pattern-text-input');
+
+    patternNameInput.onInput(
+      () => this.eventBus.updatePatternName(patternNameInput.value)
+    );
+    this.eventBus.patternLoaded$.subscribe(() => {
+      patternNameInput.value = this.eventBus.getPatternName();
+    });
+
+    return patternNameInput.root;
   }
 }
 
-class PatternChoiceControls {
+class PatternLoadControlsManager {
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager
@@ -244,45 +259,46 @@ class PatternChoiceControls {
     return this.eventBus.getSelectedUser() !== OTHER_USERS;
   }
 
-  getControlsContainer(): HTMLDivElement {
-    const patternInputs = this.getPatternInputs();
-
-    const container = ui.div([patternInputs.root]);
-    this.eventBus.patternListUpdated$.subscribe(() => this.updatePatternChoiceInputContainer(container));
-
-    return container;
+  createUIComponents(): HTMLElement[] {
+    const inputsContainer = this.getPatternInputsContainer();
+    return [
+      ui.h1('Load'),
+      inputsContainer,
+    ];
   }
 
-  private getPatternInputs(): StringInput {
+  private getPatternInputsContainer(): HTMLDivElement {
+    const inputsContainer = ui.divH(this.getPatternInputs());
+
+    this.eventBus.patternListUpdated$.subscribe(() => {
+      $(inputsContainer).empty();
+      $(inputsContainer).append(this.getPatternInputs());
+    });
+
+    return inputsContainer;
+  }
+
+  private getPatternInputs(): HTMLElement[] {
     const userChoiceInput = this.createUserChoiceInput();
-    const patternChoiceInput = this.createPatternChoiceInput();
-
-    const patternInputContainer = ui.div([patternChoiceInput.input]);
-    this.eventBus.userSelection$.subscribe(() => {
-      $(patternInputContainer).empty();
-      patternInputContainer.append(this.createPatternChoiceInput().input);
-    });
-
-    patternChoiceInput.root.append(
-      userChoiceInput.input,
-      patternInputContainer
-    );
-
-    this.setPatternChoiceInputStyle(patternChoiceInput);
-
+    const patternChoiceInputContainer = this.createPatternChoiceInputContainer();
     const deletePatternButton = this.createDeletePatternButton();
-    this.eventBus.userSelection$.subscribe(() => {
-      $(deletePatternButton).toggle(this.isCurrentUserSelected());
-    });
-    patternChoiceInput.addOptions(deletePatternButton);
 
-    return patternChoiceInput;
+    return [
+      userChoiceInput.root,
+      patternChoiceInputContainer,
+      deletePatternButton
+    ];
   }
 
-  private setPatternChoiceInputStyle(patternChoiceInput: StringInput): void {
-    patternChoiceInput.setTooltip('Select and apply pattern');
-    $(patternChoiceInput.input).css('max-width', '142px');
-    patternChoiceInput.input.style.marginLeft = '12px';
+  private createPatternChoiceInputContainer(): HTMLDivElement {
+    const patternChoiceInput = this.createPatternChoiceInput();
+    const patternChoiceInputContainer = ui.div([patternChoiceInput.root]);
+    this.eventBus.userSelection$.subscribe(() => {
+      $(patternChoiceInputContainer).empty();
+      $(patternChoiceInputContainer).append(this.createPatternChoiceInput().root);
+    });
+
+    return patternChoiceInputContainer;
   }
 
   private createUserChoiceInput(): StringInput {
@@ -290,7 +306,7 @@ class PatternChoiceControls {
     const possibleValues = [currentUser + ' (me)', OTHER_USERS];
 
     const userChoiceInput = ui.choiceInput(
-      '',
+      'Author',
       this.eventBus.getSelectedUser(),
       possibleValues,
       (userName: string) => this.eventBus.selectUser(userName)
@@ -302,7 +318,10 @@ class PatternChoiceControls {
 
   private setUserChoiceInputStyle(userChoiceInput: StringInput): void {
     userChoiceInput.setTooltip('Select pattern author');
-    $(userChoiceInput.input).css('max-width', '140px');
+    $(userChoiceInput.root).css({
+      'padding-right': '30px',
+      'padding-left': '30px',
+    });
   }
 
   private createPatternChoiceInput(): StringInput {
@@ -312,7 +331,7 @@ class PatternChoiceControls {
     this.selectedPattern = patternList[0] || '<default>';
     this.eventBus.requestPatternLoad(this.selectedPattern);
     const choiceInput = ui.choiceInput(
-      'Load pattern',
+      'Pattern',
       this.selectedPattern,
       patternList
     );
@@ -320,13 +339,14 @@ class PatternChoiceControls {
       'max-width': '100px',
       'min-width': '100px',
     });
+
     choiceInput.onInput(
       () => this.eventBus.requestPatternLoad(choiceInput.value!)
     );
     return choiceInput;
   }
 
-  private createDeletePatternButton(): HTMLDivElement {
+  private createDeletePatternButton(): HTMLButtonElement {
     const button = ui.button(
       ui.iconFA('trash-alt'),
       () => this.showDeletePatternDialog()
@@ -334,7 +354,11 @@ class PatternChoiceControls {
 
     ui.tooltip.bind(button, 'Delete pattern from user storage');
 
-    return ui.div([button], 'ui-input-options');
+    this.eventBus.userSelection$.subscribe(() => {
+      $(button).toggle(this.isCurrentUserSelected());
+    });
+
+    return button;
   }
 
   private showDeletePatternDialog(): void {
@@ -342,39 +366,6 @@ class PatternChoiceControls {
     dialog.add(ui.divText(`Are you sure you want to delete pattern ${this.selectedPattern}?`));
     dialog.onOK(() => this.eventBus.deletePattern(this.selectedPattern));
     dialog.show();
-  }
-
-  private updatePatternChoiceInputContainer(container: HTMLElement): void {
-    const patternInputs = this.getPatternInputs();
-    $(container).empty();
-    container.append(patternInputs.root);
-  }
-}
-
-class PatternNameControls {
-  constructor(
-    private eventBus: EventBus,
-    private dataManager: PatternAppDataManager
-  ) { }
-
-  createPatternNameInputBlock(): HTMLElement {
-    const patternNameInput = ui.textInput(
-      'Pattern name',
-      this.eventBus.getPatternName()
-    );
-
-    patternNameInput.onInput(
-      () => this.eventBus.updatePatternName(patternNameInput.value)
-    );
-    this.eventBus.patternLoaded$.subscribe(() => {
-      patternNameInput.value = this.eventBus.getPatternName();
-    });
-
-    // const savePatternButton = this.createSavePatternButton();
-
-    // patternNameInput.addOptions(savePatternButton);
-    // patternNameInput.setTooltip('Name of the pattern');
-    return patternNameInput.root;
   }
 }
 

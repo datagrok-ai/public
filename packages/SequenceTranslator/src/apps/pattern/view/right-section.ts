@@ -5,6 +5,7 @@ import {SvgDisplayManager} from './svg-utils/svg-display-manager';
 
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
+import {isOverhangNucleotide} from '../model/utils';
 import {StrandType, PatternNameExistsError, PatternExistsError} from '../model/types';
 
 import $ from 'cash-dom';
@@ -110,8 +111,11 @@ class NumericLabelVisibilityControls {
 
   private createInputs(): HTMLDivElement {
     const inputBases = [] as BooleanInput[];
+
     const uniqueNucleotideBases = this.eventBus.getUniqueNucleotideBases();
-    uniqueNucleotideBases.forEach((nucleotide: string) => {
+    const nucleobasesWithoutOverhangs = uniqueNucleotideBases.filter((n) => !isOverhangNucleotide(n));
+
+    nucleobasesWithoutOverhangs.forEach((nucleotide: string) => {
       const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
       const input = ui.boolInput(
         nucleotide,

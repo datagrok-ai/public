@@ -2,10 +2,41 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
+import {NucleotideSequences} from './types';
 
-export function isOverhangNucleotide(modification: string): boolean {
-  return modification.endsWith('(o)');
+
+export function isOverhangNucleotide(nucleotide: string): boolean {
+  return nucleotide.endsWith('(o)');
 }
+
+
+export function getUniqueNucleotides(sequences: NucleotideSequences): string[] {
+  const nucleotides = Object.values(sequences).flat();
+  return getUniqueSortedStrings(nucleotides);
+}
+
+
+export function getUniqueNucleotidesWithNumericLabels(
+  modificationsWithNumericLabels: string[]
+): string[] {
+  const uniqueLabelledNucleotides = getUniqueSortedStrings(modificationsWithNumericLabels);
+
+  return uniqueLabelledNucleotides.filter((nucleotide) => !isOverhangNucleotide(nucleotide));
+}
+
+
+export function getMostFrequentNucleotide(sequences: NucleotideSequences): string {
+  const nucleotideToFrequencyMap = Object.values(sequences).flat().reduce((acc, nucleotide) => {
+    acc[nucleotide] = (acc[nucleotide] || 0) + 1;
+    return acc;
+  }, {} as {[key: string]: number});
+
+  const mostFrequentNucleotide = Object.entries(nucleotideToFrequencyMap)
+    .reduce((a, b) => a[1] > b[1] ? a : b, ['', 0])[0];
+
+  return mostFrequentNucleotide;
+}
+
 
 export function generateExample(sequenceLength: number, sequenceBasis: string): string {
   const AXOLABS_MAP = AXOLABS_STYLE_MAP;
@@ -127,7 +158,9 @@ export namespace StrandEditingUtils {
     sequenceBase: string
   ): {nucleotides: string[], ptoFlags: boolean[]} {
     const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
-    const nucleotides = originalNucleotides.concat(new Array(newStrandLength - originalNucleotides.length).fill(sequenceBase));
+    const nucleotides = originalNucleotides.concat(
+      new Array(newStrandLength - originalNucleotides.length).fill(sequenceBase)
+    );
 
     const appendedFlagsLength = (originalNucleotides.length === 0) ? newStrandLength + 1 : appendedNucleotidesLength;
     const ptoFlags = originalPTOFlags.concat(
@@ -136,4 +169,13 @@ export namespace StrandEditingUtils {
 
     return {nucleotides, ptoFlags};
   }
+}
+
+function getUniqueSortedStrings(array: string[]): string[] {
+  const uniqueStrings = Array.from(new Set(array));
+  const sorted = Array.from(uniqueStrings).sort(
+    (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+  );
+
+  return sorted;
 }
