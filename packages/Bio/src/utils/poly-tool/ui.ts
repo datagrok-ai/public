@@ -4,9 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {addTransformedColumn} from './transformation';
-
-const RULE_PATH = 'System:AppData/Bio/polytool_rules/';
-const RULES_STORAGE_NAME = 'Polytools';
+import {RULES_PATH, RULES_STORAGE_NAME} from './transformation';
 
 export type UserRuleSettings = {
   included: string[],
@@ -14,7 +12,7 @@ export type UserRuleSettings = {
 }
 
 async function getAllAvailableRuleFiles(): Promise<string[]> {
-  const list = await grok.dapi.files.list(RULE_PATH);
+  const list = await grok.dapi.files.list(RULES_PATH);
   const paths = list.map((fileInfo) => {
     return fileInfo.fullPath;
   });
@@ -47,7 +45,7 @@ export class PolyTool {
     this.userRuleSettings = {included: [], notIncluded: []};
   }
 
-  private updateRulesSelectionStatus(ruleFileName: string, isSelected: boolean) : void {
+  private updateRulesSelectionStatus(ruleFileName: string, isSelected: boolean): void {
     const isRuleFileSelected = this.userRuleSettings.included.includes(ruleFileName);
 
     if (!isRuleFileSelected && isSelected) {
@@ -69,18 +67,18 @@ export class PolyTool {
     setUserLibSettings(this.userRuleSettings);
   }
 
-  private getAddButton() : HTMLButtonElement {
+  private getAddButton(): HTMLButtonElement {
     return ui.button('ADD RULES', () => {
       DG.Utils.openFile({
         accept: '.csv',
         open: async (selectedFile) => {
           const content = await selectedFile.text();
-          await grok.dapi.files.writeAsText(RULE_PATH + `${selectedFile.name}`, content);
+          await grok.dapi.files.writeAsText(RULES_PATH + `${selectedFile.name}`, content);
           this.updateRulesSelectionStatus(selectedFile.name, false);
           const cb = ui.boolInput(
             selectedFile.name,
             false,
-            (isSelected: boolean) => this.updateRulesSelectionStatus(RULE_PATH + `${selectedFile.name}`, isSelected)
+            (isSelected: boolean) => this.updateRulesSelectionStatus(RULES_PATH + `${selectedFile.name}`, isSelected)
           );
           this.ruleFilesInputs.append(cb.root);
         },
@@ -97,7 +95,7 @@ export class PolyTool {
       const ruleFileName = this.ruleFiles[i];
       const isRuleFileSelected = this.userRuleSettings.included.includes(ruleFileName);
       const cb = ui.boolInput(
-        ruleFileName.replace(RULE_PATH, ''),
+        ruleFileName.replace(RULES_PATH, ''),
         isRuleFileSelected,
         (isSelected: boolean) => this.updateRulesSelectionStatus(ruleFileName, isSelected)
       );
@@ -141,8 +139,7 @@ export class PolyTool {
           return;
         }
         addTransformedColumn(molCol!, generateHelmChoiceInput.value!, this.userRuleSettings.included);
-      }
-      );
+      });
 
     return this.dialog;
   }

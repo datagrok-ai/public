@@ -4,12 +4,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {_package} from '../../package';
-import {HELM_WRAPPER} from './const';
-import {getMolColumnFromHelm} from '../helm-to-molfile';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-const RULE_PATH = 'System:AppData/Bio/polytool_rules/';
+import {HELM_WRAPPER} from './const';
+import {getMolColumnFromHelm} from '../helm-to-molfile';
+
+export const RULES_PATH = 'System:AppData/Bio/polytool-rules/';
+export const RULES_STORAGE_NAME = 'Polytool';
+
 
 type ConnectionData = {
   allPos1: number[],
@@ -28,7 +30,7 @@ type Rule = {
   secondR: number
 }
 
-function addCommonTags(col: DG.Column):void {
+function addCommonTags(col: DG.Column): void {
   col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
   col.setTag('aligned', ALIGNMENT.SEQ);
   col.setTag('alphabet', ALPHABET.PT);
@@ -54,7 +56,7 @@ class TransformationCommon {
   protected getLinkedPositions(helm: string, rules: Rule[]): [number, number][] {
     const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
     const monomers = seq.split('.').map((m) => { return m.replace('[', '').replace(']', ''); });
-    const result:[number, number][] = new Array<[number, number]>(rules.length);
+    const result: [number, number][] = new Array<[number, number]>(rules.length);
 
     for (let i = 0; i < rules.length; i++) {
       let firstFound = false;
@@ -167,7 +169,7 @@ class TransformationCommon {
       allAttaches2.push(rules[i].secondR);
 
       helm = HELM_WRAPPER.LEFT;
-      for (let i = 0; i < monomers.length; i ++) {
+      for (let i = 0; i < monomers.length; i++) {
         if (i != monomers.length - 1)
           helm = helm + monomers[i] + '.';
         else
@@ -225,12 +227,12 @@ export async function addTransformedColumn(
   const uh = UnitsHandler.getOrCreate(molColumn);
   const sourceHelmCol = uh.convert(NOTATION.HELM);
   const pt = PolymerTransformation.getInstance(sourceHelmCol);
-  const fileSource = new DG.FileSource(RULE_PATH);
+  const fileSource = new DG.FileSource(RULES_PATH);
 
   const rulesRawFrames: DG.DataFrame[] = new Array<DG.DataFrame>(ruleFiles.length);
 
   for (let i = 0; i < ruleFiles.length; i++) {
-    const rulesRaw = await fileSource.readAsText(ruleFiles[i].replace(RULE_PATH, ''));
+    const rulesRaw = await fileSource.readAsText(ruleFiles[i].replace(RULES_PATH, ''));
     rulesRawFrames[i] = DG.DataFrame.fromCsv(rulesRaw);
   }
 
