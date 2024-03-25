@@ -152,7 +152,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
-    help: LINK.MODEL,
+    help: LINK.SCORES,
     showViewerFormulaLines: true,
   });
 

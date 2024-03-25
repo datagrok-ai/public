@@ -51,8 +51,9 @@ export enum LINK {
   MVA = 'https://datagrok.ai/help/explore/multivariate-analysis/pls',
   MODEL = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference',
   COEFFS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients',
-  LOADINGS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/correlation-loadings',
+  LOADINGS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings',
   EXPL_VARS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/explained-variance',
+  SCORES = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/scores',
 }
 
 /** Components consts */
