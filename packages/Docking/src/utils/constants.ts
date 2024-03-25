@@ -10,6 +10,7 @@ export let BINDING_ENERGY_COL_UNUSED = '';
 export let POSE_COL = 'pose';
 export let POSE_COL_UNUSED = '';
 export const ERROR_COL_NAME = 'error';
+export const ERROR_MESSAGE = 'Error log';
 
 export function setPose(value: string) {
     POSE_COL_UNUSED = value;
