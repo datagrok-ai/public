@@ -571,6 +571,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (data.series?.some((series) => series.points.length === 0))
       return;
 
+    if (data.series?.some((series) => series.points.every((point) => point.x === 0)))
+      return;
+
+    if (data.series?.some((series) => series.points.every((point) => point.y === 0)))
+      return;
+
     this.renderCurves(g, x, y, w, h, data);
   }
 
