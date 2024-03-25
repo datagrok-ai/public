@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.40.0 (WIP)
+
+### Features
+
+* #2707: Add original and canonical to ISeqSplitted
+
 ## 5.39.29 (2024-03-07)
 
 ### Features

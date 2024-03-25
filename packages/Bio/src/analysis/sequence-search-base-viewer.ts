@@ -14,7 +14,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
   fingerprintChoices = ['Morgan', 'Pattern'];
-  moleculeColumn?: DG.Column | null;
+  moleculeColumn?: DG.Column<string>;
   moleculeColumnName: string;
   initialized: boolean = false;
   tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet];
@@ -51,7 +51,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
         .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe((_: any) => this.render(false)));
-      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) as DG.Column<string>;
       this.moleculeColumnName = this.moleculeColumn?.name!;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
     }

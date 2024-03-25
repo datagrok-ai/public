@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UnitsHandler} from '../units-handler';
 import {CandidateType} from './types';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
@@ -40,6 +39,9 @@ export const enum TAGS {
 export const positionSeparator: string = ', ';
 
 export const monomerRe: RegExp = /(?:\[([A-Za-z0-9_\-,()]+)\])|([A-Za-z\-])/g;
+
+export const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+export const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
 
 export const Alphabets = new class {
   fasta = {

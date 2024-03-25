@@ -7,7 +7,7 @@ import {
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME,
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
-import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';
+import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
 import {UnitsHandler} from '../utils/units-handler';
 import {splitAlignedSequences} from '../utils/splitter';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -17,21 +17,21 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
   const monomerSymbolDict: { [key: string]: number } = {};
   const uh = UnitsHandler.getOrCreate(col);
-  const splitterFunc: SplitterFunc = uh.getSplitter();
   const encodedStringArray = [];
-  for (let i = 0; i < col.length; ++i) {
+  const rowCount = col.length;
+  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     let encodedMonomerStr = '';
-    const monomers = splitterFunc(col.get(i));
-    for (const m of monomers) {
-      if (!monomerSymbolDict[m]) {
+    const monomers = uh.splitted[rowIdx];
+    for (const cm of monomers.canonicals) {
+      if (!monomerSymbolDict[cm]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
           return null;
         }
-        monomerSymbolDict[m] = encodeSymbol;
+        monomerSymbolDict[cm] = encodeSymbol;
         encodeSymbol++;
       }
-      encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[m]);
+      encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[cm]);
     }
     encodedStringArray.push(encodedMonomerStr);
   }
@@ -40,21 +40,21 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
 
 export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
   const uh = UnitsHandler.getOrCreate(col);
-  const splitter: SplitterFunc = uh.getSplitter();
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
-  for (let i = 0; i < col.length; ++i) {
-    const macroMolecule = col.get(i);
-    const monomers = splitter(macroMolecule);
+  const rowCount = col.length;
+  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+    const monomers = uh.splitted[rowIdx];
     const molFilesForSeq = [];
     for (let j = 0; j < monomers.length; ++j) {
-      if (monomers[j]) {
-        if (!monomersDict[monomers[j]]) {
-          grok.shell.warning(`Monomer ${monomers[j]} is missing in HELM library. Structure cannot be created`);
+      const cm = monomers.getCanonical(j);
+      if (cm) {
+        if (!monomersDict[cm]) {
+          grok.shell.warning(`Monomer ${cm} is missing in HELM library. Structure cannot be created`);
           return null;
         }
         // what is the reason of double conversion?
-        molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[monomers[j]])));
+        molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[cm])));
       }
     }
     molFiles.push(molFilesForSeq);
@@ -64,19 +64,18 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
 
 export function getMolfilesFromSingleSeq(cell: DG.Cell, monomersLibObject: any[]): any[][] | null {
   const uh = UnitsHandler.getOrCreate(cell.column);
-  const splitterFunc: SplitterFunc = uh.getSplitter();
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
-  const macroMolecule = cell.value;
-  const monomers = splitterFunc(macroMolecule);
+  const monomers = uh.splitted[cell.rowIndex];
   const molFilesForSeq = [];
   for (let j = 0; j < monomers.length; ++j) {
-    if (monomers[j]) {
-      if (!monomersDict[monomers[j]]) {
-        grok.shell.warning(`Monomer ${monomers[j]} is missing in HELM library. Structure cannot be created`);
+    const cm = monomers.getCanonical(j);
+    if (cm) {
+      if (!monomersDict[cm]) {
+        grok.shell.warning(`Monomer ${cm} is missing in HELM library. Structure cannot be created`);
         return null;
       }
-      molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[monomers[j]])));
+      molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[cm])));
     }
   }
   molFiles.push(molFilesForSeq);
@@ -158,31 +157,35 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
  * @param {DG.Column<string>[]} positionColumns List of position columns containing monomers.
  * @param {string[]} referenceSequence Reference sequence.
  * @returns {Promise<DG.Column<number>>} Column with similarity values. */
+
+/* eslint-disable max-len */
 export async function sequenceChemSimilarity(sequenceCol: DG.Column<string>, referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
 export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[], referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
-export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[] | DG.Column<string>,
-  referenceSequence: ISeqSplitted): Promise<DG.Column<number>> {
+export async function sequenceChemSimilarity(
+  positionColumns: DG.Column<string>[] | DG.Column<string>, referenceSequence: ISeqSplitted
+): Promise<DG.Column<number>> {
+  /* eslint-enable max-len */
   if (positionColumns instanceof DG.Column)
     positionColumns = splitAlignedSequences(positionColumns).columns.toList();
 
   const libHelper = await getMonomerLibHelper();
   const monomerLib = libHelper.getBioLib();
   // const smilesCols: DG.Column<string>[] = new Array(monomerCols.length);
-  const rawCols: {categories: string[], data: Uint32Array, emptyIndex: number}[] = new Array(positionColumns.length);
+  const rawCols: { categories: string[], data: Uint32Array, emptyIndex: number }[] = new Array(positionColumns.length);
   const rowCount = positionColumns[0].length;
   const totalSimilarity = new Float32Array(rowCount);
 
   // Calculate base similarity
   for (let position = 0; position < positionColumns.length; ++position) {
-    const referenceMonomer = referenceSequence[position];
-    const referenceMol = monomerLib.getMonomer('PEPTIDE', referenceMonomer)?.smiles ?? '';
+    const referenceMonomerCanonical = referenceSequence.getCanonical(position);
+    const referenceMol = monomerLib.getMonomer('PEPTIDE', referenceMonomerCanonical)?.smiles ?? '';
 
     const monomerCol = positionColumns[position];
     const monomerColData = monomerCol.getRawData() as Uint32Array;
     const monomerColCategories = monomerCol.categories;
     const emptyCategoryIdx = monomerColCategories.indexOf('');
     rawCols[position] = {categories: monomerColCategories, data: monomerColData, emptyIndex: emptyCategoryIdx};
-    if (typeof referenceMonomer === 'undefined')
+    if (typeof referenceMonomerCanonical === 'undefined')
       continue;
 
     // Calculating similarity for
@@ -192,11 +195,12 @@ export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[
     const similarityCol = (await grok.chem.getSimilarities(molCol, referenceMol))!;
     const similarityColData = similarityCol.getRawData();
 
+    // TODO: Use UnitsHandler to check whether monomer is a gap
     for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
       const monomerCategoryIdx = monomerColData[rowIdx];
-      totalSimilarity[rowIdx] += referenceMonomer !== '' && monomerCategoryIdx !== emptyCategoryIdx ?
+      totalSimilarity[rowIdx] += referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx ?
         similarityColData[monomerCategoryIdx] :
-        referenceMonomer === '' && monomerCategoryIdx === emptyCategoryIdx ? 1 : 0;
+        referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx ? 1 : 0;
     }
   }
 
@@ -217,15 +221,17 @@ export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[
   return similarityCol;
 }
 
+/* eslint-disable max-len */
 /** Calculates chemical similarity between each pair of monomers.
  * @param {string[]} monomerSet Set of unique monomers.
  * @returns {Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}>} Ojbect containing similarity scoring matrix and monomer to index mapping. */
 export async function calculateMonomerSimilarity(monomerSet: string[],
-): Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}> {
+): Promise<{ scoringMatrix: number[][], alphabetIndexes: { [monomerId: string]: number } }> {
+  /* eslint-enable max-len */
   const libHelper = await getMonomerLibHelper();
   const monomerLib = libHelper.getBioLib();
   const scoringMatrix: number[][] = [];
-  const alphabetIndexes: {[id: string]: number} = {};
+  const alphabetIndexes: { [id: string]: number } = {};
   const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
   const monomerMoleculesCol = DG.Column.fromStrings('smiles', monomerMolecules);
 
@@ -244,12 +250,12 @@ export async function calculateMonomerSimilarity(monomerSet: string[],
 }
 
 export async function getMonomerSubstitutionMatrix(monomerSet: string[], fingerprintType: string = 'Morgan',
-): Promise<{scoringMatrix: number[][], alphabetIndexes: {[monomerId: string]: number}}> {
+): Promise<{ scoringMatrix: number[][], alphabetIndexes: { [monomerId: string]: number } }> {
   const libHelper = await getMonomerLibHelper();
   const monomerLib = libHelper.getBioLib();
   const scoringMatrix: number[][] =
     new Array(monomerSet.length).fill(0).map(() => new Array(monomerSet.length).fill(0));
-  const alphabetIndexes: {[id: string]: number} = {};
+  const alphabetIndexes: { [id: string]: number } = {};
   const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
   const fingerprintsFunc = DG.Func.find({package: 'Chem', name: 'getFingerprints'})[0];
   if (!fingerprintsFunc) {

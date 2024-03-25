@@ -132,6 +132,7 @@ async function requestAlignedObjects(
     }
     responseObj = await response.json();
   } else {
+    // @ts-ignore
     const responseStr = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params)!;
     if (!responseStr)
       throw new Error('Empty response');

@@ -20,12 +20,11 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
   const applyChangesBtn = ui.button('Apply', async () => {
     const uh = UnitsHandler.getOrCreate(alignedSequenceCol);
     const newSequence = sequenceInput.value;
-    const splitter = uh.getSplitter();
-    const splitSequence = splitter(newSequence);
+    const splitSequence = uh.split(newSequence);
     const affectedRowIndex = currentDf.currentRowIdx;
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (let i = 0; i < splitSequence.length; i++) {
-      const part = splitSequence[i];
+      const part = splitSequence.getCanonical(i);
       if (currentDf.col(i.toString()) !== null)
         currentDf.set(i.toString(), affectedRowIndex, part);
     }

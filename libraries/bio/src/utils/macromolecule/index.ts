@@ -26,6 +26,5 @@ export {
   pickUpPalette,
   pickUpSeqCol,
   getPaletteByType,
-  MonomerToShortFunc,
-  getSplitterForColumn
+  MonomerToShortFunc
 } from './utils';

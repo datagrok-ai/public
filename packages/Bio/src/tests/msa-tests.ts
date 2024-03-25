@@ -103,13 +103,11 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
 async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
+  await grok.data.detectSemanticTypes(srcDf);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
 
   const srcCol: DG.Column = srcDf.getCol('seq')!;
-  const semType: string = await grok.functions
-    .call('Bio:detectMacromolecule', {col: srcCol}) as unknown as string;
-  if (semType)
-    srcCol.semType = semType;
+  expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
   const tgtCol: DG.Column = tgtDf.getCol('seq')!;
   const resCol: DG.Column = await runKalign(srcCol, true);
@@ -121,23 +119,18 @@ async function _testMSAOnColumn(
   srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
 ): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
+  await grok.data.detectSemanticTypes(srcDf);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
 
-  const srcSeqCol = srcDf.getCol('seq')!;
   const tgtCol = tgtDf.getCol('seq')!;
   const srcCol: DG.Column = srcDf.getCol('seq')!;
-  const semType: string = await grok.functions
-    .call('Bio:detectMacromolecule', {col: srcCol}) as unknown as string;
-  if (semType)
-    srcCol.semType = semType;
-
-  await grok.data.detectSemanticTypes(srcDf);
-  expect(srcSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(srcSeqCol.getTag(DG.TAGS.UNITS), srcNotation);
+  expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
+  expect(srcCol.getTag(DG.TAGS.UNITS), srcNotation);
   if (alphabet)
-    expect(srcSeqCol.getTag(bioTAGS.alphabet), alphabet);
+    expect(srcCol.getTag(bioTAGS.alphabet), alphabet);
 
-  const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol, pepsea: {method: pepseaMethod}});
+  const msaSeqCol = await multipleSequenceAlignmentUI({col: srcCol, pepsea: {method: pepseaMethod}});
+  expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
   expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
   expect(msaSeqCol.getTag(DG.TAGS.UNITS), tgtNotation);
   expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);

@@ -9,6 +9,7 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import '../../css/composition-analysis.css';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 
 export function getCompositionAnalysisWidget(val: DG.SemanticValue): DG.Widget {
@@ -17,24 +18,24 @@ export function getCompositionAnalysisWidget(val: DG.SemanticValue): DG.Widget {
   const alphabet = val.cell.column.tags[bioTAGS.alphabet];
   let palette: SeqPalette = UnknownSeqPalettes.Color;
   switch (alphabet) {
-    case ALPHABET.DNA:
-    case ALPHABET.RNA:
-      palette = getPaletteByType(ALPHABET.DNA);
-      break;
-    case ALPHABET.PT:
-      palette = getPaletteByType(ALPHABET.PT);
-      break;
-    default:
-      break;
+  case ALPHABET.DNA:
+  case ALPHABET.RNA:
+    palette = getPaletteByType(ALPHABET.DNA);
+    break;
+  case ALPHABET.PT:
+    palette = getPaletteByType(ALPHABET.PT);
+    break;
+  default:
+    break;
   }
 
   const counts: { [m: string]: number } = {};
-  const uh = UnitsHandler.getOrCreate(val.cell.column);
-  const splitter = uh.getSplitter();
-  const parts = splitter(val.value);
-  wu(parts).filter((p) => !!p && p !== '').forEach((m: string) => {
-    const count = counts[m] || 0;
-    counts[m] = count + 1;
+  const uh = UnitsHandler.getOrCreate(val.cell.column as DG.Column<string>);
+  const rowIdx = val.cell.rowIndex;
+  const parts = uh.splitted[rowIdx];
+  wu(parts.canonicals).filter((cm) => cm !== GAP_SYMBOL).forEach((cm) => {
+    const count = counts[cm] || 0;
+    counts[cm] = count + 1;
   });
   const table = buildCompositionTable(palette, counts);
   Array.from(table.rows).forEach((row) => {
