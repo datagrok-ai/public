@@ -154,7 +154,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: on-failure
+    restart: unless-stopped
     profiles: [ "all", "db" ]
 
   pg_rdkit:
