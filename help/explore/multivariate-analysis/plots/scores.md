@@ -11,6 +11,6 @@ It indicates correlations between observations (how observations related to each
 
 ![add-to-workspace](scores.png)
 
-Combine it with the the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot to explore data samples:
+Combine it with the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot to explore data samples:
 
 ![add-to-workspace](scores-n-model.gif)
