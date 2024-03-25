@@ -15,9 +15,10 @@ import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
 import {getHelmMonomers} from '../package';
 
-import {_package} from '../package-test';
-import {SeqMonomer, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+
+import {_package} from '../package-test';
 
 category('splitters', async () => {
   before(async () => {
@@ -144,13 +145,13 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {
-  const res: ISeqSplitted = splitterAsFasta(src, (m, j) => new SeqMonomer(m));
+  const res: ISeqSplitted = splitterAsFasta(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(wu(res).map((m) => m.original).toArray(), tgt);
+  expectArray(wu(res.originals).toArray(), tgt);
 }
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
-  const res: ISeqSplitted = splitterAsHelm(src, (m, j) => new SeqMonomer(m));
+  const res: ISeqSplitted = splitterAsHelm(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(wu(res).map((m) => m.original).toArray(), tgt);
+  expectArray(wu(res.originals).toArray(), tgt);
 }

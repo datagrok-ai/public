@@ -12,6 +12,8 @@ export interface ISeqSplitted {
   get canonicals(): Iterable<string>;
   get originals(): Iterable<string>;
 
+  isGap(posIdx: number): boolean;
+
   /** */
   getCanonical(posIdx: number): string;
 

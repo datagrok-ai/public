@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapOriginals, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
@@ -162,8 +162,8 @@ function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: st
   const missedMonomerSet = findMonomers(monomerList);
   if (missedMonomerSet.size === 0)
     webEditor(cell, value, units);
-  else if (missedMonomerSet.size === 1 && missedMonomerSet.has(GapSymbols[NOTATION.HELM].original))
-    grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapSymbols[NOTATION.HELM]}'.`);
+  else if (missedMonomerSet.size === 1 && missedMonomerSet.has(GapOriginals[NOTATION.HELM]))
+    grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapOriginals[NOTATION.HELM]}'.`);
   else {
     grok.shell.warning(
       `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are absent! <br/>` +

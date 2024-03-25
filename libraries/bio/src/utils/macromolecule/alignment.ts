@@ -1,6 +1,7 @@
 import {ISeqSplitted} from './types';
-import {GapSymbols} from '../units-handler';
+import {GapOriginals} from '../units-handler';
 import {NOTATION} from './consts';
+import {StringListSeqSplitted} from './utils';
 
 export type AlignmentOptions = {
   gapPenalty: number,
@@ -12,13 +13,13 @@ export type AlignmentOptions = {
 export const defaultAlignmentOptions: AlignmentOptions = {
   gapPenalty: 1,
   matchScore: 1,
-  gapSymbol: GapSymbols[NOTATION.FASTA],
+  gapSymbol: GapOriginals[NOTATION.FASTA],
   localAlignment: false,
 };
 
 export function alignSequencePair(template: ISeqSplitted, seq: ISeqSplitted,
   alignmentOptions: Partial<AlignmentOptions> = {},
-): { seq1: string, seq2: string, seq1Splitted: string[], seq2Splitted: string[] } {
+): { seq1: string, seq2: string, seq1Splitted: ISeqSplitted, seq2Splitted: ISeqSplitted } {
   const options = {...defaultAlignmentOptions, ...alignmentOptions};
 
   function compare(cm1: string, cm2: string) {
@@ -97,7 +98,9 @@ export function alignSequencePair(template: ISeqSplitted, seq: ISeqSplitted,
     alignedSeq.push(...new Array(alignedTemplate.length - alignedSeq.length).fill(options.gapSymbol.valueOf()));
 
   return {
-    seq1: alignedTemplate.join(''), seq2: alignedSeq.join(''),
-    seq1Splitted: alignedTemplate, seq2Splitted: alignedSeq
+    seq1: alignedTemplate.join(''),
+    seq2: alignedSeq.join(''),
+    seq1Splitted: new StringListSeqSplitted(alignedTemplate, options.gapSymbol),
+    seq2Splitted: new StringListSeqSplitted(alignedSeq, options.gapSymbol)
   };
 }

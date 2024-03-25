@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.17.11",
+  "version": "1.17.12",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -50,7 +50,7 @@
     "link-statistics": "npm link @datagrok-libraries/statistics",
     "link-ml": "npm link @datagrok-libraries/ml",
     "link-bio": "npm link @datagrok-libraries/bio",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/bio @datagrok-libraries/statistics @datagrok-libraries/tutorials",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/math @datagrok-libraries/ml @datagrok-libraries/bio @datagrok-libraries/statistics @datagrok-libraries/tutorials",
     "install-dependencies": "npm install",
     "debug-peptides": "grok publish",
     "release-peptides": "grok publish --release",
@@ -67,7 +67,7 @@
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/statistics run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/statistics run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Developers"

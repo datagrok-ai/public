@@ -121,12 +121,12 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const propPanel = ui.div();
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
-    const resCol = resDf.col(molColName)!;
+    const resCol: DG.Column<string> = resDf.col(molColName)!;
     const molColUh = UnitsHandler.getOrCreate(this.moleculeColumn!);
     const resUh = UnitsHandler.getOrCreate(resCol);
     const subParts1 = molColUh.splitted[this.targetMoleculeIdx];
     const subParts2 = resUh.splitted[resDf.currentRowIdx];
-    const alignment = alignSequencePair(Array.from(subParts1), Array.from(subParts2));
+    const alignment = alignSequencePair(subParts1, subParts2);
     const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resUh.units, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {

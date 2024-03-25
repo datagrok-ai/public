@@ -6,7 +6,7 @@ import wu from 'wu';
 
 import {getHelmMonomers} from '../package';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {GAP_SYMBOL, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const V2000_ATOM_NAME_POS = 31;
 
@@ -30,8 +30,7 @@ export async function getMonomericMols(
   } else {
     molV3000Array = new Array<string>(mcol.length);
     for (let i = 0; i < mcol.length; i++) {
-      const sequenceMonomers = wu(uh.splitted[i]).filter((m) => !uh.isGap(m)).toArray();
-      const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
+      const molV3000 = molV3000FromNonHelmSequence(uh.splitted[i], monomersDict, pattern);
       molV3000Array[i] = molV3000;
     }
   }
@@ -51,9 +50,12 @@ M  V30 BEGIN CTAB
   molV3000 += 'M  V30 BEGIN ATOM\n';
 
   for (let atomRowI = 0; atomRowI < monomers.length; atomRowI++) {
-    molV3000 += pattern ?
-      `M  V30 ${atomRowI + 1} R${monomersDict.get(monomers[atomRowI].canonical)} 0.000 0.000 0 0\n` :
-      `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(monomers[atomRowI].canonical)}\n`;
+    const cm: string = monomers.getCanonical(atomRowI);
+    if (cm !== GAP_SYMBOL) {
+      molV3000 += pattern ?
+        `M  V30 ${atomRowI + 1} R${monomersDict.get(cm)} 0.000 0.000 0 0\n` :
+        `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(cm)}\n`;
+    }
   }
 
   molV3000 += 'M  V30 END ATOM\n';

@@ -422,6 +422,10 @@ export class UnitsHandler {
     // TODO: Splitter for HELM
   }
 
+  public split(seq: string): ISeqSplitted {
+    return this.splitter(seq);
+  }
+
   public getDistanceFunctionName(): MmDistanceFunctionsNames {
     // TODO add support for helm and separator notation
     if (!this.isFasta())
@@ -584,7 +588,7 @@ export class UnitsHandler {
         const seqOM = seqS.getOriginal(seqJPos);
         regOMList[regJPos] = seqJPos < seqS.length ? seqOM : GapOriginals[this.notation];
       }
-      return join(new StringListSeqSplitted(regOMList));
+      return join(new StringListSeqSplitted(regOMList, GapOriginals[this.notation]));
     });
 
     const getRegionOfPositionNames = (str: string): string => {
@@ -770,18 +774,20 @@ function convertToSeparator(srcUh: UnitsHandler, src: string, tgtSeparator: stri
 
 function joinToHelm(srcSS: ISeqSplitted, wrappers: string[], isDnaOrRna: boolean): string {
   const [prefix, leftWrapper, rightWrapper, postfix] = wrappers;
-  const resMList: string[] = wu(srcSS).map((srcM: ISeqMonomer) => {
-    let m: string = srcM.original;
-    if (srcM.canonical === GAP_SYMBOL)
-      m = GapOriginals[NOTATION.HELM].original;
+  const resOMList: string[] = new Array<string>(srcSS.length);
+  for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
+    const cm = srcSS.getCanonical(posIdx);
+    let om: string = srcSS.getOriginal(posIdx);
+    if (cm === GAP_SYMBOL)
+      om = GapOriginals[NOTATION.HELM];
     else {
       if (isDnaOrRna)
-        m = m.replace(HELM_WRAPPERS_REGEXP, '$1');
-      m = m.length === 1 ? `${leftWrapper}${m}${rightWrapper}` : `${leftWrapper}[${m}]${rightWrapper}`;
+        om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
+      om = om.length === 1 ? `${leftWrapper}${om}${rightWrapper}` : `${leftWrapper}[${om}]${rightWrapper}`;
     }
-    return m;
-  }).toArray();
-  return `${prefix}${resMList.join('.')}${postfix}`;
+    resOMList[posIdx] = om;
+  }
+  return `${prefix}${resOMList.join('.')}${postfix}`;
 }
 
 function convertToHelm(srcUh: UnitsHandler, src: string): string {
@@ -790,7 +796,7 @@ function convertToHelm(srcUh: UnitsHandler, src: string): string {
   const wrappers = srcUh.getHelmWrappers();
 
   const isDnaOrRna = src.startsWith('DNA') || src.startsWith('RNA');
-  const srcSS = srcUhSplitter(src, (m, j) => new SeqMonomer(m));
+  const srcSS = srcUhSplitter(src);
   return joinToHelm(srcSS, wrappers, isDnaOrRna);
 }
 
@@ -799,17 +805,17 @@ function splitterAsHelmNucl(srcUh: UnitsHandler, src: string): ISeqSplitted {
   // @ts-ignore
   const srcUhSplitter = srcUh.splitter;
 
-  const srcMList: ISeqSplitted = srcUhSplitter(src, (m, j) => new SeqMonomer(m));
-  const tgtMList: (ISeqMonomer | null)[] = new Array<ISeqMonomer>(srcMList.length);
+  const srcMList: ISeqSplitted = srcUhSplitter(src);
+  const tgtMList: (string | null)[] = new Array<string>(srcMList.length);
   const isDna = src.startsWith('DNA');
   const isRna = src.startsWith('RNA');
-  for (const [srcM, j] of wu.enumerate(srcMList)) {
-    let m: string | null = srcM.original;
+  for (let posIdx: number = 0; posIdx < srcMList.length; ++posIdx) {
+    let om: string | null = srcMList.getOriginal(posIdx);
     if (isDna || isRna) {
-      m = m.replace(HELM_WRAPPERS_REGEXP, '$1');
-      m = m === PHOSPHATE_SYMBOL ? null : m;
+      om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
+      om = om === PHOSPHATE_SYMBOL ? null : om;
     }
-    tgtMList[j] = m ? new SeqMonomer(m) : null;
+    tgtMList[posIdx] = om ? om : null;
   }
-  return tgtMList.filter((tgtM) => !!tgtM) as ISeqMonomer[];
+  return new StringListSeqSplitted(tgtMList.filter((om) => !!om) as string[], GapOriginals[NOTATION.HELM]);
 }

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {ISeqMonomer, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const FASTA_LINE_WIDTH = 60;
 
@@ -105,9 +105,9 @@ export function wrapSequence(srcSS: ISeqSplitted, lineWidth: number = FASTA_LINE
   const seqLineList: string[] = [];
   while (seqPos < seqLength) {
     /* join sliced monomer into line */
-    const seqLine = wu(srcSS).slice(seqPos, seqPos + lineWidth).toArray();
-    const seqLineTxt: string = seqLine.map((srcM) => srcM.original)
-      .map((m) => m.length > 1 ? `[${m}]` : m).reduce((a, b) => a + b, '');
+    const seqLine = wu(srcSS.originals).slice(seqPos, seqPos + lineWidth).toArray();
+    const seqLineTxt: string = seqLine.map((om) => om.length > 1 ? `[${om}]` : om)
+      .reduce((a, b) => a + b, '');
     seqLineList.push(seqLineTxt);
     seqPos += seqLine.length;
   }

@@ -1,5 +1,7 @@
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {mmDistanceFunctionArgs} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -33,7 +35,7 @@ export async function getEncodedSeqSpaceCol(
     encList[rowIdx] = '';
     const splittedSeq = seqUh.splitted[rowIdx];
     for (let j = 0; j < splittedSeq.length; j++) {
-      const char = splittedSeq[j].canonical;
+      const char = splittedSeq.getCanonical(j);
       if (!charCodeMap.has(char)) {
         charCodeMap.set(char, String.fromCharCode(charCodeCounter));
         charCodeCounter++;

@@ -3,14 +3,14 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {
   CandidateSimType,
-  CandidateType,
+  CandidateType, GAP_SYMBOL,
   ISeqSplitted,
   MonomerFreqs,
   SeqColStats,
   SplitterFunc
 } from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION} from './consts';
-import {GapSymbols, UnitsHandler} from '../units-handler';
+import {GapOriginals, UnitsHandler} from '../units-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 import {SeqPalette} from '../../seq-palettes';
@@ -25,12 +25,17 @@ export class StringListSeqSplitted implements ISeqSplitted {
 
   get originals(): Iterable<string> { return this.mList; }
 
+  isGap(posIdx: number): boolean {
+    return this.getOriginal(posIdx) === this.gapOriginalMonomer;
+  }
+
   getCanonical(posIdx: number): string { return this.mList[posIdx]; }
 
   getOriginal(posIdx: number): string { return this.mList[posIdx]; }
 
   constructor(
-    private readonly mList: string[]
+    private readonly mList: string[],
+    private readonly gapOriginalMonomer: string
   ) {}
 }
 
@@ -41,10 +46,18 @@ export class FastaSimpleSeqSplitted implements ISeqSplitted {
 
   get originals(): Iterable<string> { return this.seqS; }
 
-  getCanonical(posIdx: number): string { return this.seqS[posIdx]; }
+  isGap(posIdx: number): boolean {
+    return this.getOriginal(posIdx) === GapOriginals[NOTATION.FASTA];
+  }
+
+  getCanonical(posIdx: number): string {
+    if (this.isGap(posIdx))
+      return GAP_SYMBOL;
+
+    return this.seqS[posIdx];
+  }
 
   getOriginal(posIdx: number): string { return this.seqS[posIdx]; }
-
 
   constructor(
     private readonly seqS: string
@@ -98,7 +111,7 @@ export const splitterAsFasta: SplitterFunc = (seq: string): ISeqSplitted => {
       return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
     }).toArray();
 
-  return new StringListSeqSplitted(mmList);
+  return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.FASTA]);
 
 
   // return new Proxy(splittedList as object, {
@@ -109,7 +122,7 @@ export const splitterAsFasta: SplitterFunc = (seq: string): ISeqSplitted => {
 };
 
 export const splitterAsFastaSimple: SplitterFunc = (seq: string): ISeqSplitted => {
-  return !!seq ? new FastaSimpleSeqSplitted(seq) : new StringListSeqSplitted([]);
+  return !!seq ? new FastaSimpleSeqSplitted(seq) : new StringListSeqSplitted([], GapOriginals[NOTATION.FASTA]);
 };
 
 /** Gets method to split sequence by separator
@@ -120,10 +133,10 @@ export const splitterAsFastaSimple: SplitterFunc = (seq: string): ISeqSplitted =
 export function getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
   return (seq: string) => {
     if (!seq)
-      return new StringListSeqSplitted([]);
+      return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
     else {
       const mmList: string[] = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
-      return new StringListSeqSplitted(mmList);
+      return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.SEPARATOR]);
     }
   };
 }
@@ -153,9 +166,7 @@ export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
   };
 
   const mmList: string[] = inSeq ? inSeq.split('.') : [];
-
-  // TODO: Lazy creation monomer objects
-  return new StringListSeqSplitted(mmList);
+  return new StringListSeqSplitted(mmList.map(mmPostProcess), GapOriginals[NOTATION.HELM]);
 };
 
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */

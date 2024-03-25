@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
   monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
@@ -17,8 +17,7 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
-import {GAP_SYMBOL, ISeqMonomer, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {GAP_SYMBOL, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 
@@ -925,9 +924,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
-      const gapSymbol: ISeqMonomer = this.unitsHandler!.defaultGapSymbol;
       this.positions = wu(this.positions).filter((pi) => {
-        return !pi.hasMonomer(gapSymbol.canonical) || pi.getFreq(gapSymbol.canonical).rowCount !== pi.sumRowCount;
+        return !pi.hasMonomer(GAP_SYMBOL) || pi.getFreq(GAP_SYMBOL).rowCount !== pi.sumRowCount;
       }).toArray();
     }
   }
@@ -1004,9 +1002,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           if (dfFilter.get(rowI)) {
             ++pi.sumRowCount;
             const seqMList: ISeqSplitted = splitted[rowI];
-            const m: ISeqMonomer = seqMList[this.startPosition + jPos];
-            const canonicalMonomer: string = m ? m.canonical : GAP_SYMBOL;
-            const pmi = pi.getFreq(canonicalMonomer);
+            const cm: string = seqMList.getCanonical(this.startPosition + jPos);
+            const pmi = pi.getFreq(cm);
             pmi.value = ++pmi.rowCount;
           }
         }
@@ -1024,9 +1021,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) { // respect the filter
             const seqMList: ISeqSplitted = splitted[rowI];
-            const m: ISeqMonomer = seqMList[this.startPosition + jPos];
+            const cm: string = seqMList.getCanonical(this.startPosition + jPos);
             const value: number | null = valueCol.get(rowI);
-            this.positions[jPos].getFreq(m.canonical).push(value);
+            this.positions[jPos].getFreq(cm).push(value);
           }
         }
         this.positions[jPos].aggregate(this.valueAggrType);
@@ -1077,9 +1074,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       if (this.seqCol && !this.palette) {
         this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;
         this.msgHost!.style.display = '';
-      } else {
+      } else
         this.msgHost!.style.display = 'none';
-      }
     }
 
     if (!this.seqCol || !this.dataFrame || !this.palette || this.host == null || this.slider == null)
@@ -1228,9 +1224,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           tooltipRows.push(ui.div(`${this.valueAggrType}: ${pmi.value.toFixed(3)}`));
         const tooltipEl = ui.divV(tooltipRows);
         ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
-      } else {
+      } else
         ui.tooltip.hide();
-      }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
       _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n` + errMsg);
@@ -1338,8 +1333,8 @@ export function checkSeqForMonomerAtPos(
   df: DG.DataFrame, uh: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
   const seqMList: ISeqSplitted = uh.splitted[rowI];
-  const seqM = at.pos < seqMList.length ? seqMList[at.pos] : null;
-  return seqM !== null && seqM.canonical === monomer;
+  const seqCM: string | null = at.pos < seqMList.length ? seqMList.getCanonical(at.pos) : null;
+  return seqCM !== null && seqCM === monomer;
 }
 
 export function countForMonomerAtPosition(
@@ -1350,8 +1345,8 @@ export function countForMonomerAtPosition(
   while ((rowI = filter.findNext(rowI, true)) != -1) {
     const seqMList: ISeqSplitted = uh.splitted[rowI];
     const seqMPos: number = at.pos;
-    const seqM: ISeqMonomer | null = seqMPos < seqMList.length ? seqMList[seqMPos] : null;
-    if (seqM !== null && seqM.canonical === monomer) count++;
+    const seqCM: string | null = seqMPos < seqMList.length ? seqMList.getCanonical(seqMPos) : null;
+    if (seqCM !== null && seqCM === monomer) count++;
   }
   return count;
 }

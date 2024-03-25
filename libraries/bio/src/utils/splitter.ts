@@ -20,16 +20,9 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
   const resultDf = DG.DataFrame.create(rowCount);
 
   const uh = UnitsHandler.getOrCreate(sequenceColumn);
-  const colCats = sequenceColumn.categories;
-  const colRawData = sequenceColumn.getRawData();
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-    const catI = colRawData[rowIdx];
-    const sequence = colCats[catI];
-    if (sequence == null)
-      continue;
-
     const currentMonomerList = uh.splitted[rowIdx];
-    for (let posIdx: number = 0; posIdx > currentMonomerList.length; ++posIdx) {
+    for (let posIdx: number = 0; posIdx < currentMonomerList.length; ++posIdx) {
       const om: string = currentMonomerList.getOriginal(posIdx);
       const col = getCol(posIdx) || createCol(posIdx);
       col.set(rowIdx, om, false);

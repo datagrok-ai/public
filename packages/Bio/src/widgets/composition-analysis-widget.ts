@@ -9,6 +9,7 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import '../../css/composition-analysis.css';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 
 export function getCompositionAnalysisWidget(val: DG.SemanticValue): DG.Widget {
@@ -29,11 +30,10 @@ export function getCompositionAnalysisWidget(val: DG.SemanticValue): DG.Widget {
   }
 
   const counts: { [m: string]: number } = {};
-  const uh = UnitsHandler.getOrCreate(val.cell.column);
+  const uh = UnitsHandler.getOrCreate(val.cell.column as DG.Column<string>);
   const rowIdx = val.cell.rowIndex;
   const parts = uh.splitted[rowIdx];
-  wu(parts).filter((p) => !uh.isGap(p)).forEach((m) => {
-    const cm = m.canonical;
+  wu(parts.canonicals).filter((cm) => cm !== GAP_SYMBOL).forEach((cm) => {
     const count = counts[cm] || 0;
     counts[cm] = count + 1;
   });
