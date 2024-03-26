@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as OCL from 'openchemlib/full';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
@@ -12,7 +12,6 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {MonomerLibManager} from './monomer-lib/lib-manager';
 
 import {_package} from '../package';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 const enum V2K_CONST {
   MAX_ATOM_COUNT = 999,
@@ -90,32 +89,7 @@ export class HelmToMolfileConverter {
     return smiles;
   }
 
-  async createSketcher(): Promise<any> {
-    const prevSketcher = DG.chem.currentSketcherType;
-    const func = await DG.Func.find({tags: ['moleculeSketcher'], name: 'openChemLibSketcher'})[0];
-    DG.chem.currentSketcherType = func.friendlyName;
-    const s = new DG.chem.Sketcher();
-    const d = ui.dialog().add(s);
-    d.root.style.display = 'none';
-    d.show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 10000);
-    DG.chem.currentSketcherType = prevSketcher;
-    return {sketcher: s.sketcher, dialog: d};
-}
-
-  async getMolfileV3000(sketcher: any, molFile: string, prevMolV3000: string) {
-    sketcher.molFile = molFile;
-    await awaitCheck(() => {
-      if (sketcher.molV3000 && sketcher.molV3000 !== prevMolV3000) {
-        return true;
-      }
-      return false;
-    },
-      'molecule has not been set', 10000);
-    return sketcher.molV3000;
-  }
-
-  async getMolV3000ViaSketcher(beautifiedMols: (RDMol | null)[], columnName: string) {
+  async getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string) {
     const beautifiedMolV2000 =  beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
@@ -123,18 +97,15 @@ export class HelmToMolfileConverter {
       mol!.delete();
       return molBlock;
     });
-    const sketcherPb = DG.TaskBarProgressIndicator.create(`Starting chirality engine...`);
-    const {sketcher, dialog} = await this.createSketcher();
-    sketcherPb.close();
     const molv3000Arr = new Array<string>(beautifiedMolV2000.length);
     const chiralityPb = DG.TaskBarProgressIndicator.create(`Handling chirality...`);
     for (let i = 0; i < beautifiedMolV2000.length; i++) {
-      const molV3000 = await this.getMolfileV3000(sketcher, beautifiedMolV2000[i], sketcher._molV3000);
+      const oclMolecule = OCL.Molecule.fromMolfile(beautifiedMolV2000[i]);
+      const molV3000 = oclMolecule.toMolfileV3();
       molv3000Arr[i] = molV3000.replace('STERAC1', 'STEABS');
       const progress = i/beautifiedMolV2000.length*100;
       chiralityPb.update(progress, `${progress?.toFixed(2)}% of molecules completed`);
     }
-    dialog.close();
     chiralityPb.close();
     return DG.Column.fromStrings(columnName, molv3000Arr); 
   }
@@ -155,7 +126,7 @@ export class HelmToMolfileConverter {
     const columnName = this.df.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
 
     if (chiralityEngine)
-      return await this.getMolV3000ViaSketcher(beautifiedMols, columnName);
+      return await this.getMolV3000ViaOCL(beautifiedMols, columnName);
     return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
