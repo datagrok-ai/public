@@ -15,6 +15,7 @@ import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rend
 import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 let attached = false;
+let scaffoldTreeId = 0;
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -437,11 +438,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   dataFrameSwitchgInProgress: boolean = false;
+  bitsetUpdateInProgress: boolean = false;
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
   smartsExist: boolean = false;
   current?: DG.TreeViewNode;
   closeAll?: boolean = false;
+  setHighlightTag = true;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -464,6 +467,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   allowGenerate: boolean;
   applyFilter: boolean = true;
   summary: string;
+  scaffoldTreeId: number = scaffoldTreeId;
 
   constructor() {
     super();
@@ -535,7 +539,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
-    this.summary = this.string('summary', this.getFilterSum());
+    this.summary = this.string('summary', this.getFilterSum(), {userEditable: false});
     this._initMenu();
   }
 
@@ -1054,8 +1058,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncodeUpdateInProgress = false;
 
     this.colorCodedScaffolds = [];
-    this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
-
+    if (this.setHighlightTag && this.molColumn)
+      this.setScaffoldTag(this.molColumn, this.colorCodedScaffolds);
     this.updateUI();
   }
 
@@ -1068,7 +1072,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.bitset = null;
     if (this.molColumn !== null) {
       removeElementByColor(this.colorCodedScaffolds, '');
-      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+      if (this.setHighlightTag)
+        this.setScaffoldTag(this.molColumn, this.colorCodedScaffolds);
     }
 
     this.checkBoxesUpdateInProgress = true;
@@ -1092,7 +1097,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+    if (this.setHighlightTag)
+      this.setScaffoldTag(this.molColumn, this.colorCodedScaffolds);
+    
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1116,8 +1123,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.bitset === null || this.bitset.length !== this.molColumn.length)
+    if (this.bitset === null || this.bitset.length !== this.molColumn.length) {
+      if (this.bitsetUpdateInProgress) {
+        grok.shell.warning('Filtering starts after the bitset is updated.');
+        return;
+      }
       this.bitset = DG.BitSet.create(this.molColumn.length);
+    }
 
     this.bitset.setAll(this.bitOperation === BitwiseOp.AND, false);
 
@@ -1351,8 +1363,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       updatedTag = colorCodedString;
     } else {
       updatedTag = checkedString;
-    }  
-    this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
+    }
+    if (this.setHighlightTag)
+      this.setScaffoldTag(this.molColumn!, JSON.parse(updatedTag));
   }
   
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
@@ -1405,28 +1418,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const first = this.paletteColors.shift();
     this.paletteColors[this.paletteColors.length] = first!;
     
-    const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
-      chosenColor = value;
-    });
-    const paletteIcon = ui.iconFA('palette', () => {
-      ui.dialog('Choose color')
-      .add(colorPicker)
-      .onOK(() => {
-        groupValue.colorOn = true;
-        chosenColor = colorPicker.stringValue;
-        this.updateColorIcon(colorIcon, chosenColor);
-        groupValue.chosenColor = chosenColor;
-        this.setColorToHighlight(group, chosenColor, true);
-        this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-      })
-      .show()
-    }, 'Choose color to highlight');
+    const paletteIcon = ui.iconFA('palette');
+
+    const colorPicker = ui.colorPicker(DG.Color.fromHtml(chosenColor), (color: number) => {
+      colorPicker.style.cssText += 'background-color: hsla(0, 0%, 0%, 0) !important';
+      groupValue.colorOn = true;
+      chosenColor = DG.Color.toHtml(color);
+      this.updateColorIcon(colorIcon, chosenColor);
+      groupValue.chosenColor = chosenColor;
+      this.setColorToHighlight(group, chosenColor, true);
+      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
+    }, paletteIcon);
+
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);
-    paletteIcon.onclick = (e) => {
-      colorPicker.stringValue = (groupValue.chosenColor ?? groupValue.parentColor) ?? chosenColor;
-      e.stopImmediatePropagation()
-    };
+    paletteIcon.onclick = (e) => e.stopImmediatePropagation();
     paletteIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const colorIcon = ui.iconFA('circle', async () => {
@@ -1670,6 +1676,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.highlightCanvas(group, color, substr);
   }
 
+  toggleTreeGenerationVisibility(): void {
+    this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
+    const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.Table);
+    const isMolDataset = dataFrame ? dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null : false;
+    if (this.allowGenerate && isMolDataset) {
+      this._generateLink!.style.color = '';
+      setTimeout(() => this.generateTree(), 1000);
+    }
+  }
+
   makeNodeActiveAndFilter(node: DG.TreeViewNode) {
     this.checkBoxesUpdateInProgress = true;
     this.selectGroup(node);
@@ -1678,8 +1694,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateFilters();
   }
 
+  makeGenerateInactive() {
+    this._generateLink!.style.pointerEvents = 'none';
+    this._generateLink!.style.color = 'lightgrey';
+    this.message = NO_MOL_COL_ERROR_MSG;
+    (this._iconAdd! as any).inert = true;
+    this._iconAdd!.style.color = 'grey';
+    this.MoleculeColumn = '';
+  }
+
   onPropertyChanged(p: DG.Property): void {
     if (p.name === 'Table') {
+      this.Table = p.get(this);
       for (let n = 0; n < this.molColumns.length; ++n) {
         if (this.molColumns[n][0].dataFrame.name === this.Table) {
           if (this.tableIdx === n)
@@ -1688,10 +1714,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           this.tableIdx = n;
           break;
         }
+        this.tableIdx = -1;
+      }
+      if (this.tableIdx === -1) {
+        this.makeGenerateInactive();
+        return;
       }
       this.dataFrameSwitchgInProgress = true;
       this.clear();
-
       this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1;
       this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
       this.dataFrameSwitchgInProgress = false;
@@ -1699,8 +1729,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const div = getMoleculePropertyDiv();
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
-
-      setTimeout(() => this.generateTree(), 1000);
+      this.toggleTreeGenerationVisibility();
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
@@ -1744,9 +1773,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       this.updateUI();
     } else if (p.name === 'allowGenerate') {
-      this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
-      if (this.allowGenerate === true)
-        setTimeout(() => this.generateTree(), 1000);
+      this.toggleTreeGenerationVisibility();
     }
   }
 
@@ -1843,9 +1870,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (thisViewer.tree.items.length < 1)
         return;
       const firstChild = thisViewer.tree.items[0];
-      if (dataFrame.rowCount !== value(firstChild).bitset?.length)
+      if (dataFrame.rowCount !== value(firstChild).bitset?.length) {
+        this.bitsetUpdateInProgress = true;
         await updateAllNodesHits(thisViewer);
+      }
       updateLabelWithLoaderOrBitset(thisViewer);
+      this.bitsetUpdateInProgress = false;
+      this.updateFilters(false);
+      dataFrame.rows.requestFilter();
     }));
 
     this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
@@ -1871,10 +1903,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }));
 
     this.render();
+    const isMolDataset = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null;
+
+    if (!isMolDataset) {
+      this.Table = dataFrame.name;
+      this.makeGenerateInactive();
+      return;
+    }
 
     if (this.allowGenerate)
       setTimeout(() => this.generateTree(), 1000);
     attached = true;
+    scaffoldTreeId += 1;
   }
 
   detach(): void {
@@ -1890,12 +1930,30 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.progressBar = null;
     }
 
-    this.molColPropObserver!.disconnect();
+    this.molColPropObserver?.disconnect();
     this.molColPropObserver = null;
 
     this.clearFilters();
-    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+    this.setScaffoldTag(this.molColumn!, [], true);
     super.detach();
+  }
+
+  setScaffoldTag(column: DG.Column, scaffolds: any, detach: boolean = false) {
+    let scaffoldTag = column.getTag(SCAFFOLD_TREE_HIGHLIGHT);
+    let parsedTag: any[] = scaffoldTag !== null ? JSON.parse(scaffoldTag) : [];
+
+    if (detach) {
+        parsedTag = parsedTag.filter(obj => !(this.scaffoldTreeId in obj));
+    } else {
+      const existingScaffold = parsedTag.find(obj => this.scaffoldTreeId in obj);
+      if (existingScaffold)
+        existingScaffold[this.scaffoldTreeId] = scaffolds;
+      else
+        parsedTag[parsedTag.length] = { [this.scaffoldTreeId]: scaffolds };
+    }
+
+    scaffoldTag = JSON.stringify(parsedTag);
+    column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
   }
 
   selectGroup(group: DG.TreeViewNode) : void {
@@ -1913,11 +1971,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   updateUI() {
     if (this.molColumn === null) {
-      this._generateLink!.style.pointerEvents = 'none';
-      this._generateLink!.style.color = 'lightgrey';
-      this.message = NO_MOL_COL_ERROR_MSG;
-      (this._iconAdd! as any).inert = true;
-      this._iconAdd!.style.color = 'grey';
+      this.makeGenerateInactive();
       return;
     }
 

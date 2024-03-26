@@ -101,7 +101,26 @@ services:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "dbServer": "database",
+          "dbPort": "5432",
+          "db": "datagrok",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
+          "isolatesCount": 1,
+          "deployDemo": false,
+          "deployTestDemo": false,
+          "datlasApiUrl": "http://datagrok:8082",
+          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
+          "capabilities": ["jupyter"]
+        }
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: false
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   h2o:
@@ -135,7 +154,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: on-failure
+    restart: unless-stopped
     profiles: [ "all", "db" ]
 
   pg_rdkit:

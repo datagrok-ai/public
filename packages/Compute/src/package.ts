@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
@@ -88,12 +89,72 @@ export function autostart() {
 
 }
 
+//name: CustomDataUploader
+//input: func func
+//output: object uploadedCalls
+export async function CustomDataUploader(func: DG.Func) {
+  await new Promise((r) => setTimeout(r, 1000));
+
+  const dummyFunccall = await func.prepare({
+    'ambTemp': 22,
+    'initTemp': 100,
+    'desiredTemp': 30,
+    'area': 0.06,
+    'heatCap': 4200,
+    'heatTransferCoeff': 8.3,
+    'simTime': 21600,
+    }).call();
+    
+  return [dummyFunccall]
+}
+
+//name: CustomUploader
+//input: object params
+//output: widget uploadWidget
+//output: funccall uploadFuncCall
+export async function CustomUploader(params: {func: DG.Func}) {
+  const uploadFunc = await grok.functions.eval('Compute:CustomDataUploader') as DG.Func;
+  const uploadFuncCall = uploadFunc.prepare({func: params.func})
+  const uploadBtn = ui.bigButton('Click me to get mock calls', () => uploadFuncCall.call());
+
+  const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
+    ui.label('This part of dialog comes from my custom data uploader'),
+    ui.divH([uploadBtn], {style: {'justify-content': 'center'}})
+  ])]));  
+
+  const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
+    filter((call) => call.id === uploadFuncCall.id)
+  ).subscribe(() => {
+    ui.setUpdateIndicator(uploadBtn, true);
+  })
+
+  const unsetLoadingSub = grok.functions.onAfterRunAction.pipe(
+    filter((call) => call.id === uploadFuncCall.id)
+  ).subscribe(() => {
+    ui.setUpdateIndicator(uploadBtn, false);
+  })
+
+  dummyWidget.subs.push(setLoadingSub, unsetLoadingSub)
+
+  return {uploadWidget: dummyWidget, uploadFuncCall};
+}
+
+//name: CustomCustomizer
+//input: object params
+export function CustomCustomizer(params: {defaultView: DG.TableView}) {
+  const comparisonView = params.defaultView;
+  comparisonView.scatterPlot({
+    "xColumnName": "Initial temperature",
+    "yColumnName": "Time to cool",
+  });
+}
+
 //tags: init
 export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler('Model Catalog', 'modelCatalog', _package));
+  DG.ObjectHandler.register(new ModelHandler());
   
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;

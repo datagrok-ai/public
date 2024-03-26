@@ -93,6 +93,7 @@ export class ViewBase {
 
   set name(s: string) {
     this._name = s;
+    api.grok_View_Set_Name(this.dart, s);
   }
 
   get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }

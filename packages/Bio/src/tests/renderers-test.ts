@@ -4,14 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
-import * as C from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
-import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
+import {awaitGrid} from './utils';
+import * as C from '../utils/constants';
 
 category('renderers', () => {
   test('long sequence performance ', async () => {
@@ -62,15 +63,15 @@ category('renderers', () => {
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
 
     const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
   }
 
   async function _rendererMacromoleculeSeparator() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_SEPARATOR_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/SEPARATOR_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const seqCol = df.getCol('sequence');
@@ -82,8 +83,8 @@ category('renderers', () => {
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
 
     const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
@@ -104,15 +105,15 @@ category('renderers', () => {
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
 
     const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, C.SEM_TYPES.MACROMOLECULE_DIFFERENCE);
   }
 
   async function _testAfterMsa() {
-    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA.fasta');
+    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.fasta');
     const df: DG.DataFrame = importFasta(fastaTxt)[0];
 
     const srcSeqCol: DG.Column = df.getCol('sequence');
@@ -125,8 +126,8 @@ category('renderers', () => {
     await grok.data.detectSemanticTypes(df);
 
     console.log('Bio: tests/renderers/afterMsa, table view');
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
 
     console.log('Bio: tests/renderers/afterMsa, src before test ' +
       `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
@@ -138,9 +139,8 @@ category('renderers', () => {
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol});
-    tv.grid.invalidate();
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
@@ -153,7 +153,7 @@ category('renderers', () => {
   }
 
   async function _testAfterConvert() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const srcCol: DG.Column = df.col('sequence')!;
@@ -166,8 +166,8 @@ category('renderers', () => {
     await grok.data.detectSemanticTypes(df);
 
     const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
 
     const resCellRenderer = tgtCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');

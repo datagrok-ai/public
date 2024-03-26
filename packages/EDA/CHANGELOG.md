@@ -1,5 +1,25 @@
 # EDA changelog
 
+## 1.1.15 (2024-02-27)
+
+Add support for post processing functions in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.
+
+## 1.1.14 (2024-02-20)
+
+Fix NW distance function
+
+## 1.1.13 (2024-02-12)
+
+Fix PCA & PLS applying to table from local file
+
+## 1.1.12 (2024-02-12)
+
+Add MCL clustering. The method is available in Top Menu > ML > Cluster > MCL.
+
+## 1.1.11 (2023-12-28)
+
+Add missing values imputation using the KNN method.
+
 ## 1.1.10 (2023-12-28)
 
 Add option to pass random seed to dimensionality reduction methods. This allows to reproduce results of dimensionality reduction.
@@ -26,17 +46,9 @@ Anova top-menu item is improved.
 
 ## 1.1.4 (2023-10-11)
 
-Implemented ANOVA.
-
-### Features
-
-* One-way ANOVA (see Top Menu > ML > Analysis of Variances (ANOVA)...)
+Add one-way ANOVA (see Top Menu > ML > Analysis of Variances (ANOVA)...)
 
 ## 1.1.3 (2023-08-24)
-
-This release is centered around enhancing user-friendliness and addressing concerns.
-
-### Features
 
 * The method PCA is replaced to Top Menu > ML > Dimensionality Reduction
 * The method UMPA is added (see Top Menu > ML > Dimensionality Reduction)
@@ -44,10 +56,6 @@ This release is centered around enhancing user-friendliness and addressing conce
 * The method SPE is added (see Top Menu > ML > Dimensionality Reduction)
 
 ## 1.1.2 (2023-07-27)
-
-This release focuses on improving usability.
-
-### Features
 
 * Move Multivariate Analysis using partial least squares (PLS) regression to Top Menu | ML
 * In PLS and PCA, just numerical columns can be selected as features

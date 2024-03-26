@@ -6,7 +6,7 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
-import {awaitContainerStart} from './utils';
+import {awaitContainerStart} from '../utils/docker';
 
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
@@ -81,12 +81,12 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
   test('isCorrectHelm', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  });
+  }, {timeout: 60000 /* docker */});
 
   test('isCorrectHelmLong', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  });
+  }, {timeout: 60000 /* docker */});
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(

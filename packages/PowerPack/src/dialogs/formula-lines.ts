@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay} from "@datagrok-libraries/utils/src/test";
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -144,13 +144,13 @@ class Table {
     this.items = items;
     this._onItemChangedAction = onItemChangedAction;
 
-    const dataFrame = this.items.length > 0
-      ? DG.DataFrame.fromObjects(this.items)!
-      : DG.DataFrame.fromColumns([
-          DG.Column.fromList('string', 'title', []),
-          DG.Column.fromList('string', 'formula', []),
-          DG.Column.fromList('bool', 'visible', []),
-        ]);
+    const dataFrame = this.items.length > 0 ?
+      DG.DataFrame.fromObjects(this.items)! :
+      DG.DataFrame.fromColumns([
+        DG.Column.fromList('string', 'title', []),
+        DG.Column.fromList('string', 'formula', []),
+        DG.Column.fromList('bool', 'visible', []),
+      ]);
 
     /** Column for "trash" buttons */
     dataFrame.columns.addNewString(BTN_CAPTION.REMOVE);
@@ -184,7 +184,7 @@ class Table {
           case 'visible': cell.customText = 'Show'; break;
           case BTN_CAPTION.REMOVE: cell.style.textColor = 0; break;
         }
-      else if (cell.isTableCell && cell.gridColumn.name == BTN_CAPTION.REMOVE)
+      else if (cell.isTableCell && cell.gridColumn.name === BTN_CAPTION.REMOVE)
         cell.style.element = this._deleteBtn(cell.gridRow);
     });
 
@@ -214,8 +214,8 @@ class Table {
   update(itemIdx: number) {
     const item = this.items[itemIdx];
     this._notify = false;
-      this._dataFrame.set('title', itemIdx, item.title);
-      this._dataFrame.set('formula', itemIdx, item.formula);
+    this._dataFrame.set('title', itemIdx, item.title);
+    this._dataFrame.set('formula', itemIdx, item.formula);
     this._notify = true;
   }
 
@@ -223,10 +223,10 @@ class Table {
     this.items.unshift(item);
     this._dataFrame.rows.insertAt(0);
     this._notify = false;
-      this._dataFrame.set('title', 0, item.title);
-      this._dataFrame.set('formula', 0, item.formula);
-      this._dataFrame.set('visible', 0, item.visible);
-      this._dataFrame.set(BTN_CAPTION.REMOVE, 0, '');
+    this._dataFrame.set('title', 0, item.title);
+    this._dataFrame.set('formula', 0, item.formula);
+    this._dataFrame.set('visible', 0, item.visible);
+    this._dataFrame.set(BTN_CAPTION.REMOVE, 0, '');
     this._notify = true;
     this._currentItemIdx = 0;
   }
@@ -252,30 +252,38 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  scatterPlot: DG.ScatterPlotViewer;
+  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartLookSettings>;
   dataFrame: DG.DataFrame;
   items: DG.FormulaLine[];
 
   /** Source Scatter Plot axes */
   _scrAxes?: AxisNames;
 
-  set height(h: number) {this.scatterPlot.root.style.height = `${h}px`;}
-  get root(): HTMLElement {return this.scatterPlot.root;}
+  set height(h: number) {this.viewer.root.style.height = `${h}px`;}
+  get root(): HTMLElement {return this.viewer.root;}
 
   /** Returns the current columns pair of the preview Scatter Plot */
   get axisCols(): AxisColumns {
-    return {
-      y: this.dataFrame.getCol(this.scatterPlot.props.yColumnName),
-      x: this.dataFrame.getCol(this.scatterPlot.props.xColumnName),
+    let yColName;
+    if (this.viewer.type === DG.VIEWER.LINE_CHART) {
+      const yCols: string[] = (this.viewer.props as DG.ILineChartLookSettings).yColumnNames;
+      yColName = this.dataFrame.columns.toList().find((col) => col.name != this.viewer.props.xColumnName &&
+        yCols.some((n) => col.name.includes(n)))?.name;
     }
+    else
+      yColName = (this.viewer.props as DG.IScatterPlotLookSettings).yColumnName;
+    return {
+      y: this.dataFrame.getCol(yColName!),
+      x: this.dataFrame.getCol(this.viewer.props.xColumnName),
+    };
   }
 
   /** Sets the current axes of the preview Scatter Plot by column names */
   set _axes(names: AxisNames) {
     if (names && names.y && this.dataFrame.getCol(names.y))
-      this.scatterPlot.setOptions({y: names.y});
+      this.viewer.setOptions(this.viewer.type === DG.VIEWER.LINE_CHART ? {yColumnNames: [names.y]}: {y: names.y});
     if (names && names.x && this.dataFrame.getCol(names.x))
-      this.scatterPlot.setOptions({x: names.x});
+      this.viewer.setOptions({x: names.x});
   }
 
   /**
@@ -290,14 +298,14 @@ class Preview {
     if (this._scrAxes) {
       [previewY, previewX] = [previewY ?? this._scrAxes.y, previewX ?? this._scrAxes.x];
 
-      if (previewX == this._scrAxes.y || previewY == this._scrAxes.x)
+      if (previewX === this._scrAxes.y || previewY === this._scrAxes.x)
         [previewY, previewX] = [previewX, previewY];
 
-      if (previewX == previewY)
+      if (previewX === previewY)
         previewY = this._scrAxes.y;
     }
 
-    return { y: previewY, x: previewX }
+    return {y: previewY, x: previewX};
   }
 
   constructor(items: DG.FormulaLine[], src: DG.DataFrame | DG.Viewer, onContextMenu: Function) {
@@ -306,11 +314,12 @@ class Preview {
     if (src instanceof DG.DataFrame)
       this.dataFrame = src;
     else if (src instanceof DG.Viewer) {
-      if (src.getOptions()['type'] == DG.VIEWER.LINE_CHART) {
+      if (src.getOptions()['type'] === DG.VIEWER.LINE_CHART) {
         this.dataFrame = new DG.DataFrame(new DG.LineChartViewer(src.dart).activeFrame!);
         const yCols: string[] = src.props.yColumnNames;
-        const yCol = this.dataFrame.columns.toList().find(col => col.name != src.props.xColumnName && yCols.some(n => col.name.includes(n)));   
-        this._scrAxes = { x: src.props.xColumnName, y: yCol == undefined ? src.props.xColumnName : yCol.name };
+        const yCol = this.dataFrame.columns.toList()
+          .find((col) => col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
+        this._scrAxes = {x: src.props.xColumnName, y: yCol === undefined ? src.props.xColumnName : yCol.name};
       } else {
         this.dataFrame = src.dataFrame!;
         this._scrAxes = { y: src.props.yColumnName, x: src.props.xColumnName };
@@ -318,29 +327,48 @@ class Preview {
     } else
       throw 'Host is not DataFrame or Viewer.';
 
-    this.scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
-      showDataframeFormulaLines: false,
-      showViewerFormulaLines: true,
-      showSizeSelector: false,
-      showColorSelector: false,
-      showContextMenu: false,
-      axesFollowFilter: false,
-      showMinMaxTickmarks: false,
-      showMouseOverPoint: false,
-      showCurrentPoint: false,
-      zoomAndFilter: 'no action',
-      axisFont: '11px Arial',
-      legendVisibility: 'Never',
-      xAxisHeight: 25,
-    });
+    if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
+      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
+        yAxisType: src.props.yAxisType,
+        xAxisType: src.props.xAxisType,
+        invertXAxis: src.props.invertXAxis,
+        showDataframeFormulaLines: false,
+        showViewerFormulaLines: true,
+        showContextMenu: false,
+        axesFollowFilter: false,
+        axisFont: '11px Arial',
+        legendVisibility: 'Never',
+        xAxisHeight: 25,
+      });
+    else
+      this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
+        yAxisType: src instanceof DG.Viewer ? src.props.yAxisType : 'linear',
+        xAxisType: src instanceof DG.Viewer ? src.props.xAxisType : 'linear',
+        invertXAxis: src instanceof DG.Viewer ? src.props.invertXAxis : false,
+        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] != DG.VIEWER.LINE_CHART ?
+          src.props.invertYAxis : false,
+        showDataframeFormulaLines: false,
+        showViewerFormulaLines: true,
+        showSizeSelector: false,
+        showColorSelector: false,
+        showContextMenu: false,
+        axesFollowFilter: false,
+        showMinMaxTickmarks: false,
+        showMouseOverPoint: false,
+        showCurrentPoint: false,
+        zoomAndFilter: 'no action',
+        axisFont: '11px Arial',
+        legendVisibility: 'Never',
+        xAxisHeight: 25,
+      });
 
     /**
      * Creates special context menu for preview Scatter Plot.
      * Before opening the menu, it calculates the world coordinates of the click point.
      */
-    this.scatterPlot.root.addEventListener('contextmenu', (event: MouseEvent) => {
+    this.viewer.root.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault();
-      const worldPoint = this.scatterPlot.screenToWorld(event.offsetX, event.offsetY);
+      const worldPoint = (this.viewer as DG.ScatterPlotViewer).screenToWorld(event.offsetX, event.offsetY);
       onContextMenu(worldPoint.y, worldPoint.x);
     });
   }
@@ -361,12 +389,12 @@ class Preview {
       previewItem.visible = true;
 
       /** Trying to show the item */
-      this.scatterPlot.meta.formulaLines.clear();
-      this.scatterPlot.meta.formulaLines.add(previewItem);
+      this.viewer.meta.formulaLines.clear();
+      this.viewer.meta.formulaLines.add(previewItem);
       this._axes = this._getItemAxes(previewItem);
       return true;
     } catch {
-      this.scatterPlot.meta.formulaLines.clear();
+      this.viewer.meta.formulaLines.clear();
       return false;
     }
   }
@@ -386,7 +414,7 @@ class Editor {
   /** The title must be accessible from other inputs, because it may depend on the formula */
   _ibTitle?: DG.InputBase;
   _setTitleIfEmpty(oldFormula: string, newFormula: string) {
-    if ((oldFormula == (this._ibTitle!.input as HTMLInputElement).placeholder) || newFormula == this._ibTitle!.value)
+    if ((oldFormula === (this._ibTitle!.input as HTMLInputElement).placeholder) || newFormula === this._ibTitle!.value)
       this._ibTitle!.value = newFormula;
   }
 
@@ -405,7 +433,7 @@ class Editor {
   }
 
   _createForm(itemIdx: number): HTMLElement {
-    const item = itemIdx >= 0 ? this.items[itemIdx] : { type: ITEM_TYPE.BAND };
+    const item = itemIdx >= 0 ? this.items[itemIdx] : {type: ITEM_TYPE.BAND};
     let caption = ITEM_CAPTION.BAND;
     let [itemY, itemX, expression] = ['', '', ''];
 
@@ -421,10 +449,10 @@ class Editor {
 
     if (itemIdx >= 0) {
       /** Preparing the "Main" panel */
-      mainPane.append(caption == ITEM_CAPTION.CONST_LINE
-        ? this._inputConstant(itemIdx, itemY, expression)
-        : this._inputFormula(itemIdx));
-      if (caption == ITEM_CAPTION.BAND)
+      mainPane.append(caption === ITEM_CAPTION.CONST_LINE ?
+        this._inputConstant(itemIdx, itemY, expression) :
+        this._inputFormula(itemIdx));
+      if (caption === ITEM_CAPTION.BAND)
         mainPane.append(this._inputColumn2(itemIdx));
 
       /** Preparing the "Format" panel */
@@ -548,7 +576,7 @@ class Editor {
 
     const ibMin = ui.stringInput('Range', `${item.min ?? ''}`,
       (value: string) => {
-        item.min = value.length == 0 ? undefined : Number(value);
+        item.min = value.length === 0 ? undefined : Number(value);
         this._onItemChangedAction(itemIdx);
       });
 
@@ -558,7 +586,7 @@ class Editor {
 
     const ibMax = ui.stringInput('', `${item.max ?? ''}`,
       (value: string) => {
-        item.max = value.length == 0 ? undefined : Number(value);
+        item.max = value.length === 0 ? undefined : Number(value);
         this._onItemChangedAction(itemIdx);
       });
 
@@ -576,7 +604,7 @@ class Editor {
     const ibArrange = ui.choiceInput('Arrange',
       item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', ['above markers', 'below markers'],
       (value: string) => {
-        item.zIndex = value == 'above markers' ? 100 : -100;
+        item.zIndex = value === 'above markers' ? 100 : -100;
         this._onItemChangedAction(itemIdx);
       });
 
@@ -591,7 +619,7 @@ class Editor {
     const item = this.items[itemIdx];
 
     function formTitleValue(value: string) {
-      if (value == '' || value == item.formula) {
+      if (value === '' || value === item.formula) {
         elTitle.placeholder = item.formula!;
         elTitle.value = '';
         return item.formula!;
@@ -726,8 +754,8 @@ class CreationControl {
       arr.findIndex((t) => (t.formula === val.formula) ) === ind);
 
     /** Remove identical older items from history */
-    this._historyItems = this._historyItems.filter(arr =>
-      !this._justCreatedItems.find(val => (val.formula === arr.formula)));
+    this._historyItems = this._historyItems.filter((arr) =>
+      !this._justCreatedItems.find((val) => (val.formula === arr.formula)));
 
     const newHistoryItems = this._justCreatedItems.concat(this._historyItems);
     newHistoryItems.splice(HISTORY_LENGTH);
@@ -795,7 +823,7 @@ class CreationControl {
 
         /** Update the Table, Preview and Editor states */
         onItemCreatedAction(item);
-      }
+      };
 
       /** Construct popup menu */
       const menu = DG.Menu.popup().items([
@@ -803,7 +831,7 @@ class CreationControl {
         ITEM_CAPTION.VERT_LINE,
         ITEM_CAPTION.HORZ_LINE,
         ITEM_CAPTION.VERT_BAND,
-        ITEM_CAPTION.HORZ_BAND
+        ITEM_CAPTION.HORZ_BAND,
       ], onClickAction);
 
       /** Add separator only if other menu items exist */
@@ -834,7 +862,7 @@ class CreationControl {
       }
 
       menu.show();
-    }
+    };
   }
 }
 
@@ -857,9 +885,7 @@ export class FormulaLinesDialog {
 
   /** Returns the Table corresponding to the current tab in the tab control */
   get _currentTable(): Table {
-    return this.tabs.currentPane.name == ITEM_SOURCE.VIEWER
-      ? this.viewerTable!
-      : this.dframeTable!;
+    return this.tabs.currentPane.name === ITEM_SOURCE.VIEWER ? this.viewerTable! : this.dframeTable!;
   }
 
   /** Initializes all parameters and opens the Dialog window */
@@ -875,7 +901,7 @@ export class FormulaLinesDialog {
     /** Init Dialog layout */
     const layout = ui.div([
       ui.block([this.tabs.root, this.preview.root], {style: {width: '55%', paddingRight: '20px'}}),
-      ui.block([this.editor.root], {style: {width: '45%'}})
+      ui.block([this.editor.root], {style: {width: '45%'}}),
     ]);
 
     this.dialog

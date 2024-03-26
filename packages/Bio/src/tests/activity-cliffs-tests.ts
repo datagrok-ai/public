@@ -10,8 +10,9 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {_package} from '../package-test';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
@@ -23,7 +24,7 @@ category('activityCliffs', async () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibSettings: LibSettings;
+  let userLibSettings: UserLibSettings;
   const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
   const helmEncodingFunc = DG.Func.find({name: 'helmPreprocessingFunction', package: 'Bio'})[0];
   before(async () => {
@@ -71,7 +72,7 @@ category('activityCliffs', async () => {
   });
 
   test('Helm', async () => {
-    const df = await _package.files.readCsv('data/sample_HELM_50.csv');
+    const df = await _package.files.readCsv('samples/HELM_50.csv');
     const _view = grok.shell.addTableView(df);
 
     await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,

@@ -2,7 +2,7 @@ import {after, before, category, expect, test} from '@datagrok-libraries/utils/s
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {caption, enabled, checkHTMLElement} from './utils';
+import {caption, enabled, checkHTMLElement, stringValue} from './utils';
 import dayjs from 'dayjs';
 
 
@@ -55,7 +55,7 @@ category('UI: Inputs', () => {
 
   test('input.stringValue', async () => {
     for (const [key, value] of Object.entries(inputs))
-      stringValue(key, value, '.ui-input-editor');
+      stringValue(key, value, '.ui-input-editor', v);
   });
 
   test('input.enabled', async () => {
@@ -121,49 +121,13 @@ category('UI: Inputs', () => {
     grok.shell.closeAll();
   });
 
-  function stringValue(name: string, input: DG.InputBase, selector: string): void {
-    v.root.innerHTML = '';
-    v.append(input.root);
-    let value: string;
-    try {
-      switch (name) {
-      case 'multiChoiceInput':
-        const node = v.root.querySelectorAll('.ui-input-multi-choice-checks>div');
-        value = (<HTMLInputElement>v.root.querySelector('.ui-input-label')).innerText;
-        for (let i = 0; i < node.length; i++) {
-          const input = (<HTMLInputElement>node[i].querySelector('input'));
-          if (input.checked)
-            value = value.concat((<HTMLInputElement>node[i].querySelector('.ui-label')).innerText);
-        }
-        expect(input.stringValue, value);
-        break;
-      case 'columnInput':
-        value = (<HTMLInputElement>v.root.querySelector('.d4-column-selector-column')).innerText;
-        expect(input.stringValue, value);
-        break;
-      case 'columnsInput':
-        value = (<HTMLInputElement>v.root.querySelector('.ui-input-column-names')).innerText.substring(3);
-        expect(input.stringValue, value);
-        break;
-      default:
-        value = (<HTMLInputElement>v.root.querySelector(selector)).value;
-        expect(input.stringValue, value);
-        break;
-      }
-    } catch (x) {
-      throw new Error(name + ': ' + x);
-    } finally {
-      input.root.remove();
-    }
-  }
-
   function readonly(name: string, input: DG.InputBase, selector: string): void {
     v.append(input.root);
     let value: boolean = false;
     input.readOnly = true;
     try {
       if (input.input.tagName == 'INPUT') {
-        if (v.root.querySelector(selector))
+        if (v.root.querySelector(selector) || name === 'switchInput')
           value = true;
         expect(input.readOnly, value);
       }

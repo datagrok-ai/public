@@ -335,6 +335,7 @@ export namespace chem {
       if (mode)
         this._mode = mode;
       this.root.style.height = '100%';
+      this.extSketcherCanvas.classList.add('chem-external-sketcher-canvas');
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
       this.emptySketcherLink = ui.divText('Sketch', 'chem-sketch-link sketch-link');
       this.calculating = false;
@@ -391,7 +392,8 @@ export namespace chem {
           ui.empty(this.extSketcherDiv);
           const currentMolfile = this.getMolFile();
           ui.tooltip.bind(this.extSketcherCanvas, () => this.createMoleculeTooltip(currentMolfile));
-          canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
+          const r = window.devicePixelRatio;
+          canvasMol(0, 0, width * r, height * r, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
               this.extSketcherDiv.append(this.extSketcherCanvas);
@@ -485,10 +487,6 @@ export namespace chem {
         }
       };
 
-      ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
-        if (!this.isEmpty() && !this.extSketcherDiv.closest('.d4-popup-host'))
-          this.updateExtSketcherContent();
-      });
 
       this.updateExtSketcherContent();
       return this.extSketcherDiv;

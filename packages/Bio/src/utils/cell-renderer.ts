@@ -215,6 +215,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = tableColTemp[tempTAGS.currentWord];
+      if (tempCurrentWord && tableCol?.dataFrame?.currentRowIdx === -1)
+        tableColTemp[tempTAGS.currentWord] = null;
       const referenceSequence: ISeqSplitted = splitterFunc(
         ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
           tempReferenceSequence : tempCurrentWord ?? '');

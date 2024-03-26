@@ -6,20 +6,215 @@ position: 6 # float position is supported
 
 ## Latest version
 
-| Service                                                   | Docker Image                                                                                      |
-|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.17.6](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| Service                                                   | Docker Image                                                                                     |
+|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.18.1](https://hub.docker.com/r/datagrok/datagrok)                           |
+| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                   |
+| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                    |
+| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                    |
 | [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
-| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
-| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
+| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)            |
+| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                      |
+| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                         |
 
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+
+## 2024-03-14 1.18.1
+
+### Addressed Issues
+
+* (Improvement) GROK-14698: Color coding: improve traffic lights schemas 
+
+
+## 2024-03-08 1.18.0
+
+Datagrok 1.18 release focuses on usability improvements and stability:
+
+* Improved **Browser** for navigation, preview, and convenient interaction with all available functionality on the Datagrok platform.
+* Ability to clone projects.
+* New CVM queue employs multiple JKG nodes to ensure scalable and streamlined script execution.
+* New MultiChoice cell renderer to show a number of checkboxes within a cell. For details, see [Add multiple check box and dropdown list to cell of table](https://community.datagrok.ai/t/add-multiple-check-box-and-dropdown-list-to-cell-of-table/835/9?u=oahadzhanian.datagrok.ai).
+* New Tags cell renderer for comma-separated rows.
+* Automatic error handling report: A "Report an Error" dialog box appears when you click the exclamation point icon (Beta version).
+* Sticky meta (Beta version).
+
+### Visualization and usability improvements
+
+* Calculated columns:
+  * Save calculated columns to the projects with data synchronization.
+  * Update values if the base column values changed.
+*  [#2634](https://github.com/datagrok-ai/public/issues/2634): Synchronization between Bar chart and Line chart.
+* [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click.
+* [#2548](https://github.com/datagrok-ai/public/issues/2548): Viewers | Legends: implement switching between categories using up and down arrows when one category is selected exclusively.
+* [#2635](https://github.com/datagrok-ai/public/issues/2635): Customization of actions on the Context Panel.
+* [#2664](https://github.com/datagrok-ai/public/issues/2664): Implement a cascade column renaming used by Formula lines.
+* [#2467](https://github.com/datagrok-ai/public/issues/2467): Allow to set tab label for stacked viewers programmatically.
+* [#2598](https://github.com/datagrok-ai/public/issues/2598): Context menus to hide selectors.
+* [#2564](https://github.com/datagrok-ai/public/issues/2564): Column selectors should not overlap the viewer.
+* [#2299](https://github.com/datagrok-ai/public/issues/2299): Make viewers aware of surroundings.
+* Rename viewer by hotkey **F2**.
+* Column selectors: ESC should close the popup.
+* Fixed:
+   * [#2570](https://github.com/datagrok-ai/public/issues/2570): Viewers: legend does not show all categories after filtering in specific cases.
+   * [#2590](https://github.com/datagrok-ai/public/issues/2590): Calculated columns dialog: not all functions are available in list, search is not working as expected.
+* [Grid](../../../visualize/viewers/grid.md):
+   * [#2645](https://github.com/datagrok-ai/public/issues/2645): Support single decimal place for rounding in calculated columns
+   * Rendering table cells with any viewer.
+   * Custom numeric format.
+   * Fixed:
+     * [#2468](https://github.com/datagrok-ai/public/issues/2468): Cell values starting with the quote character are parsed incorrectly.
+     * [#2483](https://github.com/datagrok-ai/public/issues/2483): Order and hide columns and Tooltip dialogs: cosmetic issues.
+     * [#2503](https://github.com/datagrok-ai/public/issues/2503): Order and Hide: Tooltip with null category shouldn’t be that big.
+     * [#2523](https://github.com/datagrok-ai/public/issues/2523): Columns added after performing structure search cannot be shown again if hidden.
+* [Filter Panel](../../../visualize/viewers/filters.md):
+   * [#2185](https://github.com/datagrok-ai/public/issues/2185): Fuzzy filter enhancements:
+   * The filter header corresponds to the column name.
+   * Ability to combine with free-text filter
+   * Save to layout typical searches / search patterns
+   * [#2502](https://github.com/datagrok-ai/public/issues/2502): buttons on the filter panel appear on hovering only.
+   * Fixed:
+     * [#2504](https://github.com/datagrok-ai/public/issues/2504): The question mark hovering doesn’t show the filtering of the scaffold tree viewer.
+     * [#2647](https://github.com/datagrok-ai/public/issues/2647): #2647: File refresh breaks structure filter
+     * [#2684](https://github.com/datagrok-ai/public/issues/2684): #2684: Wrong filters are added if there are two views in some cases.
+* [Scatterplot](../../../visualize/viewers/scatter-plot.md):
+   * [#2456](https://github.com/datagrok-ai/public/issues/2456): ignore negatives and zero values when switching to log scale.
+   * [#2480](https://github.com/datagrok-ai/public/issues/2480):default range should take into account only the rows where both axes values are present.
+   * Fixed:
+     * [#2330](https://github.com/datagrok-ai/public/issues/2330): Scatterplot has to show empty categories like Box plot and Bar chart do.
+     * [#2487](https://github.com/datagrok-ai/public/issues/2487): datetime columns are not supported when adding formula lines.
+     * [#2488](https://github.com/datagrok-ai/public/issues/2488): Color selector is missing for formula lines dialog.
+     * [#2489](https://github.com/datagrok-ai/public/issues/2489): Color selector opened from the 'style' section in properties panel cannot be closed.
+     * [#2505](https://github.com/datagrok-ai/public/issues/2505): If categories are filtered out they shouldn't be shown in the marker legend.
+     * [#2527](https://github.com/datagrok-ai/public/issues/2527): error occurs when axes are set to log scale in some cases.
+     * [#2530](https://github.com/datagrok-ai/public/issues/2530): Errors on hovering scatterplot with formula lines.
+     * [#2665](https://github.com/datagrok-ai/public/issues/2665): Ctrl+Shift+Drag doesn't work for deselection.
+     * [#2671](https://github.com/datagrok-ai/public/issues/2671): filtered out data is unexpectedly shown in some cases on filtering the plot further using markers legend.
+     * [#671](https://github.com/datagrok-ai/public/issues/671): 'Formula lines' dialog preview is not updated if scatterplot configuration is changed
+* [Trellis plot](../../../visualize/viewers/trellis-plot.md):
+   * [#2457](https://github.com/datagrok-ai/public/issues/2457): redesigning:
+     * Move X and Y selectors to the corresponding axes.
+     * Most relevant options of the inner viewer should be displayed at the top of the viewer
+     * Selectors instead of combo-boxes
+   * [#2336](https://github.com/datagrok-ai/public/issues/2336): improve the display of outer and inner viewers properties.
+   * [#2636](https://github.com/datagrok-ai/public/issues/2636): Trellis plot | Bar chart: improvements.Now they work with global axes, support multiple splits, and display their axis with category names and colors on the left.
+   * Better auto-selection of columns for pie chart and bar chart.
+   * Integrate sparklines (Beta version). For details, see [Trellis: sparklines](https://community.datagrok.ai/t/trellis-sparklines/818/1)
+   
+* [Histogram](../../../visualize/viewers/histogram.md):
+   * [#2549](https://github.com/datagrok-ai/public/issues/2549): add highlighting for split lines as for line chart.
+   * [#2685](https://github.com/datagrok-ai/public/issues/2685): add stacked view option when split is set.
+   * Fixed:
+     * [#2472](https://github.com/datagrok-ai/public/issues/2472): selected column is not synchronised between in-plot controls and properties panel.
+     * [#2524](https://github.com/datagrok-ai/public/issues/2524): Split: no tooltip and Y axis when the values are not normalized.
+* [Line chart](../../../visualize/viewers/line-chart.md):
+   * [#2357](https://github.com/datagrok-ai/public/issues/2357): custom tooltip.
+   * [#2623](https://github.com/datagrok-ai/public/issues/2623): implement the one-click way to set the Split by columns.
+   *  Interactivity on a stacked bar chart.
+   * Fixed:
+     * [#2485](https://github.com/datagrok-ai/public/issues/2485): too much empty space if Y axis is logarithmic for specific data.
+     * [#2577](https://github.com/datagrok-ai/public/issues/2577): colors in the legend do not match color in the plot in some cases.
+     * [#2608](https://github.com/datagrok-ai/public/issues/2608): Line chart with row source = selected: all rows are deselected on clicking line in some cases.
+* [Box plot](../../../visualize/viewers/box-plot.md): [#2484](https://github.com/datagrok-ai/public/issues/2484): no indication what dot is hovered, wrong dot is selected in some cases.
+* [Bar chart](../../../visualize/viewers/bar-chart.md):
+   * [#2584](https://github.com/datagrok-ai/public/issues/2584): add new aggregations for time ranges such as weeks and days.
+   * [#2298](https://github.com/datagrok-ai/public/issues/2298): squeeze the white space around the title.
+  * Fixed: [#2562](https://github.com/datagrok-ai/public/issues/2562): error when date column is used as category and split function is non-default.
+* For pivot table fixed:
+    * [#2535](https://github.com/datagrok-ai/public/issues/2535): non-default aggregations are not saved in layout.
+    * [#2606](https://github.com/datagrok-ai/public/issues/2606): colours, formatting, shown/hidden columns are reset on filtering.
+*  [Tile viewer](../../../visualize/viewers/tile-viewer.md): ability to specify custom lane categories.
+
+*  [Correlation plot](../../../visualize/viewers/tile-viewer.md): [#2653](https://github.com/datagrok-ai/public/issues/2653): tooltip issue.
+
+*  [Forms viewer](../../../visualize/viewers/forms.md): [#2652](https://github.com/datagrok-ai/public/issues/2652): implemented an option to download a viewer as PNG.
+
+### Data Access
+
+*  Azure Blob integration. For details, see [Azure Blob](../../access/files/shares/azure.md)
+
+### Improvements for developers
+
+* Core: Inputs: validation and harmonization 
+   * New `UserInput`.
+   * Two-way binding for `DG.InputForm`.
+   * `bindFuncCall` method for `InputForm`.
+   * Computable "visible" and "enabled" properties
+   * `TableInput`: Implement capability to get files from Shares.
+   * `NumberInput`: Add capability to set custom step.
+   * Removed default rounding for float inputs.
+*  Table, RowSource, and Filter properties in js viewers.
+*  Scripts logging system.
+* Script saving via Ctrl+S.
+* Scripting | Variables: added the scrollbar to the variables window.
+*  API to send an email from DG.
+
+#### [JS API](../../../develop/js-api.md)
+
+  * ` Column.getNumber()` method.
+  * Dynamical dependencies load for `Utils.loadJsCss(files)`.
+   * Auto-generation of Dart interop interface.
+  * Exposed `FuncCall` fields to JS.
+  * Setter for `InputBase` caption.
+  * Made `EventData` for `DataFrame` typed.
+
+## 2024-02-08 1.17.13
+
+### Addressed Issues
+
+* (Bug) [#2647](https://github.com/datagrok-ai/public/issues/2647): #2647: File refresh breaks structure filter
+* (Bug) [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases
+* (Bug) [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases (WIP)
+
+
+## 2024-01-26 1.17.12
+
+### Addressed Issues
+
+* (Bug) Windows share mounts with wrong permissions
+
+
+## 2024-01-22 1.17.11
+
+### Addressed Issues
+
+* (Bug) [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there are two views opened 
+
+
+## 2023-12-21 1.17.10
+
+### Addressed Issues
+
+* (Bug) [#2535](https://github.com/datagrok-ai/public/issues/2535): Pivot table: non-default aggregations are not saved in layout 
+* (Bug) GROK-14381: Grid | Add Summary column: impossible to hide or add a column through the Order or Hide Columns dialog 
+* (Bug) [#2577](https://github.com/datagrok-ai/public/issues/2577): Line chart: colours in the legend do not match colour in the plot in some cases 
+* (Bug) [#2570](https://github.com/datagrok-ai/public/issues/2570): Viewers: legend does not show all categories after filtering in specific cases (WIP)
+* (Bug) [#2574](https://github.com/datagrok-ai/public/issues/2574): Multiple errors in console on hovering line chart with logarithmic axis and no data 
+
+
+## 2023-12-11 1.17.9
+
+### Addressed Issues
+
+* GROK-14356: Projects: data-sync option is not shown for .sdf files 
+
+
+## 2023-12-07 1.17.8
+
+### Addressed Issues
+
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click (WIP)
+
+
+## 2023-12-06 1.17.7
+
+### Addressed Issues
+
+* (Improvement) [#2455](https://github.com/datagrok-ai/public/issues/2455): Viewers: Add the ability to choose several categories with ctrl click (WIP)
+* (Bug) [#2562](https://github.com/datagrok-ai/public/issues/2562): Bar chart: error when date column is used as category and split function is non-default 
+
 
 ## 2023-11-29 1.17.6
 

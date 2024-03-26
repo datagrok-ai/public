@@ -44,7 +44,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_) => {
-        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));
+        this.viewer.setHighlightTag = super.isFiltering;
+        const tag = super.isFiltering ? this.viewer.colorCodedScaffolds : [];
+        this.viewer.setScaffoldTag(this.column!, tag);
       }),
     );
     this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
@@ -66,6 +68,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
       colName: state.columnName,
     });
 
+    if (state.colorCodedScaffolds)
+      this.viewer.setHighlightTag = state.active; //in case applyState is called on disabled filter with existing scaffolds, the highlight is not set
     if (state.savedTree)
       this.viewer.loadTreeStr(state.savedTree);
 
@@ -75,6 +79,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   applyFilter(): void {
     if (this.dataFrame && this.viewer.bitset && !this.isDetached) {
+      this.viewer.setHighlightTag = true;
       this.viewer.updateFilters(false);
       this.dataFrame!.filter.and(this.viewer.bitset!);
       this.dataFrame!.rows.addFilterState(this.saveState());
@@ -84,7 +89,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
-    this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+    this.viewer.setScaffoldTag(this.viewer.molCol!, [], true);
   }
 
   createViewer(dataFrame: DG.DataFrame) {

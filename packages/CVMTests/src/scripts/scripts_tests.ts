@@ -30,6 +30,17 @@ for (const lang of langs) {
         'bool_output': bool, 'string_output': str});
     });
 
+    test('Long string', async () => {
+      const str = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+      const int = 2;
+      const double = 0.3;
+      const bool = true;
+      const result = await grok.functions.call(`CVMTests:${lang}Simple`,
+        {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
+      expectObject(result, {'integer_output': int, 'double_output': double,
+        'bool_output': bool, 'string_output': str});
+    }, {timeout: 60000});
+
     test('Datetime input/output', async () => {
       const currentTime = dayjs();
       const result = await grok.functions.call(`CVMTests:${lang}Date`,
@@ -41,12 +52,15 @@ for (const lang of langs) {
     });
 
     test('Dataframe input/output', async () => {
-      const df = DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
+      function getSample() {
+        return DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
+      }
       const result = await grok.functions.call(`CVMTests:${lang}Dataframe`,
-        {'df': df, 'dfNumerical': df, 'dfCategorical': df});
-      expectTable(result['resultDf'], df);
-      expectTable(result['resultNumerical'], df);
-      expectTable(result['resultCategorical'], df);
+        {'df': getSample(), 'dfNumerical': getSample(), 'dfCategorical': getSample()});
+      const sample = getSample();
+      expectTable(result['resultDf'], sample);
+      expectTable(result['resultNumerical'], sample);
+      expectTable(result['resultCategorical'], sample);
     });
 
     test('Map type input/output', async () => {
@@ -134,7 +148,7 @@ for (const lang of langs) {
       const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
       return `Execution time: ${Date.now() - start}`;
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+    }, {timeout: 120000});
 
     test(`Dataframe performance test sequentially`, async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -146,7 +160,7 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+    }, {timeout: 120000});
 
     test('Dataframe performance test parallel', async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -159,7 +173,7 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
+    }, {timeout: 120000});
   });
 }
 
@@ -226,4 +240,10 @@ export async function getScriptTime(name: string, params: object = {}): Promise<
   const start = Date.now();
   await grok.functions.call(name, params);
   return Date.now() - start;
+}
+
+function randomString(length: number, chars: string) {
+  let result = '';
+  for (let i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+  return result;
 }

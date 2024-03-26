@@ -32,6 +32,7 @@ category('Radar', () => {
   test('Standard Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
+      title: 'Radar',
       min: '5',
       max: '95',
       showOnlyCurrentRow: false,

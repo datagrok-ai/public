@@ -15,6 +15,7 @@ import {intToHtml} from '@datagrok-libraries/utils/src/color';
 import {IPhylocanvasGlViewer, TreeTypesNames} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 import {TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 
 // TODO: add test for these properties existing.
 
@@ -67,6 +68,9 @@ const TreeTypesTypes: { [treeType: string]: string } = {
   [TreeTypesNames.Diagonal]: TreeTypes.Diagonal,
   [TreeTypesNames.Orthogonal]: TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
 };
+
+/** minimal tree required to not throw exception in PhylocanvasGL */
+const defaultNwkRoot = parseNewick('(NONE:1);');
 
 export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlViewer {
   private viewed: boolean = false;
@@ -289,8 +293,6 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
       this.root.appendChild(this.treeDiv);
 
       // default props required to prevent throwing exception
-      const defaultNwkStr = '(NONE:1);'; // minimal tree required to not throw exception in PhylocanvasGL
-      const defaultNwkRoot = parseNewick(defaultNwkStr);
       const props: { [p: string]: any } = {
         source: {type: 'biojs', data: defaultNwkRoot},
         interactive: true,
@@ -322,7 +324,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
       //
       //   }));
     }
-    const newickRoot = parseNewick(this.newick!);
+    const newickRoot = this.newick ? parseNewick(this.newick) : defaultNwkRoot;
     this.viewer!.setProps({source: {type: 'biojs', data: newickRoot}});
 
     this.viewSubs.push(this.nwkDf.onSelectionChanged.subscribe(this.dfOnSelectionChanged.bind(this)));
@@ -451,6 +453,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
 
   protected viewerDeckOnAfterRender({gl}: { gl: WebGLRenderingContext }): void {
     this._onAfterRender.next({gl});
+    this._onRendered.next();
   }
 
   protected viewerOnHover(info: PickingInfo, event: MjolnirPointerEvent): void {
@@ -472,6 +475,22 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
     const nodeCol: DG.Column = this.nwkDf.getCol(this.nodeColumnName);
     const selectedIdSet = new Set(this.viewer!.props.selectedIds);
     this.nwkDf.selection.init((rowI) => selectedIdSet.has(nodeCol.get(rowI)));
+  }
+
+  // -- IRenderer --
+
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    this.viewer!.render();
+  }
+
+  async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+    await testEvent(this.onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout);
   }
 }
 

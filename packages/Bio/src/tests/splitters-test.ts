@@ -3,25 +3,20 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  after,
-  before,
-  category,
-  test,
-  expect,
-  expectArray,
-  delay,
-  awaitCheck
+  after, before, category, test, expect, expectArray, delay, awaitCheck
 } from '@datagrok-libraries/utils/src/test';
-import * as C from '../utils/constants';
-import {_package, getHelmMonomers} from '../package';
 import {
   TAGS as bioTAGS,
   splitterAsFasta,
   splitterAsHelm,
   NOTATION
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {splitToMonomersUI} from '../utils/split-to-monomers';
 
+import {splitToMonomersUI} from '../utils/split-to-monomers';
+import {awaitGrid} from './utils';
+import * as C from '../utils/constants';
+
+import {getHelmMonomers} from '../package';
 
 category('splitters', async () => {
   before(async () => {
@@ -107,8 +102,8 @@ category('splitters', async () => {
 
     // TODO: Check cell.renderer for columns of monomers
     const tv: DG.TableView = grok.shell.addTableView(newDf);
-    await awaitCheck(() => { return tv.grid.dataFrame != df; },
-      'View grid has wrong data frame', 100);
+    await awaitGrid(tv.grid);
+    expect(tv.grid.dataFrame.id, df.id);
   });
 
   test('getHelmMonomers', async () => {

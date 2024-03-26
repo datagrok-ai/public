@@ -4,11 +4,12 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
+import { checkPackage } from '../utils/elemental-analysis-utils';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
-const TRIPLE_BOND = '#';
-const TRIPLE_BOND_REPLACE_SYMBOL = '%23';
+const MW_DESC = 'exactmw';
+const MAX_MW_FOR_IDENTIFIERS = 1200;
 
 let unichemSources: DG.DataFrame;
 
@@ -102,28 +103,18 @@ class UniChemSource {
   }
 }
 
-async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any} | undefined> {
-  const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
-  const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
-  const response = await grok.dapi.fetchProxy(url, params);
-  const json = await response.json();
-  if (json.error)
-    return;
+async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any}> {
+  const json = await grok.functions.call(`ChemblApi:getCompoundsIds`, { 'inchiKey': inchiKey });
   const sources: {[key: string]: any}[] = json.filter((s: {[key: string]: string | number}) => {
     const srcId = parseInt(`${s['src_id']}`);
     s['src_id'] = srcId;
     return srcId in UniChemSource.idNames;
   });
-
-  return response.status !== 200 ?
-    {} : Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
+  return Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
 }
 
 export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | null> {
   const idMap = await getCompoundsIds(inchiKey);
-
-  if (typeof idMap === 'undefined')
-    return null;
 
   await UniChemSource.refreshSources();
 
@@ -134,32 +125,26 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
   return idMap;
 }
 
-async function getIUPACName(smiles: string): Promise<string> {
-  // need to escape # sign (triple bond) in URL
-  const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL);
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
-  const response = await fetch(url);
-  const responseJson = await response.json();
-  const result = responseJson.PropertyTable?.Properties;
-  return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
-}
-
 export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   const mol = getMolSafe(molfile, {}, rdKitModule);
+  let fullIdentifiersPanel = true;
   if (mol.mol) {
     const inchi = mol.mol.get_inchi();
     const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
+    if (JSON.parse(mol.mol.get_descriptors())[MW_DESC] > MAX_MW_FOR_IDENTIFIERS)
+      fullIdentifiersPanel = false;
     mol.mol.delete();
 
     let idMap: {[k: string]: any} | null = null;
     try {
-      idMap = await getIdMap(inchiKey);
+      if (checkPackage('ChemblApi', 'getCompoundsIds'))
+        idMap = await getIdMap(inchiKey);
     } catch (e) {
       console.warn(e);
     }
 
-    const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap);
+    const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap, fullIdentifiersPanel);
     return new DG.Widget(ui.tableFromMap(mainIdentifiers));
   } else
     return new DG.Widget(ui.divText('Malformed molecule'));
@@ -167,26 +152,35 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
 
 
 function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
-  idMap: {[k: string]: any} | null): {[k: string]: any} {
+  idMap: {[k: string]: any} | null, fullIdentifiersPanel: boolean): {[k: string]: any} {
   const map: {[k: string]: any} = {};
   const smiles = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
-  map['Name'] = ui.wait(async () => ui.divText(await getIUPACName(smiles)));
+  if (fullIdentifiersPanel)
+    addNameField(map, smiles);
   map['Smiles'] = smiles;
   map['Inchi'] = inchi;
   map['Inchi key'] = inchiKey;
-  extractMainIdentifier(CHEMBL, map, idMap);
-  extractMainIdentifier(PUBCHEM, map, idMap);
-  if (idMap) {
-    for (const [source, identifier] of Object.entries(idMap))
-      map[source] = ui.link(identifier.id, () => window.open(identifier.link));
-  }
-  function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
-    const identifier = idMap ? idMap[source.toLowerCase()] : null;
-    if (identifier) {
-      map[source] = ui.link(identifier.id, () => window.open(identifier.link));
-      delete idMap![source.toLowerCase()];
-    } else
-      map[source] = '-';
+  if (fullIdentifiersPanel) {
+    if (idMap && Object.keys(idMap).length) {
+      extractMainIdentifier(CHEMBL, map, idMap);
+      extractMainIdentifier(PUBCHEM, map, idMap);
+      for (const [source, identifier] of Object.entries(idMap))
+        map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+    }
+    function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
+      const identifier = idMap ? idMap[source.toLowerCase()] : null;
+      if (identifier) {
+        map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+        delete idMap![source.toLowerCase()];
+      } else
+        map[source] = '-';
+    }
   }
   return map;
+}
+
+function addNameField(map: { [key: string]: any }, smiles: string) {
+  const packageExists = checkPackage('PubchemApi', 'GetIupacName');
+  if (packageExists)
+    map['Name'] = ui.wait(async () => ui.divText(await grok.functions.call(`PubChemApi:GetIupacName`, { 'smiles': smiles })));
 }

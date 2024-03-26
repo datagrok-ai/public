@@ -30,7 +30,8 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
   preprocessingFunctions: (DG.Func | null | undefined)[],
   aggregationMethod: DistanceAggregationMethod, plotEmbeddings: boolean = true, clusterEmbeddings: boolean = false,
   dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & {preprocessingFuncArgs: Options[]} &
-    Options = {preprocessingFuncArgs: []}, uiOptions: DimRedUiOptions = {}) {
+    Options = {preprocessingFuncArgs: []},
+  uiOptions: DimRedUiOptions = {}, postProcessingFunc: DG.Func | null = null, postProcFuncArgs: Options = {}) {
   const scatterPlotProps = {
     showXAxis: false,
     showYAxis: false,
@@ -42,6 +43,8 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
     throw new Error('columns, metrics and preprocessing functions, weights and function arguments' +
       'must have the same length');
   }
+
+  const tv = grok.shell.tableView(table.name) ?? grok.shell.addTableView(table);
 
   const doReduce = async () => {
     const pg = DG.TaskBarProgressIndicator.create(
@@ -56,8 +59,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
           embedXCol = table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
           embedYCol = table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
           if (plotEmbeddings && !scatterPlot) {
-            scatterPlot = grok.shell
-              .tableView(table.name)
+            scatterPlot = tv
               .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1],
                 title: uiOptions.scatterPlotName ?? 'Embedding space'});
           }
@@ -80,8 +82,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
         let resolveF: Function | null = null;
         if (plotEmbeddings) {
-          scatterPlot = grok.shell
-            .tableView(table.name)
+          scatterPlot = tv
             .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1],
               title: uiOptions.scatterPlotName ?? 'Embedding space'});
           ui.setUpdateIndicator(scatterPlot.root, true);
@@ -141,7 +142,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         try {
           const clusterRes = await getDbscanWorker(res[0], res[1],
             dimRedOptions.dbScanEpsilon ?? 0.01, dimRedOptions.dbScanMinPts ?? 4);
-          const clusterColName = table.columns.getUnusedName('Cluster');
+          const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
           const clusterCol = table.columns.addNewString(clusterColName);
           clusterCol.init((i) => clusterRes[i].toString());
           if (scatterPlot)
@@ -153,13 +154,28 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
           clusterPg.close();
         }
       }
-      if (res && plotEmbeddings && scatterPlot) {
-        ui.setUpdateIndicator((scatterPlot as DG.ScatterPlotViewer).root, false);
+      if (res) {
         const embedXCol = table.columns.byName(embedColsNames[0]);
         const embedYCol = table.columns.byName(embedColsNames[1]);
         embedXCol.init((i) => res[0][i]);
         embedYCol.init((i) => res[1][i]);
-        return scatterPlot as DG.ScatterPlotViewer;
+        if (postProcessingFunc) {
+          try {
+            const col1InputName = postProcessingFunc.inputs[0].name;
+            const col2InputName = postProcessingFunc.inputs[1].name;
+            await postProcessingFunc
+              .prepare({[col1InputName]: embedXCol, [col2InputName]: embedYCol, ...postProcFuncArgs})
+              .call(true);
+          } catch (e) {
+            grok.shell.error('Post-processing failed');
+            console.error(e);
+          }
+        }
+        if (scatterPlot) {
+          ui.setUpdateIndicator((scatterPlot as DG.ScatterPlotViewer).root, false);
+          (scatterPlot as DG.ScatterPlotViewer).helpUrl = '/help/compute/sequence-space';
+          return scatterPlot as DG.ScatterPlotViewer;
+        }
       }
     } catch (e) {
       grok.shell.error('Dimensionality reduction failed');

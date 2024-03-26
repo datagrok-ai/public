@@ -1,25 +1,53 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {default as init} from "parquet-wasm/esm/arrow1";
+import {fromFeather as _fromFeather, toFeather as _toFeather, fromParquet as _fromParquet, toParquet as _toParquet} from "./api/api";
 
-import { tableFromIPC, tableFromArrays, tableToIPC} from 'apache-arrow';
-//@ts-ignore
-import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from './arrow1';
-import { Buffer } from 'buffer';
 export const _package = new DG.Package();
-
-
 
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-
-//tags: init
+//tags: autostart
 export async function parquetInit() {
   await init(_package.webRoot + 'dist/arrow1_bg.wasm');
+}
+
+//name: toFeather
+//description: Converts DG.DataFrame to arrow
+//input: dataframe table
+//input: bool asStream = true
+//output: blob bytes
+export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8Array | null {
+  return _toFeather(table, asStream);
+}
+
+//name: fromFeather
+//description: Converts arrow ipc stream to DG.DataFrame
+//input: blob bytes
+//output: dataframe table
+export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
+  return _fromFeather(bytes);
+}
+
+//name: toParquet
+//description: Converts DG.DataFrame to parquet
+//input: dataframe table
+//input: int compression {nullable: true}
+//output: blob bytes
+export function toParquet(table: DG.DataFrame, compression?: number): Uint8Array | null {
+  return _toParquet(table, compression);
+}
+
+//name: fromParquet
+//description: Converts binary data in parquet format to DG.DataFrame
+//input: blob bytes
+//output: dataframe table
+export function fromParquet(bytes: Uint8Array): DG.DataFrame | null {
+  return _fromParquet(bytes);
 }
 
 //input: list bytes
@@ -27,10 +55,7 @@ export async function parquetInit() {
 //tags: file-handler
 //meta.ext: parquet
 export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-  const table = tableFromIPC(readParquet(bytes)).toArray();
-  const df = DG.DataFrame.fromObjects(table);
-  if (df)
-    return [df];
+  return [fromParquet(bytes as Uint8Array)];
 }
 
 //input: list bytes
@@ -38,52 +63,25 @@ export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | Sha
 //tags: file-handler
 //meta.ext: feather
 export function featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-  const arrow = Buffer.from(bytes);
-  const table = tableFromIPC(arrow).toArray();
-  const df = DG.DataFrame.fromObjects(table);
-  if (df) 
+  const df = fromFeather(bytes as Uint8Array);
+  if (df)
     return [df];
 }
 
 //name: saveAsParquet
 //description: Save as Parquet
 //tags: fileExporter
-export function saveAsParquet(){
+export function saveAsParquet() {
   let table = grok.shell.t;
-  let column_names = table.columns.names();
-  const t: { [_: string]: any }= {};
-  for(var i = 0; i < column_names.length; i++){
-    if(table.col(column_names[i])?.type === 'int'){
-      t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
-    }
-    else{
-      t[column_names[i]] = table.columns.byName(column_names[i]).toList();
-    }
-  }
-  const res = tableFromArrays(t);
-  const arrowUint8Array = tableToIPC(res, "stream");
-  const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
-  const parquetUint8Array = writeParquet(arrowUint8Array, writerProperties);
-  DG.Utils.download(table.name + '.parquet', parquetUint8Array);
+  const parquetUint8Array = toParquet(table);
+  DG.Utils.download(table.name + '.parquet', parquetUint8Array ?? new Uint8Array(0));
 }
-
 
 //name: saveAsFeather
 //description: Save as Feather
 //tags: fileExporter
-export function saveAsFeather(){
+export function saveAsFeather() {
   let table = grok.shell.t;
-  let column_names = table.columns.names();
-  const t: { [_: string]: any } = {};
-  for(var i = 0; i < column_names.length; i++){
-    if(table.col(column_names[i])?.type === 'int'){
-      t[column_names[i]] = new Int32Array(table.columns.byName(column_names[i]).toList());
-    }
-    else{
-      t[column_names[i]] = table.columns.byName(column_names[i]).toList();
-    }
-  }
-  const res = tableFromArrays(t);
-  const arrowUint8Array = tableToIPC(res, "stream");
-  DG.Utils.download(table.name + '.feather', arrowUint8Array);
+  const arrowUint8Array = toFeather(table, false);
+  DG.Utils.download(table.name + '.feather', arrowUint8Array ?? new Uint8Array(0));
 }

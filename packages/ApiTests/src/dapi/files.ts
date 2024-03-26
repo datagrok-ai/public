@@ -105,6 +105,12 @@ category('Dapi: files', () => {
     await grok.dapi.files.delete(filePath);
   }, {skipReason: 'GROK-11670'});
 
+  test('readAsText', async () => {
+    const files = await _package.files.list('datasets', true, 'demog.csv');
+    const res = await _package.files.readAsText(files[0]);
+    expect(!!res);
+  });
+
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);
   });

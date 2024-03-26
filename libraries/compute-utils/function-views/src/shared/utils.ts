@@ -4,25 +4,42 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH, viewerTypesMapping} from '../../../shared-utils/consts';
 import wu from 'wu';
+import {Observable} from 'rxjs';
+import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
+
+export function properUpdateIndicator(e: HTMLElement, state: boolean) {
+  if (state) {
+    $(e).addClass('ui-box').css({'width': 'auto', 'height': 'auto'});
+    ui.setUpdateIndicator(e, true);
+  } else {
+    ui.setUpdateIndicator(e, false);
+    $(e).removeClass('ui-box');
+  }
+}
+
+export function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
+  return new Observable((observer: any) => {
+    const sub = onInput((val: T) => {
+      observer.next(val);
+    });
+    return () => sub.unsubscribe();
+  });
+}
 
 export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
-  const dfOutputs = wu(call.outputParams.values() as DG.FuncCallParam[])
+  const dfOutputs = wu(call.outputParams.values())
     .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
   for (const output of dfOutputs)
     deepClone.outputs[output.name] = call.outputs[output.name].clone();
 
-  const dfInputs = wu(call.inputParams.values() as DG.FuncCallParam[])
+  const dfInputs = wu(call.inputParams.values())
     .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
   for (const input of dfInputs)
     deepClone.inputs[input.name] = call.inputs[input.name].clone();
 
   return deepClone;
-};
-
-export const boundImportFunction = (func: DG.Func): string | undefined => {
-  return func.options['getRealData'];
 };
 
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
@@ -84,7 +101,7 @@ export const getDfFromRuns = (
         newColumn.init(
           (idx: number) => comparedRuns[idx].inputs[configProp.name] ?? comparedRuns[idx].outputs[configProp.name],
         );
-        const unusedName = comparisonDf.columns.getUnusedName(newColumn.name);
+        const unusedName = comparisonDf.columns.getUnusedName(`${newColumn.name} (${config['type']})`);
         newColumn.name = unusedName;
         columnName = unusedName;
         newColumn.temp[VIEWER_PATH] = config;

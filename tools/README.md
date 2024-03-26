@@ -83,6 +83,8 @@ Read more about package development in [Datagrok's documentation](https://datagr
 - `api` creates wrapper functions for package scripts and queries. The output is stored in files `/src/scripts-api.ts`
   and `/src/queries-api.ts` respectively.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
+Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.
+For more information on configuring connections, refer to the [Connections](https://datagrok.ai/help/develop#connections) article.
 
   ```shell
   cd <package-name>

@@ -1,5 +1,17 @@
 # SimPKPD changelog
 
+## 1.0.9 (2024-02-20)
+
+Updated annotation providing better UI/UX
+
+## 1.0.8 (2024-02-08)
+
+Added annotation providing sensitivity anlysis & fixed demo app annotation
+
+## 1.0.7 (2024-02-06)
+
+Fixed output annotation
+
 ## 1.0.6 (2024-01-10)
 
 Fixed demo app.

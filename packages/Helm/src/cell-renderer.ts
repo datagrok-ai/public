@@ -7,7 +7,7 @@ import wu from 'wu';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-import {findMonomers, parseHelm} from './utils';
+import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
 import {IEditor, HelmMonomerPlacer, IEditorMolAtom, ISeqMonomer} from './helm-monomer-placer';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
@@ -19,11 +19,6 @@ const enum tempTAGS {
 
   helmPlacer = 'bio-helmPlacer',
 }
-
-// Global flag is for replaceAll
-const helmGapStartRe = /\{(\*\.)+/g;
-const helmGapIntRe = /\.(\*\.)+/g;
-const helmGapEndRe = /(\.\*)+\}/g;
 
 function getSeqMonomerFromHelm(
   helmPrefix: string, symbol: string, monomerLib: IMonomerLib
@@ -42,16 +37,16 @@ function getSeqMonomerFromHelmAtom(atom: IEditorMolAtom): ISeqMonomer {
   let polymerType: string | undefined = undefined;
   // @ts-ignore
   switch (atom.bio.type) {
-    case 'HELM_BASE':
-    case 'HELM_SUGAR': // r - ribose, d - deoxyribose
-    case 'HELM_LINKER': // p - phosphate
-      polymerType = 'RNA';
-      break;
-    case 'HELM_AA':
-      polymerType = 'PEPTIDE';
-      break;
-    default:
-      polymerType = 'PEPTIDE';
+  case 'HELM_BASE':
+  case 'HELM_SUGAR': // r - ribose, d - deoxyribose
+  case 'HELM_LINKER': // p - phosphate
+    polymerType = 'RNA';
+    break;
+  case 'HELM_AA':
+    polymerType = 'PEPTIDE';
+    break;
+  default:
+    polymerType = 'PEPTIDE';
   }
   return {symbol: atom.elem, polymerType: polymerType};
 }
@@ -144,36 +139,6 @@ function getHoveredMonomerFallback(
   return hoveredSeqMonomer;
 }
 
-// patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
-/** get the text width in pixels */
-// @ts-ignore
-window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
-  const rawNode = this.rawNode;
-  const oldParent = rawNode.parentNode;
-  const _measurementNode = rawNode.cloneNode(true);
-  _measurementNode.style.visibility = 'hidden';
-
-  // solution to the "orphan issue" in FF
-  let _width = 0;
-  const _text = _measurementNode.firstChild.nodeValue;
-  oldParent.appendChild(_measurementNode);
-
-  // solution to the "orphan issue" in Opera
-  // (nodeValue == "" hangs firefox)
-  if (_text != '') {
-    let watchdogCounter = 100;
-    while (!_width && --watchdogCounter > 0) { // <-- hangs
-      //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
-      if (_measurementNode.getBBox)
-        _width = parseInt(_measurementNode.getBBox().width);
-      else
-        _width = 68;
-    }
-  }
-  oldParent.removeChild(_measurementNode);
-  return _width;
-};
-
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
  * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
  */
@@ -193,63 +158,63 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       try { tableCol = gridCell.tableColumn; } catch { }
       if (!tableCol) return;
 
-      const argsX = e.offsetX - gridCell.bounds.x;
-      const argsY = e.offsetY - gridCell.bounds.y;
+      /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
+      const argsX = e.offsetX - gcb.x;
+      const argsY = e.offsetY - gcb.y;
 
       const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
       const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
-      const seqMonomer: ISeqMonomer | null = editor ? getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor) :
-        getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
-      if (!seqMonomer) {
-        ui.tooltip.hide();
-        return;
-      }
-
-      const seq: string = !gridCell.cell.value ? '' : gridCell.cell.value
-        .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}')
-        .replace('{*}', '{}');
-      const monomerList = parseHelm(seq);
-      const missedMonomers = findMonomers(monomerList);
-
-      if (missedMonomers.has(seqMonomer.symbol)) {
-        ui.tooltip.show(ui.divV([
-          ui.divText(`Monomer ${seqMonomer.symbol} not found.`),
-          ui.divText('Open the Context Panel, then expand Manage Libraries'),
-        ]), e.x + 16, e.y + 16);
-      } else {
-        const monomer = helmPlacer.getMonomer(seqMonomer);
-        if (monomer) {
-          const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-          const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-          ui.tooltip.show(ui.divV([
-            ui.divText(seqMonomer.symbol),
-            monomerSvg,
-          ]), e.x + 16, e.y + 16);
+      let seqMonomer: ISeqMonomer | null;
+      let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
+      if (editor)
+        seqMonomer = getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor);
+      else {
+        const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
+        const monomerList = parseHelm(seq);
+        missedMonomers = findMonomers(monomerList);
+        const parsedMonomers = new Set<string>(monomerList);
+        seqMonomer = getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
+        if (seqMonomer && !parsedMonomers.has(seqMonomer.symbol)) seqMonomer = null;
+        if (seqMonomer) {
+          const textSize = helmPlacer.monomerTextSizeMap[seqMonomer.symbol];
+          if (textSize) {
+            const textBaseLine = gcb.height / 2 -
+              (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2 + 1;
+            const textTop = textBaseLine - textSize.fontBoundingBoxAscent;
+            const textBottom = textBaseLine + textSize.fontBoundingBoxDescent;
+            if (argsY < textTop || textBottom < argsY) seqMonomer = null;
+          }
         }
       }
 
-      // const tooltipMessage: HTMLElement[] = [];
-      // for (const [part, partI] of wu.enumerate(allParts)) {
-      //   if (missedMonomers.has(part)) {
-      //     tooltipMessage[partI] = ui.divV([
-      //       ui.divText(`Monomer ${allParts[partI]} not found.`),
-      //       ui.divText('Open the Context Panel, then expand Manage Libraries')
-      //     ]);
-      //   } else if (monomers.has(part)) {
-      //     const elList = [ui.div(part)];
-      //     const monomer = helmPlacer.getMonomer(part);
-      //     if (monomer) {
-      //       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-      //       const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-      //       elList.push(monomerSvg);
-      //     }
-      //     tooltipMessage[partI] = ui.divV(elList);
-      //   }
-      // }
-      //
-      // (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) ?
-      //   ui.tooltip.show(tooltipMessage[left], e.x + 16, e.y + 16) :
-      //   ui.tooltip.hide();
+      if (seqMonomer) {
+        if (!missedMonomers.has(seqMonomer.symbol)) {
+          const monomer = helmPlacer.getMonomer(seqMonomer);
+          if (monomer) {
+            const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+            const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
+            ui.tooltip.show(ui.divV([
+              ui.divText(seqMonomer.symbol),
+              monomerSvg,
+            ]), e.x + 16, e.y + 16);
+          }
+        } else {
+          ui.tooltip.show(ui.divV([
+            ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
+            ui.divText('Open the Context Panel, then expand Manage Libraries'),
+          ]), e.x + 16, e.y + 16);
+        }
+      } else if (missedMonomers.size == 0) {
+        ui.tooltip.hide();
+        return;
+      } else { // seqMonomer == null && missedMonomers.size > 0
+        const mmStrList = wu(missedMonomers.keys()).toArray().sort()
+          .filter((_, i) => i < 3);
+        const missedMonomersStr = mmStrList.join(', ') + (missedMonomers.size > 3 ? ', ...' : '');
+        ui.tooltip.show(ui.divV([ui.divText('Monomers missed in monomer libraries:'),
+          ui.divText(missedMonomersStr)
+        ]), e.x + 16, e.y + 16);
+      }
     } catch (err: any) {
       const errMsg: string = errorToConsole(err);
       console.error('Helm: HelmCellRenderer.onMouseMove() error:\n' + errMsg);
@@ -258,6 +223,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       e.stopPropagation();
     }
   }
+
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
@@ -274,9 +240,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const monomerColor: string = '#404040';
       const frameColor: string = '#C0C0C0';
 
-      const seq: string = !gridCell.cell.value ? '' : gridCell.cell.value
-        .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}')
-        .replace('{*}', '{}');
+      const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value);
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
       const missedMonomers: Set<string> = findMonomers(monomerList);
@@ -311,14 +275,14 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         }
 
         w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        g.save();
+        //g.save();
         g.beginPath();
         g.rect(x, y, w, h);
         g.clip();
         g.transform(1, 0, 0, 1, x, y);
         g.font = '12px monospace';
         g.textBaseline = 'top';
-        const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
+        const [allParts, _lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
 
         for (let i = 0; i < allParts.length; ++i) {
           const part: string = allParts[i];
@@ -328,7 +292,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
                 monomers.has(part) ? monomerColor :
                   frameColor;
           g.fillStyle = color;
-          printLeftOrCentered(sumLengths[i], 0, w, h, g, allParts[i], color, 0, true, 1.0);
+          printLeftOrCentered(sumLengths[i], 0, w, h, g, allParts[i], color, 0, true, 1.0,
+            undefined, undefined, undefined, undefined, undefined,
+            undefined, undefined, undefined, helmPlacer.monomerTextSizeMap);
         }
       }
     } finally {

@@ -140,5 +140,4 @@ tree = sg.ScaffoldTree.from_dataframe(
 )
 
 res = get_json_representation(tree)
-json_result = json.dumps(res)
-result = json_result.replace("\\n", "\n")
+result = json.dumps(res)

@@ -6,7 +6,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {isMolBlock} from './chem-common';
+import {hexToPercentRgb, isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
@@ -248,22 +248,61 @@ export function checkMoleculeValid(molecule: string): any {
 }
 
 
-export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule): ISubstruct | null {
-  const mol = getMolSafe(molecule, {}, rdkit).mol;
+export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule, col?: string, addHs?: boolean): ISubstruct | null {
+  let mol = getMolSafe(molecule, {}, rdkit).mol;
   let substruct: ISubstruct | null = null;
+  let uncommonAtomsBest: number[] = [];
+  let uncommonBondsBest: number[] = [];
+  const highlightAtomColors: { [key: string]: number[] } = {};
+  const highlightBondColors: { [key: string]: number[] } = {};
   try {
     if (mol) {
-      let uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
-      let uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
-      if (mcsMol) {
-        const matchedAtomsAndBonds: ISubstruct = JSON.parse(mol!.get_substruct_match(mcsMol!));
-        if (matchedAtomsAndBonds.atoms)
-          uncommonAtoms = getArraysDifference(uncommonAtoms, matchedAtomsAndBonds.atoms.sort((a, b) => { return a - b; }));
-        if (matchedAtomsAndBonds.bonds)
-          uncommonBonds = getArraysDifference(uncommonBonds, matchedAtomsAndBonds.bonds.sort((a, b) => { return a - b; }));
+      if (addHs) {
+        const molblockWithHs = mol.add_hs();
+        mol = getMolSafe(molblockWithHs, {}, rdkit).mol;
       }
-      return {atoms: uncommonAtoms, bonds: uncommonBonds};
+      if(mol) {
+        let rdKol: number[] | null = null;
+        if (col)
+          rdKol = hexToPercentRgb(col);
+        let uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
+        let uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
+        if (mcsMol) {
+          const matchedAtomsAndBondsList: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(mcsMol!));
+          let errorRateTotal = Number.MAX_SAFE_INTEGER;
+          for (let i = 0; i < matchedAtomsAndBondsList.length; i++) {
+            let uncommonAtomsSingle = [...uncommonAtoms];
+            let uncommonBondsSingle = [...uncommonBonds];
+            if (matchedAtomsAndBondsList[i].atoms)
+              uncommonAtomsSingle = getArraysDifference(uncommonAtomsSingle, matchedAtomsAndBondsList[i].atoms!.sort((a, b) => { return a - b; }));
+            if (matchedAtomsAndBondsList[i].bonds)
+              uncommonBondsSingle = getArraysDifference(uncommonBondsSingle, matchedAtomsAndBondsList[i].bonds!.sort((a, b) => { return a - b; }));
+  
+            let errorRate = 0;
+            for (let j = 0; j < uncommonBondsSingle.length - 1; j++) {
+              if (Math.abs(uncommonBondsSingle[j] - uncommonBondsSingle[j + 1]) > 1)
+                errorRate++;
+            }
+            if (errorRate < errorRateTotal) {
+              errorRateTotal = errorRate;
+              uncommonAtomsBest = uncommonAtomsSingle;
+              uncommonBondsBest = uncommonBondsSingle;
+            }
+          }
+        }
+        if (rdKol) {
+          for (let i = 0; i < uncommonAtomsBest.length; i++)
+            highlightAtomColors[uncommonAtomsBest[i].toString()] = rdKol;
+        }
+        if (rdKol) {
+          for (let i = 0; i < uncommonBondsBest.length; i++)
+            highlightBondColors[uncommonBondsBest[i].toString()] = rdKol;
+        }
+        return { atoms: uncommonAtomsBest, bonds: uncommonBondsBest, highlightAtomColors, highlightBondColors };
+      }
     }
+  } catch {
+    //do nothing, if molecule is invalid - return empty substruct obj
   } finally {
     mol?.delete();
   }

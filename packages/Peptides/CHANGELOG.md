@@ -1,6 +1,39 @@
 # Peptides changelog
 
-## 1.17.3 (WIP)
+## 1.17.11 (2024-03-12)
+
+* Fix context panel issues with mutation cliff pairs.
+* Fix filter crashing app and never recovering.
+* Precompute mutation cliffs statistics for correct rendering.
+* Use mutation cliffs statistics for rendering (instead of invariant map data)
+* Use Count and mean difference for size and color of mutation cliffs table.
+* Correct tooltip for mutation cliffs table to use mutation cliffs stats.
+
+## 1.17.10 (2024-02-29)
+
+Fix context panel crashing and never recovering
+
+## 1.17.9 (2024-02-29)
+
+Fix Logo summary table not calculating for single clusters and not updating on filter.
+
+## 1.17.8 (2024-02-22)
+
+Allow using qnum activity columns when running SAR analysis from top menu.
+
+## 1.17.7 (2024-02-22)
+
+Allow using qnum activity columns.
+
+## 1.17.6 (2024-02-20)
+
+Fix NW Distance function.
+
+## 1.17.5 (2024-02-15)
+
+Added MCL clustering to peptide analysis.
+
+## 1.17.3 (2024-02-01)
 
 * Sequence space random seeding for reproducibility.
 * Use of generated clusters for summery web logo table.

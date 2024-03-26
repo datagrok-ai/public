@@ -70,10 +70,11 @@ export class ModelHandler extends DG.ObjectHandler {
   static async openHelp(func: DG.Func) {
     if (func.options['readme'] != null) {
       grok.shell.windows.showHelp = true;
-      grok.shell.windows.help.showHelp('');
+      await new Promise((r) => setTimeout(r, 100));
       const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
-      const readmeText = await grok.dapi.files.readAsText(path);
-      grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+      grok.dapi.files.readAsText(path).then((readmeText) => {
+        grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+      });
     }
   }
 
@@ -88,16 +89,13 @@ export class ModelHandler extends DG.ObjectHandler {
 
   // Checks whether this is the handler for [x]
   override isApplicable(x: any) {
-    return x instanceof DG.Func && x.hasTag('model');
+    const js = DG.toJs(x);
+    return js instanceof DG.Func && js.hasTag('model');
   }
 
   private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);
 
-  constructor(
-    private viewName: string,
-    private funcName: string,
-    private currentPackage: DG.Package,
-  ) {
+  constructor() {
     super();
   }
 
@@ -113,7 +111,8 @@ export class ModelHandler extends DG.ObjectHandler {
     setTimeout(async () => {
       const userGroups = await this.awaitUserGroups();
       const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
-      const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
+      const missingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name));
+      const hasMissingMandatoryGroups = missingMandatoryGroups.length > 0;
       const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
       mandatoryGroupsIcon.classList.remove('grok-icon');
 
@@ -126,7 +125,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
       const mandatoryGroupsInfo = ui.div(ui.divV([
         ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
-        ...mandatoryUserGroups.map((group) => ui.divV([
+        ...missingMandatoryGroups.map((group) => ui.divV([
           ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
           ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
           ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}}),
@@ -138,10 +137,14 @@ export class ModelHandler extends DG.ObjectHandler {
         ui.label(x.friendlyName),
       ]);
 
-      if (!hasMissingMandatoryGroups) {
+      markup.onclick = () => {
+        if (grok.shell.windows.help.visible)
+          ModelHandler.openHelp(x);
+      };
+
+      if (!hasMissingMandatoryGroups)
         markup.ondblclick = () => {ModelHandler.openModel(x);};
-        markup.onclick = () => {ModelHandler.openHelp(x);};
-      } else
+      else
         label.classList.add('d4-disabled');
 
       if (hasMissingMandatoryGroups) {
@@ -228,6 +231,10 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override init(): void {
+    this.registerParamFunc('Help', (func: DG.Func) => {
+      ModelHandler.openHelp(DG.toJs(func));
+    });
+
     setTimeout(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
       const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);

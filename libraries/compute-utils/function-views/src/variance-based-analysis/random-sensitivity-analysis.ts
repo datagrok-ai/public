@@ -11,19 +11,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForRandomAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine';
+import {OutputDataFromUI, getOutput,
+  SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
-
-type OutputDataFromUI = {
-  prop: DG.Property,
-  value: {
-    row: number,
-    columns: string | null
-  },
-};
-
-const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
 
 export class RandomAnalysis {
   private dimension: number;
@@ -31,8 +22,7 @@ export class RandomAnalysis {
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];
-
-  private outputInfo: OutputInfo[];
+  private outputsOfInterest: OutputDataFromUI[];
 
   constructor(
     func: DG.Func,
@@ -69,17 +59,7 @@ export class RandomAnalysis {
       this.funcCalls.push(func.prepare(inputs));
     }
 
-    this.outputInfo = outputsOfInterest.map((output) => ({
-      prop: output.prop,
-      elements: [],
-      row: output.value.row,
-    }
-    ));
-  }
-
-  // Runs the function with each inputs set
-  private async run(): Promise<void> {
-    await Promise.all(this.funcCalls.map((call) => call.call()));
+    this.outputsOfInterest = outputsOfInterest;
   }
 
   // Performs variance-based sensitivity analysis
@@ -89,18 +69,15 @@ export class RandomAnalysis {
     this.funcCalls = await getCalledFuncCalls(this.funcCalls);
 
     // columns with the varied inputs values
-    const inputColumns = this.variedInputs.map((varInput) => varInput.column as DG.Column);
+    const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
+
+    // columns with outputs
+    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
 
     // create table with the varied inputs
-    const funcEvalResults = DG.DataFrame.fromColumns(inputColumns);
+    const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);
+
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
-
-    //const outputColumns = getOutputColumns(this.funcCalls);
-    const outputColumns = getOutput(this.funcCalls, this.outputInfo).columns.toList();
-
-    // add columns with outputs
-    for (const col of outputColumns)
-      funcEvalResults.columns.add(col);
 
     return {funcEvalResults: funcEvalResults, funcCalls: this.funcCalls};
   }

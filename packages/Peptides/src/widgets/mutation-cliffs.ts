@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
-import {addExpandIcon, getSeparator, setGridProps} from '../utils/misc';
+import {addExpandIconGen, getSeparator, setGridProps} from '../utils/misc';
 import {renderCellSelection} from '../utils/cell-renderer';
 
 export type MutationCliffsOptions = {
@@ -15,14 +15,41 @@ export type MutationCliffsOptions = {
  * grid of mutation cliffs pairs themselves.
  * @param table - table with sequences.
  * @param options - options for mutation cliffs widget.
+ * @param allowExpand - whether to allow expand icon in the grid.
  * @return - mutation cliffs widget.
  */
-export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliffsOptions): DG.Widget {
+export function mutationCliffsWidget(
+  table: DG.DataFrame, options: MutationCliffsOptions, allowExpand = true,
+): DG.Widget {
+  //addExpandIcon(pairsGrid);
+  //addExpandIcon(uniqueSequencesGrid);
+  const res = cliffsPairsWidgetParts(table, options);
+  if (!res)
+    return new DG.Widget(ui.label('No mutations table generated'));
+  const {pairsGrid, uniqueSequencesGrid, aminoToInput} = res;
+  const comboGrids = [pairsGrid, uniqueSequencesGrid];
+  const widgetRoot = ui.divV([aminoToInput.root, ...comboGrids.map((grid) => grid.root)],
+    {style: {width: '100%'}});
+  if (allowExpand) {
+    addExpandIconGen('Mutation Cliffs pairs', aminoToInput.root, widgetRoot,
+      () => {
+        const parts = cliffsPairsWidgetParts(table, options);
+        return ui.divV([parts!.aminoToInput.root, parts!.pairsGrid.root, parts!.uniqueSequencesGrid.root],
+          {style: {width: '100%', height: '100%'}});
+      });
+  }
+
+  return new DG.Widget(widgetRoot);
+}
+
+
+function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOptions):
+  {pairsGrid: DG.Grid, uniqueSequencesGrid: DG.Grid, aminoToInput: DG.InputBase<string>} | null {
   const filteredIndexes = table.filter.getSelectedIndexes();
   const positions = Object.keys(options.mutationCliffsSelection);
 
   if (!positions.length || options.mutationCliffs === null)
-    return new DG.Widget(ui.label('No mutations table generated'));
+    return null;
 
 
   const substitutionsArray: string[] = [];
@@ -86,7 +113,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   }
 
   if (substitutionsArray.length === 0)
-    return new DG.Widget(ui.label('No mutations table generated'));
+    return null;
 
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
@@ -107,7 +134,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   aminoToInput.setTooltip('Filter the rows by the monomer that the mutation was substituted to');
 
   const pairsGrid = pairsTable.plot.grid();
-  setGridProps(pairsGrid);
+  setGridProps(pairsGrid, true);
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
@@ -118,14 +145,20 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   const pairsSelectedIndexes: number[] = [];
   pairsGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
     try {
+      if (!gridCell || !gridCell.dart) {
+        pairsSelectedIndexes.length = 0;
+        setUniqueSeqGridFilter();
+        return;
+      } // this may happen on escape key press
       const rowIdx = gridCell.tableRowIndex;
       if (!keyPress)
         return;
 
-
-      if (rowIdx === null)
+      if (rowIdx === null) {
+        pairsSelectedIndexes.length = 0;
+        setUniqueSeqGridFilter();
         return;
-
+      }
 
       if (lastSelectedIndex !== null)
         pairsSelectedIndexes.splice(pairsSelectedIndexes.indexOf(lastSelectedIndex), 1);
@@ -135,13 +168,15 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
         pairsSelectedIndexes.push(rowIdx);
         pairsGrid.invalidate();
       }
-      uniqueSequencesTable.filter.fireChanged();
+      setUniqueSeqGridFilter();
     } finally {
       keyPress = false;
-      lastSelectedIndex = gridCell.tableRowIndex;
+      lastSelectedIndex = gridCell && gridCell.dart ? gridCell.tableRowIndex : null;
     }
   });
-  pairsGrid.root.addEventListener('keydown', (event) => keyPress = event.key.startsWith('Arrow'));
+  pairsGrid.root.addEventListener('keydown', (event) => {
+    keyPress = event.key.startsWith('Arrow');
+  });
   pairsGrid.root.addEventListener('click', (event) => {
     const gridCell = pairsGrid.hitTest(event.offsetX, event.offsetY);
     if (!gridCell || gridCell.tableRowIndex === null)
@@ -159,8 +194,9 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
       else
         pairsSelectedIndexes.splice(rowIdxIdx, 1);
     }
-    uniqueSequencesTable.filter.fireChanged();
+    setUniqueSeqGridFilter();
     pairsGrid.invalidate();
+    uniqueSequencesGrid.invalidate();
   });
   pairsGrid.onCellRender.subscribe((gcArgs) => {
     if (gcArgs.cell.tableColumn?.name !== substCol.name || !pairsSelectedIndexes.includes(gcArgs.cell.tableRowIndex!))
@@ -186,21 +222,27 @@ export function mutationCliffsWidget(table: DG.DataFrame, options: MutationCliff
   const selectedIndexes = uniqueSequencesBitSet.getSelectedIndexes();
   seqIdxCol.init((idx) => selectedIndexes[idx]);
   const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();
-  setGridProps(uniqueSequencesGrid);
+  setGridProps(uniqueSequencesGrid, true);
   uniqueSequencesGrid.props.rowHeight = 20;
-  uniqueSequencesTable.filter.onChanged.subscribe(() => {
+
+  function setUniqueSeqGridFilter(): void {
     const uniqueSelectedIndexes: number[] = [];
     for (const idx of pairsSelectedIndexes) {
       uniqueSelectedIndexes.push(fromIdxCol.get(idx)!);
       uniqueSelectedIndexes.push(toIdxCol.get(idx)!);
     }
     uniqueSequencesTable.filter.init(
-      (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(seqIdxColData[idx]), false);
-  });
-
-  addExpandIcon(pairsGrid);
-  addExpandIcon(uniqueSequencesGrid);
-
-  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root],
-    {style: {width: '100%'}}));
+      (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(seqIdxColData[idx]), true);
+    pairsGrid.invalidate();
+    uniqueSequencesGrid.invalidate();
+  }
+  pairsGrid.root.style.width = '100% !important';
+  uniqueSequencesGrid.root.style.width = '100% !important';
+  setTimeout(() => {
+    pairsGrid.root.style.removeProperty('width');
+    pairsGrid.root.style.setProperty('width', '100%');
+    uniqueSequencesGrid.root.style.removeProperty('width');
+    uniqueSequencesGrid.root.style.setProperty('width', '100%');
+  }, 200);
+  return {pairsGrid, uniqueSequencesGrid, aminoToInput};
 }

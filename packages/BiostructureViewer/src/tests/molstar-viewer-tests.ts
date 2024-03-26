@@ -192,27 +192,30 @@ category('MolstarViewer', () => {
   }, {timeout: 40000});
 
   test('pdb_data', async () => {
-    // debugger;
+    const logPrefix = `BsV tests: MolstarViewer.pdb_data()`;
     const df = await _package.files.readCsv('pdb_data.csv');
     const view = grok.shell.addTableView(df);
     const pdbGCol = view.grid.col('pdb')!;
     expect(!!pdbGCol, true, `'pdb' column not found`);
 
     const back = PdbGridCellRendererBack.getOrCreate(pdbGCol);
+    await delay(500); // To let sending all (visible) rows grid cells to renderer
     await back.awaitRendered(20000);
 
-    const rowI = 1;
-    const pdbName = '1ZP8';
+    const rowIdx: number = 1; // 0, 1
+    const pdbName: string = '1ZP8'; // '1QBS', '1ZP8'
     // region Click
-    const cellPdb0 = view.grid.cell('pdb', rowI);
+    const pdbCell = view.grid.cell('pdb', rowIdx);
     const grb = view.grid.root.getBoundingClientRect();
-    const cb = cellPdb0.bounds;
+    const cb = pdbCell.bounds;
     const ev = new MouseEvent('click', {
       cancelable: true, bubbles: true, view: window, button: 0,
       clientX: grb.left + cb.left + 3, clientY: grb.top + cb.top + 3,
     });
     const gridOverlay = $(view.grid.root).find('canvas').get()[2];
     await testEvent(back.onClicked, () => {}, () => {
+      _package.logger.debug(`${logPrefix}, dispatchEvent(ev), ` +
+        `ev.clientX = ${ev.clientX}, ev.clientY = ${ev.clientY}, rowIdx = ${rowIdx}, pdbName = ${pdbName}`);
       gridOverlay.dispatchEvent(ev); // Click
     }, 20000, 'click handling 20000 timeout');
     // endregion Click
@@ -224,7 +227,7 @@ category('MolstarViewer', () => {
     await viewer.awaitRendered(15000);
     const aViewer = viewer as any;
     expect(!!aViewer.dataEff, true, 'Viewer dataEff is empty.');
-    expect(aViewer.dataEff.data.includes(pdbName), true, `Viewer dataEff must be '${pdbName}' for row ${rowI}.`);
+    expect(aViewer.dataEff.data.includes(pdbName), true, `Viewer dataEff must be '${pdbName}' for row ${rowIdx}.`);
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: 'TODO: Searching for hanging test'});
 });

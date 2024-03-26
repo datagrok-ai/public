@@ -1,5 +1,42 @@
 # Chem changelog
 
+## 1.9.0 (2024-03-21)
+
+### Features
+
+* [#2495](https://github.com/datagrok-ai/public/issues/2495): Chem: MMP - initial vesrion
+* [#2540](https://github.com/datagrok-ai/public/issues/2540): Chem | Substructure search: Add an option to toggle the realignment of molecules by molecular filter
+* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem | Scaffold Tree: Remove the intermediate dialog before the color picker
+* [#2504](https://github.com/datagrok-ai/public/issues/2504): Filter panel: The question mark hovering doesn’t show the filtering of the scaffold tree viewer
+
+### Bug Fixes
+
+* GROK-15147: Chem | Scaffold Tree: Highlighting disappears in some cases
+* GROK-15240: Chem | RGroups: Handling malformed data
+* GROK-15213: Chem | RGroups: Undo latest analysis doesn't work when run on multiple dataframes
+* GROK-15187: Chem | RGroups: Fixed memory consumption
+* GROK-15171: Chem: Substructure filter doesn't apply correctly after removing rows and disable
+
+## 1.8.13 (2024-02-29)
+
+### Bug Fixes
+
+* Warm up substructure search web workers only once when first filter is created on column
+
+## 1.8.12 (2024-02-15)
+
+### Bug Fixes
+
+* Fixed multiple substructure search calls with the same structure (in case multiple layouts are applied to cloned views at once)
+
+## 1.8.11 (2024-02-08)
+
+### Bug Fixes
+
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases
+* [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases
+* [#2646](https://github.com/datagrok-ai/public/issues/2646): Structure highlighting is not removed when filters panel is closed
+
 ## 1.8.10 (2024-01-19)
 
 ### Features

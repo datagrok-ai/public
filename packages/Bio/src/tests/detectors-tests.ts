@@ -155,8 +155,8 @@ MWRSWY-CKHPMWRSWY-CKHP`;
   }
 
   const samples: { [key: string]: string } = {
-    [Samples.fastaFasta]: 'System:AppData/Bio/data/sample_FASTA.fasta',
-    [Samples.fastaPtCsv]: 'System:AppData/Bio/data/sample_FASTA_PT.csv',
+    [Samples.fastaFasta]: 'System:AppData/Bio/samples/FASTA.fasta',
+    [Samples.fastaPtCsv]: 'System:AppData/Bio/samples/FASTA_PT.csv',
     [Samples.msaComplex]: 'System:AppData/Bio/samples/MSA.csv',
     [Samples.fastaCsv]: 'System:AppData/Bio/samples/FASTA.csv',
     [Samples.helmCsv]: 'System:AppData/Bio/samples/HELM.csv',

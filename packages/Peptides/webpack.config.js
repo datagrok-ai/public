@@ -29,7 +29,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   devtool: 'inline-source-map',
   externals: {

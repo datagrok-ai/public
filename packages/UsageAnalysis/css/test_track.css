@@ -1,6 +1,13 @@
+.test-track {
+  overflow: unset;
+  display: flex;
+  flex-direction: column;
+}
+
 #tt-tree {
   width: 100%;
-  overflow-y: unset;
+  overflow-y: scroll;
+  height: inherit;
 }
 
 #tt-tree .d4-tree-view-group {
@@ -14,6 +21,8 @@
   padding: 10px 10px 0 10px;
   overflow-y: scroll;
   line-height: 1.5;
+  user-select: text;
+  resize: vertical;
 }
 
 #tt-test-case-div > .d4-markup > ol {
@@ -29,6 +38,7 @@
 #tt-test-case-div-outer {
   position: relative;
   margin: 0 8px;
+  flex-grow: 0;
 }
 
 #tt-edit-button {
@@ -49,48 +59,48 @@
   display: none;
 }
 
-.tt-new-test-case-input {
-  width: 300px;
-  height: 200px;
-}
-
 .tt-status-icon {
   margin-left: 5px !important;
   cursor: default !important;
 }
 
 .tt-history i:nth-child(1) {
-  filter: blur(0.6px);
-  opacity: 0.8;
+  filter: blur(0.7px);
+  opacity: 0.7;
 }
 
 .tt-history i:nth-child(2) {
-  filter: blur(0.8px);
-  opacity: 0.6;
+  filter: blur(0.9px);
+  opacity: 0.5;
 }
 
 .tt-history i:nth-child(3) {
-  filter: blur(1px);
-  opacity: 0.4;
+  filter: blur(1.1px);
+  opacity: 0.3;
+}
+
+.tt-history i:hover {
+  filter: none;
+  opacity: 1;
 }
 
 .tt-ribbon-button {
   margin: 4px 0 !important;
 }
 
-.tt-slack-link {
+.tt-link {
   font-size: 0;
 }
 
-.tt-slack-link:after {
-  content: 'SLACK';
+.tt-link:after {
+  content: attr(data-label);
   font-size: 13px;
   vertical-align: -15%;
 }
 
-/* .tt-ribbon-button:nth-child(1) {
-  margin-left: 2px !important;
-} */
+.tt-link-list:after {
+  vertical-align: -30%;
+}
 
 #tt-ribbon-save-button:enabled {
   animation-name: color;
@@ -109,10 +119,38 @@
 }
 
 .tt-reason {
-  position: absolute;
-  right: 10px;
+  margin-right: 0;
+  margin-left: auto;
   max-width: 100px;
   text-overflow: ellipsis;
   overflow: hidden;
   color: var(--grey-4);
+}
+
+.tt-reason br {
+  content: '';
+}
+
+#tt-name {
+  align-self: center;
+  margin-right: 8px;
+  margin-left: auto;
+  color: var(--grey-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tt-dialog .ui-input-label {
+  width: unset !important;
+  min-width: unset !important;
+  max-width: unset !important;
+}
+
+.tt-reason-dialog {
+  min-width: 500px;
+}
+
+.tt-dialog .ui-input-textarea {
+  height: 100%;
 }

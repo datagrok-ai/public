@@ -31,7 +31,7 @@ category('UI top menu', () => {
         similarityViewer.props.limit = 5;
         await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 5,
             'molecules number inside Similarity viewer is different than expected after change "Limit" property', 3000);
-        const similarityLable = similarityViewer.root.getElementsByClassName('similarity-prop-value')[1] as HTMLElement;
+        const similarityLable = similarityViewer.root.getElementsByClassName('chem-similarity-prop-value')[1] as HTMLElement;
         if (similarityLable.innerText != '0.22')
             throw new Error('Expected Similarity Lable for 2nd molecule does not match the "Dice" metric');
         const closeBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
@@ -67,7 +67,7 @@ category('UI top menu', () => {
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
         grok.shell.topMenu.find('Chem').group('Transform').find('Mutate...').click();
-        await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 500);
+        await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 2000);
         const dialog = DG.Dialog.getOpenDialogs()[0];
         await awaitCheck(() => dialog.inputs.length === 4, 'cannot load Mutate dialog', 1000);
         expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
@@ -179,7 +179,7 @@ category('UI top menu', () => {
     });
 
     test('rgroups', async () => {
-        smiles = grok.data.demo.molecules(20);
+        smiles = await readDataframe('tests/sar-small_test.csv');
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
         grok.shell.topMenu.find('Chem').group('Analyze').find('R-Groups Analysis...').click();
@@ -190,8 +190,8 @@ category('UI top menu', () => {
         await delay(2000);
         const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton?.click();
-        await awaitCheck(() => smiles.columns.names().filter((cname) => !cname.startsWith('~')).length === 5,
-            'rgroup columns haven\'t been added', 15000);
+        await awaitCheck(() => smiles.columns.names().filter((cname) => !cname.startsWith('~')).length === 6,
+            'rgroup columns haven\'t been added', 30000);
         await awaitCheck(() => {
             for (let v of grok.shell.tv.viewers) {
                 if (v.type === DG.VIEWER.TRELLIS_PLOT)

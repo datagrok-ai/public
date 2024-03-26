@@ -27,6 +27,7 @@ import {toJs, toDart} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
+import { StickyMeta } from "./sticky_meta";
 
 const api: IDartApi = <any>window;
 
@@ -233,6 +234,8 @@ export class Dapi {
   get logTypes(): HttpDataSource<LogEventType> {
     return new HttpDataSource(api.grok_Dapi_LogTypes());
   }
+
+  stickyMeta = new StickyMeta();
 }
 
 
@@ -403,6 +406,14 @@ export class AdminDataSource {
     if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
     return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
+  }
+
+  getUserReport(reportId: string): Promise<Uint8Array> {
+    return api.grok_Dapi_Admin_Get_User_Report(this.dart, reportId);
+  }
+
+  postEventReport(eventId: string): Promise<void> {
+    return api.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId);
   }
 }
 
@@ -638,6 +649,15 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
   forEntity(e: Entity): Promise<Credentials> {
     return api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart);
   }
+
+  /** Saves a credentials.
+   * Note, that in order to work correct, credentials should be connected
+   * to other entity that owns them. So the best way to modify Credentials is load by {@link forEntity}, change
+   * {@link Credentials.parameters} and after that call this method.
+   */
+  save(c: Credentials): Promise<Credentials> {
+    return api.grok_CredentialsDataSource_Save(this.dart, c.dart);
+  }
 }
 
 /**
@@ -791,9 +811,9 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   }
 
   /** Gets recent projects datasource
-   * @returns {HttpDataSource<HistoryEntry>} */
-  get recent(): HttpDataSource<HistoryEntry> {
-     return new HttpDataSource<HistoryEntry>(api.grok_Dapi_RecentProjects());
+   * @returns {HttpDataSource<Project>} */
+  get recent(): HttpDataSource<Project> {
+     return new HttpDataSource<Project>(api.grok_Dapi_RecentProjects());
   }
 
   /** Opens the specified project. */
@@ -959,8 +979,7 @@ export class FileSource {
       file = `${this.root}${this.root != '' ? '/' : ''}${file}`;
       return <string>file;
     } else {
-      file = `${this.root}${this.root != '' ? '/' : ''}${file.path}`;
-      return <string>file;
+      return file.fullPath;
     }
   }
 

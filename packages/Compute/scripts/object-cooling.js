@@ -18,6 +18,9 @@
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.foldedCategories: ["Object properties"]
+//meta.compareCustomizer: Compute:CustomCustomizer
+//meta.uploadFunc: Compute:CustomUploader
+//meta.help: Compute/readme.md
 
 timeToCool = undefined;
 

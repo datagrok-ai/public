@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, expectArray, testEvent} from '@datagrok-libraries/utils/src/test';
 import {
-  getUserLibSettings, LibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
@@ -16,7 +17,7 @@ import {_package} from '../package-test';
 
 category('getMolfiles', () => {
   let monomerLibHelper: IMonomerLibHelper;
-  let userLibSettings: LibSettings;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();

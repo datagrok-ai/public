@@ -8,7 +8,7 @@ import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} 
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
-import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
+import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE, storageName} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
@@ -88,6 +88,8 @@ export class PipelineView extends FunctionView {
     }
 
     if (format === 'Single Excel') {
+      DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+
       const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
       const exportWorkbook = new ExcelJS.Workbook();
 
@@ -281,7 +283,10 @@ export class PipelineView extends FunctionView {
       this.subs.push(disableMutationSub);
 
       const enableSub = grok.functions.onAfterRunAction.pipe(
-        filter((run) => step.view.funcCall && run && step.view.funcCall.id === run.id),
+        filter((run) =>
+          step.view.funcCall && run &&
+          !!run.id && step.view.funcCall.id === run.id,
+        ),
         withLatestFrom(step.visibility, step.ability),
         filter(([, visibility, ability]) =>
           !(visibility === VISIBILITY_STATE.HIDDEN || ability === ABILITY_STATE.DISABLED)),
@@ -332,7 +337,43 @@ export class PipelineView extends FunctionView {
     this.subs.push(plvHistorySub);
 
     await this.onFuncCallReady();
+
     this.isReady.next(true);
+
+    this.loadHelp().then(() => {
+      this.buildRibbonPanels();
+
+      const restoreHelpState = () => {
+        const currentStep = this.findCurrentStep();
+
+        if (currentStep && this.helpFiles[currentStep.func.nqName]) {
+          this.getHelpState().then((state) => {
+            if (state === 'opened')
+              this.showHelpWithDelay(currentStep);
+          });
+        }
+      };
+
+      const helpOpenSub = grok.events.onCurrentViewChanged.pipe(
+        filter(() => grok.shell.v == this),
+      ).subscribe(restoreHelpState);
+
+      restoreHelpState();
+
+      this.subs.push(helpOpenSub);
+    });
+  }
+
+  private helpFiles = {} as Record<string, string>;
+  private async loadHelp() {
+    return Promise.all(Object.values(this.steps).map(async (step) => {
+      const helpUrl = step.options?.helpUrl;
+      if (helpUrl) {
+        const path = `System:AppData/${this.func.package.name}/${helpUrl}`;
+        const file = await grok.dapi.files.readAsText(path);
+        this.helpFiles[step.func.nqName] = file;
+      }
+    }));
   }
 
   private syncNavButtons(currentStep: StepState, backBtn: HTMLButtonElement, nextBtn: HTMLButtonElement) {
@@ -396,11 +437,11 @@ export class PipelineView extends FunctionView {
     Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
   }
 
-  public override async onComparisonLaunch(funcCallIds: string[]) {
+  public override async onComparisonLaunch(funcCalls: DG.FuncCall[]) {
     const parentCall = grok.shell.v.parentCall;
 
     const childFuncCalls = await Promise.all(
-      funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
+      funcCalls.map((funcCall) => historyUtils.loadChildRuns(funcCall.id)),
     );
 
     // Main child function should habe `meta.isMain: true` tag or the last function is used
@@ -508,40 +549,6 @@ export class PipelineView extends FunctionView {
       );
     });
 
-    const updateHelpPanel = async () => {
-      const newHelpUrl = Object.values(this.steps)
-        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name)
-        ?.options?.helpUrl;
-
-
-      if (newHelpUrl) {
-        const path = `System:AppData/${this.func.package.name}/${newHelpUrl}`;
-        const file = await grok.dapi.files.readAsText(path);
-        grok.shell.windows.help.showHelp(ui.markdown(file));
-      }
-    };
-
-    const updateRibbonPanels = () => {
-      const currentStep = Object.values(this.steps)
-        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
-
-      if (currentStep) {
-        this.setRibbonPanels([
-          ...this.buildRibbonPanels(),
-          ...currentStep.view.buildRibbonPanels(),
-        ]);
-      }
-    };
-
-    if (!this.options.isTabbed) {
-      this.stepTabs.onTabChanged.subscribe(async () => {
-        updateHelpPanel();
-        updateRibbonPanels();
-      });
-      grok.shell.windows.help.visible = true;
-      updateHelpPanel();
-    }
-
     this.hideSteps(
       ...this.initialConfig
         .filter((config) => config.hiddenOnInit === VISIBILITY_STATE.HIDDEN)
@@ -549,6 +556,104 @@ export class PipelineView extends FunctionView {
     );
 
     return pipelineTabs.root;
+  }
+
+  private async showHelpWithDelay(currentStep: StepState) {
+    grok.shell.windows.help.visible = true;
+    // Workaround to deal with help panel bug
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
+  }
+
+  private findCurrentStep() {
+    return Object.values(this.steps)
+      .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+  }
+
+  public override buildHistoryBlock(): HTMLElement {
+    const hb = super.buildHistoryBlock();
+
+    const deletionSub = this.historyBlock!.afterRunDeleted.subscribe(async (deletedCall) => {
+      const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`options.parentCallId="${deletedCall.id}"`).list();
+
+      childRuns.map(async (childRun) => historyUtils.deleteRun(childRun));
+    });
+    this.subs.push(deletionSub);
+
+    return hb;
+  }
+
+  private async getHelpState(): Promise<'closed' | 'opened'> {
+    const storedValue = await grok.dapi.userDataStorage.getValue(storageName, `${this.func.name}_help_state`);
+    return storedValue === 'closed' ? 'closed' : 'opened';
+  }
+
+  private async saveHelpState(state: 'closed' | 'opened') {
+    return grok.dapi.userDataStorage.postValue(storageName, `${this.func.name}_help_state`, state);
+  }
+
+  public override buildRibbonPanels(): HTMLElement[][] {
+    const infoIcon = ui.iconFA('info', async () => {
+      const currentStep = this.findCurrentStep();
+
+      if (currentStep && this.helpFiles[currentStep.func.nqName]) {
+        await this.showHelpWithDelay(currentStep);
+        this.saveHelpState('opened');
+      }
+    });
+
+    const updateInfoIconAndRibbons = () => {
+      const currentStep = this.findCurrentStep();
+
+      const newRibbonPanels = [
+        [
+          ...super.buildRibbonPanels().flat(),
+          ...currentStep && this.helpFiles[currentStep.func.nqName] ? [infoIcon]: [],
+        ],
+        ...currentStep ? currentStep.view.buildRibbonPanels(): [],
+      ];
+
+      this.setRibbonPanels(newRibbonPanels);
+
+      if (currentStep && this.helpFiles[currentStep.func.nqName]) {
+        if (grok.shell.windows.help.visible)
+          this.showHelpWithDelay(currentStep);
+      }
+
+      return newRibbonPanels;
+    };
+
+    if (!this.isReady.value) {
+      const tabSub = this.stepTabs.onTabChanged.subscribe(updateInfoIconAndRibbons);
+      const helpSub = grok.events.onEvent('grok-panels-changed')
+        .pipe(filter(() => grok.shell.v === this))
+        .subscribe(async () => {
+          const savedState = await this.getHelpState();
+          if (grok.shell.windows.help.visible && savedState === 'closed') {
+            this.saveHelpState('opened');
+            return;
+          }
+
+          if (!grok.shell.windows.help.visible && savedState === 'opened') {
+            const info = ui.iconFA('info');
+            $(info).css('margin', '0px 3px');
+            grok.shell.info(ui.span([
+              `You can open help panel by clicking the`,
+              info,
+              `button on the ribbon menu`,
+            ]));
+
+            this.saveHelpState('closed');
+            return;
+          }
+        });
+      this.subs.push(tabSub, helpSub);
+    }
+
+    const newRibbonPanels = updateInfoIconAndRibbons();
+
+    return newRibbonPanels;
   }
 
   public override async run(): Promise<void> {
@@ -571,8 +676,7 @@ export class PipelineView extends FunctionView {
           scriptCall.options['parentCallId'] = this.funcCall.id;
           scriptCall.newId();
 
-          this.steps[scriptCall.func.nqName].view.lastCall =
-            await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+          await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
 
           return Promise.resolve();
         });
@@ -581,7 +685,6 @@ export class PipelineView extends FunctionView {
 
       await this.onAfterRun(this.funcCall);
 
-      this.funcCall.options['isFavorite'] = undefined;
       if (this.funcCall.options['title'])
         this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
 
