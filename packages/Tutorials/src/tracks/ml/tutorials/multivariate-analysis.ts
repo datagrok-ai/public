@@ -8,11 +8,10 @@ import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/s
 export class MultivariateAnalysisTutorial extends Tutorial {
   get name() { return 'Multivariate Analysis'; }
   get description() {
-    return 'Multivariate analysis (MVA) is based on the statistical ' +
-    'principle of multivariate statistics, which involves observation ' +
-    'and analysis of more than one statistical outcome variable at a time';
+    return `Multivariate analysis reveals complex interactions and patterns within a dataset. It uses 
+    statistical techniques to explore the relationships among multiple variables.`;
   }
-  get steps() { return 7; }
+  get steps() { return 6; }
     
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
@@ -21,38 +20,68 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   protected async _run() {
     this.header.textContent = this.name;
 
-    this.describe('<p>The multivariate uses a statistical method that resembles principal ' +
-      'components regression. Instead of finding hyperplanes of maximum variance ' +
-      'between the response and independent variables, it finds a linear regression ' +
-      'model by projecting the predicted variables and the observable variables to a ' +
-      'new space.</p><p>In the following example, we will predict a car price by its attributes, ' +
-      'and see how different measures are related to each other and to the outcome.</p>');
+    this.describe(`Partial Least Squares Regression (PLS) models the relationship 
+    between independent variables (predictors) and dependent variables (responses). Use it 
+    when there are a large number of predictors, multicollinearity among them, and relatively few observations.`);
 
-    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
-    const dlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
+    const plsDlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
       'Multivariate Analysis (PLS)', this.getMenuItem('ML'));
-    await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
-    await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Features"', 'Features',
+
+    plsDlg.root.hidden = true;
+    
+    // We create fake dialog that runs analysis (since inputs of the "main" dialog are added using ui.form).
+    const dlg = ui.dialog({title: 'Multivariate Analysis (PLS)', helpUrl: this.helpUrl});
+
+    dlg.add(ui.columnInput('Predict', this.t!, null, () => {}, {
+      filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
+    }));
+  
+    dlg.add(ui.columnsInput('Using', this.t!, () => {}, {
+      available: this.t!.columns.toList().filter((col) => 
+        (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
+      ).map((col) => col.name),
+      checked: [],
+    }));
+  
+    dlg.add(ui.intInput('Components', null, () => {}));
+  
+    dlg.add(ui.columnInput('Names', this.t!, null, () => {}, {
+      filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)
+    }));
+  
+    dlg.addButton('RUN', () => {
+      dlg.close();
+      plsDlg.getButton('RUN').click();
+    }, undefined, 'Perform multivariate analysis');
+  
+    dlg.show();
+      
+    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price',
+      'Specify column with the response variable.');
+      
+    await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Using"', 'Using',
       this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
-      'Click "All" in the column selection dialog and uncheck "price".');    
-    await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model');
-    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
-    await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3');
+      `Set columns with predictors' values. Click "All" in the column selection dialog and uncheck "price".`);
+
+    await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3',
+      'Define the number of the latent factors.');
+    
+    await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
+      'Select column with data samples names.');
 
     const outcomeDescription = `Once you run the analysis, the following visualizations will appear:
     <ul style="list-style-type:disc">
-      <li><code>Reference vs. Predicted</code> is a scatter plot with a regression line comparing predicted vs reference outcomes</li>
+      <li><code>Observed vs. Predicted</code> is a scatter plot with a regression line comparing predicted vs reference outcomes</li>
       <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>      
-      <li><code>Regression coefficients</code> is a bar chart with regression coefficients</li>
-      <li><code>Loadings</code> is a scatter plot that shows correlation between variables</li>
+      <li><code>Loadings</code> is a scatter plot that presents the impact of each feature on the latent factors</li>
+      <li><code>Regression Coefficients</code> is a bar chart with regression coefficients</li>
+      <li><code>Explained Variance</code> is a bar chart indicating how well the latent factors fit source data</li>
     </ul><br>Look into these findings to figure out which variables correlate with each other ` +
     'and which of them have a greater impact on the outcome.<br>See the context help on the right '+
     'to learn more about multivariate analysis, or navigate to a documentation page by clicking the "Open in new tab" button.';
 
-    await this.action('Click "OK" and wait for the analysis to complete.', 
-      grok.functions.onAfterRunAction.pipe(filter((call) => call.func.name === 'PLS')),
-      null, outcomeDescription
-    );
+    await this.action('Click "RUN" and wait for the analysis to complete.', dlg.onClose, null, outcomeDescription);
   }
 }
